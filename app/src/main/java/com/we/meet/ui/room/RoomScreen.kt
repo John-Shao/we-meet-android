@@ -108,10 +108,11 @@ import kotlinx.coroutines.launch
 
 private val RoomToolbarIconButtonSize = 40.dp
 private val RoomToolbarIconSize = 24.dp
-// Bottom toolbar uses a tighter button container (= icon + 4dp each side)
-// so icons sit closer to their labels; 40dp leaves ~10dp visible gap which
-// the toolbar doesn't need.
-private val BottomToolbarIconButtonSize = 32.dp
+// Bottom toolbar: container matches the icon exactly so the only gap
+// between icon and label is BottomToolbarLabelSpacing. A larger container
+// (e.g. the top toolbar's 40dp) adds invisible padding that pushes the
+// label too far below.
+private val BottomToolbarIconButtonSize = 24.dp
 private val BottomToolbarLabelSpacing = 2.dp
 
 @Composable
@@ -355,14 +356,14 @@ private fun RoomContent(
     val statusTop = insets.statusBars.asPaddingValues().calculateTopPadding()
     val navBottom = insets.navigationBars.asPaddingValues().calculateBottomPadding()
     // Top toolbar content: vertical padding 8*2 + IconButton 40 = 56dp
-    // Bottom toolbar content: vertical padding 4*2 + icon button 40 + 2 + label ~16 = ~66dp
+    // Bottom toolbar content: row pad 4*2 + col pad 4*2 + icon box 24 + spacer 2 + label ~16 = ~58dp
     val gap = 8.dp
     val topInset by animateDpAsState(
         targetValue = if (toolbarsVisible) statusTop + 56.dp + gap else 0.dp,
         label = "topInset",
     )
     val bottomInset by animateDpAsState(
-        targetValue = if (toolbarsVisible) navBottom + 66.dp + gap else 0.dp,
+        targetValue = if (toolbarsVisible) navBottom + 58.dp + gap else 0.dp,
         label = "bottomInset",
     )
 
