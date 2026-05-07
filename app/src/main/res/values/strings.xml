@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">We Meet</string>
+
+    <!-- Login screen -->
+    <string name="login_title">Enter phone number</string>
+    <string name="login_phone_hint">Enter phone number</string>
+    <string name="login_next">Next</string>
+    <string name="login_otp_sent_title">Code sent</string>
+    <string name="login_otp_sent_to">To %1$s</string>
+    <string name="login_resend_otp">Resend (%1$ds)</string>
+    <string name="login_resend">Resend</string>
+    <string name="login_error_phone_format">Please enter a valid 11-digit mainland China phone number.</string>
+    <string name="login_error_otp_format">Please enter the 6-digit SMS code.</string>
+
+    <!-- Home screen -->
+    <string name="home_title">We Meet</string>
+    <string name="home_room_label">Meeting ID</string>
+    <string name="home_room_hint">e.g. 499707</string>
+    <string name="home_create_meeting">Start meeting</string>
+    <string name="home_join_meeting">Join meeting</string>
+    <string name="home_join">Join</string>
+    <string name="home_logout">Sign out</string>
+    <string name="home_signed_in_as">Signed in as %1$s</string>
+    <string name="home_settings">Settings</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_video_codec">Video codec</string>
+    <string name="settings_video_codec_default_suffix">(default)</string>
+    <string name="settings_video_codec_hint">Applies to your next meeting.</string>
+
+    <!-- Preview screen -->
+    <string name="preview_start_meeting">Start meeting</string>
+    <string name="preview_join_meeting">Join meeting</string>
+    <string name="preview_mic">Microphone</string>
+    <string name="preview_camera">Camera</string>
+    <string name="preview_meeting_id_hint">Meeting ID</string>
+    <string name="preview_speaker">Speaker</string>
+    <string name="preview_earpiece">Earpiece</string>
+    <string name="preview_mute">Mute</string>
+
+    <!-- Room screen -->
+    <string name="room_title">In meeting</string>
+    <string name="room_slug_label">Meeting ID: %1$s</string>
+    <string name="room_connecting">Connecting…</string>
+    <string name="room_action_mic">Microphone</string>
+    <string name="room_action_camera">Camera</string>
+    <string name="room_action_switch_camera">Flip</string>
+    <string name="room_action_participants">Members</string>
+    <string name="room_action_minimize">Minimize</string>
+    <string name="room_action_message">Messages</string>
+    <string name="room_action_more">More</string>
+    <string name="room_more_share">Share</string>
+    <string name="room_more_record">Record</string>
+    <string name="room_more_interpret">Interpret</string>
+    <string name="room_more_settings">Settings</string>
+    <string name="room_more_coming_soon">Coming soon</string>
+    <!-- Screen share -->
+    <string name="room_screen_share_screen">Share screen</string>
+    <string name="room_screen_share_whiteboard">Share whiteboard</string>
+    <string name="room_screen_share_stop">Stop share</string>
+    <string name="room_screen_share_of">%1$s\'s screen</string>
+    <string name="room_screen_share_self_sharing">You are sharing your screen</string>
+    <string name="room_screen_share_overlay_prompt">Grant \"Display over other apps\" permission to stop screen share from the desktop</string>
+    <string name="room_action_hangup">Leave</string>
+    <string name="room_end">End</string>
+    <string name="room_leave">Leave meeting</string>
+    <string name="room_end_meeting">End meeting</string>
+    <string name="room_leave_hint">If you don\'t want to end the meeting, please assign a new host before leaving.</string>
+    <string name="room_participants">Members (%1$d)</string>
+    <string name="room_participant_me"> (Me)</string>
+    <string name="room_permission_required">Camera and microphone permissions are required to join a meeting.</string>
+    <string name="room_grant_permissions">Grant permissions</string>
+    <string name="room_no_video">No video</string>
+    <string name="room_pin_participant">Pin</string>
+    <string name="room_unpin_participant">Unpin</string>
+    <string name="room_host_ended_title">Host ended the meeting</string>
+    <string name="room_host_ended_ack">OK</string>
+    <string name="room_host_ended_ack_countdown">OK (%1$ds)</string>
+    <string name="room_messages_title">Messages</string>
+    <string name="room_message_input_hint">Send a message…</string>
+    <string name="room_message_empty">No messages yet</string>
+    <string name="room_message_host_tag">Host</string>
+
+    <!-- Ongoing-meeting foreground-service notification -->
+    <string name="meeting_notification_channel_name">Meeting in progress</string>
+    <string name="meeting_notification_title">In meeting</string>
+    <string name="meeting_notification_content">%1$s</string>
+
+    <!-- History -->
+    <string name="history_section_title">History</string>
+    <string name="history_empty">No history yet</string>
+    <string name="history_detail_meeting_id">Meeting ID: %1$s</string>
+    <string name="history_detail_host">Host: %1$s</string>
+    <string name="history_detail_participants">Participants</string>
+    <string name="history_detail_timeline_today">Today</string>
+    <string name="history_detail_joined">Joined meeting</string>
+    <string name="history_detail_left">Left meeting</string>
+    <string name="history_unknown_host">—</string>
+
+    <!-- Tabs -->
+    <string name="tab_meeting">Meeting</string>
+    <string name="tab_profile">Me</string>
+
+    <!-- Profile screen -->
+    <string name="profile_nickname">Nickname</string>
+    <string name="profile_phone">Phone</string>
+    <string name="profile_not_set">Not set</string>
+    <string name="profile_set_nickname">Set nickname</string>
+    <string name="profile_nickname_hint">Enter a nickname</string>
+    <string name="profile_sign_out">Sign out</string>
+    <string name="profile_sign_out_confirm">Are you sure you want to sign out?</string>
+    <string name="profile_intro">Bio</string>
+    <string name="profile_set_intro">Edit bio</string>
+    <string name="profile_intro_hint">Up to 100 characters</string>
+    <string name="profile_intro_counter">%1$d/%2$d</string>
+    <string name="profile_avatar">Avatar</string>
+    <string name="profile_change_avatar">Change avatar</string>
+    <string name="profile_cover">Cover</string>
+    <string name="profile_change_cover">Change cover</string>
+    <string name="profile_image_uploading">Uploading…</string>
+    <string name="profile_image_error_mime">Only JPG / PNG / WEBP images are allowed</string>
+    <string name="profile_image_error_size">Image must be 2 MB or smaller</string>
+    <string name="profile_image_error_upload">Upload failed, please try again</string>
+    <string name="profile_intro_error_save">Failed to save bio</string>
+
+    <!-- Generic -->
+    <string name="error_network">Network error. Please check your connection and try again.</string>
+    <string name="error_unknown">Something went wrong. Please try again.</string>
+    <string name="error_room_not_found">Meeting ID invalid</string>
+    <string name="error_auth_expired">Session expired, please sign in again</string>
+    <string name="error_too_many_requests">Too many requests, please try again later</string>
+    <string name="error_server">Service error, please try again later</string>
+    <string name="session_expired_title">Session expired</string>
+    <string name="session_expired_message">Please sign in again to continue.</string>
+    <string name="session_expired_action">Sign in again</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+</resources>

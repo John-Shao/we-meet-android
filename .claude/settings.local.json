@@ -1,0 +1,71 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep:*)",
+      "Bash(./gradlew :app:compileDebugKotlin)",
+      "Read(//d/workspace/Meeting/jusi_meet_suite1.9/src/frontend/**)",
+      "Bash(./gradlew :app:assembleDebug)",
+      "Read(//tmp/**)",
+      "Bash(javap -p -classpath classes.jar io.livekit.android.RoomOptions)",
+      "Bash(javap -p -classpath classes.jar io.livekit.android.audio.AudioSwitchHandler)",
+      "Bash(javap -p -classpath classes.jar io.livekit.android.room.Room)",
+      "Bash(unzip -p classes.jar io/livekit/android/audio/AudioSwitchHandler.class)",
+      "Bash(javap -p /tmp/lk-inspect/Handler.class)",
+      "Bash(javap -p Handler.class)",
+      "Read(//dev/**)",
+      "Bash(mkdir -p /tmp/lk-src)",
+      "Bash(unzip -o \"/c/Users/19146/.gradle/caches/modules-2/files-2.1/io.livekit/livekit-android/2.23.5/b5992d9859d5ee08fa9b7efd858fb10e067b160c/livekit-android-2.23.5-sources.jar\" -d lk-src)",
+      "Bash(mkdir -p /tmp/asw-src)",
+      "Bash(unzip -o \"/c/Users/19146/.gradle/caches/modules-2/files-2.1/com.github.davidliu/audioswitch/89582c47c9a04c62f90aa5e57251af4800a62c9a/3d4e5480e8e0811ca53a15cbf09aa0d41ea9e384/audioswitch-89582c47c9a04c62f90aa5e57251af4800a62c9a-sources.jar\" -d .)",
+      "Bash(mkdir -p /tmp/lk-aar)",
+      "Bash(unzip -o \"/c/Users/19146/.gradle/caches/modules-2/files-2.1/io.livekit/livekit-android/2.23.5/99f072b274d0dbead64207363a719c9c24ffa52/livekit-android-2.23.5.aar\")",
+      "Bash(xargs -I{} sh -c 'unzip -l \"{}\" 2>/dev/null | grep -i \"WebRtcAudio\\\\|JavaAudioDeviceModule\"')",
+      "Bash(javap -c org/webrtc/audio/WebRtcAudioTrack.class)",
+      "Bash(javap -p org/webrtc/audio/WebRtcAudioManager.class)",
+      "Bash(javap -c -p org/webrtc/audio/WebRtcAudioTrack.class)",
+      "Bash(javap -c -p -v org/webrtc/audio/WebRtcAudioTrack.class)",
+      "Bash(find . -name \"*.class\" -exec sh -c 'javap -c \"$1\" 2>/dev/null | grep -l \"setPreferredDevice\" > /dev/null && echo \"$1\"' _ {} \\\\;)",
+      "Bash(javap -c org/webrtc/audio/WebRtcAudioRecord.class)",
+      "Bash(javap -c org/webrtc/audio/JavaAudioDeviceModule.class)",
+      "Bash(awk '/createAudioTrackOnOreoOrHigher/,/^  [a-z]/')",
+      "Bash(awk '/private static android.media.AudioTrack createAudioTrackOnOreoOrHigher/,/^  [a-z]/{print}')",
+      "Bash(javap -p 'org/webrtc/audio/JavaAudioDeviceModule$Builder.class')",
+      "Bash(javap -c -p org/webrtc/audio/JavaAudioDeviceModule.class)",
+      "Bash(javap -c -p 'org/webrtc/audio/JavaAudioDeviceModule$Builder.class')",
+      "Bash(javap -p org/webrtc/audio/JavaAudioDeviceModule.class)",
+      "Bash(javap -p livekit/org/webrtc/audio/AudioDeviceModule.class)",
+      "Bash(javap -p org/webrtc/audio/AudioDeviceModule.class)",
+      "Bash(javap -p io/livekit/android/audio/JavaAudioRecordPrewarmer.class)",
+      "Bash(xargs -I{} sh -c 'unzip -l \"{}\" 2>/dev/null | grep -l \"livekit/org/webrtc/audio/JavaAudioDeviceModule.class\" > /dev/null && echo \"{}\"')",
+      "Bash(mkdir -p /tmp/lk-prefixed)",
+      "Bash(unzip -o \"/c/Users/19146/.gradle/caches/8.10.2/transforms/002d442e20dc8f2634574d9fe5f20742/transformed/android-prefixed-137.7151.05-runtime.jar\")",
+      "Bash(javap -p livekit/org/webrtc/audio/WebRtcAudioTrack.class)",
+      "Bash(javap -p livekit/org/webrtc/audio/JavaAudioDeviceModule.class)",
+      "Bash(grep -A 3 -i \"minify\\\\|proguard\" app/build.gradle.kts)",
+      "Bash(grep -A 3 -i \"minify\\\\|proguard\" app/build.gradle)",
+      "Read(//d/workspace/Meeting/jusi_meet_suite1.9/**)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(python -c \"from PIL import Image; print\\('Pillow OK'\\)\")",
+      "Bash(python -m pip show Pillow)",
+      "Bash(python3 -c \"from PIL import Image; print\\('Pillow OK'\\)\")",
+      "Bash(pip install *)",
+      "Bash(python -c \"from PIL import Image; print\\('OK'\\)\")"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "tr -d '\\n' | grep -qoE '\"file_path\"[[:space:]]*:[[:space:]]*\"[^\"]*\\.(kt|kts|xml|gradle|properties)\"' && ./gradlew :app:assembleDebug",
+            "timeout": 300,
+            "statusMessage": "Building debug APK..."
+          }
+        ]
+      }
+    ]
+  }
+}

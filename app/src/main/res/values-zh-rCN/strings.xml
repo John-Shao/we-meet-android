@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">We Meet</string>
+
+    <!-- Login screen -->
+    <string name="login_title">请输入手机号</string>
+    <string name="login_phone_hint">请输入手机号</string>
+    <string name="login_next">下一步</string>
+    <string name="login_otp_sent_title">验证码已发送</string>
+    <string name="login_otp_sent_to">至 %1$s</string>
+    <string name="login_resend_otp">重新获取（%1$d 秒）</string>
+    <string name="login_resend">重新获取</string>
+    <string name="login_error_phone_format">请输入正确的 11 位中国大陆手机号。</string>
+    <string name="login_error_otp_format">请输入 6 位短信验证码。</string>
+
+    <!-- Home screen -->
+    <string name="home_title">We Meet</string>
+    <string name="home_room_label">会议号</string>
+    <string name="home_room_hint">例如 499707</string>
+    <string name="home_create_meeting">发起会议</string>
+    <string name="home_join_meeting">加入会议</string>
+    <string name="home_join">加入</string>
+    <string name="home_logout">退出登录</string>
+    <string name="home_signed_in_as">已登录：%1$s</string>
+    <string name="home_settings">设置</string>
+
+    <!-- 设置页 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_video_codec">视频编解码</string>
+    <string name="settings_video_codec_default_suffix">（默认）</string>
+    <string name="settings_video_codec_hint">将在下一次加入会议时生效。</string>
+
+    <!-- Preview screen -->
+    <string name="preview_start_meeting">开始会议</string>
+    <string name="preview_join_meeting">加入会议</string>
+    <string name="preview_mic">麦克风</string>
+    <string name="preview_camera">摄像头</string>
+    <string name="preview_meeting_id_hint">会议号</string>
+    <string name="preview_speaker">扬声器</string>
+    <string name="preview_earpiece">听筒</string>
+    <string name="preview_mute">静音</string>
+
+    <!-- Room screen -->
+    <string name="room_title">会议中</string>
+    <string name="room_slug_label">会议号：%1$s</string>
+    <string name="room_connecting">正在连接…</string>
+    <string name="room_action_mic">麦克风</string>
+    <string name="room_action_camera">摄像头</string>
+    <string name="room_action_switch_camera">翻转</string>
+    <string name="room_action_participants">参会人</string>
+    <string name="room_action_minimize">缩小</string>
+    <string name="room_action_message">消息</string>
+    <string name="room_action_more">更多</string>
+    <string name="room_more_share">共享</string>
+    <string name="room_more_record">录制</string>
+    <string name="room_more_interpret">同传</string>
+    <string name="room_more_settings">设置</string>
+    <string name="room_more_coming_soon">功能开发中</string>
+    <!-- 屏幕共享 -->
+    <string name="room_screen_share_screen">共享屏幕</string>
+    <string name="room_screen_share_whiteboard">共享白板</string>
+    <string name="room_screen_share_stop">停止共享</string>
+    <string name="room_screen_share_of">%1$s 的共享</string>
+    <string name="room_screen_share_self_sharing">你正在共享屏幕</string>
+    <string name="room_screen_share_overlay_prompt">请授予"悬浮窗"权限，以便在桌面上停止共享</string>
+    <string name="room_action_hangup">挂断</string>
+    <string name="room_end">结束</string>
+    <string name="room_leave">离开会议</string>
+    <string name="room_end_meeting">结束会议</string>
+    <string name="room_leave_hint">如果不想结束会议，\n请在离开会议前指定新的主持人。</string>
+    <string name="room_participants">参会成员（%1$d）</string>
+    <string name="room_participant_me">（我）</string>
+    <string name="room_permission_required">需要摄像头与麦克风权限才能加入会议。</string>
+    <string name="room_grant_permissions">授予权限</string>
+    <string name="room_no_video">无视频</string>
+    <string name="room_pin_participant">置顶</string>
+    <string name="room_unpin_participant">取消置顶</string>
+    <string name="room_host_ended_title">主持人已结束会议</string>
+    <string name="room_host_ended_ack">我知道了</string>
+    <string name="room_host_ended_ack_countdown">我知道了（%1$d 秒）</string>
+    <string name="room_messages_title">会中消息</string>
+    <string name="room_message_input_hint">发送会中消息</string>
+    <string name="room_message_empty">暂无消息</string>
+    <string name="room_message_host_tag">主持人</string>
+
+    <!-- 会议中前台服务通知 -->
+    <string name="meeting_notification_channel_name">会议中</string>
+    <string name="meeting_notification_title">会议进行中</string>
+    <string name="meeting_notification_content">%1$s</string>
+
+    <!-- 历史记录 -->
+    <string name="history_section_title">历史记录</string>
+    <string name="history_empty">暂无历史记录</string>
+    <string name="history_detail_meeting_id">会议 ID：%1$s</string>
+    <string name="history_detail_host">发起人：%1$s</string>
+    <string name="history_detail_participants">参会人</string>
+    <string name="history_detail_timeline_today">今天</string>
+    <string name="history_detail_joined">加入会议</string>
+    <string name="history_detail_left">离开会议</string>
+    <string name="history_unknown_host">—</string>
+
+    <!-- Tabs -->
+    <string name="tab_meeting">会议</string>
+    <string name="tab_profile">我的</string>
+
+    <!-- Profile screen -->
+    <string name="profile_nickname">昵称</string>
+    <string name="profile_phone">手机号</string>
+    <string name="profile_not_set">未设置</string>
+    <string name="profile_set_nickname">设置昵称</string>
+    <string name="profile_nickname_hint">请输入昵称</string>
+    <string name="profile_sign_out">退出登录</string>
+    <string name="profile_sign_out_confirm">确定要退出登录吗？</string>
+    <string name="profile_intro">个人简介</string>
+    <string name="profile_set_intro">编辑简介</string>
+    <string name="profile_intro_hint">最长 100 个字符</string>
+    <string name="profile_intro_counter">%1$d/%2$d</string>
+    <string name="profile_avatar">头像</string>
+    <string name="profile_change_avatar">更换头像</string>
+    <string name="profile_cover">封面</string>
+    <string name="profile_change_cover">更换封面</string>
+    <string name="profile_image_uploading">上传中…</string>
+    <string name="profile_image_error_mime">仅支持 JPG / PNG / WEBP 格式</string>
+    <string name="profile_image_error_size">图片大小不能超过 2 MB</string>
+    <string name="profile_image_error_upload">上传失败，请稍后再试</string>
+    <string name="profile_intro_error_save">保存简介失败</string>
+
+    <!-- Generic -->
+    <string name="error_network">网络异常，请检查连接后重试。</string>
+    <string name="error_unknown">出错了，请重试。</string>
+    <string name="error_room_not_found">会议号无效</string>
+    <string name="error_auth_expired">登录已过期，请重新登录</string>
+    <string name="error_too_many_requests">请求过于频繁，请稍后重试</string>
+    <string name="error_server">服务异常，请稍后重试</string>
+    <string name="session_expired_title">登录已过期</string>
+    <string name="session_expired_message">请重新登录以继续。</string>
+    <string name="session_expired_action">重新登录</string>
+    <string name="ok">确定</string>
+    <string name="cancel">取消</string>
+</resources>

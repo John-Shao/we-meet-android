@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The actual Material 3 colours come from Compose (ui/theme/Theme.kt).
+         This XML theme just gives the splash/launch frame a sensible base
+         and disables the action bar so Compose owns the whole window. -->
+    <style name="Theme.WeMeet" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+</resources>

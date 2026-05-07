@@ -1,0 +1,45 @@
+package com.we.meet.data.api
+
+import com.we.meet.data.api.dto.ConfirmProfileImageRequest
+import com.we.meet.data.api.dto.UpdateIntroRequest
+import com.we.meet.data.api.dto.UploadUrlRequest
+import com.we.meet.data.api.dto.UploadUrlResponse
+import com.we.meet.data.api.dto.UserDto
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.PATCH
+import retrofit2.http.POST
+import retrofit2.http.Path
+
+/**
+ * meet-backend user / profile endpoints. Documented in
+ * ../jusi_meet_suite1.9/docs/mobile-integration-profile.md.
+ *
+ * All calls require a Bearer access token; [AuthInterceptor] attaches it
+ * automatically.
+ */
+interface UserApi {
+
+    /** Fetch the currently logged-in user's full profile. */
+    @GET("api/v1.0/users/me/")
+    suspend fun getMe(): UserDto
+
+    /** Update the user's bio (server enforces 100-char cap). */
+    @PATCH("api/v1.0/users/{id}/")
+    suspend fun updateIntro(
+        @Path("id") userId: String,
+        @Body body: UpdateIntroRequest,
+    ): UserDto
+
+    /** Request a presigned PUT URL for an avatar / cover image upload. */
+    @POST("api/v1.0/users/me/upload-url/")
+    suspend fun requestProfileUploadUrl(
+        @Body body: UploadUrlRequest,
+    ): UploadUrlResponse
+
+    /** Confirm a freshly-uploaded image and persist its URL on the user. */
+    @PATCH("api/v1.0/users/me/profile-image/")
+    suspend fun confirmProfileImage(
+        @Body body: ConfirmProfileImageRequest,
+    ): UserDto
+}

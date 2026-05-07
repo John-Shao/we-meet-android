@@ -1,0 +1,150 @@
+package com.we.meet
+
+import android.app.PictureInPictureParams
+import android.content.res.Configuration
+import android.os.Build
+import android.os.Bundle
+import android.util.Log
+import android.util.Rational
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
+import com.we.meet.overlay.ScreenShareOverlay
+import com.we.meet.ui.nav.AppNav
+import com.we.meet.ui.theme.WeMeetTheme
+
+private const val TAG = "MainActivity"
+
+/**
+ * Compose-visible flag for "Activity is in Picture-in-Picture mode right now".
+ * RoomScreen reads this to render [com.we.meet.ui.room.PipLayout] instead
+ * of the full toolbar/gallery when we're in the PiP window.
+ */
+val LocalIsInPipMode = compositionLocalOf { false }
+
+class MainActivity : ComponentActivity() {
+
+    /**
+     * `true` while the user is actually in a connected meeting. RoomScreen
+     * flips this via a DisposableEffect. Used by [onUserLeaveHint] (pre-12
+     * fallback) so we never PiP from Login / Home.
+     */
+    private var inMeeting: Boolean = false
+
+    /**
+     * `true` while the local user is publishing a screen-share track. We
+     * suppress Picture-in-Picture entirely in this state: a PiP window
+     * rendering the meeting UI would be captured back by MediaProjection,
+     * producing the hall-of-mirrors recursion we already guard against in
+     * the gallery tile. When this flag is on the user is expected to be on
+     * their home screen or inside another app anyway.
+     */
+    private var screenSharing: Boolean = false
+
+    private val pipModeState = mutableStateOf(false)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            CompositionLocalProvider(LocalIsInPipMode provides pipModeState.value) {
+                WeMeetTheme {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        AppNav()
+                    }
+                }
+            }
+        }
+    }
+
+    // Gate the screen-share floating bubble on Activity visibility. The
+    // overlay only shows while we're backgrounded — when the user returns to
+    // the meeting UI they already have the in-app stop controls.
+    override fun onStart() {
+        super.onStart()
+        ScreenShareOverlay.setForeground(true)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        ScreenShareOverlay.setForeground(false)
+    }
+
+    /**
+     * Called by RoomScreen when the user enters / leaves a connected meeting.
+     * On Android 12+ this also drives the system's auto-enter-PiP behaviour:
+     * while in a meeting, a home-gesture auto-pips; outside, the Activity
+     * backgrounds normally.
+     */
+    fun setMeetingInProgress(active: Boolean) {
+        inMeeting = active
+        applyPipParams()
+    }
+
+    /**
+     * Called by RoomScreen when the local user starts / stops a screen share.
+     * While true, we override the meeting-in-progress auto-PiP behaviour and
+     * keep PiP disabled so Home-gesture just backgrounds us to the desktop
+     * (where the actual share happens) instead of spawning a tiny meeting
+     * window that MediaProjection would re-capture recursively.
+     */
+    fun setScreenSharing(active: Boolean) {
+        screenSharing = active
+        applyPipParams()
+    }
+
+    /**
+     * Single place that decides whether auto-enter-PiP is on. Auto-enter
+     * only makes sense when we're in a meeting AND not screen-sharing.
+     */
+    private fun applyPipParams() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        val autoEnter = inMeeting && !screenSharing
+        runCatching { setPictureInPictureParams(buildPipParams(autoEnter)) }
+            .onFailure { Log.w(TAG, "setPictureInPictureParams failed", it) }
+    }
+
+    // Pre-12 fallback: onUserLeaveHint fires on Home press. Android 12+ with
+    // setAutoEnterEnabled handles the gesture path itself.
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (!inMeeting || screenSharing) return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) return
+        runCatching { enterPictureInPictureMode(buildPipParams(autoEnter = false)) }
+            .onFailure { Log.w(TAG, "enterPictureInPictureMode failed", it) }
+    }
+
+    /** Called by the in-meeting "缩小" toolbar button to collapse into PiP. */
+    fun enterPipNow() {
+        if (!inMeeting || screenSharing) return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        runCatching { enterPictureInPictureMode(buildPipParams(autoEnter = true)) }
+            .onFailure { Log.w(TAG, "enterPictureInPictureMode failed", it) }
+    }
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration,
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        pipModeState.value = isInPictureInPictureMode
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun buildPipParams(autoEnter: Boolean): PictureInPictureParams {
+        val builder = PictureInPictureParams.Builder()
+            .setAspectRatio(Rational(3, 4))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.setAutoEnterEnabled(autoEnter)
+        }
+        return builder.build()
+    }
+}
