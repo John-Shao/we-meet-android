@@ -50,7 +50,9 @@
       "Bash(python -m pip show Pillow)",
       "Bash(python3 -c \"from PIL import Image; print\\('Pillow OK'\\)\")",
       "Bash(pip install *)",
-      "Bash(python -c \"from PIL import Image; print\\('OK'\\)\")"
+      "Bash(python -c \"from PIL import Image; print\\('OK'\\)\")",
+      "Bash(grep -E \"\\\\.\\(ts|tsx|js|jsx\\)$\")",
+      "Bash(./gradlew :app:compileDebugKotlin -q)"
     ]
   },
   "hooks": {
