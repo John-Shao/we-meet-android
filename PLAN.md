@@ -1,5 +1,12 @@
 # We Meet Android 端 MVP
 
+> **状态更新**：本文为初版 MVP 实施计划，已完成。后端现已切换为 **we-meet**
+> （同级仓库 `../we-meet/`，基础地址 `https://meet.we-meet.online`）。下文中
+> 对 `jusi_meet_suite1.9`、`meet.jusiai.com` 的引用为历史路径；最新接口契约与
+> 移动端设计见 `../we-meet/docs/extensions/移动端App客户端支持方案.md`。
+> 关键差异：可输入的会议号是房间的 `meeting_code` 字段（6 位数字）；头像/封面
+> 桶为私有，图片 URL 为短期签名 URL。
+
 ## 背景
 
 We Meet 的后端（Django REST API + 自托管 LiveKit + AI agents）和现有的 React + TypeScript Web 前端位于同级仓库 `D:\workspace\Meeting\jusi_meet_suite1.9`。该后端已经提供了面向移动端的接口（短信验证码 `/api/mobile/auth/send-otp/` 与 `/api/mobile/auth/verify-otp/`）和 Keycloak Token Exchange，并在 [../jusi_meet_suite1.9/docs/mobile-integration-guide.md](../jusi_meet_suite1.9/docs/mobile-integration-guide.md) 与 [../jusi_meet_suite1.9/docs/mobile-integration-auth.md](../jusi_meet_suite1.9/docs/mobile-integration-auth.md) 中提供了完整的接入文档。目前缺的是一个真正的原生客户端。

@@ -16,7 +16,7 @@ fun cfg(key: String, default: String = ""): String =
         ?: (project.findProperty(key) as String?)
         ?: default
 
-val baseUrl = cfg("WE_MEET_BASE_URL", "https://meet.jusiai.com")
+val baseUrl = cfg("WE_MEET_BASE_URL", "https://meet.we-meet.online")
 val livekitOverride = cfg("WE_MEET_LIVEKIT_URL_OVERRIDE", "")
 
 android {

@@ -36,12 +36,18 @@ data class UploadUrlRequest(
     val size: Long,
 )
 
-/** Response for POST `/api/v1.0/users/me/upload-url/`. */
+/**
+ * Response for POST `/api/v1.0/users/me/upload-url/`.
+ *
+ * The we-meet backend stores images in private buckets, so it does NOT return
+ * a `public_url` — the client only needs `upload_url` (to PUT the bytes) and
+ * `object_key` (to confirm). The eventual signed image URL comes back later
+ * from `GET /api/v1.0/users/me/`.
+ */
 @JsonClass(generateAdapter = true)
 data class UploadUrlResponse(
     val upload_url: String,
     val object_key: String,
-    val public_url: String,
     val expires_in: Int,
     val headers: Map<String, String>,
 )

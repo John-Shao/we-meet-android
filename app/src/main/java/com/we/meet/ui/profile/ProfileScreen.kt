@@ -1,5 +1,6 @@
 package com.we.meet.ui.profile
 
+import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -53,6 +54,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.we.meet.BuildConfig
 import com.we.meet.WeMeetApp
 import com.we.meet.R
@@ -313,6 +315,24 @@ fun ProfileScreen(
     }
 }
 
+/**
+ * Build a Coil request for a profile image (avatar / cover).
+ *
+ * Those buckets are private, so the backend returns presigned URLs whose
+ * query-string signature changes on every `users/me/` fetch. Keying the cache
+ * on the full URL would defeat caching, so the disk/memory cache keys are
+ * pinned to the stable object path (everything before '?'). This also lets an
+ * already-cached image still render when its signed URL has since expired.
+ */
+private fun profileImageRequest(context: Context, url: String): ImageRequest {
+    val stableKey = url.substringBefore('?')
+    return ImageRequest.Builder(context)
+        .data(url)
+        .diskCacheKey(stableKey)
+        .memoryCacheKey(stableKey)
+        .build()
+}
+
 @Composable
 private fun CoverBanner(
     coverUrl: String,
@@ -330,7 +350,7 @@ private fun CoverBanner(
     ) {
         if (coverUrl.isNotBlank()) {
             AsyncImage(
-                model = coverUrl,
+                model = profileImageRequest(LocalContext.current, coverUrl),
                 contentDescription = stringResource(R.string.profile_cover),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
@@ -381,7 +401,7 @@ private fun AvatarBubble(
             )
 
             avatarUrl.isNotBlank() -> AsyncImage(
-                model = avatarUrl,
+                model = profileImageRequest(LocalContext.current, avatarUrl),
                 contentDescription = stringResource(R.string.profile_avatar),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
