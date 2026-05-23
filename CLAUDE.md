@@ -4,7 +4,7 @@
 
 We Meet Android is a native Android client for the We Meet video conferencing platform. It connects to the Django REST backend + LiveKit server in sibling repo `../we-meet/`.
 
-Core flow: SMS OTP login → join room by meeting code / UUID → LiveKit audio/video → leave.
+Core flow: SMS OTP login → join room by 8-digit slug / UUID → LiveKit audio/video → leave.
 
 This project is the mobile client counterpart of `../we-meet/src/frontend` (React + TypeScript web frontend), a useful reference for UI patterns, LiveKit integration, and API usage.
 
@@ -72,12 +72,11 @@ Backend: `../we-meet/` (Django + LiveKit). Mobile design doc:
 Key endpoints:
 - `POST /api/mobile/auth/send-otp/` — no auth required
 - `POST /api/mobile/auth/verify-otp/` — returns access_token, refresh_token, expires_in
-- `GET /api/v1.0/rooms/{idOrMeetingCode}/` — returns room info with `livekit: {url, room, token}`
+- `GET /api/v1.0/rooms/{idOrSlug}/` — returns room info with `livekit: {url, room, token}`
 
 we-meet-specific notes:
-- The joinable 6-digit code is the room's `meeting_code` field — `slug` is
-  name-derived and not typeable. `RoomDto` maps `meeting_code` onto its `slug`
-  field so the rest of the app keeps using `slug` as 会议号.
+- The room's `slug` is a server-generated, unique 8-digit number — it IS the
+  joinable 会议号. `RoomDto.slug` maps to it directly (no field remapping).
 - Avatar/cover buckets are private: `upload-url` returns no `public_url`, and
   `avatar_url`/`cover_url` from `users/me/` are short-lived signed URLs (treat
   as expiring — re-fetch the profile rather than caching the URL long-term).

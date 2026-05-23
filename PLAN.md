@@ -4,8 +4,8 @@
 > （同级仓库 `../we-meet/`，基础地址 `https://meet.we-meet.online`）。下文中
 > 对 `jusi_meet_suite1.9`、`meet.jusiai.com` 的引用为历史路径；最新接口契约与
 > 移动端设计见 `../we-meet/docs/extensions/移动端App客户端支持方案.md`。
-> 关键差异：可输入的会议号是房间的 `meeting_code` 字段（6 位数字）；头像/封面
-> 桶为私有，图片 URL 为短期签名 URL。
+> 关键差异：可输入的会议号即房间的 `slug` 字段（服务端生成的唯一 8 位数字）；
+> 头像/封面桶为私有，图片 URL 为短期签名 URL。
 
 ## 背景
 

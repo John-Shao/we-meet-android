@@ -252,8 +252,10 @@ private fun TimelineRow(time: String, label: String) {
 
 private fun formatSlug(slug: String): String {
     val digits = slug.filter { it.isDigit() }
-    // Render 9-digit slugs as "123 456 789", 6-digit as "123 456", else raw.
+    // Render 8-digit slugs as "1234 5678" (we-meet); keep 9-digit "123 456 789"
+    // and 6-digit "123 456" for legacy/jusi compatibility; else raw.
     return when (digits.length) {
+        8 -> "${digits.substring(0, 4)} ${digits.substring(4)}"
         9 -> "${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6)}"
         6 -> "${digits.substring(0, 3)} ${digits.substring(3)}"
         else -> slug

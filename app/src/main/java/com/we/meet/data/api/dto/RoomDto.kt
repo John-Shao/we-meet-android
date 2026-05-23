@@ -1,6 +1,5 @@
 package com.we.meet.data.api.dto
 
-import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
@@ -13,11 +12,10 @@ data class RoomDto(
     val id: String,
     val name: String?,
     /**
-     * The joinable meeting code. On the we-meet backend `slug` is derived from
-     * the room name; the typeable 6-digit code lives in `meeting_code`, which
-     * we map onto this field so the whole app keeps using `slug` as 会议号.
+     * The joinable meeting code. On the we-meet backend `slug` is a generated,
+     * unique 8-digit number — it IS the 会议号, so the app uses it directly.
      */
-    @Json(name = "meeting_code") val slug: String?,
+    val slug: String?,
     val access_level: String?,
     val is_administrable: Boolean?,
     val livekit: LiveKitDto?,

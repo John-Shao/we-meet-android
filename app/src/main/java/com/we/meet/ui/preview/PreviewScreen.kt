@@ -224,8 +224,9 @@ fun PreviewScreen(
                     OutlinedTextField(
                         value = meetingId,
                         onValueChange = { value ->
-                            // Only allow digits, max 6 characters
-                            meetingId = value.filter { it.isDigit() }.take(6)
+                            // Only allow digits, max 8 characters (slug is an
+                            // 8-digit numeric meeting code on the we-meet backend).
+                            meetingId = value.filter { it.isDigit() }.take(8)
                         },
                         singleLine = true,
                         placeholder = {
@@ -330,7 +331,7 @@ fun PreviewScreen(
             }
             val actionEnabled = when (mode) {
                 PreviewMode.Create -> meetingName.isNotBlank() && !state.isLoading
-                PreviewMode.Join -> meetingId.length == 6 && !state.isLoading
+                PreviewMode.Join -> meetingId.length == 8 && !state.isLoading
             }
 
             Button(
