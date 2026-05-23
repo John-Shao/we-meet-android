@@ -22,6 +22,12 @@ data class VerifyOtpRequest(
     val otp: String,
 )
 
+/** Body for `POST /api/mobile/auth/refresh/`. */
+@JsonClass(generateAdapter = true)
+data class RefreshTokenRequest(
+    val refresh_token: String,
+)
+
 /** Response for `POST /api/mobile/auth/verify-otp/`. */
 @JsonClass(generateAdapter = true)
 data class VerifyOtpResponse(

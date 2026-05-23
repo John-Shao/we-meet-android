@@ -3,6 +3,7 @@ package com.we.meet.data.api
 import com.we.meet.BuildConfig
 import com.we.meet.data.auth.AuthInterceptor
 import com.we.meet.data.auth.SessionExpiredInterceptor
+import com.we.meet.data.auth.TokenRefreshAuthenticator
 import com.we.meet.data.auth.TokenStore
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -29,6 +30,14 @@ class ApiClient(tokenStore: TokenStore) {
         .writeTimeout(30, TimeUnit.SECONDS)
         .addInterceptor(AuthInterceptor(tokenStore))
         .addInterceptor(SessionExpiredInterceptor(tokenStore))
+        // Authenticator runs INSIDE RetryAndFollowUp, between AuthInterceptor
+        // (request-side) and SessionExpiredInterceptor (response-side). On a
+        // 401, refresh happens here transparently; only if refresh fails
+        // does the 401 propagate up to SessionExpiredInterceptor and the
+        // existing "session expired" flow kicks in.
+        // authApiProvider is lazy so we can hand it `authApi` after Retrofit
+        // finishes building (would be a forward-reference if eager).
+        .authenticator(TokenRefreshAuthenticator(tokenStore) { authApi })
         .apply {
             if (BuildConfig.DEBUG) {
                 addInterceptor(
