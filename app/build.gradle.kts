@@ -17,6 +17,7 @@ fun cfg(key: String, default: String = ""): String =
         ?: default
 
 val baseUrl = cfg("WE_MEET_BASE_URL", "https://meet.we-meet.online")
+val keycloakUrl = cfg("WE_MEET_KEYCLOAK_URL", "https://id.we-meet.online")
 val livekitOverride = cfg("WE_MEET_LIVEKIT_URL_OVERRIDE", "")
 
 android {
@@ -32,6 +33,7 @@ android {
 
         // Surface config to BuildConfig.
         buildConfigField("String", "WE_MEET_BASE_URL", "\"$baseUrl\"")
+        buildConfigField("String", "WE_MEET_KEYCLOAK_URL", "\"$keycloakUrl\"")
         buildConfigField("String", "WE_MEET_LIVEKIT_URL_OVERRIDE", "\"$livekitOverride\"")
     }
 

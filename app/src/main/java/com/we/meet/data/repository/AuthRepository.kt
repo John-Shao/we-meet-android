@@ -1,5 +1,6 @@
 package com.we.meet.data.repository
 
+import com.we.meet.BuildConfig
 import com.we.meet.data.api.AuthApi
 import com.we.meet.data.api.dto.SendOtpRequest
 import com.we.meet.data.api.dto.VerifyOtpRequest
@@ -89,6 +90,12 @@ class AuthRepository(
     }
 
     private companion object {
-        const val KEYCLOAK_ACCOUNT_URL = "https://id.jusiai.com/realms/meet/account"
+        // Keycloak issuer URL is set at build time via WE_MEET_KEYCLOAK_URL
+        // (gradle.properties / local.properties). Must match the issuer that
+        // signed the backend's access_token, otherwise Account API → 401 → the
+        // SessionExpiredInterceptor trips and the user sees "session expired"
+        // right after a successful login. See ApiClient for the OkHttp wiring.
+        val KEYCLOAK_ACCOUNT_URL: String =
+            "${BuildConfig.WE_MEET_KEYCLOAK_URL.trimEnd('/')}/realms/meet/account"
     }
 }
