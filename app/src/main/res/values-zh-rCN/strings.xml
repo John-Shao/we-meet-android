@@ -135,6 +135,7 @@
     <string name="profile_image_error_size">图片大小不能超过 2 MB</string>
     <string name="profile_image_error_upload">上传失败，请稍后再试</string>
     <string name="profile_intro_error_save">保存简介失败</string>
+    <string name="profile_nickname_error_save">保存昵称失败</string>
 
     <!-- Generic -->
     <string name="error_network">网络异常，请检查连接后重试。</string>

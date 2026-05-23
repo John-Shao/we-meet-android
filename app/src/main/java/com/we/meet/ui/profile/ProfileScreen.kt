@@ -89,6 +89,7 @@ fun ProfileScreen(
     val sizeError = stringResource(R.string.profile_image_error_size)
     val uploadError = stringResource(R.string.profile_image_error_upload)
     val introError = stringResource(R.string.profile_intro_error_save)
+    val nicknameError = stringResource(R.string.profile_nickname_error_save)
 
     fun handleUpload(kind: ProfileRepository.Kind, uri: android.net.Uri?) {
         if (uri == null) return
@@ -264,13 +265,24 @@ fun ProfileScreen(
     }
 
     if (showNicknameDialog) {
+        val previousNickname = nickname
         NicknameDialog(
             currentNickname = nickname,
             onConfirm = { newName ->
+                // Optimistic update so the dialog can close immediately; on
+                // failure we revert and surface the error in the same banner
+                // intro-save uses.
                 nickname = newName
                 showNicknameDialog = false
                 scope.launch {
-                    app.authRepository.updateNickname(newName)
+                    profileRepo.updateNickname(newName)
+                        .onSuccess { user ->
+                            user.full_name?.takeIf { it.isNotBlank() }?.let { nickname = it }
+                        }
+                        .onFailure {
+                            nickname = previousNickname
+                            errorMessage = nicknameError
+                        }
                 }
             },
             onDismiss = { showNicknameDialog = false },

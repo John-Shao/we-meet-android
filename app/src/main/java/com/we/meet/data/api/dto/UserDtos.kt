@@ -28,6 +28,12 @@ data class UpdateIntroRequest(
     val intro: String,
 )
 
+/** Body for PATCH `/api/v1.0/users/me/nickname/`. */
+@JsonClass(generateAdapter = true)
+data class UpdateNicknameRequest(
+    val nickname: String,
+)
+
 /** Body for POST `/api/v1.0/users/me/upload-url/`. */
 @JsonClass(generateAdapter = true)
 data class UploadUrlRequest(

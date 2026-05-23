@@ -135,6 +135,7 @@
     <string name="profile_image_error_size">Image must be 2 MB or smaller</string>
     <string name="profile_image_error_upload">Upload failed, please try again</string>
     <string name="profile_intro_error_save">Failed to save bio</string>
+    <string name="profile_nickname_error_save">Failed to save nickname</string>
 
     <!-- Generic -->
     <string name="error_network">Network error. Please check your connection and try again.</string>

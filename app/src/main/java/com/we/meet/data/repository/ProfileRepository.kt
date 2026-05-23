@@ -6,6 +6,7 @@ import android.webkit.MimeTypeMap
 import com.we.meet.data.api.UserApi
 import com.we.meet.data.api.dto.ConfirmProfileImageRequest
 import com.we.meet.data.api.dto.UpdateIntroRequest
+import com.we.meet.data.api.dto.UpdateNicknameRequest
 import com.we.meet.data.api.dto.UploadUrlRequest
 import com.we.meet.data.api.dto.UserDto
 import com.we.meet.data.auth.AuthInterceptor
@@ -57,6 +58,19 @@ class ProfileRepository(
         val userId = requireUserId()
         withContext(Dispatchers.IO) {
             val user = userApi.updateIntro(userId, UpdateIntroRequest(intro = intro))
+            persistProfile(user)
+            user
+        }
+    }
+
+    /**
+     * Update the display nickname (Keycloak firstName, surfaced as
+     * UserDto.full_name on subsequent /users/me/ reads). Server proxies to
+     * Keycloak Admin API to dodge the realm's user-profile validators.
+     */
+    suspend fun updateNickname(nickname: String): Result<UserDto> = runCatching {
+        withContext(Dispatchers.IO) {
+            val user = userApi.updateNickname(UpdateNicknameRequest(nickname = nickname))
             persistProfile(user)
             user
         }
