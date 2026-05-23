@@ -23,6 +23,17 @@
     <string name="home_logout">退出登录</string>
     <string name="home_signed_in_as">已登录：%1$s</string>
     <string name="home_settings">设置</string>
+    <string name="home_scan_qr">扫一扫</string>
+
+    <!-- 扫码登录确认页 -->
+    <string name="qr_scan_confirm_title">网页端登录</string>
+    <string name="qr_scan_confirm_hint">确认在显示此二维码的设备上以你的账号登录 we-meet。</string>
+    <string name="qr_scan_confirm_button">确认登录</string>
+    <string name="qr_scan_cancel_button">取消</string>
+    <string name="qr_scan_back_button">返回</string>
+    <string name="qr_scan_error_invalid">该二维码不是 we-meet 登录二维码。</string>
+    <string name="qr_scan_error_scan_failed">二维码校验失败，可能已过期，请重试。</string>
+    <string name="qr_scan_error_confirm_failed">登录失败，请重试。</string>
 
     <!-- 设置页 -->
     <string name="settings_title">设置</string>

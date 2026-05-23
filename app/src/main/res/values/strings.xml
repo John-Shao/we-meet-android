@@ -23,6 +23,17 @@
     <string name="home_logout">Sign out</string>
     <string name="home_signed_in_as">Signed in as %1$s</string>
     <string name="home_settings">Settings</string>
+    <string name="home_scan_qr">Scan QR</string>
+
+    <!-- QR scan / web sign-in confirmation -->
+    <string name="qr_scan_confirm_title">Sign in on the web</string>
+    <string name="qr_scan_confirm_hint">Confirm to sign in to we-meet on the device that showed this QR.</string>
+    <string name="qr_scan_confirm_button">Confirm sign-in</string>
+    <string name="qr_scan_cancel_button">Cancel</string>
+    <string name="qr_scan_back_button">Back</string>
+    <string name="qr_scan_error_invalid">This QR code isn\'t a we-meet sign-in.</string>
+    <string name="qr_scan_error_scan_failed">Couldn\'t check the QR. It may have expired — please try again.</string>
+    <string name="qr_scan_error_confirm_failed">Sign-in failed, please try again.</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Settings</string>

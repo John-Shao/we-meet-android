@@ -9,6 +9,7 @@ import com.we.meet.data.auth.TokenStore
 import com.we.meet.data.history.HistoryStore
 import com.we.meet.data.repository.AuthRepository
 import com.we.meet.data.repository.ProfileRepository
+import com.we.meet.data.repository.QrLoginRepository
 import com.we.meet.data.repository.RoomRepository
 import com.we.meet.data.settings.SettingsStore
 import com.we.meet.overlay.ScreenShareOverlay
@@ -33,6 +34,8 @@ class WeMeetApp : Application(), ImageLoaderFactory {
         private set
     lateinit var roomRepository: RoomRepository
         private set
+    lateinit var qrLoginRepository: QrLoginRepository
+        private set
     lateinit var historyStore: HistoryStore
         private set
     lateinit var settingsStore: SettingsStore
@@ -50,6 +53,7 @@ class WeMeetApp : Application(), ImageLoaderFactory {
             contentResolver,
         )
         roomRepository = RoomRepository(apiClient.roomApi)
+        qrLoginRepository = QrLoginRepository(apiClient.qrLoginApi)
         historyStore = HistoryStore(this)
         settingsStore = SettingsStore(this)
         ScreenShareOverlay.init(this)

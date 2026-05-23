@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddBox
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Icon
@@ -44,6 +45,7 @@ import com.we.meet.R
 fun HomeScreen(
     onCreateMeeting: () -> Unit,
     onJoinMeeting: () -> Unit,
+    onScanQrCode: () -> Unit,
     onHistoryClick: (roomId: String) -> Unit,
     onSettingsClick: () -> Unit,
 ) {
@@ -56,13 +58,20 @@ fun HomeScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        // Top bar — settings entry on the right.
+        // Top bar — scan-QR entry on the left of settings on the right.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.End,
         ) {
+            IconButton(onClick = onScanQrCode) {
+                Icon(
+                    imageVector = Icons.Default.QrCodeScanner,
+                    contentDescription = stringResource(R.string.home_scan_qr),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             IconButton(onClick = onSettingsClick) {
                 Icon(
                     imageVector = Icons.Default.Settings,

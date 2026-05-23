@@ -39,6 +39,8 @@ import com.we.meet.ui.login.LoginScreen
 import com.we.meet.ui.main.MainTabScreen
 import com.we.meet.ui.preview.PreviewMode
 import com.we.meet.ui.preview.PreviewScreen
+import com.we.meet.ui.qrscan.QrScanResult
+import com.we.meet.ui.qrscan.QrScanScreen
 import com.we.meet.ui.room.RoomScreen
 import com.we.meet.ui.settings.SettingsScreen
 import kotlinx.coroutines.delay
@@ -52,6 +54,7 @@ object Routes {
     const val SETTINGS = "settings"
     const val CREATE_PREVIEW = "create_preview"
     const val JOIN_PREVIEW = "join_preview"
+    const val QR_SCAN = "qr_scan"
 
     private const val ROOM_BASE = "room"
     const val ROOM = "$ROOM_BASE/{roomId}/{url}/{token}/{name}/{slug}/{host}/{createdAt}/{isAdmin}/{mic}/{cam}"
@@ -107,6 +110,7 @@ fun AppNav() {
             MainTabScreen(
                 onCreateMeeting = { navController.navigate(Routes.CREATE_PREVIEW) },
                 onJoinMeeting = { navController.navigate(Routes.JOIN_PREVIEW) },
+                onScanQrCode = { navController.navigate(Routes.QR_SCAN) },
                 onHistoryClick = { roomId ->
                     navController.navigate(Routes.historyDetail(roomId))
                 },
@@ -115,6 +119,18 @@ fun AppNav() {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(Routes.HOME) { inclusive = true }
                     }
+                },
+            )
+        }
+
+        composable(Routes.QR_SCAN) {
+            QrScanScreen(
+                onDone = { _: QrScanResult ->
+                    // Confirmed / Cancelled / Error all just return to home —
+                    // the web side surfaces the confirmation, and on this
+                    // device the toast/screenshot of state isn't worth a
+                    // dedicated success page for v1.
+                    navController.popBackStack()
                 },
             )
         }

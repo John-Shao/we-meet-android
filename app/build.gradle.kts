@@ -111,4 +111,9 @@ dependencies {
 
     // Image loading
     implementation(libs.coil.compose)
+
+    // QR scanning — self-contained CaptureActivity + ScanContract for the
+    // Activity Result API. Pulled in as a direct coordinate rather than via
+    // libs.versions.toml because it's the only ZXing-derived dep we use.
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 }

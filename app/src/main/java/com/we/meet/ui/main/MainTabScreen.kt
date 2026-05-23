@@ -56,6 +56,7 @@ private val tabs = listOf(
 fun MainTabScreen(
     onCreateMeeting: () -> Unit,
     onJoinMeeting: () -> Unit,
+    onScanQrCode: () -> Unit,
     onHistoryClick: (roomId: String) -> Unit,
     onSettingsClick: () -> Unit,
     onSignedOut: () -> Unit,
@@ -76,6 +77,7 @@ fun MainTabScreen(
                     HomeScreen(
                         onCreateMeeting = onCreateMeeting,
                         onJoinMeeting = onJoinMeeting,
+                        onScanQrCode = onScanQrCode,
                         onHistoryClick = onHistoryClick,
                         onSettingsClick = onSettingsClick,
                     )
