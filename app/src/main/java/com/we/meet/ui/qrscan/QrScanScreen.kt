@@ -74,8 +74,12 @@ fun QrScanScreen(onDone: (QrScanResult) -> Unit) {
                     setDesiredBarcodeFormats(ScanOptions.QR_CODE)
                     setPrompt("")            // we don't want the legacy footer text
                     setBeepEnabled(false)
-                    setOrientationLocked(false)
+                    setOrientationLocked(true)
                     setBarcodeImageEnabled(false)
+                    // Use our portrait subclass; ZXing's default
+                    // CaptureActivity is locked to sensorLandscape via its
+                    // own manifest entry, which would flip the device.
+                    setCaptureActivity(PortraitCaptureActivity::class.java)
                 }
             )
         }

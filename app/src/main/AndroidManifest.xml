@@ -76,6 +76,16 @@
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
 
+        <!-- ZXing's CaptureActivity ships locked to sensorLandscape. Our app
+             is portrait-only, so we subclass it as PortraitCaptureActivity and
+             re-declare it here with sensorPortrait. The library's manifest
+             entry is for the base CaptureActivity and is unaffected. -->
+        <activity
+            android:name=".ui.qrscan.PortraitCaptureActivity"
+            android:screenOrientation="sensorPortrait"
+            android:stateNotNeeded="true"
+            tools:ignore="LockedOrientationActivity" />
+
     </application>
 
 </manifest>
