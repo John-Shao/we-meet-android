@@ -52,3 +52,7 @@ Thumbs.db
 *.apk
 *.aab
 /.gradle-user-home
+
+# Claude Code per-developer settings (project-shared config stays in
+# .claude/settings.json; settings.local.json is local permission state)
+.claude/settings.local.json
