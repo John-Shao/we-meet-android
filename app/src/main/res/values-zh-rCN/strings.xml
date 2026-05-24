@@ -141,6 +141,7 @@
     <string name="error_network">网络异常，请检查连接后重试。</string>
     <string name="error_unknown">出错了，请重试。</string>
     <string name="error_room_not_found">会议号无效</string>
+    <string name="error_meeting_ended">会议已结束</string>
     <string name="error_auth_expired">登录已过期，请重新登录</string>
     <string name="error_too_many_requests">请求过于频繁，请稍后重试</string>
     <string name="error_server">服务异常，请稍后重试</string>

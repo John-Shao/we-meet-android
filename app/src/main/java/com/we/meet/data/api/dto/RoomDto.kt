@@ -23,6 +23,12 @@ data class RoomDto(
     val created_at: String? = null,
     /** Display name of the room owner (发起人). */
     val owner: String? = null,
+    /**
+     * ISO 8601 timestamp set when the room has been ended. When present the
+     * backend omits the `livekit` block — join must surface 「会议已结束」 to
+     * the user instead of the generic 「出错了」 fallback.
+     */
+    val closed_at: String? = null,
 )
 
 @JsonClass(generateAdapter = true)

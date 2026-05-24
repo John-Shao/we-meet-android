@@ -114,10 +114,19 @@ class PreviewViewModel(
                 onSuccess = { room ->
                     val lk = room.livekit
                     if (lk == null) {
+                        // Backend returns 200 with no `livekit` block when the
+                        // room has been ended — surface 「会议已结束」 rather
+                        // than the generic fallback so the user knows why they
+                        // can't join.
+                        val msgRes = if (room.closed_at != null) {
+                            R.string.error_meeting_ended
+                        } else {
+                            R.string.error_unknown
+                        }
                         _state.update {
                             it.copy(
                                 isLoading = false,
-                                errorMessage = getApplication<Application>().getString(R.string.error_unknown),
+                                errorMessage = getApplication<Application>().getString(msgRes),
                             )
                         }
                     } else {
