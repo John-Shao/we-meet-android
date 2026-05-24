@@ -9,9 +9,8 @@ import com.squareup.moshi.JsonClass
  * same room update [lastLeftAtMs] and [participants] but preserve
  * [firstJoinedAtMs].
  *
- * [host] is only known when the local user created the meeting; for joined
- * meetings it stays null because the backend room serializer does not expose
- * owner info.
+ * [host] is the display name of the room owner, sourced from the backend
+ * room API's `owner` field (available since the serializer was extended).
  */
 @JsonClass(generateAdapter = true)
 data class HistoryEntry(

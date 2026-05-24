@@ -21,6 +21,8 @@ data class RoomDto(
     val livekit: LiveKitDto?,
     /** ISO 8601, e.g. "2026-04-22T14:58:12.345Z". Used by history as 创建时间. */
     val created_at: String? = null,
+    /** Display name of the room owner (发起人). */
+    val owner: String? = null,
 )
 
 @JsonClass(generateAdapter = true)

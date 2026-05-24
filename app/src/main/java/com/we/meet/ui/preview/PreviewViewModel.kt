@@ -38,7 +38,7 @@ data class RoomTarget(
     val displayName: String,
     val slug: String,
     val isAdmin: Boolean,
-    /** 发起人. Only known when the local user created the meeting. */
+    /** 发起人. From the backend room API (owner field). */
     val host: String?,
     /** 创建时间 in epoch millis. Parsed from RoomDto.created_at, or now() as fallback. */
     val createdAtMs: Long,
@@ -129,8 +129,7 @@ class PreviewViewModel(
                             displayName = room.name ?: room.slug ?: room.id,
                             slug = room.slug ?: room.id,
                             isAdmin = room.is_administrable == true,
-                            // Host of an existing room isn't in the API response.
-                            host = null,
+                            host = room.owner,
                             createdAtMs = parseIsoMillis(room.created_at),
                         ))
                     }
