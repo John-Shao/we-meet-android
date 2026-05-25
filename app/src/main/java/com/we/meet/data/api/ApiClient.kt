@@ -1,5 +1,6 @@
 package com.we.meet.data.api
 
+import android.util.Log
 import com.we.meet.BuildConfig
 import com.we.meet.data.auth.AuthInterceptor
 import com.we.meet.data.auth.SessionExpiredInterceptor
@@ -24,6 +25,33 @@ class ApiClient(tokenStore: TokenStore) {
         .add(KotlinJsonAdapterFactory())
         .build()
 
+    // Refresh-only OkHttpClient. Built BEFORE the main client so the main
+    // client's TokenRefreshAuthenticator can route 401 refresh attempts
+    // through this independent dispatcher.
+    //
+    // Crucially this client has NO AuthInterceptor (so the stale bearer that
+    // caused the original 401 doesn't get re-attached to the refresh POST)
+    // and NO authenticator (so a refresh-side 401 cannot recurse back into
+    // refresh). Without this isolation the main client's authenticator
+    // `runBlocking { refresh() }` enqueues onto the same dispatcher whose
+    // workers are blocked waiting for it — TCP stays ESTABLISHED, queues
+    // sit 0:0, and OkHttp's per-call timeouts never fire because the call
+    // is still in the dispatcher queue.
+    private val refreshOkHttp: OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
+        .apply { if (BuildConfig.DEBUG) addInterceptor(debugLoggingInterceptor()) }
+        .build()
+
+    private val refreshRetrofit: Retrofit = Retrofit.Builder()
+        .baseUrl(normalizedBaseUrl(BuildConfig.WE_MEET_BASE_URL))
+        .client(refreshOkHttp)
+        .addConverterFactory(MoshiConverterFactory.create(moshi))
+        .build()
+
+    private val refreshAuthApi: AuthApi = refreshRetrofit.create(AuthApi::class.java)
+
     val okHttp: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
@@ -35,18 +63,10 @@ class ApiClient(tokenStore: TokenStore) {
         // 401, refresh happens here transparently; only if refresh fails
         // does the 401 propagate up to SessionExpiredInterceptor and the
         // existing "session expired" flow kicks in.
-        // authApiProvider is lazy so we can hand it `authApi` after Retrofit
-        // finishes building (would be a forward-reference if eager).
-        .authenticator(TokenRefreshAuthenticator(tokenStore) { authApi })
-        .apply {
-            if (BuildConfig.DEBUG) {
-                addInterceptor(
-                    HttpLoggingInterceptor().apply {
-                        level = HttpLoggingInterceptor.Level.HEADERS
-                    }
-                )
-            }
-        }
+        // The refresh call goes through the standalone refreshAuthApi to
+        // avoid self-dependency on this client's dispatcher.
+        .authenticator(TokenRefreshAuthenticator(tokenStore, refreshAuthApi))
+        .apply { if (BuildConfig.DEBUG) addInterceptor(debugLoggingInterceptor()) }
         .build()
 
     private val retrofit: Retrofit = Retrofit.Builder()
@@ -62,4 +82,13 @@ class ApiClient(tokenStore: TokenStore) {
 
     private fun normalizedBaseUrl(raw: String): String =
         if (raw.endsWith("/")) raw else "$raw/"
+
+    // App-tagged logger so log lines appear under the app's PID with a tag
+    // we control. Some OEM logcat pipelines (Honor, Huawei) drop the default
+    // "okhttp.OkHttpClient" tag into an encrypted system bucket that
+    // `adb logcat --pid=<app>` cannot decode; routing through Log.d keeps
+    // the lines visible.
+    private fun debugLoggingInterceptor(): HttpLoggingInterceptor =
+        HttpLoggingInterceptor { msg -> Log.d("WeMeetHttp", msg) }
+            .apply { level = HttpLoggingInterceptor.Level.HEADERS }
 }

@@ -1,5 +1,6 @@
 package com.we.meet.data.auth
 
+import android.util.Log
 import com.we.meet.data.api.AuthApi
 import com.we.meet.data.api.dto.RefreshTokenRequest
 import kotlinx.coroutines.runBlocking
@@ -25,13 +26,16 @@ import okhttp3.Route
  *      the original 401 propagates to [SessionExpiredInterceptor], which
  *      then clears the tokens and pushes the user back to the login screen.
  *
- * Note: this Authenticator is invoked on a request thread that is already
- * blocked waiting for the call to finish; using [runBlocking] to drive the
- * suspend Retrofit method does not introduce a new deadlock surface.
+ * Note: [authApi] MUST be backed by an OkHttpClient that does NOT itself
+ * install this authenticator nor [AuthInterceptor]. Routing the refresh
+ * through the same client deadlocks: the [runBlocking] call inside the
+ * authenticator blocks an OkHttp worker thread and re-enqueues onto the
+ * same dispatcher, while [AuthInterceptor] would re-attach the very
+ * bearer that triggered the 401 in the first place.
  */
 class TokenRefreshAuthenticator(
     private val tokenStore: TokenStore,
-    private val authApiProvider: () -> AuthApi,
+    private val authApi: AuthApi,
 ) : Authenticator {
 
     @Synchronized
@@ -61,11 +65,12 @@ class TokenRefreshAuthenticator(
 
         val refreshed = try {
             runBlocking {
-                authApiProvider().refresh(RefreshTokenRequest(refresh_token = storedRefresh))
+                authApi.refresh(RefreshTokenRequest(refresh_token = storedRefresh))
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             // Backend returned 4xx/5xx, or network failure. Bail; the 401
             // propagates so the user is sent back to login.
+            Log.w(TAG, "refresh failed; surfacing 401", e)
             return null
         }
 
@@ -75,5 +80,9 @@ class TokenRefreshAuthenticator(
         return request.newBuilder()
             .header("Authorization", "Bearer ${refreshed.access_token}")
             .build()
+    }
+
+    private companion object {
+        const val TAG = "WeMeetAuth"
     }
 }
