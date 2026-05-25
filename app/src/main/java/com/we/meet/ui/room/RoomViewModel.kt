@@ -30,6 +30,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
+import org.json.JSONObject
+import java.util.UUID
 
 private const val TAG = "RoomViewModel"
 
@@ -208,6 +210,8 @@ class RoomViewModel(
                             .toSet()
                         refreshParticipants()
                     }
+
+                    is RoomEvent.DataReceived -> onLegacyChatPacket(event)
 
                     is RoomEvent.Disconnected -> {
                         // Ephemeral chat, matches web: "消息仅对发送时在场的
@@ -549,6 +553,20 @@ class RoomViewModel(
     }
 
     // ── In-meeting chat ────────────────────────────────────────────────
+    //
+    // We mirror the web client's chat protocol (see
+    // @livekit/components-core's `setupChat`) which publishes on TWO topics
+    // simultaneously and de-duplicates on receive by message id:
+    //
+    //   1. LiveKit Text Streams on topic `lk.chat` — requires server v1.8.2+.
+    //   2. Legacy DataChannel on topic `lk-chat-topic` (JSON payload
+    //      { id, timestamp, message, ignoreLegacy }) — what everyone falls
+    //      back to when the server is older.
+    //
+    // Production we-meet currently runs livekit-server v1.7.2 (no Text-
+    // Stream support), so (2) is the only path that actually reaches peers.
+    // (1) is kept active for forward compatibility once the server upgrade
+    // happens — the dedupe key is the message id, shared across both paths.
 
     /**
      * Register the LiveKit Text Stream handler for the reserved `lk.chat`
@@ -581,36 +599,97 @@ class RoomViewModel(
         }
     }
 
+    /**
+     * Decode an incoming legacy chat packet (topic `lk-chat-topic`) and
+     * append it as a remote message. Honours the `ignoreLegacy` flag the
+     * sender sets when they also published the same id via Text Streams —
+     * we'll have already received the Text-Stream copy through the handler
+     * above. Any other DataReceived topic is silently ignored.
+     */
+    private fun onLegacyChatPacket(event: RoomEvent.DataReceived) {
+        if (event.topic != LiveKitController.LEGACY_CHAT_TOPIC) return
+        runCatching {
+            val json = JSONObject(String(event.data, Charsets.UTF_8))
+            if (json.optBoolean("ignoreLegacy", false)) return
+            val id = json.optString("id").ifEmpty { return }
+            val text = json.optString("message")
+            val timestamp = json.optLong("timestamp", System.currentTimeMillis())
+            val sender = event.participant
+            val displayName = sender?.name?.takeIf { it.isNotBlank() }
+                ?: sender?.identity?.value
+                ?: "—"
+            appendMessage(
+                ChatMessageUi(
+                    id = id,
+                    senderIdentity = sender?.identity?.value ?: "",
+                    senderName = displayName,
+                    isLocal = false,
+                    isHost = false,
+                    text = text,
+                    timestampMs = timestamp,
+                ),
+            )
+        }.onFailure { Log.w(TAG, "onLegacyChatPacket: malformed payload", it) }
+    }
+
     fun sendChatMessage(text: String) {
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return
         viewModelScope.launch {
-            controller.sendChatText(trimmed)
-                .onSuccess { info ->
-                    val local = controller.room.localParticipant
-                    val name = local.name?.takeIf { it.isNotBlank() }
-                        ?: local.identity?.value
-                        ?: "—"
-                    appendMessage(
-                        ChatMessageUi(
-                            id = info.id,
-                            senderIdentity = local.identity?.value ?: "",
-                            senderName = name,
-                            isLocal = true,
-                            isHost = isAdmin,
-                            text = trimmed,
-                            timestampMs = info.timestampMs,
-                        ),
-                    )
-                }
-                .onFailure { e ->
-                    Log.w(TAG, "sendChatMessage failed", e)
-                }
+            // 1. Try Text Streams (server v1.8.2+). Reuse its id/timestamp
+            //    when it succeeds so the legacy copy collides on the same
+            //    key for dedupe on the receiving end.
+            val textStreamResult = runCatching { controller.sendChatText(trimmed) }
+                .getOrElse { Result.failure(it) }
+            val info = textStreamResult.getOrNull()
+            val id = info?.id ?: UUID.randomUUID().toString()
+            val timestamp = info?.timestampMs ?: System.currentTimeMillis()
+            val textStreamOk = info != null
+
+            // 2. Local echo — LiveKit never delivers local sends to our own
+            //    handler, so we have to append it ourselves.
+            val local = controller.room.localParticipant
+            val name = local.name?.takeIf { it.isNotBlank() }
+                ?: local.identity?.value
+                ?: "—"
+            appendMessage(
+                ChatMessageUi(
+                    id = id,
+                    senderIdentity = local.identity?.value ?: "",
+                    senderName = name,
+                    isLocal = true,
+                    isHost = isAdmin,
+                    text = trimmed,
+                    timestampMs = timestamp,
+                ),
+            )
+
+            // 3. Always publish the legacy DataChannel copy. Peers on an
+            //    old server (or peers like older Android builds that don't
+            //    yet listen on text streams) will only ever see this one.
+            //    ignoreLegacy=true tells modern peers to drop this copy if
+            //    they already received the text-stream one.
+            controller.sendChatLegacy(
+                id = id,
+                text = trimmed,
+                timestampMs = timestamp,
+                ignoreLegacy = textStreamOk,
+            ).onFailure { Log.w(TAG, "sendChatLegacy failed", it) }
+
+            if (!textStreamOk) {
+                Log.i(TAG, "sendChatText unsupported on this server; legacy DataChannel only")
+            }
         }
     }
 
     private fun appendMessage(message: ChatMessageUi) {
-        _state.update { it.copy(messages = it.messages + message) }
+        _state.update { state ->
+            // Dedupe across text-stream + legacy paths: same logical message
+            // is sent on both topics with the same id, so the second arrival
+            // is a no-op.
+            if (state.messages.any { it.id == message.id }) state
+            else state.copy(messages = state.messages + message)
+        }
     }
 
     /** End the room via backend API, then disconnect. Only owner should call this. */

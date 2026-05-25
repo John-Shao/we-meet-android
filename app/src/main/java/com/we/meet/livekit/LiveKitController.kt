@@ -16,10 +16,12 @@ import io.livekit.android.room.datastream.StreamTextOptions
 import io.livekit.android.room.datastream.TextStreamInfo
 import io.livekit.android.room.datastream.incoming.TextStreamHandler
 import io.livekit.android.room.participant.VideoTrackPublishDefaults
+import io.livekit.android.room.track.DataPublishReliability
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.Track
 import io.livekit.android.room.track.VideoCodec
 import io.livekit.android.room.track.screencapture.ScreenCaptureParams
+import org.json.JSONObject
 
 /**
  * Thin imperative wrapper around the LiveKit Android SDK.
@@ -151,11 +153,20 @@ class LiveKitController(
         callAudioDeviceModule.release()
     }
 
-    // ── In-meeting chat (LiveKit Text Streams) ──────────────────────────
+    // ── In-meeting chat ──────────────────────────────────────────────────
     //
-    // The web client's `useChat()` hook writes to the reserved `lk.chat`
-    // topic via Text Streams. We mirror that on Android so messages
-    // interoperate in both directions.
+    // Mirror @livekit/components-core's `setupChat`: send/receive over BOTH
+    //   1. Text Streams on topic `lk.chat`         (requires server v1.8.2+)
+    //   2. Legacy DataChannel on topic `lk-chat-topic` (JSON payload)
+    //
+    // Production we-meet is currently on livekit-server v1.7.2 which has no
+    // Text-Stream support; the web client therefore relies on (2). We must
+    // mirror that path or Android stays mute in both directions. (1) is kept
+    // for forward compatibility once the server is upgraded.
+    //
+    // Receivers MUST de-duplicate by message id across the two channels and
+    // honour `ignoreLegacy=true` on incoming legacy packets (set by senders
+    // that already published the same message via Text Streams).
 
     suspend fun sendChatText(text: String): Result<TextStreamInfo> =
         room.localParticipant.sendText(text, StreamTextOptions(topic = CHAT_TOPIC))
@@ -164,7 +175,34 @@ class LiveKitController(
         runCatching { room.registerTextStreamHandler(CHAT_TOPIC, handler) }
     }
 
+    /**
+     * Publish a chat message via the legacy DataChannel topic
+     * (`lk-chat-topic`). Payload schema matches what `@livekit/components-core`
+     * encodes — `{ id, timestamp, message, ignoreLegacy }`. Set
+     * [ignoreLegacy] to true when the same message was also (successfully)
+     * sent via Text Streams so 1.8.2+ web peers don't double-render it.
+     */
+    suspend fun sendChatLegacy(
+        id: String,
+        text: String,
+        timestampMs: Long,
+        ignoreLegacy: Boolean,
+    ): Result<Unit> {
+        val payload = JSONObject().apply {
+            put("id", id)
+            put("timestamp", timestampMs)
+            put("message", text)
+            put("ignoreLegacy", ignoreLegacy)
+        }.toString().toByteArray(Charsets.UTF_8)
+        return room.localParticipant.publishData(
+            data = payload,
+            reliability = DataPublishReliability.RELIABLE,
+            topic = LEGACY_CHAT_TOPIC,
+        )
+    }
+
     companion object {
         const val CHAT_TOPIC = "lk.chat"
+        const val LEGACY_CHAT_TOPIC = "lk-chat-topic"
     }
 }
