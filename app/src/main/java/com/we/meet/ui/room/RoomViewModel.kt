@@ -719,6 +719,41 @@ class RoomViewModel(
     }
 
     /**
+     * Owner-only: kick the named participant from the room. The caller
+     * (UI) is expected to have already gated this on [RoomUiState.isAdmin];
+     * non-admins will get a 403 from the server anyway, but the gate
+     * prevents wasted requests + spurious failure toasts.
+     */
+    suspend fun removeParticipant(identity: String): Result<Unit> {
+        return roomRepository.removeParticipant(
+            idOrSlug = roomId,
+            identity = identity,
+        )
+    }
+
+    /**
+     * Owner-only: mute the named participant's microphone publication.
+     * We look up the live LiveKit Participant + its mic track sid here
+     * (instead of threading them through the call site) because the UI
+     * only carries our flattened [ParticipantUi], not the raw SDK
+     * publications. Returns failure if the target isn't present or
+     * isn't currently publishing audio (the host either doesn't see
+     * a mic icon at all, or sees it already off — silently no-op).
+     */
+    suspend fun muteParticipantMicrophone(identity: String): Result<Unit> {
+        val target = controller.room.remoteParticipants.values
+            .firstOrNull { it.identity?.value == identity }
+            ?: return Result.failure(IllegalStateException("Participant not in room"))
+        val micSid = target.getTrackPublication(Track.Source.MICROPHONE)?.sid
+            ?: return Result.success(Unit)
+        return roomRepository.muteParticipantMicrophone(
+            idOrSlug = roomId,
+            identity = identity,
+            micTrackSid = micSid,
+        )
+    }
+
+    /**
      * Toggle the local participant's raised-hand state. The "current
      * state" comes from our own ParticipantUi snapshot (sourced from the
      * `handRaisedAt` attribute), so a stale state flow can't cause us to

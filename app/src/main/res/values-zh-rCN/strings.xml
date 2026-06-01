@@ -101,6 +101,11 @@
     <string name="room_rename_label">显示名</string>
     <string name="room_rename_confirm">保存</string>
     <string name="room_rename_cancel">取消</string>
+    <string name="room_host_actions">主持人操作</string>
+    <string name="room_host_mute">静音</string>
+    <string name="room_host_remove">移出会议</string>
+    <string name="room_host_remove_title">移出参会人？</string>
+    <string name="room_host_remove_message">确定将 %1$s 移出会议？对方可以通过会议链接重新加入。</string>
 
     <!-- 会议中前台服务通知 -->
     <string name="meeting_notification_channel_name">会议中</string>

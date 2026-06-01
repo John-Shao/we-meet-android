@@ -1,7 +1,9 @@
 package com.we.meet.data.api
 
 import com.we.meet.data.api.dto.CreateRoomRequest
+import com.we.meet.data.api.dto.MuteParticipantRequest
 import com.we.meet.data.api.dto.RaiseHandRequest
+import com.we.meet.data.api.dto.RemoveParticipantRequest
 import com.we.meet.data.api.dto.RenameParticipantRequest
 import com.we.meet.data.api.dto.RoomDto
 import retrofit2.http.Body
@@ -64,5 +66,28 @@ interface RoomApi {
         @Header("No-Auth") noAuth: String = "1",
         @Header("Authorization") authHeader: String,
         @Body body: RaiseHandRequest,
+    )
+
+    /**
+     * Owner-only: kick a participant out of the room. AuthInterceptor's
+     * default Keycloak Bearer is what the backend's `HasPrivilegesOnRoom`
+     * permission expects — do NOT mark this No-Auth.
+     */
+    @POST("api/v1.0/rooms/{idOrSlug}/remove-participant/")
+    suspend fun removeParticipant(
+        @Path("idOrSlug") idOrSlug: String,
+        @Body body: RemoveParticipantRequest,
+    )
+
+    /**
+     * Owner-only: mute a specific publication on a participant. Same auth
+     * story as remove-participant — Keycloak Bearer via AuthInterceptor.
+     * Caller passes the microphone publication's SID for the "silence a
+     * noisy participant" flow.
+     */
+    @POST("api/v1.0/rooms/{idOrSlug}/mute-participant/")
+    suspend fun muteParticipant(
+        @Path("idOrSlug") idOrSlug: String,
+        @Body body: MuteParticipantRequest,
     )
 }

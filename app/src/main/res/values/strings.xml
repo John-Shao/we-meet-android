@@ -101,6 +101,11 @@
     <string name="room_rename_label">Display name</string>
     <string name="room_rename_confirm">Save</string>
     <string name="room_rename_cancel">Cancel</string>
+    <string name="room_host_actions">Host actions</string>
+    <string name="room_host_mute">Mute mic</string>
+    <string name="room_host_remove">Remove</string>
+    <string name="room_host_remove_title">Remove participant?</string>
+    <string name="room_host_remove_message">Remove %1$s from the meeting? They can rejoin from the meeting link.</string>
 
     <!-- Ongoing-meeting foreground-service notification -->
     <string name="meeting_notification_channel_name">Meeting in progress</string>

@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PanTool
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
@@ -66,6 +67,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -210,6 +213,8 @@ fun RoomScreen(
                         onStopScreenShare = viewModel::stopScreenShare,
                         onRenameSelf = viewModel::renameSelf,
                         onToggleHand = viewModel::toggleHand,
+                        onMuteParticipant = viewModel::muteParticipantMicrophone,
+                        onRemoveParticipant = viewModel::removeParticipant,
                         onLeave = {
                             viewModel.leave()
                             onLeave(false)
@@ -243,6 +248,8 @@ private fun RoomContent(
     onStopScreenShare: () -> Unit,
     onRenameSelf: suspend (String) -> Result<Unit>,
     onToggleHand: suspend () -> Result<Unit>,
+    onMuteParticipant: suspend (String) -> Result<Unit>,
+    onRemoveParticipant: suspend (String) -> Result<Unit>,
     onLeave: () -> Unit,
     onEndMeeting: () -> Unit,
 ) {
@@ -442,13 +449,27 @@ private fun RoomContent(
     // the dialog survives if the user navigates away from the sheet.
     var showRenameDialog by remember { mutableStateOf(false) }
 
+    // Kick-confirmation candidate. The sheet immediately closes when the
+    // host picks "踢出" so the confirm dialog reads on the meeting back-
+    // drop, not under a half-opened sheet. `candidate` carries both
+    // identity (for the API call) and display name (for the prompt).
+    var kickCandidate by remember { mutableStateOf<Pair<String, String>?>(null) }
+
     // Participants bottom sheet
     if (showParticipants) {
         ParticipantsSheet(
             participants = state.participants,
+            isAdmin = state.isAdmin,
             onRenameSelfClick = {
                 showParticipants = false
                 showRenameDialog = true
+            },
+            onMuteClick = { identity ->
+                scope.launch { onMuteParticipant(identity) }
+            },
+            onRemoveClick = { identity, name ->
+                showParticipants = false
+                kickCandidate = identity to name
             },
             onDismiss = { showParticipants = false },
         )
@@ -463,6 +484,17 @@ private fun RoomContent(
                 showRenameDialog = false
             },
             onDismiss = { showRenameDialog = false },
+        )
+    }
+
+    kickCandidate?.let { (identity, name) ->
+        KickConfirmDialog(
+            participantName = name,
+            onConfirm = {
+                scope.launch { onRemoveParticipant(identity) }
+                kickCandidate = null
+            },
+            onDismiss = { kickCandidate = null },
         )
     }
 
@@ -799,7 +831,10 @@ private fun VideoGrid(
 @Composable
 private fun ParticipantsSheet(
     participants: List<ParticipantUi>,
+    isAdmin: Boolean,
     onRenameSelfClick: () -> Unit,
+    onMuteClick: (identity: String) -> Unit,
+    onRemoveClick: (identity: String, name: String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -863,6 +898,17 @@ private fun ParticipantsSheet(
                             tint = if (p.isMicEnabled) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFFFF6B6B),
                             modifier = Modifier.size(20.dp),
                         )
+                        // Owner-only host actions menu. We skip screen-share
+                        // synthetic rows — the sharer's camera row is the
+                        // real participant and already owns these controls.
+                        if (isAdmin && !p.isLocal && !p.isScreenShare) {
+                            Spacer(Modifier.width(4.dp))
+                            ParticipantHostMenu(
+                                isMicEnabled = p.isMicEnabled,
+                                onMute = { onMuteClick(p.identity) },
+                                onRemove = { onRemoveClick(p.identity, p.name) },
+                            )
+                        }
                     }
                     HorizontalDivider()
                 }
@@ -870,6 +916,77 @@ private fun ParticipantsSheet(
             Spacer(Modifier.height(24.dp))
         }
     }
+}
+
+@Composable
+private fun ParticipantHostMenu(
+    isMicEnabled: Boolean,
+    onMute: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    Box {
+        IconButton(
+            onClick = { menuOpen = true },
+            modifier = Modifier.size(32.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = stringResource(R.string.room_host_actions),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        DropdownMenu(
+            expanded = menuOpen,
+            onDismissRequest = { menuOpen = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.room_host_mute)) },
+                enabled = isMicEnabled,
+                onClick = {
+                    menuOpen = false
+                    onMute()
+                },
+            )
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        text = stringResource(R.string.room_host_remove),
+                        color = Color(0xFFFF4444),
+                    )
+                },
+                onClick = {
+                    menuOpen = false
+                    onRemove()
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun KickConfirmDialog(
+    participantName: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.room_host_remove_title)) },
+        text = { Text(stringResource(R.string.room_host_remove_message, participantName)) },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF4444)),
+            ) { Text(stringResource(R.string.room_host_remove)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.room_rename_cancel))
+            }
+        },
+    )
 }
 
 @Composable

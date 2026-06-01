@@ -3,7 +3,9 @@ package com.we.meet.data.repository
 import com.we.meet.BuildConfig
 import com.we.meet.data.api.RoomApi
 import com.we.meet.data.api.dto.CreateRoomRequest
+import com.we.meet.data.api.dto.MuteParticipantRequest
 import com.we.meet.data.api.dto.RaiseHandRequest
+import com.we.meet.data.api.dto.RemoveParticipantRequest
 import com.we.meet.data.api.dto.RenameParticipantRequest
 import com.we.meet.data.api.dto.RoomDto
 
@@ -60,6 +62,36 @@ class RoomRepository(
             idOrSlug = idOrSlug,
             authHeader = "Bearer $livekitToken",
             body = RaiseHandRequest(raised = raised),
+        )
+    }
+
+    /** Owner-only: kick the named participant out of the room. */
+    suspend fun removeParticipant(
+        idOrSlug: String,
+        identity: String,
+    ): Result<Unit> = runCatching {
+        roomApi.removeParticipant(
+            idOrSlug = idOrSlug,
+            body = RemoveParticipantRequest(participant_identity = identity),
+        )
+    }
+
+    /**
+     * Owner-only: silence a participant's microphone. Backend mutes the
+     * specific publication SID; LiveKit then pushes the mute to the
+     * target client, which auto-flips its local mic off.
+     */
+    suspend fun muteParticipantMicrophone(
+        idOrSlug: String,
+        identity: String,
+        micTrackSid: String,
+    ): Result<Unit> = runCatching {
+        roomApi.muteParticipant(
+            idOrSlug = idOrSlug,
+            body = MuteParticipantRequest(
+                participant_identity = identity,
+                track_sid = micTrackSid,
+            ),
         )
     }
 
