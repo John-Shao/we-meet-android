@@ -188,7 +188,15 @@ class RoomViewModel(
     private fun connect() {
         viewModelScope.launch {
             runCatching {
-                controller.connect(livekitUrl, livekitToken)
+                controller.connect(
+                    livekitUrl, livekitToken,
+                    audio = initialMicEnabled,
+                    video = initialCameraEnabled,
+                )
+                // Defensive: if the in-connect publish silently failed (Boolean
+                // return, no throw — see LiveKitController.setMicrophoneEnabled
+                // for the underlying SDK behaviour), the explicit toggles below
+                // get a second crack at it now that the room is fully up.
                 controller.setMicrophoneEnabled(initialMicEnabled)
                 controller.setCameraEnabled(initialCameraEnabled)
             }.onSuccess {
@@ -225,9 +233,23 @@ class RoomViewModel(
                     is RoomEvent.TrackUnsubscribed,
                     is RoomEvent.TrackPublished,
                     is RoomEvent.TrackUnpublished,
-                    is RoomEvent.TrackMuted,
-                    is RoomEvent.TrackUnmuted,
                     is RoomEvent.ParticipantAttributesChanged -> refreshParticipants()
+
+                    // Server-initiated mute (host hit "mute" on our row,
+                    // or we self-muted via setMicrophoneEnabled). The SDK
+                    // already flipped the publication; sync the toolbar
+                    // state so the local user sees what's actually true
+                    // — otherwise the host mutes them, the icon still
+                    // reads "mic on", they tap it expecting it to mute
+                    // them, and the flow gets bewildering.
+                    is RoomEvent.TrackMuted -> {
+                        syncLocalTrackState(event.participant, event.publication, muted = true)
+                        refreshParticipants()
+                    }
+                    is RoomEvent.TrackUnmuted -> {
+                        syncLocalTrackState(event.participant, event.publication, muted = false)
+                        refreshParticipants()
+                    }
 
                     is RoomEvent.ActiveSpeakersChanged -> {
                         activeSpeakerIds = event.speakers
@@ -345,6 +367,35 @@ class RoomViewModel(
         }
         if (participantNames.isNotEmpty()) {
             historyStore.recordParticipants(roomId, participantNames)
+        }
+    }
+
+    /**
+     * Reconcile [RoomUiState.micEnabled] / [RoomUiState.cameraEnabled]
+     * with a SDK-emitted publication-mute change. Only fires for our own
+     * publications — remote participants' mute state lives in the
+     * per-tile [ParticipantUi.isMicEnabled] that [refreshParticipants]
+     * already rebuilds from the SDK.
+     *
+     * The `refreshParticipants` body has a comment explaining why it
+     * deliberately doesn't read mic/cam from the SDK (publish is async,
+     * the LiveKit-observed state lags user intent and flickers the
+     * toolbar). Server-initiated mute is the one case where we MUST
+     * surface the SDK truth — the user can't know they were muted from
+     * the toolbar alone, and any user-initiated toggle goes through
+     * [toggleMic] / [toggleCamera] which already drives the state flag,
+     * so flicker isn't a risk on the local-toggle path.
+     */
+    private fun syncLocalTrackState(
+        participant: Participant,
+        publication: io.livekit.android.room.track.TrackPublication,
+        muted: Boolean,
+    ) {
+        if (participant != controller.room.localParticipant) return
+        when (publication.source) {
+            Track.Source.MICROPHONE -> _state.update { it.copy(micEnabled = !muted) }
+            Track.Source.CAMERA -> _state.update { it.copy(cameraEnabled = !muted) }
+            else -> Unit
         }
     }
 
@@ -523,7 +574,11 @@ class RoomViewModel(
                 }
 
                 withTimeout(30_000) {
-                    controller.connect(livekitUrl, livekitToken)
+                    controller.connect(
+                        livekitUrl, livekitToken,
+                        audio = wantMic,
+                        video = wantCamera,
+                    )
                 }
                 // No strict `check` on state here — if connect() returned
                 // without throwing, trust LiveKit. Some builds briefly
@@ -748,6 +803,7 @@ class RoomViewModel(
             ?: return Result.success(Unit)
         return roomRepository.muteParticipantMicrophone(
             idOrSlug = roomId,
+            livekitToken = livekitToken,
             identity = identity,
             micTrackSid = micSid,
         )

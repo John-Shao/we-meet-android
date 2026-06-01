@@ -80,14 +80,20 @@ class RoomRepository(
      * Owner-only: silence a participant's microphone. Backend mutes the
      * specific publication SID; LiveKit then pushes the mute to the
      * target client, which auto-flips its local mic off.
+     *
+     * Auth uses the caller's LiveKit token — backend's mute-participant
+     * endpoint chains LiveKitTokenAuthentication first and a Keycloak
+     * Bearer would 401 there before falling through to OIDC.
      */
     suspend fun muteParticipantMicrophone(
         idOrSlug: String,
+        livekitToken: String,
         identity: String,
         micTrackSid: String,
     ): Result<Unit> = runCatching {
         roomApi.muteParticipant(
             idOrSlug = idOrSlug,
+            authHeader = "Bearer $livekitToken",
             body = MuteParticipantRequest(
                 participant_identity = identity,
                 track_sid = micTrackSid,

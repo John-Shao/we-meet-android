@@ -80,14 +80,22 @@ interface RoomApi {
     )
 
     /**
-     * Owner-only: mute a specific publication on a participant. Same auth
-     * story as remove-participant — Keycloak Bearer via AuthInterceptor.
-     * Caller passes the microphone publication's SID for the "silence a
-     * noisy participant" flow.
+     * Owner-only: mute a specific publication on a participant. Unlike
+     * remove-participant (which lives on the default auth chain), the
+     * mute endpoint declares `authentication_classes=[LiveKitTokenAuth, ...]`
+     * — and `LiveKitTokenAuthentication.authenticate` raises
+     * AuthenticationFailed (NOT returns None) when it can't parse the
+     * Bearer as a LiveKit JWT, so a Keycloak Bearer here never falls
+     * through to OIDC. Same shape as /rename/ and /toggle-hand/: skip
+     * the interceptor's auto Keycloak Bearer with No-Auth and pass the
+     * LiveKit token explicitly. Owner's LiveKit token is room-scoped,
+     * which satisfies CanMuteParticipant regardless of `everyone_can_mute`.
      */
     @POST("api/v1.0/rooms/{idOrSlug}/mute-participant/")
     suspend fun muteParticipant(
         @Path("idOrSlug") idOrSlug: String,
+        @Header("No-Auth") noAuth: String = "1",
+        @Header("Authorization") authHeader: String,
         @Body body: MuteParticipantRequest,
     )
 }

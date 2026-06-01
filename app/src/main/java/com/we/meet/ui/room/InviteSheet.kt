@@ -72,7 +72,11 @@ fun InviteSheet(
     roomSlug: String,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState()
+    // Force full expansion on open. The default partial-expanded state
+    // hid the 复制/分享 action row below the fold on phones — users had to
+    // drag the sheet up to discover the buttons, which is bad enough on a
+    // host-side primary action to be a usability bug, not just a polish.
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = LocalContext.current
 
     val baseUrl = BuildConfig.WE_MEET_BASE_URL.trimEnd('/')

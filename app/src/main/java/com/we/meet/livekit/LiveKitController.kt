@@ -82,20 +82,51 @@ class LiveKitController(
 
     val events: EventListenable<RoomEvent> get() = room.events
 
-    suspend fun connect(url: String, token: String) {
+    /**
+     * Connect to the LiveKit room and, if requested, capture+publish mic
+     * and camera during the connect flow.
+     *
+     * When [audio] / [video] are true here, the SDK schedules publish
+     * inside its own connect state machine — that's important when the
+     * App is the *first* connector to a freshly-created room: a separate
+     * `setMicrophoneEnabled(true)` immediately after `connect()` races
+     * with LiveKit server-side room initialization and the publish can
+     * silently fail (returns false, no throw). Doing it via ConnectOptions
+     * avoids that race for the creator path. The post-connect
+     * setMicrophoneEnabled / setCameraEnabled the caller still runs is
+     * a no-op fallback (publication exists → just toggles muted).
+     */
+    suspend fun connect(
+        url: String,
+        token: String,
+        audio: Boolean = false,
+        video: Boolean = false,
+    ) {
         room.connect(
             url = url,
             token = token,
-            options = ConnectOptions(autoSubscribe = true),
+            options = ConnectOptions(
+                autoSubscribe = true,
+                audio = audio,
+                video = video,
+            ),
         )
     }
 
-    suspend fun setMicrophoneEnabled(enabled: Boolean) {
-        room.localParticipant.setMicrophoneEnabled(enabled)
+    suspend fun setMicrophoneEnabled(enabled: Boolean): Boolean {
+        val ok = room.localParticipant.setMicrophoneEnabled(enabled)
+        if (enabled && !ok) {
+            android.util.Log.w(TAG, "setMicrophoneEnabled(true) returned false — publish likely failed")
+        }
+        return ok
     }
 
-    suspend fun setCameraEnabled(enabled: Boolean) {
-        room.localParticipant.setCameraEnabled(enabled)
+    suspend fun setCameraEnabled(enabled: Boolean): Boolean {
+        val ok = room.localParticipant.setCameraEnabled(enabled)
+        if (enabled && !ok) {
+            android.util.Log.w(TAG, "setCameraEnabled(true) returned false — publish likely failed")
+        }
+        return ok
     }
 
     /**
@@ -202,6 +233,7 @@ class LiveKitController(
     }
 
     companion object {
+        private const val TAG = "LiveKitController"
         const val CHAT_TOPIC = "lk.chat"
         const val LEGACY_CHAT_TOPIC = "lk-chat-topic"
     }
