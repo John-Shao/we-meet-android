@@ -71,6 +71,21 @@ fun InviteSheet(
     roomName: String,
     roomSlug: String,
     onDismiss: () -> Unit,
+    /**
+     * Optional ISO 8601 scheduled-start (e.g. "2026-06-02T09:00+08:00").
+     * When non-null + non-blank we show a "预约时间: ..." row and
+     * include the localised time in the clipboard payload so the
+     * paste-text the host shares mentions when to show up.
+     */
+    scheduledAtIso: String? = null,
+    /**
+     * When non-null, renders a primary "进入会议" button above the
+     * copy/share row. Used by the "create later" flow on Home where
+     * the host wants to share first and join later (or join now after
+     * copying the link). Null when the sheet is opened from inside a
+     * meeting — the host is already in.
+     */
+    onEnterRoom: (() -> Unit)? = null,
 ) {
     // Force full expansion on open. The default partial-expanded state
     // hid the 复制/分享 action row below the fold on phones — users had to
@@ -81,6 +96,9 @@ fun InviteSheet(
 
     val baseUrl = BuildConfig.WE_MEET_BASE_URL.trimEnd('/')
     val joinUrl = "$baseUrl/$roomSlug"
+    val scheduledDisplay = remember(scheduledAtIso) {
+        scheduledAtIso?.takeIf { it.isNotBlank() }?.let(::formatIsoForDisplay)
+    }
 
     // Encode once per slug. zxing's MultiFormatWriter is cheap, but we still
     // don't want to re-encode on every recomposition (clipboard toast, etc).
@@ -93,7 +111,11 @@ fun InviteSheet(
         }.getOrNull()
     }
 
-    val inviteText = stringResource(R.string.invite_clipboard_format, joinUrl, roomSlug)
+    val baseInviteText = stringResource(R.string.invite_clipboard_format, joinUrl, roomSlug)
+    val scheduledLine = scheduledDisplay?.let {
+        "\n" + stringResource(R.string.invite_clipboard_scheduled, it)
+    }.orEmpty()
+    val inviteText = baseInviteText + scheduledLine
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -154,6 +176,17 @@ fun InviteSheet(
                 )
             }
 
+            // Scheduled-start (only when host picked a time)
+            if (scheduledDisplay != null) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.invite_scheduled_label, scheduledDisplay),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center,
+                )
+            }
+
             // URL (small, monospace-ish — Material 3 doesn't expose a code style)
             Spacer(Modifier.height(8.dp))
             Text(
@@ -165,6 +198,21 @@ fun InviteSheet(
 
             Spacer(Modifier.height(20.dp))
             HorizontalDivider()
+
+            // "Create later" entry-point only: primary CTA above the
+            // copy/share row so the host can immediately enter the
+            // meeting they just made. In-meeting opens of this sheet
+            // (no [onEnterRoom]) skip this row entirely.
+            if (onEnterRoom != null) {
+                androidx.compose.material3.Button(
+                    onClick = onEnterRoom,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                ) {
+                    Text(stringResource(R.string.invite_enter_room))
+                }
+            }
 
             Row(
                 modifier = Modifier
@@ -213,6 +261,18 @@ private fun copyToClipboard(context: Context, text: String) {
         ?: return
     clipboard.setPrimaryClip(ClipData.newPlainText("we-meet-invite", text))
 }
+
+/**
+ * Format a server-supplied ISO 8601 offset timestamp (e.g.
+ * "2026-06-02T09:00:00+08:00") as a short local wall-clock display.
+ * Falls back to the raw string on parse failure so we never blank out
+ * a row the user actually scheduled.
+ */
+private fun formatIsoForDisplay(iso: String): String = runCatching {
+    val odt = java.time.OffsetDateTime.parse(iso)
+    odt.atZoneSameInstant(java.time.ZoneId.systemDefault())
+        .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+}.getOrDefault(iso)
 
 private fun startSystemShare(context: Context, text: String) {
     val intent = Intent(Intent.ACTION_SEND).apply {

@@ -19,6 +19,15 @@
     <string name="home_room_hint">e.g. 499707</string>
     <string name="home_create_meeting">Start meeting</string>
     <string name="home_join_meeting">Join meeting</string>
+    <string name="home_create_later_meeting">Schedule meeting</string>
+    <string name="home_create_later_name_label">Meeting name</string>
+    <string name="home_create_later_confirm">Create</string>
+    <string name="home_create_later_cancel">Cancel</string>
+    <string name="home_create_later_no_time">No scheduled time</string>
+    <string name="home_create_later_pick_time">Pick time</string>
+    <string name="home_create_later_edit_time">Edit</string>
+    <string name="home_create_later_clear_time">Clear time</string>
+    <string name="home_create_later_next">Next</string>
     <string name="home_join">Join</string>
     <string name="home_logout">Sign out</string>
     <string name="home_signed_in_as">Signed in as %1$s</string>
@@ -138,6 +147,9 @@
     <string name="invite_copied">Invite copied to clipboard</string>
     <string name="invite_share_chooser_title">Share meeting</string>
     <string name="invite_clipboard_format">Join my meeting on We Meet:\n%1$s\n(Meeting ID: %2$s)</string>
+    <string name="invite_enter_room">Enter meeting</string>
+    <string name="invite_scheduled_label">Scheduled for %1$s</string>
+    <string name="invite_clipboard_scheduled">Scheduled for: %1$s</string>
 
     <!-- Ongoing-meeting foreground-service notification -->
     <string name="meeting_notification_channel_name">Meeting in progress</string>

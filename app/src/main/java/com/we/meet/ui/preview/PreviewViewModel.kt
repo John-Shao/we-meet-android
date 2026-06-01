@@ -42,6 +42,12 @@ data class RoomTarget(
     val host: String?,
     /** 创建时间 in epoch millis. Parsed from RoomDto.created_at, or now() as fallback. */
     val createdAtMs: Long,
+    /**
+     * Optional scheduled-start ISO 8601 string from RoomDto.scheduled_at,
+     * or null when the room wasn't scheduled. Forwarded to UI surfaces
+     * (invite sheet, history) so participants see when to show up.
+     */
+    val scheduledAtIso: String? = null,
 )
 
 class PreviewViewModel(

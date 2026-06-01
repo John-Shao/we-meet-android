@@ -23,9 +23,22 @@ class RoomRepository(
     private val roomApi: RoomApi,
 ) {
 
-    /** Create a new room and return its connection info. */
-    suspend fun createRoom(username: String, roomName: String): Result<RoomDto> = runCatching {
-        val room = roomApi.createRoom(username, CreateRoomRequest(name = roomName))
+    /**
+     * Create a new room and return its connection info. [scheduledAtIso]
+     * is optional — when supplied the backend persists it on
+     * Room.scheduled_at; downstream UIs (invite sheet, history) surface
+     * it as the intended start time. Null = persistent, joinable-anytime
+     * room.
+     */
+    suspend fun createRoom(
+        username: String,
+        roomName: String,
+        scheduledAtIso: String? = null,
+    ): Result<RoomDto> = runCatching {
+        val room = roomApi.createRoom(
+            username,
+            CreateRoomRequest(name = roomName, scheduled_at = scheduledAtIso),
+        )
         applyLivekitOverride(room)
     }
 

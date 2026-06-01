@@ -29,6 +29,14 @@ data class RoomDto(
      * the user instead of the generic 「出错了」 fallback.
      */
     val closed_at: String? = null,
+    /**
+     * ISO 8601 timestamp for the host's intended start time, or null if the
+     * room wasn't scheduled (host either created an instant meeting, or a
+     * persistent "later" meeting without picking a time). Informational
+     * only — joining a scheduled room before [scheduled_at] still works;
+     * UI surfaces this as "scheduled for X" in the invite sheet & history.
+     */
+    val scheduled_at: String? = null,
 )
 
 @JsonClass(generateAdapter = true)
