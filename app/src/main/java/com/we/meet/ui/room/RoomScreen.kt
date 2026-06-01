@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.PanTool
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Videocam
@@ -208,6 +209,7 @@ fun RoomScreen(
                         onStartScreenShare = viewModel::startScreenShare,
                         onStopScreenShare = viewModel::stopScreenShare,
                         onRenameSelf = viewModel::renameSelf,
+                        onToggleHand = viewModel::toggleHand,
                         onLeave = {
                             viewModel.leave()
                             onLeave(false)
@@ -240,6 +242,7 @@ private fun RoomContent(
     onStartScreenShare: suspend (Intent) -> Boolean,
     onStopScreenShare: () -> Unit,
     onRenameSelf: suspend (String) -> Result<Unit>,
+    onToggleHand: suspend () -> Result<Unit>,
     onLeave: () -> Unit,
     onEndMeeting: () -> Unit,
 ) {
@@ -463,10 +466,18 @@ private fun RoomContent(
         )
     }
 
-    // More-actions bottom sheet (share / record / interpret / settings)
+    // More-actions bottom sheet (hand / share / record / interpret / settings)
+    val handRaised = state.participants
+        .firstOrNull { it.isLocal && !it.isScreenShare }
+        ?.handRaisedAt != null
     if (showMore) {
         MoreActionsSheet(
+            handRaised = handRaised,
             localScreenSharing = state.localScreenSharing,
+            onRaiseHandClick = {
+                showMore = false
+                scope.launch { onToggleHand() }
+            },
             onShareClick = {
                 showMore = false
                 if (state.localScreenSharing) {
@@ -906,7 +917,9 @@ private fun RenameDialog(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MoreActionsSheet(
+    handRaised: Boolean,
     localScreenSharing: Boolean,
+    onRaiseHandClick: () -> Unit,
     onShareClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -925,13 +938,31 @@ private fun MoreActionsSheet(
     val sheetTint = MaterialTheme.colorScheme.onSurface
     val shareTint = if (localScreenSharing) Color(0xFFFF4444) else sheetTint
 
+    // Raised-hand visual: orange tint while raised, neutral while lowered.
+    // Matches the desktop client's "primaryDark" selected state in spirit
+    // without bringing in another colour role.
+    val handTint = if (handRaised) Color(0xFFFFB300) else sheetTint
+    val handBg = if (handRaised) Color(0xFFFFE6B3) else sheetBg
+
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
+            ControlButton(
+                icon = Icons.Default.PanTool,
+                label = stringResource(
+                    if (handRaised) R.string.room_more_lower_hand
+                    else R.string.room_more_raise_hand
+                ),
+                isOn = true,
+                onClick = onRaiseHandClick,
+                labelColor = handTint,
+                iconBgColor = handBg,
+                iconTintColor = handTint,
+            )
             ControlButton(
                 icon = if (localScreenSharing) Icons.AutoMirrored.Filled.StopScreenShare
                     else Icons.AutoMirrored.Filled.ScreenShare,

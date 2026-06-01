@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.ScreenShare
 import androidx.compose.material.icons.automirrored.filled.StopScreenShare
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
+import androidx.compose.material.icons.filled.PanTool
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.Icon
@@ -197,6 +198,31 @@ fun ParticipantTile(
                 style = MaterialTheme.typography.labelMedium,
                 fontSize = 12.sp,
             )
+        }
+
+        // Top-left: raised-hand badge. Only shown for camera tiles (the
+        // screen-share synthetic tile inherits the sharer's attributes but
+        // visually doubling the hand badge across both tiles is noise).
+        // Same orange as the More sheet's "已举手" tint so the meaning is
+        // consistent across surfaces.
+        if (participant.handRaisedAt != null && !participant.isScreenShare) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .zIndex(1f)
+                    .padding(6.dp)
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFFFB300)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PanTool,
+                    contentDescription = stringResource(R.string.room_tile_hand_raised),
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
         }
 
         // Top-right: pin / unpin button. 44dp transparent tap target wraps a

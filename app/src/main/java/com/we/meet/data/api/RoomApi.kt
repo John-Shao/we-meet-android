@@ -1,6 +1,7 @@
 package com.we.meet.data.api
 
 import com.we.meet.data.api.dto.CreateRoomRequest
+import com.we.meet.data.api.dto.RaiseHandRequest
 import com.we.meet.data.api.dto.RenameParticipantRequest
 import com.we.meet.data.api.dto.RoomDto
 import retrofit2.http.Body
@@ -49,5 +50,19 @@ interface RoomApi {
         @Header("No-Auth") noAuth: String = "1",
         @Header("Authorization") authHeader: String,
         @Body body: RenameParticipantRequest,
+    )
+
+    /**
+     * Toggle the *current* participant's raised-hand state. Same auth shape
+     * as `/rename/` — LiveKit-token identity, so skip AuthInterceptor.
+     *
+     * @param authHeader Pass `"Bearer ${livekitToken}"`.
+     */
+    @POST("api/v1.0/rooms/{idOrSlug}/toggle-hand/")
+    suspend fun toggleHand(
+        @Path("idOrSlug") idOrSlug: String,
+        @Header("No-Auth") noAuth: String = "1",
+        @Header("Authorization") authHeader: String,
+        @Body body: RaiseHandRequest,
     )
 }

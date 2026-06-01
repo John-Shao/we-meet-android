@@ -62,11 +62,14 @@
     <string name="room_action_minimize">Minimize</string>
     <string name="room_action_message">Messages</string>
     <string name="room_action_more">More</string>
+    <string name="room_more_raise_hand">Raise hand</string>
+    <string name="room_more_lower_hand">Lower hand</string>
     <string name="room_more_share">Share</string>
     <string name="room_more_record">Record</string>
     <string name="room_more_interpret">Interpret</string>
     <string name="room_more_settings">Settings</string>
     <string name="room_more_coming_soon">Coming soon</string>
+    <string name="room_tile_hand_raised">Hand raised</string>
     <!-- Screen share -->
     <string name="room_screen_share_screen">Share screen</string>
     <string name="room_screen_share_whiteboard">Share whiteboard</string>

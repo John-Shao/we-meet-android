@@ -3,6 +3,7 @@ package com.we.meet.data.repository
 import com.we.meet.BuildConfig
 import com.we.meet.data.api.RoomApi
 import com.we.meet.data.api.dto.CreateRoomRequest
+import com.we.meet.data.api.dto.RaiseHandRequest
 import com.we.meet.data.api.dto.RenameParticipantRequest
 import com.we.meet.data.api.dto.RoomDto
 
@@ -46,6 +47,19 @@ class RoomRepository(
             idOrSlug = idOrSlug,
             authHeader = "Bearer $livekitToken",
             body = RenameParticipantRequest(name = name),
+        )
+    }
+
+    /** Raise or lower the local participant's hand. */
+    suspend fun toggleHand(
+        idOrSlug: String,
+        livekitToken: String,
+        raised: Boolean,
+    ): Result<Unit> = runCatching {
+        roomApi.toggleHand(
+            idOrSlug = idOrSlug,
+            authHeader = "Bearer $livekitToken",
+            body = RaiseHandRequest(raised = raised),
         )
     }
 

@@ -35,6 +35,13 @@ import java.util.UUID
 
 private const val TAG = "RoomViewModel"
 
+/**
+ * LiveKit participant attribute key the backend writes when a user raises
+ * or lowers their hand (set by `POST /toggle-hand/`). Empty string means
+ * the hand is down; a non-empty ISO 8601 timestamp means the hand is up.
+ */
+private const val HAND_RAISED_ATTRIBUTE = "handRaisedAt"
+
 /** UI-facing snapshot of one participant in the room. */
 data class ParticipantUi(
     val identity: String,
@@ -51,6 +58,13 @@ data class ParticipantUi(
      * distinct tiles, mirroring Tencent-Meeting-style behaviour.
      */
     val isScreenShare: Boolean = false,
+    /**
+     * Raised-hand state, mirrored from the backend `handRaisedAt`
+     * participant attribute. `null` or empty → hand is down; an ISO 8601
+     * timestamp → hand is up (the timestamp is the raise instant, used
+     * for queue ordering — earliest-raised goes first).
+     */
+    val handRaisedAt: String? = null,
 ) {
     companion object {
         const val SCREEN_SHARE_ID_SUFFIX = "#screen"
@@ -212,7 +226,8 @@ class RoomViewModel(
                     is RoomEvent.TrackPublished,
                     is RoomEvent.TrackUnpublished,
                     is RoomEvent.TrackMuted,
-                    is RoomEvent.TrackUnmuted -> refreshParticipants()
+                    is RoomEvent.TrackUnmuted,
+                    is RoomEvent.ParticipantAttributesChanged -> refreshParticipants()
 
                     is RoomEvent.ActiveSpeakersChanged -> {
                         activeSpeakerIds = event.speakers
@@ -349,6 +364,7 @@ class RoomViewModel(
             isMicEnabled = isMicrophoneEnabled,
             videoTrack = videoTrack,
             isSpeaking = id in activeSpeakerIds,
+            handRaisedAt = attributes[HAND_RAISED_ATTRIBUTE]?.takeIf { it.isNotEmpty() },
         )
     }
 
@@ -700,6 +716,27 @@ class RoomViewModel(
             if (state.messages.any { it.id == message.id }) state
             else state.copy(messages = state.messages + message)
         }
+    }
+
+    /**
+     * Toggle the local participant's raised-hand state. The "current
+     * state" comes from our own ParticipantUi snapshot (sourced from the
+     * `handRaisedAt` attribute), so a stale state flow can't cause us to
+     * request `raised=true` when the hand is already up — the next
+     * ParticipantAttributesChanged event will keep the UI in sync either
+     * way. We don't optimistically flip the local state here; the server
+     * echoes the attribute change back to all clients (including us) and
+     * [refreshParticipants] picks it up via the event subscription.
+     */
+    suspend fun toggleHand(): Result<Unit> {
+        val currentlyRaised = _state.value.participants
+            .firstOrNull { it.isLocal && !it.isScreenShare }
+            ?.handRaisedAt != null
+        return roomRepository.toggleHand(
+            idOrSlug = roomId,
+            livekitToken = livekitToken,
+            raised = !currentlyRaised,
+        )
     }
 
     /**
