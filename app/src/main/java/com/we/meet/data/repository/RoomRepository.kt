@@ -3,6 +3,7 @@ package com.we.meet.data.repository
 import com.we.meet.BuildConfig
 import com.we.meet.data.api.RoomApi
 import com.we.meet.data.api.dto.CreateRoomRequest
+import com.we.meet.data.api.dto.RenameParticipantRequest
 import com.we.meet.data.api.dto.RoomDto
 
 /**
@@ -29,6 +30,23 @@ class RoomRepository(
     /** End (close) a room. Only the owner can do this. */
     suspend fun endRoom(idOrSlug: String): Result<Unit> = runCatching {
         roomApi.endRoom(idOrSlug)
+    }
+
+    /**
+     * Rename the *current* participant (i.e. the local user) in a room.
+     * Backend identifies the participant from the supplied LiveKit token,
+     * so callers must pass the same token the SDK is using on the wire.
+     */
+    suspend fun renameSelf(
+        idOrSlug: String,
+        livekitToken: String,
+        name: String,
+    ): Result<Unit> = runCatching {
+        roomApi.renameParticipant(
+            idOrSlug = idOrSlug,
+            authHeader = "Bearer $livekitToken",
+            body = RenameParticipantRequest(name = name),
+        )
     }
 
     /** Apply optional LiveKit URL override (used for local-dev port forwarding). */

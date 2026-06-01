@@ -88,6 +88,15 @@ data class RoomUiState(
      * Drives the Share / Stop Share state in the More sheet.
      */
     val localScreenSharing: Boolean = false,
+    /**
+     * True if this user can administer the room (owner or admin role).
+     * Sourced from `RoomDto.is_administrable` at preview time and frozen
+     * for the session — role changes mid-meeting are not modelled. Exposed
+     * here so any in-room Composable can gate host-only UI (kick / mute /
+     * rename / waiting-list admit) without threading isAdmin through new
+     * function signatures.
+     */
+    val isAdmin: Boolean = false,
 ) {
     enum class Phase { Connecting, Connected, Error, Disconnected }
 }
@@ -128,6 +137,7 @@ class RoomViewModel(
         RoomUiState(
             micEnabled = initialMicEnabled,
             cameraEnabled = initialCameraEnabled,
+            isAdmin = isAdmin,
         ),
     )
     val state: StateFlow<RoomUiState> = _state.asStateFlow()
@@ -689,6 +699,32 @@ class RoomViewModel(
             // is a no-op.
             if (state.messages.any { it.id == message.id }) state
             else state.copy(messages = state.messages + message)
+        }
+    }
+
+    /**
+     * Rename the local participant via the backend `/rename/` endpoint.
+     * The change propagates to other participants via LiveKit's
+     * `ParticipantAttributesChanged` / `ParticipantNameChanged` events,
+     * which we already invalidate the UI on via [refreshParticipants].
+     *
+     * Trimmed/empty input is a no-op so callers don't need to validate
+     * twice. Returns Result so the dialog can show a toast on failure.
+     */
+    suspend fun renameSelf(name: String): Result<Unit> {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return Result.success(Unit)
+        return roomRepository.renameSelf(
+            idOrSlug = roomId,
+            livekitToken = livekitToken,
+            name = trimmed,
+        ).onSuccess {
+            // LiveKit pushes the new display name back to all clients as a
+            // ParticipantAttributesChanged event, but for the local user
+            // the SDK's own `localParticipant.name` only updates when the
+            // server echoes — so we proactively re-sync the participant
+            // list to pick up the new name without waiting for the event.
+            refreshParticipants()
         }
     }
 

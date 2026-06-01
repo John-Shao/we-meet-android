@@ -51,6 +51,7 @@ import androidx.compose.material.icons.filled.Hearing
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.PhoneAndroid
@@ -60,6 +61,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VideocamOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -69,6 +71,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -204,6 +207,7 @@ fun RoomScreen(
                         onSendMessage = viewModel::sendChatMessage,
                         onStartScreenShare = viewModel::startScreenShare,
                         onStopScreenShare = viewModel::stopScreenShare,
+                        onRenameSelf = viewModel::renameSelf,
                         onLeave = {
                             viewModel.leave()
                             onLeave(false)
@@ -235,6 +239,7 @@ private fun RoomContent(
     onSendMessage: (String) -> Unit,
     onStartScreenShare: suspend (Intent) -> Boolean,
     onStopScreenShare: () -> Unit,
+    onRenameSelf: suspend (String) -> Result<Unit>,
     onLeave: () -> Unit,
     onEndMeeting: () -> Unit,
 ) {
@@ -428,11 +433,33 @@ private fun RoomContent(
         }
     }
 
+    // Rename-self dialog. Driven from the Participants sheet's edit icon on
+    // the local user's row. Kept here (not nested inside ParticipantsSheet)
+    // so the dismiss + sheet teardown ordering stays predictable, and so
+    // the dialog survives if the user navigates away from the sheet.
+    var showRenameDialog by remember { mutableStateOf(false) }
+
     // Participants bottom sheet
     if (showParticipants) {
         ParticipantsSheet(
             participants = state.participants,
+            onRenameSelfClick = {
+                showParticipants = false
+                showRenameDialog = true
+            },
             onDismiss = { showParticipants = false },
+        )
+    }
+
+    if (showRenameDialog) {
+        val initialName = state.participants.firstOrNull { it.isLocal }?.name.orEmpty()
+        RenameDialog(
+            initial = initialName,
+            onConfirm = { newName ->
+                scope.launch { onRenameSelf(newName) }
+                showRenameDialog = false
+            },
+            onDismiss = { showRenameDialog = false },
         )
     }
 
@@ -761,6 +788,7 @@ private fun VideoGrid(
 @Composable
 private fun ParticipantsSheet(
     participants: List<ParticipantUi>,
+    onRenameSelfClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -800,6 +828,24 @@ private fun ParticipantsSheet(
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.weight(1f),
                         )
+                        // Rename pencil — only on the local user's row. Web's
+                        // /rename/ endpoint only ever renames the requesting
+                        // participant (LiveKit-token identity), so we don't
+                        // expose this on remote rows.
+                        if (p.isLocal) {
+                            IconButton(
+                                onClick = onRenameSelfClick,
+                                modifier = Modifier.size(32.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = stringResource(R.string.room_rename_self),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                            Spacer(Modifier.width(4.dp))
+                        }
                         Icon(
                             imageVector = if (p.isMicEnabled) Icons.Default.Mic else Icons.Default.MicOff,
                             contentDescription = null,
@@ -813,6 +859,41 @@ private fun ParticipantsSheet(
             Spacer(Modifier.height(24.dp))
         }
     }
+}
+
+@Composable
+private fun RenameDialog(
+    initial: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    // Compose holds the in-flight edit; we don't push back to the caller
+    // until they confirm. Empty / whitespace-only is treated as cancel
+    // (matches web's silent no-op rather than a noisy validation error).
+    var value by remember(initial) { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.room_rename_title)) },
+        text = {
+            OutlinedTextField(
+                value = value,
+                onValueChange = { value = it.take(80) },
+                singleLine = true,
+                label = { Text(stringResource(R.string.room_rename_label)) },
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(value.trim()) },
+                enabled = value.trim().isNotEmpty() && value.trim() != initial.trim(),
+            ) { Text(stringResource(R.string.room_rename_confirm)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.room_rename_cancel))
+            }
+        },
+    )
 }
 
 // ── More-actions bottom sheet ────────────────────────────────────────────

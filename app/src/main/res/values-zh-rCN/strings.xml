@@ -93,6 +93,11 @@
     <string name="room_message_input_hint">发送会中消息</string>
     <string name="room_message_empty">暂无消息</string>
     <string name="room_message_host_tag">主持人</string>
+    <string name="room_rename_self">修改我的昵称</string>
+    <string name="room_rename_title">修改会议中显示名</string>
+    <string name="room_rename_label">显示名</string>
+    <string name="room_rename_confirm">保存</string>
+    <string name="room_rename_cancel">取消</string>
 
     <!-- 会议中前台服务通知 -->
     <string name="meeting_notification_channel_name">会议中</string>
@@ -112,7 +117,13 @@
 
     <!-- Tabs -->
     <string name="tab_meeting">会议</string>
+    <string name="tab_ai">AI</string>
     <string name="tab_profile">我的</string>
+
+    <!-- AI hub -->
+    <string name="ai_hub_title">AI 助手</string>
+    <string name="ai_hub_call_title">打电话</string>
+    <string name="ai_hub_call_subtitle">与 AI 实时语音 / 视频对话</string>
 
     <!-- Profile screen -->
     <string name="profile_nickname">昵称</string>

@@ -1,9 +1,11 @@
 package com.we.meet.data.api
 
 import com.we.meet.data.api.dto.CreateRoomRequest
+import com.we.meet.data.api.dto.RenameParticipantRequest
 import com.we.meet.data.api.dto.RoomDto
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -31,4 +33,21 @@ interface RoomApi {
 
     @POST("api/v1.0/rooms/{idOrSlug}/end/")
     suspend fun endRoom(@Path("idOrSlug") idOrSlug: String)
+
+    /**
+     * Rename the *current* participant in a room (Web's equivalent of
+     * `useRenameParticipant`). The backend resolves the participant from
+     * the LiveKit token in `Authorization`, so we must NOT let
+     * AuthInterceptor stamp the usual Keycloak Bearer here — pass the
+     * `No-Auth: 1` marker AND the LiveKit Bearer explicitly.
+     *
+     * @param authHeader Pass `"Bearer ${livekitToken}"`.
+     */
+    @POST("api/v1.0/rooms/{idOrSlug}/rename/")
+    suspend fun renameParticipant(
+        @Path("idOrSlug") idOrSlug: String,
+        @Header("No-Auth") noAuth: String = "1",
+        @Header("Authorization") authHeader: String,
+        @Body body: RenameParticipantRequest,
+    )
 }
