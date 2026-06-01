@@ -77,6 +77,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -216,6 +217,9 @@ fun RoomScreen(
                         onToggleHand = viewModel::toggleHand,
                         onMuteParticipant = viewModel::muteParticipantMicrophone,
                         onRemoveParticipant = viewModel::removeParticipant,
+                        onAdmitParticipant = viewModel::admitParticipant,
+                        onRefreshAccessLevel = viewModel::refreshAccessLevel,
+                        onUpdateAccessLevel = viewModel::updateAccessLevel,
                         onLeave = {
                             viewModel.leave()
                             onLeave(false)
@@ -251,6 +255,9 @@ private fun RoomContent(
     onToggleHand: suspend () -> Result<Unit>,
     onMuteParticipant: suspend (String) -> Result<Unit>,
     onRemoveParticipant: suspend (String) -> Result<Unit>,
+    onAdmitParticipant: suspend (participantId: String, allow: Boolean) -> Result<Unit>,
+    onRefreshAccessLevel: suspend () -> Unit,
+    onUpdateAccessLevel: suspend (String) -> Result<Unit>,
     onLeave: () -> Unit,
     onEndMeeting: () -> Unit,
 ) {
@@ -271,6 +278,8 @@ private fun RoomContent(
     var showMessages by remember { mutableStateOf(false) }
     var showShareChooser by remember { mutableStateOf(false) }
     var showInvite by remember { mutableStateOf(false) }
+    var showWaitingList by remember { mutableStateOf(false) }
+    var showHostSettings by remember { mutableStateOf(false) }
     // One-shot guard so we prompt for SYSTEM_ALERT_WINDOW at most once per
     // meeting instance. If the user declines or ignores, subsequent "共享
     // 屏幕" taps just proceed — sharing still works without the desktop
@@ -415,15 +424,26 @@ private fun RoomContent(
             exit = slideOutVertically { -it } + fadeOut(),
             modifier = Modifier.align(Alignment.TopCenter),
         ) {
-            TopToolbar(
-                roomName = roomName,
-                roomSlug = roomSlug,
-                onMinimize = { (context as? MainActivity)?.enterPipNow() },
-                onSwitchCamera = onSwitchCamera,
-                onMessage = { showMessages = true },
-                onShowInvite = { showInvite = true },
-                onLeave = { showLeaveDialog = true },
-            )
+            Column(modifier = Modifier.fillMaxWidth()) {
+                TopToolbar(
+                    roomName = roomName,
+                    roomSlug = roomSlug,
+                    onMinimize = { (context as? MainActivity)?.enterPipNow() },
+                    onSwitchCamera = onSwitchCamera,
+                    onMessage = { showMessages = true },
+                    onShowInvite = { showInvite = true },
+                    onLeave = { showLeaveDialog = true },
+                )
+                // Lobby banner: only renders for owners with someone in
+                // the waiting queue (non-owners' waitingParticipants is
+                // always empty, so the if-guard is one source of truth).
+                if (state.waitingParticipants.isNotEmpty()) {
+                    LobbyBanner(
+                        count = state.waitingParticipants.size,
+                        onClick = { showWaitingList = true },
+                    )
+                }
+            }
         }
 
         // Bottom toolbar (drawer-style)
@@ -509,12 +529,31 @@ private fun RoomContent(
         )
     }
 
+    if (showWaitingList) {
+        WaitingListSheet(
+            waitingParticipants = state.waitingParticipants,
+            onAdmit = { id ->
+                scope.launch { onAdmitParticipant(id, true) }
+            },
+            onDeny = { id ->
+                scope.launch { onAdmitParticipant(id, false) }
+            },
+            onAdmitAll = {
+                state.waitingParticipants.forEach { p ->
+                    scope.launch { onAdmitParticipant(p.id, true) }
+                }
+            },
+            onDismiss = { showWaitingList = false },
+        )
+    }
+
     // More-actions bottom sheet (hand / share / record / interpret / settings)
     val handRaised = state.participants
         .firstOrNull { it.isLocal && !it.isScreenShare }
         ?.handRaisedAt != null
     if (showMore) {
         MoreActionsSheet(
+            isAdmin = state.isAdmin,
             handRaised = handRaised,
             localScreenSharing = state.localScreenSharing,
             onRaiseHandClick = {
@@ -529,7 +568,22 @@ private fun RoomContent(
                     showShareChooser = true
                 }
             },
+            onHostSettingsClick = {
+                showMore = false
+                scope.launch { onRefreshAccessLevel() }
+                showHostSettings = true
+            },
             onDismiss = { showMore = false },
+        )
+    }
+
+    if (showHostSettings) {
+        HostSettingsSheet(
+            currentAccessLevel = state.accessLevel,
+            onSelectAccessLevel = { level ->
+                scope.launch { onUpdateAccessLevel(level) }
+            },
+            onDismiss = { showHostSettings = false },
         )
     }
 
@@ -1041,6 +1095,222 @@ private fun RenameDialog(
     )
 }
 
+// ── Lobby banner + waiting list sheet (owner-only) ───────────────────────
+
+@Composable
+private fun LobbyBanner(
+    count: Int,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFFFFB300))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Person,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = stringResource(R.string.room_lobby_banner, count),
+            color = Color.White,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = stringResource(R.string.room_lobby_banner_action),
+            color = Color.White,
+            style = MaterialTheme.typography.labelMedium,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WaitingListSheet(
+    waitingParticipants: List<com.we.meet.data.api.dto.WaitingParticipantDto>,
+    onAdmit: (participantId: String) -> Unit,
+    onDeny: (participantId: String) -> Unit,
+    onAdmitAll: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.room_lobby_title, waitingParticipants.size),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                if (waitingParticipants.size > 1) {
+                    TextButton(onClick = onAdmitAll) {
+                        Text(stringResource(R.string.room_lobby_admit_all))
+                    }
+                }
+            }
+            HorizontalDivider()
+            LazyColumn {
+                items(waitingParticipants) { p ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .padding(6.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = p.username,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            onClick = { onDeny(p.id) },
+                        ) {
+                            Text(
+                                text = stringResource(R.string.room_lobby_deny),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.width(4.dp))
+                        TextButton(
+                            onClick = { onAdmit(p.id) },
+                        ) {
+                            Text(stringResource(R.string.room_lobby_admit))
+                        }
+                    }
+                    HorizontalDivider()
+                }
+            }
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+// ── Host settings sheet (owner-only) ──────────────────────────────────────
+
+private const val ACCESS_LEVEL_PUBLIC = "public"
+private const val ACCESS_LEVEL_TRUSTED = "trusted"
+private const val ACCESS_LEVEL_RESTRICTED = "restricted"
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HostSettingsSheet(
+    currentAccessLevel: String?,
+    onSelectAccessLevel: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            Text(
+                text = stringResource(R.string.room_host_settings_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+            Text(
+                text = stringResource(R.string.room_host_settings_subtitle),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 16.dp),
+            )
+            HorizontalDivider()
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.room_host_access_section),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(vertical = 8.dp),
+            )
+            AccessLevelOption(
+                value = ACCESS_LEVEL_PUBLIC,
+                current = currentAccessLevel,
+                title = stringResource(R.string.room_host_access_public_title),
+                description = stringResource(R.string.room_host_access_public_desc),
+                onSelect = onSelectAccessLevel,
+            )
+            AccessLevelOption(
+                value = ACCESS_LEVEL_TRUSTED,
+                current = currentAccessLevel,
+                title = stringResource(R.string.room_host_access_trusted_title),
+                description = stringResource(R.string.room_host_access_trusted_desc),
+                onSelect = onSelectAccessLevel,
+            )
+            AccessLevelOption(
+                value = ACCESS_LEVEL_RESTRICTED,
+                current = currentAccessLevel,
+                title = stringResource(R.string.room_host_access_restricted_title),
+                description = stringResource(R.string.room_host_access_restricted_desc),
+                onSelect = onSelectAccessLevel,
+            )
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun AccessLevelOption(
+    value: String,
+    current: String?,
+    title: String,
+    description: String,
+    onSelect: (String) -> Unit,
+) {
+    val selected = current == value
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onSelect(value) }
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = { onSelect(value) },
+        )
+        Spacer(Modifier.width(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
 // ── More-actions bottom sheet ────────────────────────────────────────────
 
 /**
@@ -1051,10 +1321,12 @@ private fun RenameDialog(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MoreActionsSheet(
+    isAdmin: Boolean,
     handRaised: Boolean,
     localScreenSharing: Boolean,
     onRaiseHandClick: () -> Unit,
     onShareClick: () -> Unit,
+    onHostSettingsClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -1132,7 +1404,7 @@ private fun MoreActionsSheet(
                 icon = Icons.Default.Settings,
                 label = stringResource(R.string.room_more_settings),
                 isOn = true,
-                onClick = showStub,
+                onClick = if (isAdmin) onHostSettingsClick else showStub,
                 labelColor = sheetTint,
                 iconBgColor = sheetBg,
                 iconTintColor = sheetTint,

@@ -3,11 +3,16 @@ package com.we.meet.data.repository
 import com.we.meet.BuildConfig
 import com.we.meet.data.api.RoomApi
 import com.we.meet.data.api.dto.CreateRoomRequest
+import com.we.meet.data.api.dto.EnterRequest
 import com.we.meet.data.api.dto.MuteParticipantRequest
 import com.we.meet.data.api.dto.RaiseHandRequest
 import com.we.meet.data.api.dto.RemoveParticipantRequest
 import com.we.meet.data.api.dto.RenameParticipantRequest
+import com.we.meet.data.api.dto.RequestEntryRequest
+import com.we.meet.data.api.dto.RequestEntryResponse
 import com.we.meet.data.api.dto.RoomDto
+import com.we.meet.data.api.dto.UpdateRoomRequest
+import com.we.meet.data.api.dto.WaitingParticipantDto
 
 /**
  * Fetches a room's connection info from the backend.  The interesting payload
@@ -33,6 +38,21 @@ class RoomRepository(
     /** End (close) a room. Only the owner can do this. */
     suspend fun endRoom(idOrSlug: String): Result<Unit> = runCatching {
         roomApi.endRoom(idOrSlug)
+    }
+
+    /**
+     * Host-only: change the room's access level
+     * ("public" | "trusted" | "restricted"). "restricted" gates the
+     * lobby flow; "trusted" lets logged-in users bypass; "public"
+     * disables the lobby entirely.
+     */
+    suspend fun updateAccessLevel(
+        idOrSlug: String,
+        accessLevel: String,
+    ): Result<RoomDto> = runCatching {
+        applyLivekitOverride(
+            roomApi.updateRoom(idOrSlug, UpdateRoomRequest(access_level = accessLevel))
+        )
     }
 
     /**
@@ -99,6 +119,52 @@ class RoomRepository(
                 track_sid = micTrackSid,
             ),
         )
+    }
+
+    /**
+     * Lobby: visitor's request-entry call. Status returned drives the
+     * UI state machine: "waiting" → keep polling, "accepted" → connect
+     * to LiveKit with the supplied token, "denied" → tell the user the
+     * host rejected them, retry blocked for a short window.
+     */
+    suspend fun requestEntry(
+        idOrSlug: String,
+        username: String,
+    ): Result<RequestEntryResponse> = runCatching {
+        applyLivekitOverrideEntry(
+            roomApi.requestEntry(idOrSlug, RequestEntryRequest(username = username))
+        )
+    }
+
+    /** Owner-only: snapshot of the lobby. Caller is expected to poll. */
+    suspend fun listWaitingParticipants(
+        idOrSlug: String,
+    ): Result<List<WaitingParticipantDto>> = runCatching {
+        roomApi.listWaitingParticipants(idOrSlug).participants
+    }
+
+    /** Owner-only: admit ([allow]=true) or reject ([allow]=false) one waiter. */
+    suspend fun admitParticipant(
+        idOrSlug: String,
+        participantId: String,
+        allow: Boolean,
+    ): Result<Unit> = runCatching {
+        roomApi.admitParticipant(
+            idOrSlug = idOrSlug,
+            body = EnterRequest(
+                participant_id = participantId,
+                allow_entry = allow,
+            ),
+        )
+    }
+
+    private fun applyLivekitOverrideEntry(resp: RequestEntryResponse): RequestEntryResponse {
+        val override = BuildConfig.WE_MEET_LIVEKIT_URL_OVERRIDE
+        return if (override.isNotBlank() && resp.livekit != null) {
+            resp.copy(livekit = resp.livekit.copy(url = override))
+        } else {
+            resp
+        }
     }
 
     /** Apply optional LiveKit URL override (used for local-dev port forwarding). */

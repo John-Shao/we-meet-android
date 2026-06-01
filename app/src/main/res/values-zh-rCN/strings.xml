@@ -106,6 +106,22 @@
     <string name="room_host_remove">移出会议</string>
     <string name="room_host_remove_title">移出参会人？</string>
     <string name="room_host_remove_message">确定将 %1$s 移出会议？对方可以通过会议链接重新加入。</string>
+    <string name="room_lobby_banner">%1$d 人请求加入</string>
+    <string name="room_lobby_banner_action">查看</string>
+    <string name="room_lobby_title">候诊室（%1$d）</string>
+    <string name="room_lobby_admit">允许</string>
+    <string name="room_lobby_deny">拒绝</string>
+    <string name="room_lobby_admit_all">全部允许</string>
+    <string name="room_more_host_settings">主持人设置</string>
+    <string name="room_host_settings_title">主持人设置</string>
+    <string name="room_host_settings_subtitle">仅主持人可访问以下控制项。</string>
+    <string name="room_host_access_section">会议访问</string>
+    <string name="room_host_access_public_title">开放</string>
+    <string name="room_host_access_public_desc">任何人都可直接加入会议，无需申请。</string>
+    <string name="room_host_access_trusted_title">对受信任用户开放</string>
+    <string name="room_host_access_trusted_desc">已登录用户无需申请即可加入会议。</string>
+    <string name="room_host_access_restricted_title">受限</string>
+    <string name="room_host_access_restricted_desc">未受邀的人加入会议时需要申请。</string>
 
     <!-- 邀请 sheet -->
     <string name="invite_title">邀请参会人</string>

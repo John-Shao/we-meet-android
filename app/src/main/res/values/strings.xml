@@ -106,6 +106,22 @@
     <string name="room_host_remove">Remove</string>
     <string name="room_host_remove_title">Remove participant?</string>
     <string name="room_host_remove_message">Remove %1$s from the meeting? They can rejoin from the meeting link.</string>
+    <string name="room_lobby_banner">%1$d people are waiting to join</string>
+    <string name="room_lobby_banner_action">Review</string>
+    <string name="room_lobby_title">Waiting room (%1$d)</string>
+    <string name="room_lobby_admit">Admit</string>
+    <string name="room_lobby_deny">Deny</string>
+    <string name="room_lobby_admit_all">Admit all</string>
+    <string name="room_more_host_settings">Host settings</string>
+    <string name="room_host_settings_title">Host settings</string>
+    <string name="room_host_settings_subtitle">Only the host can change these.</string>
+    <string name="room_host_access_section">Access</string>
+    <string name="room_host_access_public_title">Open</string>
+    <string name="room_host_access_public_desc">Anyone can join directly.</string>
+    <string name="room_host_access_trusted_title">Trusted users</string>
+    <string name="room_host_access_trusted_desc">Signed-in users can join without asking.</string>
+    <string name="room_host_access_restricted_title">Restricted</string>
+    <string name="room_host_access_restricted_desc">Uninvited people need to request entry.</string>
 
     <!-- Invite sheet -->
     <string name="invite_title">Invite to meeting</string>

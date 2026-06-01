@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.we.meet.WeMeetApp
+import com.we.meet.data.api.dto.WaitingParticipantDto
 import com.we.meet.data.chat.ChatMessageUi
 import com.we.meet.data.history.HistoryStore
 import com.we.meet.data.repository.RoomRepository
@@ -111,6 +112,21 @@ data class RoomUiState(
      * function signatures.
      */
     val isAdmin: Boolean = false,
+    /**
+     * Lobby snapshot — non-empty only when the host has visitors waiting
+     * to be admitted. Driven by a background poll loop in the ViewModel
+     * (started after Connected, only for isAdmin=true). Empty list for
+     * non-admins and for empty lobbies.
+     */
+    val waitingParticipants: List<WaitingParticipantDto> = emptyList(),
+    /**
+     * Current room access level — one of "public" / "trusted" /
+     * "restricted", or null until first loaded. Owner-only host
+     * settings sheet writes this. Non-owners are gated upstream from
+     * mutating it, but the field is also visible so a future "viewer
+     * sees the room's policy" UI doesn't need new plumbing.
+     */
+    val accessLevel: String? = null,
 ) {
     enum class Phase { Connecting, Connected, Error, Disconnected }
 }
@@ -180,6 +196,13 @@ class RoomViewModel(
      */
     private var userInitiatedLeave = false
 
+    /**
+     * Handle to the active lobby-poll job so we can cancel + restart it
+     * across reconnects. Owner-only: never started when [isAdmin]=false.
+     * Null while idle.
+     */
+    private var lobbyPollJob: kotlinx.coroutines.Job? = null
+
     init {
         observeEvents()
         connect()
@@ -212,6 +235,7 @@ class RoomViewModel(
                 )
                 registerChatHandler()
                 refreshParticipants()
+                if (isAdmin) startLobbyPolling()
             }.onFailure { e ->
                 _state.update {
                     it.copy(
@@ -599,6 +623,7 @@ class RoomViewModel(
                 }
                 ConferenceForegroundService.start(getApplication(), roomName)
                 refreshParticipants()
+                if (isAdmin) startLobbyPolling()
             } else {
                 // Couldn't re-join — assume the room is gone (host ended
                 // it, LiveKit GC'd an empty room, token expired). Flip to
@@ -854,6 +879,72 @@ class RoomViewModel(
             // list to pick up the new name without waiting for the event.
             refreshParticipants()
         }
+    }
+
+    /**
+     * Start the owner-side lobby polling loop. Idempotent — if a poll
+     * job is already in flight, re-use it. 3 s interval is a balance
+     * between freshness (visitor's request-entry timeout is 30 s, so
+     * we want owner to see new entries before they expire) and battery.
+     * The poll silently swallows failures so a transient network blip
+     * doesn't tear down the loop; the next tick recovers.
+     */
+    private fun startLobbyPolling() {
+        if (lobbyPollJob?.isActive == true) return
+        lobbyPollJob = viewModelScope.launch {
+            while (true) {
+                roomRepository.listWaitingParticipants(roomId)
+                    .onSuccess { list ->
+                        _state.update { it.copy(waitingParticipants = list) }
+                    }
+                // Don't log every transient failure — they're expected
+                // during reconnect windows. Swallow and retry.
+                delay(3_000)
+            }
+        }
+    }
+
+    /**
+     * Owner admit (allow=true) / deny (allow=false) a single waiting
+     * participant. Optimistically removes them from the local snapshot
+     * so the sheet reacts instantly; the next poll tick (or a poll
+     * triggered by another admin's action) will reconcile if needed.
+     */
+    suspend fun admitParticipant(participantId: String, allow: Boolean): Result<Unit> {
+        return roomRepository.admitParticipant(roomId, participantId, allow)
+            .onSuccess {
+                _state.update { s ->
+                    s.copy(waitingParticipants = s.waitingParticipants.filterNot { it.id == participantId })
+                }
+            }
+    }
+
+    /**
+     * Pull the current access_level from the backend. Called lazily
+     * when the host opens the settings sheet — we don't preload at
+     * connect time because non-owners never see this UI and the value
+     * is cheap to fetch on demand. Updates the state on success;
+     * failure leaves the existing state untouched so a network blip
+     * doesn't blank out the sheet's radio selection.
+     */
+    suspend fun refreshAccessLevel() {
+        roomRepository.getRoom(roomId, username = selfName).onSuccess { room ->
+            _state.update { it.copy(accessLevel = room.access_level) }
+        }
+    }
+
+    /**
+     * Host-only: change the room's access level. On success the local
+     * state is updated immediately so the sheet's radio reflects the
+     * new value without waiting for another GET. Failure surfaces via
+     * the returned Result so the UI can show a toast.
+     */
+    suspend fun updateAccessLevel(accessLevel: String): Result<Unit> {
+        return roomRepository.updateAccessLevel(roomId, accessLevel)
+            .map { room ->
+                _state.update { it.copy(accessLevel = room.access_level) }
+                Unit
+            }
     }
 
     /** End the room via backend API, then disconnect. Only owner should call this. */
