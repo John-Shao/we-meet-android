@@ -22,8 +22,10 @@ retrofit = "2.11.0"
 okhttp = "4.12.0"
 moshi = "1.15.1"
 
-# LiveKit
-livekit = "2.23.5"
+# LiveKit — bumped to 2.24.1 to unify with the ported :feature-assistant
+# (Sprint 3). compose-components 2.2.1 kept; if the build flags a core/
+# components mismatch, bump livekitCompose to its 2.24-compatible release.
+livekit = "2.24.1"
 livekitCompose = "2.2.1"
 
 # Image loading
@@ -75,5 +77,6 @@ coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

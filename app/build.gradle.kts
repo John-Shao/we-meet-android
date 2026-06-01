@@ -26,7 +26,9 @@ android {
 
     defaultConfig {
         applicationId = "com.we.meet"
-        minSdk = 24
+        // Bumped 24 → 29 for the realtime AI assistant (:feature-assistant),
+        // which uses audio-routing / WebRTC APIs that require API 29+.
+        minSdk = 29
         targetSdk = 34
         versionCode = 1
         versionName = "0.1.0"
@@ -104,6 +106,9 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
+
+    // AI assistant feature (Sprint 3) — realtime "打电话" call screen.
+    implementation(project(":feature-assistant"))
 
     // LiveKit
     implementation(libs.livekit.android)

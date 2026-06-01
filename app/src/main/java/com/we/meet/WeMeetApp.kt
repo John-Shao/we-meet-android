@@ -4,6 +4,7 @@ import android.app.Application
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.disk.DiskCache
+import com.we.meet.feature.assistant.AssistantDeps
 import com.we.meet.data.api.ApiClient
 import com.we.meet.data.auth.TokenStore
 import com.we.meet.data.history.HistoryStore
@@ -13,6 +14,7 @@ import com.we.meet.data.repository.QrLoginRepository
 import com.we.meet.data.repository.RoomRepository
 import com.we.meet.data.settings.SettingsStore
 import com.we.meet.overlay.ScreenShareOverlay
+import okhttp3.OkHttpClient
 
 /**
  * Application class that owns the shared singletons for the app.
@@ -22,7 +24,7 @@ import com.we.meet.overlay.ScreenShareOverlay
  * If the app grows beyond a few screens, swap this for Hilt without churning
  * the call sites: every screen reads dependencies from a single property.
  */
-class WeMeetApp : Application(), ImageLoaderFactory {
+class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps {
 
     lateinit var tokenStore: TokenStore
         private set
@@ -58,6 +60,13 @@ class WeMeetApp : Application(), ImageLoaderFactory {
         settingsStore = SettingsStore(this)
         ScreenShareOverlay.init(this)
     }
+
+    // AssistantDeps — lets :feature-assistant reuse the host's authenticated
+    // networking instead of owning its own auth/login. Read after onCreate().
+    override val authedOkHttp: OkHttpClient
+        get() = apiClient.okHttp
+    override val baseUrl: String
+        get() = BuildConfig.WE_MEET_BASE_URL
 
     /**
      * Custom Coil [ImageLoader] used by every [coil.compose.AsyncImage].

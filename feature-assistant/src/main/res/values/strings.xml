@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="assistant_error_network">网络异常，请检查网络后重试</string>
+    <string name="assistant_error_unknown">出错了，请稍后重试</string>
+    <string name="assistant_error_auth_expired">登录已过期，请重新登录</string>
+    <string name="assistant_error_too_many_requests">操作过于频繁，请稍后再试</string>
+    <string name="assistant_error_server">服务异常，请稍后重试</string>
+</resources>

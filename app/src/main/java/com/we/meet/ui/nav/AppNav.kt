@@ -35,6 +35,7 @@ import androidx.navigation.navArgument
 import com.we.meet.WeMeetApp
 import com.we.meet.R
 import com.we.meet.data.auth.SessionState
+import com.we.meet.feature.assistant.aicall.ui.AssistantCallScreen
 import com.we.meet.ui.login.LoginScreen
 import com.we.meet.ui.main.MainTabScreen
 import com.we.meet.ui.preview.PreviewMode
@@ -55,6 +56,7 @@ object Routes {
     const val CREATE_PREVIEW = "create_preview"
     const val JOIN_PREVIEW = "join_preview"
     const val QR_SCAN = "qr_scan"
+    const val ASSISTANT_CALL = "assistant_call"
 
     private const val ROOM_BASE = "room"
     const val ROOM = "$ROOM_BASE/{roomId}/{url}/{token}/{name}/{slug}/{host}/{createdAt}/{isAdmin}/{mic}/{cam}"
@@ -115,11 +117,19 @@ fun AppNav() {
                     navController.navigate(Routes.historyDetail(roomId))
                 },
                 onSettingsClick = { navController.navigate(Routes.SETTINGS) },
+                onOpenAssistantCall = { navController.navigate(Routes.ASSISTANT_CALL) },
                 onSignedOut = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(Routes.HOME) { inclusive = true }
                     }
                 },
+            )
+        }
+
+        composable(Routes.ASSISTANT_CALL) {
+            AssistantCallScreen(
+                deps = app,
+                onBack = { navController.popBackStack() },
             )
         }
 

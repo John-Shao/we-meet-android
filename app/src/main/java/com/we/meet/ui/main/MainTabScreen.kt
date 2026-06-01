@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.outlined.Person
@@ -38,6 +39,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.we.meet.R
+import com.we.meet.ui.ai.AiHubScreen
 import com.we.meet.ui.home.HomeScreen
 import com.we.meet.ui.profile.ProfileScreen
 
@@ -49,6 +51,7 @@ private data class TabItem(
 
 private val tabs = listOf(
     TabItem(R.string.tab_meeting, Icons.Filled.Videocam, Icons.Filled.Videocam),
+    TabItem(R.string.tab_ai, Icons.Filled.AutoAwesome, Icons.Filled.AutoAwesome),
     TabItem(R.string.tab_profile, Icons.Filled.Person, Icons.Filled.Person),
 )
 
@@ -59,6 +62,7 @@ fun MainTabScreen(
     onScanQrCode: () -> Unit,
     onHistoryClick: (roomId: String) -> Unit,
     onSettingsClick: () -> Unit,
+    onOpenAssistantCall: () -> Unit,
     onSignedOut: () -> Unit,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
@@ -84,6 +88,11 @@ fun MainTabScreen(
                 }
             }
             1 -> {
+                Box(modifier = Modifier.padding(padding)) {
+                    AiHubScreen(onOpenAssistantCall = onOpenAssistantCall)
+                }
+            }
+            2 -> {
                 Box(modifier = Modifier.padding(padding)) {
                     ProfileScreen(onSignedOut = onSignedOut)
                 }
