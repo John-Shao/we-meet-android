@@ -54,9 +54,22 @@ object Routes {
     const val HOME = "home"
     const val SETTINGS = "settings"
     const val CREATE_PREVIEW = "create_preview"
-    const val JOIN_PREVIEW = "join_preview"
+    /**
+     * `slug` is an optional query parameter — empty when the user navigated
+     * via the tab bar's "join meeting" entry, populated when they came in
+     * via an App Links deep link. Compose Navigation 2.x treats the query
+     * as part of the route pattern; the default value comes from the
+     * navArgument below.
+     */
+    const val JOIN_PREVIEW = "join_preview?slug={slug}"
     const val QR_SCAN = "qr_scan"
     const val ASSISTANT_CALL = "assistant_call"
+
+    /** Build a JoinPreview route URL, optionally seeding the meeting-id input. */
+    fun joinPreview(slug: String? = null): String {
+        val s = slug.orEmpty()
+        return if (s.isBlank()) "join_preview?slug=" else "join_preview?slug=$s"
+    }
 
     private const val ROOM_BASE = "room"
     const val ROOM = "$ROOM_BASE/{roomId}/{url}/{token}/{name}/{slug}/{host}/{createdAt}/{isAdmin}/{mic}/{cam}"
@@ -96,6 +109,29 @@ fun AppNav() {
     // whatever NavHost is showing (typically Home after the auto pop).
     var hostEndedSheetVisible by remember { mutableStateOf(false) }
 
+    // App-Links deep link handler. MainActivity writes the parsed slug onto
+    // app.pendingJoinSlug from onCreate / onNewIntent. We forward it to
+    // JoinPreview only if the user is already logged in — if they're sitting
+    // on LoginScreen, dropping them onto a Preview they can't actually join
+    // is jarring; the slug is simply discarded. (S2/S3 may refine this with
+    // "remember slug across login" if it becomes a real ask.)
+    LaunchedEffect(Unit) {
+        app.pendingJoinSlug.collect { slug ->
+            if (slug.isNullOrBlank()) return@collect
+            // Reset first so a repeat deep link (same slug, second tap from
+            // the same chat) still fires — collectors only see distinct
+            // emissions, and the navigate below is fire-and-forget.
+            app.pendingJoinSlug.value = null
+            if (!app.tokenStore.isLoggedIn()) return@collect
+            navController.navigate(Routes.joinPreview(slug)) {
+                // Don't accumulate Preview screens if the user keeps tapping
+                // links — keep one Preview at most on the stack above Home.
+                launchSingleTop = true
+                popUpTo(Routes.HOME)
+            }
+        }
+    }
+
     NavHost(navController = navController, startDestination = startDestination) {
 
         composable(Routes.LOGIN) {
@@ -111,7 +147,7 @@ fun AppNav() {
         composable(Routes.HOME) {
             MainTabScreen(
                 onCreateMeeting = { navController.navigate(Routes.CREATE_PREVIEW) },
-                onJoinMeeting = { navController.navigate(Routes.JOIN_PREVIEW) },
+                onJoinMeeting = { navController.navigate(Routes.joinPreview()) },
                 onScanQrCode = { navController.navigate(Routes.QR_SCAN) },
                 onHistoryClick = { roomId ->
                     navController.navigate(Routes.historyDetail(roomId))
@@ -161,9 +197,19 @@ fun AppNav() {
             )
         }
 
-        composable(Routes.JOIN_PREVIEW) {
+        composable(
+            route = Routes.JOIN_PREVIEW,
+            arguments = listOf(
+                navArgument("slug") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            ),
+        ) { entry ->
+            val deepLinkSlug = entry.arguments?.getString("slug").orEmpty()
             PreviewScreen(
                 mode = PreviewMode.Join,
+                initialMeetingId = deepLinkSlug.takeIf { it.isNotBlank() },
                 onEnterRoom = { roomId, url, token, name, slug, host, createdAtMs, isAdmin, mic, cam ->
                     navController.navigate(Routes.room(roomId, url, token, name, slug, host, createdAtMs, isAdmin, mic, cam)) {
                         popUpTo(Routes.HOME)

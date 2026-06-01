@@ -54,12 +54,40 @@
             android:name=".MainActivity"
             android:exported="true"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode"
+            android:launchMode="singleTask"
             android:supportsPictureInPicture="true"
             android:theme="@style/Theme.WeMeet"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+                App Links for meeting join URLs. Backend generates only
+                8-digit numeric slugs; the wildcard "." (any single
+                character) sized to length 9 incl. leading slash narrows
+                manifest matching to that shape. Android's pathPattern
+                can't express "[0-9]{8}", so other 9-char paths like
+                "/feedback" still match here and MainActivity.handleDeepLink
+                does the strict final-shape check in code
+                (DEEP_LINK_SLUG_REGEX); mismatches fall through to normal
+                startup without errors.
+                autoVerify="true" makes the system fetch
+                https://meet.we-meet.online/.well-known/assetlinks.json
+                on install; once that's served by the frontend the App
+                takes the link without a chooser. While the JSON is
+                missing the App just appears in the chooser alongside
+                the browser — still working, just less seamless.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:scheme="http" />
+                <data android:host="meet.we-meet.online" />
+                <data android:pathPattern="/........" />
             </intent-filter>
         </activity>
 

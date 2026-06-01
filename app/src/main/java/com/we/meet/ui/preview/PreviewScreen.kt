@@ -95,6 +95,12 @@ fun PreviewScreen(
     mode: PreviewMode,
     onEnterRoom: (roomId: String, livekitUrl: String, livekitToken: String, name: String, slug: String, host: String?, createdAtMs: Long, isAdmin: Boolean, mic: Boolean, cam: Boolean) -> Unit,
     onClose: () -> Unit,
+    /**
+     * When non-null, seeds the meeting-id input in Join mode (used by App
+     * Links deep links so the user lands on a Preview with the code already
+     * filled in). Ignored in Create mode.
+     */
+    initialMeetingId: String? = null,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val previewViewModel: PreviewViewModel = viewModel(factory = PreviewViewModel.Factory(app))
@@ -158,7 +164,7 @@ fun PreviewScreen(
 
     // Mode-specific state
     var meetingName by remember { mutableStateOf(previewViewModel.defaultMeetingName) }
-    var meetingId by remember { mutableStateOf("") }
+    var meetingId by remember { mutableStateOf(initialMeetingId.orEmpty()) }
 
     val doAction: () -> Unit = {
         val callback = { target: RoomTarget ->

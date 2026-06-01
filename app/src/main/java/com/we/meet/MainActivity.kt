@@ -1,7 +1,9 @@
 package com.we.meet
 
 import android.app.PictureInPictureParams
+import android.content.Intent
 import android.content.res.Configuration
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -21,6 +23,17 @@ import com.we.meet.ui.nav.AppNav
 import com.we.meet.ui.theme.WeMeetTheme
 
 private const val TAG = "MainActivity"
+
+/**
+ * Backend `Room.generate_unique_slug` only ever emits 8-digit numeric
+ * codes — the legacy 3-4-3 lowercase-letter slug generator
+ * (`generate_room_slug`) still exists in utils.py but the model no
+ * longer calls it. Anything else coming in via App Links is a
+ * mismatch (e.g. `/feedback` is also length-9 and would pass the
+ * manifest pathPattern) and we ignore it so the Activity falls through
+ * to its normal start destination.
+ */
+private val DEEP_LINK_SLUG_REGEX = Regex("^[0-9]{8}$")
 
 /**
  * Compose-visible flag for "Activity is in Picture-in-Picture mode right now".
@@ -53,6 +66,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        handleDeepLink(intent)
         setContent {
             CompositionLocalProvider(LocalIsInPipMode provides pipModeState.value) {
                 WeMeetTheme {
@@ -62,6 +76,32 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // Some launchers send a fresh App Links VIEW intent while the Activity
+        // is already alive (e.g. tap link from a notification). Re-parse so
+        // AppNav's collector fires a second time.
+        handleDeepLink(intent)
+    }
+
+    /**
+     * Pull a meeting slug out of an incoming `https://meet.we-meet.online/<slug>`
+     * intent (manifest-side intent-filter pre-filters by path length, but
+     * the Android `pathPattern` syntax can't express `[0-9]{8}`, so we do
+     * the final shape check here in code). On a match, push the slug onto
+     * [WeMeetApp.pendingJoinSlug] for AppNav to consume; anything else is
+     * silently ignored so the Activity falls through to its normal start
+     * destination.
+     */
+    private fun handleDeepLink(intent: Intent?) {
+        val uri: Uri = intent?.data ?: return
+        if (intent.action != Intent.ACTION_VIEW) return
+        val slug = uri.pathSegments?.firstOrNull()?.takeIf {
+            DEEP_LINK_SLUG_REGEX.matches(it)
+        } ?: return
+        (application as? WeMeetApp)?.pendingJoinSlug?.value = slug
     }
 
     // Gate the screen-share floating bubble on Activity visibility. The

@@ -14,6 +14,7 @@ import com.we.meet.data.repository.QrLoginRepository
 import com.we.meet.data.repository.RoomRepository
 import com.we.meet.data.settings.SettingsStore
 import com.we.meet.overlay.ScreenShareOverlay
+import kotlinx.coroutines.flow.MutableStateFlow
 import okhttp3.OkHttpClient
 
 /**
@@ -42,6 +43,15 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps {
         private set
     lateinit var settingsStore: SettingsStore
         private set
+
+    /**
+     * Holds a meeting slug pulled from an incoming App Links / deep-link
+     * intent until AppNav can route the user to JoinPreview with it
+     * prefilled. MainActivity writes; AppNav collects exactly once and
+     * resets to null. Lives on the Application so it survives the
+     * pre-NavHost composition gap on cold-start deep launches.
+     */
+    val pendingJoinSlug: MutableStateFlow<String?> = MutableStateFlow(null)
 
     override fun onCreate() {
         super.onCreate()
