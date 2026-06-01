@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.ScreenShare
@@ -269,6 +270,7 @@ private fun RoomContent(
     var showAudioSheet by remember { mutableStateOf(false) }
     var showMessages by remember { mutableStateOf(false) }
     var showShareChooser by remember { mutableStateOf(false) }
+    var showInvite by remember { mutableStateOf(false) }
     // One-shot guard so we prompt for SYSTEM_ALERT_WINDOW at most once per
     // meeting instance. If the user declines or ignores, subsequent "共享
     // 屏幕" taps just proceed — sharing still works without the desktop
@@ -419,6 +421,7 @@ private fun RoomContent(
                 onMinimize = { (context as? MainActivity)?.enterPipNow() },
                 onSwitchCamera = onSwitchCamera,
                 onMessage = { showMessages = true },
+                onShowInvite = { showInvite = true },
                 onLeave = { showLeaveDialog = true },
             )
         }
@@ -495,6 +498,14 @@ private fun RoomContent(
                 kickCandidate = null
             },
             onDismiss = { kickCandidate = null },
+        )
+    }
+
+    if (showInvite) {
+        InviteSheet(
+            roomName = roomName,
+            roomSlug = roomSlug,
+            onDismiss = { showInvite = false },
         )
     }
 
@@ -600,6 +611,7 @@ private fun TopToolbar(
     onMinimize: () -> Unit,
     onSwitchCamera: () -> Unit,
     onMessage: () -> Unit,
+    onShowInvite: () -> Unit,
     onLeave: () -> Unit,
 ) {
     Box(
@@ -644,10 +656,15 @@ private fun TopToolbar(
 
         // Center: room name + slug. Padding widened so the title never collides
         // with the two-icon left cluster or the message+end right cluster.
+        // Tapping the cluster opens InviteSheet — feels-right discovery for
+        // host (and any participant who wants to forward the link).
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
-                .padding(horizontal = 110.dp),
+                .padding(horizontal = 110.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onShowInvite)
+                .padding(horizontal = 8.dp, vertical = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
