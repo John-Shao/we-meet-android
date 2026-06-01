@@ -150,6 +150,12 @@
     <string name="profile_nickname_hint">Enter a nickname</string>
     <string name="profile_sign_out">Sign out</string>
     <string name="profile_sign_out_confirm">Are you sure you want to sign out?</string>
+    <string name="profile_deregister">Delete account</string>
+    <string name="profile_deregister_title">Delete account?</string>
+    <string name="profile_deregister_warning">This permanently removes your account from We Meet. Meeting history, profile, and saved data will be erased and can\'t be recovered. Type your phone number to confirm.</string>
+    <string name="profile_deregister_phone_hint">Phone number</string>
+    <string name="profile_deregister_confirm">Delete</string>
+    <string name="profile_deregister_error">Failed to delete account. Please try again.</string>
     <string name="profile_intro">Bio</string>
     <string name="profile_set_intro">Edit bio</string>
     <string name="profile_intro_hint">Up to 100 characters</string>

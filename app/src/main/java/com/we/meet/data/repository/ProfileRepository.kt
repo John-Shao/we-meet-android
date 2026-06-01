@@ -77,6 +77,22 @@ class ProfileRepository(
     }
 
     /**
+     * Deregister (anonymize) the user on the backend, then clear local
+     * auth state so the caller can route back to the login screen.
+     *
+     * Crucially we DON'T clear the TokenStore until the server has acked
+     * the request — if the request fails (network drop, server 5xx) the
+     * user should land back on the same Profile screen still signed in,
+     * not on Login with the data still live on the backend.
+     */
+    suspend fun deregister(): Result<Unit> = runCatching {
+        withContext(Dispatchers.IO) {
+            userApi.deregister()
+            tokenStore.clear()
+        }
+    }
+
+    /**
      * Upload an avatar / cover image using the three-step presigned PUT
      * flow: request URL → PUT bytes → confirm.
      */

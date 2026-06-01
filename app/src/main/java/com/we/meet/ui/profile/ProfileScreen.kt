@@ -82,6 +82,8 @@ fun ProfileScreen(
     var showNicknameDialog by remember { mutableStateOf(false) }
     var showIntroDialog by remember { mutableStateOf(false) }
     var showSignOutConfirm by remember { mutableStateOf(false) }
+    var showDeregisterDialog by remember { mutableStateOf(false) }
+    var deregistering by remember { mutableStateOf(false) }
     var uploadingKind by remember { mutableStateOf<ProfileRepository.Kind?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -90,6 +92,7 @@ fun ProfileScreen(
     val uploadError = stringResource(R.string.profile_image_error_upload)
     val introError = stringResource(R.string.profile_intro_error_save)
     val nicknameError = stringResource(R.string.profile_nickname_error_save)
+    val deregisterError = stringResource(R.string.profile_deregister_error)
 
     fun handleUpload(kind: ProfileRepository.Kind, uri: android.net.Uri?) {
         if (uri == null) return
@@ -249,6 +252,25 @@ fun ProfileScreen(
             )
         }
 
+        // Deregister — lower visual weight than Sign out (TextButton vs.
+        // surface-Button), but the actual confirm dialog uses a high-friction
+        // phone-number-match prompt so the entry point being subtle doesn't
+        // cost much. Compliance line for an account-delete entry on every
+        // logged-in screen.
+        Spacer(Modifier.height(8.dp))
+        TextButton(
+            onClick = { showDeregisterDialog = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.profile_deregister),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+
         if (BuildConfig.DEBUG) {
             Spacer(Modifier.height(12.dp))
             TextButton(
@@ -322,6 +344,32 @@ fun ProfileScreen(
                 TextButton(onClick = { showSignOutConfirm = false }) {
                     Text(stringResource(R.string.cancel))
                 }
+            },
+        )
+    }
+
+    if (showDeregisterDialog) {
+        DeregisterDialog(
+            expectedPhone = phone,
+            inFlight = deregistering,
+            onConfirm = {
+                deregistering = true
+                scope.launch {
+                    profileRepo.deregister()
+                        .onSuccess {
+                            showDeregisterDialog = false
+                            deregistering = false
+                            onSignedOut()
+                        }
+                        .onFailure {
+                            deregistering = false
+                            errorMessage = deregisterError
+                            showDeregisterDialog = false
+                        }
+                }
+            },
+            onDismiss = {
+                if (!deregistering) showDeregisterDialog = false
             },
         )
     }
@@ -496,6 +544,67 @@ private fun NicknameDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun DeregisterDialog(
+    expectedPhone: String,
+    inFlight: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    // Friction guard: the user has to type their phone number for the
+    // confirm button to enable. Trim incoming input so trailing whitespace
+    // from soft-keyboard auto-suggest doesn't block a legitimate match.
+    var input by remember { mutableStateOf("") }
+    val matches = input.trim() == expectedPhone
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.profile_deregister_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = stringResource(R.string.profile_deregister_warning),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    singleLine = true,
+                    placeholder = {
+                        Text(stringResource(R.string.profile_deregister_phone_hint))
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !inFlight,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                enabled = matches && !inFlight,
+            ) {
+                if (inFlight) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.profile_deregister_confirm),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !inFlight) {
                 Text(stringResource(R.string.cancel))
             }
         },

@@ -55,4 +55,12 @@ interface UserApi {
     suspend fun updateNickname(
         @Body body: UpdateNicknameRequest,
     ): UserDto
+
+    /**
+     * Deregister (soft-delete + anonymize) the current user account.
+     * Server returns 204 No Content on success — Retrofit's suspend Unit
+     * adapter accepts that as a non-failure.
+     */
+    @POST("api/v1.0/users/me/deregister/")
+    suspend fun deregister()
 }
