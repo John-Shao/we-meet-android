@@ -112,6 +112,13 @@
     <string name="room_lobby_admit">允许</string>
     <string name="room_lobby_deny">拒绝</string>
     <string name="room_lobby_admit_all">全部允许</string>
+    <string name="waiting_title">等待主持人审批</string>
+    <string name="waiting_subtitle">主持人允许后将自动加入「%1$s」</string>
+    <string name="waiting_cancel">取消</string>
+    <string name="waiting_back">返回</string>
+    <string name="waiting_denied_title">主持人拒绝了你的请求</string>
+    <string name="waiting_denied_subtitle">你可以稍后重试，或直接联系主持人。</string>
+    <string name="waiting_error_title">无法连接到会议</string>
     <string name="room_more_host_settings">主持人设置</string>
     <string name="room_host_settings_title">主持人设置</string>
     <string name="room_host_settings_subtitle">仅主持人可访问以下控制项。</string>

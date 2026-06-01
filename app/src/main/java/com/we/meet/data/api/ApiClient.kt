@@ -3,6 +3,7 @@ package com.we.meet.data.api
 import android.util.Log
 import com.we.meet.BuildConfig
 import com.we.meet.data.auth.AuthInterceptor
+import com.we.meet.data.auth.InMemoryCookieJar
 import com.we.meet.data.auth.SessionExpiredInterceptor
 import com.we.meet.data.auth.TokenRefreshAuthenticator
 import com.we.meet.data.auth.TokenStore
@@ -56,6 +57,11 @@ class ApiClient(tokenStore: TokenStore) {
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
+        // Lobby flow needs Set-Cookie persistence across request-entry
+        // polls. Other endpoints either don't set cookies (mobile auth
+        // returns Bearer in body) or are fine with cookies travelling
+        // alongside Authorization — the server prefers the latter.
+        .cookieJar(InMemoryCookieJar())
         .addInterceptor(AuthInterceptor(tokenStore))
         .addInterceptor(SessionExpiredInterceptor(tokenStore))
         // Authenticator runs INSIDE RetryAndFollowUp, between AuthInterceptor

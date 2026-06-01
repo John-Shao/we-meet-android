@@ -103,7 +103,11 @@ class PreviewViewModel(
         }
     }
 
-    fun joinRoom(slug: String, onSuccess: (RoomTarget) -> Unit) {
+    fun joinRoom(
+        slug: String,
+        onSuccess: (RoomTarget) -> Unit,
+        onNeedsLobby: (idOrSlug: String, roomName: String) -> Unit,
+    ) {
         val trimmed = slug.trim()
         if (trimmed.isEmpty()) return
         if (_state.value.isLoading) return
@@ -113,34 +117,48 @@ class PreviewViewModel(
             roomRepository.getRoom(trimmed, displayUsername).fold(
                 onSuccess = { room ->
                     val lk = room.livekit
-                    if (lk == null) {
-                        // Backend returns 200 with no `livekit` block when the
-                        // room has been ended — surface 「会议已结束」 rather
-                        // than the generic fallback so the user knows why they
-                        // can't join.
-                        val msgRes = if (room.closed_at != null) {
-                            R.string.error_meeting_ended
-                        } else {
-                            R.string.error_unknown
+                    // Backend's get_closed_at returns an empty string for
+                    // still-open rooms, NOT null — Moshi keeps it as "".
+                    // Compare on blankness instead of nullability or every
+                    // restricted-room join (livekit=null, closed_at="")
+                    // mis-routes to "meeting ended".
+                    val isEnded = !room.closed_at.isNullOrBlank()
+                    when {
+                        // Ended rooms — surface 「会议已结束」 rather than the
+                        // generic fallback so the user knows why they can't join.
+                        lk == null && isEnded -> {
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    errorMessage = getApplication<Application>()
+                                        .getString(R.string.error_meeting_ended),
+                                )
+                            }
                         }
-                        _state.update {
-                            it.copy(
-                                isLoading = false,
-                                errorMessage = getApplication<Application>().getString(msgRes),
-                            )
+                        // No livekit but room is still open: current user lacks
+                        // should-access-room (restricted access_level + no
+                        // OWNER role). Route to the waiting-room flow instead
+                        // of showing an unhelpful error. Use the user's input
+                        // as the lobby idOrSlug since that's also what
+                        // request-entry and subsequent polls will target.
+                        lk == null -> {
+                            _state.update { it.copy(isLoading = false) }
+                            val displayName = room.name ?: room.slug ?: trimmed
+                            onNeedsLobby(trimmed, displayName)
                         }
-                    } else {
-                        _state.update { it.copy(isLoading = false) }
-                        onSuccess(RoomTarget(
-                            roomId = room.id,
-                            livekitUrl = lk.url,
-                            livekitToken = lk.token,
-                            displayName = room.name ?: room.slug ?: room.id,
-                            slug = room.slug ?: room.id,
-                            isAdmin = room.is_administrable == true,
-                            host = room.owner,
-                            createdAtMs = parseIsoMillis(room.created_at),
-                        ))
+                        else -> {
+                            _state.update { it.copy(isLoading = false) }
+                            onSuccess(RoomTarget(
+                                roomId = room.id,
+                                livekitUrl = lk.url,
+                                livekitToken = lk.token,
+                                displayName = room.name ?: room.slug ?: room.id,
+                                slug = room.slug ?: room.id,
+                                isAdmin = room.is_administrable == true,
+                                host = room.owner,
+                                createdAtMs = parseIsoMillis(room.created_at),
+                            ))
+                        }
                     }
                 },
                 onFailure = { e ->

@@ -101,6 +101,13 @@ fun PreviewScreen(
      * filled in). Ignored in Create mode.
      */
     initialMeetingId: String? = null,
+    /**
+     * Fired in Join mode when the target room exists but the current
+     * user can't access it directly (typically access_level=restricted).
+     * AppNav should navigate to the waiting-room screen, passing the
+     * idOrSlug + display name forward. Ignored in Create mode.
+     */
+    onNeedsLobby: (idOrSlug: String, roomName: String, mic: Boolean, cam: Boolean) -> Unit = { _, _, _, _ -> },
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val previewViewModel: PreviewViewModel = viewModel(factory = PreviewViewModel.Factory(app))
@@ -172,7 +179,13 @@ fun PreviewScreen(
         }
         when (mode) {
             PreviewMode.Create -> previewViewModel.createMeeting(meetingName, callback)
-            PreviewMode.Join -> previewViewModel.joinRoom(meetingId, callback)
+            PreviewMode.Join -> previewViewModel.joinRoom(
+                slug = meetingId,
+                onSuccess = callback,
+                onNeedsLobby = { idOrSlug, roomName ->
+                    onNeedsLobby(idOrSlug, roomName, micEnabled, cameraEnabled)
+                },
+            )
         }
     }
 

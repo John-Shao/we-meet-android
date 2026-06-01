@@ -112,6 +112,13 @@
     <string name="room_lobby_admit">Admit</string>
     <string name="room_lobby_deny">Deny</string>
     <string name="room_lobby_admit_all">Admit all</string>
+    <string name="waiting_title">Waiting for host approval</string>
+    <string name="waiting_subtitle">You\'ll join %1$s once the host lets you in.</string>
+    <string name="waiting_cancel">Cancel</string>
+    <string name="waiting_back">Back</string>
+    <string name="waiting_denied_title">The host denied your request</string>
+    <string name="waiting_denied_subtitle">You can try again later or contact the host directly.</string>
+    <string name="waiting_error_title">Could not reach the meeting</string>
     <string name="room_more_host_settings">Host settings</string>
     <string name="room_host_settings_title">Host settings</string>
     <string name="room_host_settings_subtitle">Only the host can change these.</string>

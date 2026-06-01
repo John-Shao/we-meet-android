@@ -44,6 +44,7 @@ import com.we.meet.ui.qrscan.QrScanResult
 import com.we.meet.ui.qrscan.QrScanScreen
 import com.we.meet.ui.room.RoomScreen
 import com.we.meet.ui.settings.SettingsScreen
+import com.we.meet.ui.waiting.WaitingRoomScreen
 import kotlinx.coroutines.delay
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -64,6 +65,14 @@ object Routes {
     const val JOIN_PREVIEW = "join_preview?slug={slug}"
     const val QR_SCAN = "qr_scan"
     const val ASSISTANT_CALL = "assistant_call"
+
+    private const val WAITING_ROOM_BASE = "waiting_room"
+    const val WAITING_ROOM = "$WAITING_ROOM_BASE/{idOrSlug}/{name}/{mic}/{cam}"
+
+    fun waitingRoom(idOrSlug: String, name: String, mic: Boolean, cam: Boolean): String {
+        fun enc(s: String) = URLEncoder.encode(s, StandardCharsets.UTF_8.name())
+        return "$WAITING_ROOM_BASE/${enc(idOrSlug)}/${enc(name)}/$mic/$cam"
+    }
 
     /** Build a JoinPreview route URL, optionally seeding the meeting-id input. */
     fun joinPreview(slug: String? = null): String {
@@ -216,6 +225,57 @@ fun AppNav() {
                     }
                 },
                 onClose = { navController.popBackStack() },
+                onNeedsLobby = { idOrSlug, roomName, mic, cam ->
+                    navController.navigate(Routes.waitingRoom(idOrSlug, roomName, mic, cam)) {
+                        // Replace the Preview entry — once the user committed
+                        // to "join" we don't want back-navigation to land
+                        // them in the input page mid-wait.
+                        popUpTo(Routes.JOIN_PREVIEW) { inclusive = true }
+                    }
+                },
+            )
+        }
+
+        composable(
+            route = Routes.WAITING_ROOM,
+            arguments = listOf(
+                navArgument("idOrSlug") { type = NavType.StringType },
+                navArgument("name") { type = NavType.StringType },
+                navArgument("mic") { type = NavType.BoolType },
+                navArgument("cam") { type = NavType.BoolType },
+            ),
+        ) { entry ->
+            val args = entry.arguments!!
+            val idOrSlug = Routes.decode(args.getString("idOrSlug").orEmpty())
+            val roomName = Routes.decode(args.getString("name").orEmpty())
+            val mic = args.getBoolean("mic", true)
+            val cam = args.getBoolean("cam", true)
+            WaitingRoomScreen(
+                idOrSlug = idOrSlug,
+                roomName = roomName,
+                mic = mic,
+                cam = cam,
+                onAccepted = { url, token, roomId ->
+                    // Visitor-only path: no admin role, no historical
+                    // server-side metadata. createdAtMs falls back to
+                    // join-instant so the local history entry has a
+                    // sensible timestamp rather than 1970.
+                    navController.navigate(
+                        Routes.room(
+                            roomId = roomId,
+                            url = url,
+                            token = token,
+                            name = roomName,
+                            slug = idOrSlug,
+                            host = null,
+                            createdAtMs = System.currentTimeMillis(),
+                            isAdmin = false,
+                            mic = mic,
+                            cam = cam,
+                        )
+                    ) { popUpTo(Routes.HOME) }
+                },
+                onCancel = { navController.popBackStack() },
             )
         }
 
