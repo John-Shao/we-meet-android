@@ -23,7 +23,7 @@
     <string name="home_create_later_name_label">Meeting name</string>
     <string name="home_create_later_confirm">Create</string>
     <string name="home_create_later_cancel">Cancel</string>
-    <string name="home_create_later_no_time">No scheduled time</string>
+    <string name="home_create_later_no_time">Please pick a time</string>
     <string name="home_create_later_pick_time">Pick time</string>
     <string name="home_create_later_edit_time">Edit</string>
     <string name="home_create_later_clear_time">Clear time</string>

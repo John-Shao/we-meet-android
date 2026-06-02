@@ -224,6 +224,9 @@ private fun LaterMeetingDialog(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
+                        // Scheduled time is required — when unset we show
+                        // a "please pick" prompt rather than a neutral
+                        // hint so users notice it's missing.
                         text = scheduledMillis?.let { formatMillisForDisplay(it) }
                             ?: stringResource(R.string.home_create_later_no_time),
                         modifier = Modifier.weight(1f),
@@ -239,23 +242,17 @@ private fun LaterMeetingDialog(
                         ))
                     }
                 }
-                if (scheduledMillis != null) {
-                    TextButton(
-                        onClick = { scheduledMillis = null },
-                        modifier = Modifier.align(Alignment.End),
-                    ) {
-                        Text(stringResource(R.string.home_create_later_clear_time))
-                    }
-                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    val iso = scheduledMillis?.let { millisToIsoOffset(it) }
+                    val iso = scheduledMillis?.let { millisToIsoOffset(it) } ?: return@TextButton
                     onConfirm(input.trim(), iso)
                 },
-                enabled = input.trim().isNotEmpty(),
+                // Scheduled time is required for a scheduled meeting —
+                // both the name and the time must be set before submit.
+                enabled = input.trim().isNotEmpty() && scheduledMillis != null,
             ) { Text(stringResource(R.string.home_create_later_confirm)) }
         },
         dismissButton = {
