@@ -142,6 +142,10 @@ class HomeViewModel(
                             scheduledAtIso = room.scheduled_at,
                         )
                     }
+                    // Pull the latest server list so the brand-new room
+                    // shows up in the scheduled / history zones without
+                    // waiting for the next LifecycleResumeEffect tick.
+                    refreshRemoteRooms()
                 }
             _laterCreating.update { false }
         }

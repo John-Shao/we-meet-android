@@ -30,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -257,9 +258,13 @@ private fun LaterMeetingDialog(
                     val iso = scheduledMillis?.let { millisToIsoOffset(it) } ?: return@TextButton
                     onConfirm(input.trim(), iso)
                 },
-                // Scheduled time is required for a scheduled meeting —
-                // both the name and the time must be set before submit.
-                enabled = input.trim().isNotEmpty() && scheduledMillis != null,
+                // Scheduled time is required AND must not be in the past
+                // (the user could otherwise pick today + an already-past
+                // hour with the time picker, which the date picker can't
+                // gate on its own).
+                enabled = input.trim().isNotEmpty() &&
+                    scheduledMillis != null &&
+                    (scheduledMillis ?: 0L) > System.currentTimeMillis(),
             ) { Text(stringResource(R.string.home_create_later_confirm)) }
         },
         dismissButton = {
@@ -270,8 +275,25 @@ private fun LaterMeetingDialog(
     )
 
     if (showDatePicker) {
+        // Reject any calendar day before today (local-time midnight). The
+        // year cutoff stays unconstrained so the user can scroll forward
+        // freely.
+        val todayStartUtc = remember {
+            val cal = java.util.Calendar.getInstance().apply {
+                set(java.util.Calendar.HOUR_OF_DAY, 0)
+                set(java.util.Calendar.MINUTE, 0)
+                set(java.util.Calendar.SECOND, 0)
+                set(java.util.Calendar.MILLISECOND, 0)
+            }
+            cal.timeInMillis
+        }
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = scheduledMillis ?: System.currentTimeMillis(),
+            initialSelectedDateMillis = (scheduledMillis ?: System.currentTimeMillis())
+                .coerceAtLeast(todayStartUtc),
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                    utcTimeMillis >= todayStartUtc
+            },
         )
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
