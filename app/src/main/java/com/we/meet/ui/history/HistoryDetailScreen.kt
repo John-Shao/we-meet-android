@@ -23,18 +23,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SecondaryTabRow
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -89,8 +84,6 @@ fun HistoryDetailScreen(
     val transcriptsState by viewModel.transcripts.collectAsStateWithLifecycle()
     val regenerating by viewModel.regenerating.collectAsStateWithLifecycle()
 
-    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -107,57 +100,83 @@ fun HistoryDetailScreen(
             )
         },
     ) { padding ->
+        // Flat single-scroll layout — earlier 4-tab design was awkward on a
+        // phone; each section is now a labelled block separated by a
+        // horizontal divider so users only have to scroll.
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 12.dp),
         ) {
-            SecondaryTabRow(selectedTabIndex = selectedTab) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    text = { Text(stringResource(R.string.meeting_detail_tab_info)) },
-                )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    text = { Text(stringResource(R.string.meeting_detail_tab_summary)) },
-                )
-                Tab(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    text = { Text(stringResource(R.string.meeting_detail_tab_action_items)) },
-                )
-                Tab(
-                    selected = selectedTab == 3,
-                    onClick = { selectedTab = 3 },
-                    text = { Text(stringResource(R.string.meeting_detail_tab_transcript)) },
-                )
-            }
+            SectionHeader(stringResource(R.string.meeting_detail_tab_info))
+            InfoTab(
+                roomState = roomState,
+                transcriptsState = transcriptsState,
+                localEntry = localEntry,
+            )
+            SectionSpacer()
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-            ) {
-                when (selectedTab) {
-                    0 -> InfoTab(
-                        roomState = roomState,
-                        transcriptsState = transcriptsState,
-                        localEntry = localEntry,
-                    )
-                    1 -> SummaryTab(
-                        state = summaryState,
-                        regenerating = regenerating,
-                        onRegenerate = { viewModel.regenerateSummary(roomId) },
-                    )
-                    2 -> ActionItemsTab(state = actionItemsState)
-                    3 -> TranscriptTab(state = transcriptsState)
-                }
-            }
+            SectionHeader(
+                title = stringResource(R.string.meeting_detail_tab_summary),
+                trailing = {
+                    Button(
+                        onClick = { viewModel.regenerateSummary(roomId) },
+                        enabled = !regenerating,
+                    ) {
+                        Text(
+                            if (regenerating)
+                                stringResource(R.string.meeting_detail_summary_regenerating)
+                            else stringResource(R.string.meeting_detail_summary_regenerate)
+                        )
+                    }
+                },
+            )
+            SummaryTab(state = summaryState)
+            SectionSpacer()
+
+            SectionHeader(stringResource(R.string.meeting_detail_tab_action_items))
+            ActionItemsTab(state = actionItemsState)
+            SectionSpacer()
+
+            SectionHeader(stringResource(R.string.meeting_detail_tab_transcript))
+            TranscriptTab(state = transcriptsState)
+            Spacer(Modifier.height(24.dp))
         }
     }
+}
+
+@Composable
+private fun SectionHeader(
+    title: String,
+    trailing: (@Composable () -> Unit)? = null,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        if (trailing != null) trailing()
+    }
+    HorizontalDivider(
+        thickness = 1.dp,
+        color = MaterialTheme.colorScheme.outlineVariant,
+    )
+    Spacer(Modifier.height(8.dp))
+}
+
+@Composable
+private fun SectionSpacer() {
+    Spacer(Modifier.height(16.dp))
 }
 
 // ---------------------------------------------------------------------------
@@ -333,46 +352,26 @@ private fun TimelineRow(time: String, label: String) {
 @Composable
 private fun SummaryTab(
     state: MeetingDetailViewModel.LoadState<SummaryDto?>,
-    regenerating: Boolean,
-    onRegenerate: () -> Unit,
 ) {
     when (state) {
         is MeetingDetailViewModel.LoadState.Loading -> CenteredText(stringResource(R.string.meeting_detail_loading))
         is MeetingDetailViewModel.LoadState.Failure -> CenteredText(stringResource(R.string.meeting_detail_load_failed))
         is MeetingDetailViewModel.LoadState.Success -> {
             val summary = state.value
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    Button(
-                        onClick = onRegenerate,
-                        enabled = !regenerating,
-                    ) {
-                        Text(
-                            if (regenerating)
-                                stringResource(R.string.meeting_detail_summary_regenerating)
-                            else stringResource(R.string.meeting_detail_summary_regenerate)
-                        )
-                    }
-                }
-                Spacer(Modifier.height(12.dp))
-                when {
-                    summary == null -> Text(stringResource(R.string.meeting_detail_summary_empty))
-                    summary.status == "failed" -> Text(
-                        buildString {
-                            append(stringResource(R.string.meeting_detail_summary_failed))
-                            if (summary.error_message.isNotBlank()) {
-                                append(": ")
-                                append(summary.error_message)
-                            }
+            when {
+                summary == null -> Text(stringResource(R.string.meeting_detail_summary_empty))
+                summary.status == "failed" -> Text(
+                    buildString {
+                        append(stringResource(R.string.meeting_detail_summary_failed))
+                        if (summary.error_message.isNotBlank()) {
+                            append(": ")
+                            append(summary.error_message)
                         }
-                    )
-                    summary.content.isBlank() ->
-                        Text(stringResource(R.string.meeting_detail_summary_empty))
-                    else -> MarkdownText(content = summary.content)
-                }
+                    }
+                )
+                summary.content.isBlank() ->
+                    Text(stringResource(R.string.meeting_detail_summary_empty))
+                else -> MarkdownText(content = summary.content)
             }
         }
     }
