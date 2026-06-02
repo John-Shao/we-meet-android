@@ -111,6 +111,17 @@ fun AppNav() {
     val app = context.applicationContext as WeMeetApp
     val navController = rememberNavController()
 
+    // Guard against a Compose double-tap on any back button popping past
+    // the root and leaving NavHost without a destination (blank screen).
+    // `previousBackStackEntry` is non-null only when something sits below
+    // the current entry — so the second tap, fired after the first pop
+    // already shrank the stack to its root, simply no-ops.
+    val safePop: () -> Unit = {
+        if (navController.previousBackStackEntry != null) {
+            navController.popBackStack()
+        }
+    }
+
     val startDestination = if (app.tokenStore.isLoggedIn()) Routes.HOME else Routes.LOGIN
 
     // Set by RoomScreen when the server disconnected us because the host
@@ -175,24 +186,25 @@ fun AppNav() {
         composable(Routes.ASSISTANT_CALL) {
             AssistantCallScreen(
                 deps = app,
-                onBack = { navController.popBackStack() },
+                onBack = rememberOnceOnly(safePop),
             )
         }
 
         composable(Routes.QR_SCAN) {
+            val onceClose = rememberOnceOnly(safePop)
             QrScanScreen(
                 onDone = { _: QrScanResult ->
                     // Confirmed / Cancelled / Error all just return to home —
                     // the web side surfaces the confirmation, and on this
                     // device the toast/screenshot of state isn't worth a
                     // dedicated success page for v1.
-                    navController.popBackStack()
+                    onceClose()
                 },
             )
         }
 
         composable(Routes.SETTINGS) {
-            SettingsScreen(onBack = { navController.popBackStack() })
+            SettingsScreen(onBack = rememberOnceOnly(safePop))
         }
 
         composable(Routes.CREATE_PREVIEW) {
@@ -203,7 +215,7 @@ fun AppNav() {
                         popUpTo(Routes.HOME)
                     }
                 },
-                onClose = { navController.popBackStack() },
+                onClose = rememberOnceOnly(safePop),
             )
         }
 
@@ -225,7 +237,7 @@ fun AppNav() {
                         popUpTo(Routes.HOME)
                     }
                 },
-                onClose = { navController.popBackStack() },
+                onClose = rememberOnceOnly(safePop),
                 onNeedsLobby = { idOrSlug, roomName, mic, cam ->
                     navController.navigate(Routes.waitingRoom(idOrSlug, roomName, mic, cam)) {
                         // Replace the Preview entry — once the user committed
@@ -276,7 +288,7 @@ fun AppNav() {
                         )
                     ) { popUpTo(Routes.HOME) }
                 },
-                onCancel = { navController.popBackStack() },
+                onCancel = rememberOnceOnly(safePop),
             )
         }
 
@@ -324,7 +336,7 @@ fun AppNav() {
             val args = entry.arguments!!
             com.we.meet.ui.history.HistoryDetailScreen(
                 roomId = Routes.decode(args.getString("roomId").orEmpty()),
-                onBack = { navController.popBackStack() },
+                onBack = rememberOnceOnly(safePop),
             )
         }
     }
@@ -348,6 +360,27 @@ fun AppNav() {
                 }
             },
         )
+    }
+}
+
+/**
+ * Wraps a back/cancel callback so a double-tap fires it exactly once.
+ *
+ * Compose's nav animation keeps the outgoing destination's composable
+ * alive briefly, so a fast second tap on the back arrow can re-enter
+ * the same onClick lambda and trigger an extra `popBackStack()` — that
+ * eats the layer below (mid-stack) or empties the back stack (blank
+ * screen). Putting the guard inside each destination's `composable {}`
+ * scope means the flag resets every time the destination is re-entered.
+ */
+@Composable
+private fun rememberOnceOnly(action: () -> Unit): () -> Unit {
+    var fired by remember { mutableStateOf(false) }
+    return {
+        if (!fired) {
+            fired = true
+            action()
+        }
     }
 }
 
