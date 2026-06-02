@@ -358,20 +358,19 @@ private fun SummaryTab(
         is MeetingDetailViewModel.LoadState.Failure -> CenteredText(stringResource(R.string.meeting_detail_load_failed))
         is MeetingDetailViewModel.LoadState.Success -> {
             val summary = state.value
-            when {
-                summary == null -> Text(stringResource(R.string.meeting_detail_summary_empty))
-                summary.status == "failed" -> Text(
-                    buildString {
-                        append(stringResource(R.string.meeting_detail_summary_failed))
-                        if (summary.error_message.isNotBlank()) {
-                            append(": ")
-                            append(summary.error_message)
-                        }
-                    }
-                )
-                summary.content.isBlank() ->
-                    Text(stringResource(R.string.meeting_detail_summary_empty))
-                else -> MarkdownText(content = summary.content)
+            // For end users, "no summary generated yet" (404), "summary
+            // exists but content is blank", and "backend tried but
+            // failed (e.g. no transcripts to summarise)" all read the
+            // same: there's no summary to show. Web surfaces the raw
+            // error_message; the App keeps it simple — the regenerate
+            // button is the action the user can take regardless.
+            val showEmpty = summary == null ||
+                summary.content.isBlank() ||
+                summary.status == "failed"
+            if (showEmpty) {
+                Text(stringResource(R.string.meeting_detail_summary_empty))
+            } else {
+                MarkdownText(content = summary!!.content)
             }
         }
     }
