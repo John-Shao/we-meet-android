@@ -29,7 +29,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -84,12 +86,23 @@ fun HistoryDetailScreen(
     val transcriptsState by viewModel.transcripts.collectAsStateWithLifecycle()
     val regenerating by viewModel.regenerating.collectAsStateWithLifecycle()
 
+    // Guard against a double-tap on the back arrow popping two entries
+    // off the back stack — the second pop empties the stack, which
+    // shows a blank screen until the user backgrounds the app.
+    var backPressed by remember { mutableStateOf(false) }
+    val handleBack: () -> Unit = {
+        if (!backPressed) {
+            backPressed = true
+            onBack()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.meeting_detail_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = handleBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.cancel),
