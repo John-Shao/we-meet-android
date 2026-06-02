@@ -2,9 +2,13 @@ package com.we.meet.data.api
 
 import com.we.meet.data.api.dto.CreateRoomRequest
 import com.we.meet.data.api.dto.EnterRequest
+import com.we.meet.data.api.dto.ActionItemDto
 import com.we.meet.data.api.dto.MuteParticipantRequest
 import com.we.meet.data.api.dto.PagedRoomsDto
 import com.we.meet.data.api.dto.RaiseHandRequest
+import com.we.meet.data.api.dto.RegenerateSummaryResponse
+import com.we.meet.data.api.dto.SummaryDto
+import com.we.meet.data.api.dto.TranscriptDto
 import com.we.meet.data.api.dto.RemoveParticipantRequest
 import com.we.meet.data.api.dto.RenameParticipantRequest
 import com.we.meet.data.api.dto.RequestEntryRequest
@@ -168,4 +172,34 @@ interface RoomApi {
         @Path("idOrSlug") idOrSlug: String,
         @Body body: EnterRequest,
     )
+
+    /**
+     * Meeting summary (markdown text + status). 404 = no summary yet —
+     * caller surfaces an empty state and offers regenerate.
+     */
+    @GET("api/v1.0/rooms/{idOrSlug}/summary/")
+    suspend fun getSummary(@Path("idOrSlug") idOrSlug: String): SummaryDto
+
+    /**
+     * Action items extracted from the meeting. Empty list when none.
+     * Backend orders by `sort_order`.
+     */
+    @GET("api/v1.0/rooms/{idOrSlug}/action-items/")
+    suspend fun getActionItems(@Path("idOrSlug") idOrSlug: String): List<ActionItemDto>
+
+    /**
+     * Full transcript rows for the meeting, ordered by `started_at`.
+     * Each row carries `translations` map keyed by language code.
+     */
+    @GET("api/v1.0/rooms/{idOrSlug}/transcripts/")
+    suspend fun getTranscripts(@Path("idOrSlug") idOrSlug: String): List<TranscriptDto>
+
+    /**
+     * Re-run summary + action-item generation. Async on backend
+     * (Celery) — caller refetches summary/action-items shortly after.
+     */
+    @POST("api/v1.0/rooms/{idOrSlug}/summary/regenerate/")
+    suspend fun regenerateSummary(
+        @Path("idOrSlug") idOrSlug: String,
+    ): RegenerateSummaryResponse
 }

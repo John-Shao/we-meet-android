@@ -37,6 +37,14 @@ data class RoomDto(
      * UI surfaces this as "scheduled for X" in the invite sheet & history.
      */
     val scheduled_at: String? = null,
+    /**
+     * Room members (owner + explicitly granted). Only returned by the
+     * backend to admins/owners — `null` when the caller can't see it, or
+     * empty list when the API does include the field but no members
+     * beyond owner. Used by MeetingDetail's info tab as the fallback
+     * participant list when transcripts are absent.
+     */
+    val accesses: List<RoomAccessDto>? = null,
 )
 
 @JsonClass(generateAdapter = true)

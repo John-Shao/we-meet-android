@@ -167,6 +167,31 @@
     <string name="history_detail_left">离开会议</string>
     <string name="history_unknown_host">—</string>
 
+    <!-- 会议详情 -->
+    <string name="meeting_detail_title">会议详情</string>
+    <string name="meeting_detail_tab_info">信息</string>
+    <string name="meeting_detail_tab_summary">纪要</string>
+    <string name="meeting_detail_tab_action_items">行动项</string>
+    <string name="meeting_detail_tab_transcript">字幕</string>
+    <string name="meeting_detail_loading">加载中…</string>
+    <string name="meeting_detail_load_failed">加载失败</string>
+    <string name="meeting_detail_info_name">名称</string>
+    <string name="meeting_detail_info_time">时间</string>
+    <string name="meeting_detail_info_code">会议号</string>
+    <string name="meeting_detail_info_owner">发起人</string>
+    <string name="meeting_detail_info_participants">参会人</string>
+    <string name="meeting_detail_info_ongoing">进行中</string>
+    <string name="meeting_detail_info_empty">—</string>
+    <string name="meeting_detail_info_timeline">您的参与记录</string>
+    <string name="meeting_detail_summary_empty">尚未生成会议纪要。</string>
+    <string name="meeting_detail_summary_regenerate">重新生成</string>
+    <string name="meeting_detail_summary_regenerating">生成中…</string>
+    <string name="meeting_detail_summary_failed">纪要生成失败。</string>
+    <string name="meeting_detail_action_items_empty">暂无行动项。</string>
+    <string name="meeting_detail_action_items_owner">负责人</string>
+    <string name="meeting_detail_action_items_due">截止时间</string>
+    <string name="meeting_detail_transcript_empty">暂无字幕。</string>
+
     <!-- Tabs -->
     <string name="tab_meeting">会议</string>
     <string name="tab_ai">AI</string>

@@ -4,50 +4,69 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.WeMeetApp
 import com.we.meet.R
+import com.we.meet.data.api.dto.ActionItemDto
+import com.we.meet.data.api.dto.RoomDto
+import com.we.meet.data.api.dto.SummaryDto
+import com.we.meet.data.api.dto.TranscriptDto
 import com.we.meet.data.history.HistoryEntry
 import com.we.meet.ui.home.HistoryTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
+/**
+ * Meeting-detail screen. Mirrors the Web frontend's MeetingDetail page —
+ * 4 tabs (Info / Summary / Action items / Transcript) loaded from the
+ * same backend endpoints. Kept the file/function name to avoid touching
+ * nav (the previous "history detail" was a subset of this).
+ *
+ * The Info tab augments the server response with the device's local
+ * HistoryEntry (join/leave times, observed participants) — that data
+ * never reaches the backend, so the Web page can't show it.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryDetailScreen(
@@ -55,13 +74,27 @@ fun HistoryDetailScreen(
     onBack: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
-    val entries by app.historyStore.entries.collectAsStateWithLifecycle()
-    val entry = remember(entries, roomId) { entries.firstOrNull { it.roomId == roomId } }
+    val viewModel: MeetingDetailViewModel =
+        viewModel(factory = MeetingDetailViewModel.Factory(app))
+    val historyEntries by app.historyStore.entries.collectAsStateWithLifecycle()
+    val localEntry = remember(historyEntries, roomId) {
+        historyEntries.firstOrNull { it.roomId == roomId }
+    }
+
+    LaunchedEffect(roomId) { viewModel.load(roomId) }
+
+    val roomState by viewModel.room.collectAsStateWithLifecycle()
+    val summaryState by viewModel.summary.collectAsStateWithLifecycle()
+    val actionItemsState by viewModel.actionItems.collectAsStateWithLifecycle()
+    val transcriptsState by viewModel.transcripts.collectAsStateWithLifecycle()
+    val regenerating by viewModel.regenerating.collectAsStateWithLifecycle()
+
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {},
+                title = { Text(stringResource(R.string.meeting_detail_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -74,156 +107,201 @@ fun HistoryDetailScreen(
             )
         },
     ) { padding ->
-        if (entry == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.history_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            return@Scaffold
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState()),
+                .padding(padding),
         ) {
-            DetailHeaderCard(entry = entry)
-            Spacer(Modifier.height(16.dp))
-            Timeline(entry = entry)
-            Spacer(Modifier.height(24.dp))
+            SecondaryTabRow(selectedTabIndex = selectedTab) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text(stringResource(R.string.meeting_detail_tab_info)) },
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { Text(stringResource(R.string.meeting_detail_tab_summary)) },
+                )
+                Tab(
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 },
+                    text = { Text(stringResource(R.string.meeting_detail_tab_action_items)) },
+                )
+                Tab(
+                    selected = selectedTab == 3,
+                    onClick = { selectedTab = 3 },
+                    text = { Text(stringResource(R.string.meeting_detail_tab_transcript)) },
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+            ) {
+                when (selectedTab) {
+                    0 -> InfoTab(
+                        roomState = roomState,
+                        transcriptsState = transcriptsState,
+                        localEntry = localEntry,
+                    )
+                    1 -> SummaryTab(
+                        state = summaryState,
+                        regenerating = regenerating,
+                        onRegenerate = { viewModel.regenerateSummary(roomId) },
+                    )
+                    2 -> ActionItemsTab(state = actionItemsState)
+                    3 -> TranscriptTab(state = transcriptsState)
+                }
+            }
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+// ---------------------------------------------------------------------------
+// Info tab
+// ---------------------------------------------------------------------------
+
 @Composable
-private fun DetailHeaderCard(entry: HistoryEntry) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 20.dp, vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            text = entry.name.ifBlank { entry.slug },
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
+private fun InfoTab(
+    roomState: MeetingDetailViewModel.LoadState<RoomDto>,
+    transcriptsState: MeetingDetailViewModel.LoadState<List<TranscriptDto>>,
+    localEntry: HistoryEntry?,
+) {
+    when (roomState) {
+        is MeetingDetailViewModel.LoadState.Loading -> CenteredText(stringResource(R.string.meeting_detail_loading))
+        is MeetingDetailViewModel.LoadState.Failure -> CenteredText(stringResource(R.string.meeting_detail_load_failed))
+        is MeetingDetailViewModel.LoadState.Success -> {
+            val room = roomState.value
+            val emptyMark = stringResource(R.string.meeting_detail_info_empty)
+            val ongoing = stringResource(R.string.meeting_detail_info_ongoing)
 
-        DetailRow(
-            icon = Icons.Default.Schedule,
-            text = formatTimeRange(entry),
-        )
-        DetailRow(
-            icon = Icons.Default.Info,
-            text = stringResource(R.string.history_detail_meeting_id, formatSlug(entry.slug)),
-        )
-        DetailRow(
-            icon = Icons.Default.People,
-            text = stringResource(
-                R.string.history_detail_host,
-                entry.host?.takeIf { it.isNotBlank() }
-                    ?: stringResource(R.string.history_unknown_host),
-            ),
-        )
+            // Server-side participant list: transcript speakers when
+            // available (catches guests who never got an access row),
+            // fall back to `accesses` members.
+            val speakerNames: List<String> =
+                (transcriptsState as? MeetingDetailViewModel.LoadState.Success)
+                    ?.value
+                    ?.let { rows ->
+                        val seen = linkedSetOf<String>()
+                        rows.forEach { row ->
+                            val name = row.speaker_name.takeIf { it.isNotBlank() }
+                                ?: row.speaker_identity.take(12)
+                            if (name.isNotBlank()) seen += name
+                        }
+                        seen.toList()
+                    }
+                    ?: emptyList()
+            val memberNames: List<String> = (room.accesses ?: emptyList()).map {
+                it.user.full_name?.takeIf { n -> n.isNotBlank() }
+                    ?: it.user.short_name?.takeIf { n -> n.isNotBlank() }
+                    ?: it.user.email
+                    ?: emptyMark
+            }
+            val participantNames = speakerNames.ifEmpty { memberNames }
 
-        if (entry.participants.isNotEmpty()) {
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = stringResource(R.string.history_detail_participants),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            val timeText = buildTimeText(
+                createdAtIso = room.created_at,
+                closedAtIso = room.closed_at,
+                ongoingLabel = ongoing,
             )
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                entry.participants.forEach { name -> ParticipantChip(name = name) }
+
+            InfoRow(
+                label = stringResource(R.string.meeting_detail_info_name),
+                value = room.name?.takeIf { it.isNotBlank() } ?: emptyMark,
+            )
+            InfoRow(
+                label = stringResource(R.string.meeting_detail_info_time),
+                value = timeText,
+            )
+            InfoRow(
+                label = stringResource(R.string.meeting_detail_info_code),
+                value = formatSlug(room.slug ?: emptyMark),
+            )
+            InfoRow(
+                label = stringResource(R.string.meeting_detail_info_owner),
+                value = room.owner?.takeIf { it.isNotBlank() } ?: emptyMark,
+            )
+            InfoRowMultiLine(
+                label = stringResource(R.string.meeting_detail_info_participants),
+                values = participantNames.ifEmpty { listOf(emptyMark) },
+            )
+
+            // Device-local timeline — only present if the user has
+            // actually joined this room from this device.
+            if (localEntry != null && localEntry.firstJoinedAtMs > 0) {
+                Spacer(Modifier.height(20.dp))
+                Text(
+                    text = stringResource(R.string.meeting_detail_info_timeline),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                TimelineRow(
+                    time = HistoryTimeFormatter.time(localEntry.firstJoinedAtMs),
+                    label = stringResource(R.string.history_detail_joined),
+                )
+                localEntry.lastLeftAtMs?.let { leftMs ->
+                    TimelineRow(
+                        time = HistoryTimeFormatter.time(leftMs),
+                        label = stringResource(R.string.history_detail_left),
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun DetailRow(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(18.dp),
-        )
-        Spacer(Modifier.width(10.dp))
+private fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
+    ) {
         Text(
-            text = text,
+            text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-    }
-}
-
-@Composable
-private fun ParticipantChip(name: String) {
-    val avatarText = name.trim().firstOrNull()?.toString() ?: "?"
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = avatarText,
-                color = MaterialTheme.colorScheme.onPrimary,
-                style = MaterialTheme.typography.labelLarge,
-            )
-        }
-        Spacer(Modifier.width(6.dp))
-        Text(
-            text = name,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-    }
-}
-
-@Composable
-private fun Timeline(entry: HistoryEntry) {
-    Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-        Text(
-            text = if (HistoryTimeFormatter.isToday(entry.firstJoinedAtMs))
-                stringResource(R.string.history_detail_timeline_today)
-            else HistoryTimeFormatter.fullDateTime(entry.firstJoinedAtMs),
-            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(vertical = 8.dp),
+            modifier = Modifier.width(88.dp),
         )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+    }
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
+}
 
-        // 加入会议 — always present.
-        TimelineRow(
-            time = HistoryTimeFormatter.time(entry.firstJoinedAtMs),
-            label = stringResource(R.string.history_detail_joined),
+@Composable
+private fun InfoRowMultiLine(label: String, values: List<String>) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(88.dp),
         )
-        entry.lastLeftAtMs?.let { leftMs ->
-            TimelineRow(
-                time = HistoryTimeFormatter.time(leftMs),
-                label = stringResource(R.string.history_detail_left),
-            )
+        Column(modifier = Modifier.weight(1f)) {
+            values.forEach { v ->
+                Text(
+                    text = v,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(vertical = 2.dp),
+                )
+            }
         }
     }
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
 }
 
 @Composable
@@ -232,13 +310,12 @@ private fun TimelineRow(time: String, label: String) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp),
+            .padding(vertical = 10.dp),
     ) {
         Text(
             text = time,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Start,
         )
         Spacer(Modifier.width(16.dp))
         Text(
@@ -247,13 +324,252 @@ private fun TimelineRow(time: String, label: String) {
             color = MaterialTheme.colorScheme.onSurface,
         )
     }
-    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
+}
+
+// ---------------------------------------------------------------------------
+// Summary tab
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun SummaryTab(
+    state: MeetingDetailViewModel.LoadState<SummaryDto?>,
+    regenerating: Boolean,
+    onRegenerate: () -> Unit,
+) {
+    when (state) {
+        is MeetingDetailViewModel.LoadState.Loading -> CenteredText(stringResource(R.string.meeting_detail_loading))
+        is MeetingDetailViewModel.LoadState.Failure -> CenteredText(stringResource(R.string.meeting_detail_load_failed))
+        is MeetingDetailViewModel.LoadState.Success -> {
+            val summary = state.value
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    Button(
+                        onClick = onRegenerate,
+                        enabled = !regenerating,
+                    ) {
+                        Text(
+                            if (regenerating)
+                                stringResource(R.string.meeting_detail_summary_regenerating)
+                            else stringResource(R.string.meeting_detail_summary_regenerate)
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                when {
+                    summary == null -> Text(stringResource(R.string.meeting_detail_summary_empty))
+                    summary.status == "failed" -> Text(
+                        buildString {
+                            append(stringResource(R.string.meeting_detail_summary_failed))
+                            if (summary.error_message.isNotBlank()) {
+                                append(": ")
+                                append(summary.error_message)
+                            }
+                        }
+                    )
+                    summary.content.isBlank() ->
+                        Text(stringResource(R.string.meeting_detail_summary_empty))
+                    else -> MarkdownText(content = summary.content)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Minimal markdown renderer — enough to keep summary output readable
+ * without dragging in a markdown library. Recognizes `#`-style headings,
+ * `-`/`*` bullet lines, and paragraphs separated by blank lines.
+ * Inline emphasis (`**bold**`, `*italic*`) is left as-is — the LLM
+ * rarely produces it for meeting summaries.
+ */
+@Composable
+private fun MarkdownText(content: String) {
+    Column {
+        content.lineSequence().forEach { rawLine ->
+            val line = rawLine.trimEnd()
+            when {
+                line.isBlank() -> Spacer(Modifier.height(8.dp))
+                line.startsWith("### ") -> Text(
+                    text = line.removePrefix("### "),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                )
+                line.startsWith("## ") -> Text(
+                    text = line.removePrefix("## "),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 10.dp, bottom = 4.dp),
+                )
+                line.startsWith("# ") -> Text(
+                    text = line.removePrefix("# "),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                )
+                line.trimStart().startsWith("- ") || line.trimStart().startsWith("* ") -> {
+                    val text = line.trimStart().removePrefix("- ").removePrefix("* ")
+                    Row(modifier = Modifier.padding(vertical = 2.dp)) {
+                        Text("• ", style = MaterialTheme.typography.bodyMedium)
+                        Text(text, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+                else -> Text(
+                    text = line,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 2.dp),
+                )
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Action items tab
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun ActionItemsTab(state: MeetingDetailViewModel.LoadState<List<ActionItemDto>>) {
+    when (state) {
+        is MeetingDetailViewModel.LoadState.Loading -> CenteredText(stringResource(R.string.meeting_detail_loading))
+        is MeetingDetailViewModel.LoadState.Failure -> CenteredText(stringResource(R.string.meeting_detail_load_failed))
+        is MeetingDetailViewModel.LoadState.Success -> {
+            val items = state.value
+            if (items.isEmpty()) {
+                CenteredText(stringResource(R.string.meeting_detail_action_items_empty))
+                return
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items.forEach { item ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (item.is_completed)
+                                    MaterialTheme.colorScheme.surfaceVariant
+                                else MaterialTheme.colorScheme.surface
+                            )
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                    ) {
+                        Text(
+                            text = item.content,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        if (item.owner_text.isNotBlank() || item.due_text.isNotBlank()) {
+                            Spacer(Modifier.height(4.dp))
+                            Row {
+                                if (item.owner_text.isNotBlank()) {
+                                    Text(
+                                        text = stringResource(R.string.meeting_detail_action_items_owner) +
+                                            ": " + item.owner_text,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Spacer(Modifier.width(12.dp))
+                                }
+                                if (item.due_text.isNotBlank()) {
+                                    Text(
+                                        text = stringResource(R.string.meeting_detail_action_items_due) +
+                                            ": " + item.due_text,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Transcript tab
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun TranscriptTab(state: MeetingDetailViewModel.LoadState<List<TranscriptDto>>) {
+    when (state) {
+        is MeetingDetailViewModel.LoadState.Loading -> CenteredText(stringResource(R.string.meeting_detail_loading))
+        is MeetingDetailViewModel.LoadState.Failure -> CenteredText(stringResource(R.string.meeting_detail_load_failed))
+        is MeetingDetailViewModel.LoadState.Success -> {
+            val rows = state.value
+            if (rows.isEmpty()) {
+                CenteredText(stringResource(R.string.meeting_detail_transcript_empty))
+                return
+            }
+            // System language — used to pick a relevant translation row
+            // when the speaker's `language` differs.
+            val userLang = Locale.getDefault().language.lowercase()
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                rows.forEach { row ->
+                    val ts = formatTime(row.started_at)
+                    val speaker = row.speaker_name.takeIf { it.isNotBlank() }
+                        ?: row.speaker_identity.take(12)
+                    val translationKey = row.translations.keys.firstOrNull {
+                        it.lowercase().substringBefore('-') == userLang
+                    }
+                    val translation = translationKey
+                        ?.let { row.translations[it] }
+                        ?.takeIf { row.language.lowercase().substringBefore('-') != userLang }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 12.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(4.dp),
+                            )
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                    ) {
+                        Text(
+                            text = "$ts · $speaker",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = row.text,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        translation?.let {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Normal,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun CenteredText(text: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text = text, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }
 
 private fun formatSlug(slug: String): String {
     val digits = slug.filter { it.isDigit() }
-    // Render 8-digit slugs as "1234 5678" (we-meet); keep 9-digit "123 456 789"
-    // and 6-digit "123 456" for legacy/jusi compatibility; else raw.
     return when (digits.length) {
         8 -> "${digits.substring(0, 4)} ${digits.substring(4)}"
         9 -> "${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6)}"
@@ -262,46 +578,34 @@ private fun formatSlug(slug: String): String {
     }
 }
 
-@Composable
-private fun formatTimeRange(entry: HistoryEntry): String {
-    val startMs = entry.firstJoinedAtMs
-    val endMs = entry.lastLeftAtMs
-
-    val datePart = if (HistoryTimeFormatter.isToday(startMs))
-        "${monthDay(startMs)} (${stringResource(R.string.history_detail_timeline_today)})"
-    else monthDay(startMs)
-
-    val timeRange = if (endMs == null) {
-        HistoryTimeFormatter.time(startMs)
-    } else {
-        "${HistoryTimeFormatter.time(startMs)} – ${HistoryTimeFormatter.time(endMs)}"
+private fun parseIsoToMillis(iso: String?): Long? {
+    if (iso.isNullOrBlank()) return null
+    val normalized = iso
+        .replace(Regex("\\.\\d+"), "")
+        .let { if (it.endsWith("Z")) it.dropLast(1) + "+0000" else it }
+    val fmt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
     }
+    return runCatching { fmt.parse(normalized)?.time }.getOrNull()
+}
 
-    return if (endMs != null) {
-        val duration = formatDuration(endMs - startMs)
-        "$datePart $timeRange  |  $duration"
+private fun buildTimeText(
+    createdAtIso: String?,
+    closedAtIso: String?,
+    ongoingLabel: String,
+): String {
+    val startMs = parseIsoToMillis(createdAtIso) ?: return "—"
+    val endMs = closedAtIso?.takeIf { it.isNotBlank() }?.let { parseIsoToMillis(it) }
+    val startStr = HistoryTimeFormatter.monthDayTime(startMs)
+    return if (endMs == null) {
+        "$startStr ($ongoingLabel)"
     } else {
-        "$datePart $timeRange"
+        val endStr = HistoryTimeFormatter.monthDayTime(endMs)
+        "$startStr – $endStr"
     }
 }
 
-private fun monthDay(epochMs: Long): String {
-    // Reuse the month-day formatter but drop the time suffix — we render time
-    // separately as a range.
-    val full = HistoryTimeFormatter.monthDayTime(epochMs)
-    return full.substringBefore(' ', full)
-}
-
-private fun formatDuration(ms: Long): String {
-    if (ms <= 0) return "0 秒"
-    val totalSeconds = ms / 1000
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val seconds = totalSeconds % 60
-    val parts = buildList {
-        if (hours > 0) add("${hours} 时")
-        if (minutes > 0) add("${minutes} 分")
-        if (hours == 0L && minutes < 10) add("${seconds} 秒")
-    }
-    return if (parts.isEmpty()) "${totalSeconds} 秒" else parts.joinToString(" ")
+private fun formatTime(iso: String): String {
+    val ms = parseIsoToMillis(iso) ?: return iso
+    return HistoryTimeFormatter.time(ms)
 }

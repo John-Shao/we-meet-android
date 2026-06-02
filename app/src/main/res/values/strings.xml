@@ -167,6 +167,31 @@
     <string name="history_detail_left">Left meeting</string>
     <string name="history_unknown_host">—</string>
 
+    <!-- Meeting detail (matches the Web meeting-detail page tabs) -->
+    <string name="meeting_detail_title">Meeting detail</string>
+    <string name="meeting_detail_tab_info">Info</string>
+    <string name="meeting_detail_tab_summary">Summary</string>
+    <string name="meeting_detail_tab_action_items">Action items</string>
+    <string name="meeting_detail_tab_transcript">Transcript</string>
+    <string name="meeting_detail_loading">Loading…</string>
+    <string name="meeting_detail_load_failed">Failed to load.</string>
+    <string name="meeting_detail_info_name">Name</string>
+    <string name="meeting_detail_info_time">Time</string>
+    <string name="meeting_detail_info_code">Meeting ID</string>
+    <string name="meeting_detail_info_owner">Owner</string>
+    <string name="meeting_detail_info_participants">Participants</string>
+    <string name="meeting_detail_info_ongoing">Ongoing</string>
+    <string name="meeting_detail_info_empty">—</string>
+    <string name="meeting_detail_info_timeline">Your timeline</string>
+    <string name="meeting_detail_summary_empty">No summary has been generated yet.</string>
+    <string name="meeting_detail_summary_regenerate">Regenerate</string>
+    <string name="meeting_detail_summary_regenerating">Regenerating…</string>
+    <string name="meeting_detail_summary_failed">Summary generation failed.</string>
+    <string name="meeting_detail_action_items_empty">No action items.</string>
+    <string name="meeting_detail_action_items_owner">Owner</string>
+    <string name="meeting_detail_action_items_due">Due</string>
+    <string name="meeting_detail_transcript_empty">No transcript available.</string>
+
     <!-- Tabs -->
     <string name="tab_meeting">Meeting</string>
     <string name="tab_ai">AI</string>
