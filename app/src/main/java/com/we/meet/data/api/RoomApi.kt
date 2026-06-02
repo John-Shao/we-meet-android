@@ -3,6 +3,7 @@ package com.we.meet.data.api
 import com.we.meet.data.api.dto.CreateRoomRequest
 import com.we.meet.data.api.dto.EnterRequest
 import com.we.meet.data.api.dto.MuteParticipantRequest
+import com.we.meet.data.api.dto.PagedRoomsDto
 import com.we.meet.data.api.dto.RaiseHandRequest
 import com.we.meet.data.api.dto.RemoveParticipantRequest
 import com.we.meet.data.api.dto.RenameParticipantRequest
@@ -33,6 +34,19 @@ interface RoomApi {
         @Path("idOrSlug") idOrSlug: String,
         @Query("username") username: String,
     ): RoomDto
+
+    /**
+     * List rooms the authenticated user is a member of. Backend's
+     * `RoomViewSet.list` already restricts to `filter(users=user)` so we
+     * don't pass a `mine` flag. Paginated via DRF PageNumberPagination —
+     * mobile only consumes page 1 (page_size=50) for now, which is well
+     * within the room-membership cap any single user is likely to hit.
+     */
+    @GET("api/v1.0/rooms/")
+    suspend fun listMyRooms(
+        @Query("page") page: Int = 1,
+        @Query("page_size") pageSize: Int = 50,
+    ): PagedRoomsDto
 
     @POST("api/v1.0/rooms/")
     suspend fun createRoom(

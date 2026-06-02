@@ -48,6 +48,20 @@ class RoomRepository(
         applyLivekitOverride(room)
     }
 
+    /**
+     * List rooms the authenticated user is a member of. Backend filters
+     * by `users=request.user` so any logged-in account hits its own list.
+     * Anonymous callers receive an empty list (backend short-circuits).
+     *
+     * Used by Home to overlay server-side history on top of the local
+     * HistoryStore — entries the user joined from another device land
+     * here, the local store contributes the per-device "last visited"
+     * timestamps and observed participants.
+     */
+    suspend fun fetchMyRooms(): Result<List<RoomDto>> = runCatching {
+        roomApi.listMyRooms().results.map { applyLivekitOverride(it) }
+    }
+
     /** End (close) a room. Only the owner can do this. */
     suspend fun endRoom(idOrSlug: String): Result<Unit> = runCatching {
         roomApi.endRoom(idOrSlug)

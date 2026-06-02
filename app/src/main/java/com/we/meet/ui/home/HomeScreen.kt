@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.WeMeetApp
@@ -68,6 +69,15 @@ fun HomeScreen(
     val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(app))
     val history by homeViewModel.history.collectAsStateWithLifecycle()
     val laterCreated by homeViewModel.laterCreated.collectAsStateWithLifecycle()
+
+    // Refresh the server-side rooms list whenever Home becomes visible
+    // again — covers returning from a meeting, the room-end flow, or a
+    // create-on-another-device case (the user opened the App expecting
+    // to see a room their Web session just made).
+    LifecycleResumeEffect(homeViewModel) {
+        homeViewModel.refreshRemoteRooms()
+        onPauseOrDispose { }
+    }
 
     var showLaterNameDialog by remember { mutableStateOf(false) }
 
