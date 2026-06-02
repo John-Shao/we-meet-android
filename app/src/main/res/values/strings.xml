@@ -156,6 +156,10 @@
     <string name="meeting_notification_title">In meeting</string>
     <string name="meeting_notification_content">%1$s</string>
 
+    <!-- Scheduled meetings (upcoming) -->
+    <string name="scheduled_section_title">Scheduled meetings</string>
+    <string name="scheduled_time_prefix">Scheduled for %1$s</string>
+
     <!-- History -->
     <string name="history_section_title">History</string>
     <string name="history_empty">No history yet</string>

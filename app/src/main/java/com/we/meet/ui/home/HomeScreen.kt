@@ -68,6 +68,7 @@ fun HomeScreen(
     val app = LocalContext.current.applicationContext as WeMeetApp
     val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(app))
     val history by homeViewModel.history.collectAsStateWithLifecycle()
+    val scheduledMeetings by homeViewModel.scheduledMeetings.collectAsStateWithLifecycle()
     val laterCreated by homeViewModel.laterCreated.collectAsStateWithLifecycle()
 
     // Refresh the server-side rooms list whenever Home becomes visible
@@ -151,8 +152,14 @@ fun HomeScreen(
                 .background(WeMeetTheme.extras.surfaceBand),
         )
 
-        // History zone — padded inside its own column.
+        // Scheduled + History zones — padded inside one column.
+        // Scheduled list renders nothing when empty, so on a fresh
+        // install the history section still sits flush with the band.
         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+            ScheduledMeetingsList(
+                rooms = scheduledMeetings,
+                onEntryClick = onJoinSlug,
+            )
             HistoryList(
                 entries = history,
                 onEntryClick = onHistoryClick,

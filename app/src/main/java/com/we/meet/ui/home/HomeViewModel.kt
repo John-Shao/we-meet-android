@@ -42,11 +42,33 @@ class HomeViewModel(
      * know); remote wins for name/host/created_at (most authoritative
      * source). Rooms that only exist on the server still surface here so
      * users see meetings created on the Web app.
+     *
+     * Future scheduled rooms the user hasn't joined yet are excluded
+     * here — they live in [scheduledMeetings] instead.
      */
     val history: StateFlow<List<HistoryEntry>> = combine(
         localHistory,
         _remoteRooms,
     ) { local, remote -> mergeHistory(local, remote) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000L),
+            initialValue = emptyList(),
+        )
+
+    /**
+     * Future-dated rooms (scheduled_at in the future) the user is a
+     * member of and hasn't joined yet. Sorted by scheduled time ascending
+     * — the next meeting on top. Closed rooms are excluded.
+     *
+     * Rooms the user has already joined locally stay on the history list
+     * even if their `scheduled_at` is still future (the meeting can run
+     * past the scheduled start), so they aren't surfaced twice.
+     */
+    val scheduledMeetings: StateFlow<List<RoomDto>> = combine(
+        localHistory,
+        _remoteRooms,
+    ) { local, remote -> selectScheduled(local, remote) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000L),
@@ -144,10 +166,17 @@ class HomeViewModel(
     ): List<HistoryEntry> {
         val localBySlug = local.associateBy { it.slug }
         val remoteSlugs = remote.mapNotNull { it.slug }.toHashSet()
+        val now = System.currentTimeMillis()
 
         val merged = remote.mapNotNull { dto ->
             val slug = dto.slug ?: return@mapNotNull null
             val existing = localBySlug[slug]
+            // Future-scheduled rooms surface on `scheduledMeetings`, not
+            // here — unless the user has actually joined this device,
+            // in which case keep history's record of that.
+            if (existing == null && isFutureScheduled(dto.scheduled_at, now)) {
+                return@mapNotNull null
+            }
             val createdAtMs = parseIsoMillis(dto.created_at)
             if (existing != null) {
                 existing.copy(
@@ -178,6 +207,45 @@ class HomeViewModel(
         return (merged + localOnly).sortedByDescending {
             maxOf(it.firstJoinedAtMs, it.lastLeftAtMs ?: 0L, it.createdAtMs)
         }
+    }
+
+    /**
+     * Pick rooms whose `scheduled_at` is in the future and the user
+     * hasn't already entered from this device. Closed rooms are
+     * excluded — once a meeting has ended its slot is over.
+     */
+    private fun selectScheduled(
+        local: List<HistoryEntry>,
+        remote: List<RoomDto>,
+    ): List<RoomDto> {
+        val joinedSlugs = local.filter { it.firstJoinedAtMs > 0 }
+            .mapNotNull { it.slug.takeIf { s -> s.isNotBlank() } }
+            .toHashSet()
+        val now = System.currentTimeMillis()
+        return remote
+            .asSequence()
+            .filter { it.closed_at.isNullOrBlank() }
+            .filter { isFutureScheduled(it.scheduled_at, now) }
+            .filter { (it.slug ?: "") !in joinedSlugs }
+            .sortedBy { parseIsoMillis(it.scheduled_at) }
+            .toList()
+    }
+
+    private fun isFutureScheduled(iso: String?, nowMs: Long): Boolean {
+        if (iso.isNullOrBlank()) return false
+        val ms = parseIsoMillisOrNull(iso) ?: return false
+        return ms > nowMs
+    }
+
+    private fun parseIsoMillisOrNull(iso: String?): Long? {
+        if (iso.isNullOrBlank()) return null
+        val normalized = iso
+            .replace(Regex("\\.\\d+"), "")
+            .let { if (it.endsWith("Z")) it.dropLast(1) + "+0000" else it }
+        val fmt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
+        return runCatching { fmt.parse(normalized)?.time }.getOrNull()
     }
 
     private fun parseIsoMillis(iso: String?): Long {
