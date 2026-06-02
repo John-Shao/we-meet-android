@@ -166,15 +166,15 @@ class HomeViewModel(
     ): List<HistoryEntry> {
         val localBySlug = local.associateBy { it.slug }
         val remoteSlugs = remote.mapNotNull { it.slug }.toHashSet()
-        val now = System.currentTimeMillis()
-
+        val todayStart = startOfTodayMs()
         val merged = remote.mapNotNull { dto ->
             val slug = dto.slug ?: return@mapNotNull null
             val existing = localBySlug[slug]
-            // Future-scheduled rooms surface on `scheduledMeetings`, not
-            // here — unless the user has actually joined this device,
-            // in which case keep history's record of that.
-            if (existing == null && isFutureScheduled(dto.scheduled_at, now)) {
+            // Today's and future scheduled rooms surface on
+            // `scheduledMeetings`, not here — unless the user has
+            // actually joined from this device, in which case keep
+            // history's record of that.
+            if (existing == null && isScheduledOnOrAfterToday(dto.scheduled_at, todayStart)) {
                 return@mapNotNull null
             }
             val createdAtMs = parseIsoMillis(dto.created_at)
@@ -210,9 +210,11 @@ class HomeViewModel(
     }
 
     /**
-     * Pick rooms whose `scheduled_at` is in the future and the user
-     * hasn't already entered from this device. Closed rooms are
-     * excluded — once a meeting has ended its slot is over.
+     * Pick rooms whose `scheduled_at` is today or in the future. Today's
+     * already-passed slots stay (e.g. 9am meeting viewed at 10am) — they
+     * disappear at midnight rolling into the next day. Closed rooms are
+     * excluded, and rooms the user has already joined from this device
+     * stay in history instead.
      */
     private fun selectScheduled(
         local: List<HistoryEntry>,
@@ -221,20 +223,30 @@ class HomeViewModel(
         val joinedSlugs = local.filter { it.firstJoinedAtMs > 0 }
             .mapNotNull { it.slug.takeIf { s -> s.isNotBlank() } }
             .toHashSet()
-        val now = System.currentTimeMillis()
+        val todayStart = startOfTodayMs()
         return remote
             .asSequence()
             .filter { it.closed_at.isNullOrBlank() }
-            .filter { isFutureScheduled(it.scheduled_at, now) }
+            .filter { isScheduledOnOrAfterToday(it.scheduled_at, todayStart) }
             .filter { (it.slug ?: "") !in joinedSlugs }
             .sortedBy { parseIsoMillis(it.scheduled_at) }
             .toList()
     }
 
-    private fun isFutureScheduled(iso: String?, nowMs: Long): Boolean {
+    private fun startOfTodayMs(): Long {
+        val cal = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }
+        return cal.timeInMillis
+    }
+
+    private fun isScheduledOnOrAfterToday(iso: String?, todayStartMs: Long): Boolean {
         if (iso.isNullOrBlank()) return false
         val ms = parseIsoMillisOrNull(iso) ?: return false
-        return ms > nowMs
+        return ms >= todayStartMs
     }
 
     private fun parseIsoMillisOrNull(iso: String?): Long? {
