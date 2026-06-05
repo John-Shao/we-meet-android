@@ -100,13 +100,16 @@ private fun ScheduledRow(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.tertiaryContainer),
+                    // Match HistoryList's primary-container palette so
+                    // both lists read as one visual family — the icon
+                    // shape (Event vs Videocam) is what tells them apart.
+                    .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Default.Event,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
             Spacer(Modifier.size(12.dp))
