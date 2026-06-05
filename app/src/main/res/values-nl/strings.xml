@@ -52,6 +52,10 @@
     <string name="settings_language">Taal</string>
     <string name="settings_language_system">Volg systeem</string>
     <string name="settings_language_hint">Herstart de app als sommige schermen nog niet zijn bijgewerkt.</string>
+    <string name="settings_theme">Thema</string>
+    <string name="settings_theme_system">Volg systeem</string>
+    <string name="settings_theme_light">Licht</string>
+    <string name="settings_theme_dark">Donker</string>
 
     <!-- Preview screen -->
     <string name="preview_start_meeting">Vergadering starten</string>

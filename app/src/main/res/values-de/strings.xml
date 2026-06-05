@@ -52,6 +52,10 @@
     <string name="settings_language">Sprache</string>
     <string name="settings_language_system">System folgen</string>
     <string name="settings_language_hint">Starte die App neu, falls einige Bildschirme noch nicht aktualisiert sind.</string>
+    <string name="settings_theme">Design</string>
+    <string name="settings_theme_system">System folgen</string>
+    <string name="settings_theme_light">Hell</string>
+    <string name="settings_theme_dark">Dunkel</string>
 
     <!-- Preview screen -->
     <string name="preview_start_meeting">Meeting starten</string>

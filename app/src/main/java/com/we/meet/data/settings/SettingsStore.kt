@@ -32,9 +32,41 @@ class SettingsStore(context: Context) {
     private fun loadVideoCodec(): VideoCodecPref =
         VideoCodecPref.fromKey(prefs.getString(KEY_VIDEO_CODEC, null))
 
+    private val _themeMode = MutableStateFlow(loadThemeMode())
+
+    /**
+     * Light/dark theme preference. Default is [ThemeMode.SYSTEM] which
+     * defers to `isSystemInDarkTheme()` so existing installs (no
+     * persisted key) follow the device setting just like before this
+     * preference was introduced.
+     */
+    val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
+
+    fun setThemeMode(mode: ThemeMode) {
+        prefs.edit().putString(KEY_THEME_MODE, mode.name).apply()
+        _themeMode.value = mode
+    }
+
+    private fun loadThemeMode(): ThemeMode =
+        ThemeMode.fromKey(prefs.getString(KEY_THEME_MODE, null))
+
     private companion object {
         const val FILE_NAME = "jusi_meet_settings"
         const val KEY_VIDEO_CODEC = "video_codec"
+        const val KEY_THEME_MODE = "theme_mode"
+    }
+}
+
+enum class ThemeMode {
+    SYSTEM,
+    LIGHT,
+    DARK;
+
+    companion object {
+        val DEFAULT: ThemeMode = SYSTEM
+
+        fun fromKey(key: String?): ThemeMode =
+            entries.firstOrNull { it.name == key } ?: DEFAULT
     }
 }
 

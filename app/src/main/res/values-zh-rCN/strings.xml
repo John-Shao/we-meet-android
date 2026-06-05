@@ -52,6 +52,10 @@
     <string name="settings_language">语言</string>
     <string name="settings_language_system">跟随系统</string>
     <string name="settings_language_hint">若部分界面未即时更新，重启应用即可。</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_theme_system">跟随系统</string>
+    <string name="settings_theme_light">浅色</string>
+    <string name="settings_theme_dark">深色</string>
 
     <!-- Preview screen -->
     <string name="preview_start_meeting">开始会议</string>

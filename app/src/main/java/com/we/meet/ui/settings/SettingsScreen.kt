@@ -47,6 +47,7 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.WeMeetApp
 import com.we.meet.R
+import com.we.meet.data.settings.ThemeMode
 import com.we.meet.data.settings.VideoCodecPref
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,6 +58,7 @@ fun SettingsScreen(
     val app = LocalContext.current.applicationContext as WeMeetApp
     val settingsStore = app.settingsStore
     val selectedCodec by settingsStore.videoCodec.collectAsStateWithLifecycle()
+    val themeMode by settingsStore.themeMode.collectAsStateWithLifecycle()
 
     var backPending by remember { mutableStateOf(false) }
 
@@ -88,10 +90,111 @@ fun SettingsScreen(
                 selected = selectedCodec,
                 onSelect = settingsStore::setVideoCodec,
             )
+            ThemeSection(
+                selected = themeMode,
+                onSelect = settingsStore::setThemeMode,
+            )
             LanguageSection()
         }
     }
 }
+
+// ── Theme ───────────────────────────────────────────────────────────────
+
+@Composable
+private fun ThemeSection(
+    selected: ThemeMode,
+    onSelect: (ThemeMode) -> Unit,
+) {
+    Spacer(Modifier.height(8.dp))
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface),
+    ) {
+        ThemeDropdownRow(
+            label = stringResource(R.string.settings_theme),
+            selected = selected,
+            onSelect = onSelect,
+        )
+    }
+
+    Spacer(Modifier.height(16.dp))
+}
+
+@Composable
+private fun ThemeDropdownRow(
+    label: String,
+    selected: ThemeMode,
+    onSelect: (ThemeMode) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = true }
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Spacer(Modifier.weight(1f))
+        Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = themeLabel(selected),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.width(2.dp))
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
+                ThemeMode.entries.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(themeLabel(option)) },
+                        onClick = {
+                            onSelect(option)
+                            expanded = false
+                        },
+                        trailingIcon = if (option == selected) {
+                            {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else null,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun themeLabel(mode: ThemeMode): String = stringResource(
+    when (mode) {
+        ThemeMode.SYSTEM -> R.string.settings_theme_system
+        ThemeMode.LIGHT -> R.string.settings_theme_light
+        ThemeMode.DARK -> R.string.settings_theme_dark
+    }
+)
 
 // ── Language ────────────────────────────────────────────────────────────
 

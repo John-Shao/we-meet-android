@@ -52,6 +52,10 @@
     <string name="settings_language">Language</string>
     <string name="settings_language_system">Follow system</string>
     <string name="settings_language_hint">Restart the app if some screens haven\'t picked up the change.</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">Follow system</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
 
     <!-- Preview screen -->
     <string name="preview_start_meeting">Start meeting</string>

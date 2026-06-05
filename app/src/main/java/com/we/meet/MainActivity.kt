@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import com.we.meet.overlay.ScreenShareOverlay
 import com.we.meet.ui.nav.AppNav
@@ -68,8 +70,18 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         handleDeepLink(intent)
         setContent {
+            // Pull the user's theme preference once at composition time;
+            // a state-collect keeps the theme reactive when the user
+            // changes it from Settings without restarting the app.
+            val app = applicationContext as WeMeetApp
+            val themeMode by app.settingsStore.themeMode.collectAsStateWithLifecycle()
+            val darkTheme = when (themeMode) {
+                com.we.meet.data.settings.ThemeMode.SYSTEM -> androidx.compose.foundation.isSystemInDarkTheme()
+                com.we.meet.data.settings.ThemeMode.LIGHT -> false
+                com.we.meet.data.settings.ThemeMode.DARK -> true
+            }
             CompositionLocalProvider(LocalIsInPipMode provides pipModeState.value) {
-                WeMeetTheme {
+                WeMeetTheme(darkTheme = darkTheme) {
                     Surface(modifier = Modifier.fillMaxSize()) {
                         AppNav()
                     }

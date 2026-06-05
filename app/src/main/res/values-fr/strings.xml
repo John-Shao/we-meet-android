@@ -52,6 +52,10 @@
     <string name="settings_language">Langue</string>
     <string name="settings_language_system">Suivre le système</string>
     <string name="settings_language_hint">Redémarrez l\'app si certains écrans ne se sont pas mis à jour.</string>
+    <string name="settings_theme">Thème</string>
+    <string name="settings_theme_system">Suivre le système</string>
+    <string name="settings_theme_light">Clair</string>
+    <string name="settings_theme_dark">Sombre</string>
 
     <!-- Preview screen -->
     <string name="preview_start_meeting">Démarrer la réunion</string>
