@@ -39,6 +39,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.ScreenShare
@@ -151,6 +152,8 @@ fun RoomScreen(
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
     val subtitleSegments by viewModel.subtitleSegments.collectAsStateWithLifecycle()
+    val aiMessages by viewModel.aiMessages.collectAsStateWithLifecycle()
+    val aiAsking by viewModel.aiAsking.collectAsStateWithLifecycle()
 
     // Host-ended-meeting auto-leave. When the server tells us the room was
     // deleted (not a local leave), pop back to Home and let AppNav show the
@@ -225,6 +228,10 @@ fun RoomScreen(
                         onToggleRecording = viewModel::toggleRecording,
                         onToggleSubtitles = viewModel::toggleSubtitles,
                         subtitleSegments = subtitleSegments,
+                        aiMessages = aiMessages,
+                        aiAsking = aiAsking,
+                        onAskAi = viewModel::askAi,
+                        onClearAi = viewModel::clearAi,
                         onLeave = {
                             viewModel.leave()
                             onLeave(false)
@@ -266,6 +273,10 @@ private fun RoomContent(
     onToggleRecording: () -> Unit,
     onToggleSubtitles: () -> Unit,
     subtitleSegments: List<SubtitleSegment>,
+    aiMessages: List<RoomAiMessage>,
+    aiAsking: Boolean,
+    onAskAi: (String) -> Unit,
+    onClearAi: () -> Unit,
     onLeave: () -> Unit,
     onEndMeeting: () -> Unit,
 ) {
@@ -288,6 +299,7 @@ private fun RoomContent(
     var showInvite by remember { mutableStateOf(false) }
     var showWaitingList by remember { mutableStateOf(false) }
     var showHostSettings by remember { mutableStateOf(false) }
+    var showAiSheet by remember { mutableStateOf(false) }
     // One-shot guard so we prompt for SYSTEM_ALERT_WINDOW at most once per
     // meeting instance. If the user declines or ignores, subsequent "共享
     // 屏幕" taps just proceed — sharing still works without the desktop
@@ -604,12 +616,26 @@ private fun RoomContent(
                 showMore = false
                 onToggleSubtitles()
             },
+            onAiClick = {
+                showMore = false
+                showAiSheet = true
+            },
             onHostSettingsClick = {
                 showMore = false
                 scope.launch { onRefreshAccessLevel() }
                 showHostSettings = true
             },
             onDismiss = { showMore = false },
+        )
+    }
+
+    if (showAiSheet) {
+        RoomAiSheet(
+            messages = aiMessages,
+            asking = aiAsking,
+            onSend = onAskAi,
+            onClear = onClearAi,
+            onDismiss = { showAiSheet = false },
         )
     }
 
@@ -1400,6 +1426,7 @@ private fun MoreActionsSheet(
     onShareClick: () -> Unit,
     onRecordClick: () -> Unit,
     onSubtitlesClick: () -> Unit,
+    onAiClick: () -> Unit,
     onHostSettingsClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -1491,6 +1518,18 @@ private fun MoreActionsSheet(
                 labelColor = subtitlesTint,
                 iconBgColor = subtitlesBg,
                 iconTintColor = subtitlesTint,
+            )
+            // In-room AI assistant. Any participant can ask; backend
+            // gates on LiveKit token (HasLiveKitRoomAccess), so anonymous
+            // and registered users alike succeed once they're in the room.
+            ControlButton(
+                icon = Icons.Default.AutoAwesome,
+                label = stringResource(R.string.room_more_ai),
+                isOn = true,
+                onClick = onAiClick,
+                labelColor = sheetTint,
+                iconBgColor = sheetBg,
+                iconTintColor = sheetTint,
             )
             ControlButton(
                 icon = Icons.Default.Settings,

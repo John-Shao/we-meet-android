@@ -169,6 +169,13 @@
     <string name="room_recording_banner">正在录制</string>
     <string name="room_more_subtitles_on">实时字幕</string>
     <string name="room_more_subtitles_off">关闭字幕</string>
+    <string name="room_more_ai">AI</string>
+    <string name="room_ai_title">会议 AI 助手</string>
+    <string name="room_ai_clear">新对话</string>
+    <string name="room_ai_empty_hint">向 AI 提问关于这场会议的任何内容。</string>
+    <string name="room_ai_thinking">思考中…</string>
+    <string name="room_ai_input_hint">请输入您的问题…</string>
+    <string name="room_ai_send">发送</string>
     <string name="history_delete_confirm_title">删除会议？</string>
     <string name="history_delete_confirm_text">将"%1$s"从列表移除。若您是该会议的发起人，将同时删除所有人的此条记录。</string>
     <string name="history_delete_confirm_ok">删除</string>

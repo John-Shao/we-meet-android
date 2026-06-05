@@ -169,6 +169,13 @@
     <string name="room_recording_banner">Recording in progress</string>
     <string name="room_more_subtitles_on">Subtitles</string>
     <string name="room_more_subtitles_off">Hide subtitles</string>
+    <string name="room_more_ai">AI</string>
+    <string name="room_ai_title">In-room AI</string>
+    <string name="room_ai_clear">Clear</string>
+    <string name="room_ai_empty_hint">Ask the AI about anything said in this meeting.</string>
+    <string name="room_ai_thinking">Thinking…</string>
+    <string name="room_ai_input_hint">Ask the AI…</string>
+    <string name="room_ai_send">Send</string>
     <string name="history_delete_confirm_title">Delete meeting?</string>
     <string name="history_delete_confirm_text">Remove “%1$s” from your list. If you own the meeting it will also be deleted for everyone.</string>
     <string name="history_delete_confirm_ok">Delete</string>

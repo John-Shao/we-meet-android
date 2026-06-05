@@ -186,6 +186,21 @@ data class SubtitleSegment(
     val timestamp: Long,
 )
 
+/**
+ * One bubble in the in-room AI chat. [text] grows as SSE delta frames
+ * land; [done] flips true on the terminating Done frame or on error so
+ * the UI can stop showing a typing cursor. [error] is non-null only
+ * when the stream ended via an `error` event or HTTP failure.
+ */
+data class RoomAiMessage(
+    val id: String,
+    /** "user" or "assistant" (matches OpenAI history role) */
+    val role: String,
+    val text: String,
+    val done: Boolean = true,
+    val error: String? = null,
+)
+
 class RoomViewModel(
     application: Application,
     private val roomId: String,
@@ -194,6 +209,7 @@ class RoomViewModel(
     private val roomName: String,
     private val roomSlug: String,
     private val roomRepository: RoomRepository,
+    private val roomAiRepository: com.we.meet.data.repository.RoomAiRepository,
     private val historyStore: HistoryStore,
     private val selfName: String,
     private val host: String?,
@@ -235,6 +251,21 @@ class RoomViewModel(
      */
     private val _subtitleSegments = MutableStateFlow<List<SubtitleSegment>>(emptyList())
     val subtitleSegments: StateFlow<List<SubtitleSegment>> = _subtitleSegments.asStateFlow()
+
+    /**
+     * Local-only AI chat history for the in-room AI assistant. Held on
+     * its own StateFlow so SSE deltas (one append per partial token) do
+     * not bounce the whole RoomUiState. Cleared on disconnect.
+     */
+    private val _aiMessages = MutableStateFlow<List<RoomAiMessage>>(emptyList())
+    val aiMessages: StateFlow<List<RoomAiMessage>> = _aiMessages.asStateFlow()
+
+    private val _aiAsking = MutableStateFlow(false)
+    val aiAsking: StateFlow<Boolean> = _aiAsking.asStateFlow()
+
+    /** Counter to mint deterministic chat-bubble IDs without `Math.random()`. */
+    private var aiMessageSeq: Long = 0
+    private fun nextAiMessageId(): String = "ai-${++aiMessageSeq}"
 
     /**
      * One-shot guard so a host (or anyone with subtitle-start permission)
@@ -1143,6 +1174,111 @@ class RoomViewModel(
         }
     }
 
+    /**
+     * Send one question to the room AI. Streams the answer back via
+     * SSE; appends the user bubble immediately, then opens an empty
+     * assistant bubble whose [RoomAiMessage.text] grows as deltas
+     * arrive. Concurrency-guarded — a second [askAi] call while one is
+     * pending is dropped (the sheet disables its send button while
+     * [aiAsking] is true anyway).
+     *
+     * History: last 6 messages from the current chat are forwarded so
+     * the backend can maintain multi-turn context (see
+     * docs/features/streaming_chat.md). Per-question RAG retrieval
+     * uses only the new question, not history.
+     */
+    fun askAi(question: String) {
+        val trimmed = question.trim()
+        if (trimmed.isEmpty()) return
+        if (_aiAsking.value) return
+
+        val userMsg = RoomAiMessage(
+            id = nextAiMessageId(),
+            role = "user",
+            text = trimmed,
+        )
+        val assistantId = nextAiMessageId()
+        val assistantStub = RoomAiMessage(
+            id = assistantId,
+            role = "assistant",
+            text = "",
+            done = false,
+        )
+
+        // Snapshot history BEFORE appending the new question/stub.
+        val historyForBackend = _aiMessages.value
+            .takeLast(6)
+            .map { com.we.meet.data.repository.RoomAiHistoryItem(it.role, it.text) }
+
+        _aiMessages.update { it + userMsg + assistantStub }
+        _aiAsking.value = true
+
+        viewModelScope.launch {
+            try {
+                roomAiRepository.askStream(
+                    roomId = roomId,
+                    livekitToken = livekitToken,
+                    question = trimmed,
+                    history = historyForBackend,
+                ).collect { event ->
+                    when (event) {
+                        is com.we.meet.data.repository.RoomAiEvent.Delta -> {
+                            _aiMessages.update { list ->
+                                list.map { m ->
+                                    if (m.id == assistantId) m.copy(text = m.text + event.text)
+                                    else m
+                                }
+                            }
+                        }
+                        com.we.meet.data.repository.RoomAiEvent.Done -> {
+                            _aiMessages.update { list ->
+                                list.map { m -> if (m.id == assistantId) m.copy(done = true) else m }
+                            }
+                        }
+                        is com.we.meet.data.repository.RoomAiEvent.ErrorEvent -> {
+                            _aiMessages.update { list ->
+                                list.map { m ->
+                                    if (m.id == assistantId) m.copy(
+                                        done = true,
+                                        error = event.message.ifBlank { null },
+                                    ) else m
+                                }
+                            }
+                        }
+                        is com.we.meet.data.repository.RoomAiEvent.Meta -> {
+                            // Meta is informational (rooms_referenced, model);
+                            // mobile MVP doesn't surface it. Ignore.
+                        }
+                    }
+                }
+                // Stream closed without Done — mark the bubble done so
+                // the typing cursor disappears.
+                _aiMessages.update { list ->
+                    list.map { m ->
+                        if (m.id == assistantId && !m.done) m.copy(done = true) else m
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "askAi failed", e)
+                _aiMessages.update { list ->
+                    list.map { m ->
+                        if (m.id == assistantId) m.copy(
+                            done = true,
+                            error = e.message ?: "AI request failed",
+                        ) else m
+                    }
+                }
+            } finally {
+                _aiAsking.value = false
+            }
+        }
+    }
+
+    /** Clear AI chat history (e.g. user pressed "新对话" in the sheet). */
+    fun clearAi() {
+        _aiMessages.value = emptyList()
+    }
+
     /** End the room via backend API, then disconnect. Only owner should call this. */
     fun endMeeting(onDone: () -> Unit) {
         userInitiatedLeave = true
@@ -1186,8 +1322,8 @@ class RoomViewModel(
                 ?: "Android User"
             return RoomViewModel(
                 application, roomId, livekitUrl, livekitToken, roomName, roomSlug,
-                app.roomRepository, app.historyStore, selfName, host, createdAtMs,
-                initialMicEnabled, initialCameraEnabled, isAdmin,
+                app.roomRepository, app.roomAiRepository, app.historyStore, selfName,
+                host, createdAtMs, initialMicEnabled, initialCameraEnabled, isAdmin,
             ) as T
         }
     }
