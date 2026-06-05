@@ -39,12 +39,10 @@ data class AiVoiceDto(
 data class AiProfileDto(
     val code: String,
     val display_name: String? = null,
-    val architecture: String? = null,
     /** Backend-declared usage: "audio" for voice-only profiles, "video"
      *  for vision-capable profiles. Picked by the App to route 「打电话」
-     *  to the right profile without string-matching on `code`. May be
-     *  null if talking to an older backend — callers should fall back to
-     *  the `mentions()` heuristic below. */
+     *  to the right profile. May be null if talking to a pre-0036
+     *  backend — callers fall back to the `mentions()` heuristic below. */
     val agent_type: String? = null,
     val voices: List<AiVoiceDto> = emptyList(),
     val default_voice_id: String? = null,
@@ -52,7 +50,6 @@ data class AiProfileDto(
     // server-side. Prompt resolution falls back to user preference, then
     // to none.
 ) {
-    val isOmni: Boolean get() = architecture.equals("omni", ignoreCase = true)
     val isVideo: Boolean get() = agent_type.equals("video", ignoreCase = true)
     val isAudio: Boolean get() = agent_type.equals("audio", ignoreCase = true)
 
@@ -80,21 +77,18 @@ data class AiAgentConfigResponse(
      *  (e.g. ``qwen`` vs ``qwen-omni-realtime``). */
 
     /** Video-capable realtime profile. Picks the backend-declared
-     *  ``agent_type == "video"`` profile; falls back to the legacy
-     *  string-match heuristic for backends that don't yet expose
+     *  ``agent_type == "video"`` profile; falls back to a ``code``
+     *  heuristic for pre-0036 backends that don't yet expose
      *  ``agent_type``. */
     fun videoProfile(): AiProfileDto? =
         profiles.firstOrNull { it.isVideo }
             ?: profiles.firstOrNull { it.mentions("qwen") }
-            ?: profiles.firstOrNull { it.isOmni }
 
     /** Audio realtime profile. Same precedence: ``agent_type == "audio"``
      *  first, legacy heuristic second. */
     fun voiceProfile(): AiProfileDto? =
         profiles.firstOrNull { it.isAudio }
             ?: profiles.firstOrNull { it.mentions("doubao") && it.mentions("s2s") }
-            ?: profiles.firstOrNull { it.isOmni && !it.mentions("qwen") }
-            ?: profiles.firstOrNull { it.isOmni }
 }
 
 // ---- Start agent (POST /api/v1.0/rooms/{id}/start-ai-agent/) ----
