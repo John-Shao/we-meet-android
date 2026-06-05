@@ -164,7 +164,16 @@ fun HomeScreen(
             )
             HistoryList(
                 entries = history,
-                onEntryClick = onHistoryClick,
+                // Live rooms (no closed_at yet) get rejoined via the
+                // preview flow; archived rooms route to the detail
+                // page. Matches Web's MeetingDetail entry behaviour.
+                onEntryClick = { entry ->
+                    if (entry.closedAtMs != null) {
+                        onHistoryClick(entry.roomId)
+                    } else {
+                        onJoinSlug(entry.slug.ifBlank { entry.roomId })
+                    }
+                },
                 onDeleteEntry = homeViewModel::deleteMeeting,
             )
         }

@@ -36,7 +36,7 @@ import java.util.Locale
 @Composable
 fun HistoryList(
     entries: List<HistoryEntry>,
-    onEntryClick: (roomId: String) -> Unit,
+    onEntryClick: (entry: HistoryEntry) -> Unit,
     onDeleteEntry: (identifier: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -51,7 +51,7 @@ fun HistoryList(
         entries.forEach { entry ->
             HistoryRow(
                 entry = entry,
-                onClick = { onEntryClick(entry.roomId) },
+                onClick = { onEntryClick(entry) },
                 onDelete = {
                     // Prefer slug for the delete API call when present —
                     // it's the user-visible meeting code and avoids any

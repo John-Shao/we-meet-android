@@ -22,4 +22,12 @@ data class HistoryEntry(
     val firstJoinedAtMs: Long,
     val lastLeftAtMs: Long?,
     val participants: List<String>,
+    /**
+     * Epoch ms of `Room.closed_at` when the server-side merge tagged
+     * the room as ended. `null` means the room is still active (a
+     * participant click should rejoin it instead of opening the
+     * detail/archive view). Default null keeps backwards compat with
+     * history JSON persisted before this field existed.
+     */
+    val closedAtMs: Long? = null,
 )

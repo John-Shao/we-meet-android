@@ -207,11 +207,16 @@ class HomeViewModel(
                 return@mapNotNull null
             }
             val createdAtMs = parseIsoMillis(dto.created_at)
+            // Track server's "closed_at" so Home can route stale rooms
+            // to the archive view and live rooms back into the meeting.
+            // 0L (parse failure / empty string) collapses to null.
+            val closedAtMs = parseIsoMillisOrNull(dto.closed_at)
             if (existing != null) {
                 existing.copy(
                     name = dto.name?.takeIf { it.isNotBlank() } ?: existing.name,
                     host = dto.owner ?: existing.host,
                     createdAtMs = existing.createdAtMs.takeIf { it > 0 } ?: createdAtMs,
+                    closedAtMs = closedAtMs ?: existing.closedAtMs,
                 )
             } else {
                 HistoryEntry(
@@ -223,6 +228,7 @@ class HomeViewModel(
                     firstJoinedAtMs = 0L,
                     lastLeftAtMs = null,
                     participants = emptyList(),
+                    closedAtMs = closedAtMs,
                 )
             }
         }
