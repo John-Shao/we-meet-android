@@ -1428,27 +1428,22 @@ private fun MoreActionsSheet(
                 iconBgColor = sheetBg,
                 iconTintColor = shareTint,
             )
-            // Record: owner-only entry. Non-admins see a disabled stub
-            // (still appears so the sheet layout doesn't change between
-            // hosts and guests). Tint goes red while LiveKit is
-            // broadcasting recording=true so the host knows the worker
-            // came up; pending state during start/stop disables clicks.
-            val recordTint = if (isRecording) Color(0xFFFF4444) else sheetTint
-            val recordBg = if (isRecording) Color(0xFFFFE0E0) else sheetBg
-            val recordLabel = stringResource(
-                when {
-                    isRecording -> R.string.room_more_record_stop
-                    else -> R.string.room_more_record
-                }
-            )
+            // Record: backend `RECORDING_ENABLE` is off on the current
+            // deployment (aliyun-prod values.meet.yaml), so start-recording
+            // returns 404 from `@FeatureFlag.require("recording")`. The
+            // button stays in stub mode ("功能开发中") for everyone until
+            // the deployment turns it on AND a real recording flow is
+            // designed for mobile. The banner below still subscribes to
+            // RoomEvent.RecordingStatusChanged — Web-initiated recordings
+            // remain visible on App when the time comes.
             ControlButton(
                 icon = Icons.Default.FiberManualRecord,
-                label = recordLabel,
+                label = stringResource(R.string.room_more_record),
                 isOn = true,
-                onClick = if (isAdmin && !recordingPending) onRecordClick else showStub,
-                labelColor = recordTint,
-                iconBgColor = recordBg,
-                iconTintColor = recordTint,
+                onClick = showStub,
+                labelColor = sheetTint,
+                iconBgColor = sheetBg,
+                iconTintColor = sheetTint,
             )
             ControlButton(
                 icon = Icons.Default.Language,
