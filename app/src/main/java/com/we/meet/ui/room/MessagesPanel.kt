@@ -1,20 +1,18 @@
 package com.we.meet.ui.room
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,15 +24,17 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -58,23 +58,36 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * 会中消息. Renders inside a ModalBottomSheet that occupies 61.8% of
+ * the viewport (golden ratio, matches RoomAiSheet). Sheet collapse
+ * gestures (drag down on the handle or scrim tap) call [onDismiss];
+ * the back button does the same via the sheet's built-in handling.
+ *
+ * The transcript area uses `weight(1f)` so it expands to fill whatever
+ * vertical space is left after the title row + input row, regardless
+ * of IME state (input row sticks to the bottom via `imePadding`).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MessagesPanel(
     messages: List<ChatMessageUi>,
     onSend: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    BackHandler(onBack = onDismiss)
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .statusBarsPadding()
-            .imePadding(),
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        contentWindowInsets = { WindowInsets(0) },
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            TopBar(onDismiss = onDismiss)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.618f)
+                .imePadding(),
+        ) {
+            Header()
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             MessageList(
                 messages = messages,
@@ -89,22 +102,12 @@ fun MessagesPanel(
 }
 
 @Composable
-private fun TopBar(onDismiss: () -> Unit) {
+private fun Header() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp),
+            .height(40.dp),
     ) {
-        IconButton(
-            onClick = onDismiss,
-            modifier = Modifier.align(Alignment.CenterStart),
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = stringResource(R.string.cancel),
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-        }
         Text(
             text = stringResource(R.string.room_messages_title),
             style = MaterialTheme.typography.titleMedium,
@@ -250,7 +253,6 @@ private fun InputBar(onSend: (String) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
