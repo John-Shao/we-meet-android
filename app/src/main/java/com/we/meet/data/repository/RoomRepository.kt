@@ -85,6 +85,17 @@ class RoomRepository(
     }
 
     /**
+     * Start realtime subtitle (Doubao ASR via meet-agent-subtitles) on
+     * the backend. Auth chain requires LiveKit token, not Keycloak — caller
+     * passes the room's livekit token verbatim. Once started, the agent
+     * publishes transcription events the client picks up via
+     * RoomEvent.TranscriptionReceived; there is no stop endpoint.
+     */
+    suspend fun startSubtitle(idOrSlug: String, livekitToken: String): Result<Unit> = runCatching {
+        roomApi.startSubtitle(idOrSlug, authHeader = "Bearer $livekitToken")
+    }
+
+    /**
      * Owner-only: delete the room on the backend. Returns [Result.failure]
      * with the underlying HttpException when the caller isn't the owner
      * (HTTP 403) — callers should fall back to local-only removal in

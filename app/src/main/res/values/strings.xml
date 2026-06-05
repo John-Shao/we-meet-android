@@ -167,6 +167,8 @@
     <string name="history_action_delete">Delete</string>
     <string name="room_more_record_stop">Stop recording</string>
     <string name="room_recording_banner">Recording in progress</string>
+    <string name="room_more_subtitles_on">Subtitles</string>
+    <string name="room_more_subtitles_off">Hide subtitles</string>
     <string name="history_delete_confirm_title">Delete meeting?</string>
     <string name="history_delete_confirm_text">Remove “%1$s” from your list. If you own the meeting it will also be deleted for everyone.</string>
     <string name="history_delete_confirm_ok">Delete</string>

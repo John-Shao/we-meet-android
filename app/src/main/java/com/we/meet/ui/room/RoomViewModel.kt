@@ -43,6 +43,14 @@ private const val TAG = "RoomViewModel"
  */
 private const val HAND_RAISED_ATTRIBUTE = "handRaisedAt"
 
+/**
+ * Max subtitle segments kept in memory. A 4-hour all-hands at one
+ * segment/second is ~14k entries — multiply by ~200 bytes per item
+ * (id, name, text snapshot) and that's ~3MB, fine for the runtime.
+ * Cap exists so a runaway meeting doesn't pile heap indefinitely.
+ */
+private const val SUBTITLE_BUFFER_MAX = 2000
+
 /** UI-facing snapshot of one participant in the room. */
 data class ParticipantUi(
     val identity: String,
@@ -142,9 +150,41 @@ data class RoomUiState(
      * can't double-fire start/stop while the worker spins up.
      */
     val recordingPending: Boolean = false,
+    /**
+     * Whether the subtitles overlay is currently visible on this device.
+     * Independent of [subtitlesStartedOnBackend] — overlay is a local
+     * view toggle that the user can flip without sending another POST.
+     * Driven by [RoomViewModel.toggleSubtitles].
+     */
+    val subtitlesOverlayOn: Boolean = false,
+    /**
+     * True while the start-subtitle POST is in flight. Disables the
+     * subtitle button so a fast double-tap can't fire two requests.
+     */
+    val subtitlesPending: Boolean = false,
 ) {
     enum class Phase { Connecting, Connected, Error, Disconnected }
 }
+
+/**
+ * A single transcription line emitted by the LiveKit agent. We keep
+ * what the UI actually needs:
+ *
+ *  * [id] — SDK-provided segment id, used to dedup partial vs final
+ *    pushes from STT (we only keep the first per id, matching Web).
+ *  * [participantIdentity] — speaker identity (stable across renames)
+ *  * [participantName] — speaker display name at the moment the
+ *    segment landed (we snapshot it so renames don't rewrite history)
+ *  * [text] — the recognized text
+ *  * [timestamp] — firstReceivedTime from the SDK (ms epoch)
+ */
+data class SubtitleSegment(
+    val id: String,
+    val participantIdentity: String,
+    val participantName: String,
+    val text: String,
+    val timestamp: Long,
+)
 
 class RoomViewModel(
     application: Application,
@@ -186,6 +226,23 @@ class RoomViewModel(
         ),
     )
     val state: StateFlow<RoomUiState> = _state.asStateFlow()
+
+    /**
+     * Subtitle segments accumulated since the agent started pushing
+     * transcriptions. Kept on its own StateFlow so the high-frequency
+     * append from TranscriptionReceived doesn't bounce the full
+     * RoomUiState — the participants tile + toolbars don't depend on it.
+     */
+    private val _subtitleSegments = MutableStateFlow<List<SubtitleSegment>>(emptyList())
+    val subtitleSegments: StateFlow<List<SubtitleSegment>> = _subtitleSegments.asStateFlow()
+
+    /**
+     * One-shot guard so a host (or anyone with subtitle-start permission)
+     * tapping the button twice in a row doesn't kick off two backend
+     * agents. The flag stays true for the rest of the session — there's
+     * no stop-subtitle endpoint.
+     */
+    private var subtitlesStartedOnBackend = false
 
     /**
      * Identities of participants currently detected as active speakers by
@@ -262,6 +319,7 @@ class RoomViewModel(
         }
     }
 
+    @OptIn(io.livekit.android.annotations.Beta::class)
     private fun observeEvents() {
         viewModelScope.launch {
             controller.events.collect { event ->
@@ -303,6 +361,16 @@ class RoomViewModel(
                                 recordingPending = false,
                             )
                         }
+                    }
+
+                    // Realtime transcription line(s) from meet-agent-
+                    // subtitles. Web only keeps the first segment per id
+                    // (Doubao Seed-ASR emits each line once it's stable,
+                    // not repeated partials) — we do the same. Append in
+                    // arrival order; UI groups consecutive same-speaker
+                    // rows visually.
+                    is RoomEvent.TranscriptionReceived -> {
+                        appendSubtitleSegments(event)
                     }
 
                     is RoomEvent.ActiveSpeakersChanged -> {
@@ -1002,6 +1070,76 @@ class RoomViewModel(
             if (result.isFailure) {
                 _state.update { it.copy(recordingPending = false) }
             }
+        }
+    }
+
+    /**
+     * Toggle the subtitle overlay. First flip-on also POSTs
+     * `start-subtitle` to the backend — subsequent flips are pure
+     * client-side overlay toggles (the backend agent stays attached
+     * to the room until disconnect; there is no stop-subtitle).
+     *
+     * Anonymous and registered participants alike can start subtitles
+     * — the backend authorises off the LiveKit token rather than the
+     * Keycloak session, so anyone in the room is allowed.
+     */
+    fun toggleSubtitles() {
+        val current = _state.value
+        if (current.subtitlesPending) return
+        // Just hiding the overlay — no network round-trip.
+        if (current.subtitlesOverlayOn) {
+            _state.update { it.copy(subtitlesOverlayOn = false) }
+            return
+        }
+        // Showing the overlay: lazy-start the backend agent if we
+        // haven't already this session.
+        if (subtitlesStartedOnBackend) {
+            _state.update { it.copy(subtitlesOverlayOn = true) }
+            return
+        }
+        _state.update { it.copy(subtitlesPending = true) }
+        viewModelScope.launch {
+            val result = roomRepository.startSubtitle(roomId, livekitToken)
+            if (result.isSuccess) {
+                subtitlesStartedOnBackend = true
+                _state.update { it.copy(subtitlesPending = false, subtitlesOverlayOn = true) }
+            } else {
+                _state.update { it.copy(subtitlesPending = false) }
+            }
+        }
+    }
+
+    /**
+     * Snapshot a TranscriptionReceived event into our flat
+     * SubtitleSegment list. Dedup by SDK segment id (Doubao Seed-ASR
+     * emits one event per stable line, but defensive against double
+     * delivery from reconnects). Cap the list at a generous bound so
+     * a multi-hour meeting doesn't grow it without limit.
+     */
+    @OptIn(io.livekit.android.annotations.Beta::class)
+    private fun appendSubtitleSegments(event: RoomEvent.TranscriptionReceived) {
+        val participant = event.participant ?: return
+        val identity = participant.identity?.value ?: return
+        val name = participant.name?.takeIf { it.isNotBlank() }
+            ?: participant.identity?.value
+            ?: ""
+        val incoming = event.transcriptionSegments
+        if (incoming.isEmpty()) return
+        _subtitleSegments.update { existing ->
+            val seen = existing.mapTo(HashSet()) { it.id }
+            val fresh = incoming
+                .filter { it.id !in seen }
+                .map { seg ->
+                    SubtitleSegment(
+                        id = seg.id,
+                        participantIdentity = identity,
+                        participantName = name,
+                        text = seg.text,
+                        timestamp = seg.firstReceivedTime,
+                    )
+                }
+            if (fresh.isEmpty()) existing
+            else (existing + fresh).takeLast(SUBTITLE_BUFFER_MAX)
         }
     }
 

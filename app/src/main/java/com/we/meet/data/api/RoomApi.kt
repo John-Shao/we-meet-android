@@ -79,6 +79,25 @@ interface RoomApi {
     suspend fun stopRecording(@Path("idOrSlug") idOrSlug: String)
 
     /**
+     * Start realtime transcription for the room. Backend gates on
+     * `HasLiveKitRoomAccess` + `LiveKitTokenAuthentication`, so we MUST
+     * send the LiveKit Bearer (not Keycloak) and bypass AuthInterceptor
+     * via `No-Auth: 1` (see [[reference-livekit-auth-chain]]). Once
+     * started, the meet-agent-subtitles dispatcher pushes transcription
+     * packets that surface as RoomEvent.TranscriptionReceived on every
+     * client. No body, no stop endpoint — the agent stays attached
+     * until the room ends.
+     *
+     * @param authHeader Pass `"Bearer ${livekitToken}"`.
+     */
+    @POST("api/v1.0/rooms/{idOrSlug}/start-subtitle/")
+    suspend fun startSubtitle(
+        @Path("idOrSlug") idOrSlug: String,
+        @Header("No-Auth") noAuth: String = "1",
+        @Header("Authorization") authHeader: String,
+    )
+
+    /**
      * Owner-only: hard-delete the room. Backend `RoomPermissions` requires
      * `is_owner(user)` for DELETE so non-owner callers see HTTP 403 — the
      * repository layer surfaces that as a Result.failure and the UI

@@ -39,6 +39,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.ScreenShare
 import androidx.compose.material.icons.automirrored.filled.StopScreenShare
@@ -149,6 +150,7 @@ fun RoomScreen(
         ),
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val subtitleSegments by viewModel.subtitleSegments.collectAsStateWithLifecycle()
 
     // Host-ended-meeting auto-leave. When the server tells us the room was
     // deleted (not a local leave), pop back to Home and let AppNav show the
@@ -221,6 +223,8 @@ fun RoomScreen(
                         onRefreshAccessLevel = viewModel::refreshAccessLevel,
                         onUpdateAccessLevel = viewModel::updateAccessLevel,
                         onToggleRecording = viewModel::toggleRecording,
+                        onToggleSubtitles = viewModel::toggleSubtitles,
+                        subtitleSegments = subtitleSegments,
                         onLeave = {
                             viewModel.leave()
                             onLeave(false)
@@ -260,6 +264,8 @@ private fun RoomContent(
     onRefreshAccessLevel: suspend () -> Unit,
     onUpdateAccessLevel: suspend (String) -> Result<Unit>,
     onToggleRecording: () -> Unit,
+    onToggleSubtitles: () -> Unit,
+    subtitleSegments: List<SubtitleSegment>,
     onLeave: () -> Unit,
     onEndMeeting: () -> Unit,
 ) {
@@ -451,6 +457,19 @@ private fun RoomContent(
             }
         }
 
+        // Subtitle overlay — sits just above the bottom toolbar when
+        // the user has enabled captions. Always visible (regardless of
+        // toolbar fade-out) so subtitles don't blink with the controls.
+        if (state.subtitlesOverlayOn) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 96.dp),
+            ) {
+                SubtitleOverlay(segments = subtitleSegments)
+            }
+        }
+
         // Bottom toolbar (drawer-style)
         AnimatedVisibility(
             visible = toolbarsVisible,
@@ -563,6 +582,8 @@ private fun RoomContent(
             localScreenSharing = state.localScreenSharing,
             isRecording = state.isRecording,
             recordingPending = state.recordingPending,
+            subtitlesOverlayOn = state.subtitlesOverlayOn,
+            subtitlesPending = state.subtitlesPending,
             onRaiseHandClick = {
                 showMore = false
                 scope.launch { onToggleHand() }
@@ -578,6 +599,10 @@ private fun RoomContent(
             onRecordClick = {
                 showMore = false
                 onToggleRecording()
+            },
+            onSubtitlesClick = {
+                showMore = false
+                onToggleSubtitles()
             },
             onHostSettingsClick = {
                 showMore = false
@@ -1369,9 +1394,12 @@ private fun MoreActionsSheet(
     localScreenSharing: Boolean,
     isRecording: Boolean,
     recordingPending: Boolean,
+    subtitlesOverlayOn: Boolean,
+    subtitlesPending: Boolean,
     onRaiseHandClick: () -> Unit,
     onShareClick: () -> Unit,
     onRecordClick: () -> Unit,
+    onSubtitlesClick: () -> Unit,
     onHostSettingsClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -1445,14 +1473,24 @@ private fun MoreActionsSheet(
                 iconBgColor = sheetBg,
                 iconTintColor = sheetTint,
             )
+            // Subtitles — repurposes the old "interpret" slot. Anyone
+            // in the room can flip them on; first-on POSTs start-subtitle
+            // (LiveKit-token auth, see RoomRepository.startSubtitle).
+            // Once started the agent stays attached for the meeting —
+            // subsequent taps only show/hide the overlay locally.
+            val subtitlesTint = if (subtitlesOverlayOn) Color(0xFF3C8DFF) else sheetTint
+            val subtitlesBg = if (subtitlesOverlayOn) Color(0xFFD9E8FF) else sheetBg
             ControlButton(
-                icon = Icons.Default.Language,
-                label = stringResource(R.string.room_more_interpret),
+                icon = Icons.Default.ClosedCaption,
+                label = stringResource(
+                    if (subtitlesOverlayOn) R.string.room_more_subtitles_off
+                    else R.string.room_more_subtitles_on
+                ),
                 isOn = true,
-                onClick = showStub,
-                labelColor = sheetTint,
-                iconBgColor = sheetBg,
-                iconTintColor = sheetTint,
+                onClick = if (subtitlesPending) showStub else onSubtitlesClick,
+                labelColor = subtitlesTint,
+                iconBgColor = subtitlesBg,
+                iconTintColor = subtitlesTint,
             )
             ControlButton(
                 icon = Icons.Default.Settings,
