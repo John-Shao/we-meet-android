@@ -81,11 +81,10 @@ fun HomeScreen(
 
     var showLaterNameDialog by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-    ) {
+    // Header (top bar + action zone + band) stays pinned; only the
+    // meeting lists below scroll when the user swipes up. Same Feishu /
+    // WeChat-style "fixed action shelf + scrolling timeline" layout.
+    Column(modifier = Modifier.fillMaxSize()) {
         // Top bar — scan-QR entry on the left of settings on the right.
         Row(
             modifier = Modifier
@@ -147,10 +146,16 @@ fun HomeScreen(
                 .background(WeMeetTheme.extras.surfaceBand),
         )
 
-        // Scheduled + History zones — padded inside one column.
+        // Scheduled + History zones — padded inside one column. This is
+        // the only scrollable region; the action shelf above stays put.
         // Scheduled list renders nothing when empty, so on a fresh
         // install the history section still sits flush with the band.
-        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp),
+        ) {
             ScheduledMeetingsList(
                 rooms = scheduledMeetings,
                 onEntryClick = onJoinSlug,
