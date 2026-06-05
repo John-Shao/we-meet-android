@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -85,9 +85,14 @@ fun RoomAiSheet(
         sheetState = sheetState,
         contentWindowInsets = { WindowInsets(0) },
     ) {
+        // Half-screen sheet: `fillMaxHeight(0.5f)` makes the sheet
+        // expand to half the available viewport (rather than wrapping
+        // to content), so the transcript has room even when empty and
+        // long answers don't fight the input field for vertical space.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .fillMaxHeight(0.5f)
                 .imePadding()
                 .padding(horizontal = 16.dp),
         ) {
@@ -111,7 +116,7 @@ fun RoomAiSheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 200.dp, max = 420.dp)
+                    .weight(1f)
                     .verticalScroll(scrollState)
                     .padding(vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
