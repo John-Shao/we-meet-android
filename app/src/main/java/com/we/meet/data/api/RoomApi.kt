@@ -17,6 +17,7 @@ import com.we.meet.data.api.dto.RoomDto
 import com.we.meet.data.api.dto.WaitingParticipantsResponse
 import com.we.meet.data.api.dto.UpdateRoomRequest
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.PATCH
@@ -60,6 +61,15 @@ interface RoomApi {
 
     @POST("api/v1.0/rooms/{idOrSlug}/end/")
     suspend fun endRoom(@Path("idOrSlug") idOrSlug: String)
+
+    /**
+     * Owner-only: hard-delete the room. Backend `RoomPermissions` requires
+     * `is_owner(user)` for DELETE so non-owner callers see HTTP 403 — the
+     * repository layer surfaces that as a Result.failure and the UI
+     * falls back to local-only removal (i.e. "hide from my history").
+     */
+    @DELETE("api/v1.0/rooms/{idOrSlug}/")
+    suspend fun deleteRoom(@Path("idOrSlug") idOrSlug: String)
 
     /**
      * Host-only: update room settings (currently access_level; room

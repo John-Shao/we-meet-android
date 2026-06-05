@@ -68,6 +68,17 @@ class RoomRepository(
     }
 
     /**
+     * Owner-only: delete the room on the backend. Returns [Result.failure]
+     * with the underlying HttpException when the caller isn't the owner
+     * (HTTP 403) — callers should fall back to local-only removal in
+     * that case so participants can still hide ended meetings from
+     * their own history.
+     */
+    suspend fun deleteRoom(idOrSlug: String): Result<Unit> = runCatching {
+        roomApi.deleteRoom(idOrSlug)
+    }
+
+    /**
      * Host-only: change the room's access level
      * ("public" | "trusted" | "restricted"). "restricted" gates the
      * lobby flow; "trusted" lets logged-in users bypass; "public"

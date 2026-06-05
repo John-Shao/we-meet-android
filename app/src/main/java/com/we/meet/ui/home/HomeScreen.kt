@@ -160,10 +160,12 @@ fun HomeScreen(
             ScheduledMeetingsList(
                 rooms = scheduledMeetings,
                 onEntryClick = onJoinSlug,
+                onDeleteEntry = homeViewModel::deleteMeeting,
             )
             HistoryList(
                 entries = history,
                 onEntryClick = onHistoryClick,
+                onDeleteEntry = homeViewModel::deleteMeeting,
             )
         }
     }

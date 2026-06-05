@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Videocam
@@ -35,6 +37,7 @@ import java.util.Locale
 fun HistoryList(
     entries: List<HistoryEntry>,
     onEntryClick: (roomId: String) -> Unit,
+    onDeleteEntry: (identifier: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (entries.isEmpty()) return
@@ -46,48 +49,80 @@ fun HistoryList(
             modifier = Modifier.padding(vertical = 12.dp),
         )
         entries.forEach { entry ->
-            HistoryRow(entry = entry, onClick = { onEntryClick(entry.roomId) })
+            HistoryRow(
+                entry = entry,
+                onClick = { onEntryClick(entry.roomId) },
+                onDelete = {
+                    // Prefer slug for the delete API call when present —
+                    // it's the user-visible meeting code and avoids any
+                    // ambiguity with synthesized entries that may not
+                    // carry a real backend UUID.
+                    val id = entry.slug.takeIf { it.isNotBlank() } ?: entry.roomId
+                    onDeleteEntry(id)
+                },
+            )
         }
     }
 }
 
 @Composable
-private fun HistoryRow(entry: HistoryEntry, onClick: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+private fun HistoryRow(
+    entry: HistoryEntry,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    SwipeRevealRow(
+        // Right-swiping the row (drag back toward zero) retracts the
+        // drawer — that's the cancel gesture, no explicit button needed.
+        actionsWidth = ACTION_BUTTON_WIDTH,
+        actions = { close ->
+            ActionButton(
+                label = stringResource(R.string.history_action_delete),
+                bg = MaterialTheme.colorScheme.errorContainer,
+                fg = MaterialTheme.colorScheme.onErrorContainer,
+                onClick = {
+                    onDelete()
+                    close()
+                },
+            )
+        },
     ) {
-        Box(
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center,
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(vertical = 12.dp),
         ) {
-            Icon(
-                imageVector = Icons.Default.Videocam,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-        }
-        Spacer(Modifier.size(12.dp))
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.weight(1f),
-        ) {
-            Text(
-                text = entry.name.ifBlank { entry.slug },
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = HistoryTimeFormatter.relativeListTimestamp(entry.firstJoinedAtMs),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Videocam,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+            Spacer(Modifier.size(12.dp))
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(
+                    text = entry.name.ifBlank { entry.slug },
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = HistoryTimeFormatter.relativeListTimestamp(entry.firstJoinedAtMs),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
     HorizontalDivider(
@@ -96,6 +131,31 @@ private fun HistoryRow(entry: HistoryEntry, onClick: () -> Unit) {
         thickness = 0.5.dp,
     )
 }
+
+@Composable
+internal fun ActionButton(
+    label: String,
+    bg: androidx.compose.ui.graphics.Color,
+    fg: androidx.compose.ui.graphics.Color,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .width(ACTION_BUTTON_WIDTH)
+            .fillMaxHeight()
+            .background(bg)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            color = fg,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+}
+
+internal val ACTION_BUTTON_WIDTH = 80.dp
 
 object HistoryTimeFormatter {
     private fun timeFmt() = SimpleDateFormat("HH:mm", Locale.getDefault())

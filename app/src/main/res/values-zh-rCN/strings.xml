@@ -163,6 +163,11 @@
     <!-- 历史记录 -->
     <string name="history_section_title">历史记录</string>
     <string name="history_empty">暂无历史记录</string>
+    <string name="history_row_more">更多</string>
+    <string name="history_action_delete">删除</string>
+    <string name="history_delete_confirm_title">删除会议？</string>
+    <string name="history_delete_confirm_text">将"%1$s"从列表移除。若您是该会议的发起人，将同时删除所有人的此条记录。</string>
+    <string name="history_delete_confirm_ok">删除</string>
     <string name="history_detail_meeting_id">会议号：%1$s</string>
     <string name="history_detail_host">发起人：%1$s</string>
     <string name="history_detail_participants">参会人</string>

@@ -149,6 +149,16 @@ class HistoryStore(context: Context) {
         } }
     }
 
+    /**
+     * Drop the entry for [roomId] (UUID OR slug match — the remote-merge
+     * path sometimes only knows the slug). No-op when nothing matches.
+     */
+    fun remove(roomId: String) {
+        scope.launch { mutateLocked { list ->
+            list.filterNot { it.roomId == roomId || it.slug == roomId }
+        } }
+    }
+
     private suspend fun mutateLocked(block: (List<HistoryEntry>) -> List<HistoryEntry>) {
         mutex.withLock {
             val current = _entries.value

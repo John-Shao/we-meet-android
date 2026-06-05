@@ -163,6 +163,11 @@
     <!-- History -->
     <string name="history_section_title">History</string>
     <string name="history_empty">No history yet</string>
+    <string name="history_row_more">More</string>
+    <string name="history_action_delete">Delete</string>
+    <string name="history_delete_confirm_title">Delete meeting?</string>
+    <string name="history_delete_confirm_text">Remove “%1$s” from your list. If you own the meeting it will also be deleted for everyone.</string>
+    <string name="history_delete_confirm_ok">Delete</string>
     <string name="history_detail_meeting_id">Meeting ID: %1$s</string>
     <string name="history_detail_host">Host: %1$s</string>
     <string name="history_detail_participants">Participants</string>

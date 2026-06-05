@@ -28,7 +28,7 @@ class HomeViewModel(
     application: Application,
     private val tokenStore: TokenStore,
     private val roomRepository: RoomRepository,
-    historyStore: HistoryStore,
+    private val historyStore: HistoryStore,
 ) : AndroidViewModel(application) {
 
     private val localHistory: StateFlow<List<HistoryEntry>> = historyStore.entries
@@ -153,6 +153,31 @@ class HomeViewModel(
 
     fun dismissLaterCreated() {
         _laterCreated.value = null
+    }
+
+    /**
+     * Remove a meeting from the user's view. When the user is the room
+     * owner (backend `is_owner(user)`), the room is hard-deleted on the
+     * server so it disappears from every device. Non-owners get HTTP
+     * 403 — we still drop the local history entry so it vanishes from
+     * THIS device, mirroring the Web "hide this room" UX. A remote
+     * refresh follows so the scheduled/history zones reflect the
+     * latest state.
+     *
+     * Pass [identifier] as whichever the row carries — UUID or slug.
+     * Both forms hit the same DRF endpoint and HistoryStore.remove()
+     * matches against either field.
+     */
+    fun deleteMeeting(identifier: String) {
+        if (identifier.isBlank()) return
+        viewModelScope.launch {
+            roomRepository.deleteRoom(identifier)
+            // Local removal happens regardless of the API result — for
+            // non-owners that's the only meaningful effect; for owners
+            // it keeps the UI in sync before the refresh lands.
+            historyStore.remove(identifier)
+            refreshRemoteRooms()
+        }
     }
 
     /**

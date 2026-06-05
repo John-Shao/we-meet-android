@@ -39,11 +39,14 @@ import java.util.TimeZone
  * Each row shows the room name on the first line and the formatted
  * scheduled time (M月d日 HH:mm) on the second. Tapping the row routes
  * to PreviewScreen via [onEntryClick] (same target as a history row).
+ * Left-swipe reveals delete/cancel actions in the same shape the
+ * history list uses; backend semantics are identical.
  */
 @Composable
 fun ScheduledMeetingsList(
     rooms: List<RoomDto>,
     onEntryClick: (slug: String) -> Unit,
+    onDeleteEntry: (identifier: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (rooms.isEmpty()) return
@@ -59,51 +62,72 @@ fun ScheduledMeetingsList(
             ScheduledRow(
                 room = room,
                 onClick = { onEntryClick(slug) },
+                onDelete = { onDeleteEntry(slug) },
             )
         }
     }
 }
 
 @Composable
-private fun ScheduledRow(room: RoomDto, onClick: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+private fun ScheduledRow(
+    room: RoomDto,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    SwipeRevealRow(
+        // Right-swipe retracts the drawer; no explicit cancel button.
+        actionsWidth = ACTION_BUTTON_WIDTH,
+        actions = { close ->
+            ActionButton(
+                label = stringResource(R.string.history_action_delete),
+                bg = MaterialTheme.colorScheme.errorContainer,
+                fg = MaterialTheme.colorScheme.onErrorContainer,
+                onClick = {
+                    onDelete()
+                    close()
+                },
+            )
+        },
     ) {
-        Box(
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.tertiaryContainer),
-            contentAlignment = Alignment.Center,
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(vertical = 12.dp),
         ) {
-            Icon(
-                imageVector = Icons.Default.Event,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onTertiaryContainer,
-            )
-        }
-        Spacer(Modifier.size(12.dp))
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.weight(1f),
-        ) {
-            Text(
-                text = (room.name?.takeIf { it.isNotBlank() }) ?: room.slug.orEmpty(),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = stringResource(
-                    R.string.scheduled_time_prefix,
-                    formatScheduledAt(room.scheduled_at),
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.tertiaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Event,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            }
+            Spacer(Modifier.size(12.dp))
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(
+                    text = (room.name?.takeIf { it.isNotBlank() }) ?: room.slug.orEmpty(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(
+                        R.string.scheduled_time_prefix,
+                        formatScheduledAt(room.scheduled_at),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
     }
     HorizontalDivider(
