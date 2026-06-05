@@ -19,6 +19,12 @@ fun cfg(key: String, default: String = ""): String =
 val baseUrl = cfg("WE_MEET_BASE_URL", "https://meet.we-meet.online")
 val keycloakUrl = cfg("WE_MEET_KEYCLOAK_URL", "https://id.we-meet.online")
 val livekitOverride = cfg("WE_MEET_LIVEKIT_URL_OVERRIDE", "")
+// PostHog: leave WE_MEET_POSTHOG_KEY empty to keep analytics off. The
+// Analytics singleton no-ops when the key is blank — useful for the
+// aliyun-prod deployment which currently doesn't ship analytics, and
+// for any dev build that doesn't want to pollute the project's events.
+val posthogKey = cfg("WE_MEET_POSTHOG_KEY", "")
+val posthogHost = cfg("WE_MEET_POSTHOG_HOST", "https://app.posthog.com")
 
 android {
     namespace = "com.we.meet"
@@ -37,6 +43,8 @@ android {
         buildConfigField("String", "WE_MEET_BASE_URL", "\"$baseUrl\"")
         buildConfigField("String", "WE_MEET_KEYCLOAK_URL", "\"$keycloakUrl\"")
         buildConfigField("String", "WE_MEET_LIVEKIT_URL_OVERRIDE", "\"$livekitOverride\"")
+        buildConfigField("String", "WE_MEET_POSTHOG_KEY", "\"$posthogKey\"")
+        buildConfigField("String", "WE_MEET_POSTHOG_HOST", "\"$posthogHost\"")
     }
 
     buildTypes {
@@ -106,6 +114,11 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
+
+    // Analytics (S4.4) — PostHog SDK. The Analytics singleton no-ops when
+    // WE_MEET_POSTHOG_KEY is blank, so this dep is dormant on builds
+    // without a key (most local + the current aliyun-prod deployment).
+    implementation(libs.posthog.android)
 
     // AI assistant feature (Sprint 3) — realtime "打电话" call screen.
     implementation(project(":feature-assistant"))

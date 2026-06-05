@@ -128,6 +128,13 @@ class HomeViewModel(
         viewModelScope.launch {
             roomRepository.createRoom(displayUsername, meetingName, scheduledAtIso)
                 .onSuccess { room ->
+                    com.we.meet.analytics.Analytics.capture(
+                        com.we.meet.analytics.Analytics.EVENT_CREATE_MEETING,
+                        mapOf(
+                            "kind" to "scheduled",
+                            "scheduled" to (scheduledAtIso != null),
+                        ),
+                    )
                     val lk = room.livekit
                     if (lk != null) {
                         _laterCreated.value = RoomTarget(

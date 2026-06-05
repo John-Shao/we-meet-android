@@ -327,6 +327,10 @@ class RoomViewModel(
                 controller.setCameraEnabled(initialCameraEnabled)
             }.onSuccess {
                 _state.update { it.copy(phase = RoomUiState.Phase.Connected) }
+                com.we.meet.analytics.Analytics.capture(
+                    com.we.meet.analytics.Analytics.EVENT_JOIN_MEETING,
+                    mapOf("isAdmin" to isAdmin),
+                )
                 ConferenceForegroundService.start(getApplication(), roomName)
                 historyStore.upsertOnJoin(
                     roomId = roomId,
@@ -417,6 +421,10 @@ class RoomViewModel(
                         // Ephemeral chat, matches web: "消息仅对发送时在场的
                         // 参与者可见。所有消息将在通话结束时删除。"
                         _state.update { it.copy(messages = emptyList()) }
+                        com.we.meet.analytics.Analytics.capture(
+                            com.we.meet.analytics.Analytics.EVENT_END_MEETING,
+                            mapOf("reason" to (event.reason?.toString() ?: "unknown")),
+                        )
 
                         // How the backend ends a meeting: the `/end/` endpoint
                         // calls LiveKit's `remove_participant` for every
@@ -1091,6 +1099,7 @@ class RoomViewModel(
         if (current.recordingPending) return
         _state.update { it.copy(recordingPending = true) }
         viewModelScope.launch {
+            val starting = !current.isRecording
             val result =
                 if (current.isRecording) roomRepository.stopRecording(roomId)
                 else roomRepository.startRecording(roomId)
@@ -1100,6 +1109,10 @@ class RoomViewModel(
             // event will land separately on success.
             if (result.isFailure) {
                 _state.update { it.copy(recordingPending = false) }
+            } else if (starting) {
+                com.we.meet.analytics.Analytics.capture(
+                    com.we.meet.analytics.Analytics.EVENT_RECORDING_START,
+                )
             }
         }
     }
@@ -1133,6 +1146,9 @@ class RoomViewModel(
             val result = roomRepository.startSubtitle(roomId, livekitToken)
             if (result.isSuccess) {
                 subtitlesStartedOnBackend = true
+                com.we.meet.analytics.Analytics.capture(
+                    com.we.meet.analytics.Analytics.EVENT_SUBTITLE_START,
+                )
                 _state.update { it.copy(subtitlesPending = false, subtitlesOverlayOn = true) }
             } else {
                 _state.update { it.copy(subtitlesPending = false) }
@@ -1212,6 +1228,10 @@ class RoomViewModel(
 
         _aiMessages.update { it + userMsg + assistantStub }
         _aiAsking.value = true
+        com.we.meet.analytics.Analytics.capture(
+            com.we.meet.analytics.Analytics.EVENT_ROOM_AI_QUERY,
+            mapOf("historyLen" to historyForBackend.size),
+        )
 
         viewModelScope.launch {
             try {

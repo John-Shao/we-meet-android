@@ -339,6 +339,7 @@ fun ProfileScreen(
                 TextButton(onClick = {
                     showSignOutConfirm = false
                     app.authRepository.signOut()
+                    com.we.meet.analytics.Analytics.reset()
                     onSignedOut()
                 }) {
                     Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.error)

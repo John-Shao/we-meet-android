@@ -106,6 +106,11 @@ class LoginViewModel(
             authRepository.verifyOtp(phone, otp).fold(
                 onSuccess = {
                     _state.update { it.copy(isVerifying = false) }
+                    com.we.meet.analytics.Analytics.capture(
+                        com.we.meet.analytics.Analytics.EVENT_LOGIN,
+                        mapOf("method" to "phone-otp"),
+                    )
+                    com.we.meet.analytics.Analytics.identify(userId = phone)
                     onSuccess()
                 },
                 onFailure = { e ->

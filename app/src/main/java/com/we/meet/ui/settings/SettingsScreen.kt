@@ -130,6 +130,7 @@ fun SettingsScreen(
                         .onSuccess {
                             showDeregisterDialog = false
                             deregistering = false
+                            com.we.meet.analytics.Analytics.reset()
                             onAccountDeregistered()
                         }
                         .onFailure {

@@ -77,6 +77,8 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps {
         historyStore = HistoryStore(this)
         settingsStore = SettingsStore(this)
         ScreenShareOverlay.init(this)
+        // PostHog: no-op when WE_MEET_POSTHOG_KEY is blank (default).
+        com.we.meet.analytics.Analytics.init(this)
     }
 
     // AssistantDeps — lets :feature-assistant reuse the host's authenticated
