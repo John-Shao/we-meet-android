@@ -204,7 +204,17 @@ fun AppNav() {
         }
 
         composable(Routes.SETTINGS) {
-            SettingsScreen(onBack = rememberOnceOnly(safePop))
+            SettingsScreen(
+                onBack = rememberOnceOnly(safePop),
+                // Deregister flow lives in Settings → Account. After the
+                // backend wipe succeeds we share the same redirect-to-login
+                // path the regular Sign-out button uses.
+                onAccountDeregistered = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.HOME) { inclusive = true }
+                    }
+                },
+            )
         }
 
         composable(Routes.CREATE_PREVIEW) {
