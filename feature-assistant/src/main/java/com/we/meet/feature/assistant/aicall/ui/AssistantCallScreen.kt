@@ -257,10 +257,12 @@ fun AssistantCallScreen(
             }
 
             if (state.showPicker) {
-                VoicePickerSheet(
+                AiSettingsSheet(
                     config = state.agentConfig,
-                    selectedVoiceIndex = state.selectedVoiceIndex,
-                    selectedPromptLabel = state.selectedPromptLabel,
+                    initialTab = state.mode,
+                    voiceSelection = state.voiceSelection,
+                    videoSelection = state.videoSelection,
+                    onSelectProfile = vm::selectProfile,
                     onSelectVoice = vm::selectVoice,
                     onSelectPrompt = vm::selectPrompt,
                     onDismiss = { vm.showPicker(false) },

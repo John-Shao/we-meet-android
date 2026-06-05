@@ -19,6 +19,24 @@ sealed interface AiCallStatus {
     data object Ended : AiCallStatus
 }
 
+/**
+ * Per-mode (voice / video) user selection of (profile, voice, prompt).
+ * All three are tracked by stable backend ids:
+ *  - ``profileCode`` ∈ [AiProfileDto.code]
+ *  - ``voiceId`` ∈ AiVoiceDto.id (UUID); null → use profile's default voice
+ *  - ``promptId`` ∈ AiPromptDto.id (UUID); null → no prompt
+ *
+ * When the user hasn't picked anything yet, the ViewModel falls back to
+ * [AiAgentConfigResponse.voiceProfile] / [AiAgentConfigResponse.videoProfile]
+ * for the profile and to that profile's [AiProfileDto.default_voice_id]
+ * for the voice.
+ */
+data class AiModeSelection(
+    val profileCode: String? = null,
+    val voiceId: String? = null,
+    val promptId: String? = null,
+)
+
 data class AiCallUiState(
     val status: AiCallStatus = AiCallStatus.Idle,
     val mode: AiCallMode = AiCallMode.Voice,
@@ -28,8 +46,11 @@ data class AiCallUiState(
     val agentSpeaking: Boolean = false,
     val agentAudioLevel: Float = 0f,
     val agentConfig: AiAgentConfigResponse? = null,
-    val selectedVoiceIndex: Int = 0,
-    val selectedPromptLabel: String? = null,
+    val voiceSelection: AiModeSelection = AiModeSelection(),
+    val videoSelection: AiModeSelection = AiModeSelection(),
     val errorToast: String? = null,
     val showPicker: Boolean = false,
-)
+) {
+    fun selectionFor(mode: AiCallMode): AiModeSelection =
+        if (mode == AiCallMode.Voice) voiceSelection else videoSelection
+}

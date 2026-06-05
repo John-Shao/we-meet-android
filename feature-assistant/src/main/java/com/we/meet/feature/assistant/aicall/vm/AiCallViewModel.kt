@@ -18,6 +18,7 @@ import com.we.meet.feature.assistant.aicall.model.AiAgentConfigResponse
 import com.we.meet.feature.assistant.aicall.model.AiCallMode
 import com.we.meet.feature.assistant.aicall.model.AiCallStatus
 import com.we.meet.feature.assistant.aicall.model.AiCallUiState
+import com.we.meet.feature.assistant.aicall.model.AiModeSelection
 import com.we.meet.feature.assistant.aicall.model.AiProfileDto
 import com.we.meet.feature.assistant.aicall.model.ConnectingStep
 import com.we.meet.feature.assistant.net.AssistantNetwork
@@ -74,8 +75,8 @@ class AiCallViewModel(
 
     private val _state = MutableStateFlow(
         AiCallUiState(
-            selectedVoiceIndex = prefs.voiceIndex,
-            selectedPromptLabel = prefs.promptLabel,
+            voiceSelection = prefs.load(AiCallMode.Voice),
+            videoSelection = prefs.load(AiCallMode.Video),
         )
     )
     val state: StateFlow<AiCallUiState> = _state.asStateFlow()
@@ -197,15 +198,34 @@ class AiCallViewModel(
         _state.update { it.copy(showPicker = show) }
     }
 
-    fun selectVoice(index: Int) {
-        val clamped = index.coerceIn(0, 3)
-        prefs.voiceIndex = clamped
-        _state.update { it.copy(selectedVoiceIndex = clamped) }
+    /** Set the agent profile for [mode]. Resets voice (voices belong to a
+     *  specific profile), keeps prompt. */
+    fun selectProfile(mode: AiCallMode, profileCode: String?) {
+        updateSelection(mode) { it.copy(profileCode = profileCode, voiceId = null) }
     }
 
-    fun selectPrompt(label: String?) {
-        prefs.promptLabel = label
-        _state.update { it.copy(selectedPromptLabel = label) }
+    /** Set the voice id for [mode]. */
+    fun selectVoice(mode: AiCallMode, voiceId: String?) {
+        updateSelection(mode) { it.copy(voiceId = voiceId) }
+    }
+
+    /** Set the prompt id for [mode]. ``null`` = no prompt (agent uses
+     *  built-in behaviour). */
+    fun selectPrompt(mode: AiCallMode, promptId: String?) {
+        updateSelection(mode) { it.copy(promptId = promptId) }
+    }
+
+    private inline fun updateSelection(
+        mode: AiCallMode,
+        crossinline transform: (AiModeSelection) -> AiModeSelection,
+    ) {
+        _state.update { state ->
+            val cur = state.selectionFor(mode)
+            val next = transform(cur)
+            prefs.save(mode, next)
+            if (mode == AiCallMode.Voice) state.copy(voiceSelection = next)
+            else state.copy(videoSelection = next)
+        }
     }
 
     fun dismissError() {
@@ -224,11 +244,11 @@ class AiCallViewModel(
 
     private suspend fun runConnectFlow(cfg: AiAgentConfigResponse) {
         val mode = _state.value.mode
-        val profile = (if (mode == AiCallMode.Video) cfg.videoProfile() else cfg.voiceProfile())
+        val profile = resolveProfile(cfg, mode)
             ?: error("没有可用的 AI 模型配置")
         val profileCode = profile.code
-        val voiceId = resolveVoiceId(profile)
-        val promptId = resolvePromptId(cfg)
+        val voiceId = resolveVoiceId(profile, mode)
+        val promptId = resolvePromptId(cfg, mode)
 
         setStatus(AiCallStatus.Connecting(ConnectingStep.CreatingRoom))
         val room = roomRepo.createRoom("__JUSI_AI_SESSION__-${System.currentTimeMillis()}")
@@ -320,14 +340,14 @@ class AiCallViewModel(
 
                 _state.update { it.copy(mode = nextMode) }
 
-                val profile = (if (nextMode == AiCallMode.Video) cfg.videoProfile() else cfg.voiceProfile())
+                val profile = resolveProfile(cfg, nextMode)
                     ?: error("没有可用的 AI 模型配置")
                 agentRepo.startAgent(
                     roomId = roomId,
                     livekitToken = token,
                     profileCode = profile.code,
-                    voiceId = resolveVoiceId(profile),
-                    promptId = resolvePromptId(cfg),
+                    voiceId = resolveVoiceId(profile, nextMode),
+                    promptId = resolvePromptId(cfg, nextMode),
                 )
 
                 awaitAgentJoin(room, excluded = oldAgentIds, timeoutMs = 10_000)
@@ -534,20 +554,30 @@ class AiCallViewModel(
         _state.update { it.copy(status = status) }
     }
 
-    /** Pick the voice UUID by the user's index into the [profile]'s voice
-     *  list; fall back to the profile's default voice id. */
-    private fun resolveVoiceId(profile: AiProfileDto): String? {
-        val voices = profile.voices
-        if (voices.isNotEmpty()) {
-            return voices[_state.value.selectedVoiceIndex.coerceIn(0, voices.size - 1)].id
-        }
-        return profile.default_voice_id
+    /** Resolve the user's chosen profile for [mode]; if their stored
+     *  ``profileCode`` no longer exists in the catalog (or they never
+     *  picked one), fall back to the backend-declared default. */
+    private fun resolveProfile(cfg: AiAgentConfigResponse, mode: AiCallMode): AiProfileDto? {
+        val picked = _state.value.selectionFor(mode).profileCode
+        val byCode = picked?.let { cfg.profile(it) }
+        if (byCode != null) return byCode
+        return if (mode == AiCallMode.Video) cfg.videoProfile() else cfg.voiceProfile()
     }
 
-    /** Map the chosen prompt label to its UUID; null label = backend default. */
-    private fun resolvePromptId(cfg: AiAgentConfigResponse): String? {
-        val label = _state.value.selectedPromptLabel ?: return null
-        return cfg.prompts.firstOrNull { it.label == label }?.id
+    /** Resolve the voice id for [mode]: user pick (validated against the
+     *  resolved profile's voice list) → profile's default voice id. */
+    private fun resolveVoiceId(profile: AiProfileDto, mode: AiCallMode): String? {
+        val picked = _state.value.selectionFor(mode).voiceId
+        if (picked != null && profile.voices.any { it.id == picked }) return picked
+        return profile.default_voice_id
+            ?: profile.voices.firstOrNull()?.id
+    }
+
+    /** Resolve the prompt id for [mode]: user pick (validated against the
+     *  catalog) → null (no prompt — agent uses its built-in behaviour). */
+    private fun resolvePromptId(cfg: AiAgentConfigResponse, mode: AiCallMode): String? {
+        val picked = _state.value.selectionFor(mode).promptId ?: return null
+        return cfg.prompts.firstOrNull { it.id == picked }?.id
     }
 
     // endregion
