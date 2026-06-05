@@ -8,9 +8,9 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.Rational
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -42,7 +42,7 @@ private val DEEP_LINK_SLUG_REGEX = Regex("^[0-9]{8}$")
  */
 val LocalIsInPipMode = compositionLocalOf { false }
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     /**
      * `true` while the user is actually in a connected meeting. RoomScreen

@@ -42,6 +42,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.WeMeetApp
 import com.we.meet.R
@@ -86,6 +88,136 @@ fun SettingsScreen(
                 selected = selectedCodec,
                 onSelect = settingsStore::setVideoCodec,
             )
+            LanguageSection()
+        }
+    }
+}
+
+// ── Language ────────────────────────────────────────────────────────────
+
+/**
+ * 5 supported locales mirror the Web frontend's i18n bundle. Tag is the
+ * BCP-47 language tag we feed into [AppCompatDelegate.setApplicationLocales].
+ * Display name stays in the locale's own script so the option is
+ * recognisable from any current UI language.
+ */
+private data class LanguageOption(val tag: String, val display: String)
+
+private val LANGUAGE_OPTIONS = listOf(
+    LanguageOption("zh-CN", "简体中文"),
+    LanguageOption("en", "English"),
+    LanguageOption("fr", "Français"),
+    LanguageOption("de", "Deutsch"),
+    LanguageOption("nl", "Nederlands"),
+)
+
+@Composable
+private fun LanguageSection() {
+    Spacer(Modifier.height(8.dp))
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface),
+    ) {
+        LanguageDropdownRow(label = stringResource(R.string.settings_language))
+    }
+
+    Spacer(Modifier.height(8.dp))
+    Text(
+        text = stringResource(R.string.settings_language_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 24.dp),
+    )
+    Spacer(Modifier.height(16.dp))
+}
+
+@Composable
+private fun LanguageDropdownRow(label: String) {
+    var expanded by remember { mutableStateOf(false) }
+    // Current selection: AppCompatDelegate is the source of truth — it
+    // persists per-app locale on API 33+ via Android's LocaleManager,
+    // and uses ConfigurationOverride for older API levels. An empty
+    // locale list means "follow system" — we show that as the system
+    // option rather than mapping it to a real tag.
+    val currentTag = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+    val systemLabel = stringResource(R.string.settings_language_system)
+    val currentLabel = LANGUAGE_OPTIONS.firstOrNull { it.tag.equals(currentTag, ignoreCase = true) }
+        ?.display ?: systemLabel
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = true }
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Spacer(Modifier.weight(1f))
+        Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = currentLabel,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.width(2.dp))
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
+                DropdownMenuItem(
+                    text = { Text(systemLabel) },
+                    onClick = {
+                        AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
+                        expanded = false
+                    },
+                    trailingIcon = if (currentTag.isEmpty()) {
+                        {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    } else null,
+                )
+                LANGUAGE_OPTIONS.forEach { option ->
+                    val selected = option.tag.equals(currentTag, ignoreCase = true)
+                    DropdownMenuItem(
+                        text = { Text(option.display) },
+                        onClick = {
+                            AppCompatDelegate.setApplicationLocales(
+                                LocaleListCompat.forLanguageTags(option.tag)
+                            )
+                            expanded = false
+                        },
+                        trailingIcon = if (selected) {
+                            {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else null,
+                    )
+                }
+            }
         }
     }
 }

@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">We Meet</string>
+
+    <!-- Login screen -->
+    <string name="login_title">Voer telefoonnummer in</string>
+    <string name="login_phone_hint">Voer telefoonnummer in</string>
+    <string name="login_next">Volgende</string>
+    <string name="login_otp_sent_title">Code verzonden</string>
+    <string name="login_otp_sent_to">Naar %1$s</string>
+    <string name="login_resend_otp">Opnieuw versturen (%1$ds)</string>
+    <string name="login_resend">Opnieuw versturen</string>
+    <string name="login_error_phone_format">Voer een geldig 11-cijferig vasteland-Chinees mobielnummer in.</string>
+    <string name="login_error_otp_format">Voer de 6-cijferige sms-code in.</string>
+
+    <!-- Home screen -->
+    <string name="home_title">We Meet</string>
+    <string name="home_room_label">Vergader-ID</string>
+    <string name="home_room_hint">bv. 499707</string>
+    <string name="home_create_meeting">Vergadering starten</string>
+    <string name="home_join_meeting">Deelnemen aan vergadering</string>
+    <string name="home_create_later_meeting">Vergadering plannen</string>
+    <string name="home_create_later_name_label">Naam vergadering</string>
+    <string name="home_create_later_confirm">Aanmaken</string>
+    <string name="home_create_later_cancel">Annuleren</string>
+    <string name="home_create_later_no_time">Kies een tijd</string>
+    <string name="home_create_later_pick_time">Tijd kiezen</string>
+    <string name="home_create_later_edit_time">Bewerken</string>
+    <string name="home_create_later_clear_time">Wissen</string>
+    <string name="home_create_later_next">Volgende</string>
+    <string name="home_join">Deelnemen</string>
+    <string name="home_logout">Afmelden</string>
+    <string name="home_signed_in_as">Aangemeld als %1$s</string>
+    <string name="home_settings">Instellingen</string>
+    <string name="home_scan_qr">QR scannen</string>
+
+    <!-- QR scan / web sign-in confirmation -->
+    <string name="qr_scan_confirm_title">Aanmelden op het web</string>
+    <string name="qr_scan_confirm_hint">Bevestig om aan te melden bij we-meet op het apparaat dat deze QR weergaf.</string>
+    <string name="qr_scan_confirm_button">Aanmelding bevestigen</string>
+    <string name="qr_scan_cancel_button">Annuleren</string>
+    <string name="qr_scan_back_button">Terug</string>
+    <string name="qr_scan_error_invalid">Deze QR-code is geen we-meet aanmelding.</string>
+    <string name="qr_scan_error_scan_failed">Kan de QR niet controleren. Mogelijk verlopen — probeer opnieuw.</string>
+    <string name="qr_scan_error_confirm_failed">Aanmelding mislukt, probeer opnieuw.</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Instellingen</string>
+    <string name="settings_video_codec">Videocodec</string>
+    <string name="settings_video_codec_default_suffix">(standaard)</string>
+    <string name="settings_video_codec_hint">Toegepast op je volgende vergadering.</string>
+    <string name="settings_language">Taal</string>
+    <string name="settings_language_system">Volg systeem</string>
+    <string name="settings_language_hint">Herstart de app als sommige schermen nog niet zijn bijgewerkt.</string>
+
+    <!-- Preview screen -->
+    <string name="preview_start_meeting">Vergadering starten</string>
+    <string name="preview_join_meeting">Vergadering deelnemen</string>
+    <string name="preview_mic">Microfoon</string>
+    <string name="preview_camera">Camera</string>
+    <string name="preview_meeting_id_hint">Vergader-ID</string>
+    <string name="preview_speaker">Luidspreker</string>
+    <string name="preview_earpiece">Oortelefoon</string>
+    <string name="preview_mute">Dempen</string>
+
+    <!-- Room screen -->
+    <string name="room_title">In vergadering</string>
+    <string name="room_slug_label">Vergader-ID: %1$s</string>
+    <string name="room_connecting">Verbinden…</string>
+    <string name="room_action_mic">Microfoon</string>
+    <string name="room_action_camera">Camera</string>
+    <string name="room_action_switch_camera">Wisselen</string>
+    <string name="room_action_participants">Leden</string>
+    <string name="room_action_minimize">Minimaliseren</string>
+    <string name="room_action_message">Berichten</string>
+    <string name="room_action_more">Meer</string>
+    <string name="room_more_raise_hand">Hand opsteken</string>
+    <string name="room_more_lower_hand">Hand laten zakken</string>
+    <string name="room_more_share">Delen</string>
+    <string name="room_more_record">Opnemen</string>
+    <string name="room_more_interpret">Tolken</string>
+    <string name="room_more_settings">Instellingen</string>
+    <string name="room_more_coming_soon">Binnenkort beschikbaar</string>
+    <string name="room_tile_hand_raised">Hand omhoog</string>
+    <!-- Screen share -->
+    <string name="room_screen_share_screen">Scherm delen</string>
+    <string name="room_screen_share_whiteboard">Whiteboard delen</string>
+    <string name="room_screen_share_stop">Delen stoppen</string>
+    <string name="room_screen_share_of">Scherm van %1$s</string>
+    <string name="room_screen_share_self_sharing">Je deelt je scherm</string>
+    <string name="room_screen_share_overlay_prompt">Verleen \"Boven andere apps weergeven\" om delen vanaf het bureau te stoppen</string>
+    <string name="room_action_hangup">Verlaten</string>
+    <string name="room_end">Beëindigen</string>
+    <string name="room_leave">Vergadering verlaten</string>
+    <string name="room_end_meeting">Vergadering beëindigen</string>
+    <string name="room_leave_hint">Als je de vergadering niet wilt beëindigen, wijs voor vertrek een nieuwe host aan.</string>
+    <string name="room_participants">Leden (%1$d)</string>
+    <string name="room_participant_me"> (Ik)</string>
+    <string name="room_permission_required">Camera- en microfoontoestemming zijn vereist om deel te nemen.</string>
+    <string name="room_grant_permissions">Toestemmingen verlenen</string>
+    <string name="room_no_video">Geen video</string>
+    <string name="room_pin_participant">Vastpinnen</string>
+    <string name="room_unpin_participant">Losmaken</string>
+    <string name="room_host_ended_title">Host heeft de vergadering beëindigd</string>
+    <string name="room_host_ended_ack">OK</string>
+    <string name="room_host_ended_ack_countdown">OK (%1$ds)</string>
+    <string name="room_messages_title">Berichten</string>
+    <string name="room_message_input_hint">Stuur een bericht…</string>
+    <string name="room_message_empty">Nog geen berichten</string>
+    <string name="room_message_host_tag">Host</string>
+    <string name="room_rename_self">Hernoem mij</string>
+    <string name="room_rename_title">Weergavenaam wijzigen</string>
+    <string name="room_rename_label">Weergavenaam</string>
+    <string name="room_rename_confirm">Opslaan</string>
+    <string name="room_rename_cancel">Annuleren</string>
+    <string name="room_host_actions">Host-acties</string>
+    <string name="room_host_mute">Microfoon dempen</string>
+    <string name="room_host_remove">Verwijderen</string>
+    <string name="room_host_remove_title">Deelnemer verwijderen?</string>
+    <string name="room_host_remove_message">%1$s verwijderen uit de vergadering? Deze persoon kan via de link opnieuw deelnemen.</string>
+    <string name="room_lobby_banner">%1$d personen wachten om deel te nemen</string>
+    <string name="room_lobby_banner_action">Controleren</string>
+    <string name="room_lobby_title">Wachtruimte (%1$d)</string>
+    <string name="room_lobby_admit">Toelaten</string>
+    <string name="room_lobby_deny">Weigeren</string>
+    <string name="room_lobby_admit_all">Iedereen toelaten</string>
+    <string name="waiting_title">Wachten op goedkeuring van de host</string>
+    <string name="waiting_subtitle">Je neemt deel aan „%1$s” zodra de host je binnenlaat.</string>
+    <string name="waiting_cancel">Annuleren</string>
+    <string name="waiting_back">Terug</string>
+    <string name="waiting_denied_title">De host heeft je verzoek geweigerd</string>
+    <string name="waiting_denied_subtitle">Je kunt het later opnieuw proberen of de host direct benaderen.</string>
+    <string name="waiting_error_title">Vergadering niet bereikbaar</string>
+    <string name="room_more_host_settings">Host-instellingen</string>
+    <string name="room_host_settings_title">Host-instellingen</string>
+    <string name="room_host_settings_subtitle">Alleen de host kan dit wijzigen.</string>
+    <string name="room_host_access_section">Toegang</string>
+    <string name="room_host_access_public_title">Open</string>
+    <string name="room_host_access_public_desc">Iedereen kan direct deelnemen.</string>
+    <string name="room_host_access_trusted_title">Vertrouwde gebruikers</string>
+    <string name="room_host_access_trusted_desc">Aangemelde gebruikers kunnen zonder vragen deelnemen.</string>
+    <string name="room_host_access_restricted_title">Beperkt</string>
+    <string name="room_host_access_restricted_desc">Niet-uitgenodigde personen moeten toegang aanvragen.</string>
+
+    <!-- Invite sheet -->
+    <string name="invite_title">Uitnodigen voor vergadering</string>
+    <string name="invite_qr_desc">QR-code om aan de vergadering deel te nemen</string>
+    <string name="invite_copy_link">Kopiëren</string>
+    <string name="invite_share">Delen</string>
+    <string name="invite_copied">Uitnodiging naar klembord gekopieerd</string>
+    <string name="invite_share_chooser_title">Vergadering delen</string>
+    <string name="invite_clipboard_format">Neem deel aan mijn vergadering op We Meet:\n%1$s\n(Vergader-ID: %2$s)</string>
+    <string name="invite_enter_room">Vergadering binnengaan</string>
+    <string name="invite_scheduled_label">Gepland voor %1$s</string>
+    <string name="invite_clipboard_scheduled">Gepland voor: %1$s</string>
+
+    <!-- Ongoing-meeting foreground-service notification -->
+    <string name="meeting_notification_channel_name">Vergadering bezig</string>
+    <string name="meeting_notification_title">In vergadering</string>
+    <string name="meeting_notification_content">%1$s</string>
+
+    <!-- Scheduled meetings (upcoming) -->
+    <string name="scheduled_section_title">Geplande vergaderingen</string>
+    <string name="scheduled_time_prefix">Gepland voor %1$s</string>
+
+    <!-- History -->
+    <string name="history_section_title">Geschiedenis</string>
+    <string name="history_empty">Nog geen geschiedenis</string>
+    <string name="history_row_more">Meer</string>
+    <string name="history_action_delete">Verwijderen</string>
+    <string name="room_more_record_stop">Opname stoppen</string>
+    <string name="room_recording_banner">Opname loopt</string>
+    <string name="room_more_subtitles_on">Ondertitels</string>
+    <string name="room_more_subtitles_off">Ondertitels verbergen</string>
+    <string name="room_more_ai">AI</string>
+    <string name="room_ai_title">Vergader-AI</string>
+    <string name="room_ai_clear">Wissen</string>
+    <string name="room_ai_empty_hint">Vraag de AI iets over wat in deze vergadering is gezegd.</string>
+    <string name="room_ai_thinking">Aan het denken…</string>
+    <string name="room_ai_input_hint">Vraag de AI…</string>
+    <string name="room_ai_send">Versturen</string>
+    <string name="history_delete_confirm_title">Vergadering verwijderen?</string>
+    <string name="history_delete_confirm_text">„%1$s” uit je lijst verwijderen. Als je de host bent, wordt het ook voor anderen verwijderd.</string>
+    <string name="history_delete_confirm_ok">Verwijderen</string>
+    <string name="history_detail_meeting_id">Vergader-ID: %1$s</string>
+    <string name="history_detail_host">Host: %1$s</string>
+    <string name="history_detail_participants">Deelnemers</string>
+    <string name="history_detail_timeline_today">Vandaag</string>
+    <string name="history_detail_joined">Vergadering bijgewoond</string>
+    <string name="history_detail_left">Vergadering verlaten</string>
+    <string name="history_unknown_host">—</string>
+
+    <!-- Meeting detail -->
+    <string name="meeting_detail_title">Vergaderdetail</string>
+    <string name="meeting_detail_tab_info">Info</string>
+    <string name="meeting_detail_tab_summary">Samenvatting</string>
+    <string name="meeting_detail_tab_action_items">Acties</string>
+    <string name="meeting_detail_tab_transcript">Transcriptie</string>
+    <string name="meeting_detail_loading">Laden…</string>
+    <string name="meeting_detail_load_failed">Laden mislukt.</string>
+    <string name="meeting_detail_info_name">Naam</string>
+    <string name="meeting_detail_info_time">Tijd</string>
+    <string name="meeting_detail_info_code">Vergader-ID</string>
+    <string name="meeting_detail_info_owner">Eigenaar</string>
+    <string name="meeting_detail_info_participants">Deelnemers</string>
+    <string name="meeting_detail_info_ongoing">Bezig</string>
+    <string name="meeting_detail_info_empty">—</string>
+    <string name="meeting_detail_info_timeline">Jouw tijdlijn</string>
+    <string name="meeting_detail_summary_empty">Er is nog geen samenvatting gegenereerd.</string>
+    <string name="meeting_detail_summary_regenerate">Opnieuw genereren</string>
+    <string name="meeting_detail_summary_regenerating">Opnieuw aan het genereren…</string>
+    <string name="meeting_detail_summary_failed">Samenvatting mislukt.</string>
+    <string name="meeting_detail_action_items_empty">Geen acties.</string>
+    <string name="meeting_detail_action_items_owner">Verantwoordelijke</string>
+    <string name="meeting_detail_action_items_due">Deadline</string>
+    <string name="meeting_detail_transcript_empty">Geen transcriptie beschikbaar.</string>
+
+    <!-- Tabs -->
+    <string name="tab_meeting">Vergadering</string>
+    <string name="tab_ai">AI</string>
+    <string name="tab_profile">Ik</string>
+
+    <!-- AI hub -->
+    <string name="ai_hub_title">AI-assistent</string>
+    <string name="ai_hub_call_title">Bellen</string>
+    <string name="ai_hub_call_subtitle">Realtime spraak- of videogesprek met AI</string>
+
+    <!-- Profile screen -->
+    <string name="profile_nickname">Bijnaam</string>
+    <string name="profile_phone">Telefoon</string>
+    <string name="profile_not_set">Niet ingesteld</string>
+    <string name="profile_set_nickname">Bijnaam instellen</string>
+    <string name="profile_nickname_hint">Voer een bijnaam in</string>
+    <string name="profile_sign_out">Afmelden</string>
+    <string name="profile_sign_out_confirm">Weet je zeker dat je wilt afmelden?</string>
+    <string name="profile_deregister">Account verwijderen</string>
+    <string name="profile_deregister_title">Account verwijderen?</string>
+    <string name="profile_deregister_warning">Dit verwijdert je We Meet-account permanent. Geschiedenis, profiel en opgeslagen gegevens worden gewist en kunnen niet worden hersteld. Typ je telefoonnummer ter bevestiging.</string>
+    <string name="profile_deregister_phone_hint">Telefoonnummer</string>
+    <string name="profile_deregister_confirm">Verwijderen</string>
+    <string name="profile_deregister_error">Verwijderen mislukt. Probeer opnieuw.</string>
+    <string name="profile_intro">Bio</string>
+    <string name="profile_set_intro">Bio bewerken</string>
+    <string name="profile_intro_hint">Tot 100 tekens</string>
+    <string name="profile_intro_counter">%1$d/%2$d</string>
+    <string name="profile_avatar">Avatar</string>
+    <string name="profile_change_avatar">Avatar wijzigen</string>
+    <string name="profile_cover">Omslag</string>
+    <string name="profile_change_cover">Omslag wijzigen</string>
+    <string name="profile_image_uploading">Bezig met uploaden…</string>
+    <string name="profile_image_error_mime">Alleen JPG-/PNG-/WEBP-afbeeldingen zijn toegestaan</string>
+    <string name="profile_image_error_size">Afbeelding mag maximaal 2 MB zijn</string>
+    <string name="profile_image_error_upload">Upload mislukt, probeer opnieuw</string>
+    <string name="profile_intro_error_save">Bio kon niet worden opgeslagen</string>
+    <string name="profile_nickname_error_save">Bijnaam kon niet worden opgeslagen</string>
+
+    <!-- Generic -->
+    <string name="error_network">Netwerkfout. Controleer je verbinding en probeer opnieuw.</string>
+    <string name="error_unknown">Er ging iets mis. Probeer opnieuw.</string>
+    <string name="error_room_not_found">Ongeldige vergader-ID</string>
+    <string name="error_meeting_ended">Vergadering is beëindigd</string>
+    <string name="error_auth_expired">Sessie verlopen, meld je opnieuw aan</string>
+    <string name="error_too_many_requests">Te veel verzoeken, probeer het later opnieuw</string>
+    <string name="error_server">Servicefout, probeer het later opnieuw</string>
+    <string name="session_expired_title">Sessie verlopen</string>
+    <string name="session_expired_message">Meld je opnieuw aan om door te gaan.</string>
+    <string name="session_expired_action">Opnieuw aanmelden</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Annuleren</string>
+</resources>

@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">We Meet</string>
+
+    <!-- Login screen -->
+    <string name="login_title">Entrez votre numéro</string>
+    <string name="login_phone_hint">Entrez votre numéro</string>
+    <string name="login_next">Suivant</string>
+    <string name="login_otp_sent_title">Code envoyé</string>
+    <string name="login_otp_sent_to">À %1$s</string>
+    <string name="login_resend_otp">Renvoyer (%1$ds)</string>
+    <string name="login_resend">Renvoyer</string>
+    <string name="login_error_phone_format">Veuillez saisir un numéro de mobile chinois à 11 chiffres valide.</string>
+    <string name="login_error_otp_format">Veuillez saisir le code SMS à 6 chiffres.</string>
+
+    <!-- Home screen -->
+    <string name="home_title">We Meet</string>
+    <string name="home_room_label">ID de réunion</string>
+    <string name="home_room_hint">ex. 499707</string>
+    <string name="home_create_meeting">Démarrer une réunion</string>
+    <string name="home_join_meeting">Rejoindre une réunion</string>
+    <string name="home_create_later_meeting">Planifier une réunion</string>
+    <string name="home_create_later_name_label">Nom de la réunion</string>
+    <string name="home_create_later_confirm">Créer</string>
+    <string name="home_create_later_cancel">Annuler</string>
+    <string name="home_create_later_no_time">Veuillez choisir une heure</string>
+    <string name="home_create_later_pick_time">Choisir l\'heure</string>
+    <string name="home_create_later_edit_time">Modifier</string>
+    <string name="home_create_later_clear_time">Effacer</string>
+    <string name="home_create_later_next">Suivant</string>
+    <string name="home_join">Rejoindre</string>
+    <string name="home_logout">Se déconnecter</string>
+    <string name="home_signed_in_as">Connecté en tant que %1$s</string>
+    <string name="home_settings">Paramètres</string>
+    <string name="home_scan_qr">Scanner un QR</string>
+
+    <!-- QR scan / web sign-in confirmation -->
+    <string name="qr_scan_confirm_title">Se connecter sur le web</string>
+    <string name="qr_scan_confirm_hint">Confirmez pour vous connecter à we-meet sur l\'appareil qui affiche ce QR.</string>
+    <string name="qr_scan_confirm_button">Confirmer la connexion</string>
+    <string name="qr_scan_cancel_button">Annuler</string>
+    <string name="qr_scan_back_button">Retour</string>
+    <string name="qr_scan_error_invalid">Ce QR code n\'est pas une connexion we-meet.</string>
+    <string name="qr_scan_error_scan_failed">Impossible de vérifier le QR. Il a peut-être expiré — veuillez réessayer.</string>
+    <string name="qr_scan_error_confirm_failed">Connexion échouée, veuillez réessayer.</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_video_codec">Codec vidéo</string>
+    <string name="settings_video_codec_default_suffix">(par défaut)</string>
+    <string name="settings_video_codec_hint">S\'applique à votre prochaine réunion.</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_language_system">Suivre le système</string>
+    <string name="settings_language_hint">Redémarrez l\'app si certains écrans ne se sont pas mis à jour.</string>
+
+    <!-- Preview screen -->
+    <string name="preview_start_meeting">Démarrer la réunion</string>
+    <string name="preview_join_meeting">Rejoindre la réunion</string>
+    <string name="preview_mic">Microphone</string>
+    <string name="preview_camera">Caméra</string>
+    <string name="preview_meeting_id_hint">ID de réunion</string>
+    <string name="preview_speaker">Haut-parleur</string>
+    <string name="preview_earpiece">Écouteur</string>
+    <string name="preview_mute">Muet</string>
+
+    <!-- Room screen -->
+    <string name="room_title">En réunion</string>
+    <string name="room_slug_label">ID de réunion : %1$s</string>
+    <string name="room_connecting">Connexion…</string>
+    <string name="room_action_mic">Microphone</string>
+    <string name="room_action_camera">Caméra</string>
+    <string name="room_action_switch_camera">Retourner</string>
+    <string name="room_action_participants">Membres</string>
+    <string name="room_action_minimize">Réduire</string>
+    <string name="room_action_message">Messages</string>
+    <string name="room_action_more">Plus</string>
+    <string name="room_more_raise_hand">Lever la main</string>
+    <string name="room_more_lower_hand">Baisser la main</string>
+    <string name="room_more_share">Partager</string>
+    <string name="room_more_record">Enregistrer</string>
+    <string name="room_more_interpret">Interpréter</string>
+    <string name="room_more_settings">Paramètres</string>
+    <string name="room_more_coming_soon">Bientôt disponible</string>
+    <string name="room_tile_hand_raised">Main levée</string>
+    <!-- Screen share -->
+    <string name="room_screen_share_screen">Partager l\'écran</string>
+    <string name="room_screen_share_whiteboard">Partager le tableau</string>
+    <string name="room_screen_share_stop">Arrêter le partage</string>
+    <string name="room_screen_share_of">Écran de %1$s</string>
+    <string name="room_screen_share_self_sharing">Vous partagez votre écran</string>
+    <string name="room_screen_share_overlay_prompt">Accordez l\'autorisation \"Afficher par-dessus d\'autres apps\" pour arrêter le partage depuis le bureau</string>
+    <string name="room_action_hangup">Quitter</string>
+    <string name="room_end">Terminer</string>
+    <string name="room_leave">Quitter la réunion</string>
+    <string name="room_end_meeting">Terminer la réunion</string>
+    <string name="room_leave_hint">Si vous ne souhaitez pas terminer la réunion, désignez un nouvel hôte avant de partir.</string>
+    <string name="room_participants">Membres (%1$d)</string>
+    <string name="room_participant_me"> (Moi)</string>
+    <string name="room_permission_required">Les autorisations caméra et microphone sont nécessaires pour rejoindre une réunion.</string>
+    <string name="room_grant_permissions">Accorder les autorisations</string>
+    <string name="room_no_video">Pas de vidéo</string>
+    <string name="room_pin_participant">Épingler</string>
+    <string name="room_unpin_participant">Désépingler</string>
+    <string name="room_host_ended_title">L\'hôte a terminé la réunion</string>
+    <string name="room_host_ended_ack">OK</string>
+    <string name="room_host_ended_ack_countdown">OK (%1$ds)</string>
+    <string name="room_messages_title">Messages</string>
+    <string name="room_message_input_hint">Envoyer un message…</string>
+    <string name="room_message_empty">Aucun message</string>
+    <string name="room_message_host_tag">Hôte</string>
+    <string name="room_rename_self">Me renommer</string>
+    <string name="room_rename_title">Modifier le nom affiché</string>
+    <string name="room_rename_label">Nom affiché</string>
+    <string name="room_rename_confirm">Enregistrer</string>
+    <string name="room_rename_cancel">Annuler</string>
+    <string name="room_host_actions">Actions hôte</string>
+    <string name="room_host_mute">Couper le micro</string>
+    <string name="room_host_remove">Retirer</string>
+    <string name="room_host_remove_title">Retirer ce participant ?</string>
+    <string name="room_host_remove_message">Retirer %1$s de la réunion ? Cette personne pourra rejoindre via le lien.</string>
+    <string name="room_lobby_banner">%1$d personnes attendent de rejoindre</string>
+    <string name="room_lobby_banner_action">Examiner</string>
+    <string name="room_lobby_title">Salle d\'attente (%1$d)</string>
+    <string name="room_lobby_admit">Admettre</string>
+    <string name="room_lobby_deny">Refuser</string>
+    <string name="room_lobby_admit_all">Admettre tous</string>
+    <string name="waiting_title">En attente de l\'approbation de l\'hôte</string>
+    <string name="waiting_subtitle">Vous rejoindrez « %1$s » dès que l\'hôte vous laissera entrer.</string>
+    <string name="waiting_cancel">Annuler</string>
+    <string name="waiting_back">Retour</string>
+    <string name="waiting_denied_title">L\'hôte a refusé votre demande</string>
+    <string name="waiting_denied_subtitle">Vous pouvez réessayer plus tard ou contacter l\'hôte directement.</string>
+    <string name="waiting_error_title">Impossible d\'accéder à la réunion</string>
+    <string name="room_more_host_settings">Paramètres hôte</string>
+    <string name="room_host_settings_title">Paramètres hôte</string>
+    <string name="room_host_settings_subtitle">Seul l\'hôte peut modifier ces options.</string>
+    <string name="room_host_access_section">Accès</string>
+    <string name="room_host_access_public_title">Ouvert</string>
+    <string name="room_host_access_public_desc">Tout le monde peut rejoindre directement.</string>
+    <string name="room_host_access_trusted_title">Utilisateurs de confiance</string>
+    <string name="room_host_access_trusted_desc">Les utilisateurs connectés peuvent rejoindre sans demander.</string>
+    <string name="room_host_access_restricted_title">Restreint</string>
+    <string name="room_host_access_restricted_desc">Les personnes non invitées doivent demander à entrer.</string>
+
+    <!-- Invite sheet -->
+    <string name="invite_title">Inviter à la réunion</string>
+    <string name="invite_qr_desc">QR code pour rejoindre la réunion</string>
+    <string name="invite_copy_link">Copier</string>
+    <string name="invite_share">Partager</string>
+    <string name="invite_copied">Invitation copiée dans le presse-papiers</string>
+    <string name="invite_share_chooser_title">Partager la réunion</string>
+    <string name="invite_clipboard_format">Rejoignez ma réunion sur We Meet :\n%1$s\n(ID de réunion : %2$s)</string>
+    <string name="invite_enter_room">Entrer dans la réunion</string>
+    <string name="invite_scheduled_label">Prévu pour %1$s</string>
+    <string name="invite_clipboard_scheduled">Prévu pour : %1$s</string>
+
+    <!-- Ongoing-meeting foreground-service notification -->
+    <string name="meeting_notification_channel_name">Réunion en cours</string>
+    <string name="meeting_notification_title">En réunion</string>
+    <string name="meeting_notification_content">%1$s</string>
+
+    <!-- Scheduled meetings (upcoming) -->
+    <string name="scheduled_section_title">Réunions planifiées</string>
+    <string name="scheduled_time_prefix">Prévu pour %1$s</string>
+
+    <!-- History -->
+    <string name="history_section_title">Historique</string>
+    <string name="history_empty">Aucun historique</string>
+    <string name="history_row_more">Plus</string>
+    <string name="history_action_delete">Supprimer</string>
+    <string name="room_more_record_stop">Arrêter l\'enregistrement</string>
+    <string name="room_recording_banner">Enregistrement en cours</string>
+    <string name="room_more_subtitles_on">Sous-titres</string>
+    <string name="room_more_subtitles_off">Masquer les sous-titres</string>
+    <string name="room_more_ai">IA</string>
+    <string name="room_ai_title">IA dans la réunion</string>
+    <string name="room_ai_clear">Effacer</string>
+    <string name="room_ai_empty_hint">Posez à l\'IA une question sur ce qui a été dit dans cette réunion.</string>
+    <string name="room_ai_thinking">Réflexion…</string>
+    <string name="room_ai_input_hint">Demander à l\'IA…</string>
+    <string name="room_ai_send">Envoyer</string>
+    <string name="history_delete_confirm_title">Supprimer la réunion ?</string>
+    <string name="history_delete_confirm_text">Retirer « %1$s » de votre liste. Si vous êtes l\'hôte, elle sera également supprimée pour tout le monde.</string>
+    <string name="history_delete_confirm_ok">Supprimer</string>
+    <string name="history_detail_meeting_id">ID de réunion : %1$s</string>
+    <string name="history_detail_host">Hôte : %1$s</string>
+    <string name="history_detail_participants">Participants</string>
+    <string name="history_detail_timeline_today">Aujourd\'hui</string>
+    <string name="history_detail_joined">A rejoint la réunion</string>
+    <string name="history_detail_left">A quitté la réunion</string>
+    <string name="history_unknown_host">—</string>
+
+    <!-- Meeting detail -->
+    <string name="meeting_detail_title">Détails de la réunion</string>
+    <string name="meeting_detail_tab_info">Infos</string>
+    <string name="meeting_detail_tab_summary">Résumé</string>
+    <string name="meeting_detail_tab_action_items">Actions</string>
+    <string name="meeting_detail_tab_transcript">Transcription</string>
+    <string name="meeting_detail_loading">Chargement…</string>
+    <string name="meeting_detail_load_failed">Échec du chargement.</string>
+    <string name="meeting_detail_info_name">Nom</string>
+    <string name="meeting_detail_info_time">Heure</string>
+    <string name="meeting_detail_info_code">ID de réunion</string>
+    <string name="meeting_detail_info_owner">Propriétaire</string>
+    <string name="meeting_detail_info_participants">Participants</string>
+    <string name="meeting_detail_info_ongoing">En cours</string>
+    <string name="meeting_detail_info_empty">—</string>
+    <string name="meeting_detail_info_timeline">Votre historique</string>
+    <string name="meeting_detail_summary_empty">Aucun résumé n\'a encore été généré.</string>
+    <string name="meeting_detail_summary_regenerate">Régénérer</string>
+    <string name="meeting_detail_summary_regenerating">Régénération…</string>
+    <string name="meeting_detail_summary_failed">Échec de la génération du résumé.</string>
+    <string name="meeting_detail_action_items_empty">Aucune action.</string>
+    <string name="meeting_detail_action_items_owner">Responsable</string>
+    <string name="meeting_detail_action_items_due">Échéance</string>
+    <string name="meeting_detail_transcript_empty">Aucune transcription disponible.</string>
+
+    <!-- Tabs -->
+    <string name="tab_meeting">Réunion</string>
+    <string name="tab_ai">IA</string>
+    <string name="tab_profile">Moi</string>
+
+    <!-- AI hub -->
+    <string name="ai_hub_title">Assistant IA</string>
+    <string name="ai_hub_call_title">Appel</string>
+    <string name="ai_hub_call_subtitle">Chat vocal / vidéo en temps réel avec l\'IA</string>
+
+    <!-- Profile screen -->
+    <string name="profile_nickname">Pseudo</string>
+    <string name="profile_phone">Téléphone</string>
+    <string name="profile_not_set">Non défini</string>
+    <string name="profile_set_nickname">Définir le pseudo</string>
+    <string name="profile_nickname_hint">Entrez un pseudo</string>
+    <string name="profile_sign_out">Se déconnecter</string>
+    <string name="profile_sign_out_confirm">Voulez-vous vraiment vous déconnecter ?</string>
+    <string name="profile_deregister">Supprimer le compte</string>
+    <string name="profile_deregister_title">Supprimer le compte ?</string>
+    <string name="profile_deregister_warning">Cela supprime définitivement votre compte We Meet. L\'historique, le profil et les données enregistrées seront effacés et non récupérables. Tapez votre numéro de téléphone pour confirmer.</string>
+    <string name="profile_deregister_phone_hint">Numéro de téléphone</string>
+    <string name="profile_deregister_confirm">Supprimer</string>
+    <string name="profile_deregister_error">Échec de la suppression. Veuillez réessayer.</string>
+    <string name="profile_intro">Bio</string>
+    <string name="profile_set_intro">Modifier la bio</string>
+    <string name="profile_intro_hint">Jusqu\'à 100 caractères</string>
+    <string name="profile_intro_counter">%1$d/%2$d</string>
+    <string name="profile_avatar">Avatar</string>
+    <string name="profile_change_avatar">Changer l\'avatar</string>
+    <string name="profile_cover">Couverture</string>
+    <string name="profile_change_cover">Changer la couverture</string>
+    <string name="profile_image_uploading">Envoi…</string>
+    <string name="profile_image_error_mime">Seules les images JPG / PNG / WEBP sont autorisées</string>
+    <string name="profile_image_error_size">L\'image doit faire 2 Mo ou moins</string>
+    <string name="profile_image_error_upload">Échec de l\'envoi, veuillez réessayer</string>
+    <string name="profile_intro_error_save">Échec de l\'enregistrement de la bio</string>
+    <string name="profile_nickname_error_save">Échec de l\'enregistrement du pseudo</string>
+
+    <!-- Generic -->
+    <string name="error_network">Erreur réseau. Vérifiez votre connexion et réessayez.</string>
+    <string name="error_unknown">Une erreur est survenue. Veuillez réessayer.</string>
+    <string name="error_room_not_found">ID de réunion invalide</string>
+    <string name="error_meeting_ended">La réunion est terminée</string>
+    <string name="error_auth_expired">Session expirée, veuillez vous reconnecter</string>
+    <string name="error_too_many_requests">Trop de requêtes, veuillez réessayer plus tard</string>
+    <string name="error_server">Erreur du service, veuillez réessayer plus tard</string>
+    <string name="session_expired_title">Session expirée</string>
+    <string name="session_expired_message">Veuillez vous reconnecter pour continuer.</string>
+    <string name="session_expired_action">Se reconnecter</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Annuler</string>
+</resources>

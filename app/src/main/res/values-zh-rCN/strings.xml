@@ -49,6 +49,9 @@
     <string name="settings_video_codec">视频编解码</string>
     <string name="settings_video_codec_default_suffix">（默认）</string>
     <string name="settings_video_codec_hint">将在下一次加入会议时生效。</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_language_system">跟随系统</string>
+    <string name="settings_language_hint">若部分界面未即时更新，重启应用即可。</string>
 
     <!-- Preview screen -->
     <string name="preview_start_meeting">开始会议</string>
