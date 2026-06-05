@@ -65,6 +65,7 @@ private const val INTRO_MAX_LENGTH = 100
 
 @Composable
 fun ProfileScreen(
+    onSettingsClick: () -> Unit,
     onSignedOut: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -219,6 +220,26 @@ fun ProfileScreen(
                 label = stringResource(R.string.profile_phone),
                 value = phone,
                 onClick = null,
+            )
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        // App-level settings live in a separate group: language / theme /
+        // video codec — all device-wide preferences, not per-meeting.
+        // Routing through onSettingsClick keeps the existing SettingsScreen
+        // as the single host for these knobs.
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surface),
+        ) {
+            SettingsRow(
+                label = stringResource(R.string.profile_settings),
+                value = null,
+                onClick = onSettingsClick,
             )
         }
 
@@ -480,7 +501,7 @@ private fun AvatarBubble(
 @Composable
 private fun SettingsRow(
     label: String,
-    value: String,
+    value: String?,
     onClick: (() -> Unit)?,
 ) {
     Row(
@@ -495,13 +516,15 @@ private fun SettingsRow(
             style = MaterialTheme.typography.bodyLarge,
         )
         Spacer(Modifier.weight(1f))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            modifier = Modifier.padding(end = 4.dp),
-        )
+        if (value != null) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                modifier = Modifier.padding(end = 4.dp),
+            )
+        }
         if (onClick != null) {
             Spacer(Modifier.width(4.dp))
             Icon(

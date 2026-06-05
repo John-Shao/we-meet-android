@@ -243,6 +243,7 @@
     <string name="profile_deregister_phone_hint">Telefoonnummer</string>
     <string name="profile_deregister_confirm">Verwijderen</string>
     <string name="profile_deregister_error">Verwijderen mislukt. Probeer opnieuw.</string>
+    <string name="profile_settings">Instellingen</string>
     <string name="profile_intro">Bio</string>
     <string name="profile_set_intro">Bio bewerken</string>
     <string name="profile_intro_hint">Tot 100 tekens</string>

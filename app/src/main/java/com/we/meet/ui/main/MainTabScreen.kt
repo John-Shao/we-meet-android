@@ -85,7 +85,6 @@ fun MainTabScreen(
                         onJoinSlug = onJoinSlug,
                         onScanQrCode = onScanQrCode,
                         onHistoryClick = onHistoryClick,
-                        onSettingsClick = onSettingsClick,
                     )
                 }
             }
@@ -96,7 +95,10 @@ fun MainTabScreen(
             }
             2 -> {
                 Box(modifier = Modifier.padding(padding)) {
-                    ProfileScreen(onSignedOut = onSignedOut)
+                    ProfileScreen(
+                        onSettingsClick = onSettingsClick,
+                        onSignedOut = onSignedOut,
+                    )
                 }
             }
         }

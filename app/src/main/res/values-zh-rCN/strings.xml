@@ -243,6 +243,7 @@
     <string name="profile_deregister_phone_hint">手机号</string>
     <string name="profile_deregister_confirm">注销</string>
     <string name="profile_deregister_error">注销失败，请稍后重试。</string>
+    <string name="profile_settings">设置</string>
     <string name="profile_intro">个人简介</string>
     <string name="profile_set_intro">编辑简介</string>
     <string name="profile_intro_hint">最长 100 个字符</string>

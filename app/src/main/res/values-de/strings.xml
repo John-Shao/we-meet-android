@@ -243,6 +243,7 @@
     <string name="profile_deregister_phone_hint">Telefonnummer</string>
     <string name="profile_deregister_confirm">Löschen</string>
     <string name="profile_deregister_error">Löschen fehlgeschlagen. Bitte erneut versuchen.</string>
+    <string name="profile_settings">Einstellungen</string>
     <string name="profile_intro">Bio</string>
     <string name="profile_set_intro">Bio bearbeiten</string>
     <string name="profile_intro_hint">Bis zu 100 Zeichen</string>

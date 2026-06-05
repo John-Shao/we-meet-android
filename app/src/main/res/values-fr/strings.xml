@@ -243,6 +243,7 @@
     <string name="profile_deregister_phone_hint">Numéro de téléphone</string>
     <string name="profile_deregister_confirm">Supprimer</string>
     <string name="profile_deregister_error">Échec de la suppression. Veuillez réessayer.</string>
+    <string name="profile_settings">Paramètres</string>
     <string name="profile_intro">Bio</string>
     <string name="profile_set_intro">Modifier la bio</string>
     <string name="profile_intro_hint">Jusqu\'à 100 caractères</string>

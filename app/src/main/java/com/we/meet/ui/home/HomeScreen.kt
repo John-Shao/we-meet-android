@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddBox
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
@@ -64,7 +63,6 @@ fun HomeScreen(
     onJoinSlug: (slug: String) -> Unit,
     onScanQrCode: () -> Unit,
     onHistoryClick: (roomId: String) -> Unit,
-    onSettingsClick: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(app))
@@ -102,13 +100,9 @@ fun HomeScreen(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            IconButton(onClick = onSettingsClick) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = stringResource(R.string.home_settings),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            // Settings entry was moved to the Profile tab — language /
+            // theme / codec are app-level prefs that don't belong in
+            // the meetings tab's header.
         }
 
         // Action zone — padded, same background as the page.
