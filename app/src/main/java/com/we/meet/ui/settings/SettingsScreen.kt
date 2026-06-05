@@ -169,6 +169,7 @@ private fun AccountSection(
                 .clickable(onClick = onDeregisterClick)
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
         ) {
             Text(
                 text = stringResource(R.string.profile_deregister),
