@@ -85,14 +85,14 @@ fun RoomAiSheet(
         sheetState = sheetState,
         contentWindowInsets = { WindowInsets(0) },
     ) {
-        // Half-screen sheet: `fillMaxHeight(0.5f)` makes the sheet
-        // expand to half the available viewport (rather than wrapping
-        // to content), so the transcript has room even when empty and
-        // long answers don't fight the input field for vertical space.
+        // Golden-ratio sheet (~0.618 of the viewport). Strikes a
+        // balance between leaving the meeting tile visible behind the
+        // sheet and giving the transcript breathing room for long
+        // answers — empty state still looks centred rather than cramped.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.5f)
+                .fillMaxHeight(0.618f)
                 .imePadding()
                 .padding(horizontal = 16.dp),
         ) {
