@@ -58,8 +58,6 @@ data class AiPromptDto(
     val id: String,
     val label: String,
     val content: String? = null,
-    val category_code: String? = null,
-    val category_label: String? = null,
 )
 
 @JsonClass(generateAdapter = true)
