@@ -42,7 +42,9 @@ data class AiProfileDto(
     val architecture: String? = null,
     val voices: List<AiVoiceDto> = emptyList(),
     val default_voice_id: String? = null,
-    val default_prompt_id: String? = null,
+    // No profile-level default prompt: model and prompt are decoupled
+    // server-side. Prompt resolution falls back to user preference, then
+    // to none.
 ) {
     val isOmni: Boolean get() = architecture.equals("omni", ignoreCase = true)
 
