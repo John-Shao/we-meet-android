@@ -1451,95 +1451,105 @@ private fun MoreActionsSheet(
     val handTint = if (handRaised) Color(0xFFFFB300) else sheetTint
     val handBg = if (handRaised) Color(0xFFFFE6B3) else sheetBg
 
+    // Subtitles — repurposes the old "interpret" slot. Anyone in the room
+    // can flip them on; first-on POSTs start-subtitle (LiveKit-token auth,
+    // see RoomRepository.startSubtitle). Once started the agent stays
+    // attached for the meeting; subsequent taps only show/hide the overlay.
+    val subtitlesTint = if (subtitlesOverlayOn) Color(0xFF3C8DFF) else sheetTint
+    val subtitlesBg = if (subtitlesOverlayOn) Color(0xFFD9E8FF) else sheetBg
+
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Row(
+        // 5-per-row grid. Each cell is `weight(1f)` so columns line up
+        // between rows — keeps Settings (row 2 col 1) visually under
+        // Raise Hand (row 1 col 1) without manual width math.
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            ControlButton(
-                icon = Icons.Default.PanTool,
-                label = stringResource(
-                    if (handRaised) R.string.room_more_lower_hand
-                    else R.string.room_more_raise_hand
-                ),
-                isOn = true,
-                onClick = onRaiseHandClick,
-                labelColor = handTint,
-                iconBgColor = handBg,
-                iconTintColor = handTint,
-            )
-            ControlButton(
-                icon = if (localScreenSharing) Icons.AutoMirrored.Filled.StopScreenShare
-                    else Icons.AutoMirrored.Filled.ScreenShare,
-                label = stringResource(
-                    if (localScreenSharing) R.string.room_screen_share_stop
-                    else R.string.room_more_share
-                ),
-                isOn = true,
-                onClick = onShareClick,
-                labelColor = shareTint,
-                iconBgColor = sheetBg,
-                iconTintColor = shareTint,
-            )
-            // Record: backend `RECORDING_ENABLE` is off on the current
-            // deployment (aliyun-prod values.meet.yaml), so start-recording
-            // returns 404 from `@FeatureFlag.require("recording")`. The
-            // button stays in stub mode ("功能开发中") for everyone until
-            // the deployment turns it on AND a real recording flow is
-            // designed for mobile. The banner below still subscribes to
-            // RoomEvent.RecordingStatusChanged — Web-initiated recordings
-            // remain visible on App when the time comes.
-            ControlButton(
-                icon = Icons.Default.FiberManualRecord,
-                label = stringResource(R.string.room_more_record),
-                isOn = true,
-                onClick = showStub,
-                labelColor = sheetTint,
-                iconBgColor = sheetBg,
-                iconTintColor = sheetTint,
-            )
-            // Subtitles — repurposes the old "interpret" slot. Anyone
-            // in the room can flip them on; first-on POSTs start-subtitle
-            // (LiveKit-token auth, see RoomRepository.startSubtitle).
-            // Once started the agent stays attached for the meeting —
-            // subsequent taps only show/hide the overlay locally.
-            val subtitlesTint = if (subtitlesOverlayOn) Color(0xFF3C8DFF) else sheetTint
-            val subtitlesBg = if (subtitlesOverlayOn) Color(0xFFD9E8FF) else sheetBg
-            ControlButton(
-                icon = Icons.Default.ClosedCaption,
-                label = stringResource(
-                    if (subtitlesOverlayOn) R.string.room_more_subtitles_off
-                    else R.string.room_more_subtitles_on
-                ),
-                isOn = true,
-                onClick = if (subtitlesPending) showStub else onSubtitlesClick,
-                labelColor = subtitlesTint,
-                iconBgColor = subtitlesBg,
-                iconTintColor = subtitlesTint,
-            )
-            // In-room AI assistant. Any participant can ask; backend
-            // gates on LiveKit token (HasLiveKitRoomAccess), so anonymous
-            // and registered users alike succeed once they're in the room.
-            ControlButton(
-                icon = Icons.Default.AutoAwesome,
-                label = stringResource(R.string.room_more_ai),
-                isOn = true,
-                onClick = onAiClick,
-                labelColor = sheetTint,
-                iconBgColor = sheetBg,
-                iconTintColor = sheetTint,
-            )
-            ControlButton(
-                icon = Icons.Default.Settings,
-                label = stringResource(R.string.room_more_settings),
-                isOn = true,
-                onClick = if (isAdmin) onHostSettingsClick else showStub,
-                labelColor = sheetTint,
-                iconBgColor = sheetBg,
-                iconTintColor = sheetTint,
-            )
+            Row(modifier = Modifier.fillMaxWidth()) {
+                ControlButton(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.PanTool,
+                    label = stringResource(
+                        if (handRaised) R.string.room_more_lower_hand
+                        else R.string.room_more_raise_hand
+                    ),
+                    isOn = true,
+                    onClick = onRaiseHandClick,
+                    labelColor = handTint,
+                    iconBgColor = handBg,
+                    iconTintColor = handTint,
+                )
+                ControlButton(
+                    modifier = Modifier.weight(1f),
+                    icon = if (localScreenSharing) Icons.AutoMirrored.Filled.StopScreenShare
+                        else Icons.AutoMirrored.Filled.ScreenShare,
+                    label = stringResource(
+                        if (localScreenSharing) R.string.room_screen_share_stop
+                        else R.string.room_more_share
+                    ),
+                    isOn = true,
+                    onClick = onShareClick,
+                    labelColor = shareTint,
+                    iconBgColor = sheetBg,
+                    iconTintColor = shareTint,
+                )
+                // Record: backend RECORDING_ENABLE is off, stays a stub
+                // ("功能开发中") for everyone. Banner still picks up
+                // RecordingStatusChanged if Web ever flips it on.
+                ControlButton(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.FiberManualRecord,
+                    label = stringResource(R.string.room_more_record),
+                    isOn = true,
+                    onClick = showStub,
+                    labelColor = sheetTint,
+                    iconBgColor = sheetBg,
+                    iconTintColor = sheetTint,
+                )
+                ControlButton(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.ClosedCaption,
+                    label = stringResource(
+                        if (subtitlesOverlayOn) R.string.room_more_subtitles_off
+                        else R.string.room_more_subtitles_on
+                    ),
+                    isOn = true,
+                    onClick = if (subtitlesPending) showStub else onSubtitlesClick,
+                    labelColor = subtitlesTint,
+                    iconBgColor = subtitlesBg,
+                    iconTintColor = subtitlesTint,
+                )
+                // In-room AI — backend gates on LiveKit token
+                // (HasLiveKitRoomAccess) so all participants can use it.
+                ControlButton(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.AutoAwesome,
+                    label = stringResource(R.string.room_more_ai),
+                    isOn = true,
+                    onClick = onAiClick,
+                    labelColor = sheetTint,
+                    iconBgColor = sheetBg,
+                    iconTintColor = sheetTint,
+                )
+            }
+            Row(modifier = Modifier.fillMaxWidth()) {
+                ControlButton(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.Settings,
+                    label = stringResource(R.string.room_more_settings),
+                    isOn = true,
+                    onClick = if (isAdmin) onHostSettingsClick else showStub,
+                    labelColor = sheetTint,
+                    iconBgColor = sheetBg,
+                    iconTintColor = sheetTint,
+                )
+                // Reserve 4 empty cells so Settings keeps the col-1
+                // position when more entries land on row 2 later.
+                Spacer(Modifier.weight(4f))
+            }
         }
         Spacer(Modifier.height(24.dp))
     }
