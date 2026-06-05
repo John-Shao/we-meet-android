@@ -220,6 +220,7 @@ fun RoomScreen(
                         onAdmitParticipant = viewModel::admitParticipant,
                         onRefreshAccessLevel = viewModel::refreshAccessLevel,
                         onUpdateAccessLevel = viewModel::updateAccessLevel,
+                        onToggleRecording = viewModel::toggleRecording,
                         onLeave = {
                             viewModel.leave()
                             onLeave(false)
@@ -258,6 +259,7 @@ private fun RoomContent(
     onAdmitParticipant: suspend (participantId: String, allow: Boolean) -> Result<Unit>,
     onRefreshAccessLevel: suspend () -> Unit,
     onUpdateAccessLevel: suspend (String) -> Result<Unit>,
+    onToggleRecording: () -> Unit,
     onLeave: () -> Unit,
     onEndMeeting: () -> Unit,
 ) {
@@ -443,6 +445,9 @@ private fun RoomContent(
                         onClick = { showWaitingList = true },
                     )
                 }
+                if (state.isRecording) {
+                    RecordingBanner()
+                }
             }
         }
 
@@ -556,6 +561,8 @@ private fun RoomContent(
             isAdmin = state.isAdmin,
             handRaised = handRaised,
             localScreenSharing = state.localScreenSharing,
+            isRecording = state.isRecording,
+            recordingPending = state.recordingPending,
             onRaiseHandClick = {
                 showMore = false
                 scope.launch { onToggleHand() }
@@ -567,6 +574,10 @@ private fun RoomContent(
                 } else {
                     showShareChooser = true
                 }
+            },
+            onRecordClick = {
+                showMore = false
+                onToggleRecording()
             },
             onHostSettingsClick = {
                 showMore = false
@@ -1133,6 +1144,38 @@ private fun LobbyBanner(
     }
 }
 
+/**
+ * Red "Recording in progress" pill shown at the top of every
+ * participant's screen while LiveKit broadcasts `isRecording = true`.
+ * Mirrors LobbyBanner's shape so the two stack cleanly when a host
+ * is recording WITH visitors waiting in the lobby.
+ */
+@Composable
+private fun RecordingBanner() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFFFF4444))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Default.FiberManualRecord,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(14.dp),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = stringResource(R.string.room_recording_banner),
+            color = Color.White,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WaitingListSheet(
@@ -1324,8 +1367,11 @@ private fun MoreActionsSheet(
     isAdmin: Boolean,
     handRaised: Boolean,
     localScreenSharing: Boolean,
+    isRecording: Boolean,
+    recordingPending: Boolean,
     onRaiseHandClick: () -> Unit,
     onShareClick: () -> Unit,
+    onRecordClick: () -> Unit,
     onHostSettingsClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -1382,14 +1428,27 @@ private fun MoreActionsSheet(
                 iconBgColor = sheetBg,
                 iconTintColor = shareTint,
             )
+            // Record: owner-only entry. Non-admins see a disabled stub
+            // (still appears so the sheet layout doesn't change between
+            // hosts and guests). Tint goes red while LiveKit is
+            // broadcasting recording=true so the host knows the worker
+            // came up; pending state during start/stop disables clicks.
+            val recordTint = if (isRecording) Color(0xFFFF4444) else sheetTint
+            val recordBg = if (isRecording) Color(0xFFFFE0E0) else sheetBg
+            val recordLabel = stringResource(
+                when {
+                    isRecording -> R.string.room_more_record_stop
+                    else -> R.string.room_more_record
+                }
+            )
             ControlButton(
                 icon = Icons.Default.FiberManualRecord,
-                label = stringResource(R.string.room_more_record),
+                label = recordLabel,
                 isOn = true,
-                onClick = showStub,
-                labelColor = sheetTint,
-                iconBgColor = sheetBg,
-                iconTintColor = sheetTint,
+                onClick = if (isAdmin && !recordingPending) onRecordClick else showStub,
+                labelColor = recordTint,
+                iconBgColor = recordBg,
+                iconTintColor = recordTint,
             )
             ControlButton(
                 icon = Icons.Default.Language,

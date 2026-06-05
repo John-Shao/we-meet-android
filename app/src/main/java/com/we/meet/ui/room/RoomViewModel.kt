@@ -127,6 +127,21 @@ data class RoomUiState(
      * sees the room's policy" UI doesn't need new plumbing.
      */
     val accessLevel: String? = null,
+    /**
+     * True while the LiveKit room broadcasts `isRecording = true` (set
+     * by the backend when a Recording row is ACTIVE). Drives the red
+     * "正在录制" banner above the participant grid and flips the More
+     * sheet's record button to "stop". Updated from
+     * [RoomEvent.RecordingStatusChanged] — visible to ALL participants,
+     * not just the host who started it.
+     */
+    val isRecording: Boolean = false,
+    /**
+     * True between tapping start/stop and the server's RecordingStatus
+     * event landing. Used to disable the record button so the host
+     * can't double-fire start/stop while the worker spins up.
+     */
+    val recordingPending: Boolean = false,
 ) {
     enum class Phase { Connecting, Connected, Error, Disconnected }
 }
@@ -273,6 +288,21 @@ class RoomViewModel(
                     is RoomEvent.TrackUnmuted -> {
                         syncLocalTrackState(event.participant, event.publication, muted = false)
                         refreshParticipants()
+                    }
+
+                    // Server flipped Room.isRecording. The SDK 2.23.5
+                    // event class doesn't expose the boolean as a public
+                    // property; read it off the Room instead — by the
+                    // time the event fires, room.isRecording reflects
+                    // the new value. Visible to ALL participants, not
+                    // just the host who started recording.
+                    is RoomEvent.RecordingStatusChanged -> {
+                        _state.update {
+                            it.copy(
+                                isRecording = controller.room.isRecording,
+                                recordingPending = false,
+                            )
+                        }
                     }
 
                     is RoomEvent.ActiveSpeakersChanged -> {
@@ -945,6 +975,34 @@ class RoomViewModel(
                 _state.update { it.copy(accessLevel = room.access_level) }
                 Unit
             }
+    }
+
+    /**
+     * Host-only: toggle audio-transcription recording. Backend uses the
+     * room's UUID OR its slug interchangeably; slug is what we have at
+     * VM-construction time so we hit `start-recording`/`stop-recording`
+     * with that. The LiveKit RoomEvent.RecordingStatusChanged broadcast
+     * is what flips [RoomUiState.isRecording] for everyone — this
+     * function only fires the HTTP call and toggles a local pending
+     * flag while we wait. Caller is expected to gate on isAdmin.
+     */
+    fun toggleRecording() {
+        if (!isAdmin) return
+        val current = _state.value
+        if (current.recordingPending) return
+        _state.update { it.copy(recordingPending = true) }
+        viewModelScope.launch {
+            val result =
+                if (current.isRecording) roomRepository.stopRecording(roomId)
+                else roomRepository.startRecording(roomId)
+            // On failure (409 already running, 502 worker error, 403 etc.)
+            // drop the pending flag so the button re-enables; the server
+            // state stays whatever it was. The RecordingStatusChanged
+            // event will land separately on success.
+            if (result.isFailure) {
+                _state.update { it.copy(recordingPending = false) }
+            }
+        }
     }
 
     /** End the room via backend API, then disconnect. Only owner should call this. */

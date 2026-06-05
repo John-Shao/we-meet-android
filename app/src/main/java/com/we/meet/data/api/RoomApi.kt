@@ -14,6 +14,7 @@ import com.we.meet.data.api.dto.RenameParticipantRequest
 import com.we.meet.data.api.dto.RequestEntryRequest
 import com.we.meet.data.api.dto.RequestEntryResponse
 import com.we.meet.data.api.dto.RoomDto
+import com.we.meet.data.api.dto.StartRecordingRequest
 import com.we.meet.data.api.dto.WaitingParticipantsResponse
 import com.we.meet.data.api.dto.UpdateRoomRequest
 import retrofit2.http.Body
@@ -61,6 +62,21 @@ interface RoomApi {
 
     @POST("api/v1.0/rooms/{idOrSlug}/end/")
     suspend fun endRoom(@Path("idOrSlug") idOrSlug: String)
+
+    /**
+     * Host-only: start a recording. Backend permission gate is
+     * `HasPrivilegesOnRoom` (admin/owner). Response is a small status
+     * envelope we don't need to decode — Retrofit returns Unit when
+     * the body type is omitted.
+     */
+    @POST("api/v1.0/rooms/{idOrSlug}/start-recording/")
+    suspend fun startRecording(
+        @Path("idOrSlug") idOrSlug: String,
+        @Body body: StartRecordingRequest,
+    )
+
+    @POST("api/v1.0/rooms/{idOrSlug}/stop-recording/")
+    suspend fun stopRecording(@Path("idOrSlug") idOrSlug: String)
 
     /**
      * Owner-only: hard-delete the room. Backend `RoomPermissions` requires

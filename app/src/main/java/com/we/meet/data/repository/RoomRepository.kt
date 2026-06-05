@@ -68,6 +68,23 @@ class RoomRepository(
     }
 
     /**
+     * Host-only: start/stop a transcript recording on the backend. The
+     * UI surface comes through LiveKit's `RecordingStatusChanged` event,
+     * not the HTTP response — these calls just kick off / shut down
+     * the Egress worker.
+     */
+    suspend fun startRecording(idOrSlug: String): Result<Unit> = runCatching {
+        roomApi.startRecording(
+            idOrSlug,
+            com.we.meet.data.api.dto.StartRecordingRequest(),
+        )
+    }
+
+    suspend fun stopRecording(idOrSlug: String): Result<Unit> = runCatching {
+        roomApi.stopRecording(idOrSlug)
+    }
+
+    /**
      * Owner-only: delete the room on the backend. Returns [Result.failure]
      * with the underlying HttpException when the caller isn't the owner
      * (HTTP 403) — callers should fall back to local-only removal in
