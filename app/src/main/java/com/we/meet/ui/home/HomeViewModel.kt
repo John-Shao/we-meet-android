@@ -88,10 +88,23 @@ class HomeViewModel(
     fun refreshRemoteRooms() {
         viewModelScope.launch {
             roomRepository.fetchMyRooms().onSuccess { rooms ->
-                _remoteRooms.value = rooms
+                _remoteRooms.value = rooms.filterNot { it.isAiSession() }
             }
         }
     }
+
+    /**
+     * AI 打电话 sessions are created via the same `POST /rooms/` endpoint
+     * as real meetings (feature-assistant convention: name starts with
+     * `__JUSI_AI_SESSION__-`), so they come back in `/rooms/?mine=true`.
+     * They are NOT meetings the user wants to see in 「预约会议」 /
+     * 「历史记录」, hide them at the data-source seam.
+     *
+     * Single source of truth is the prefix written by AiCallViewModel —
+     * keep the two in sync.
+     */
+    private fun RoomDto.isAiSession(): Boolean =
+        name?.startsWith(AI_SESSION_NAME_PREFIX) == true
 
     /**
      * The room just created via "create later" — non-null while the
@@ -323,5 +336,11 @@ class HomeViewModel(
                 roomRepository = app.roomRepository,
                 historyStore = app.historyStore,
             ) as T
+    }
+
+    private companion object {
+        // Mirror of the prefix written by feature-assistant's AiCallViewModel
+        // when it creates an AI session room. Keep the two in sync.
+        const val AI_SESSION_NAME_PREFIX = "__JUSI_AI_SESSION__-"
     }
 }
