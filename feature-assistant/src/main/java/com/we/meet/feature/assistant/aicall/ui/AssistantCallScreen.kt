@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -183,7 +184,9 @@ fun AssistantCallScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = Color.White,
+        // Theme-aware background; the previous hardcoded white looked broken
+        // in dark mode (black title text on a forced-white rectangle).
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { inner ->
         Box(modifier = Modifier.fillMaxSize()) {
@@ -248,7 +251,8 @@ fun AssistantCallScreen(
                 Text(
                     text = "内容由 AI 生成",
                     fontSize = 12.sp,
-                    color = if (isVideoActive) Color.White.copy(alpha = 0.7f) else Color(0xFF999999),
+                    color = if (isVideoActive) Color.White.copy(alpha = 0.7f)
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 16.dp),
@@ -281,7 +285,10 @@ private fun TopBar(
     showFlipCamera: Boolean,
     onFlipCamera: () -> Unit,
 ) {
-    val tint = if (tintOnDark) Color.White else Color.Black
+    // tintOnDark = true only when video fills the background (so the bar
+    // sits on the camera feed). Otherwise the bar sits on the theme
+    // background and should follow it (dark surface → light text).
+    val tint = if (tintOnDark) Color.White else MaterialTheme.colorScheme.onBackground
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -342,8 +349,9 @@ private fun StatusHint(
         is AiCallStatus.Ended -> "通话已结束" to false
         is AiCallStatus.Failed -> status.message to false
     }
-    val background = if (onDark) Color.Black.copy(alpha = 0.4f) else Color(0xFFF1F1F1)
-    val textColor = if (onDark) Color.White else Color.Black
+    val background = if (onDark) Color.Black.copy(alpha = 0.4f)
+        else MaterialTheme.colorScheme.surfaceVariant
+    val textColor = if (onDark) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
 
     Box(
         modifier = Modifier

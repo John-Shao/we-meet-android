@@ -10,6 +10,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -65,7 +66,8 @@ fun AiSettingsSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color.White,
+        // Use Material3's theme-aware sheet container; hardcoded white
+        // looked broken in dark mode (TabRow drew dark, sheet drew white).
     ) {
         Column(modifier = Modifier.padding(bottom = 24.dp)) {
             TabRow(selectedTabIndex = if (activeTab == AiCallMode.Voice) 0 else 1) {
@@ -131,7 +133,10 @@ private fun ModeConfigSection(
             ?: "暂无可用模型",
         options = profiles.map { it.display_name?.takeIf { n -> n.isNotBlank() } ?: it.code },
         onSelect = { idx -> onSelectProfile(profiles[idx].code) },
-        enabled = profiles.size > 1,
+        // Stay visually 'enabled' even when there's a single option, so the
+        // value text renders at full contrast. Disabling only when the list
+        // is empty preserves the empty-state hint look.
+        enabled = profiles.isNotEmpty(),
     )
 
     Spacer(modifier = Modifier.height(8.dp))
@@ -145,7 +150,7 @@ private fun ModeConfigSection(
         value = voiceLabels.getOrNull(voiceIndex) ?: "",
         options = voiceLabels,
         onSelect = { idx -> onSelectVoice(voices.getOrNull(idx)?.id) },
-        enabled = voices.size > 1,
+        enabled = voices.isNotEmpty(),
     )
 
     Spacer(modifier = Modifier.height(8.dp))
@@ -169,7 +174,10 @@ private fun ModeConfigSection(
                 onSelectPrompt(prompts[idx - 1].id)
             }
         },
-        enabled = promptOptions.size > 1,
+        // The "默认" sentinel is always present, so promptOptions is never
+        // empty — keep the dropdown fully readable regardless of how many
+        // prompts the catalog ships with.
+        enabled = true,
     )
 }
 
@@ -179,7 +187,7 @@ private fun SectionLabel(text: String) {
         text = text,
         fontSize = 14.sp,
         fontWeight = FontWeight.SemiBold,
-        color = Color(0xFF666666),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 8.dp),
