@@ -261,7 +261,9 @@ class AiCallViewModel(
             appContext = appContext,
             options = RoomOptions(
                 videoTrackCaptureDefaults = LocalVideoTrackOptions(
-                    position = CameraPosition.FRONT,
+                    // Default to BACK camera — AI 视频场景多是「拿手机给 AI
+                    // 看东西」, 后置摄像头取景更自然; 用户可在通话中切前置。
+                    position = CameraPosition.BACK,
                     // Cap capture at 5 fps — omni 视觉模型只按低频采样, 30 fps
                     // 既浪费端上 CPU/电量, 编码后又会被 LiveKit 丢帧。capture
                     // 和 publish 两边同时设为 5 让流水线整体对齐。
@@ -333,8 +335,8 @@ class AiCallViewModel(
 
                 if (nextMode == AiCallMode.Video) {
                     publishCameraAndAwait(room)
-                    // Re-publishing always starts at the room default (FRONT).
-                    _state.update { it.copy(isCameraEnabled = true, cameraFront = true) }
+                    // Re-publishing always starts at the room default (BACK).
+                    _state.update { it.copy(isCameraEnabled = true, cameraFront = false) }
                 } else {
                     runCatching { room.localParticipant.setCameraEnabled(false) }
                     localVideoTrack = null
@@ -491,7 +493,7 @@ class AiCallViewModel(
             it.copy(
                 status = AiCallStatus.Failed(message),
                 isCameraEnabled = false,
-                cameraFront = true,
+                cameraFront = false,
                 agentAudioLevel = 0f,
                 agentSpeaking = false,
             )
@@ -513,7 +515,7 @@ class AiCallViewModel(
             it.copy(
                 status = AiCallStatus.Ended,
                 isCameraEnabled = false,
-                cameraFront = true,
+                cameraFront = false,
                 agentAudioLevel = 0f,
                 agentSpeaking = false,
                 errorToast = reason ?: it.errorToast,
