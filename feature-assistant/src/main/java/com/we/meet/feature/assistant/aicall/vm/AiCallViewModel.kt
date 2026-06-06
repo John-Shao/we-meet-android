@@ -34,8 +34,8 @@ import io.livekit.android.room.track.CameraPosition
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.LocalVideoTrackOptions
 import io.livekit.android.room.track.Track
+import io.livekit.android.room.track.VideoCaptureParameter
 import io.livekit.android.room.track.VideoEncoding
-import io.livekit.android.room.track.VideoPreset169
 import io.livekit.android.room.track.VideoTrack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -262,10 +262,13 @@ class AiCallViewModel(
             options = RoomOptions(
                 videoTrackCaptureDefaults = LocalVideoTrackOptions(
                     position = CameraPosition.FRONT,
-                    captureParams = VideoPreset169.H720.capture,
+                    // Cap capture at 5 fps — omni 视觉模型只按低频采样, 30 fps
+                    // 既浪费端上 CPU/电量, 编码后又会被 LiveKit 丢帧。capture
+                    // 和 publish 两边同时设为 5 让流水线整体对齐。
+                    captureParams = VideoCaptureParameter(1280, 720, 5),
                 ),
                 videoTrackPublishDefaults = VideoTrackPublishDefaults(
-                    videoEncoding = VideoEncoding(maxBitrate = 2_500_000, maxFps = 30),
+                    videoEncoding = VideoEncoding(maxBitrate = 2_500_000, maxFps = 5),
                     simulcast = false,
                     videoCodec = "h264",
                 ),
