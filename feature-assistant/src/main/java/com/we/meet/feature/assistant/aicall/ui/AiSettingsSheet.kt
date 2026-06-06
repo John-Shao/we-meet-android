@@ -24,7 +24,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,21 +41,28 @@ private const val NO_PROMPT_LABEL = "默认"
  * Two tabs (语音通话 / 视频通话). Each tab independently picks model →
  * voice → prompt. The voice list depends on the picked model, the prompt
  * list is shared across both tabs (and across users).
+ *
+ * The active tab is bound to the current call mode ([currentMode]) — when
+ * the user switches tabs, [onModeChange] also updates the mode so the
+ * "what I'm configuring" matches "what the next call will run as". This
+ * prevents the trap where users picked a voice on one tab but the call
+ * picked the other tab's selection because the main-screen toggle had
+ * moved state.mode out of sync.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AiSettingsSheet(
     config: AiAgentConfigResponse?,
-    initialTab: AiCallMode,
+    currentMode: AiCallMode,
     voiceSelection: AiModeSelection,
     videoSelection: AiModeSelection,
+    onModeChange: (AiCallMode) -> Unit,
     onSelectProfile: (AiCallMode, profileCode: String?) -> Unit,
     onSelectVoice: (AiCallMode, voiceId: String?) -> Unit,
     onSelectPrompt: (AiCallMode, promptId: String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var activeTab by remember(initialTab) { mutableStateOf(initialTab) }
 
     val cfg = config
     val audioProfiles = cfg?.profiles.orEmpty().filter { it.isAudio }
@@ -70,30 +76,30 @@ fun AiSettingsSheet(
         // looked broken in dark mode (TabRow drew dark, sheet drew white).
     ) {
         Column(modifier = Modifier.padding(bottom = 24.dp)) {
-            TabRow(selectedTabIndex = if (activeTab == AiCallMode.Voice) 0 else 1) {
+            TabRow(selectedTabIndex = if (currentMode == AiCallMode.Voice) 0 else 1) {
                 Tab(
-                    selected = activeTab == AiCallMode.Voice,
-                    onClick = { activeTab = AiCallMode.Voice },
+                    selected = currentMode == AiCallMode.Voice,
+                    onClick = { onModeChange(AiCallMode.Voice) },
                     text = { Text("语音通话") },
                 )
                 Tab(
-                    selected = activeTab == AiCallMode.Video,
-                    onClick = { activeTab = AiCallMode.Video },
+                    selected = currentMode == AiCallMode.Video,
+                    onClick = { onModeChange(AiCallMode.Video) },
                     text = { Text("视频通话") },
                 )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            val selection = if (activeTab == AiCallMode.Voice) voiceSelection else videoSelection
-            val profiles = if (activeTab == AiCallMode.Voice) audioProfiles else videoProfiles
+            val selection = if (currentMode == AiCallMode.Voice) voiceSelection else videoSelection
+            val profiles = if (currentMode == AiCallMode.Voice) audioProfiles else videoProfiles
             ModeConfigSection(
                 profiles = profiles,
                 prompts = prompts,
                 selection = selection,
-                onSelectProfile = { code -> onSelectProfile(activeTab, code) },
-                onSelectVoice = { id -> onSelectVoice(activeTab, id) },
-                onSelectPrompt = { id -> onSelectPrompt(activeTab, id) },
+                onSelectProfile = { code -> onSelectProfile(currentMode, code) },
+                onSelectVoice = { id -> onSelectVoice(currentMode, id) },
+                onSelectPrompt = { id -> onSelectPrompt(currentMode, id) },
             )
 
             Spacer(modifier = Modifier.height(12.dp))

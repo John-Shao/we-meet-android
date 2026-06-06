@@ -198,6 +198,21 @@ class AiCallViewModel(
         _state.update { it.copy(showPicker = show) }
     }
 
+    /**
+     * Set the current call mode without triggering a hot-swap. Called from
+     * the settings sheet when the user switches tabs (语音通话 / 视频通话)
+     * — keeps the tab the user is configuring in lock-step with the mode
+     * the next call will run in. Ignored when a call is already active
+     * (active call should use [toggleMode] for hot-swap instead).
+     */
+    fun setMode(mode: AiCallMode) {
+        if (_state.value.mode == mode) return
+        if (_state.value.status is AiCallStatus.Active ||
+            _state.value.status is AiCallStatus.Connecting
+        ) return
+        _state.update { it.copy(mode = mode) }
+    }
+
     /** Set the agent profile for [mode]. Resets voice (voices belong to a
      *  specific profile), keeps prompt. */
     fun selectProfile(mode: AiCallMode, profileCode: String?) {
