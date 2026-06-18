@@ -19,6 +19,7 @@ fun cfg(key: String, default: String = ""): String =
 val baseUrl = cfg("WE_MEET_BASE_URL", "https://meet.we-meet.online")
 val keycloakUrl = cfg("WE_MEET_KEYCLOAK_URL", "https://id.we-meet.online")
 val livekitOverride = cfg("WE_MEET_LIVEKIT_URL_OVERRIDE", "")
+val jusiImBaseUrl = cfg("JUSI_IM_BASE_URL", "https://im.we-meet.online")
 // PostHog: leave WE_MEET_POSTHOG_KEY empty to keep analytics off. The
 // Analytics singleton no-ops when the key is blank — useful for the
 // aliyun-prod deployment which currently doesn't ship analytics, and
@@ -45,6 +46,7 @@ android {
         buildConfigField("String", "WE_MEET_LIVEKIT_URL_OVERRIDE", "\"$livekitOverride\"")
         buildConfigField("String", "WE_MEET_POSTHOG_KEY", "\"$posthogKey\"")
         buildConfigField("String", "WE_MEET_POSTHOG_HOST", "\"$posthogHost\"")
+        buildConfigField("String", "JUSI_IM_BASE_URL", "\"$jusiImBaseUrl\"")
     }
 
     buildTypes {
@@ -122,6 +124,9 @@ dependencies {
 
     // AI assistant feature (Sprint 3) — realtime "打电话" call screen.
     implementation(project(":feature-assistant"))
+
+    // IM feature (P4) — chat list + 1:1/group messaging via jusi-light-im SDK.
+    implementation(project(":feature-im"))
 
     // LiveKit
     implementation(libs.livekit.android)

@@ -29,3 +29,14 @@ dependencyResolutionManagement {
 rootProject.name = "WeMeetAndroid"
 include(":app")
 include(":feature-assistant")
+include(":feature-im")
+
+// jusi-light-im Android SDK lives in a sibling repo; pull it in via composite build
+// and substitute the published coordinate to the local `:sdk-im` project so the
+// feature module can declare `implementation("com.jusi.lightim:sdk-im")` as if it
+// were a regular Maven artifact.
+includeBuild("../../jusi-light-im/sdk/android") {
+    dependencySubstitution {
+        substitute(module("com.jusi.lightim:sdk-im")).using(project(":sdk-im"))
+    }
+}

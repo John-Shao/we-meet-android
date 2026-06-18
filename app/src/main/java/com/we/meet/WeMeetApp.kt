@@ -5,6 +5,7 @@ import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.disk.DiskCache
 import com.we.meet.feature.assistant.AssistantDeps
+import com.we.meet.feature.im.ImDeps
 import com.we.meet.data.api.ApiClient
 import com.we.meet.data.auth.TokenStore
 import com.we.meet.data.history.HistoryStore
@@ -27,7 +28,7 @@ import okhttp3.OkHttpClient
  * If the app grows beyond a few screens, swap this for Hilt without churning
  * the call sites: every screen reads dependencies from a single property.
  */
-class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps {
+class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps {
 
     lateinit var tokenStore: TokenStore
         private set
@@ -81,12 +82,17 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps {
         com.we.meet.analytics.Analytics.init(this)
     }
 
-    // AssistantDeps — lets :feature-assistant reuse the host's authenticated
-    // networking instead of owning its own auth/login. Read after onCreate().
+    // AssistantDeps / ImDeps — lets :feature-assistant and :feature-im reuse the
+    // host's authenticated networking instead of owning their own auth/login.
+    // `authedOkHttp` and `baseUrl` are shared by both contracts.
     override val authedOkHttp: OkHttpClient
         get() = apiClient.okHttp
     override val baseUrl: String
         get() = BuildConfig.WE_MEET_BASE_URL
+
+    /** ImDeps — jusi-light-im server origin (no trailing slash). */
+    override val jusiImBaseUrl: String
+        get() = BuildConfig.JUSI_IM_BASE_URL
 
     /**
      * Custom Coil [ImageLoader] used by every [coil.compose.AsyncImage].
