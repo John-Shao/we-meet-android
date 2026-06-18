@@ -31,13 +31,15 @@ import kotlinx.coroutines.launch
 class ImTabViewModel internal constructor(
     private val tokenRepo: ImTokenRepository,
     private val jusiImBaseUrl: String,
-    private val authedOkHttp: okhttp3.OkHttpClient,
 ) : ViewModel() {
 
+    // SDK 用自己的默认 OkHttp (无 Interceptor), 不能复用 we-meet 主 OkHttp:
+    // 主 OkHttp 的 AuthInterceptor 会把 Keycloak Bearer 无差别覆盖到 jusi 请求,
+    // 顶掉 SDK 内部塞的 IM JWT, 触发 jusi 401 -> Authenticator 死循环 refresh
+    // (参见 [[reference-livekit-auth-chain]]).
     private val client: Client = Client(
         baseUrl = jusiImBaseUrl,
         tokenProvider = { tokenRepo.token().token },
-        okHttp = authedOkHttp,
         backoffConfig = BackoffConfig.default(),
     )
 
@@ -169,7 +171,6 @@ class ImTabViewModel internal constructor(
             return ImTabViewModel(
                 tokenRepo = ImTokenRepository(api),
                 jusiImBaseUrl = deps.jusiImBaseUrl,
-                authedOkHttp = deps.authedOkHttp,
             ) as T
         }
 
