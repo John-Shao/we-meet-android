@@ -10,6 +10,12 @@
 
     <string name="im_list_title">会话</string>
     <string name="im_list_empty">还没有会话</string>
+    <string name="im_new_direct_button">新建</string>
+    <string name="im_new_direct_title">新建会话</string>
+    <string name="im_new_direct_self_uid">你的 IM ID:\n%1$s</string>
+    <string name="im_new_direct_peer_hint">对方的 IM ID</string>
+    <string name="im_new_direct_confirm">创建</string>
+    <string name="im_new_direct_cancel">取消</string>
 
     <string name="im_chat_pick_prompt">从左侧选择一个会话开始聊天</string>
     <string name="im_chat_empty">暂无消息,发出第一条吧</string>

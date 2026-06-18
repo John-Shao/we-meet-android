@@ -52,6 +52,11 @@ class ImTabViewModel internal constructor(
         // Auto-connect on VM creation; the UI watches connectionState + uiState.error.
         viewModelScope.launch {
             try {
+                // 同步把 self_uid 拉下来缓存到 uiState — "新建会话" UI 需要显示给用户.
+                val tok = runCatching { tokenRepo.token() }.getOrNull()
+                if (tok != null) {
+                    _uiState.update { it.copy(selfUid = tok.uid) }
+                }
                 client.connect()
                 refreshConversations()
             } catch (e: Throwable) {
@@ -133,6 +138,25 @@ class ImTabViewModel internal constructor(
         return true
     }
 
+    /**
+     * MVP 联调入口: 通过对方的 jusi uid create-or-get 一个 direct conv.
+     * 后端会算 deterministic cid, 双方都会拿到同一 cid (sorted pair).
+     */
+    fun createDirect(peerUid: String) {
+        val trimmed = peerUid.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            try {
+                val result = tokenRepo.createDirect(trimmed)
+                refreshConversations()
+                selectConversation(result.cid)
+            } catch (e: Throwable) {
+                Log.w(TAG, "createDirect failed", e)
+                _uiState.update { it.copy(error = e.message ?: e::class.simpleName) }
+            }
+        }
+    }
+
     fun retry() {
         _uiState.update { it.copy(error = null) }
         viewModelScope.launch {
@@ -190,4 +214,6 @@ data class ImTabUiState(
     val activeCid: String? = null,
     val activeMessages: List<Message> = emptyList(),
     val error: String? = null,
+    /** Self uid (jusi-light-im id) — needed by the "New direct" dialog. */
+    val selfUid: String? = null,
 )

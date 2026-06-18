@@ -10,6 +10,12 @@
 
     <string name="im_list_title">Gesprekken</string>
     <string name="im_list_empty">Nog geen gesprekken</string>
+    <string name="im_new_direct_button">Nieuw</string>
+    <string name="im_new_direct_title">Nieuw gesprek</string>
+    <string name="im_new_direct_self_uid">Jouw IM-ID:\n%1$s</string>
+    <string name="im_new_direct_peer_hint">IM-ID van gesprekspartner</string>
+    <string name="im_new_direct_confirm">Aanmaken</string>
+    <string name="im_new_direct_cancel">Annuleren</string>
 
     <string name="im_chat_pick_prompt">Kies links een gesprek om te beginnen</string>
     <string name="im_chat_empty">Nog geen berichten — verzend het eerste</string>

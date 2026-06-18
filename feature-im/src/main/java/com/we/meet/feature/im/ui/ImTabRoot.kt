@@ -14,12 +14,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -80,6 +83,8 @@ fun ImTabRoot(deps: ImDeps) {
                 conversations = ui.conversations,
                 activeCid = ui.activeCid,
                 onSelect = { vm.selectConversation(it) },
+                selfUid = ui.selfUid,
+                onCreateDirect = { peerUid -> vm.createDirect(peerUid) },
                 modifier = Modifier.width(220.dp),
             )
             Box(
@@ -147,15 +152,32 @@ private fun ConversationListPane(
     conversations: List<ConversationSummary>,
     activeCid: String?,
     onSelect: (String) -> Unit,
+    selfUid: String?,
+    onCreateDirect: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showNewDialog by remember { mutableStateOf(false) }
+
     Column(modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant)) {
-        Text(
-            text = stringResource(R.string.im_list_title),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(16.dp),
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = stringResource(R.string.im_list_title),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            TextButton(
+                onClick = { showNewDialog = true },
+                enabled = selfUid != null,
+            ) {
+                Text("+ " + stringResource(R.string.im_new_direct_button))
+            }
+        }
         if (conversations.isEmpty()) {
             Text(
                 text = stringResource(R.string.im_list_empty),
@@ -163,19 +185,73 @@ private fun ConversationListPane(
                 color = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
-            return@Column
-        }
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(conversations, key = { it.cid }) { conv ->
-                ConversationRow(
-                    conv = conv,
-                    selected = conv.cid == activeCid,
-                    onClick = { onSelect(conv.cid) },
-                )
-                Divider()
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(conversations, key = { it.cid }) { conv ->
+                    ConversationRow(
+                        conv = conv,
+                        selected = conv.cid == activeCid,
+                        onClick = { onSelect(conv.cid) },
+                    )
+                    Divider()
+                }
             }
         }
     }
+
+    if (showNewDialog && selfUid != null) {
+        NewDirectDialog(
+            selfUid = selfUid,
+            onDismiss = { showNewDialog = false },
+            onConfirm = { peerUid ->
+                showNewDialog = false
+                onCreateDirect(peerUid)
+            },
+        )
+    }
+}
+
+@Composable
+private fun NewDirectDialog(
+    selfUid: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var peerUid by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.im_new_direct_title)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.im_new_direct_self_uid, selfUid),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(12.dp))
+                OutlinedTextField(
+                    value = peerUid,
+                    onValueChange = { peerUid = it },
+                    placeholder = { Text(stringResource(R.string.im_new_direct_peer_hint)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(peerUid) },
+                enabled = peerUid.trim().isNotEmpty() && peerUid.trim() != selfUid,
+            ) {
+                Text(stringResource(R.string.im_new_direct_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.im_new_direct_cancel))
+            }
+        },
+    )
 }
 
 @Composable

@@ -9,4 +9,8 @@ internal class ImTokenRepository(private val api: ImApi) {
 
     /** Suspend round-trip to we-meet's `/api/v1.0/im/token/`. */
     suspend fun token(): ImTokenResponse = api.fetchToken()
+
+    /** Suspend round-trip to we-meet's `/api/v1.0/im/conversations/direct/`. */
+    suspend fun createDirect(peerUid: String): ImDirectConversationResponse =
+        api.createDirectConversation(mapOf("peer_uid" to peerUid))
 }

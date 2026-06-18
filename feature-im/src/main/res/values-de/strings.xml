@@ -10,6 +10,12 @@
 
     <string name="im_list_title">Unterhaltungen</string>
     <string name="im_list_empty">Noch keine Unterhaltungen</string>
+    <string name="im_new_direct_button">Neu</string>
+    <string name="im_new_direct_title">Neue Unterhaltung</string>
+    <string name="im_new_direct_self_uid">Ihre IM-ID:\n%1$s</string>
+    <string name="im_new_direct_peer_hint">IM-ID des Empfängers</string>
+    <string name="im_new_direct_confirm">Erstellen</string>
+    <string name="im_new_direct_cancel">Abbrechen</string>
 
     <string name="im_chat_pick_prompt">Wählen Sie links eine Unterhaltung aus</string>
     <string name="im_chat_empty">Noch keine Nachrichten — senden Sie die erste</string>

@@ -10,6 +10,12 @@
 
     <string name="im_list_title">Conversations</string>
     <string name="im_list_empty">Aucune conversation pour le moment</string>
+    <string name="im_new_direct_button">Nouvelle</string>
+    <string name="im_new_direct_title">Nouvelle conversation</string>
+    <string name="im_new_direct_self_uid">Votre ID IM :\n%1$s</string>
+    <string name="im_new_direct_peer_hint">ID IM du correspondant</string>
+    <string name="im_new_direct_confirm">Créer</string>
+    <string name="im_new_direct_cancel">Annuler</string>
 
     <string name="im_chat_pick_prompt">Choisissez une conversation à gauche pour commencer</string>
     <string name="im_chat_empty">Aucun message — envoyez le premier</string>
