@@ -222,6 +222,7 @@
     <!-- Tabs -->
     <string name="tab_meeting">Meeting</string>
     <string name="tab_ai">KI</string>
+    <string name="tab_messages">Nachrichten</string>
     <string name="tab_profile">Ich</string>
 
     <!-- AI hub -->

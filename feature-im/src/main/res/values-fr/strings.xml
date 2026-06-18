@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="im_status_disconnected">Déconnecté</string>
+    <string name="im_status_connecting">Connexion en cours…</string>
+    <string name="im_status_connected">Connecté</string>
+    <string name="im_status_reconnecting">Reconnexion en cours…</string>
+    <string name="im_status_auth_failed">Échec d\'authentification — veuillez réessayer</string>
+
+    <string name="im_action_retry">Réessayer</string>
+
+    <string name="im_list_title">Conversations</string>
+    <string name="im_list_empty">Aucune conversation pour le moment</string>
+
+    <string name="im_chat_pick_prompt">Choisissez une conversation à gauche pour commencer</string>
+    <string name="im_chat_empty">Aucun message — envoyez le premier</string>
+
+    <string name="im_input_placeholder">Écrivez un message…</string>
+    <string name="im_input_send">Envoyer</string>
+</resources>

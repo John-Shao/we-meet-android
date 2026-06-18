@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material3.HorizontalDivider
@@ -39,6 +41,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.we.meet.R
+import com.we.meet.WeMeetApp
+import com.we.meet.feature.im.ui.ImTabRoot
 import com.we.meet.ui.ai.AiHubScreen
 import com.we.meet.ui.home.HomeScreen
 import com.we.meet.ui.profile.ProfileScreen
@@ -52,6 +56,7 @@ private data class TabItem(
 private val tabs = listOf(
     TabItem(R.string.tab_meeting, Icons.Filled.Videocam, Icons.Filled.Videocam),
     TabItem(R.string.tab_ai, Icons.Filled.AutoAwesome, Icons.Filled.AutoAwesome),
+    TabItem(R.string.tab_messages, Icons.Filled.ChatBubble, Icons.Outlined.ChatBubbleOutline),
     TabItem(R.string.tab_profile, Icons.Filled.Person, Icons.Filled.Person),
 )
 
@@ -94,6 +99,12 @@ fun MainTabScreen(
                 }
             }
             2 -> {
+                val app = androidx.compose.ui.platform.LocalContext.current.applicationContext as WeMeetApp
+                Box(modifier = Modifier.padding(padding)) {
+                    ImTabRoot(deps = app)
+                }
+            }
+            3 -> {
                 Box(modifier = Modifier.padding(padding)) {
                     ProfileScreen(
                         onSettingsClick = onSettingsClick,

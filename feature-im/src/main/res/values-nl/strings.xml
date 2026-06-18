@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="im_status_disconnected">Verbinding verbroken</string>
+    <string name="im_status_connecting">Verbinden…</string>
+    <string name="im_status_connected">Verbonden</string>
+    <string name="im_status_reconnecting">Opnieuw verbinden…</string>
+    <string name="im_status_auth_failed">Authenticatie mislukt — probeer opnieuw</string>
+
+    <string name="im_action_retry">Opnieuw proberen</string>
+
+    <string name="im_list_title">Gesprekken</string>
+    <string name="im_list_empty">Nog geen gesprekken</string>
+
+    <string name="im_chat_pick_prompt">Kies links een gesprek om te beginnen</string>
+    <string name="im_chat_empty">Nog geen berichten — verzend het eerste</string>
+
+    <string name="im_input_placeholder">Typ een bericht…</string>
+    <string name="im_input_send">Verzenden</string>
+</resources>

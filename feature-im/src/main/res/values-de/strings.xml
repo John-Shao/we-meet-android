@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="im_status_disconnected">Getrennt</string>
+    <string name="im_status_connecting">Verbinde…</string>
+    <string name="im_status_connected">Verbunden</string>
+    <string name="im_status_reconnecting">Neuverbindung…</string>
+    <string name="im_status_auth_failed">Authentifizierung fehlgeschlagen — bitte erneut versuchen</string>
+
+    <string name="im_action_retry">Wiederholen</string>
+
+    <string name="im_list_title">Unterhaltungen</string>
+    <string name="im_list_empty">Noch keine Unterhaltungen</string>
+
+    <string name="im_chat_pick_prompt">Wählen Sie links eine Unterhaltung aus</string>
+    <string name="im_chat_empty">Noch keine Nachrichten — senden Sie die erste</string>
+
+    <string name="im_input_placeholder">Nachricht eingeben…</string>
+    <string name="im_input_send">Senden</string>
+</resources>
