@@ -14,9 +14,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -63,16 +67,20 @@ import java.util.Locale
 @Composable
 fun ImTabRoot(deps: ImDeps) {
     val context = LocalContext.current
-    val vm: ImTabViewModel = viewModel(
-        factory = ImTabViewModel.Factory(context, deps)
-    )
+    val factory = remember(deps) { ImTabViewModel.Factory(context, deps) }
+    val vm: ImTabViewModel = viewModel(factory = factory)
     val ui by vm.uiState.collectAsStateWithLifecycle()
     val state by vm.connectionState.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        ConnectionStatusBar(state = state, onRetry = if (state == ConnectionState.AUTH_FAILED) {
-            { vm.retry() }
-        } else null)
+        // Offer Retry whenever the connection is unhealthy or stuck: AUTH_FAILED, a
+        // dropped/disconnected socket, or an initial connect that errored out but left
+        // the SDK pinned at CONNECTING.
+        val canRetry = state == ConnectionState.AUTH_FAILED ||
+            state == ConnectionState.DISCONNECTED ||
+            state == ConnectionState.RECONNECTING ||
+            (state == ConnectionState.CONNECTING && ui.error != null)
+        ConnectionStatusBar(state = state, onRetry = if (canRetry) { { vm.retry() } } else null)
 
         if (ui.error != null && state != ConnectionState.AUTH_FAILED) {
             ErrorBanner(message = ui.error!!)
@@ -97,7 +105,8 @@ fun ImTabRoot(deps: ImDeps) {
                 cid = ui.activeCid,
                 messages = ui.activeMessages,
                 canSend = state == ConnectionState.CONNECTED && ui.activeCid != null,
-                onSend = { body -> ui.activeCid?.let { vm.sendText(it, body) } ?: false },
+                sentTick = ui.sentTick,
+                onSend = { body -> ui.activeCid?.let { vm.sendText(it, body) } },
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -175,7 +184,13 @@ private fun ConversationListPane(
                 onClick = { showNewDialog = true },
                 enabled = selfUid != null,
             ) {
-                Text("+ " + stringResource(R.string.im_new_direct_button))
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(4.dp))
+                Text(stringResource(R.string.im_new_direct_button))
             }
         }
         if (conversations.isEmpty()) {
@@ -193,7 +208,7 @@ private fun ConversationListPane(
                         selected = conv.cid == activeCid,
                         onClick = { onSelect(conv.cid) },
                     )
-                    Divider()
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
         }
@@ -256,37 +271,25 @@ private fun NewDirectDialog(
 
 @Composable
 private fun ConversationRow(conv: ConversationSummary, selected: Boolean, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .let { mod ->
-                // Apply a clickable wrapper via Surface for ripple; manual onClick via Modifier.
-                mod
-            },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+    Surface(
+        onClick = onClick,
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        // Use a Surface to get the ripple ergonomics for free.
-        Surface(
-            onClick = onClick,
-            color = Color.Transparent,
-            modifier = Modifier.fillMaxWidth(),
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = conv.cid.take(8),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (conv.unreadCount > 0) FontWeight.Bold else FontWeight.Normal,
-                )
-                if (conv.unreadCount > 0) {
-                    UnreadBadge(count = conv.unreadCount)
-                }
+            Text(
+                text = conv.cid.take(8),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (conv.unreadCount > 0) FontWeight.Bold else FontWeight.Normal,
+            )
+            if (conv.unreadCount > 0) {
+                UnreadBadge(count = conv.unreadCount)
             }
         }
     }
@@ -299,7 +302,7 @@ private fun UnreadBadge(count: Long) {
         shape = MaterialTheme.shapes.small,
     ) {
         Text(
-            text = if (count > 99) "99+" else count.toString(),
+            text = if (count > 99) stringResource(R.string.im_unread_overflow) else count.toString(),
             color = MaterialTheme.colorScheme.onPrimary,
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
@@ -312,7 +315,8 @@ private fun ChatPane(
     cid: String?,
     messages: List<Message>,
     canSend: Boolean,
-    onSend: (String) -> Boolean,
+    sentTick: Int,
+    onSend: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -348,7 +352,7 @@ private fun ChatPane(
                 }
             }
         }
-        MessageInputBar(canSend = canSend, onSend = onSend)
+        MessageInputBar(canSend = canSend, sentTick = sentTick, onSend = onSend)
     }
 }
 
@@ -372,8 +376,13 @@ private fun MessageRow(m: Message) {
 private val TS_FORMAT: SimpleDateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
 @Composable
-private fun MessageInputBar(canSend: Boolean, onSend: (String) -> Boolean) {
+private fun MessageInputBar(canSend: Boolean, sentTick: Int, onSend: (String) -> Unit) {
     var text by remember { mutableStateOf("") }
+    // Clear the composer only after the ViewModel confirms a send (sentTick bumps),
+    // so a failed send leaves the user's text intact.
+    LaunchedEffect(sentTick) {
+        if (sentTick > 0) text = ""
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -390,22 +399,10 @@ private fun MessageInputBar(canSend: Boolean, onSend: (String) -> Boolean) {
                 .padding(end = 8.dp),
         )
         Button(
-            onClick = {
-                if (onSend(text)) text = ""
-            },
+            onClick = { onSend(text) },
             enabled = canSend && text.isNotBlank(),
         ) {
             Text(stringResource(R.string.im_input_send))
         }
     }
-}
-
-@Composable
-private fun Divider() {
-    androidx.compose.foundation.layout.Spacer(
-        modifier = Modifier
-            .fillMaxWidth()
-            .size(1.dp)
-            .background(MaterialTheme.colorScheme.outlineVariant),
-    )
 }

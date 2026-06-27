@@ -11,6 +11,7 @@ import com.jusi.lightim.Client
 import com.jusi.lightim.ConnectionState
 import com.jusi.lightim.ConversationSummary
 import com.jusi.lightim.Message
+import com.jusi.lightim.MsgOutPayload
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.data.ImApi
 import com.we.meet.feature.im.data.ImTokenRepository
@@ -39,7 +40,13 @@ class ImTabViewModel internal constructor(
     // (参见 [[reference-livekit-auth-chain]]).
     private val client: Client = Client(
         baseUrl = jusiImBaseUrl,
-        tokenProvider = { tokenRepo.token().token },
+        // Minting the IM token also tells us our own jusi uid; cache it here for the
+        // "New conversation" dialog instead of doing a second standalone token call.
+        tokenProvider = {
+            val tok = tokenRepo.token()
+            _uiState.update { it.copy(selfUid = tok.uid) }
+            tok.token
+        },
         backoffConfig = BackoffConfig.default(),
     )
 
@@ -50,13 +57,10 @@ class ImTabViewModel internal constructor(
 
     init {
         // Auto-connect on VM creation; the UI watches connectionState + uiState.error.
+        // connect() invokes tokenProvider, which also populates selfUid for the
+        // "New conversation" dialog — no separate token round-trip needed here.
         viewModelScope.launch {
             try {
-                // 同步把 self_uid 拉下来缓存到 uiState — "新建会话" UI 需要显示给用户.
-                val tok = runCatching { tokenRepo.token() }.getOrNull()
-                if (tok != null) {
-                    _uiState.update { it.copy(selfUid = tok.uid) }
-                }
                 client.connect()
                 refreshConversations()
             } catch (e: Throwable) {
@@ -68,6 +72,7 @@ class ImTabViewModel internal constructor(
         // and bumps unread counts on inactive ones.
         viewModelScope.launch {
             client.messages.collect { incoming ->
+                val known = _uiState.value.conversations.any { it.cid == incoming.cid }
                 _uiState.update { current ->
                     val updatedConvs = current.conversations.map { c ->
                         if (c.cid == incoming.cid) {
@@ -79,21 +84,20 @@ class ImTabViewModel internal constructor(
                         } else c
                     }
                     val newMessages = if (current.activeCid == incoming.cid) {
-                        val asMessage = Message(
-                            mid = incoming.mid,
-                            cid = incoming.cid,
-                            senderUid = incoming.senderUid,
-                            seq = incoming.seq,
-                            contentType = incoming.contentType,
-                            body = incoming.body,
-                            ts = incoming.createdAt,
-                        )
-                        (current.activeMessages + asMessage)
+                        (current.activeMessages + incoming.toMessage())
                             .distinctBy { it.mid }
                             .sortedBy { it.seq }
                     } else current.activeMessages
                     current.copy(conversations = updatedConvs, activeMessages = newMessages)
                 }
+                // The message landed on the thread the user is viewing — advance the
+                // server read cursor so the unread badge doesn't resurrect on refresh.
+                if (_uiState.value.activeCid == incoming.cid) {
+                    runCatching { client.markRead(incoming.cid, incoming.seq) }
+                }
+                // First message of a conversation we don't have listed yet (e.g. a peer
+                // just opened a new direct chat) — pull it into the list.
+                if (!known) refreshConversations()
             }
         }
     }
@@ -104,14 +108,19 @@ class ImTabViewModel internal constructor(
             try {
                 val history = client.loadHistory(cid)
                 _uiState.update {
+                    // The user may have switched conversations while history loaded —
+                    // don't clobber the now-active thread with this stale result.
+                    if (it.activeCid != cid) return@update it
                     val convs = it.conversations.map { c ->
                         if (c.cid == cid) c.copy(unreadCount = 0) else c
                     }
-                    it.copy(
-                        // Server returns newest-first; reverse for natural top-to-bottom rendering.
-                        activeMessages = history.messages.asReversed(),
-                        conversations = convs,
-                    )
+                    // Server returns newest-first; reverse for top-to-bottom rendering.
+                    // Merge (not overwrite) so a live message that arrived during the
+                    // load isn't dropped.
+                    val merged = (history.messages.asReversed() + it.activeMessages)
+                        .distinctBy { m -> m.mid }
+                        .sortedBy { m -> m.seq }
+                    it.copy(activeMessages = merged, conversations = convs)
                 }
                 history.messages.firstOrNull()?.let { latest ->
                     runCatching { client.markRead(cid, latest.seq) }
@@ -123,19 +132,21 @@ class ImTabViewModel internal constructor(
         }
     }
 
-    fun sendText(cid: String, body: String): Boolean {
+    fun sendText(cid: String, body: String) {
         val trimmed = body.trim()
-        if (trimmed.isEmpty()) return false
+        if (trimmed.isEmpty()) return
         viewModelScope.launch {
             try {
                 val ack: AckPayload = client.sendText(cid, trimmed)
                 Log.d(TAG, "sendText ack mid=${ack.mid} seq=${ack.seq}")
+                // Clear the composer only once the server has acked, so a failed send
+                // keeps the user's text instead of silently dropping it.
+                _uiState.update { it.copy(error = null, sentTick = it.sentTick + 1) }
             } catch (e: Throwable) {
                 Log.w(TAG, "sendText failed", e)
                 _uiState.update { it.copy(error = e.message ?: e::class.simpleName) }
             }
         }
-        return true
     }
 
     /**
@@ -161,6 +172,10 @@ class ImTabViewModel internal constructor(
         _uiState.update { it.copy(error = null) }
         viewModelScope.launch {
             try {
+                // connect() no-ops while state is CONNECTING/CONNECTED, and a failed
+                // initial connect leaves the SDK pinned at CONNECTING — disconnect first
+                // to guarantee a fresh attempt.
+                client.disconnect()
                 client.connect()
                 refreshConversations()
             } catch (e: Throwable) {
@@ -172,7 +187,8 @@ class ImTabViewModel internal constructor(
     private suspend fun refreshConversations() {
         try {
             val list = client.listConversations()
-            _uiState.update { it.copy(conversations = list) }
+            // Clear any stale error now that we've recovered, so the banner doesn't linger.
+            _uiState.update { it.copy(conversations = list, error = null) }
         } catch (e: Throwable) {
             Log.w(TAG, "listConversations failed", e)
             _uiState.update { it.copy(error = e.message ?: e::class.simpleName) }
@@ -180,6 +196,7 @@ class ImTabViewModel internal constructor(
     }
 
     override fun onCleared() {
+        super.onCleared()
         client.close()
     }
 
@@ -216,4 +233,21 @@ data class ImTabUiState(
     val error: String? = null,
     /** Self uid (jusi-light-im id) — needed by the "New direct" dialog. */
     val selfUid: String? = null,
+    /**
+     * Increments each time a message is successfully acked by the server. The input
+     * bar watches this to clear its text only after a confirmed send (so a failed
+     * send keeps the user's draft).
+     */
+    val sentTick: Int = 0,
+)
+
+/** Map an inbound WS payload to the REST [Message] shape the UI renders. */
+private fun MsgOutPayload.toMessage(): Message = Message(
+    mid = mid,
+    cid = cid,
+    senderUid = senderUid,
+    seq = seq,
+    contentType = contentType,
+    body = body,
+    ts = createdAt,
 )

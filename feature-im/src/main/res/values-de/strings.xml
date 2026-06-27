@@ -22,4 +22,6 @@
 
     <string name="im_input_placeholder">Nachricht eingeben…</string>
     <string name="im_input_send">Senden</string>
+
+    <string name="im_unread_overflow">99+</string>
 </resources>

@@ -22,4 +22,7 @@
 
     <string name="im_input_placeholder">输入消息…</string>
     <string name="im_input_send">发送</string>
+
+    <!-- 未读数超过 99 时的徽标文案。 -->
+    <string name="im_unread_overflow">99+</string>
 </resources>

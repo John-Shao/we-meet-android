@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,13 +52,7 @@ private data class TabItem(
     val labelRes: Int,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector,
-)
-
-private val tabs = listOf(
-    TabItem(R.string.tab_meeting, Icons.Filled.Videocam, Icons.Filled.Videocam),
-    TabItem(R.string.tab_ai, Icons.Filled.AutoAwesome, Icons.Filled.AutoAwesome),
-    TabItem(R.string.tab_messages, Icons.Filled.ChatBubble, Icons.Outlined.ChatBubbleOutline),
-    TabItem(R.string.tab_profile, Icons.Filled.Person, Icons.Filled.Person),
+    val content: @Composable () -> Unit,
 )
 
 @Composable
@@ -72,52 +67,55 @@ fun MainTabScreen(
     onSignedOut: () -> Unit,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    val app = LocalContext.current.applicationContext as WeMeetApp
+
+    // Single source of truth: each tab pairs its bar appearance with its content, so
+    // adding/reordering a tab is one edit and the bar can't drift out of sync with
+    // the screen shown (the parallel `when (index)` that used to do this is gone).
+    val tabs = listOf(
+        TabItem(R.string.tab_meeting, Icons.Filled.Videocam, Icons.Filled.Videocam) {
+            HomeScreen(
+                onCreateMeeting = onCreateMeeting,
+                onJoinMeeting = onJoinMeeting,
+                onJoinSlug = onJoinSlug,
+                onScanQrCode = onScanQrCode,
+                onHistoryClick = onHistoryClick,
+            )
+        },
+        TabItem(R.string.tab_ai, Icons.Filled.AutoAwesome, Icons.Filled.AutoAwesome) {
+            AiHubScreen(onOpenAssistantCall = onOpenAssistantCall)
+        },
+        TabItem(R.string.tab_messages, Icons.Filled.ChatBubble, Icons.Outlined.ChatBubbleOutline) {
+            ImTabRoot(deps = app)
+        },
+        TabItem(R.string.tab_profile, Icons.Filled.Person, Icons.Filled.Person) {
+            ProfileScreen(
+                onSettingsClick = onSettingsClick,
+                onSignedOut = onSignedOut,
+            )
+        },
+    )
 
     Scaffold(
         bottomBar = {
             CompactTabBar(
+                tabs = tabs,
                 selectedTab = selectedTab,
                 onTabSelected = { selectedTab = it },
             )
         },
     ) { padding ->
-        when (selectedTab) {
-            0 -> {
-                Box(modifier = Modifier.padding(padding)) {
-                    HomeScreen(
-                        onCreateMeeting = onCreateMeeting,
-                        onJoinMeeting = onJoinMeeting,
-                        onJoinSlug = onJoinSlug,
-                        onScanQrCode = onScanQrCode,
-                        onHistoryClick = onHistoryClick,
-                    )
-                }
-            }
-            1 -> {
-                Box(modifier = Modifier.padding(padding)) {
-                    AiHubScreen(onOpenAssistantCall = onOpenAssistantCall)
-                }
-            }
-            2 -> {
-                val app = androidx.compose.ui.platform.LocalContext.current.applicationContext as WeMeetApp
-                Box(modifier = Modifier.padding(padding)) {
-                    ImTabRoot(deps = app)
-                }
-            }
-            3 -> {
-                Box(modifier = Modifier.padding(padding)) {
-                    ProfileScreen(
-                        onSettingsClick = onSettingsClick,
-                        onSignedOut = onSignedOut,
-                    )
-                }
-            }
+        Box(modifier = Modifier.padding(padding)) {
+            // coerceIn defends against a restored index pointing past the list (e.g.
+            // a saved tab count from an older app version).
+            tabs[selectedTab.coerceIn(tabs.indices)].content()
         }
     }
 }
 
 @Composable
 private fun CompactTabBar(
+    tabs: List<TabItem>,
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
 ) {

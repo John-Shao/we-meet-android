@@ -22,4 +22,7 @@
 
     <string name="im_input_placeholder">Type a message…</string>
     <string name="im_input_send">Send</string>
+
+    <!-- Unread-count badge shown when the count exceeds 99. -->
+    <string name="im_unread_overflow">99+</string>
 </resources>

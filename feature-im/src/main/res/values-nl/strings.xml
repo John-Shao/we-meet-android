@@ -22,4 +22,6 @@
 
     <string name="im_input_placeholder">Typ een bericht…</string>
     <string name="im_input_send">Verzenden</string>
+
+    <string name="im_unread_overflow">99+</string>
 </resources>
