@@ -63,6 +63,15 @@ import kotlinx.coroutines.launch
 
 private const val INTRO_MAX_LENGTH = 100
 
+/** A pending crop: which image kind, the picked source, and the fixed output
+ *  size the cropper must produce. */
+private data class CropRequest(
+    val kind: ProfileRepository.Kind,
+    val uri: android.net.Uri,
+    val width: Int,
+    val height: Int,
+)
+
 @Composable
 fun ProfileScreen(
     onSettingsClick: () -> Unit,
@@ -84,6 +93,7 @@ fun ProfileScreen(
     var showIntroDialog by remember { mutableStateOf(false) }
     var showSignOutConfirm by remember { mutableStateOf(false) }
     var uploadingKind by remember { mutableStateOf<ProfileRepository.Kind?>(null) }
+    var cropRequest by remember { mutableStateOf<CropRequest?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val mimeError = stringResource(R.string.profile_image_error_mime)
@@ -92,12 +102,14 @@ fun ProfileScreen(
     val introError = stringResource(R.string.profile_intro_error_save)
     val nicknameError = stringResource(R.string.profile_nickname_error_save)
 
-    fun handleUpload(kind: ProfileRepository.Kind, uri: android.net.Uri?) {
-        if (uri == null) return
+    // Both avatar and cover route through the cropper before upload so the app
+    // emits fixed sizes (avatar 600×600, cover 1200×900) regardless of source.
+    fun handleCropped(kind: ProfileRepository.Kind, bytes: ByteArray) {
+        cropRequest = null
         uploadingKind = kind
         errorMessage = null
         scope.launch {
-            profileRepo.uploadProfileImage(kind, uri)
+            profileRepo.uploadProfileImageBytes(kind, bytes, "image/jpeg")
                 .onSuccess { user ->
                     avatarUrl = user.avatar_url
                     coverUrl = user.cover_url
@@ -115,11 +127,11 @@ fun ProfileScreen(
 
     val avatarPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri -> handleUpload(ProfileRepository.Kind.AVATAR, uri) }
+    ) { uri -> if (uri != null) cropRequest = CropRequest(ProfileRepository.Kind.AVATAR, uri, 600, 600) }
 
     val coverPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri -> handleUpload(ProfileRepository.Kind.COVER, uri) }
+    ) { uri -> if (uri != null) cropRequest = CropRequest(ProfileRepository.Kind.COVER, uri, 1200, 900) }
 
     LaunchedEffect(Unit) {
         profileRepo.refreshProfile()
@@ -288,6 +300,16 @@ fun ProfileScreen(
         }
 
         Spacer(Modifier.height(24.dp))
+    }
+
+    cropRequest?.let { req ->
+        ImageCropDialog(
+            uri = req.uri,
+            outputWidth = req.width,
+            outputHeight = req.height,
+            onConfirm = { bytes -> handleCropped(req.kind, bytes) },
+            onCancel = { cropRequest = null },
+        )
     }
 
     if (showNicknameDialog) {

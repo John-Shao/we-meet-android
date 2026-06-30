@@ -103,42 +103,63 @@ class ProfileRepository(
                 if (mime !in ALLOWED_MIME) throw UploadError.UnsupportedMime
                 val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
                     ?: throw UploadError.Empty
-                if (bytes.isEmpty()) throw UploadError.Empty
-                if (bytes.size > MAX_SIZE_BYTES) throw UploadError.TooLarge
-
-                val presigned = userApi.requestProfileUploadUrl(
-                    UploadUrlRequest(
-                        kind = kind.raw,
-                        content_type = mime,
-                        size = bytes.size.toLong(),
-                    )
-                )
-
-                val putRequest = Request.Builder()
-                    .url(presigned.upload_url)
-                    .put(bytes.toRequestBody(mime.toMediaTypeOrNull()))
-                    .header(AuthInterceptor.NO_AUTH, "1")
-                    .apply {
-                        presigned.headers.forEach { (k, v) -> header(k, v) }
-                    }
-                    .build()
-
-                okHttpClient.newCall(putRequest).execute().use { response ->
-                    if (!response.isSuccessful) {
-                        throw Exception("Storage PUT failed: HTTP ${response.code}")
-                    }
-                }
-
-                val user = userApi.confirmProfileImage(
-                    ConfirmProfileImageRequest(
-                        kind = kind.raw,
-                        object_key = presigned.object_key,
-                    )
-                )
-                persistProfile(user)
-                user
+                uploadBytes(kind, bytes, mime)
             }
         }
+
+    /**
+     * Upload already-decoded image bytes (e.g. the avatar cropper's
+     * [OUTPUT_SIZE]² JPEG render). Skips URI/MIME resolution since the caller
+     * controls the encoding; everything else mirrors [uploadProfileImage].
+     */
+    suspend fun uploadProfileImageBytes(
+        kind: Kind,
+        bytes: ByteArray,
+        mime: String,
+    ): Result<UserDto> =
+        runCatching {
+            withContext(Dispatchers.IO) {
+                uploadBytes(kind, bytes, mime)
+            }
+        }
+
+    private suspend fun uploadBytes(kind: Kind, bytes: ByteArray, mime: String): UserDto {
+        if (mime !in ALLOWED_MIME) throw UploadError.UnsupportedMime
+        if (bytes.isEmpty()) throw UploadError.Empty
+        if (bytes.size > MAX_SIZE_BYTES) throw UploadError.TooLarge
+
+        val presigned = userApi.requestProfileUploadUrl(
+            UploadUrlRequest(
+                kind = kind.raw,
+                content_type = mime,
+                size = bytes.size.toLong(),
+            )
+        )
+
+        val putRequest = Request.Builder()
+            .url(presigned.upload_url)
+            .put(bytes.toRequestBody(mime.toMediaTypeOrNull()))
+            .header(AuthInterceptor.NO_AUTH, "1")
+            .apply {
+                presigned.headers.forEach { (k, v) -> header(k, v) }
+            }
+            .build()
+
+        okHttpClient.newCall(putRequest).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw Exception("Storage PUT failed: HTTP ${response.code}")
+            }
+        }
+
+        val user = userApi.confirmProfileImage(
+            ConfirmProfileImageRequest(
+                kind = kind.raw,
+                object_key = presigned.object_key,
+            )
+        )
+        persistProfile(user)
+        return user
+    }
 
     private fun resolveMime(uri: Uri): String {
         contentResolver.getType(uri)?.let { return it }
