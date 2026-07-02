@@ -58,6 +58,12 @@ class GroupInfoViewModel internal constructor(
     private val _events = MutableSharedFlow<GroupInfoEvent>(extraBufferCapacity = 4)
     val events: SharedFlow<GroupInfoEvent> = _events.asSharedFlow()
 
+    // ⚠️ Must be declared BEFORE init: the version.collect below fires
+    // synchronously (StateFlow + Main.immediate) and calls rebuildRoster(),
+    // which reads these fields — declared after init they would still be null.
+    private var rosterUids: List<String> = emptyList()
+    private var ownerUid: String? = null
+
     init {
         refresh()
         viewModelScope.launch {
@@ -137,9 +143,6 @@ class GroupInfoViewModel internal constructor(
     }
 
     // ---- internals ----
-
-    private var rosterUids: List<String> = emptyList()
-    private var ownerUid: String? = null
 
     private fun rebuildRoster() {
         val self = session.selfUid.value
