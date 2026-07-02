@@ -283,7 +283,7 @@ private fun EventBody(
                 }
                 Icon(icon, contentDescription = attendee.rsvp, tint = tint, modifier = Modifier.size(16.dp))
                 Text(
-                    text = attendee.fullName?.takeIf { it.isNotBlank() } ?: attendee.email,
+                    text = attendee.fullName?.takeIf { it.isNotBlank() } ?: attendee.email.orEmpty(),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(start = 10.dp),
                 )

@@ -1,6 +1,7 @@
 package com.we.meet.ui.contacts
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.we.meet.WeMeetApp
@@ -117,7 +118,10 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             repository.listAllDepartments()
                 .onSuccess { depts -> _ui.update { it.copy(departments = depts) } }
-                .onFailure { _ui.update { it.copy(error = true) } }
+                .onFailure { e ->
+                    Log.w(TAG, "departments load failed", e)
+                    _ui.update { it.copy(error = true) }
+                }
         }
     }
 
@@ -132,7 +136,8 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
                         it.copy(members = page.members, hasMore = page.hasMore, loading = false)
                     }
                 }
-                .onFailure {
+                .onFailure { e ->
+                    Log.w(TAG, "members load failed", e)
                     _ui.update { it.copy(loading = false, error = true) }
                 }
         }
@@ -144,5 +149,9 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
             currentDept != null -> repository.departmentMembers(currentDept!!.id, page)
             else -> repository.allMembers(page)
         }
+    }
+
+    private companion object {
+        const val TAG = "ContactsVM"
     }
 }

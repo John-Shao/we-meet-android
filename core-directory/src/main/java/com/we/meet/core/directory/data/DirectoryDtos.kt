@@ -60,14 +60,6 @@ data class MemberDto(
 }
 
 @JsonClass(generateAdapter = true)
-data class PagedDepartmentsDto(
-    val count: Int = 0,
-    val next: String? = null,
-    val previous: String? = null,
-    val results: List<DepartmentDto> = emptyList(),
-)
-
-@JsonClass(generateAdapter = true)
 data class PagedMembersDto(
     val count: Int = 0,
     val next: String? = null,

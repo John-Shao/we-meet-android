@@ -13,11 +13,13 @@ import com.squareup.moshi.JsonClass
 data class EventAttendeeDto(
     val id: String? = null,
     @Json(name = "full_name") val fullName: String? = null,
-    val email: String = "",
+    // ⚠️ server sends explicit nulls here; Moshi defaults only cover ABSENT keys,
+    // so these must be nullable types, not non-null-with-default.
+    val email: String? = null,
     /** needs_action | accepted | declined | tentative */
-    val rsvp: String = "needs_action",
+    val rsvp: String? = null,
     /** organizer | required | optional */
-    val role: String = "required",
+    val role: String? = null,
 )
 
 @JsonClass(generateAdapter = true)

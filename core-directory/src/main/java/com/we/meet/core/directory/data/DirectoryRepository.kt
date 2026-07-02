@@ -14,20 +14,13 @@ data class MemberPage(
 class DirectoryRepository(private val api: DirectoryApi) {
 
     /**
-     * Full flat department list, followed through DRF pagination (capped at 20
-     * pages as a runaway guard), sorted by (depth, sortOrder, name). Callers
-     * derive children client-side via [DepartmentDto.parent].
+     * Full flat department list (the endpoint returns an unpaginated array),
+     * sorted by (depth, sortOrder, name). Callers derive children client-side
+     * via [DepartmentDto.parent].
      */
     suspend fun listAllDepartments(): Result<List<DepartmentDto>> = runCatching {
-        val all = mutableListOf<DepartmentDto>()
-        var page = 1
-        while (page <= MAX_DEPT_PAGES) {
-            val res = api.listDepartments(page = page)
-            all += res.results
-            if (res.next == null) break
-            page++
-        }
-        all.filter { it.isActive }
+        api.listDepartments()
+            .filter { it.isActive }
             .sortedWith(compareBy({ it.depth }, { it.sortOrder }, { it.name.orEmpty() }))
     }
 
@@ -51,8 +44,4 @@ class DirectoryRepository(private val api: DirectoryApi) {
         hasMore = next != null,
         nextPage = page + 1,
     )
-
-    private companion object {
-        const val MAX_DEPT_PAGES = 20
-    }
 }

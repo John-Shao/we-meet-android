@@ -7,11 +7,9 @@ import retrofit2.http.Query
 /** Read-only org-directory endpoints under api/v1.0/directory/, org-scoped server-side. */
 interface DirectoryApi {
 
+    // ⚠️ Unlike the member endpoints this returns a BARE ARRAY (no DRF page envelope).
     @GET("api/v1.0/directory/departments/")
-    suspend fun listDepartments(
-        @Query("page") page: Int = 1,
-        @Query("page_size") pageSize: Int = 100,
-    ): PagedDepartmentsDto
+    suspend fun listDepartments(): List<DepartmentDto>
 
     @GET("api/v1.0/directory/departments/{id}/members/")
     suspend fun listDepartmentMembers(
