@@ -223,7 +223,61 @@
     <string name="tab_meeting">Réunion</string>
     <string name="tab_ai">IA</string>
     <string name="tab_messages">Messages</string>
+    <string name="tab_calendar">Calendrier</string>
+    <string name="tab_contacts">Contacts</string>
     <string name="tab_profile">Moi</string>
+    <string name="profile_ai_entry">Assistant IA</string>
+
+    <!-- Contacts -->
+    <string name="contacts_title">Contacts</string>
+    <string name="contacts_search_hint">Rechercher un nom ou un e-mail</string>
+    <string name="contacts_root_org">Organisation</string>
+    <string name="contacts_empty_dept">Aucun membre dans ce service</string>
+    <string name="contacts_empty_search">Aucun membre correspondant</string>
+    <string name="contacts_load_error">Échec du chargement de l\'annuaire</string>
+    <string name="contacts_retry">Réessayer</string>
+    <string name="contacts_load_more">Charger plus</string>
+    <string name="member_detail_title">Détails du membre</string>
+    <string name="member_action_message">Message</string>
+    <string name="member_label_email">E-mail</string>
+    <string name="member_label_department">Service</string>
+    <string name="member_label_title">Poste</string>
+    <string name="member_message_failed">Impossible de démarrer la conversation</string>
+
+    <!-- Calendar -->
+    <string name="calendar_title">Calendrier</string>
+    <string name="calendar_today">Aujourd\'hui</string>
+    <string name="calendar_no_events">Aucun événement ce jour-là</string>
+    <string name="calendar_all_day">Journée entière</string>
+    <string name="calendar_load_error">Échec du chargement des événements</string>
+    <string name="calendar_retry">Réessayer</string>
+    <string name="calendar_create_title">Nouvel événement</string>
+    <string name="calendar_field_title_hint">Titre de l\'événement</string>
+    <string name="calendar_field_start">Début</string>
+    <string name="calendar_field_end">Fin</string>
+    <string name="calendar_field_all_day">Journée entière</string>
+    <string name="calendar_field_reminder">Rappel</string>
+    <string name="calendar_reminder_none">Aucun</string>
+    <string name="calendar_reminder_at_time">Au début de l\'événement</string>
+    <string name="calendar_reminder_minutes">%1$d minutes avant</string>
+    <string name="calendar_reminder_hour">1 heure avant</string>
+    <string name="calendar_reminder_day">1 jour avant</string>
+    <string name="calendar_field_attendees">Participants</string>
+    <string name="calendar_add_attendees">Ajouter des participants</string>
+    <string name="calendar_field_description_hint">Description (facultatif)</string>
+    <string name="calendar_action_create">Créer</string>
+    <string name="calendar_error_end_before_start">La fin doit être postérieure au début</string>
+    <string name="calendar_create_failed">Impossible de créer l\'événement</string>
+    <string name="event_detail_title">Détails de l\'événement</string>
+    <string name="event_organizer">Organisateur</string>
+    <string name="event_attendees_count">Participants (%1$d)</string>
+    <string name="event_rsvp_accept">Accepter</string>
+    <string name="event_rsvp_tentative">Peut-être</string>
+    <string name="event_rsvp_decline">Refuser</string>
+    <string name="event_rsvp_failed">Impossible d\'enregistrer votre réponse</string>
+    <string name="event_join_meeting">Rejoindre la réunion</string>
+    <string name="event_cancelled_flag">Annulé</string>
+    <string name="event_load_error">Échec du chargement de l\'événement</string>
 
     <!-- AI hub -->
     <string name="ai_hub_title">Assistant IA</string>

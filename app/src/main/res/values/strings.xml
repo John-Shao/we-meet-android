@@ -223,7 +223,61 @@
     <string name="tab_meeting">Meeting</string>
     <string name="tab_ai">AI</string>
     <string name="tab_messages">Messages</string>
+    <string name="tab_calendar">Calendar</string>
+    <string name="tab_contacts">Contacts</string>
     <string name="tab_profile">Me</string>
+    <string name="profile_ai_entry">AI Assistant</string>
+
+    <!-- Contacts (通讯录) -->
+    <string name="contacts_title">Contacts</string>
+    <string name="contacts_search_hint">Search name or email</string>
+    <string name="contacts_root_org">Organization</string>
+    <string name="contacts_empty_dept">No members in this department</string>
+    <string name="contacts_empty_search">No matching members</string>
+    <string name="contacts_load_error">Failed to load the directory</string>
+    <string name="contacts_retry">Retry</string>
+    <string name="contacts_load_more">Load more</string>
+    <string name="member_detail_title">Member details</string>
+    <string name="member_action_message">Message</string>
+    <string name="member_label_email">Email</string>
+    <string name="member_label_department">Department</string>
+    <string name="member_label_title">Title</string>
+    <string name="member_message_failed">Could not start the chat</string>
+
+    <!-- Calendar (日历) -->
+    <string name="calendar_title">Calendar</string>
+    <string name="calendar_today">Today</string>
+    <string name="calendar_no_events">No events on this day</string>
+    <string name="calendar_all_day">All day</string>
+    <string name="calendar_load_error">Failed to load events</string>
+    <string name="calendar_retry">Retry</string>
+    <string name="calendar_create_title">New event</string>
+    <string name="calendar_field_title_hint">Event title</string>
+    <string name="calendar_field_start">Starts</string>
+    <string name="calendar_field_end">Ends</string>
+    <string name="calendar_field_all_day">All day</string>
+    <string name="calendar_field_reminder">Reminder</string>
+    <string name="calendar_reminder_none">None</string>
+    <string name="calendar_reminder_at_time">At event time</string>
+    <string name="calendar_reminder_minutes">%1$d minutes before</string>
+    <string name="calendar_reminder_hour">1 hour before</string>
+    <string name="calendar_reminder_day">1 day before</string>
+    <string name="calendar_field_attendees">Attendees</string>
+    <string name="calendar_add_attendees">Add attendees</string>
+    <string name="calendar_field_description_hint">Description (optional)</string>
+    <string name="calendar_action_create">Create</string>
+    <string name="calendar_error_end_before_start">End time must be after the start time</string>
+    <string name="calendar_create_failed">Could not create the event</string>
+    <string name="event_detail_title">Event details</string>
+    <string name="event_organizer">Organizer</string>
+    <string name="event_attendees_count">Attendees (%1$d)</string>
+    <string name="event_rsvp_accept">Accept</string>
+    <string name="event_rsvp_tentative">Maybe</string>
+    <string name="event_rsvp_decline">Decline</string>
+    <string name="event_rsvp_failed">Could not update your response</string>
+    <string name="event_join_meeting">Join meeting</string>
+    <string name="event_cancelled_flag">Cancelled</string>
+    <string name="event_load_error">Failed to load the event</string>
 
     <!-- AI hub -->
     <string name="ai_hub_title">AI Assistant</string>

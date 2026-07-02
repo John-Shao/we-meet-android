@@ -28,6 +28,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "WeMeetAndroid"
 include(":app")
+include(":core-directory")
 include(":feature-assistant")
 include(":feature-im")
 

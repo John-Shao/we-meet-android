@@ -7,21 +7,73 @@
     <string name="im_status_auth_failed">鉴权失败,请重试</string>
 
     <string name="im_action_retry">重试</string>
+    <string name="im_action_confirm">确定</string>
+    <string name="im_action_cancel">取消</string>
 
-    <string name="im_list_title">会话</string>
+    <string name="im_list_title">消息</string>
     <string name="im_list_empty">还没有会话</string>
-    <string name="im_new_direct_button">新建</string>
-    <string name="im_new_direct_title">新建会话</string>
-    <string name="im_new_direct_self_uid">你的 IM ID:\n%1$s</string>
-    <string name="im_new_direct_peer_hint">对方的 IM ID</string>
-    <string name="im_new_direct_confirm">创建</string>
-    <string name="im_new_direct_cancel">取消</string>
+    <string name="im_untitled_chat">会话</string>
+    <string name="im_new_chat">新建会话</string>
+    <string name="im_new_group_title">新建群聊</string>
+    <string name="im_new_group_name_hint">群名称</string>
+    <string name="im_create_chat_failed">会话创建失败</string>
 
-    <string name="im_chat_pick_prompt">从左侧选择一个会话开始聊天</string>
     <string name="im_chat_empty">暂无消息,发出第一条吧</string>
 
     <string name="im_input_placeholder">输入消息…</string>
     <string name="im_input_send">发送</string>
+    <string name="im_attach_image">发送图片</string>
+    <string name="im_attach_file">发送文件</string>
+    <string name="im_sending_image">正在发送图片…</string>
+    <string name="im_sending_file">正在发送文件…</string>
+
+    <!-- 会话列表按消息类型的预览文案。 -->
+    <string name="im_preview_image">[图片]</string>
+    <string name="im_preview_file">[文件] %1$s</string>
+    <string name="im_preview_unsupported">[暂不支持的消息]</string>
+
+    <!-- 长按菜单。 -->
+    <string name="im_menu_pin">置顶</string>
+    <string name="im_menu_unpin">取消置顶</string>
+    <string name="im_menu_mute">消息免打扰</string>
+    <string name="im_menu_unmute">取消免打扰</string>
+    <string name="im_menu_delete">删除会话</string>
+    <string name="im_menu_leave">退出群聊</string>
+    <string name="im_menu_leave_dissolve">退出或解散群聊</string>
+    <string name="im_confirm_delete_title">删除会话？</string>
+    <string name="im_confirm_delete_message">仅对你隐藏该会话,收到新消息时会重新出现。</string>
+    <string name="im_confirm_leave_title">退出群聊？</string>
+    <string name="im_confirm_leave_message">退出后将不再接收该群的消息。</string>
+    <string name="im_confirm_leave_owner_message">你是群主。退出后群主将自动转让给最早加入的成员;若你是最后一人,群将解散。</string>
+
+    <!-- 已读回执。 -->
+    <string name="im_read">已读</string>
+    <string name="im_unread">未读</string>
+    <string name="im_read_count">%1$d/%2$d人已读</string>
+    <string name="im_receipt_read_section">已读 (%1$d)</string>
+    <string name="im_receipt_unread_section">未读 (%1$d)</string>
+
+    <!-- 媒体。 -->
+    <string name="im_image_load_failed">图片加载失败</string>
+    <string name="im_file_open_failed">无法打开该文件</string>
+    <string name="im_upload_invalid_type">不支持的图片类型</string>
+    <string name="im_upload_too_large">文件过大</string>
+    <string name="im_upload_failed">上传失败,请重试</string>
+
+    <!-- 群管理。 -->
+    <string name="im_group_info">群信息</string>
+    <string name="im_group_name_label">群名称</string>
+    <string name="im_group_rename">修改</string>
+    <string name="im_group_members_count">群成员 (%1$d)</string>
+    <string name="im_group_add_members">添加成员</string>
+    <string name="im_group_remove_member">移出群聊</string>
+    <string name="im_group_remove_confirm">将 %1$s 移出群聊？</string>
+    <string name="im_group_owner_badge">群主</string>
+    <string name="im_group_transfer_owner">转让群主</string>
+    <string name="im_group_transfer_confirm">将群主转让给 %1$s？</string>
+    <string name="im_group_clear_history">清空聊天记录</string>
+    <string name="im_group_clear_confirm">仅清空你自己可见的记录,其他成员不受影响。</string>
+    <string name="im_removed_from_group">你已被移出该群聊</string>
 
     <!-- 未读数超过 99 时的徽标文案。 -->
     <string name="im_unread_overflow">99+</string>

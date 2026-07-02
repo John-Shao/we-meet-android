@@ -1,45 +1,91 @@
 package com.we.meet.feature.im.data
 
-import com.squareup.moshi.JsonClass
 import retrofit2.http.Body
 import retrofit2.http.POST
 
 /**
- * we-meet backend IM bridge endpoint surface.
+ * we-meet backend IM bridge endpoint surface (core/api/im.py). All requests ride
+ * the host's authed OkHttp (OIDC bearer auto-attached); the backend resolves the
+ * caller from the token and talks HMAC-admin to jusi-light-im.
  *
- * The body of `POST /api/v1.0/im/token/` is intentionally empty — the backend
- * looks at the authenticated user (via OIDC bearer auto-attached by the host
- * OkHttp interceptor) and signs a jusi-light-im JWT bound to that user.
+ * Request bodies are plain Maps: every endpoint takes a small JSON object whose
+ * keys vary by call (`peer_uid` vs `peer_user_id`, optional fields), and a Map
+ * keeps the partial-body semantics obvious.
  */
 internal interface ImApi {
 
+    /** Mint a client-bound IM JWT. Empty body — identity comes from the bearer. */
     @POST("api/v1.0/im/token/")
     suspend fun fetchToken(@Body body: Map<String, String> = emptyMap()): ImTokenResponse
 
     /**
-     * POST /api/v1.0/im/conversations/direct/ — create-or-get a 1-on-1 conv.
-     *
-     * Body: `{"peer_uid": "<jusi uid>"}`. Backend computes the sorted-pair uuid5 cid
-     * and resolves the caller's own uid via the OIDC subject.
+     * Create-or-get a 1:1 conversation. Body is either `{"peer_uid": <jusi uid>}`
+     * or `{"peer_user_id": <we-meet uuid>}` (contact-picker flow — backend
+     * resolves the IM uid server-side). Deterministic cid per sorted pair.
      */
     @POST("api/v1.0/im/conversations/direct/")
     suspend fun createDirectConversation(
         @Body body: Map<String, String>,
     ): ImDirectConversationResponse
+
+    /** Create a group: `{"member_user_ids": [...], "name": ...}`. Caller becomes owner. */
+    @POST("api/v1.0/im/conversations/group/")
+    suspend fun createGroupConversation(
+        @Body body: Map<String, @JvmSuppressWildcards Any>,
+    ): ImGroupConversationResponse
+
+    /** P9 拉人: `{"cid": ..., "member_user_ids": [...]}`. Any member may add. */
+    @POST("api/v1.0/im/conversations/add-members/")
+    suspend fun addMembers(
+        @Body body: Map<String, @JvmSuppressWildcards Any>,
+    ): Map<String, Any>
+
+    /** P9 踢人 (owner-only): `{"cid": ..., "member_user_id": ...}`. */
+    @POST("api/v1.0/im/conversations/remove-member/")
+    suspend fun removeMember(@Body body: Map<String, String>): Map<String, Any>
+
+    /**
+     * Rename / re-describe a group (owner-only). jusi stores meta wholesale, so
+     * always send the complete desired meta: `{"cid", "name", "description", "kind"}`
+     * where kind ∈ rename | description (picks the announced system message).
+     */
+    @POST("api/v1.0/im/conversations/update/")
+    suspend fun updateGroupMeta(@Body body: Map<String, String>): Map<String, Any>
+
+    /** P9.1: post an "X 退出群聊" system message just before leaving. Best-effort. */
+    @POST("api/v1.0/im/conversations/announce-leave/")
+    suspend fun announceLeave(@Body body: Map<String, String>): Map<String, Any>
+
+    /** Map IM uids → we-meet display identities. Body `{"im_uids": [...]}`. */
+    @POST("api/v1.0/im/users/resolve/")
+    suspend fun resolveUsers(
+        @Body body: Map<String, @JvmSuppressWildcards Any>,
+    ): Map<String, ImUserInfo>
+
+    /** Presigned PUT for a chat image. Body `{"content_type": ..., "size": ...}`. */
+    @POST("api/v1.0/im/images/upload-url/")
+    suspend fun imageUploadUrl(
+        @Body body: Map<String, @JvmSuppressWildcards Any>,
+    ): UploadUrlResponse
+
+    /** Presigned PUT for a chat file (≤50 MiB). Body `{"name", "content_type", "size"}`. */
+    @POST("api/v1.0/im/files/upload-url/")
+    suspend fun fileUploadUrl(
+        @Body body: Map<String, @JvmSuppressWildcards Any>,
+    ): UploadUrlResponse
+
+    /** Presigned PUT for a voice clip (≤20 MiB) — declared for IM Phase 2. */
+    @POST("api/v1.0/im/audio/upload-url/")
+    suspend fun audioUploadUrl(
+        @Body body: Map<String, @JvmSuppressWildcards Any>,
+    ): UploadUrlResponse
+
+    /**
+     * Map object keys → short-lived presigned GET URLs (~1h). Content-agnostic:
+     * routes `chat/` → image bucket, `file/` → doc bucket, `audio/` → voice bucket.
+     */
+    @POST("api/v1.0/im/images/resolve/")
+    suspend fun resolveMedia(
+        @Body body: Map<String, @JvmSuppressWildcards Any>,
+    ): Map<String, String>
 }
-
-@JsonClass(generateAdapter = true)
-internal data class ImTokenResponse(
-    val uid: String,
-    val token: String,
-    val ws_url: String,
-    val expires_at: Long,
-)
-
-@JsonClass(generateAdapter = true)
-internal data class ImDirectConversationResponse(
-    val cid: String,
-    val type: String,
-    val members: List<String>,
-    val self_uid: String,
-)

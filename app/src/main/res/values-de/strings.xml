@@ -223,7 +223,61 @@
     <string name="tab_meeting">Meeting</string>
     <string name="tab_ai">KI</string>
     <string name="tab_messages">Nachrichten</string>
+    <string name="tab_calendar">Kalender</string>
+    <string name="tab_contacts">Kontakte</string>
     <string name="tab_profile">Ich</string>
+    <string name="profile_ai_entry">KI-Assistent</string>
+
+    <!-- Contacts -->
+    <string name="contacts_title">Kontakte</string>
+    <string name="contacts_search_hint">Name oder E-Mail suchen</string>
+    <string name="contacts_root_org">Organisation</string>
+    <string name="contacts_empty_dept">Keine Mitglieder in dieser Abteilung</string>
+    <string name="contacts_empty_search">Keine passenden Mitglieder</string>
+    <string name="contacts_load_error">Verzeichnis konnte nicht geladen werden</string>
+    <string name="contacts_retry">Erneut versuchen</string>
+    <string name="contacts_load_more">Mehr laden</string>
+    <string name="member_detail_title">Mitgliedsdetails</string>
+    <string name="member_action_message">Nachricht</string>
+    <string name="member_label_email">E-Mail</string>
+    <string name="member_label_department">Abteilung</string>
+    <string name="member_label_title">Position</string>
+    <string name="member_message_failed">Chat konnte nicht gestartet werden</string>
+
+    <!-- Calendar -->
+    <string name="calendar_title">Kalender</string>
+    <string name="calendar_today">Heute</string>
+    <string name="calendar_no_events">Keine Termine an diesem Tag</string>
+    <string name="calendar_all_day">Ganztägig</string>
+    <string name="calendar_load_error">Termine konnten nicht geladen werden</string>
+    <string name="calendar_retry">Erneut versuchen</string>
+    <string name="calendar_create_title">Neuer Termin</string>
+    <string name="calendar_field_title_hint">Termintitel</string>
+    <string name="calendar_field_start">Beginn</string>
+    <string name="calendar_field_end">Ende</string>
+    <string name="calendar_field_all_day">Ganztägig</string>
+    <string name="calendar_field_reminder">Erinnerung</string>
+    <string name="calendar_reminder_none">Keine</string>
+    <string name="calendar_reminder_at_time">Zum Terminbeginn</string>
+    <string name="calendar_reminder_minutes">%1$d Minuten vorher</string>
+    <string name="calendar_reminder_hour">1 Stunde vorher</string>
+    <string name="calendar_reminder_day">1 Tag vorher</string>
+    <string name="calendar_field_attendees">Teilnehmer</string>
+    <string name="calendar_add_attendees">Teilnehmer hinzufügen</string>
+    <string name="calendar_field_description_hint">Beschreibung (optional)</string>
+    <string name="calendar_action_create">Erstellen</string>
+    <string name="calendar_error_end_before_start">Das Ende muss nach dem Beginn liegen</string>
+    <string name="calendar_create_failed">Termin konnte nicht erstellt werden</string>
+    <string name="event_detail_title">Termindetails</string>
+    <string name="event_organizer">Organisator</string>
+    <string name="event_attendees_count">Teilnehmer (%1$d)</string>
+    <string name="event_rsvp_accept">Zusagen</string>
+    <string name="event_rsvp_tentative">Vielleicht</string>
+    <string name="event_rsvp_decline">Absagen</string>
+    <string name="event_rsvp_failed">Antwort konnte nicht gespeichert werden</string>
+    <string name="event_join_meeting">Meeting beitreten</string>
+    <string name="event_cancelled_flag">Abgesagt</string>
+    <string name="event_load_error">Termin konnte nicht geladen werden</string>
 
     <!-- AI hub -->
     <string name="ai_hub_title">KI-Assistent</string>

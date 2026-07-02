@@ -12,15 +12,20 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.Contacts
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material3.HorizontalDivider
@@ -41,17 +46,24 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.R
 import com.we.meet.WeMeetApp
-import com.we.meet.feature.im.ui.ImTabRoot
-import com.we.meet.ui.ai.AiHubScreen
+import com.we.meet.feature.im.ImSession
+import com.we.meet.feature.im.ui.list.ConversationListScreen
+import com.we.meet.ui.calendar.CalendarTabScreen
+import com.we.meet.ui.contacts.ContactsTabScreen
 import com.we.meet.ui.home.HomeScreen
 import com.we.meet.ui.profile.ProfileScreen
+
+/** Bottom tabs, in bar order. Feishu-style: 消息 · 日历 · 会议 · 通讯录 · 我的. */
+enum class MainTab { Messages, Calendar, Meeting, Contacts, Profile }
 
 private data class TabItem(
     val labelRes: Int,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector,
+    val badgeCount: Long = 0,
     val content: @Composable () -> Unit,
 )
 
@@ -63,17 +75,46 @@ fun MainTabScreen(
     onScanQrCode: () -> Unit,
     onHistoryClick: (roomId: String) -> Unit,
     onSettingsClick: () -> Unit,
-    onOpenAssistantCall: () -> Unit,
+    onOpenAiHub: () -> Unit,
     onSignedOut: () -> Unit,
+    onOpenChat: (cid: String) -> Unit,
+    onNewChat: () -> Unit,
+    onMemberClick: (userId: String) -> Unit,
+    onEventClick: (eventId: String) -> Unit,
+    onCreateEvent: (epochDay: Long) -> Unit,
 ) {
-    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    // Default to the Meeting tab — preserves the app's meeting-first behavior
+    // from the 4-tab era.
+    var selectedTab by rememberSaveable { mutableIntStateOf(MainTab.Meeting.ordinal) }
     val app = LocalContext.current.applicationContext as WeMeetApp
+
+    // Live unread total for the 消息 tab badge — fed by the process-wide IM
+    // session so it counts even while another tab is selected.
+    val imUnread by ImSession.get(app).totalUnread.collectAsStateWithLifecycle()
 
     // Single source of truth: each tab pairs its bar appearance with its content, so
     // adding/reordering a tab is one edit and the bar can't drift out of sync with
-    // the screen shown (the parallel `when (index)` that used to do this is gone).
+    // the screen shown.
     val tabs = listOf(
-        TabItem(R.string.tab_meeting, Icons.Filled.Videocam, Icons.Filled.Videocam) {
+        TabItem(
+            R.string.tab_messages,
+            Icons.Filled.ChatBubble,
+            Icons.Outlined.ChatBubbleOutline,
+            badgeCount = imUnread,
+        ) {
+            ConversationListScreen(
+                deps = app,
+                onOpenChat = onOpenChat,
+                onNewChat = onNewChat,
+            )
+        },
+        TabItem(R.string.tab_calendar, Icons.Filled.CalendarMonth, Icons.Outlined.CalendarMonth) {
+            CalendarTabScreen(
+                onEventClick = onEventClick,
+                onCreateEvent = onCreateEvent,
+            )
+        },
+        TabItem(R.string.tab_meeting, Icons.Filled.Videocam, Icons.Outlined.Videocam) {
             HomeScreen(
                 onCreateMeeting = onCreateMeeting,
                 onJoinMeeting = onJoinMeeting,
@@ -82,16 +123,19 @@ fun MainTabScreen(
                 onHistoryClick = onHistoryClick,
             )
         },
-        TabItem(R.string.tab_ai, Icons.Filled.AutoAwesome, Icons.Filled.AutoAwesome) {
-            AiHubScreen(onOpenAssistantCall = onOpenAssistantCall)
+        TabItem(R.string.tab_contacts, Icons.Filled.Contacts, Icons.Outlined.Contacts) {
+            ContactsTabScreen(onMemberClick = onMemberClick)
         },
-        TabItem(R.string.tab_messages, Icons.Filled.ChatBubble, Icons.Outlined.ChatBubbleOutline) {
-            ImTabRoot(deps = app)
-        },
-        TabItem(R.string.tab_profile, Icons.Filled.Person, Icons.Filled.Person) {
+        TabItem(R.string.tab_profile, Icons.Filled.Person, Icons.Outlined.Person) {
             ProfileScreen(
                 onSettingsClick = onSettingsClick,
-                onSignedOut = onSignedOut,
+                onOpenAiHub = onOpenAiHub,
+                onSignedOut = {
+                    // Drop the IM socket + caches so the next login doesn't
+                    // inherit this user's session.
+                    ImSession.shutdown()
+                    onSignedOut()
+                },
             )
         },
     )
@@ -145,12 +189,22 @@ private fun CompactTabBar(
                             interactionSource = remember { MutableInteractionSource() },
                         ) { onTabSelected(index) },
                 ) {
-                    Icon(
-                        imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
-                        contentDescription = stringResource(tab.labelRes),
-                        tint = color,
-                        modifier = Modifier.size(32.dp),
-                    )
+                    Box {
+                        Icon(
+                            imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
+                            contentDescription = stringResource(tab.labelRes),
+                            tint = color,
+                            modifier = Modifier.size(28.dp),
+                        )
+                        if (tab.badgeCount > 0) {
+                            TabBadge(
+                                count = tab.badgeCount,
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 10.dp, y = (-4).dp),
+                            )
+                        }
+                    }
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = stringResource(tab.labelRes),
@@ -161,5 +215,22 @@ private fun CompactTabBar(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun TabBadge(count: Long, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.error, CircleShape)
+            .padding(horizontal = 4.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = if (count > 99) "99+" else count.toString(),
+            color = MaterialTheme.colorScheme.onError,
+            fontSize = 9.sp,
+            lineHeight = 12.sp,
+        )
     }
 }

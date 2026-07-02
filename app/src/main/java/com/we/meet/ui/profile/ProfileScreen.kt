@@ -75,6 +75,7 @@ private data class CropRequest(
 @Composable
 fun ProfileScreen(
     onSettingsClick: () -> Unit,
+    onOpenAiHub: () -> Unit,
     onSignedOut: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -245,6 +246,13 @@ fun ProfileScreen(
                 .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.surface),
         ) {
+            // AI hub moved here when its bottom tab was replaced by 日历/通讯录.
+            SettingsRow(
+                label = stringResource(R.string.profile_ai_entry),
+                value = null,
+                onClick = onOpenAiHub,
+            )
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
             SettingsRow(
                 label = stringResource(R.string.profile_settings),
                 value = null,

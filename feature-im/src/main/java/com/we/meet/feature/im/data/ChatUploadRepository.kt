@@ -1,0 +1,169 @@
+package com.we.meet.feature.im.data
+
+import android.content.ContentResolver
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.provider.OpenableColumns
+import java.io.ByteArrayOutputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+
+/** Stable error codes the UI maps to i18n messages. */
+class ChatUploadException(val code: Code, message: String? = null) : Exception(message ?: code.name) {
+    enum class Code { InvalidType, TooLarge, UploadError }
+}
+
+/** Metadata carried in a file message body (JSON `{key,name,size}`). */
+data class ChatFileMeta(val key: String, val name: String, val size: Long)
+
+/**
+ * Presigned-upload pipeline for chat media — port of the web client's
+ * uploadChatImage.ts / uploadChatFile.ts.
+ *
+ * The PUT goes through a bare [OkHttpClient], NEVER the host's authed one:
+ * AuthInterceptor would attach an Authorization header and break the presigned
+ * S3 signature (mirror of the SDK's own OkHttp-isolation rule).
+ */
+internal class ChatUploadRepository(
+    private val bridge: ImBridgeRepository,
+    private val contentResolver: ContentResolver,
+) {
+    private val plainHttp = OkHttpClient()
+
+    /**
+     * Validate, (optionally) downscale + re-encode, upload; returns the stored
+     * object_key — the caller sends it as the message body with content_type="image".
+     * Gifs pass through unchanged (animation); others above 1600px/2MiB become
+     * ≤1600px lossy webp.
+     */
+    suspend fun uploadImage(uri: Uri): String = withContext(Dispatchers.IO) {
+        val mime = contentResolver.getType(uri) ?: "image/jpeg"
+        if (mime !in ALLOWED_IMAGE_TYPES) throw ChatUploadException(ChatUploadException.Code.InvalidType)
+
+        val original = contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            ?: throw ChatUploadException(ChatUploadException.Code.UploadError, "unreadable uri")
+
+        val (bytes, contentType) = if (mime == "image/gif") {
+            original to mime
+        } else {
+            prepareImage(original, mime)
+        }
+        if (bytes.size > IMAGE_MAX_BYTES) throw ChatUploadException(ChatUploadException.Code.TooLarge)
+
+        val presigned = runCatching { bridge.imageUploadUrl(contentType, bytes.size.toLong()) }
+            .getOrElse { throw ChatUploadException(ChatUploadException.Code.UploadError, it.message) }
+        put(presigned, bytes, contentType)
+        presigned.objectKey
+    }
+
+    /** Upload a document; returns the metadata to JSON-encode as the message body. */
+    suspend fun uploadFile(uri: Uri): ChatFileMeta = withContext(Dispatchers.IO) {
+        val (name, size) = queryNameAndSize(uri)
+        if (size > FILE_MAX_BYTES) throw ChatUploadException(ChatUploadException.Code.TooLarge)
+        val mime = contentResolver.getType(uri) ?: "application/octet-stream"
+
+        val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            ?: throw ChatUploadException(ChatUploadException.Code.UploadError, "unreadable uri")
+        if (bytes.size > FILE_MAX_BYTES) throw ChatUploadException(ChatUploadException.Code.TooLarge)
+
+        val presigned = runCatching { bridge.fileUploadUrl(name, mime, bytes.size.toLong()) }
+            .getOrElse { throw ChatUploadException(ChatUploadException.Code.UploadError, it.message) }
+        put(presigned, bytes, mime)
+        ChatFileMeta(key = presigned.objectKey, name = name, size = bytes.size.toLong())
+    }
+
+    // ---- internals ----
+
+    /** Downscale to ≤[MAX_EDGE]px longest edge + lossy webp when big; else pass through. */
+    private fun prepareImage(original: ByteArray, mime: String): Pair<ByteArray, String> {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(original, 0, original.size, bounds)
+        val longest = maxOf(bounds.outWidth, bounds.outHeight)
+        if (longest <= 0) throw ChatUploadException(ChatUploadException.Code.InvalidType)
+        if (longest <= MAX_EDGE && original.size <= RECODE_SIZE_THRESHOLD) {
+            return original to mime
+        }
+
+        // Two-step decode: inSampleSize gets us within 2x cheaply, then an exact
+        // scale lands on MAX_EDGE.
+        val options = BitmapFactory.Options().apply {
+            inSampleSize = calculateInSampleSize(longest)
+        }
+        val decoded = BitmapFactory.decodeByteArray(original, 0, original.size, options)
+            ?: throw ChatUploadException(ChatUploadException.Code.InvalidType)
+        val decodedLongest = maxOf(decoded.width, decoded.height)
+        val scaled = if (decodedLongest > MAX_EDGE) {
+            val scale = MAX_EDGE.toFloat() / decodedLongest
+            Bitmap.createScaledBitmap(
+                decoded,
+                (decoded.width * scale).toInt().coerceAtLeast(1),
+                (decoded.height * scale).toInt().coerceAtLeast(1),
+                true,
+            ).also { if (it !== decoded) decoded.recycle() }
+        } else decoded
+
+        val out = ByteArrayOutputStream()
+        @Suppress("DEPRECATION") // WEBP_LOSSY needs API 30; minSdk is 29.
+        val format = if (android.os.Build.VERSION.SDK_INT >= 30) {
+            Bitmap.CompressFormat.WEBP_LOSSY
+        } else {
+            Bitmap.CompressFormat.WEBP
+        }
+        scaled.compress(format, WEBP_QUALITY, out)
+        scaled.recycle()
+        return out.toByteArray() to "image/webp"
+    }
+
+    private fun calculateInSampleSize(longest: Int): Int {
+        var sample = 1
+        var edge = longest
+        while (edge / 2 >= MAX_EDGE) {
+            sample *= 2
+            edge /= 2
+        }
+        return sample
+    }
+
+    private fun put(presigned: UploadUrlResponse, bytes: ByteArray, contentType: String) {
+        val builder = Request.Builder()
+            .url(presigned.uploadUrl)
+            .put(bytes.toRequestBody(contentType.toMediaTypeOrNull()))
+        val headers = presigned.headers.ifEmpty { mapOf("Content-Type" to contentType) }
+        headers.forEach { (k, v) -> builder.header(k, v) }
+        plainHttp.newCall(builder.build()).execute().use { res ->
+            if (!res.isSuccessful) {
+                throw ChatUploadException(
+                    ChatUploadException.Code.UploadError,
+                    "storage PUT failed (${res.code})",
+                )
+            }
+        }
+    }
+
+    private fun queryNameAndSize(uri: Uri): Pair<String, Long> {
+        contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val nameIdx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                val sizeIdx = cursor.getColumnIndex(OpenableColumns.SIZE)
+                val name = if (nameIdx >= 0) cursor.getString(nameIdx) else null
+                val size = if (sizeIdx >= 0) cursor.getLong(sizeIdx) else -1L
+                return (name ?: "file") to size
+            }
+        }
+        return "file" to -1L
+    }
+
+    private companion object {
+        val ALLOWED_IMAGE_TYPES = setOf("image/jpeg", "image/png", "image/webp", "image/gif")
+        const val IMAGE_MAX_BYTES = 10 * 1024 * 1024
+        const val FILE_MAX_BYTES = 50 * 1024 * 1024
+        const val MAX_EDGE = 1600
+        const val RECODE_SIZE_THRESHOLD = 2 * 1024 * 1024
+        const val WEBP_QUALITY = 85
+    }
+}

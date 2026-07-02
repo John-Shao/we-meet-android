@@ -85,6 +85,8 @@ class ApiClient(tokenStore: TokenStore) {
     val roomApi: RoomApi = retrofit.create(RoomApi::class.java)
     val userApi: UserApi = retrofit.create(UserApi::class.java)
     val qrLoginApi: QrLoginApi = retrofit.create(QrLoginApi::class.java)
+    val imBridgeApi: ImBridgeApi = retrofit.create(ImBridgeApi::class.java)
+    val calendarApi: CalendarApi = retrofit.create(CalendarApi::class.java)
 
     private fun normalizedBaseUrl(raw: String): String =
         if (raw.endsWith("/")) raw else "$raw/"

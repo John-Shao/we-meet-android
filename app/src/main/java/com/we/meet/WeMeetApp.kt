@@ -4,6 +4,9 @@ import android.app.Application
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.disk.DiskCache
+import com.we.meet.core.directory.DirectoryDeps
+import com.we.meet.core.directory.data.DirectoryRepository
+import com.we.meet.core.directory.net.DirectoryNetwork
 import com.we.meet.feature.assistant.AssistantDeps
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.data.api.ApiClient
@@ -28,7 +31,7 @@ import okhttp3.OkHttpClient
  * If the app grows beyond a few screens, swap this for Hilt without churning
  * the call sites: every screen reads dependencies from a single property.
  */
-class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps {
+class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, DirectoryDeps {
 
     lateinit var tokenStore: TokenStore
         private set
@@ -49,6 +52,8 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps {
     lateinit var historyStore: HistoryStore
         private set
     lateinit var settingsStore: SettingsStore
+        private set
+    lateinit var directoryRepository: DirectoryRepository
         private set
 
     /**
@@ -77,6 +82,7 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps {
         qrLoginRepository = QrLoginRepository(apiClient.qrLoginApi)
         historyStore = HistoryStore(this)
         settingsStore = SettingsStore(this)
+        directoryRepository = DirectoryRepository(DirectoryNetwork.directoryApi(this))
         ScreenShareOverlay.init(this)
         // PostHog: no-op when WE_MEET_POSTHOG_KEY is blank (default).
         com.we.meet.analytics.Analytics.init(this)

@@ -7,21 +7,68 @@
     <string name="im_status_auth_failed">Authenticatie mislukt — probeer opnieuw</string>
 
     <string name="im_action_retry">Opnieuw proberen</string>
+    <string name="im_action_confirm">OK</string>
+    <string name="im_action_cancel">Annuleren</string>
 
-    <string name="im_list_title">Gesprekken</string>
+    <string name="im_list_title">Berichten</string>
     <string name="im_list_empty">Nog geen gesprekken</string>
-    <string name="im_new_direct_button">Nieuw</string>
-    <string name="im_new_direct_title">Nieuw gesprek</string>
-    <string name="im_new_direct_self_uid">Jouw IM-ID:\n%1$s</string>
-    <string name="im_new_direct_peer_hint">IM-ID van gesprekspartner</string>
-    <string name="im_new_direct_confirm">Aanmaken</string>
-    <string name="im_new_direct_cancel">Annuleren</string>
+    <string name="im_untitled_chat">Gesprek</string>
+    <string name="im_new_chat">Nieuw gesprek</string>
+    <string name="im_new_group_title">Nieuwe groep</string>
+    <string name="im_new_group_name_hint">Groepsnaam</string>
+    <string name="im_create_chat_failed">Kan het gesprek niet aanmaken</string>
 
-    <string name="im_chat_pick_prompt">Kies links een gesprek om te beginnen</string>
-    <string name="im_chat_empty">Nog geen berichten — verzend het eerste</string>
+    <string name="im_chat_empty">Nog geen berichten — stuur het eerste</string>
 
     <string name="im_input_placeholder">Typ een bericht…</string>
-    <string name="im_input_send">Verzenden</string>
+    <string name="im_input_send">Versturen</string>
+    <string name="im_attach_image">Afbeelding versturen</string>
+    <string name="im_attach_file">Bestand versturen</string>
+    <string name="im_sending_image">Afbeelding wordt verstuurd…</string>
+    <string name="im_sending_file">Bestand wordt verstuurd…</string>
+
+    <string name="im_preview_image">[Afbeelding]</string>
+    <string name="im_preview_file">[Bestand] %1$s</string>
+    <string name="im_preview_unsupported">[Niet-ondersteund bericht]</string>
+
+    <string name="im_menu_pin">Vastzetten</string>
+    <string name="im_menu_unpin">Losmaken</string>
+    <string name="im_menu_mute">Dempen</string>
+    <string name="im_menu_unmute">Dempen opheffen</string>
+    <string name="im_menu_delete">Gesprek verwijderen</string>
+    <string name="im_menu_leave">Groep verlaten</string>
+    <string name="im_menu_leave_dissolve">Groep verlaten of opheffen</string>
+    <string name="im_confirm_delete_title">Gesprek verwijderen?</string>
+    <string name="im_confirm_delete_message">Verbergt het gesprek alleen voor jou. Het verschijnt weer bij een nieuw bericht.</string>
+    <string name="im_confirm_leave_title">Groep verlaten?</string>
+    <string name="im_confirm_leave_message">Je ontvangt geen berichten meer uit deze groep.</string>
+    <string name="im_confirm_leave_owner_message">Je bent eigenaar van deze groep. Het eigendom gaat over naar het oudste lid; ben je de laatste, dan wordt de groep opgeheven.</string>
+
+    <string name="im_read">Gelezen</string>
+    <string name="im_unread">Ongelezen</string>
+    <string name="im_read_count">%1$d/%2$d gelezen</string>
+    <string name="im_receipt_read_section">Gelezen (%1$d)</string>
+    <string name="im_receipt_unread_section">Ongelezen (%1$d)</string>
+
+    <string name="im_image_load_failed">Afbeelding laden mislukt</string>
+    <string name="im_file_open_failed">Kan het bestand niet openen</string>
+    <string name="im_upload_invalid_type">Niet-ondersteund afbeeldingstype</string>
+    <string name="im_upload_too_large">Bestand is te groot</string>
+    <string name="im_upload_failed">Upload mislukt — probeer opnieuw</string>
+
+    <string name="im_group_info">Groepsinfo</string>
+    <string name="im_group_name_label">Groepsnaam</string>
+    <string name="im_group_rename">Hernoemen</string>
+    <string name="im_group_members_count">Leden (%1$d)</string>
+    <string name="im_group_add_members">Leden toevoegen</string>
+    <string name="im_group_remove_member">Lid verwijderen</string>
+    <string name="im_group_remove_confirm">%1$s uit de groep verwijderen?</string>
+    <string name="im_group_owner_badge">Eigenaar</string>
+    <string name="im_group_transfer_owner">Eigendom overdragen</string>
+    <string name="im_group_transfer_confirm">Groepseigendom overdragen aan %1$s?</string>
+    <string name="im_group_clear_history">Chatgeschiedenis wissen</string>
+    <string name="im_group_clear_confirm">Wist alleen je eigen weergave; andere leden behouden hun geschiedenis.</string>
+    <string name="im_removed_from_group">Je bent uit deze groep verwijderd</string>
 
     <string name="im_unread_overflow">99+</string>
 </resources>

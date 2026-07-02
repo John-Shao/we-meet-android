@@ -1,0 +1,139 @@
+package com.we.meet.feature.im.vm
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.jusi.lightim.ConnectionState
+import com.jusi.lightim.ConversationSummary
+import com.we.meet.feature.im.ImDeps
+import com.we.meet.feature.im.ImSession
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+/** Everything one conversation row needs; preview text is derived in the UI. */
+data class ConversationRowUi(
+    val cid: String,
+    val isGroup: Boolean,
+    val title: String,
+    val avatarUrl: String?,
+    /** Stable identity for the avatar cache (peer uid for directs). */
+    val avatarKey: String,
+    /** Resolved display name of the last sender (groups prefix the preview). */
+    val lastSenderName: String?,
+    val lastContentType: String?,
+    val lastMessage: String?,
+    val lastMessageTs: Long?,
+    val unread: Long,
+    val pinned: Boolean,
+    val muted: Boolean,
+    /** True when the caller owns this group — drives the delete-menu wording. */
+    val isOwner: Boolean,
+)
+
+/**
+ * Conversation-list screen VM — a thin projection over the shared [ImSession]:
+ * merges the live summaries with resolved display identities and exposes the
+ * row actions (pin / mute / delete-or-leave).
+ */
+class ConversationListViewModel internal constructor(
+    private val session: ImSession,
+) : ViewModel() {
+
+    val connectionState: StateFlow<ConnectionState> = session.connectionState
+    val error: StateFlow<String?> = session.conversations.error
+
+    private val _actionError = MutableStateFlow<String?>(null)
+    val actionError: StateFlow<String?> = _actionError.asStateFlow()
+
+    val rows: StateFlow<List<ConversationRowUi>> = combine(
+        session.conversations.conversations,
+        session.userDirectory.version,
+        session.selfUid,
+    ) { conversations, _, selfUid ->
+        // Resolve every uid we are about to render; cached hits are free and
+        // misses fan into one batched request that bumps `version` to re-run us.
+        val wanted = buildSet {
+            conversations.forEach { c ->
+                c.lastSenderUid?.let { add(it) }
+                if (c.type != "group") {
+                    addAll(c.members.filterNot { it == selfUid })
+                }
+            }
+        }
+        session.userDirectory.requestResolve(wanted)
+        conversations.map { it.toRow(selfUid) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun refresh() {
+        viewModelScope.launch { session.conversations.refresh() }
+    }
+
+    fun retryConnection() = session.retry()
+
+    fun togglePin(row: ConversationRowUi) =
+        session.conversations.setPinned(row.cid, !row.pinned)
+
+    fun toggleMute(row: ConversationRowUi) =
+        session.conversations.setMuted(row.cid, !row.muted)
+
+    /**
+     * Direct → hide; group member → leave; group owner → server auto-transfers
+     * to the earliest member (or dissolves when last). A leave announcement is
+     * posted best-effort first so the group sees "X 退出群聊".
+     */
+    fun deleteOrLeave(row: ConversationRowUi) {
+        viewModelScope.launch {
+            if (row.isGroup) session.bridge.announceLeave(row.cid)
+            session.conversations.deleteOrLeave(row.cid)
+                .onFailure { _actionError.value = it.message ?: it::class.simpleName }
+        }
+    }
+
+    fun dismissActionError() {
+        _actionError.value = null
+    }
+
+    private fun ConversationSummary.toRow(selfUid: String?): ConversationRowUi {
+        val isGroup = type == "group"
+        val peerUid = if (!isGroup) members.firstOrNull { it != selfUid } else null
+        val peer = peerUid?.let { session.userDirectory.get(it) }
+        val title = when {
+            isGroup -> name.ifBlank { metaName().orEmpty() }.ifBlank { "" }
+            else -> peer?.displayName ?: ""
+        }
+        val sender = lastSenderUid?.let { uid ->
+            if (uid == selfUid) null else session.userDirectory.get(uid)?.displayName
+        }
+        return ConversationRowUi(
+            cid = cid,
+            isGroup = isGroup,
+            title = title,
+            avatarUrl = if (!isGroup) peer?.avatarUrl?.takeIf { it.isNotBlank() } else null,
+            avatarKey = peerUid ?: cid,
+            lastSenderName = if (isGroup) sender else null,
+            lastContentType = lastContentType,
+            lastMessage = lastMessage,
+            lastMessageTs = lastMessageTs,
+            unread = unreadCount,
+            pinned = pinned,
+            muted = muted,
+            isOwner = isGroup && ownerUid != null && ownerUid == selfUid,
+        )
+    }
+
+    private fun ConversationSummary.metaName(): String? =
+        ((meta as? Map<*, *>)?.get("name") as? String)
+
+    class Factory(private val deps: ImDeps) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            require(modelClass.isAssignableFrom(ConversationListViewModel::class.java))
+            return ConversationListViewModel(ImSession.get(deps)) as T
+        }
+    }
+}

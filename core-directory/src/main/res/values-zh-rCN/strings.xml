@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="picker_search_hint">搜索姓名或邮箱</string>
+    <string name="picker_empty">未找到成员</string>
+    <string name="picker_load_error">成员加载失败</string>
+    <string name="picker_retry">重试</string>
+    <string name="picker_confirm_count">确定 (%1$d)</string>
+</resources>

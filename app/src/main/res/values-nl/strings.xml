@@ -223,7 +223,61 @@
     <string name="tab_meeting">Vergadering</string>
     <string name="tab_ai">AI</string>
     <string name="tab_messages">Berichten</string>
+    <string name="tab_calendar">Agenda</string>
+    <string name="tab_contacts">Contacten</string>
     <string name="tab_profile">Ik</string>
+    <string name="profile_ai_entry">AI-assistent</string>
+
+    <!-- Contacts -->
+    <string name="contacts_title">Contacten</string>
+    <string name="contacts_search_hint">Zoek op naam of e-mail</string>
+    <string name="contacts_root_org">Organisatie</string>
+    <string name="contacts_empty_dept">Geen leden in deze afdeling</string>
+    <string name="contacts_empty_search">Geen overeenkomende leden</string>
+    <string name="contacts_load_error">Adresboek laden mislukt</string>
+    <string name="contacts_retry">Opnieuw proberen</string>
+    <string name="contacts_load_more">Meer laden</string>
+    <string name="member_detail_title">Ledendetails</string>
+    <string name="member_action_message">Bericht</string>
+    <string name="member_label_email">E-mail</string>
+    <string name="member_label_department">Afdeling</string>
+    <string name="member_label_title">Functie</string>
+    <string name="member_message_failed">Kan de chat niet starten</string>
+
+    <!-- Calendar -->
+    <string name="calendar_title">Agenda</string>
+    <string name="calendar_today">Vandaag</string>
+    <string name="calendar_no_events">Geen afspraken op deze dag</string>
+    <string name="calendar_all_day">Hele dag</string>
+    <string name="calendar_load_error">Afspraken laden mislukt</string>
+    <string name="calendar_retry">Opnieuw proberen</string>
+    <string name="calendar_create_title">Nieuwe afspraak</string>
+    <string name="calendar_field_title_hint">Titel van de afspraak</string>
+    <string name="calendar_field_start">Begin</string>
+    <string name="calendar_field_end">Einde</string>
+    <string name="calendar_field_all_day">Hele dag</string>
+    <string name="calendar_field_reminder">Herinnering</string>
+    <string name="calendar_reminder_none">Geen</string>
+    <string name="calendar_reminder_at_time">Bij aanvang</string>
+    <string name="calendar_reminder_minutes">%1$d minuten van tevoren</string>
+    <string name="calendar_reminder_hour">1 uur van tevoren</string>
+    <string name="calendar_reminder_day">1 dag van tevoren</string>
+    <string name="calendar_field_attendees">Deelnemers</string>
+    <string name="calendar_add_attendees">Deelnemers toevoegen</string>
+    <string name="calendar_field_description_hint">Beschrijving (optioneel)</string>
+    <string name="calendar_action_create">Aanmaken</string>
+    <string name="calendar_error_end_before_start">Het einde moet na het begin liggen</string>
+    <string name="calendar_create_failed">Kan de afspraak niet aanmaken</string>
+    <string name="event_detail_title">Afspraakdetails</string>
+    <string name="event_organizer">Organisator</string>
+    <string name="event_attendees_count">Deelnemers (%1$d)</string>
+    <string name="event_rsvp_accept">Accepteren</string>
+    <string name="event_rsvp_tentative">Misschien</string>
+    <string name="event_rsvp_decline">Afwijzen</string>
+    <string name="event_rsvp_failed">Kan je antwoord niet opslaan</string>
+    <string name="event_join_meeting">Deelnemen aan vergadering</string>
+    <string name="event_cancelled_flag">Geannuleerd</string>
+    <string name="event_load_error">Afspraak laden mislukt</string>
 
     <!-- AI hub -->
     <string name="ai_hub_title">AI-assistent</string>

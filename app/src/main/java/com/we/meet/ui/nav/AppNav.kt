@@ -2,6 +2,8 @@ package com.we.meet.ui.nav
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -36,6 +38,13 @@ import com.we.meet.WeMeetApp
 import com.we.meet.R
 import com.we.meet.data.auth.SessionState
 import com.we.meet.feature.assistant.aicall.ui.AssistantCallScreen
+import com.we.meet.feature.im.ui.chat.ChatScreen
+import com.we.meet.feature.im.ui.group.GroupInfoScreen
+import com.we.meet.feature.im.ui.newchat.AddMembersScreen
+import com.we.meet.feature.im.ui.newchat.NewChatScreen
+import com.we.meet.ui.calendar.CreateEventScreen
+import com.we.meet.ui.calendar.EventDetailScreen
+import com.we.meet.ui.contacts.MemberDetailScreen
 import com.we.meet.ui.login.LoginScreen
 import com.we.meet.ui.main.MainTabScreen
 import com.we.meet.ui.preview.PreviewMode
@@ -65,6 +74,40 @@ object Routes {
     const val JOIN_PREVIEW = "join_preview?slug={slug}"
     const val QR_SCAN = "qr_scan"
     const val ASSISTANT_CALL = "assistant_call"
+    const val AI_HUB = "ai_hub"
+
+    // IM — full-screen chat routes above the tab scaffold.
+    private const val IM_CHAT_BASE = "im_chat"
+    const val IM_CHAT = "$IM_CHAT_BASE/{cid}"
+    private const val IM_GROUP_INFO_BASE = "im_group_info"
+    const val IM_GROUP_INFO = "$IM_GROUP_INFO_BASE/{cid}"
+    const val IM_NEW_CHAT = "im_new_chat"
+    private const val IM_ADD_MEMBERS_BASE = "im_add_members"
+    const val IM_ADD_MEMBERS = "$IM_ADD_MEMBERS_BASE/{cid}"
+
+    // Contacts / Calendar detail routes.
+    private const val MEMBER_DETAIL_BASE = "member_detail"
+    const val MEMBER_DETAIL = "$MEMBER_DETAIL_BASE/{userId}"
+    private const val EVENT_DETAIL_BASE = "event_detail"
+    const val EVENT_DETAIL = "$EVENT_DETAIL_BASE/{eventId}"
+    const val CREATE_EVENT = "create_event?epochDay={epochDay}"
+
+    fun imChat(cid: String): String =
+        "$IM_CHAT_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
+
+    fun imGroupInfo(cid: String): String =
+        "$IM_GROUP_INFO_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
+
+    fun imAddMembers(cid: String): String =
+        "$IM_ADD_MEMBERS_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
+
+    fun memberDetail(userId: String): String =
+        "$MEMBER_DETAIL_BASE/${URLEncoder.encode(userId, StandardCharsets.UTF_8.name())}"
+
+    fun eventDetail(eventId: String): String =
+        "$EVENT_DETAIL_BASE/${URLEncoder.encode(eventId, StandardCharsets.UTF_8.name())}"
+
+    fun createEvent(epochDay: Long): String = "create_event?epochDay=$epochDay"
 
     private const val WAITING_ROOM_BASE = "waiting_room"
     const val WAITING_ROOM = "$WAITING_ROOM_BASE/{idOrSlug}/{name}/{mic}/{cam}"
@@ -174,12 +217,17 @@ fun AppNav() {
                     navController.navigate(Routes.historyDetail(roomId))
                 },
                 onSettingsClick = { navController.navigate(Routes.SETTINGS) },
-                onOpenAssistantCall = { navController.navigate(Routes.ASSISTANT_CALL) },
+                onOpenAiHub = { navController.navigate(Routes.AI_HUB) },
                 onSignedOut = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(Routes.HOME) { inclusive = true }
                     }
                 },
+                onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
+                onNewChat = { navController.navigate(Routes.IM_NEW_CHAT) },
+                onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
+                onEventClick = { eventId -> navController.navigate(Routes.eventDetail(eventId)) },
+                onCreateEvent = { epochDay -> navController.navigate(Routes.createEvent(epochDay)) },
             )
         }
 
@@ -187,6 +235,109 @@ fun AppNav() {
             AssistantCallScreen(
                 deps = app,
                 onBack = rememberOnceOnly(safePop),
+            )
+        }
+
+        composable(Routes.AI_HUB) {
+            AiHubRoute(onBack = rememberOnceOnly(safePop)) {
+                navController.navigate(Routes.ASSISTANT_CALL)
+            }
+        }
+
+        composable(
+            route = Routes.IM_CHAT,
+            arguments = listOf(navArgument("cid") { type = NavType.StringType }),
+        ) { entry ->
+            val cid = Routes.decode(entry.arguments?.getString("cid").orEmpty())
+            ChatScreen(
+                deps = app,
+                cid = cid,
+                onBack = rememberOnceOnly(safePop),
+                onOpenInfo = { navController.navigate(Routes.imGroupInfo(it)) },
+            )
+        }
+
+        composable(
+            route = Routes.IM_GROUP_INFO,
+            arguments = listOf(navArgument("cid") { type = NavType.StringType }),
+        ) { entry ->
+            val cid = Routes.decode(entry.arguments?.getString("cid").orEmpty())
+            GroupInfoScreen(
+                deps = app,
+                cid = cid,
+                onBack = rememberOnceOnly(safePop),
+                onLeftGroup = {
+                    // Pop past the chat screen back to the tabs.
+                    navController.popBackStack(Routes.HOME, inclusive = false)
+                },
+                onAddMembers = { navController.navigate(Routes.imAddMembers(it)) },
+            )
+        }
+
+        composable(Routes.IM_NEW_CHAT) {
+            val onceBack = rememberOnceOnly(safePop)
+            NewChatScreen(
+                deps = app,
+                onChatReady = { cid ->
+                    navController.navigate(Routes.imChat(cid)) {
+                        // Replace the picker so back from the chat lands on the tabs.
+                        popUpTo(Routes.IM_NEW_CHAT) { inclusive = true }
+                    }
+                },
+                onCancel = onceBack,
+            )
+        }
+
+        composable(
+            route = Routes.IM_ADD_MEMBERS,
+            arguments = listOf(navArgument("cid") { type = NavType.StringType }),
+        ) { entry ->
+            val cid = Routes.decode(entry.arguments?.getString("cid").orEmpty())
+            val onceBack = rememberOnceOnly(safePop)
+            AddMembersScreen(
+                deps = app,
+                cid = cid,
+                onDone = onceBack,
+                onCancel = onceBack,
+            )
+        }
+
+        composable(
+            route = Routes.MEMBER_DETAIL,
+            arguments = listOf(navArgument("userId") { type = NavType.StringType }),
+        ) { entry ->
+            val userId = Routes.decode(entry.arguments?.getString("userId").orEmpty())
+            MemberDetailScreen(
+                userId = userId,
+                onBack = rememberOnceOnly(safePop),
+                onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
+            )
+        }
+
+        composable(
+            route = Routes.EVENT_DETAIL,
+            arguments = listOf(navArgument("eventId") { type = NavType.StringType }),
+        ) { entry ->
+            val eventId = Routes.decode(entry.arguments?.getString("eventId").orEmpty())
+            EventDetailScreen(
+                eventId = eventId,
+                onBack = rememberOnceOnly(safePop),
+                onJoinSlug = { slug -> navController.navigate(Routes.joinPreview(slug)) },
+            )
+        }
+
+        composable(
+            route = Routes.CREATE_EVENT,
+            arguments = listOf(
+                navArgument("epochDay") {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                },
+            ),
+        ) { entry ->
+            CreateEventScreen(
+                initialEpochDay = entry.arguments?.getLong("epochDay")?.takeIf { it >= 0 },
+                onClose = rememberOnceOnly(safePop),
             )
         }
 
@@ -370,6 +521,34 @@ fun AppNav() {
                 }
             },
         )
+    }
+}
+
+/**
+ * AI hub as a routed page (it lost its bottom tab to 日历/通讯录): the existing
+ * AiHubScreen content under a back-navigable top bar.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AiHubRoute(onBack: () -> Unit, onOpenAssistantCall: () -> Unit) {
+    androidx.compose.material3.Scaffold(
+        topBar = {
+            androidx.compose.material3.TopAppBar(
+                title = { Text(stringResource(R.string.tab_ai)) },
+                navigationIcon = {
+                    androidx.compose.material3.IconButton(onClick = onBack) {
+                        androidx.compose.material3.Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null,
+                        )
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        androidx.compose.foundation.layout.Box(modifier = Modifier.padding(padding)) {
+            com.we.meet.ui.ai.AiHubScreen(onOpenAssistantCall = onOpenAssistantCall)
+        }
     }
 }
 

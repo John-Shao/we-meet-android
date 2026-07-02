@@ -7,21 +7,73 @@
     <string name="im_status_auth_failed">Authentication failed — please retry</string>
 
     <string name="im_action_retry">Retry</string>
+    <string name="im_action_confirm">OK</string>
+    <string name="im_action_cancel">Cancel</string>
 
-    <string name="im_list_title">Conversations</string>
+    <string name="im_list_title">Messages</string>
     <string name="im_list_empty">No conversations yet</string>
-    <string name="im_new_direct_button">New</string>
-    <string name="im_new_direct_title">New conversation</string>
-    <string name="im_new_direct_self_uid">Your IM ID:\n%1$s</string>
-    <string name="im_new_direct_peer_hint">Peer\'s IM ID</string>
-    <string name="im_new_direct_confirm">Create</string>
-    <string name="im_new_direct_cancel">Cancel</string>
+    <string name="im_untitled_chat">Conversation</string>
+    <string name="im_new_chat">New chat</string>
+    <string name="im_new_group_title">New group</string>
+    <string name="im_new_group_name_hint">Group name</string>
+    <string name="im_create_chat_failed">Could not create the conversation</string>
 
-    <string name="im_chat_pick_prompt">Pick a conversation on the left to start chatting</string>
     <string name="im_chat_empty">No messages yet — send the first one</string>
 
     <string name="im_input_placeholder">Type a message…</string>
     <string name="im_input_send">Send</string>
+    <string name="im_attach_image">Send image</string>
+    <string name="im_attach_file">Send file</string>
+    <string name="im_sending_image">Sending image…</string>
+    <string name="im_sending_file">Sending file…</string>
+
+    <!-- List previews per content type. -->
+    <string name="im_preview_image">[Image]</string>
+    <string name="im_preview_file">[File] %1$s</string>
+    <string name="im_preview_unsupported">[Unsupported message]</string>
+
+    <!-- Long-press menu. -->
+    <string name="im_menu_pin">Pin</string>
+    <string name="im_menu_unpin">Unpin</string>
+    <string name="im_menu_mute">Mute</string>
+    <string name="im_menu_unmute">Unmute</string>
+    <string name="im_menu_delete">Delete conversation</string>
+    <string name="im_menu_leave">Leave group</string>
+    <string name="im_menu_leave_dissolve">Leave or dissolve group</string>
+    <string name="im_confirm_delete_title">Delete conversation?</string>
+    <string name="im_confirm_delete_message">This hides the conversation for you. It reappears when a new message arrives.</string>
+    <string name="im_confirm_leave_title">Leave group?</string>
+    <string name="im_confirm_leave_message">You will stop receiving messages from this group.</string>
+    <string name="im_confirm_leave_owner_message">You own this group. Ownership transfers to the earliest member, or the group dissolves if you are the last one.</string>
+
+    <!-- Read receipts. -->
+    <string name="im_read">Read</string>
+    <string name="im_unread">Unread</string>
+    <string name="im_read_count">%1$d/%2$d read</string>
+    <string name="im_receipt_read_section">Read (%1$d)</string>
+    <string name="im_receipt_unread_section">Unread (%1$d)</string>
+
+    <!-- Media. -->
+    <string name="im_image_load_failed">Image failed to load</string>
+    <string name="im_file_open_failed">Could not open the file</string>
+    <string name="im_upload_invalid_type">Unsupported image type</string>
+    <string name="im_upload_too_large">File is too large</string>
+    <string name="im_upload_failed">Upload failed — try again</string>
+
+    <!-- Group management. -->
+    <string name="im_group_info">Group info</string>
+    <string name="im_group_name_label">Group name</string>
+    <string name="im_group_rename">Rename</string>
+    <string name="im_group_members_count">Members (%1$d)</string>
+    <string name="im_group_add_members">Add members</string>
+    <string name="im_group_remove_member">Remove member</string>
+    <string name="im_group_remove_confirm">Remove %1$s from the group?</string>
+    <string name="im_group_owner_badge">Owner</string>
+    <string name="im_group_transfer_owner">Transfer ownership</string>
+    <string name="im_group_transfer_confirm">Transfer group ownership to %1$s?</string>
+    <string name="im_group_clear_history">Clear chat history</string>
+    <string name="im_group_clear_confirm">Clears the history on this device view only; other members keep theirs.</string>
+    <string name="im_removed_from_group">You were removed from this group</string>
 
     <!-- Unread-count badge shown when the count exceeds 99. -->
     <string name="im_unread_overflow">99+</string>

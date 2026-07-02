@@ -1,27 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="im_status_disconnected">Déconnecté</string>
-    <string name="im_status_connecting">Connexion en cours…</string>
+    <string name="im_status_connecting">Connexion…</string>
     <string name="im_status_connected">Connecté</string>
-    <string name="im_status_reconnecting">Reconnexion en cours…</string>
-    <string name="im_status_auth_failed">Échec d\'authentification — veuillez réessayer</string>
+    <string name="im_status_reconnecting">Reconnexion…</string>
+    <string name="im_status_auth_failed">Échec de l\'authentification — veuillez réessayer</string>
 
     <string name="im_action_retry">Réessayer</string>
+    <string name="im_action_confirm">OK</string>
+    <string name="im_action_cancel">Annuler</string>
 
-    <string name="im_list_title">Conversations</string>
-    <string name="im_list_empty">Aucune conversation pour le moment</string>
-    <string name="im_new_direct_button">Nouvelle</string>
-    <string name="im_new_direct_title">Nouvelle conversation</string>
-    <string name="im_new_direct_self_uid">Votre ID IM :\n%1$s</string>
-    <string name="im_new_direct_peer_hint">ID IM du correspondant</string>
-    <string name="im_new_direct_confirm">Créer</string>
-    <string name="im_new_direct_cancel">Annuler</string>
+    <string name="im_list_title">Messages</string>
+    <string name="im_list_empty">Aucune conversation pour l\'instant</string>
+    <string name="im_untitled_chat">Conversation</string>
+    <string name="im_new_chat">Nouvelle conversation</string>
+    <string name="im_new_group_title">Nouveau groupe</string>
+    <string name="im_new_group_name_hint">Nom du groupe</string>
+    <string name="im_create_chat_failed">Impossible de créer la conversation</string>
 
-    <string name="im_chat_pick_prompt">Choisissez une conversation à gauche pour commencer</string>
     <string name="im_chat_empty">Aucun message — envoyez le premier</string>
 
-    <string name="im_input_placeholder">Écrivez un message…</string>
+    <string name="im_input_placeholder">Écrire un message…</string>
     <string name="im_input_send">Envoyer</string>
+    <string name="im_attach_image">Envoyer une image</string>
+    <string name="im_attach_file">Envoyer un fichier</string>
+    <string name="im_sending_image">Envoi de l\'image…</string>
+    <string name="im_sending_file">Envoi du fichier…</string>
+
+    <string name="im_preview_image">[Image]</string>
+    <string name="im_preview_file">[Fichier] %1$s</string>
+    <string name="im_preview_unsupported">[Message non pris en charge]</string>
+
+    <string name="im_menu_pin">Épingler</string>
+    <string name="im_menu_unpin">Désépingler</string>
+    <string name="im_menu_mute">Mettre en sourdine</string>
+    <string name="im_menu_unmute">Réactiver les notifications</string>
+    <string name="im_menu_delete">Supprimer la conversation</string>
+    <string name="im_menu_leave">Quitter le groupe</string>
+    <string name="im_menu_leave_dissolve">Quitter ou dissoudre le groupe</string>
+    <string name="im_confirm_delete_title">Supprimer la conversation ?</string>
+    <string name="im_confirm_delete_message">Masque la conversation pour vous uniquement. Elle réapparaîtra à la prochaine nouvelle réception.</string>
+    <string name="im_confirm_leave_title">Quitter le groupe ?</string>
+    <string name="im_confirm_leave_message">Vous ne recevrez plus les messages de ce groupe.</string>
+    <string name="im_confirm_leave_owner_message">Vous êtes propriétaire de ce groupe. La propriété passera au membre le plus ancien ; si vous êtes le dernier, le groupe sera dissous.</string>
+
+    <string name="im_read">Lu</string>
+    <string name="im_unread">Non lu</string>
+    <string name="im_read_count">%1$d/%2$d lu(s)</string>
+    <string name="im_receipt_read_section">Lu (%1$d)</string>
+    <string name="im_receipt_unread_section">Non lu (%1$d)</string>
+
+    <string name="im_image_load_failed">Échec du chargement de l\'image</string>
+    <string name="im_file_open_failed">Impossible d\'ouvrir le fichier</string>
+    <string name="im_upload_invalid_type">Type d\'image non pris en charge</string>
+    <string name="im_upload_too_large">Fichier trop volumineux</string>
+    <string name="im_upload_failed">Échec de l\'envoi — réessayez</string>
+
+    <string name="im_group_info">Infos du groupe</string>
+    <string name="im_group_name_label">Nom du groupe</string>
+    <string name="im_group_rename">Renommer</string>
+    <string name="im_group_members_count">Membres (%1$d)</string>
+    <string name="im_group_add_members">Ajouter des membres</string>
+    <string name="im_group_remove_member">Retirer le membre</string>
+    <string name="im_group_remove_confirm">Retirer %1$s du groupe ?</string>
+    <string name="im_group_owner_badge">Propriétaire</string>
+    <string name="im_group_transfer_owner">Transférer la propriété</string>
+    <string name="im_group_transfer_confirm">Transférer la propriété du groupe à %1$s ?</string>
+    <string name="im_group_clear_history">Effacer l\'historique</string>
+    <string name="im_group_clear_confirm">N\'efface que votre propre vue ; les autres membres conservent leur historique.</string>
+    <string name="im_removed_from_group">Vous avez été retiré de ce groupe</string>
 
     <string name="im_unread_overflow">99+</string>
 </resources>

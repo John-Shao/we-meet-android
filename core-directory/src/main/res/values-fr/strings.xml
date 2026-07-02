@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="picker_search_hint">Rechercher un nom ou un e-mail</string>
+    <string name="picker_empty">Aucun membre trouvé</string>
+    <string name="picker_load_error">Échec du chargement des membres</string>
+    <string name="picker_retry">Réessayer</string>
+    <string name="picker_confirm_count">Confirmer (%1$d)</string>
+</resources>

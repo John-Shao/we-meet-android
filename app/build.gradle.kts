@@ -128,6 +128,9 @@ dependencies {
     // IM feature (P4) — chat list + 1:1/group messaging via jusi-light-im SDK.
     implementation(project(":feature-im"))
 
+    // Shared org-directory data layer + ContactPicker (contacts tab, calendar attendees).
+    implementation(project(":core-directory"))
+
     // LiveKit
     implementation(libs.livekit.android)
     implementation(libs.livekit.android.compose.components)
