@@ -66,7 +66,7 @@ dependencies {
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
 
-    // jusi-light-im SDK — composite-built from ../../jusi-light-im/sdk/android.
+    // jusi-light-im SDK — composite-built from ../jusi-light-im/sdk/android.
     // The dependency-substitution rule in settings.gradle.kts maps this coordinate
     // to the local `:sdk-im` Gradle project.
     implementation("com.jusi.lightim:sdk-im")

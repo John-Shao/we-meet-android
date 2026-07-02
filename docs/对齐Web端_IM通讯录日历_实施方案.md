@@ -10,9 +10,9 @@ Web 端（`D:\workspace\we-meet\we-meet\src\frontend`）已有消息/通讯录/�
 
 **已确认决策**：范围 = IM 一期核心 + 通讯录 + 日历（审批不做）；Tab = 消息·日历·会议·通讯录·我的（AI 移入「我的」页）；IM 分两期，本计划只做一期（群聊+图片/文件+已读回执+会话列表完善），二期（语音/引用/撤回/表情回应/@提及/转发）后续再排。
 
-涉及两个仓库：`d:\workspace\we-meet\we-meet-android`（主体）和 `D:\workspace\jusi-light-im\sdk\android`（SDK，composite build 引入，改动即时生效）。
+涉及两个仓库：`D:\workspace\we-meet\we-meet-android`（主体）和 `D:\workspace\we-meet\jusi-light-im\sdk\android`（SDK，composite build 引入，改动即时生效）。
 
-**实现时的权威参考**：web SDK `D:\workspace\jusi-light-im\sdk\web\src\{types,rest,client}.ts`；web IM hooks `we-meet\src\frontend\src\features\im\hooks\*.ts`（事件处理语义照搬）；web contacts/calendar `src\features\{contacts,calendar}`。
+**实现时的权威参考**：web SDK `D:\workspace\we-meet\jusi-light-im\sdk\web\src\{types,rest,client}.ts`；web IM hooks `we-meet\src\frontend\src\features\im\hooks\*.ts`（事件处理语义照搬）；web contacts/calendar `src\features\{contacts,calendar}`。
 
 ---
 
@@ -30,7 +30,7 @@ Web 端（`D:\workspace\we-meet\we-meet\src\frontend`）已有消息/通讯录/�
 
 ## M0 — jusi-light-im Android SDK 升级（先行，独立仓库分支）
 
-目录 `D:\workspace\jusi-light-im\sdk\android\sdk-im\src\main\kotlin\com\jusi\lightim\`：
+目录 `D:\workspace\we-meet\jusi-light-im\sdk\android\sdk-im\src\main\kotlin\com\jusi\lightim\`：
 
 - **Types.kt**：`ConversationSummary` 增加带默认值字段（保持源兼容）：`name=""`, `members=emptyList()`, `owner_uid`, `pinned/muted/mute_at_all=false`, `last_message/last_message_ts/last_sender_uid/last_content_type=null`。新增 `FrameType.CONV`、`ConvOutPayload(event,cid,conv_type,name,members)`、`ReadMarker(uid,seq)`、`ConvMember(uid,role,joined_at,nickname)`。
 - **rest/ImService.kt** 新增：`GET /v1/conversations/{cid}/members`、`GET /v1/conversations/{cid}/reads`、`DELETE /v1/conversations/{cid}`（⚠️ 带 body 需 `@HTTP(method="DELETE", hasBody=true)`，body `{transfer_to?}`）、`PATCH .../owner`、`PATCH .../settings`（partial 用 `Map<String,Any>` 只装非空字段）、`POST .../clear`。
