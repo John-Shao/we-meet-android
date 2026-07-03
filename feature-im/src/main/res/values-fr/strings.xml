@@ -86,4 +86,7 @@
     <string name="im_attach_voice">Message vocal</string>
     <string name="im_recording">Enregistrement… relâchez pour envoyer</string>
     <string name="im_sending_voice">Envoi du message vocal…</string>
+    <string name="im_mention_everyone">Tout le monde</string>
+    <string name="im_mention_notice">Vous avez été mentionné</string>
+    <string name="im_mention_marker">@</string>
 </resources>

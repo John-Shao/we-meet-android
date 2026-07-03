@@ -156,9 +156,21 @@ class ChatViewModel internal constructor(
     /** The screen reports RESUMED visibility; read marking only happens while true. */
     fun setVisible(isVisible: Boolean) {
         visible = isVisible
+        // Suppress + clear this conversation's @-mention flag while it's open.
+        session.setActiveConversation(if (isVisible) cid else null)
         if (isVisible) {
             raw.lastOrNull()?.let { markRead(it.seq) }
         }
+    }
+
+    /** @-mention candidates for the input dropdown: 所有人 + other members' names. */
+    fun mentionCandidates(): List<String> {
+        if (!_ui.value.isGroup) return emptyList()
+        val self = _ui.value.selfUid
+        val names = _ui.value.memberUids
+            .filter { it != self }
+            .mapNotNull { session.userDirectory.get(it)?.displayName?.takeIf { n -> n.isNotBlank() } }
+        return listOf(session.everyoneLabel()) + names
     }
 
     // ---- paging ----

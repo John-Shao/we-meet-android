@@ -6,12 +6,14 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -279,6 +281,7 @@ fun ChatScreen(
                 },
                 onPickFile = { pickFile.launch(arrayOf("*/*")) },
                 onVoiceRecorded = { file, durationMs -> vm.sendVoice(file, durationMs) },
+                mentionCandidates = if (ui.isGroup) vm.mentionCandidates() else emptyList(),
             )
         }
     }
@@ -369,8 +372,22 @@ private fun MessageInputBar(
     onPickImage: () -> Unit,
     onPickFile: () -> Unit,
     onVoiceRecorded: (java.io.File, Long) -> Unit,
+    mentionCandidates: List<String> = emptyList(),
 ) {
-    var text by remember { mutableStateOf("") }
+    var field by remember {
+        mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(""))
+    }
+    val text = field.text
+    // Active @-mention span before the caret, if any (web parity: `@` with no
+    // whitespace up to the caret). null = no dropdown.
+    val mention = remember(field, mentionCandidates) {
+        if (mentionCandidates.isEmpty()) null else activeMention(field)
+    }
+    val suggestions = remember(mention, mentionCandidates) {
+        mention?.let { m ->
+            mentionCandidates.filter { it.contains(m.query, ignoreCase = true) }.take(8)
+        }.orEmpty()
+    }
     val context = LocalContext.current
     val recorder = remember { VoiceRecorder(context) }
     var recording by remember { mutableStateOf(false) }
@@ -388,9 +405,15 @@ private fun MessageInputBar(
     // Clear only after the ViewModel confirms an acked send, so a failed send
     // keeps the user's draft.
     LaunchedEffect(sentTick) {
-        if (sentTick > 0) text = ""
+        if (sentTick > 0) field = androidx.compose.ui.text.input.TextFieldValue("")
     }
     Column {
+        if (suggestions.isNotEmpty() && mention != null) {
+            MentionDropdown(
+                names = suggestions,
+                onPick = { name -> field = applyMention(field, mention, name) },
+            )
+        }
         if (replyPreview != null) {
             Row(
                 modifier = Modifier
@@ -468,8 +491,8 @@ private fun MessageInputBar(
             )
         } else {
         OutlinedTextField(
-            value = text,
-            onValueChange = { text = it },
+            value = field,
+            onValueChange = { field = it },
             placeholder = { Text(stringResource(R.string.im_input_placeholder)) },
             enabled = canSend,
             maxLines = 4,
@@ -490,5 +513,68 @@ private fun MessageInputBar(
             )
         }
     }
+    }
+}
+
+/** An active `@…` span before the caret: its start index and the typed query. */
+private data class ActiveMention(val at: Int, val query: String)
+
+/**
+ * Detect an `@` mention being typed: scan back from the caret to the nearest
+ * `@` with no whitespace between it and the caret (web parity). null = none.
+ */
+private fun activeMention(field: androidx.compose.ui.text.input.TextFieldValue): ActiveMention? {
+    val caret = field.selection.end
+    if (caret <= 0 || field.selection.start != caret) return null
+    val text = field.text
+    var i = caret - 1
+    while (i >= 0) {
+        val c = text[i]
+        if (c == '@') return ActiveMention(i, text.substring(i + 1, caret))
+        if (c.isWhitespace()) return null
+        i--
+    }
+    return null
+}
+
+/** Replace the active `@query` with `@name ` and move the caret past it. */
+private fun applyMention(
+    field: androidx.compose.ui.text.input.TextFieldValue,
+    mention: ActiveMention,
+    name: String,
+): androidx.compose.ui.text.input.TextFieldValue {
+    val caret = field.selection.end
+    val before = field.text.substring(0, mention.at)
+    val after = field.text.substring(caret)
+    val inserted = "@$name "
+    val newText = before + inserted + after
+    val pos = (before + inserted).length
+    return androidx.compose.ui.text.input.TextFieldValue(
+        text = newText,
+        selection = androidx.compose.ui.text.TextRange(pos),
+    )
+}
+
+/** Suggestion list shown above the input while typing an @-mention. */
+@Composable
+private fun MentionDropdown(names: List<String>, onPick: (String) -> Unit) {
+    androidx.compose.material3.Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        androidx.compose.foundation.lazy.LazyColumn(
+            modifier = Modifier.heightIn(max = 200.dp),
+        ) {
+            items(names) { name ->
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onPick(name) }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
+        }
     }
 }

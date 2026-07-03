@@ -249,15 +249,25 @@ private fun ConversationRow(
                 }
                 Spacer(Modifier.height(2.dp))
                 val preview = previewText(row.lastContentType, row.lastMessage)
-                Text(
-                    text = if (row.lastSenderName != null && preview.isNotBlank()) {
-                        "${row.lastSenderName}: $preview"
-                    } else preview,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (row.mentioned) {
+                        Text(
+                            text = stringResource(R.string.im_mention_marker),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(end = 4.dp),
+                        )
+                    }
+                    Text(
+                        text = if (row.lastSenderName != null && preview.isNotBlank()) {
+                            "${row.lastSenderName}: $preview"
+                        } else preview,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             Column(horizontalAlignment = Alignment.End, modifier = Modifier.padding(start = 8.dp)) {
                 Text(

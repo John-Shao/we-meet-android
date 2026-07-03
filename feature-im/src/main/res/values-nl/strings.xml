@@ -86,4 +86,7 @@
     <string name="im_attach_voice">Spraakbericht</string>
     <string name="im_recording">Opnemen… loslaten om te verzenden</string>
     <string name="im_sending_voice">Spraakbericht verzenden…</string>
+    <string name="im_mention_everyone">Iedereen</string>
+    <string name="im_mention_notice">Je bent genoemd</string>
+    <string name="im_mention_marker">@</string>
 </resources>

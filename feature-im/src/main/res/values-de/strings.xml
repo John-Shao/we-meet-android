@@ -86,4 +86,7 @@
     <string name="im_attach_voice">Sprachnachricht</string>
     <string name="im_recording">Aufnahme… zum Senden loslassen</string>
     <string name="im_sending_voice">Sprachnachricht wird gesendet…</string>
+    <string name="im_mention_everyone">Alle</string>
+    <string name="im_mention_notice">Du wurdest erwähnt</string>
+    <string name="im_mention_marker">@</string>
 </resources>

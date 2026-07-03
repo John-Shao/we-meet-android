@@ -40,6 +40,7 @@ import kotlinx.coroutines.launch
 class ImSession private constructor(deps: ImDeps, appContext: Context) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val everyoneLabel = appContext.getString(R.string.im_mention_everyone)
 
     private val api: ImApi = ImNetwork.retrofit(deps).create(ImApi::class.java)
     internal val bridge = ImBridgeRepository(api)
@@ -77,8 +78,35 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
     /** Fires after a reconnect once the conversation list has been re-fetched. */
     val onResynced: SharedFlow<Unit> = _onResynced.asSharedFlow()
 
+    private val _mentionedCids = MutableStateFlow<Set<String>>(emptySet())
+
+    /** cids with an unread message that @-mentioned me → red "@" in the list. */
+    val mentionedCids: StateFlow<Set<String>> = _mentionedCids.asStateFlow()
+
+    /** cid currently open on screen — its inbound messages don't raise a mention flag. */
+    @Volatile
+    private var activeCid: String? = null
+
     init {
         conversations.start()
+        // @-mention detection (text heuristic, mirrors web): an inbound group
+        // message from someone else that names me (@myDisplayName) or @everyone
+        // (unless muted / mute-at-all) flags the conversation.
+        scope.launch {
+            client.messages.collect { m ->
+                val self = _selfUid.value
+                if (m.senderUid == self || m.cid == activeCid) return@collect
+                if (m.contentType != "text") return@collect
+                val summary = conversations.conversations.value.firstOrNull { it.cid == m.cid }
+                if (summary?.type != "group" || summary.muted) return@collect
+                val selfName = self?.let { userDirectory.get(it)?.displayName }
+                val mentionsSelf = !selfName.isNullOrBlank() && m.body.contains("@$selfName")
+                val mentionsAll = m.body.contains("@$everyoneLabel")
+                if (mentionsSelf || (mentionsAll && !summary.muteAtAll)) {
+                    _mentionedCids.value = _mentionedCids.value + m.cid
+                }
+            }
+        }
         // Resync-on-reconnect: WS gaps are silent message loss.
         scope.launch {
             var previous: ConnectionState = ConnectionState.DISCONNECTED
@@ -92,6 +120,17 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
         }
         connect()
     }
+
+    /** Mark [cid] as the on-screen chat (suppresses + clears its mention flag). */
+    fun setActiveConversation(cid: String?) {
+        activeCid = cid
+        if (cid != null && cid in _mentionedCids.value) {
+            _mentionedCids.value = _mentionedCids.value - cid
+        }
+    }
+
+    /** The everyone token to insert for @-all (locale-aware). */
+    fun everyoneLabel(): String = everyoneLabel
 
     /** Idempotent connect + initial list load. */
     fun connect() {

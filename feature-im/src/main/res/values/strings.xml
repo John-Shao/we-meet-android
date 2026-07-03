@@ -92,4 +92,7 @@
     <string name="im_attach_voice">Voice message</string>
     <string name="im_recording">Recording… release to send</string>
     <string name="im_sending_voice">Sending voice…</string>
+    <string name="im_mention_everyone">Everyone</string>
+    <string name="im_mention_notice">You were mentioned</string>
+    <string name="im_mention_marker">@</string>
 </resources>

@@ -33,6 +33,8 @@ data class ConversationRowUi(
     val muted: Boolean,
     /** True when the caller owns this group — drives the delete-menu wording. */
     val isOwner: Boolean,
+    /** An unread message @-mentioned me → red "@" marker. */
+    val mentioned: Boolean = false,
 )
 
 /**
@@ -54,7 +56,8 @@ class ConversationListViewModel internal constructor(
         session.conversations.conversations,
         session.userDirectory.version,
         session.selfUid,
-    ) { conversations, _, selfUid ->
+        session.mentionedCids,
+    ) { conversations, _, selfUid, mentioned ->
         // Resolve every uid we are about to render; cached hits are free and
         // misses fan into one batched request that bumps `version` to re-run us.
         val wanted = buildSet {
@@ -66,7 +69,7 @@ class ConversationListViewModel internal constructor(
             }
         }
         session.userDirectory.requestResolve(wanted)
-        conversations.map { it.toRow(selfUid) }
+        conversations.map { it.toRow(selfUid).copy(mentioned = it.cid in mentioned) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun refresh() {
