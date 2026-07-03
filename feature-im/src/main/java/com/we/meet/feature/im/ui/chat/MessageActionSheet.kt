@@ -6,9 +6,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,6 +45,8 @@ fun MessageActionSheet(
     onReact: (String) -> Unit,
     onCopy: () -> Unit,
     onReply: () -> Unit,
+    onForward: () -> Unit,
+    onMultiSelect: () -> Unit,
     onRecall: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -77,6 +82,12 @@ fun MessageActionSheet(
         ActionRow(Icons.AutoMirrored.Filled.Reply, stringResource(R.string.im_action_reply)) {
             onReply(); onDismiss()
         }
+        ActionRow(Icons.AutoMirrored.Filled.Send, stringResource(R.string.im_action_forward)) {
+            onForward(); onDismiss()
+        }
+        ActionRow(Icons.Filled.Checklist, stringResource(R.string.im_action_multi_select)) {
+            onMultiSelect(); onDismiss()
+        }
         if (canRecall) {
             ActionRow(Icons.Filled.Undo, stringResource(R.string.im_action_recall)) {
                 onRecall(); onDismiss()
@@ -84,6 +95,42 @@ fun MessageActionSheet(
         }
         Column(Modifier.padding(bottom = 16.dp)) {}
     }
+}
+
+/** Pick a conversation to forward into. */
+@Composable
+fun ForwardTargetDialog(
+    targets: List<com.we.meet.feature.im.vm.ChatViewModel.ForwardTarget>,
+    onPick: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.im_reply_cancel))
+            }
+        },
+        title = { Text(stringResource(R.string.im_forward_to)) },
+        text = {
+            androidx.compose.foundation.lazy.LazyColumn(
+                modifier = Modifier.heightIn(max = 400.dp),
+            ) {
+                items(targets.size) { i ->
+                    val target = targets[i]
+                    Text(
+                        text = target.title.ifBlank { stringResource(R.string.im_untitled_chat) },
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onPick(target.cid) }
+                            .padding(vertical = 14.dp),
+                    )
+                }
+            }
+        },
+    )
 }
 
 @Composable

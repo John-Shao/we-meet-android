@@ -95,4 +95,9 @@
     <string name="im_mention_everyone">所有人</string>
     <string name="im_mention_notice">有人@我</string>
     <string name="im_mention_marker">@</string>
+    <string name="im_action_forward">转发</string>
+    <string name="im_action_multi_select">多选</string>
+    <string name="im_action_forward_merged">合并转发</string>
+    <string name="im_forward_to">转发到</string>
+    <string name="im_selected_count">已选 %1$d 条</string>
 </resources>

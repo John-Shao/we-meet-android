@@ -95,4 +95,9 @@
     <string name="im_mention_everyone">Everyone</string>
     <string name="im_mention_notice">You were mentioned</string>
     <string name="im_mention_marker">@</string>
+    <string name="im_action_forward">Forward</string>
+    <string name="im_action_multi_select">Select</string>
+    <string name="im_action_forward_merged">Forward as record</string>
+    <string name="im_forward_to">Forward to</string>
+    <string name="im_selected_count">%1$d selected</string>
 </resources>

@@ -163,6 +163,70 @@ class ChatViewModel internal constructor(
         }
     }
 
+    /** A conversation the user can forward into (excludes the current one). */
+    data class ForwardTarget(val cid: String, val title: String)
+
+    /** Forward destinations: every other conversation, titled for display. */
+    fun forwardTargets(): List<ForwardTarget> {
+        val self = _ui.value.selfUid
+        return session.conversations.conversations.value
+            .filter { it.cid != cid }
+            .map { c ->
+                val title = if (c.type == "group") {
+                    c.name.ifBlank { ((c.meta as? Map<*, *>)?.get("name") as? String).orEmpty() }
+                } else {
+                    c.members.firstOrNull { it != self }
+                        ?.let { session.userDirectory.get(it)?.displayName }.orEmpty()
+                }
+                ForwardTarget(c.cid, title)
+            }
+    }
+
+    /** Re-send [message] verbatim (same content_type/body) into [targetCid]. */
+    fun forward(message: Message, targetCid: String) {
+        viewModelScope.launch {
+            runCatching { session.client.sendText(targetCid, message.body, contentType = message.contentType) }
+                .onFailure { Log.w(TAG, "forward failed", it) }
+        }
+    }
+
+    /** Package [messages] into one merged chat-record and send to [targetCid]. */
+    fun forwardMerged(messages: List<Message>, targetCid: String) {
+        if (messages.isEmpty()) return
+        val self = _ui.value.selfUid
+        val items = org.json.JSONArray()
+        messages.sortedBy { it.seq }.forEach { m ->
+            val sender = session.userDirectory.get(m.senderUid)?.displayName.orEmpty()
+            items.put(
+                JSONObject()
+                    .put("sender", sender)
+                    .put("text", mergedTextOf(m))
+                    .put("ts", m.ts),
+            )
+        }
+        val body = JSONObject()
+            .put("title", _ui.value.title)
+            .put("count", items.length())
+            .put("items", items)
+            .toString()
+        viewModelScope.launch {
+            runCatching { session.client.sendText(targetCid, body, contentType = "merged") }
+                .onFailure { Log.w(TAG, "forwardMerged failed", it) }
+        }
+    }
+
+    /** Full plain-text for a merged line (media → placeholder, text/quote → full). */
+    private fun mergedTextOf(m: Message): String =
+        when (val c = MessageContentParser.parse(m.contentType, m.body)) {
+            is MessageContent.Text -> c.body
+            is MessageContent.Quote -> c.text
+            is MessageContent.Image -> "[图片]"
+            is MessageContent.File -> "[文件] ${c.name}"
+            is MessageContent.Voice -> "[语音]"
+            is MessageContent.Merged -> "[聊天记录]"
+            else -> ""
+        }
+
     /** @-mention candidates for the input dropdown: 所有人 + other members' names. */
     fun mentionCandidates(): List<String> {
         if (!_ui.value.isGroup) return emptyList()

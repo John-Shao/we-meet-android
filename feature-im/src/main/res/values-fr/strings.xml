@@ -89,4 +89,9 @@
     <string name="im_mention_everyone">Tout le monde</string>
     <string name="im_mention_notice">Vous avez été mentionné</string>
     <string name="im_mention_marker">@</string>
+    <string name="im_action_forward">Transférer</string>
+    <string name="im_action_multi_select">Sélectionner</string>
+    <string name="im_action_forward_merged">Transférer comme historique</string>
+    <string name="im_forward_to">Transférer à</string>
+    <string name="im_selected_count">%1$d sélectionné(s)</string>
 </resources>

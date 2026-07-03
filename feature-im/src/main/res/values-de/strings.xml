@@ -89,4 +89,9 @@
     <string name="im_mention_everyone">Alle</string>
     <string name="im_mention_notice">Du wurdest erwähnt</string>
     <string name="im_mention_marker">@</string>
+    <string name="im_action_forward">Weiterleiten</string>
+    <string name="im_action_multi_select">Auswählen</string>
+    <string name="im_action_forward_merged">Als Verlauf weiterleiten</string>
+    <string name="im_forward_to">Weiterleiten an</string>
+    <string name="im_selected_count">%1$d ausgewählt</string>
 </resources>

@@ -89,4 +89,9 @@
     <string name="im_mention_everyone">Iedereen</string>
     <string name="im_mention_notice">Je bent genoemd</string>
     <string name="im_mention_marker">@</string>
+    <string name="im_action_forward">Doorsturen</string>
+    <string name="im_action_multi_select">Selecteren</string>
+    <string name="im_action_forward_merged">Als gesprek doorsturen</string>
+    <string name="im_forward_to">Doorsturen naar</string>
+    <string name="im_selected_count">%1$d geselecteerd</string>
 </resources>

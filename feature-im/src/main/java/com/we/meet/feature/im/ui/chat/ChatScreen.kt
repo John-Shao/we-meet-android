@@ -89,6 +89,13 @@ fun ChatScreen(
     // Long-press target for the action menu; and the message being replied to.
     var actionTarget by remember { mutableStateOf<com.jusi.lightim.Message?>(null) }
     var replyTarget by remember { mutableStateOf<com.jusi.lightim.Message?>(null) }
+    // Forwarding: a single message pending a target, or multi-select mode.
+    var forwardSingle by remember { mutableStateOf<com.jusi.lightim.Message?>(null) }
+    var selectMode by remember { mutableStateOf(false) }
+    var selectedMids by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var pickMergedTarget by remember { mutableStateOf(false) }
+    fun exitSelect() { selectMode = false; selectedMids = emptySet() }
+    androidx.activity.compose.BackHandler(enabled = selectMode) { exitSelect() }
 
     // Read marking only while RESUMED — a backgrounded chat must not eat unread.
     LifecycleResumeEffect(Unit) {
@@ -135,18 +142,24 @@ fun ChatScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = ui.title.ifBlank { stringResource(R.string.im_untitled_chat) },
+                        text = if (selectMode) {
+                            stringResource(R.string.im_selected_count, selectedMids.size)
+                        } else ui.title.ifBlank { stringResource(R.string.im_untitled_chat) },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    IconButton(onClick = { if (selectMode) exitSelect() else onBack() }) {
+                        Icon(
+                            if (selectMode) Icons.Filled.Close
+                            else Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null,
+                        )
                     }
                 },
                 actions = {
-                    if (ui.isGroup) {
+                    if (ui.isGroup && !selectMode) {
                         IconButton(onClick = { onOpenInfo(cid) }) {
                             Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.im_group_info))
                         }
@@ -209,54 +222,83 @@ fun ChatScreen(
                         items(reversed, key = { it.mid }) { message ->
                             val isOwn = message.senderUid == ui.selfUid
                             val sender = vm.resolveUser(message.senderUid)
-                            val receipt = if (isOwn && message.seq == latestOwnSeq) {
+                            val receipt = if (isOwn && message.seq == latestOwnSeq && !selectMode) {
                                 receiptLabel(
                                     isGroup = ui.isGroup,
                                     readCount = vm.readCountFor(message.seq),
                                     memberCount = (ui.memberUids.size - 1).coerceAtLeast(0),
                                 )
                             } else null
-                            MessageBubble(
-                                message = message,
-                                isOwn = isOwn,
-                                isGroup = ui.isGroup,
-                                senderName = sender?.displayName,
-                                senderAvatarUrl = sender?.avatarUrl?.takeIf { it.isNotBlank() },
-                                receiptLabel = receipt,
-                                onReceiptClick = if (receipt != null && ui.isGroup) {
-                                    { showReceipts = true }
-                                } else null,
-                                onImageClick = { key -> lightboxKey = key },
-                                onFileClick = { key, _ ->
-                                    scope.launch {
-                                        val url = vm.resolveMediaUrl(key)
-                                        if (url != null) {
-                                            runCatching {
-                                                context.startActivity(
-                                                    Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                                )
-                                            }.onFailure {
-                                                Toast.makeText(
-                                                    context,
-                                                    context.getString(R.string.im_file_open_failed),
-                                                    Toast.LENGTH_SHORT,
-                                                ).show()
+                            val bubble = @Composable {
+                                MessageBubble(
+                                    message = message,
+                                    isOwn = isOwn,
+                                    isGroup = ui.isGroup,
+                                    senderName = sender?.displayName,
+                                    senderAvatarUrl = sender?.avatarUrl?.takeIf { it.isNotBlank() },
+                                    receiptLabel = receipt,
+                                    onReceiptClick = if (receipt != null && ui.isGroup) {
+                                        { showReceipts = true }
+                                    } else null,
+                                    onImageClick = { key -> lightboxKey = key },
+                                    onFileClick = { key, _ ->
+                                        scope.launch {
+                                            val url = vm.resolveMediaUrl(key)
+                                            if (url != null) {
+                                                runCatching {
+                                                    context.startActivity(
+                                                        Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                                    )
+                                                }.onFailure {
+                                                    Toast.makeText(
+                                                        context,
+                                                        context.getString(R.string.im_file_open_failed),
+                                                        Toast.LENGTH_SHORT,
+                                                    ).show()
+                                                }
                                             }
                                         }
-                                    }
-                                },
-                                resolveMediaUrl = { key -> vm.resolveMediaUrl(key) },
-                                recalled = message.mid in ui.recalledMids,
-                                reactions = ui.reactions[message.mid].orEmpty(),
-                                onLongPress = if (message.mid !in ui.recalledMids) {
-                                    { actionTarget = message }
-                                } else null,
-                            )
+                                    },
+                                    resolveMediaUrl = { key -> vm.resolveMediaUrl(key) },
+                                    recalled = message.mid in ui.recalledMids,
+                                    reactions = ui.reactions[message.mid].orEmpty(),
+                                    onLongPress = if (!selectMode && message.mid !in ui.recalledMids) {
+                                        { actionTarget = message }
+                                    } else null,
+                                )
+                            }
+                            if (selectMode) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedMids = if (message.mid in selectedMids) {
+                                                selectedMids - message.mid
+                                            } else selectedMids + message.mid
+                                        },
+                                ) {
+                                    androidx.compose.material3.Checkbox(
+                                        checked = message.mid in selectedMids,
+                                        onCheckedChange = null,
+                                        modifier = Modifier.padding(start = 8.dp),
+                                    )
+                                    Box(Modifier.weight(1f)) { bubble() }
+                                }
+                            } else {
+                                bubble()
+                            }
                         }
                     }
                 }
             }
 
+            if (selectMode) {
+                ForwardActionBar(
+                    enabled = selectedMids.isNotEmpty(),
+                    onMerged = { pickMergedTarget = true },
+                )
+            } else
             MessageInputBar(
                 canSend = connection == ConnectionState.CONNECTED,
                 sentTick = ui.sentTick,
@@ -295,8 +337,31 @@ fun ChatScreen(
                 clipboard.setText(androidx.compose.ui.text.AnnotatedString(vm.snippetPreview(target)))
             },
             onReply = { replyTarget = target },
+            onForward = { forwardSingle = target },
+            onMultiSelect = { selectMode = true; selectedMids = setOf(target.mid) },
             onRecall = { vm.recall(target) },
             onDismiss = { actionTarget = null },
+        )
+    }
+
+    // Forward pickers: single message, or the merged multi-select bundle.
+    forwardSingle?.let { msg ->
+        ForwardTargetDialog(
+            targets = vm.forwardTargets(),
+            onPick = { targetCid -> vm.forward(msg, targetCid); forwardSingle = null },
+            onDismiss = { forwardSingle = null },
+        )
+    }
+    if (pickMergedTarget) {
+        val chosen = ui.messages.filter { it.mid in selectedMids }
+        ForwardTargetDialog(
+            targets = vm.forwardTargets(),
+            onPick = { targetCid ->
+                vm.forwardMerged(chosen, targetCid)
+                pickMergedTarget = false
+                exitSelect()
+            },
+            onDismiss = { pickMergedTarget = false },
         )
     }
 
@@ -332,6 +397,26 @@ private fun receiptLabel(
     stringResource(if (readCount > 0) R.string.im_read else R.string.im_unread)
 } else {
     stringResource(R.string.im_read_count, readCount, memberCount)
+}
+
+/** Bottom bar shown in multi-select mode: merge-forward the selected messages. */
+@Composable
+private fun ForwardActionBar(enabled: Boolean, onMerged: () -> Unit) {
+    androidx.compose.material3.Surface(
+        tonalElevation = 3.dp,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+        ) {
+            androidx.compose.material3.TextButton(onClick = onMerged, enabled = enabled) {
+                Text(stringResource(R.string.im_action_forward_merged))
+            }
+        }
+    }
 }
 
 @Composable
