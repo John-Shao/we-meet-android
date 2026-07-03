@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -76,8 +77,12 @@ fun ChatScreen(
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
     var lightboxKey by remember { mutableStateOf<String?>(null) }
     var showReceipts by remember { mutableStateOf(false) }
+    // Long-press target for the action menu; and the message being replied to.
+    var actionTarget by remember { mutableStateOf<com.jusi.lightim.Message?>(null) }
+    var replyTarget by remember { mutableStateOf<com.jusi.lightim.Message?>(null) }
 
     // Read marking only while RESUMED — a backgrounded chat must not eat unread.
     LifecycleResumeEffect(Unit) {
@@ -237,6 +242,9 @@ fun ChatScreen(
                                 resolveMediaUrl = { key -> vm.resolveMediaUrl(key) },
                                 recalled = message.mid in ui.recalledMids,
                                 reactions = ui.reactions[message.mid].orEmpty(),
+                                onLongPress = if (message.mid !in ui.recalledMids) {
+                                    { actionTarget = message }
+                                } else null,
                             )
                         }
                     }
@@ -246,7 +254,20 @@ fun ChatScreen(
             MessageInputBar(
                 canSend = connection == ConnectionState.CONNECTED,
                 sentTick = ui.sentTick,
-                onSend = { vm.sendText(it) },
+                replyPreview = replyTarget?.let { rt ->
+                    val name = vm.resolveUser(rt.senderUid)?.displayName.orEmpty()
+                    ReplyPreview(name, vm.snippetPreview(rt))
+                },
+                onClearReply = { replyTarget = null },
+                onSend = { text ->
+                    val rt = replyTarget
+                    if (rt != null) {
+                        vm.sendQuote(rt, text)
+                        replyTarget = null
+                    } else {
+                        vm.sendText(text)
+                    }
+                },
                 onPickImage = {
                     pickImage.launch(
                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -255,6 +276,20 @@ fun ChatScreen(
                 onPickFile = { pickFile.launch(arrayOf("*/*")) },
             )
         }
+    }
+
+    actionTarget?.let { target ->
+        MessageActionSheet(
+            canRecall = vm.canRecall(target),
+            myReactions = QUICK_REACTIONS.filter { vm.hasMyReaction(target.mid, it) }.toSet(),
+            onReact = { emoji -> vm.toggleReaction(target, emoji) },
+            onCopy = {
+                clipboard.setText(androidx.compose.ui.text.AnnotatedString(vm.snippetPreview(target)))
+            },
+            onReply = { replyTarget = target },
+            onRecall = { vm.recall(target) },
+            onDismiss = { actionTarget = null },
+        )
     }
 
     lightboxKey?.let { key ->
@@ -312,10 +347,15 @@ private fun PendingRow(kind: String) {
     }
 }
 
+/** Sender display name + text snippet of the message being replied to. */
+data class ReplyPreview(val sender: String, val snippet: String)
+
 @Composable
 private fun MessageInputBar(
     canSend: Boolean,
     sentTick: Int,
+    replyPreview: ReplyPreview?,
+    onClearReply: () -> Unit,
     onSend: (String) -> Unit,
     onPickImage: () -> Unit,
     onPickFile: () -> Unit,
@@ -326,6 +366,32 @@ private fun MessageInputBar(
     LaunchedEffect(sentTick) {
         if (sentTick > 0) text = ""
     }
+    Column {
+        if (replyPreview != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp)
+                    .padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "${replyPreview.sender}: ${replyPreview.snippet}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.outline,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = onClearReply, modifier = Modifier.size(28.dp)) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.im_reply_cancel),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+        }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -359,5 +425,6 @@ private fun MessageInputBar(
                 else MaterialTheme.colorScheme.outline,
             )
         }
+    }
     }
 }

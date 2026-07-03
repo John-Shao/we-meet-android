@@ -3,6 +3,8 @@ package com.we.meet.feature.im.ui.chat
 import android.media.MediaPlayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,6 +61,7 @@ import com.we.meet.feature.im.model.formatFileSize
  * One message row. Rendering dispatches on the parsed [MessageContent] — adding
  * a Phase-2 content type is one extra branch here (plus its parser subtype).
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun MessageBubble(
     message: Message,
@@ -75,6 +78,8 @@ fun MessageBubble(
     recalled: Boolean = false,
     /** Aggregated reactions on this message: emoji → reacting uids. */
     reactions: Map<String, List<String>> = emptyMap(),
+    /** Long-press on the bubble → open the message action menu. */
+    onLongPress: (() -> Unit)? = null,
 ) {
     val content = remember(message.mid) {
         MessageContentParser.parse(message.contentType, message.body)
@@ -120,7 +125,17 @@ fun MessageBubble(
             )
             Spacer(Modifier.width(8.dp))
         }
-        Column(horizontalAlignment = if (isOwn) Alignment.End else Alignment.Start) {
+        Column(
+            horizontalAlignment = if (isOwn) Alignment.End else Alignment.Start,
+            modifier = if (onLongPress != null) {
+                Modifier.combinedClickable(
+                    onClick = {},
+                    onLongClick = onLongPress,
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                )
+            } else Modifier,
+        ) {
             if (!isOwn && isGroup && !senderName.isNullOrBlank()) {
                 Text(
                     text = senderName,

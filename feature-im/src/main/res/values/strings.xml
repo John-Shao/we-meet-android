@@ -85,4 +85,8 @@
     <string name="im_recalled_other">%1$s recalled a message</string>
     <string name="im_merged_title">Chat record</string>
     <string name="im_merged_view_count">View %1$d messages</string>
+    <string name="im_action_copy">Copy</string>
+    <string name="im_action_reply">Reply</string>
+    <string name="im_action_recall">Recall</string>
+    <string name="im_reply_cancel">Cancel reply</string>
 </resources>

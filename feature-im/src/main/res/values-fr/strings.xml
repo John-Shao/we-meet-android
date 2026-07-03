@@ -79,4 +79,8 @@
     <string name="im_recalled_other">%1$s a rappelé un message</string>
     <string name="im_merged_title">Historique de discussion</string>
     <string name="im_merged_view_count">Voir %1$d messages</string>
+    <string name="im_action_copy">Copier</string>
+    <string name="im_action_reply">Répondre</string>
+    <string name="im_action_recall">Rappeler</string>
+    <string name="im_reply_cancel">Annuler la réponse</string>
 </resources>

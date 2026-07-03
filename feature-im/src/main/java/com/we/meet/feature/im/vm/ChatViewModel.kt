@@ -217,6 +217,106 @@ class ChatViewModel internal constructor(
         _ui.update { it.copy(uploadError = null) }
     }
 
+    // ---- long-press actions (quote / recall / reaction) ----
+
+    /**
+     * Reply to [replyTo] with [text]. Body mirrors web:
+     * `{reply_to:{sender,snippet}, text}`, content_type=quote. `sender` is the
+     * resolved display name baked in at send time (target convo may not know it).
+     */
+    fun sendQuote(replyTo: Message, text: String) {
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) return
+        val senderName = if (replyTo.senderUid == _ui.value.selfUid) {
+            null // rendered as "You" client-side via snippet sender fallback
+        } else {
+            session.userDirectory.get(replyTo.senderUid)?.displayName
+        }
+        val body = JSONObject()
+            .put(
+                "reply_to",
+                JSONObject()
+                    .put("sender", senderName ?: _ui.value.title)
+                    .put("snippet", snippetOf(replyTo)),
+            )
+            .put("text", trimmed)
+            .toString()
+        viewModelScope.launch {
+            try {
+                session.client.sendText(cid, body, contentType = "quote")
+                _ui.update { it.copy(error = null, sentTick = it.sentTick + 1) }
+            } catch (e: Throwable) {
+                Log.w(TAG, "sendQuote failed", e)
+                _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
+            }
+        }
+    }
+
+    /** Recall [message] (tombstone `{target_mid}`). Only own messages, ≤2 min old. */
+    fun recall(message: Message) {
+        viewModelScope.launch {
+            try {
+                session.client.sendText(
+                    cid,
+                    JSONObject().put("target_mid", message.mid).toString(),
+                    contentType = "recall",
+                )
+            } catch (e: Throwable) {
+                Log.w(TAG, "recall failed", e)
+                _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
+            }
+        }
+    }
+
+    /** Whether the caller has an active reaction [emoji] on [mid] (for toggle). */
+    fun hasMyReaction(mid: Long, emoji: String): Boolean {
+        val self = _ui.value.selfUid ?: return false
+        return _ui.value.reactions[mid]?.get(emoji)?.contains(self) == true
+    }
+
+    /** Toggle [emoji] on [message]: sends `{target_mid,emoji,op}`, op derived from current state. */
+    fun toggleReaction(message: Message, emoji: String) {
+        val op = if (hasMyReaction(message.mid, emoji)) "remove" else "add"
+        viewModelScope.launch {
+            try {
+                session.client.sendText(
+                    cid,
+                    JSONObject()
+                        .put("target_mid", message.mid)
+                        .put("emoji", emoji)
+                        .put("op", op)
+                        .toString(),
+                    contentType = "reaction",
+                )
+            } catch (e: Throwable) {
+                Log.w(TAG, "reaction failed", e)
+                _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
+            }
+        }
+    }
+
+    /** True while [message] is still within the recall window (client-enforced, web parity). */
+    fun canRecall(message: Message): Boolean {
+        if (message.senderUid != _ui.value.selfUid) return false
+        // ts is epoch millis (same basis as the list time label).
+        return System.currentTimeMillis() - message.ts <= RECALL_WINDOW_MS
+    }
+
+    /** Public plain-text snippet (reply preview bar / copy / quote sender). */
+    fun snippetPreview(m: Message): String = snippetOf(m)
+
+    /** Plain-text snippet of a message for quote previews (media → placeholder). */
+    private fun snippetOf(m: Message): String =
+        when (val c = MessageContentParser.parse(m.contentType, m.body)) {
+            is MessageContent.Text -> c.body.take(SNIPPET_MAX)
+            is MessageContent.Quote -> c.text.take(SNIPPET_MAX)
+            is MessageContent.Image -> "[图片]"
+            is MessageContent.File -> "[文件] ${c.name}"
+            is MessageContent.Voice -> "[语音]"
+            is MessageContent.Merged -> "[聊天记录]"
+            else -> ""
+        }
+
     // ---- read receipts ----
 
     /**
@@ -406,6 +506,8 @@ class ChatViewModel internal constructor(
         const val TAG = "ChatVM"
         const val PAGE_SIZE = 50
         const val MAX_IN_MEMORY = 500
+        const val SNIPPET_MAX = 40
+        const val RECALL_WINDOW_MS = 2 * 60 * 1000L
     }
 }
 

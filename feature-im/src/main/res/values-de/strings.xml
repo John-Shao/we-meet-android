@@ -79,4 +79,8 @@
     <string name="im_recalled_other">%1$s hat eine Nachricht zurückgerufen</string>
     <string name="im_merged_title">Chatverlauf</string>
     <string name="im_merged_view_count">%1$d Nachrichten ansehen</string>
+    <string name="im_action_copy">Kopieren</string>
+    <string name="im_action_reply">Antworten</string>
+    <string name="im_action_recall">Zurückrufen</string>
+    <string name="im_reply_cancel">Antwort abbrechen</string>
 </resources>

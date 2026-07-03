@@ -79,4 +79,8 @@
     <string name="im_recalled_other">%1$s heeft een bericht ingetrokken</string>
     <string name="im_merged_title">Chatgeschiedenis</string>
     <string name="im_merged_view_count">%1$d berichten bekijken</string>
+    <string name="im_action_copy">Kopiëren</string>
+    <string name="im_action_reply">Antwoorden</string>
+    <string name="im_action_recall">Intrekken</string>
+    <string name="im_reply_cancel">Antwoord annuleren</string>
 </resources>

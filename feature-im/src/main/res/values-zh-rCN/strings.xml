@@ -85,4 +85,8 @@
     <string name="im_recalled_other">%1$s 撤回了一条消息</string>
     <string name="im_merged_title">聊天记录</string>
     <string name="im_merged_view_count">查看 %1$d 条记录</string>
+    <string name="im_action_copy">复制</string>
+    <string name="im_action_reply">引用</string>
+    <string name="im_action_recall">撤回</string>
+    <string name="im_reply_cancel">取消引用</string>
 </resources>
