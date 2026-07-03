@@ -57,6 +57,11 @@ internal class ImBridgeRepository(private val api: ImApi) {
     suspend fun fileUploadUrl(name: String, contentType: String, size: Long): UploadUrlResponse =
         api.fileUploadUrl(mapOf("name" to name, "content_type" to contentType, "size" to size))
 
+    suspend fun audioUploadUrl(contentType: String, size: Long, filename: String): UploadUrlResponse =
+        api.audioUploadUrl(
+            mapOf("content_type" to contentType, "size" to size, "filename" to filename),
+        )
+
     /** Map object keys → presigned GET URLs (~1h validity). */
     suspend fun resolveMedia(objectKeys: Collection<String>): Map<String, String> =
         if (objectKeys.isEmpty()) emptyMap()

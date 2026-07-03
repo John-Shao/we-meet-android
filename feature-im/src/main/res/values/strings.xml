@@ -89,4 +89,7 @@
     <string name="im_action_reply">Reply</string>
     <string name="im_action_recall">Recall</string>
     <string name="im_reply_cancel">Cancel reply</string>
+    <string name="im_attach_voice">Voice message</string>
+    <string name="im_recording">Recording… release to send</string>
+    <string name="im_sending_voice">Sending voice…</string>
 </resources>

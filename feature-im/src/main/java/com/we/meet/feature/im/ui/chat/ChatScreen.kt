@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +36,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +45,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -274,6 +278,7 @@ fun ChatScreen(
                     )
                 },
                 onPickFile = { pickFile.launch(arrayOf("*/*")) },
+                onVoiceRecorded = { file, durationMs -> vm.sendVoice(file, durationMs) },
             )
         }
     }
@@ -338,7 +343,11 @@ private fun PendingRow(kind: String) {
         CircularProgressIndicator(modifier = Modifier.size(16.dp))
         Text(
             text = stringResource(
-                if (kind == "image") R.string.im_sending_image else R.string.im_sending_file
+                when (kind) {
+                    "image" -> R.string.im_sending_image
+                    "voice" -> R.string.im_sending_voice
+                    else -> R.string.im_sending_file
+                }
             ),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.outline,
@@ -359,8 +368,23 @@ private fun MessageInputBar(
     onSend: (String) -> Unit,
     onPickImage: () -> Unit,
     onPickFile: () -> Unit,
+    onVoiceRecorded: (java.io.File, Long) -> Unit,
 ) {
     var text by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val recorder = remember { VoiceRecorder(context) }
+    var recording by remember { mutableStateOf(false) }
+    var hasAudioPermission by remember {
+        mutableStateOf(
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.RECORD_AUDIO,
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val requestAudio = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> hasAudioPermission = granted }
+    DisposableEffect(Unit) { onDispose { if (recording) recorder.cancel() } }
     // Clear only after the ViewModel confirms an acked send, so a failed send
     // keeps the user's draft.
     LaunchedEffect(sentTick) {
@@ -404,6 +428,45 @@ private fun MessageInputBar(
         IconButton(onClick = onPickFile, enabled = canSend) {
             Icon(Icons.Filled.AttachFile, contentDescription = stringResource(R.string.im_attach_file))
         }
+        IconButton(
+            onClick = {
+                if (!hasAudioPermission) {
+                    requestAudio.launch(android.Manifest.permission.RECORD_AUDIO)
+                }
+            },
+            enabled = canSend,
+            modifier = if (hasAudioPermission) {
+                Modifier.pointerInput(canSend) {
+                    detectTapGestures(
+                        onPress = {
+                            if (!canSend) return@detectTapGestures
+                            recording = recorder.start()
+                            // Suspend here until the finger lifts, then finalize.
+                            tryAwaitRelease()
+                            if (recording) {
+                                recording = false
+                                recorder.stop()?.let { onVoiceRecorded(it.file, it.durationMs) }
+                            }
+                        },
+                    )
+                }
+            } else Modifier,
+        ) {
+            Icon(
+                Icons.Filled.Mic,
+                contentDescription = stringResource(R.string.im_attach_voice),
+                tint = if (recording) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (recording) {
+            Text(
+                text = stringResource(R.string.im_recording),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+            )
+        } else {
         OutlinedTextField(
             value = text,
             onValueChange = { text = it },
@@ -414,6 +477,7 @@ private fun MessageInputBar(
                 .weight(1f)
                 .padding(horizontal = 4.dp),
         )
+        }
         IconButton(
             onClick = { onSend(text) },
             enabled = canSend && text.isNotBlank(),

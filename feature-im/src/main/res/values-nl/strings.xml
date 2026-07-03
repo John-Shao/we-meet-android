@@ -83,4 +83,7 @@
     <string name="im_action_reply">Antwoorden</string>
     <string name="im_action_recall">Intrekken</string>
     <string name="im_reply_cancel">Antwoord annuleren</string>
+    <string name="im_attach_voice">Spraakbericht</string>
+    <string name="im_recording">Opnemen… loslaten om te verzenden</string>
+    <string name="im_sending_voice">Spraakbericht verzenden…</string>
 </resources>

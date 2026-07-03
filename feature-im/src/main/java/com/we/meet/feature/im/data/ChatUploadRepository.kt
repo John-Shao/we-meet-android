@@ -77,6 +77,20 @@ internal class ChatUploadRepository(
         ChatFileMeta(key = presigned.objectKey, name = name, size = bytes.size.toLong())
     }
 
+    /**
+     * Upload a recorded voice clip (m4a/aac). Returns the object_key; the caller
+     * sends it with content_type="voice", body `{key,duration}`.
+     */
+    suspend fun uploadVoice(file: java.io.File): String = withContext(Dispatchers.IO) {
+        val bytes = file.readBytes()
+        if (bytes.size > AUDIO_MAX_BYTES) throw ChatUploadException(ChatUploadException.Code.TooLarge)
+        val contentType = "audio/mp4"
+        val presigned = runCatching { bridge.audioUploadUrl(contentType, bytes.size.toLong(), "voice.m4a") }
+            .getOrElse { throw ChatUploadException(ChatUploadException.Code.UploadError, it.message) }
+        put(presigned, bytes, contentType)
+        presigned.objectKey
+    }
+
     // ---- internals ----
 
     /** Downscale to ≤[MAX_EDGE]px longest edge + lossy webp when big; else pass through. */
@@ -162,6 +176,7 @@ internal class ChatUploadRepository(
         val ALLOWED_IMAGE_TYPES = setOf("image/jpeg", "image/png", "image/webp", "image/gif")
         const val IMAGE_MAX_BYTES = 10 * 1024 * 1024
         const val FILE_MAX_BYTES = 50 * 1024 * 1024
+        const val AUDIO_MAX_BYTES = 20 * 1024 * 1024
         const val MAX_EDGE = 1600
         const val RECODE_SIZE_THRESHOLD = 2 * 1024 * 1024
         const val WEBP_QUALITY = 85

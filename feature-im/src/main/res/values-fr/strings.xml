@@ -83,4 +83,7 @@
     <string name="im_action_reply">Répondre</string>
     <string name="im_action_recall">Rappeler</string>
     <string name="im_reply_cancel">Annuler la réponse</string>
+    <string name="im_attach_voice">Message vocal</string>
+    <string name="im_recording">Enregistrement… relâchez pour envoyer</string>
+    <string name="im_sending_voice">Envoi du message vocal…</string>
 </resources>

@@ -89,4 +89,7 @@
     <string name="im_action_reply">引用</string>
     <string name="im_action_recall">撤回</string>
     <string name="im_reply_cancel">取消引用</string>
+    <string name="im_attach_voice">语音消息</string>
+    <string name="im_recording">正在录音…松开发送</string>
+    <string name="im_sending_voice">语音发送中…</string>
 </resources>

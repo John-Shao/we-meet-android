@@ -217,6 +217,20 @@ class ChatViewModel internal constructor(
         _ui.update { it.copy(uploadError = null) }
     }
 
+    /** Upload a recorded clip then send content_type="voice", body `{key,duration}`. */
+    fun sendVoice(file: java.io.File, durationMs: Long) = sendMedia(kind = "voice") {
+        try {
+            val objectKey = session.uploads.uploadVoice(file)
+            session.client.sendText(
+                cid,
+                JSONObject().put("key", objectKey).put("duration", durationMs).toString(),
+                contentType = "voice",
+            )
+        } finally {
+            file.delete()
+        }
+    }
+
     // ---- long-press actions (quote / recall / reaction) ----
 
     /**
