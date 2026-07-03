@@ -13,6 +13,8 @@ import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.data.ChatUploadException
 import com.we.meet.feature.im.data.ImUserInfo
+import com.we.meet.feature.im.model.MessageContent
+import com.we.meet.feature.im.model.MessageContentParser
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -32,11 +34,19 @@ data class PendingSend(
     val failed: Boolean = false,
 )
 
+/** Aggregated reactions on one message: emoji → reacting uids (in arrival order). */
+typealias ReactionMap = Map<String, List<String>>
+
 data class ChatUiState(
     val cid: String = "",
     val isGroup: Boolean = false,
     val title: String = "",
+    /** Renderable rows only — control messages (recall/reaction) are filtered out. */
     val messages: List<Message> = emptyList(),
+    /** mids replaced by a recall tombstone. */
+    val recalledMids: Set<Long> = emptySet(),
+    /** target mid → aggregated reactions (replayed in seq order, add/remove). */
+    val reactions: Map<Long, ReactionMap> = emptyMap(),
     val pending: List<PendingSend> = emptyList(),
     val hasMore: Boolean = false,
     val loadingOlder: Boolean = false,
@@ -83,6 +93,13 @@ class ChatViewModel internal constructor(
     private var visible = false
 
     private var nextLocalId = 1L
+
+    /**
+     * Full seq-ordered window including control messages (recall/reaction) —
+     * they must survive merges so tombstones/reactions can be replayed, but
+     * [ChatUiState.messages] only carries renderable rows.
+     */
+    private var raw: List<Message> = emptyList()
 
     init {
         _ui.update { it.copy(selfUid = session.selfUid.value) }
@@ -140,7 +157,7 @@ class ChatViewModel internal constructor(
     fun setVisible(isVisible: Boolean) {
         visible = isVisible
         if (isVisible) {
-            _ui.value.messages.lastOrNull()?.let { markRead(it.seq) }
+            raw.lastOrNull()?.let { markRead(it.seq) }
         }
     }
 
@@ -149,17 +166,14 @@ class ChatViewModel internal constructor(
     fun loadOlder() {
         val state = _ui.value
         if (state.loadingOlder || !state.hasMore) return
-        val oldest = state.messages.firstOrNull()?.seq ?: return
+        val oldest = raw.firstOrNull()?.seq ?: return
         _ui.update { it.copy(loadingOlder = true) }
         viewModelScope.launch {
             runCatching { session.client.loadHistory(cid, beforeSeq = oldest, limit = PAGE_SIZE) }
                 .onSuccess { res ->
+                    mergeRaw(res.messages.asReversed())
                     _ui.update { s ->
-                        val merged = (res.messages.asReversed() + s.messages)
-                            .distinctBy { it.mid }
-                            .sortedBy { it.seq }
-                            .takeLast(MAX_IN_MEMORY)
-                        s.copy(messages = merged, hasMore = res.hasMore, loadingOlder = false)
+                        deriveRows(s.copy(hasMore = res.hasMore, loadingOlder = false))
                     }
                 }
                 .onFailure { e ->
@@ -254,15 +268,10 @@ class ChatViewModel internal constructor(
         viewModelScope.launch {
             runCatching { session.client.loadHistory(cid, limit = PAGE_SIZE) }
                 .onSuccess { res ->
-                    _ui.update { s ->
-                        val merged = (res.messages.asReversed() + s.messages)
-                            .distinctBy { it.mid }
-                            .sortedBy { it.seq }
-                            .takeLast(MAX_IN_MEMORY)
-                        s.copy(messages = merged, hasMore = res.hasMore, error = null)
-                    }
+                    mergeRaw(res.messages.asReversed())
+                    _ui.update { s -> deriveRows(s.copy(hasMore = res.hasMore, error = null)) }
                     if (visible) {
-                        _ui.value.messages.lastOrNull()?.let { markRead(it.seq) }
+                        raw.lastOrNull()?.let { markRead(it.seq) }
                     }
                     requestNameResolution()
                 }
@@ -273,14 +282,46 @@ class ChatViewModel internal constructor(
     }
 
     private fun appendMessages(list: List<Message>) {
-        _ui.update { s ->
-            val merged = (s.messages + list)
-                .distinctBy { it.mid }
-                .sortedBy { it.seq }
-                .takeLast(MAX_IN_MEMORY)
-            s.copy(messages = merged)
-        }
+        mergeRaw(list)
+        _ui.update { s -> deriveRows(s) }
         requestNameResolution()
+    }
+
+    private fun mergeRaw(incoming: List<Message>) {
+        raw = (raw + incoming)
+            .distinctBy { it.mid }
+            .sortedBy { it.seq }
+            .takeLast(MAX_IN_MEMORY)
+    }
+
+    /**
+     * Replay [raw] into renderable state: recall tombstones and per-message
+     * reaction aggregates (seq order, add/remove), control rows filtered out.
+     */
+    private fun deriveRows(s: ChatUiState): ChatUiState {
+        val recalled = mutableSetOf<Long>()
+        val reactions = mutableMapOf<Long, LinkedHashMap<String, MutableList<String>>>()
+        raw.forEach { m ->
+            when (val c = MessageContentParser.parse(m.contentType, m.body)) {
+                is MessageContent.Recall -> recalled += c.targetMid
+                is MessageContent.Reaction -> {
+                    val perEmoji = reactions.getOrPut(c.targetMid) { linkedMapOf() }
+                    val uids = perEmoji.getOrPut(c.emoji) { mutableListOf() }
+                    if (c.op == "remove") uids.remove(m.senderUid)
+                    else if (m.senderUid !in uids) uids.add(m.senderUid)
+                }
+                else -> Unit
+            }
+        }
+        return s.copy(
+            messages = raw.filterNot { MessageContentParser.isControlType(it.contentType) },
+            recalledMids = recalled,
+            reactions = reactions
+                .mapValues { (_, perEmoji) ->
+                    perEmoji.filterValues { it.isNotEmpty() }.mapValues { it.value.toList() }
+                }
+                .filterValues { it.isNotEmpty() },
+        )
     }
 
     private fun markRead(seq: Long) {

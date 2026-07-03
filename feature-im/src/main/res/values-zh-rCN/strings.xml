@@ -77,4 +77,12 @@
 
     <!-- 未读数超过 99 时的徽标文案。 -->
     <string name="im_unread_overflow">99+</string>
+    <string name="im_preview_voice">[语音]</string>
+    <string name="im_preview_merged">[聊天记录]</string>
+    <string name="im_preview_reaction">[表情回应]</string>
+    <string name="im_recalled_preview">撤回了一条消息</string>
+    <string name="im_recalled_self">你撤回了一条消息</string>
+    <string name="im_recalled_other">%1$s 撤回了一条消息</string>
+    <string name="im_merged_title">聊天记录</string>
+    <string name="im_merged_view_count">查看 %1$d 条记录</string>
 </resources>

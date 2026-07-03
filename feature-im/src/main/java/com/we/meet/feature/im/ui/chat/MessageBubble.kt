@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.chat
 
+import android.media.MediaPlayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,25 +9,35 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,9 +71,26 @@ fun MessageBubble(
     onImageClick: (objectKey: String) -> Unit,
     onFileClick: (key: String, name: String) -> Unit,
     resolveMediaUrl: suspend (String) -> String?,
+    /** This message was recalled — render a tombstone line instead of content. */
+    recalled: Boolean = false,
+    /** Aggregated reactions on this message: emoji → reacting uids. */
+    reactions: Map<String, List<String>> = emptyMap(),
 ) {
     val content = remember(message.mid) {
         MessageContentParser.parse(message.contentType, message.body)
+    }
+
+    if (recalled) {
+        // Web parity: tombstone replaces the bubble entirely.
+        Box(Modifier.fillMaxWidth().padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
+            Text(
+                text = if (isOwn) stringResource(R.string.im_recalled_self)
+                else stringResource(R.string.im_recalled_other, senderName.orEmpty()),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+            )
+        }
+        return
     }
 
     if (content is MessageContent.System) {
@@ -114,8 +142,21 @@ fun MessageBubble(
                     isOwn = isOwn,
                     onClick = { onFileClick(content.key, content.name) },
                 )
+                is MessageContent.Voice -> VoiceBubble(
+                    key = content.key,
+                    durationMs = content.durationMs,
+                    isOwn = isOwn,
+                    resolveMediaUrl = resolveMediaUrl,
+                )
+                is MessageContent.Quote -> QuoteBubble(content, isOwn)
+                is MessageContent.Merged -> MergedBubble(content, isOwn)
                 is MessageContent.Unsupported -> UnsupportedBubble(isOwn)
-                is MessageContent.System -> Unit // handled above
+                // Control/system rows never reach here (filtered / early-returned).
+                is MessageContent.Recall, is MessageContent.Reaction,
+                is MessageContent.System -> Unit
+            }
+            if (reactions.isNotEmpty()) {
+                ReactionChips(reactions)
             }
             if (receiptLabel != null) {
                 Text(
@@ -234,6 +275,222 @@ private fun FileBubble(name: String, size: Long, isOwn: Boolean, onClick: () -> 
                         color = MaterialTheme.colorScheme.outline,
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Voice clip: play/pause toggle + seconds label; bubble width scales with
+ * duration (web parity). Playback uses a throwaway MediaPlayer on the
+ * presigned URL — released on dispose or when a new clip starts.
+ */
+@Composable
+private fun VoiceBubble(
+    key: String,
+    durationMs: Long,
+    isOwn: Boolean,
+    resolveMediaUrl: suspend (String) -> String?,
+) {
+    val seconds = ((durationMs + 999) / 1000).coerceAtLeast(1L)
+    var playing by remember(key) { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val player = remember(key) { VoicePlayerHolder() }
+    DisposableEffect(key) { onDispose { player.release() } }
+
+    Surface(
+        color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.surfaceVariant,
+        shape = bubbleShape,
+        onClick = {
+            if (playing) {
+                player.stop()
+                playing = false
+            } else {
+                scope.launch {
+                    val url = resolveMediaUrl(key) ?: return@launch
+                    playing = true
+                    player.play(url) { playing = false }
+                }
+            }
+        },
+    ) {
+        // Web parity: longer clip → wider bubble, clamped.
+        val bubbleWidth = (96 + seconds.coerceAtMost(60L).toInt() * 2).coerceAtMost(220)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .width(bubbleWidth.dp)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+        ) {
+            Icon(
+                if (playing) Icons.Filled.Stop else Icons.Filled.PlayArrow,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = "${seconds}″",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+}
+
+/** Single-owner MediaPlayer wrapper so bubbles can't leak players. */
+private class VoicePlayerHolder {
+    private var player: MediaPlayer? = null
+
+    fun play(url: String, onDone: () -> Unit) {
+        release()
+        player = MediaPlayer().apply {
+            setDataSource(url)
+            setOnPreparedListener { start() }
+            setOnCompletionListener { onDone() }
+            setOnErrorListener { _, _, _ -> onDone(); true }
+            prepareAsync()
+        }
+    }
+
+    fun stop() = release()
+
+    fun release() {
+        runCatching { player?.stop() }
+        runCatching { player?.release() }
+        player = null
+    }
+}
+
+/** Reply bubble: dimmed quoted `sender: snippet` block above the reply text. */
+@Composable
+private fun QuoteBubble(content: MessageContent.Quote, isOwn: Boolean) {
+    Surface(
+        color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.surfaceVariant,
+        shape = bubbleShape,
+    ) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = 280.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+        ) {
+            Surface(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(6.dp),
+            ) {
+                Text(
+                    text = listOf(content.quotedSender, content.quotedSnippet)
+                        .filter { it.isNotBlank() }
+                        .joinToString(": "),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = content.text,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+}
+
+/** Merged chat-record card: title + first lines; tap opens the full record dialog. */
+@Composable
+private fun MergedBubble(content: MessageContent.Merged, isOwn: Boolean) {
+    var showDialog by remember { mutableStateOf(false) }
+    Surface(
+        color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.surfaceVariant,
+        shape = bubbleShape,
+        onClick = { showDialog = true },
+    ) {
+        Column(
+            modifier = Modifier
+                .widthIn(min = 180.dp, max = 280.dp)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+        ) {
+            Text(
+                text = content.title.ifBlank { stringResource(R.string.im_merged_title) },
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            content.items.take(3).forEach { item ->
+                Text(
+                    text = "${item.sender}: ${item.text}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+            HorizontalDivider(Modifier.padding(vertical = 6.dp))
+            Text(
+                text = stringResource(R.string.im_merged_view_count, content.count),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+    if (showDialog) {
+        MergedRecordDialog(content, onDismiss = { showDialog = false })
+    }
+}
+
+@Composable
+private fun MergedRecordDialog(content: MessageContent.Merged, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.ok)) }
+        },
+        title = {
+            Text(content.title.ifBlank { stringResource(R.string.im_merged_title) })
+        },
+        text = {
+            LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                items(content.items.size) { i ->
+                    val item = content.items[i]
+                    Column(Modifier.padding(vertical = 6.dp)) {
+                        Text(
+                            text = item.sender,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                        Text(
+                            text = item.text,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+            }
+        },
+    )
+}
+
+/** Aggregated reaction chips under a bubble: `emoji ×n`. */
+@Composable
+private fun ReactionChips(reactions: Map<String, List<String>>) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.padding(top = 3.dp),
+    ) {
+        reactions.forEach { (emoji, uids) ->
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(10.dp),
+            ) {
+                Text(
+                    text = if (uids.size > 1) "$emoji ${uids.size}" else emoji,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                )
             }
         }
     }

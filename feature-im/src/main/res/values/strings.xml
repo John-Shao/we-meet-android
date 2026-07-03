@@ -77,4 +77,12 @@
 
     <!-- Unread-count badge shown when the count exceeds 99. -->
     <string name="im_unread_overflow">99+</string>
+    <string name="im_preview_voice">[Voice]</string>
+    <string name="im_preview_merged">[Chat record]</string>
+    <string name="im_preview_reaction">[Reaction]</string>
+    <string name="im_recalled_preview">recalled a message</string>
+    <string name="im_recalled_self">You recalled a message</string>
+    <string name="im_recalled_other">%1$s recalled a message</string>
+    <string name="im_merged_title">Chat record</string>
+    <string name="im_merged_view_count">View %1$d messages</string>
 </resources>

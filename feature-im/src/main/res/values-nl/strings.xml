@@ -71,4 +71,12 @@
     <string name="im_removed_from_group">Je bent uit deze groep verwijderd</string>
 
     <string name="im_unread_overflow">99+</string>
+    <string name="im_preview_voice">[Spraakbericht]</string>
+    <string name="im_preview_merged">[Chatgeschiedenis]</string>
+    <string name="im_preview_reaction">[Reactie]</string>
+    <string name="im_recalled_preview">heeft een bericht ingetrokken</string>
+    <string name="im_recalled_self">Je hebt een bericht ingetrokken</string>
+    <string name="im_recalled_other">%1$s heeft een bericht ingetrokken</string>
+    <string name="im_merged_title">Chatgeschiedenis</string>
+    <string name="im_merged_view_count">%1$d berichten bekijken</string>
 </resources>

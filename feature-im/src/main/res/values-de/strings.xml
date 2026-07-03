@@ -71,4 +71,12 @@
     <string name="im_removed_from_group">Du wurdest aus dieser Gruppe entfernt</string>
 
     <string name="im_unread_overflow">99+</string>
+    <string name="im_preview_voice">[Sprachnachricht]</string>
+    <string name="im_preview_merged">[Chatverlauf]</string>
+    <string name="im_preview_reaction">[Reaktion]</string>
+    <string name="im_recalled_preview">hat eine Nachricht zurückgerufen</string>
+    <string name="im_recalled_self">Du hast eine Nachricht zurückgerufen</string>
+    <string name="im_recalled_other">%1$s hat eine Nachricht zurückgerufen</string>
+    <string name="im_merged_title">Chatverlauf</string>
+    <string name="im_merged_view_count">%1$d Nachrichten ansehen</string>
 </resources>

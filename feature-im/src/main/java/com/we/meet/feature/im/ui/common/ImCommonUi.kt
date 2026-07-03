@@ -75,6 +75,11 @@ fun previewText(contentType: String?, body: String?): String {
         is MessageContent.Text -> content.body
         is MessageContent.Image -> stringResource(R.string.im_preview_image)
         is MessageContent.File -> stringResource(R.string.im_preview_file, content.name)
+        is MessageContent.Voice -> stringResource(R.string.im_preview_voice)
+        is MessageContent.Quote -> content.text
+        is MessageContent.Merged -> stringResource(R.string.im_preview_merged)
+        is MessageContent.Recall -> stringResource(R.string.im_recalled_preview)
+        is MessageContent.Reaction -> stringResource(R.string.im_preview_reaction)
         is MessageContent.System -> content.body
         is MessageContent.Unsupported -> stringResource(R.string.im_preview_unsupported)
     }

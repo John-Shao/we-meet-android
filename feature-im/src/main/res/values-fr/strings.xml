@@ -71,4 +71,12 @@
     <string name="im_removed_from_group">Vous avez été retiré de ce groupe</string>
 
     <string name="im_unread_overflow">99+</string>
+    <string name="im_preview_voice">[Message vocal]</string>
+    <string name="im_preview_merged">[Historique de discussion]</string>
+    <string name="im_preview_reaction">[Réaction]</string>
+    <string name="im_recalled_preview">a rappelé un message</string>
+    <string name="im_recalled_self">Vous avez rappelé un message</string>
+    <string name="im_recalled_other">%1$s a rappelé un message</string>
+    <string name="im_merged_title">Historique de discussion</string>
+    <string name="im_merged_view_count">Voir %1$d messages</string>
 </resources>

@@ -235,6 +235,8 @@ fun ChatScreen(
                                     }
                                 },
                                 resolveMediaUrl = { key -> vm.resolveMediaUrl(key) },
+                                recalled = message.mid in ui.recalledMids,
+                                reactions = ui.reactions[message.mid].orEmpty(),
                             )
                         }
                     }
