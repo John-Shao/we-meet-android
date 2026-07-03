@@ -4,8 +4,11 @@ import com.we.meet.data.api.dto.CalendarEventDto
 import com.we.meet.data.api.dto.CreateEventRequest
 import com.we.meet.data.api.dto.PagedCalendarEventsDto
 import com.we.meet.data.api.dto.RsvpRequest
+import com.we.meet.data.api.dto.UpdateEventRequest
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -31,4 +34,14 @@ interface CalendarApi {
 
     @POST("api/v1.0/calendar-events/{id}/rsvp/")
     suspend fun rsvp(@Path("id") id: String, @Body body: RsvpRequest): CalendarEventDto
+
+    /**
+     * Update scalar fields (title/description/time/reminders). Backend does NOT
+     * re-sync attendees on update, so the edit UI hides the attendee picker.
+     */
+    @PATCH("api/v1.0/calendar-events/{id}/")
+    suspend fun updateEvent(@Path("id") id: String, @Body body: UpdateEventRequest): CalendarEventDto
+
+    @DELETE("api/v1.0/calendar-events/{id}/")
+    suspend fun deleteEvent(@Path("id") id: String)
 }

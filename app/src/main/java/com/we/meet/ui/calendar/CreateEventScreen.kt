@@ -53,11 +53,13 @@ import com.we.meet.core.directory.ui.ContactPicker
 import com.we.meet.core.directory.ui.ContactPickerMode
 import com.we.meet.core.directory.ui.PickedMember
 import com.we.meet.data.api.dto.CreateEventRequest
+import com.we.meet.data.api.dto.UpdateEventRequest
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -66,15 +68,22 @@ import kotlinx.coroutines.launch
 private val dateFmt = DateTimeFormatter.ofPattern("yyyy/MM/dd")
 private val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
 
-/** New-event form (route `create_event?epochDay=`). Pops back on success. */
+/**
+ * Event form (route `create_event?epochDay=&eventId=`). Create mode when
+ * [editEventId] is null; otherwise loads the event, prefills scalar fields, and
+ * PATCHes on save. Edit mode hides the attendee picker (backend update doesn't
+ * re-sync attendees — web parity). Pops back on success.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateEventScreen(
     initialEpochDay: Long?,
     onClose: () -> Unit,
+    editEventId: String? = null,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val scope = rememberCoroutineScope()
+    val isEdit = editEventId != null
 
     val initialDate = initialEpochDay?.let(LocalDate::ofEpochDay) ?: LocalDate.now()
     // Default slot: next full hour (today) or 09:00 (another day), 1h long.
@@ -97,6 +106,27 @@ fun CreateEventScreen(
     var showPicker by remember { mutableStateOf(false) }
     var submitting by remember { mutableStateOf(false) }
     var errorRes by remember { mutableStateOf<Int?>(null) }
+    // Edit mode starts not-ready until the event loads.
+    var loaded by remember { mutableStateOf(!isEdit) }
+
+    androidx.compose.runtime.LaunchedEffect(editEventId) {
+        if (editEventId == null) return@LaunchedEffect
+        runCatching { app.apiClient.calendarApi.getEvent(editEventId) }
+            .onSuccess { e ->
+                val zone = ZoneId.systemDefault()
+                title = e.title
+                description = e.description
+                allDay = e.allDay
+                val startLdt = OffsetDateTime.parse(e.startAt).atZoneSameInstant(zone).toLocalDateTime()
+                val endLdt = OffsetDateTime.parse(e.endAt).atZoneSameInstant(zone).toLocalDateTime()
+                start = startLdt
+                // All-day end is stored exclusive (next midnight) → show inclusive last day.
+                end = if (e.allDay) endLdt.minusDays(1) else endLdt
+                reminderMinutes = e.reminders.firstOrNull()
+                loaded = true
+            }
+            .onFailure { errorRes = R.string.event_load_error; loaded = true }
+    }
 
     fun submit() {
         if (title.isBlank() || submitting) return
@@ -116,23 +146,37 @@ fun CreateEventScreen(
         errorRes = null
         scope.launch {
             runCatching {
-                app.apiClient.calendarApi.createEvent(
-                    CreateEventRequest(
-                        title = title.trim(),
-                        startAt = isoUtc(startInstant),
-                        endAt = isoUtc(endInstant),
-                        allDay = allDay,
-                        reminders = reminderMinutes?.let { listOf(it) } ?: emptyList(),
-                        attendeeIds = attendees.map { it.userId },
-                        description = description.trim(),
-                        timezone = zone.id,
+                if (isEdit) {
+                    app.apiClient.calendarApi.updateEvent(
+                        editEventId!!,
+                        UpdateEventRequest(
+                            title = title.trim(),
+                            description = description.trim(),
+                            startAt = isoUtc(startInstant),
+                            endAt = isoUtc(endInstant),
+                            allDay = allDay,
+                            reminders = reminderMinutes?.let { listOf(it) } ?: emptyList(),
+                        ),
                     )
-                )
+                } else {
+                    app.apiClient.calendarApi.createEvent(
+                        CreateEventRequest(
+                            title = title.trim(),
+                            startAt = isoUtc(startInstant),
+                            endAt = isoUtc(endInstant),
+                            allDay = allDay,
+                            reminders = reminderMinutes?.let { listOf(it) } ?: emptyList(),
+                            attendeeIds = attendees.map { it.userId },
+                            description = description.trim(),
+                            timezone = zone.id,
+                        )
+                    )
+                }
             }
                 .onSuccess { onClose() }
                 .onFailure {
                     submitting = false
-                    errorRes = R.string.calendar_create_failed
+                    errorRes = if (isEdit) R.string.event_update_failed else R.string.calendar_create_failed
                 }
         }
     }
@@ -140,20 +184,34 @@ fun CreateEventScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.calendar_create_title)) },
+                title = {
+                    Text(
+                        stringResource(
+                            if (isEdit) R.string.calendar_edit_title else R.string.calendar_create_title
+                        )
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onClose) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
                 },
                 actions = {
-                    TextButton(onClick = { submit() }, enabled = title.isNotBlank() && !submitting) {
+                    TextButton(
+                        onClick = { submit() },
+                        enabled = title.isNotBlank() && !submitting && loaded,
+                    ) {
                         if (submitting) {
                             CircularProgressIndicator(
                                 modifier = Modifier.padding(end = 8.dp).height(18.dp),
                             )
                         } else {
-                            Text(stringResource(R.string.calendar_action_create))
+                            Text(
+                                stringResource(
+                                    if (isEdit) R.string.calendar_action_save
+                                    else R.string.calendar_action_create
+                                )
+                            )
                         }
                     }
                 },
@@ -214,30 +272,33 @@ fun CreateEventScreen(
             )
             HorizontalDivider()
 
-            Text(
-                text = stringResource(R.string.calendar_field_attendees),
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.padding(top = 12.dp),
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    attendees.forEach { picked ->
-                        InputChip(
-                            selected = true,
-                            onClick = { attendees = attendees - picked },
-                            label = { Text(picked.displayName) },
-                        )
+            // Edit mode omits attendees — backend update doesn't re-sync them.
+            if (!isEdit) {
+                Text(
+                    text = stringResource(R.string.calendar_field_attendees),
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        attendees.forEach { picked ->
+                            InputChip(
+                                selected = true,
+                                onClick = { attendees = attendees - picked },
+                                label = { Text(picked.displayName) },
+                            )
+                        }
+                    }
+                    TextButton(onClick = { showPicker = true }) {
+                        Text(stringResource(R.string.calendar_add_attendees))
                     }
                 }
-                TextButton(onClick = { showPicker = true }) {
-                    Text(stringResource(R.string.calendar_add_attendees))
-                }
+                HorizontalDivider()
             }
-            HorizontalDivider()
 
             OutlinedTextField(
                 value = description,

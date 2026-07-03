@@ -16,6 +16,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.QuestionMark
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
@@ -33,6 +35,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -63,6 +68,9 @@ data class EventDetailUiState(
     val loading: Boolean = true,
     val error: Boolean = false,
     val rsvpError: Boolean = false,
+    /** Caller is the organizer → may edit/delete. */
+    val canManage: Boolean = false,
+    val deleteError: Boolean = false,
 )
 
 class EventDetailViewModel(
@@ -71,19 +79,43 @@ class EventDetailViewModel(
 ) : AndroidViewModel(app) {
 
     private val api = (app as WeMeetApp).apiClient.calendarApi
+    private val userApi = (app as WeMeetApp).apiClient.userApi
 
     private val _ui = MutableStateFlow(EventDetailUiState())
     val ui: StateFlow<EventDetailUiState> = _ui.asStateFlow()
 
+    private var selfUserId: String? = null
+
     init {
-        refresh()
+        viewModelScope.launch {
+            selfUserId = runCatching { userApi.getMe().id }.getOrNull()
+            refresh()
+        }
     }
 
     fun refresh() {
         viewModelScope.launch {
             runCatching { api.getEvent(eventId) }
-                .onSuccess { e -> _ui.update { it.copy(event = e, loading = false, error = false) } }
+                .onSuccess { e ->
+                    _ui.update {
+                        it.copy(
+                            event = e,
+                            loading = false,
+                            error = false,
+                            canManage = selfUserId != null && e.organizer?.id == selfUserId,
+                        )
+                    }
+                }
                 .onFailure { _ui.update { it.copy(loading = false, error = true) } }
+        }
+    }
+
+    /** Delete the event (organizer only); [onDone] fires on success so the screen pops. */
+    fun delete(onDone: () -> Unit) {
+        viewModelScope.launch {
+            runCatching { api.deleteEvent(eventId) }
+                .onSuccess { onDone() }
+                .onFailure { _ui.update { it.copy(deleteError = true) } }
         }
     }
 
@@ -113,6 +145,7 @@ fun EventDetailScreen(
     eventId: String,
     onBack: () -> Unit,
     onJoinSlug: (slug: String) -> Unit,
+    onEdit: (eventId: String) -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val vm: EventDetailViewModel = viewModel(
@@ -120,6 +153,13 @@ fun EventDetailScreen(
         factory = EventDetailViewModel.factory(app, eventId),
     )
     val ui by vm.ui.collectAsStateWithLifecycle()
+    var confirmDelete by remember { mutableStateOf(false) }
+
+    // Re-fetch on resume so an edit made on the edit screen shows on return.
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        vm.refresh()
+        onPauseOrDispose {}
+    }
 
     Scaffold(
         topBar = {
@@ -130,9 +170,42 @@ fun EventDetailScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
                 },
+                actions = {
+                    if (ui.canManage) {
+                        IconButton(onClick = { onEdit(eventId) }) {
+                            Icon(
+                                Icons.Filled.Edit,
+                                contentDescription = stringResource(R.string.event_action_edit),
+                            )
+                        }
+                        IconButton(onClick = { confirmDelete = true }) {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = stringResource(R.string.event_action_delete),
+                            )
+                        }
+                    }
+                },
             )
         },
     ) { padding ->
+        if (confirmDelete) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { confirmDelete = false },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(onClick = {
+                        confirmDelete = false
+                        vm.delete(onDone = onBack)
+                    }) { Text(stringResource(R.string.event_action_delete)) }
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(onClick = { confirmDelete = false }) {
+                        Text(stringResource(R.string.common_cancel))
+                    }
+                },
+                text = { Text(stringResource(R.string.event_delete_confirm)) },
+            )
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()

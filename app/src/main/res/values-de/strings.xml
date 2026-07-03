@@ -327,4 +327,12 @@
     <string name="session_expired_action">Erneut anmelden</string>
     <string name="ok">OK</string>
     <string name="cancel">Abbrechen</string>
+    <string name="calendar_edit_title">Termin bearbeiten</string>
+    <string name="calendar_action_save">Speichern</string>
+    <string name="event_update_failed">Speichern fehlgeschlagen</string>
+    <string name="event_action_edit">Bearbeiten</string>
+    <string name="event_action_delete">Löschen</string>
+    <string name="event_delete_confirm">Diesen Termin löschen?</string>
+    <string name="event_delete_failed">Löschen fehlgeschlagen</string>
+    <string name="common_cancel">Abbrechen</string>
 </resources>

@@ -327,4 +327,12 @@
     <string name="session_expired_action">Sign in again</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
+    <string name="calendar_edit_title">Edit event</string>
+    <string name="calendar_action_save">Save</string>
+    <string name="event_update_failed">Failed to save changes</string>
+    <string name="event_action_edit">Edit</string>
+    <string name="event_action_delete">Delete</string>
+    <string name="event_delete_confirm">Delete this event?</string>
+    <string name="event_delete_failed">Failed to delete</string>
+    <string name="common_cancel">Cancel</string>
 </resources>

@@ -327,4 +327,12 @@
     <string name="session_expired_action">重新登录</string>
     <string name="ok">确定</string>
     <string name="cancel">取消</string>
+    <string name="calendar_edit_title">编辑日程</string>
+    <string name="calendar_action_save">保存</string>
+    <string name="event_update_failed">保存失败</string>
+    <string name="event_action_edit">编辑</string>
+    <string name="event_action_delete">删除</string>
+    <string name="event_delete_confirm">确定删除该日程？</string>
+    <string name="event_delete_failed">删除失败</string>
+    <string name="common_cancel">取消</string>
 </resources>

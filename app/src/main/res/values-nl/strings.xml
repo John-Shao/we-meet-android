@@ -327,4 +327,12 @@
     <string name="session_expired_action">Opnieuw aanmelden</string>
     <string name="ok">OK</string>
     <string name="cancel">Annuleren</string>
+    <string name="calendar_edit_title">Afspraak bewerken</string>
+    <string name="calendar_action_save">Opslaan</string>
+    <string name="event_update_failed">Opslaan mislukt</string>
+    <string name="event_action_edit">Bewerken</string>
+    <string name="event_action_delete">Verwijderen</string>
+    <string name="event_delete_confirm">Deze afspraak verwijderen?</string>
+    <string name="event_delete_failed">Verwijderen mislukt</string>
+    <string name="common_cancel">Annuleren</string>
 </resources>

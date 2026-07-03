@@ -72,5 +72,20 @@ data class CreateEventRequest(
     val timezone: String,
 )
 
+/**
+ * PATCH body for editing an event — scalar fields only. The backend update path
+ * doesn't re-sync attendees/Room, so the edit UI omits the attendee picker and
+ * this DTO never carries attendee_ids (web parity).
+ */
+@JsonClass(generateAdapter = true)
+data class UpdateEventRequest(
+    val title: String,
+    val description: String,
+    @Json(name = "start_at") val startAt: String,
+    @Json(name = "end_at") val endAt: String,
+    @Json(name = "all_day") val allDay: Boolean,
+    val reminders: List<Int>,
+)
+
 @JsonClass(generateAdapter = true)
 data class RsvpRequest(val status: String)

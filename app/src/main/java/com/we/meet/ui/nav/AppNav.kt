@@ -90,7 +90,7 @@ object Routes {
     const val MEMBER_DETAIL = "$MEMBER_DETAIL_BASE/{userId}"
     private const val EVENT_DETAIL_BASE = "event_detail"
     const val EVENT_DETAIL = "$EVENT_DETAIL_BASE/{eventId}"
-    const val CREATE_EVENT = "create_event?epochDay={epochDay}"
+    const val CREATE_EVENT = "create_event?epochDay={epochDay}&eventId={eventId}"
 
     fun imChat(cid: String): String =
         "$IM_CHAT_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
@@ -108,6 +108,9 @@ object Routes {
         "$EVENT_DETAIL_BASE/${URLEncoder.encode(eventId, StandardCharsets.UTF_8.name())}"
 
     fun createEvent(epochDay: Long): String = "create_event?epochDay=$epochDay"
+
+    fun editEvent(eventId: String): String =
+        "create_event?eventId=${URLEncoder.encode(eventId, StandardCharsets.UTF_8.name())}"
 
     private const val WAITING_ROOM_BASE = "waiting_room"
     const val WAITING_ROOM = "$WAITING_ROOM_BASE/{idOrSlug}/{name}/{mic}/{cam}"
@@ -323,6 +326,7 @@ fun AppNav() {
                 eventId = eventId,
                 onBack = rememberOnceOnly(safePop),
                 onJoinSlug = { slug -> navController.navigate(Routes.joinPreview(slug)) },
+                onEdit = { id -> navController.navigate(Routes.editEvent(id)) },
             )
         }
 
@@ -333,11 +337,18 @@ fun AppNav() {
                     type = NavType.LongType
                     defaultValue = -1L
                 },
+                navArgument("eventId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
             ),
         ) { entry ->
             CreateEventScreen(
                 initialEpochDay = entry.arguments?.getLong("epochDay")?.takeIf { it >= 0 },
                 onClose = rememberOnceOnly(safePop),
+                editEventId = entry.arguments?.getString("eventId")
+                    ?.let { Routes.decode(it) },
             )
         }
 
