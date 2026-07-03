@@ -75,6 +75,12 @@ object Routes {
     const val QR_SCAN = "qr_scan"
     const val ASSISTANT_CALL = "assistant_call"
     const val AI_HUB = "ai_hub"
+    const val APPROVAL = "approval"
+    const val APPROVAL_SUBMIT = "approval_submit?templateId={templateId}"
+
+    fun approvalSubmit(templateId: String? = null): String =
+        if (templateId == null) "approval_submit"
+        else "approval_submit?templateId=${URLEncoder.encode(templateId, StandardCharsets.UTF_8.name())}"
 
     // IM — full-screen chat routes above the tab scaffold.
     private const val IM_CHAT_BASE = "im_chat"
@@ -221,6 +227,7 @@ fun AppNav() {
                 },
                 onSettingsClick = { navController.navigate(Routes.SETTINGS) },
                 onOpenAiHub = { navController.navigate(Routes.AI_HUB) },
+                onOpenApproval = { navController.navigate(Routes.APPROVAL) },
                 onSignedOut = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(Routes.HOME) { inclusive = true }
@@ -245,6 +252,30 @@ fun AppNav() {
             AiHubRoute(onBack = rememberOnceOnly(safePop)) {
                 navController.navigate(Routes.ASSISTANT_CALL)
             }
+        }
+
+        composable(Routes.APPROVAL) {
+            com.we.meet.ui.approval.ApprovalScreen(
+                onBack = rememberOnceOnly(safePop),
+                onCreate = { navController.navigate(Routes.approvalSubmit()) },
+            )
+        }
+
+        composable(
+            route = Routes.APPROVAL_SUBMIT,
+            arguments = listOf(
+                navArgument("templateId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
+        ) { entry ->
+            com.we.meet.ui.approval.SubmitApprovalScreen(
+                presetTemplateId = entry.arguments?.getString("templateId")?.let { Routes.decode(it) },
+                onBack = rememberOnceOnly(safePop),
+                onDone = rememberOnceOnly(safePop),
+            )
         }
 
         composable(

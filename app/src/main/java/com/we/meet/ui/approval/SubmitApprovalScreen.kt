@@ -1,0 +1,233 @@
+package com.we.meet.ui.approval
+
+import android.app.Application
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.we.meet.R
+import com.we.meet.WeMeetApp
+import com.we.meet.data.api.dto.ApprovalTemplateDto
+import com.we.meet.data.api.dto.SubmitApprovalRequest
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+data class SubmitUiState(
+    val templates: List<ApprovalTemplateDto> = emptyList(),
+    val loading: Boolean = true,
+    val submitting: Boolean = false,
+    val error: Boolean = false,
+)
+
+class SubmitApprovalViewModel(
+    app: Application,
+    private val presetTemplateId: String?,
+) : AndroidViewModel(app) {
+
+    private val api = (app as WeMeetApp).apiClient.approvalApi
+    private val _ui = MutableStateFlow(SubmitUiState())
+    val ui: StateFlow<SubmitUiState> = _ui.asStateFlow()
+
+    /** Template chosen initially (preset or first), set once templates load. */
+    var initialTemplateId: String? = null
+        private set
+
+    init {
+        viewModelScope.launch {
+            runCatching { api.listTemplates() }
+                .onSuccess { page ->
+                    initialTemplateId = presetTemplateId ?: page.results.firstOrNull()?.id
+                    _ui.update { it.copy(templates = page.results, loading = false) }
+                }
+                .onFailure { _ui.update { it.copy(loading = false, error = true) } }
+        }
+    }
+
+    fun submit(templateId: String, formData: Map<String, String>, onDone: () -> Unit) {
+        if (_ui.value.submitting) return
+        _ui.update { it.copy(submitting = true, error = false) }
+        viewModelScope.launch {
+            runCatching { api.submit(SubmitApprovalRequest(template = templateId, formData = formData)) }
+                .onSuccess { onDone() }
+                .onFailure { _ui.update { it.copy(submitting = false, error = true) } }
+        }
+    }
+
+    companion object {
+        fun factory(app: Application, presetTemplateId: String?): ViewModelProvider.Factory =
+            viewModelFactory { initializer { SubmitApprovalViewModel(app, presetTemplateId) } }
+    }
+}
+
+/** Submit form (route `approval_submit`): template picker + dynamic fields. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SubmitApprovalScreen(
+    presetTemplateId: String?,
+    onBack: () -> Unit,
+    onDone: () -> Unit,
+) {
+    val app = LocalContext.current.applicationContext as WeMeetApp
+    val vm: SubmitApprovalViewModel = viewModel(
+        factory = SubmitApprovalViewModel.factory(app, presetTemplateId),
+    )
+    val ui by vm.ui.collectAsStateWithLifecycle()
+
+    var selectedId by remember(ui.templates) { mutableStateOf(vm.initialTemplateId) }
+    val selected = ui.templates.firstOrNull { it.id == selectedId }
+    // Field values, keyed by field key. Reset when the template changes.
+    var formData by remember(selectedId) { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var menuOpen by remember { mutableStateOf(false) }
+
+    val fields = selected?.formSchema?.fields.orEmpty()
+    val missingRequired = fields.any { it.required && formData[it.key].orEmpty().isBlank() }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.approval_form_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    }
+                },
+                actions = {
+                    TextButton(
+                        onClick = { selectedId?.let { vm.submit(it, formData, onDone) } },
+                        enabled = selectedId != null && !missingRequired && !ui.submitting,
+                    ) {
+                        if (ui.submitting) {
+                            CircularProgressIndicator(Modifier.padding(end = 8.dp).height(18.dp))
+                        } else {
+                            Text(stringResource(R.string.approval_form_submit))
+                        }
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
+        ) {
+            when {
+                ui.loading -> CircularProgressIndicator(Modifier.padding(24.dp))
+                ui.templates.isEmpty() -> Text(
+                    stringResource(R.string.approval_no_templates),
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(24.dp),
+                )
+                else -> {
+                    // Template picker.
+                    ExposedDropdownMenuBox(
+                        expanded = menuOpen,
+                        onExpandedChange = { menuOpen = it },
+                        modifier = Modifier.padding(top = 12.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = selected?.name.orEmpty(),
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(stringResource(R.string.approval_form_template)) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = menuOpen) },
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        )
+                        ExposedDropdownMenu(
+                            expanded = menuOpen,
+                            onDismissRequest = { menuOpen = false },
+                        ) {
+                            ui.templates.forEach { t ->
+                                DropdownMenuItem(
+                                    text = { Text(t.name.orEmpty()) },
+                                    onClick = {
+                                        selectedId = t.id
+                                        menuOpen = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+
+                    selected?.description?.takeIf { it.isNotBlank() }?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
+
+                    // Dynamic fields.
+                    fields.forEach { field ->
+                        val label = (field.label ?: field.key) + if (field.required) " *" else ""
+                        OutlinedTextField(
+                            value = formData[field.key].orEmpty(),
+                            onValueChange = { formData = formData + (field.key to it) },
+                            label = { Text(label) },
+                            singleLine = field.type != "textarea",
+                            minLines = if (field.type == "textarea") 3 else 1,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = when (field.type) {
+                                    "number" -> KeyboardType.Number
+                                    else -> KeyboardType.Text
+                                }
+                            ),
+                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                        )
+                    }
+
+                    if (ui.error) {
+                        Text(
+                            text = stringResource(R.string.approval_submit_failed),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 12.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

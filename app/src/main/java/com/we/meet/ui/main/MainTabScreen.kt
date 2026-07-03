@@ -76,6 +76,7 @@ fun MainTabScreen(
     onHistoryClick: (roomId: String) -> Unit,
     onSettingsClick: () -> Unit,
     onOpenAiHub: () -> Unit,
+    onOpenApproval: () -> Unit,
     onSignedOut: () -> Unit,
     onOpenChat: (cid: String) -> Unit,
     onNewChat: () -> Unit,
@@ -130,6 +131,7 @@ fun MainTabScreen(
             ProfileScreen(
                 onSettingsClick = onSettingsClick,
                 onOpenAiHub = onOpenAiHub,
+                onOpenApproval = onOpenApproval,
                 onSignedOut = {
                     // Drop the IM socket + caches so the next login doesn't
                     // inherit this user's session.

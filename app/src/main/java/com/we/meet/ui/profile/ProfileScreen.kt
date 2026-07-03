@@ -76,6 +76,7 @@ private data class CropRequest(
 fun ProfileScreen(
     onSettingsClick: () -> Unit,
     onOpenAiHub: () -> Unit,
+    onOpenApproval: () -> Unit,
     onSignedOut: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -251,6 +252,13 @@ fun ProfileScreen(
                 label = stringResource(R.string.profile_ai_entry),
                 value = null,
                 onClick = onOpenAiHub,
+            )
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            // Approval lives here rather than a 6th bottom tab (Feishu-style workbench app).
+            SettingsRow(
+                label = stringResource(R.string.profile_approval_entry),
+                value = null,
+                onClick = onOpenApproval,
             )
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
             SettingsRow(
