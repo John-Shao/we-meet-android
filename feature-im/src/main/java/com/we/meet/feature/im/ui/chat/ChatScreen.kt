@@ -135,9 +135,10 @@ fun ChatScreen(
         }
     }
 
+    // 多图:一次选多张,逐张发送(ChatViewModel 已支持逐张 pending)。
     val pickImage = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
-    ) { uri: Uri? -> uri?.let { vm.sendImage(it) } }
+        ActivityResultContracts.PickMultipleVisualMedia()
+    ) { uris: List<Uri> -> uris.forEach { vm.sendImage(it) } }
     val pickFile = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri: Uri? -> uri?.let { vm.sendFile(it) } }
@@ -215,6 +216,12 @@ fun ChatScreen(
                     }
                 } else {
                     val latestOwnSeq = ui.messages.lastOrNull { it.senderUid == ui.selfUid }?.seq
+                    val mentionHi = remember(directoryVersion, ui.memberUids) {
+                        vm.mentionHighlightNames()
+                    }
+                    val selfHi = remember(directoryVersion, ui.selfUid) {
+                        vm.selfMentionNames()
+                    }
                     LazyColumn(
                         state = listState,
                         reverseLayout = true,
@@ -275,6 +282,8 @@ fun ChatScreen(
                                     onLongPress = if (!selectMode && message.mid !in ui.recalledMids) {
                                         { actionTarget = message }
                                     } else null,
+                                    mentionNames = mentionHi,
+                                    selfMentionNames = selfHi,
                                 )
                             }
                             Column {

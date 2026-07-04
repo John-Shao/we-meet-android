@@ -237,6 +237,22 @@ class ChatViewModel internal constructor(
         return listOf(session.everyoneLabel()) + names
     }
 
+    /** Names highlightable as @mentions inside bubbles: 所有人 + ALL members (incl self). */
+    fun mentionHighlightNames(): List<String> {
+        if (!_ui.value.isGroup) return emptyList()
+        val names = _ui.value.memberUids
+            .mapNotNull { session.userDirectory.get(it)?.displayName?.takeIf { n -> n.isNotBlank() } }
+        return listOf(session.everyoneLabel()) + names
+    }
+
+    /** Subset that means "you" (self name + 所有人) → stronger highlight. */
+    fun selfMentionNames(): List<String> {
+        if (!_ui.value.isGroup) return emptyList()
+        val self = _ui.value.selfUid
+            ?.let { session.userDirectory.get(it)?.displayName?.takeIf { n -> n.isNotBlank() } }
+        return listOfNotNull(session.everyoneLabel(), self)
+    }
+
     // ---- paging ----
 
     fun loadOlder() {

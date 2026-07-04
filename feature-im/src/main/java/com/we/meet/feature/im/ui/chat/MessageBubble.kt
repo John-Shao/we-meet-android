@@ -44,9 +44,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -80,6 +86,9 @@ fun MessageBubble(
     reactions: Map<String, List<String>> = emptyMap(),
     /** Long-press on the bubble → open the message action menu. */
     onLongPress: (() -> Unit)? = null,
+    /** @-mention highlighting (P10): all candidate names + the subset meaning "you". */
+    mentionNames: List<String> = emptyList(),
+    selfMentionNames: List<String> = emptyList(),
 ) {
     val content = remember(message.mid) {
         MessageContentParser.parse(message.contentType, message.body)
@@ -145,7 +154,8 @@ fun MessageBubble(
                 )
             }
             when (content) {
-                is MessageContent.Text -> TextBubble(content.body, isOwn)
+                is MessageContent.Text ->
+                    TextBubble(content.body, isOwn, mentionNames, selfMentionNames)
                 is MessageContent.Image -> ImageBubble(
                     objectKey = content.objectKey,
                     onClick = { onImageClick(content.objectKey) },
@@ -163,7 +173,8 @@ fun MessageBubble(
                     isOwn = isOwn,
                     resolveMediaUrl = resolveMediaUrl,
                 )
-                is MessageContent.Quote -> QuoteBubble(content, isOwn)
+                is MessageContent.Quote ->
+                    QuoteBubble(content, isOwn, mentionNames, selfMentionNames)
                 is MessageContent.Merged -> MergedBubble(content, isOwn)
                 is MessageContent.Unsupported -> UnsupportedBubble(isOwn)
                 // Control/system rows never reach here (filtered / early-returned).
@@ -193,19 +204,65 @@ fun MessageBubble(
 private val bubbleShape = RoundedCornerShape(12.dp)
 
 @Composable
-private fun TextBubble(body: String, isOwn: Boolean) {
+private fun TextBubble(
+    body: String,
+    isOwn: Boolean,
+    mentionNames: List<String> = emptyList(),
+    selfMentionNames: List<String> = emptyList(),
+) {
     Surface(
         color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
         else MaterialTheme.colorScheme.surfaceVariant,
         shape = bubbleShape,
     ) {
         Text(
-            text = body,
+            text = mentionAnnotated(body, mentionNames, selfMentionNames),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier
                 .widthIn(max = 280.dp)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         )
+    }
+}
+
+/**
+ * Highlight `@name` tokens (P10, mirrors web renderBody): self-mention / 所有人 →
+ * amber pill; other members → bold + primary tint. Longest name first to avoid
+ * partial matches. No `@` or no candidates → plain text.
+ */
+@Composable
+private fun mentionAnnotated(
+    body: String,
+    names: List<String>,
+    selfNames: List<String>,
+): AnnotatedString {
+    if (names.isEmpty() || !body.contains('@')) return AnnotatedString(body)
+    val sorted = names.filter { it.isNotBlank() }.sortedByDescending { it.length }
+    val primary = MaterialTheme.colorScheme.primary
+    return buildAnnotatedString {
+        var i = 0
+        while (i < body.length) {
+            if (body[i] == '@') {
+                val rest = body.substring(i + 1)
+                val hit = sorted.firstOrNull { rest.startsWith(it) }
+                if (hit != null) {
+                    val style = if (hit in selfNames) {
+                        SpanStyle(
+                            background = Color(0xFFFDE68A),
+                            color = Color(0xFF92400E),
+                            fontWeight = FontWeight.Bold,
+                        )
+                    } else {
+                        SpanStyle(color = primary, fontWeight = FontWeight.Bold)
+                    }
+                    withStyle(style) { append("@$hit") }
+                    i += 1 + hit.length
+                    continue
+                }
+            }
+            append(body[i])
+            i++
+        }
     }
 }
 
@@ -379,7 +436,12 @@ private class VoicePlayerHolder {
 
 /** Reply bubble: dimmed quoted `sender: snippet` block above the reply text. */
 @Composable
-private fun QuoteBubble(content: MessageContent.Quote, isOwn: Boolean) {
+private fun QuoteBubble(
+    content: MessageContent.Quote,
+    isOwn: Boolean,
+    mentionNames: List<String> = emptyList(),
+    selfMentionNames: List<String> = emptyList(),
+) {
     Surface(
         color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
         else MaterialTheme.colorScheme.surfaceVariant,
@@ -407,7 +469,7 @@ private fun QuoteBubble(content: MessageContent.Quote, isOwn: Boolean) {
             }
             Spacer(Modifier.height(4.dp))
             Text(
-                text = content.text,
+                text = mentionAnnotated(content.text, mentionNames, selfMentionNames),
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
