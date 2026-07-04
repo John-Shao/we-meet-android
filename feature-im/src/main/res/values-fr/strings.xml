@@ -94,6 +94,19 @@
     <string name="im_attach_voice">Message vocal</string>
     <string name="im_recording">Enregistrement… relâchez pour envoyer</string>
     <string name="im_sending_voice">Envoi du message vocal…</string>
+    <!-- WeChat-style composer -->
+    <string name="im_input_emoji">Émoji</string>
+    <string name="im_input_more">Plus</string>
+    <string name="im_input_voice_switch">Saisie vocale</string>
+    <string name="im_input_keyboard_switch">Clavier</string>
+    <string name="im_voice_hold">Maintenir pour parler</string>
+    <string name="im_voice_release">Relâcher pour envoyer</string>
+    <string name="im_plus_album">Photos</string>
+    <string name="im_plus_camera">Appareil photo</string>
+    <string name="im_plus_file">Fichier</string>
+    <string name="im_plus_call">Appel vocal</string>
+    <string name="im_plus_meeting">Réunion rapide</string>
+    <string name="im_coming_soon">Bientôt disponible</string>
     <string name="im_mention_everyone">Tout le monde</string>
     <string name="im_mention_notice">Vous avez été mentionné</string>
     <string name="im_mention_marker">@</string>

@@ -100,6 +100,19 @@
     <string name="im_attach_voice">语音消息</string>
     <string name="im_recording">正在录音…松开发送</string>
     <string name="im_sending_voice">语音发送中…</string>
+    <!-- 企业微信式输入栏 -->
+    <string name="im_input_emoji">表情</string>
+    <string name="im_input_more">更多</string>
+    <string name="im_input_voice_switch">语音</string>
+    <string name="im_input_keyboard_switch">键盘</string>
+    <string name="im_voice_hold">按住 说话</string>
+    <string name="im_voice_release">松开发送</string>
+    <string name="im_plus_album">图片</string>
+    <string name="im_plus_camera">拍摄</string>
+    <string name="im_plus_file">文件</string>
+    <string name="im_plus_call">语音通话</string>
+    <string name="im_plus_meeting">快速会议</string>
+    <string name="im_coming_soon">即将推出</string>
     <string name="im_mention_everyone">所有人</string>
     <string name="im_mention_notice">有人@我</string>
     <string name="im_mention_marker">@</string>

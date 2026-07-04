@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.AttachFile
@@ -69,6 +70,40 @@ import com.we.meet.feature.im.ui.common.ErrorBanner
 import com.we.meet.feature.im.vm.ChatEvent
 import com.we.meet.feature.im.vm.ChatViewModel
 import kotlinx.coroutines.launch
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.EmojiEmotions
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.KeyboardVoice
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.VideoCall
+import androidx.compose.material3.Button
+import androidx.compose.material3.Surface
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import java.io.File
 
 /** Full-screen chat thread (no bottom tab bar) — app-level route `im_chat/{cid}`. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -142,6 +177,29 @@ fun ChatScreen(
     val pickFile = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri: Uri? -> uri?.let { vm.sendFile(it) } }
+    // 拍摄:系统相机把照片写入 FileProvider URI,成功后作为图片消息发送。
+    var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
+    val takePicture = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { ok ->
+        if (ok) pendingCameraUri?.let { vm.sendImage(it) }
+        pendingCameraUri = null
+    }
+    fun startCamera() {
+        val uri = createCameraImageUri(context)
+        pendingCameraUri = uri
+        takePicture.launch(uri)
+    }
+    // 本 App 声明了 CAMERA 权限(会议预览用),故拍照需运行时授权。
+    val requestCamera = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> if (granted) startCamera() }
+    fun launchCamera() {
+        val granted = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.CAMERA,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (granted) startCamera() else requestCamera.launch(Manifest.permission.CAMERA)
+    }
 
     Scaffold(
         topBar = {
@@ -344,7 +402,15 @@ fun ChatScreen(
                     )
                 },
                 onPickFile = { pickFile.launch(arrayOf("*/*")) },
+                onCamera = { launchCamera() },
                 onVoiceRecorded = { file, durationMs -> vm.sendVoice(file, durationMs) },
+                onComingSoon = {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.im_coming_soon),
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                },
                 mentionCandidates = if (ui.isGroup) vm.mentionCandidates() else emptyList(),
             )
         }
@@ -469,6 +535,14 @@ private fun PendingRow(kind: String) {
 /** Sender display name + text snippet of the message being replied to. */
 data class ReplyPreview(val sender: String, val snippet: String)
 
+/** 输入区下方互斥面板:表情 / 「+」九宫格。 */
+private enum class InputPanel { None, Emoji, Plus }
+
+/**
+ * 企业微信/微信式输入栏:左「语音⇄键盘」切换、中「文本框/按住说话」、
+ * 右「表情」+「+ / 发送」;表情与「+」面板互斥展开于输入行下方。
+ * 语音录制、@提及、回复预览逻辑沿用原实现。
+ */
 @Composable
 private fun MessageInputBar(
     canSend: Boolean,
@@ -478,15 +552,14 @@ private fun MessageInputBar(
     onSend: (String) -> Unit,
     onPickImage: () -> Unit,
     onPickFile: () -> Unit,
+    onCamera: () -> Unit,
     onVoiceRecorded: (java.io.File, Long) -> Unit,
+    onComingSoon: () -> Unit,
     mentionCandidates: List<String> = emptyList(),
 ) {
-    var field by remember {
-        mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(""))
-    }
+    var field by remember { mutableStateOf(TextFieldValue("")) }
     val text = field.text
-    // Active @-mention span before the caret, if any (web parity: `@` with no
-    // whitespace up to the caret). null = no dropdown.
+    // Active @-mention span before the caret, if any (web parity).
     val mention = remember(field, mentionCandidates) {
         if (mentionCandidates.isEmpty()) null else activeMention(field)
     }
@@ -496,24 +569,38 @@ private fun MessageInputBar(
         }.orEmpty()
     }
     val context = LocalContext.current
+    val focus = LocalFocusManager.current
     val recorder = remember { VoiceRecorder(context) }
     var recording by remember { mutableStateOf(false) }
     var hasAudioPermission by remember {
         mutableStateOf(
-            androidx.core.content.ContextCompat.checkSelfPermission(
-                context, android.Manifest.permission.RECORD_AUDIO,
-            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(
+                context, Manifest.permission.RECORD_AUDIO,
+            ) == PackageManager.PERMISSION_GRANTED
         )
     }
     val requestAudio = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted -> hasAudioPermission = granted }
     DisposableEffect(Unit) { onDispose { if (recording) recorder.cancel() } }
-    // Clear only after the ViewModel confirms an acked send, so a failed send
-    // keeps the user's draft.
+    // Clear only after the ViewModel confirms an acked send (failed send keeps draft).
     LaunchedEffect(sentTick) {
-        if (sentTick > 0) field = androidx.compose.ui.text.input.TextFieldValue("")
+        if (sentTick > 0) field = TextFieldValue("")
     }
+
+    var voiceMode by remember { mutableStateOf(false) }
+    var panel by remember { mutableStateOf(InputPanel.None) }
+    fun openPanel(p: InputPanel) {
+        panel = if (panel == p) InputPanel.None else p
+        if (panel != InputPanel.None) { voiceMode = false; focus.clearFocus() }
+    }
+    fun insertEmoji(e: String) {
+        val t = field.text
+        val start = field.selection.start.coerceIn(0, t.length)
+        val end = field.selection.end.coerceIn(start, t.length)
+        field = TextFieldValue(t.substring(0, start) + e + t.substring(end), TextRange(start + e.length))
+    }
+
     Column {
         if (suggestions.isNotEmpty() && mention != null) {
             MentionDropdown(
@@ -523,10 +610,7 @@ private fun MessageInputBar(
         }
         if (replyPreview != null) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
-                    .padding(top = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -546,81 +630,232 @@ private fun MessageInputBar(
                 }
             }
         }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconButton(onClick = onPickImage, enabled = canSend) {
-            Icon(Icons.Filled.AddPhotoAlternate, contentDescription = stringResource(R.string.im_attach_image))
-        }
-        IconButton(onClick = onPickFile, enabled = canSend) {
-            Icon(Icons.Filled.AttachFile, contentDescription = stringResource(R.string.im_attach_file))
-        }
-        IconButton(
-            onClick = {
-                if (!hasAudioPermission) {
-                    requestAudio.launch(android.Manifest.permission.RECORD_AUDIO)
-                }
-            },
-            enabled = canSend,
-            modifier = if (hasAudioPermission) {
-                Modifier.pointerInput(canSend) {
-                    detectTapGestures(
-                        onPress = {
-                            if (!canSend) return@detectTapGestures
-                            recording = recorder.start()
-                            // Suspend here until the finger lifts, then finalize.
-                            tryAwaitRelease()
-                            if (recording) {
-                                recording = false
-                                recorder.stop()?.let { onVoiceRecorded(it.file, it.durationMs) }
-                            }
-                        },
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            // 左:语音 ⇄ 键盘 切换
+            IconButton(
+                onClick = { voiceMode = !voiceMode; panel = InputPanel.None; focus.clearFocus() },
+                enabled = canSend,
+            ) {
+                Icon(
+                    if (voiceMode) Icons.Filled.Keyboard else Icons.Filled.KeyboardVoice,
+                    contentDescription = stringResource(
+                        if (voiceMode) R.string.im_input_keyboard_switch
+                        else R.string.im_input_voice_switch
+                    ),
+                )
+            }
+            // 中:文本框 / 按住说话
+            if (voiceMode) {
+                HoldToTalkBar(
+                    recording = recording,
+                    enabled = canSend,
+                    hasPermission = hasAudioPermission,
+                    onRequestPermission = { requestAudio.launch(Manifest.permission.RECORD_AUDIO) },
+                    onStart = { recording = recorder.start() },
+                    onStop = {
+                        if (recording) {
+                            recording = false
+                            recorder.stop()?.let { onVoiceRecorded(it.file, it.durationMs) }
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+            } else {
+                OutlinedTextField(
+                    value = field,
+                    onValueChange = { field = it },
+                    placeholder = { Text(stringResource(R.string.im_input_placeholder)) },
+                    enabled = canSend,
+                    maxLines = 4,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 4.dp)
+                        .onFocusChanged { if (it.isFocused) panel = InputPanel.None },
+                )
+            }
+            // 表情
+            IconButton(onClick = { openPanel(InputPanel.Emoji) }, enabled = canSend) {
+                Icon(
+                    Icons.Filled.EmojiEmotions,
+                    contentDescription = stringResource(R.string.im_input_emoji),
+                    tint = if (panel == InputPanel.Emoji) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            // 有文字 → 发送;否则 → 「+」
+            if (text.isNotBlank() && !voiceMode) {
+                Button(
+                    onClick = { onSend(text) },
+                    enabled = canSend,
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(start = 2.dp),
+                ) { Text(stringResource(R.string.im_input_send)) }
+            } else {
+                IconButton(onClick = { openPanel(InputPanel.Plus) }, enabled = canSend) {
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = stringResource(R.string.im_input_more),
+                        tint = if (panel == InputPanel.Plus) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            } else Modifier,
-        ) {
-            Icon(
-                Icons.Filled.Mic,
-                contentDescription = stringResource(R.string.im_attach_voice),
-                tint = if (recording) MaterialTheme.colorScheme.error
+            }
+        }
+        AnimatedVisibility(visible = panel != InputPanel.None) {
+            when (panel) {
+                InputPanel.Emoji -> EmojiPanel(onPick = { insertEmoji(it) })
+                InputPanel.Plus -> PlusPanel(
+                    onImage = { panel = InputPanel.None; onPickImage() },
+                    onCamera = { panel = InputPanel.None; onCamera() },
+                    onFile = { panel = InputPanel.None; onPickFile() },
+                    onCall = onComingSoon,
+                    onMeeting = onComingSoon,
+                )
+                InputPanel.None -> Unit
+            }
+        }
+    }
+}
+
+/** 微信式「按住 说话」条:按下开始录音、松手发送(权限不足则先申请)。 */
+@Composable
+private fun HoldToTalkBar(
+    recording: Boolean,
+    enabled: Boolean,
+    hasPermission: Boolean,
+    onRequestPermission: () -> Unit,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        color = if (recording) MaterialTheme.colorScheme.errorContainer
+        else MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(8.dp),
+        modifier = modifier
+            .padding(horizontal = 4.dp)
+            .pointerInput(enabled, hasPermission) {
+                if (!enabled) return@pointerInput
+                detectTapGestures(
+                    onPress = {
+                        if (!hasPermission) {
+                            onRequestPermission()
+                            return@detectTapGestures
+                        }
+                        onStart()
+                        tryAwaitRelease()
+                        onStop()
+                    },
+                )
+            },
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+            Text(
+                text = stringResource(
+                    if (recording) R.string.im_voice_release else R.string.im_voice_hold
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (recording) MaterialTheme.colorScheme.onErrorContainer
                 else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        if (recording) {
-            Text(
-                text = stringResource(R.string.im_recording),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-            )
-        } else {
-        OutlinedTextField(
-            value = field,
-            onValueChange = { field = it },
-            placeholder = { Text(stringResource(R.string.im_input_placeholder)) },
-            enabled = canSend,
-            maxLines = 4,
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 4.dp),
-        )
-        }
-        IconButton(
-            onClick = { onSend(text) },
-            enabled = canSend && text.isNotBlank(),
-        ) {
-            Icon(
-                Icons.AutoMirrored.Filled.Send,
-                contentDescription = stringResource(R.string.im_input_send),
-                tint = if (canSend && text.isNotBlank()) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.outline,
-            )
+    }
+}
+
+/** 常用 emoji(纯 unicode,点击插入文本框光标处)。 */
+private val EMOJIS = listOf(
+    "😀", "😁", "😂", "🤣", "😊", "😍", "😘", "😜", "🤔", "😎", "😴", "😭", "😅", "😢", "😡", "🥳",
+    "👍", "👎", "👏", "🙏", "🙌", "💪", "🤝", "👌", "✌️", "🤙", "👋", "🫶", "❤️", "💔", "💯", "🔥",
+    "🎉", "✨", "⭐", "🌟", "💡", "✅", "❌", "❓", "❗", "💤", "🥰", "😳", "😱", "🤗", "😏", "😬",
+    "🙄", "😪", "🤯", "😤", "🤢", "🤮", "🤧", "😷", "🤒", "🤕", "💩", "👻", "🎁", "🌹", "☕", "🍺",
+)
+
+@Composable
+private fun EmojiPanel(onPick: (String) -> Unit) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(8),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(220.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .padding(8.dp),
+    ) {
+        items(EMOJIS) { e ->
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.padding(4.dp).size(36.dp).clickable { onPick(e) },
+            ) {
+                Text(text = e, style = MaterialTheme.typography.headlineSmall)
+            }
         }
     }
+}
+
+@Composable
+private fun PlusPanel(
+    onImage: () -> Unit,
+    onCamera: () -> Unit,
+    onFile: () -> Unit,
+    onCall: () -> Unit,
+    onMeeting: () -> Unit,
+) {
+    data class PlusItem(
+        val icon: androidx.compose.ui.graphics.vector.ImageVector,
+        val labelRes: Int,
+        val onClick: () -> Unit,
+    )
+    val items = listOf(
+        PlusItem(Icons.Filled.PhotoLibrary, R.string.im_plus_album, onImage),
+        PlusItem(Icons.Filled.PhotoCamera, R.string.im_plus_camera, onCamera),
+        PlusItem(Icons.AutoMirrored.Filled.InsertDriveFile, R.string.im_plus_file, onFile),
+        PlusItem(Icons.Filled.Call, R.string.im_plus_call, onCall),
+        PlusItem(Icons.Filled.VideoCall, R.string.im_plus_meeting, onMeeting),
+    )
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(4),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 280.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .padding(vertical = 12.dp),
+    ) {
+        items(items) { item ->
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(vertical = 8.dp).clickable { item.onClick() },
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.size(56.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            item.icon,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    stringResource(item.labelRes),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+            }
+        }
     }
+}
+
+/** 拍摄临时图片 URI(cacheDir/camera/,经 FileProvider 暴露给系统相机)。 */
+private fun createCameraImageUri(context: Context): Uri {
+    val dir = File(context.cacheDir, "camera").apply { mkdirs() }
+    val file = File.createTempFile("cam_", ".jpg", dir)
+    return FileProvider.getUriForFile(context, "${context.packageName}.improvider", file)
 }
 
 /** An active `@…` span before the caret: its start index and the typed query. */

@@ -100,6 +100,19 @@
     <string name="im_attach_voice">Voice message</string>
     <string name="im_recording">Recording… release to send</string>
     <string name="im_sending_voice">Sending voice…</string>
+    <!-- WeChat-style composer -->
+    <string name="im_input_emoji">Emoji</string>
+    <string name="im_input_more">More</string>
+    <string name="im_input_voice_switch">Voice input</string>
+    <string name="im_input_keyboard_switch">Keyboard</string>
+    <string name="im_voice_hold">Hold to talk</string>
+    <string name="im_voice_release">Release to send</string>
+    <string name="im_plus_album">Photos</string>
+    <string name="im_plus_camera">Camera</string>
+    <string name="im_plus_file">File</string>
+    <string name="im_plus_call">Voice call</string>
+    <string name="im_plus_meeting">Quick meeting</string>
+    <string name="im_coming_soon">Coming soon</string>
     <string name="im_mention_everyone">Everyone</string>
     <string name="im_mention_notice">You were mentioned</string>
     <string name="im_mention_marker">@</string>

@@ -3,4 +3,17 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Voice messages (hold-to-talk). Requested at runtime. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <application>
+        <!-- 拍摄:给系统相机一个可写的 content:// URI(cacheDir/camera)。 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.improvider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/im_file_paths" />
+        </provider>
+    </application>
 </manifest>

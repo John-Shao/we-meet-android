@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- 拍摄临时图片:context.cacheDir/camera/ -->
+    <cache-path name="im_camera" path="camera/" />
+</paths>
