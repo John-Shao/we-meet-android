@@ -284,6 +284,16 @@ private fun EventBody(
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
+        if (event.reminders.isNotEmpty()) {
+            val res = LocalContext.current.resources
+            Text(
+                text = "🔔 ${stringResource(R.string.calendar_field_reminder)}: " +
+                    event.reminders.joinToString("、") { reminderLabel(res, it) },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
 
         if (parsed?.roomSlug != null && parsed.cancelled.not()) {
             Spacer(Modifier.height(16.dp))
@@ -373,3 +383,13 @@ private fun EventBody(
         Spacer(Modifier.height(32.dp))
     }
 }
+
+/** Reminder lead-time → label, mirroring CreateEventScreen's dropdown. Plain
+ * function (not @Composable) so it works inside a joinToString lambda. */
+private fun reminderLabel(res: android.content.res.Resources, minutes: Int): String =
+    when (minutes) {
+        0 -> res.getString(R.string.calendar_reminder_at_time)
+        60 -> res.getString(R.string.calendar_reminder_hour)
+        1440 -> res.getString(R.string.calendar_reminder_day)
+        else -> res.getString(R.string.calendar_reminder_minutes, minutes)
+    }
