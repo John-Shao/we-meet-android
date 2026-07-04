@@ -37,4 +37,7 @@ interface ApprovalApi {
 
     @POST("api/v1.0/approvals/{id}/cancel/")
     suspend fun cancel(@Path("id") id: String, @Body body: Map<String, String> = emptyMap()): ApprovalInstanceDto
+
+    @POST("api/v1.0/approvals/{id}/urge/")
+    suspend fun urge(@Path("id") id: String, @Body body: Map<String, String> = emptyMap()): ApprovalInstanceDto
 }

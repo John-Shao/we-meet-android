@@ -350,6 +350,13 @@
     <string name="approval_status_needs_assignment">Zuweisung nötig</string>
     <string name="approval_node">Stufe %1$d</string>
     <string name="approval_unassigned">Nicht zugewiesen</string>
+    <string name="approval_cc">Kopie</string>
+    <string name="approval_skipped">Übersprungen (Bedingung nicht erfüllt)</string>
+    <string name="approval_countersign_and">Gemeinsam</string>
+    <string name="approval_countersign_or">Einer genügt</string>
+    <string name="approval_progress">%1$d/%2$d genehmigt</string>
+    <string name="approval_urge">Erinnern</string>
+    <string name="approval_urged">Erinnerung gesendet — der aktuelle Genehmiger wurde benachrichtigt.</string>
     <string name="approval_needs_assignment_hint">Der Genehmiger konnte nicht automatisch ermittelt werden. Bitte einen Admin die Organisationsstruktur korrigieren lassen.</string>
     <string name="approval_comment_hint">Kommentar (optional)</string>
     <string name="approval_act_approve">Genehmigen</string>

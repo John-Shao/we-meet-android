@@ -33,6 +33,8 @@ data class ApprovalUiState(
     /** Server count of the pending list's first page — the tab badge. */
     val pendingCount: Int = 0,
     val actionError: Boolean = false,
+    /** One-shot flag: a 催办 just succeeded (drives a transient confirmation). */
+    val urged: Boolean = false,
 ) {
     val current: ApprovalListState get() = if (tab == ApprovalTab.Pending) pending else mine
 }
@@ -129,7 +131,21 @@ class ApprovalViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** 催办:re-ping the current approver. No list change; flags a confirmation. */
+    fun urge(id: String) {
+        viewModelScope.launch {
+            runCatching { api.urge(id) }
+                .onSuccess { _ui.update { s -> s.copy(urged = true) } }
+                .onFailure {
+                    Log.w(TAG, "approval urge failed", it)
+                    _ui.update { s -> s.copy(actionError = true) }
+                }
+        }
+    }
+
     fun dismissActionError() = _ui.update { it.copy(actionError = false) }
+
+    fun dismissUrged() = _ui.update { it.copy(urged = false) }
 
     private inline fun updateTab(tab: ApprovalTab, block: (ApprovalListState) -> ApprovalListState) {
         _ui.update {

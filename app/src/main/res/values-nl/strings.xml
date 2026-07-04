@@ -350,6 +350,13 @@
     <string name="approval_status_needs_assignment">Toewijzing nodig</string>
     <string name="approval_node">Stap %1$d</string>
     <string name="approval_unassigned">Niet toegewezen</string>
+    <string name="approval_cc">CC</string>
+    <string name="approval_skipped">Overgeslagen (voorwaarde niet vervuld)</string>
+    <string name="approval_countersign_and">Gezamenlijk</string>
+    <string name="approval_countersign_or">Eén volstaat</string>
+    <string name="approval_progress">%1$d/%2$d goedgekeurd</string>
+    <string name="approval_urge">Herinneren</string>
+    <string name="approval_urged">Herinnering verstuurd — de huidige fiatteur is op de hoogte gebracht.</string>
     <string name="approval_needs_assignment_hint">De fiatteur kon niet automatisch worden bepaald. Vraag een beheerder de organisatiestructuur te corrigeren.</string>
     <string name="approval_comment_hint">Opmerking (optioneel)</string>
     <string name="approval_act_approve">Goedkeuren</string>

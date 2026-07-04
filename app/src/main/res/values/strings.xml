@@ -350,6 +350,13 @@
     <string name="approval_status_needs_assignment">Needs assignment</string>
     <string name="approval_node">Step %1$d</string>
     <string name="approval_unassigned">Unassigned</string>
+    <string name="approval_cc">CC</string>
+    <string name="approval_skipped">Skipped (condition not met)</string>
+    <string name="approval_countersign_and">All must sign</string>
+    <string name="approval_countersign_or">Any one signs</string>
+    <string name="approval_progress">%1$d/%2$d approved</string>
+    <string name="approval_urge">Nudge</string>
+    <string name="approval_urged">Nudged — the current approver has been reminded.</string>
     <string name="approval_needs_assignment_hint">The approver could not be resolved automatically. Ask an admin to fix the org structure and retry.</string>
     <string name="approval_comment_hint">Comment (optional)</string>
     <string name="approval_act_approve">Approve</string>

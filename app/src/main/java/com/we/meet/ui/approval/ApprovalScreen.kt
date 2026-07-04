@@ -30,7 +30,9 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,11 +58,20 @@ fun ApprovalScreen(
 ) {
     val vm: ApprovalViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     // A submit made on the create screen should reflect on return.
     LifecycleResumeEffect(Unit) {
         vm.refresh()
         onPauseOrDispose {}
+    }
+
+    // 催办成功的一次性确认提示。
+    LaunchedEffect(ui.urged) {
+        if (ui.urged) {
+            Toast.makeText(context, R.string.approval_urged, Toast.LENGTH_SHORT).show()
+            vm.dismissUrged()
+        }
     }
 
     Scaffold(
@@ -133,6 +144,7 @@ fun ApprovalScreen(
                                 tab = ui.tab,
                                 onAct = { action, comment -> vm.act(inst.id, action, comment) },
                                 onCancel = { vm.cancel(inst.id) },
+                                onUrge = { vm.urge(inst.id) },
                             )
                         }
                         if (state.hasMore) {
@@ -161,6 +173,7 @@ private fun InstanceCard(
     tab: ApprovalTab,
     onAct: (action: String, comment: String) -> Unit,
     onCancel: () -> Unit,
+    onUrge: () -> Unit,
 ) {
     Surface(
         tonalElevation = 1.dp,
@@ -199,27 +212,9 @@ private fun InstanceCard(
                 }
             }
 
-            // Approver chain.
+            // Approver chain — grouped by node (P5b: 会签/跳过/抄送).
             if (inst.tasks.isNotEmpty()) {
-                Column(Modifier.padding(top = 8.dp)) {
-                    inst.tasks.forEach { task ->
-                        val name = task.approver?.displayName?.takeIf { it.isNotBlank() }
-                            ?: stringResource(R.string.approval_unassigned)
-                        val mark = when (task.action) {
-                            "approved" -> "✓"
-                            "rejected" -> "✗"
-                            else -> "•"
-                        }
-                        Text(
-                            text = "$mark ${stringResource(R.string.approval_node, task.nodeIndex + 1)} $name" +
-                                if (task.comment.isNotBlank()) " — ${task.comment}" else "",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (task.nodeIndex == inst.currentNode && inst.status == "pending") {
-                                MaterialTheme.colorScheme.primary
-                            } else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+                ApproverChain(inst)
             }
 
             if (inst.status == "needs_assignment") {
@@ -263,10 +258,17 @@ private fun InstanceCard(
             }
             if (tab == ApprovalTab.Mine && inst.status == "pending") {
                 var confirm by remember { mutableStateOf(false) }
-                TextButton(
-                    onClick = { confirm = true },
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.padding(top = 4.dp),
-                ) { Text(stringResource(R.string.approval_act_cancel)) }
+                ) {
+                    TextButton(onClick = onUrge) {
+                        Text(stringResource(R.string.approval_urge))
+                    }
+                    TextButton(onClick = { confirm = true }) {
+                        Text(stringResource(R.string.approval_act_cancel))
+                    }
+                }
                 if (confirm) {
                     androidx.compose.material3.AlertDialog(
                         onDismissRequest = { confirm = false },
@@ -286,6 +288,91 @@ private fun InstanceCard(
             }
         }
     }
+}
+
+/**
+ * 审批链时间线,按节点分组(P5b):单签一行;会签(≥2)显示「并签/或签 · N/M 已批」
+ * + 各审批人;抄送显示「抄送:名单」;条件跳过显示「已跳过」。
+ */
+@Composable
+private fun ApproverChain(inst: ApprovalInstanceDto) {
+    val nodeIndexes = inst.tasks.map { it.nodeIndex }.distinct().sorted()
+    Column(Modifier.padding(top = 8.dp)) {
+        nodeIndexes.forEach { idx ->
+            val tasks = inst.tasks.filter { it.nodeIndex == idx }
+            val cc = tasks.filter { it.kind == "cc" }
+            val approvers = tasks.filter { it.kind == "approve" && it.approver != null }
+            val skipped = tasks.any {
+                it.kind == "approve" && it.approver == null && it.action == "skipped"
+            }
+            val active = idx == inst.currentNode && inst.status == "pending"
+            val nodeLabel = stringResource(R.string.approval_node, idx + 1)
+            val activeColor = if (active) {
+                MaterialTheme.colorScheme.primary
+            } else MaterialTheme.colorScheme.onSurfaceVariant
+            val dim = MaterialTheme.colorScheme.outline
+
+            when {
+                cc.isNotEmpty() -> {
+                    val names = cc
+                        .mapNotNull { it.approver?.displayName?.takeIf { n -> n.isNotBlank() } }
+                        .joinToString("、")
+                    Text(
+                        "$nodeLabel · ${stringResource(R.string.approval_cc)}:$names",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = dim,
+                    )
+                }
+                skipped -> Text(
+                    "$nodeLabel:${stringResource(R.string.approval_skipped)}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = dim,
+                )
+                approvers.size <= 1 -> {
+                    val task = approvers.firstOrNull() ?: tasks.first()
+                    val name = task.approver?.displayName?.takeIf { it.isNotBlank() }
+                        ?: stringResource(R.string.approval_unassigned)
+                    Text(
+                        "${taskMark(task.action)} $nodeLabel $name" +
+                            if (task.comment.isNotBlank()) " — ${task.comment}" else "",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = activeColor,
+                    )
+                }
+                else -> {
+                    val mode = inst.nodes.firstOrNull { it.index == idx }?.mode ?: "single"
+                    val done = approvers.count { it.action == "approved" }
+                    val head = stringResource(
+                        if (mode == "or") R.string.approval_countersign_or
+                        else R.string.approval_countersign_and,
+                    )
+                    Text(
+                        "$nodeLabel · $head · " +
+                            stringResource(R.string.approval_progress, done, approvers.size),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = activeColor,
+                    )
+                    approvers.forEach { task ->
+                        val name = task.approver?.displayName?.takeIf { it.isNotBlank() }.orEmpty()
+                        Text(
+                            "    ${taskMark(task.action)} $name" +
+                                if (task.comment.isNotBlank()) " — ${task.comment}" else "",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun taskMark(action: String): String = when (action) {
+    "approved" -> "✓"
+    "rejected" -> "✗"
+    "skipped" -> "⊘"
+    else -> "•"
 }
 
 @Composable

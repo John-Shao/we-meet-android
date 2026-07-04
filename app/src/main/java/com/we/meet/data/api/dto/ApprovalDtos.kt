@@ -48,10 +48,21 @@ data class ApprovalTemplateDto(
 data class ApprovalTaskDto(
     @Json(name = "node_index") val nodeIndex: Int = 0,
     val approver: UserLiteDto? = null,
-    /** pending | approved | rejected. */
+    /** pending | approved | rejected | skipped | notified. */
     val action: String = "pending",
+    /** approve | cc (P5b 抄送). */
+    val kind: String = "approve",
     val comment: String = "",
     @Json(name = "acted_at") val actedAt: String? = null,
+)
+
+/** Display-only per-node metadata (P5b): mode drives the 会签 label. */
+@JsonClass(generateAdapter = true)
+data class ApprovalNodeMetaDto(
+    val index: Int = 0,
+    val type: String? = null,
+    /** single | and | or. */
+    val mode: String = "single",
 )
 
 @JsonClass(generateAdapter = true)
@@ -66,6 +77,7 @@ data class ApprovalInstanceDto(
     val status: String = "pending",
     @Json(name = "current_node") val currentNode: Int = 0,
     val tasks: List<ApprovalTaskDto> = emptyList(),
+    val nodes: List<ApprovalNodeMetaDto> = emptyList(),
     @Json(name = "created_at") val createdAt: String? = null,
 )
 

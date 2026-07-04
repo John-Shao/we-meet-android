@@ -350,6 +350,13 @@
     <string name="approval_status_needs_assignment">À assigner</string>
     <string name="approval_node">Niveau %1$d</string>
     <string name="approval_unassigned">Non assigné</string>
+    <string name="approval_cc">En copie</string>
+    <string name="approval_skipped">Ignorée (condition non remplie)</string>
+    <string name="approval_countersign_and">Signature conjointe</string>
+    <string name="approval_countersign_or">Un seul signe</string>
+    <string name="approval_progress">%1$d/%2$d approuvé</string>
+    <string name="approval_urge">Relancer</string>
+    <string name="approval_urged">Relance envoyée — l\'approbateur actuel a été rappelé.</string>
     <string name="approval_needs_assignment_hint">"L'approbateur n'a pas pu être résolu automatiquement. Demandez à un admin de corriger la structure."</string>
     <string name="approval_comment_hint">Commentaire (facultatif)</string>
     <string name="approval_act_approve">Approuver</string>

@@ -350,6 +350,13 @@
     <string name="approval_status_needs_assignment">待指派</string>
     <string name="approval_node">第 %1$d 级</string>
     <string name="approval_unassigned">待指派</string>
+    <string name="approval_cc">抄送</string>
+    <string name="approval_skipped">已跳过（条件不满足）</string>
+    <string name="approval_countersign_and">并签</string>
+    <string name="approval_countersign_or">或签</string>
+    <string name="approval_progress">%1$d/%2$d 已批</string>
+    <string name="approval_urge">催办</string>
+    <string name="approval_urged">已催办，已再次提醒当前审批人。</string>
     <string name="approval_needs_assignment_hint">审批人无法自动解析，请联系管理员完善组织架构后重试指派。</string>
     <string name="approval_comment_hint">审批意见（可选）</string>
     <string name="approval_act_approve">通过</string>
