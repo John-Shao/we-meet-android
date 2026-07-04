@@ -32,6 +32,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -77,6 +79,18 @@ fun ConversationListScreen(
 
     var menuFor by remember { mutableStateOf<ConversationRowUi?>(null) }
     var confirmDelete by remember { mutableStateOf<ConversationRowUi?>(null) }
+
+    // 进入消息页时,若 WS 处于终态(鉴权失败/断开)自动重连一次 —— 覆盖启动时
+    // token 未就绪导致 AUTH_FAILED 卡死的情况(REST 正常但 WS 永不恢复)。
+    val currentConn by rememberUpdatedState(connection)
+    LifecycleResumeEffect(Unit) {
+        if (currentConn == ConnectionState.AUTH_FAILED ||
+            currentConn == ConnectionState.DISCONNECTED
+        ) {
+            vm.retryConnection()
+        }
+        onPauseOrDispose {}
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
