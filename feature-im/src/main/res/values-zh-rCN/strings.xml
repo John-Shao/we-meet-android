@@ -19,6 +19,7 @@
     <string name="im_create_chat_failed">会话创建失败</string>
 
     <string name="im_chat_empty">暂无消息,发出第一条吧</string>
+    <string name="im_time_yesterday">昨天</string>
 
     <string name="im_input_placeholder">输入消息…</string>
     <string name="im_input_send">发送</string>

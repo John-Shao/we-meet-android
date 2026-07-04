@@ -19,6 +19,7 @@
     <string name="im_create_chat_failed">Kan het gesprek niet aanmaken</string>
 
     <string name="im_chat_empty">Nog geen berichten — stuur het eerste</string>
+    <string name="im_time_yesterday">Gisteren</string>
 
     <string name="im_input_placeholder">Typ een bericht…</string>
     <string name="im_input_send">Versturen</string>

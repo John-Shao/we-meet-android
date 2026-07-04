@@ -19,6 +19,7 @@
     <string name="im_create_chat_failed">Unterhaltung konnte nicht erstellt werden</string>
 
     <string name="im_chat_empty">Noch keine Nachrichten — schreib die erste</string>
+    <string name="im_time_yesterday">Gestern</string>
 
     <string name="im_input_placeholder">Nachricht eingeben…</string>
     <string name="im_input_send">Senden</string>

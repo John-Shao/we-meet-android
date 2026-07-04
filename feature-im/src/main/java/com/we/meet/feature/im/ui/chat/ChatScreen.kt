@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
@@ -58,6 +59,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jusi.lightim.ConnectionState
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.R
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import com.we.meet.feature.im.data.ChatUploadException
 import com.we.meet.feature.im.ui.common.ConnectionStatusBar
 import com.we.meet.feature.im.ui.common.ErrorBanner
@@ -219,7 +224,12 @@ fun ChatScreen(
                         items(ui.pending.asReversed(), key = { "pending-${it.localId}" }) { pending ->
                             PendingRow(kind = pending.kind)
                         }
-                        items(reversed, key = { it.mid }) { message ->
+                        itemsIndexed(reversed, key = { _, m -> m.mid }) { index, message ->
+                            // 时间分隔条(飞书/微信式):与更早一条间隔超阈值(或本条为最早)
+                            // 时,在其上方插一条居中时间。reversed 为新→旧,older = index+1。
+                            val older = reversed.getOrNull(index + 1)
+                            val showDivider = older == null ||
+                                message.ts - older.ts >= TIME_DIVIDER_GAP_MS
                             val isOwn = message.senderUid == ui.selfUid
                             val sender = vm.resolveUser(message.senderUid)
                             val receipt = if (isOwn && message.seq == latestOwnSeq && !selectMode) {
@@ -267,26 +277,29 @@ fun ChatScreen(
                                     } else null,
                                 )
                             }
-                            if (selectMode) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            selectedMids = if (message.mid in selectedMids) {
-                                                selectedMids - message.mid
-                                            } else selectedMids + message.mid
-                                        },
-                                ) {
-                                    androidx.compose.material3.Checkbox(
-                                        checked = message.mid in selectedMids,
-                                        onCheckedChange = null,
-                                        modifier = Modifier.padding(start = 8.dp),
-                                    )
-                                    Box(Modifier.weight(1f)) { bubble() }
+                            Column {
+                                if (showDivider) TimeDivider(message.ts)
+                                if (selectMode) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                selectedMids = if (message.mid in selectedMids) {
+                                                    selectedMids - message.mid
+                                                } else selectedMids + message.mid
+                                            },
+                                    ) {
+                                        androidx.compose.material3.Checkbox(
+                                            checked = message.mid in selectedMids,
+                                            onCheckedChange = null,
+                                            modifier = Modifier.padding(start = 8.dp),
+                                        )
+                                        Box(Modifier.weight(1f)) { bubble() }
+                                    }
+                                } else {
+                                    bubble()
                                 }
-                            } else {
-                                bubble()
                             }
                         }
                     }
@@ -662,4 +675,37 @@ private fun MentionDropdown(names: List<String>, onPick: (String) -> Unit) {
             }
         }
     }
+}
+
+private const val TIME_DIVIDER_GAP_MS = 5 * 60 * 1000L
+
+/** 居中时间分隔条(飞书/微信式):今天→HH:mm、昨天→「昨天 HH:mm」、跨天→日期+时间。 */
+@Composable
+private fun TimeDivider(tsMs: Long) {
+    val label = dividerLabel(tsMs, stringResource(R.string.im_time_yesterday))
+    Box(
+        Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline,
+        )
+    }
+}
+
+private fun dividerLabel(tsMs: Long, yesterday: String): String {
+    val now = Calendar.getInstance()
+    val then = Calendar.getInstance().apply { timeInMillis = tsMs }
+    val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(tsMs))
+    fun sameDay(a: Calendar, b: Calendar) =
+        a.get(Calendar.YEAR) == b.get(Calendar.YEAR) &&
+            a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR)
+    if (sameDay(now, then)) return time
+    val y = (now.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, -1) }
+    if (sameDay(y, then)) return "$yesterday $time"
+    val sameYear = now.get(Calendar.YEAR) == then.get(Calendar.YEAR)
+    val pattern = if (sameYear) "M/d HH:mm" else "yyyy/M/d HH:mm"
+    return SimpleDateFormat(pattern, Locale.getDefault()).format(Date(tsMs))
 }

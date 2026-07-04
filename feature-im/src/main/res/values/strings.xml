@@ -19,6 +19,7 @@
     <string name="im_create_chat_failed">Could not create the conversation</string>
 
     <string name="im_chat_empty">No messages yet — send the first one</string>
+    <string name="im_time_yesterday">Yesterday</string>
 
     <string name="im_input_placeholder">Type a message…</string>
     <string name="im_input_send">Send</string>
