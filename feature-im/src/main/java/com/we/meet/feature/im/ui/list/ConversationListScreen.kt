@@ -80,10 +80,16 @@ fun ConversationListScreen(
     var menuFor by remember { mutableStateOf<ConversationRowUi?>(null) }
     var confirmDelete by remember { mutableStateOf<ConversationRowUi?>(null) }
 
-    // 进入消息页时,若 WS 处于终态(鉴权失败/断开)自动重连一次 —— 覆盖启动时
-    // token 未就绪导致 AUTH_FAILED 卡死的情况(REST 正常但 WS 永不恢复)。
+    // 进入/回到消息页时:
+    //  1. 无条件重拉会话列表 —— 对齐 Web(react-query focus-refetch)。WS 实时帧
+    //     只在会话已在列表里时冒泡;若新会话是在上次 refresh 之后建立、且此后没有
+    //     WS 事件触发过 refresh(初始 connect 的 refresh 早于会话创建),列表会一直
+    //     陈旧到冷启动。每次 resume 主动 refresh 让「看不到最新会话」自愈。
+    //  2. 若 WS 处于终态(鉴权失败/断开)再自动重连一次 —— 覆盖启动时 token 未就绪
+    //     导致 AUTH_FAILED 卡死的情况(REST 正常但 WS 永不恢复)。
     val currentConn by rememberUpdatedState(connection)
     LifecycleResumeEffect(Unit) {
+        vm.refresh()
         if (currentConn == ConnectionState.AUTH_FAILED ||
             currentConn == ConnectionState.DISCONNECTED
         ) {

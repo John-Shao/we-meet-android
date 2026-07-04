@@ -125,12 +125,13 @@ fun MessageBubble(
             .padding(horizontal = 12.dp, vertical = 4.dp),
         horizontalArrangement = if (isOwn) Arrangement.End else Arrangement.Start,
     ) {
-        if (!isOwn && isGroup) {
+        // 对方消息:左侧头像(私聊 + 群聊都显示,对齐企业微信/微信)。
+        if (!isOwn) {
             MemberAvatar(
                 name = senderName.orEmpty(),
                 url = senderAvatarUrl,
                 cacheKey = "im-avatar:${message.senderUid}",
-                size = 32.dp,
+                size = 36.dp,
             )
             Spacer(Modifier.width(8.dp))
         }
@@ -197,6 +198,16 @@ fun MessageBubble(
                         ),
                 )
             }
+        }
+        // 自己消息:右侧头像(对齐企业微信/微信)。
+        if (isOwn) {
+            Spacer(Modifier.width(8.dp))
+            MemberAvatar(
+                name = senderName.orEmpty(),
+                url = senderAvatarUrl,
+                cacheKey = "im-avatar:${message.senderUid}",
+                size = 36.dp,
+            )
         }
     }
 }
