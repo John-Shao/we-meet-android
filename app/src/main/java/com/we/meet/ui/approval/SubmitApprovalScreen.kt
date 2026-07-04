@@ -3,6 +3,8 @@ package com.we.meet.ui.approval
 import android.app.Application
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -13,8 +15,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.rememberDatePickerState
+import java.time.Instant
+import java.time.ZoneOffset
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -202,20 +210,28 @@ fun SubmitApprovalScreen(
                     // Dynamic fields.
                     fields.forEach { field ->
                         val label = (field.label ?: field.key) + if (field.required) " *" else ""
-                        OutlinedTextField(
-                            value = formData[field.key].orEmpty(),
-                            onValueChange = { formData = formData + (field.key to it) },
-                            label = { Text(label) },
-                            singleLine = field.type != "textarea",
-                            minLines = if (field.type == "textarea") 3 else 1,
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = when (field.type) {
-                                    "number" -> KeyboardType.Number
-                                    else -> KeyboardType.Text
-                                }
-                            ),
-                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                        )
+                        if (field.type == "date") {
+                            DateField(
+                                label = label,
+                                value = formData[field.key].orEmpty(),
+                                onPick = { formData = formData + (field.key to it) },
+                            )
+                        } else {
+                            OutlinedTextField(
+                                value = formData[field.key].orEmpty(),
+                                onValueChange = { formData = formData + (field.key to it) },
+                                label = { Text(label) },
+                                singleLine = field.type != "textarea",
+                                minLines = if (field.type == "textarea") 3 else 1,
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = when (field.type) {
+                                        "number" -> KeyboardType.Number
+                                        else -> KeyboardType.Text
+                                    }
+                                ),
+                                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                            )
+                        }
                     }
 
                     if (ui.error) {
@@ -229,5 +245,49 @@ fun SubmitApprovalScreen(
                 }
             }
         }
+    }
+}
+
+/** Date form field (对齐 web type="date"):read-only 文本框点击弹 M3 DatePicker,
+ *  提交 ISO yyyy-MM-dd(与 web <input type="date"> 一致)。 */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DateField(label: String, value: String, onPick: (String) -> Unit) {
+    var show by remember { mutableStateOf(false) }
+    Box(Modifier.fillMaxWidth().padding(top = 12.dp)) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {},
+            label = { Text(label) },
+            readOnly = true,
+            trailingIcon = { Icon(Icons.Filled.DateRange, contentDescription = null) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        // readOnly 文本框自身不发 click,盖一层透明可点区域触发选择器。
+        Box(Modifier.matchParentSize().clickable { show = true })
+    }
+    if (show) {
+        val initial = runCatching {
+            java.time.LocalDate.parse(value)
+                .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        }.getOrNull()
+        val state = rememberDatePickerState(initialSelectedDateMillis = initial)
+        DatePickerDialog(
+            onDismissRequest = { show = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedDateMillis?.let { ms ->
+                        val d = Instant.ofEpochMilli(ms).atZone(ZoneOffset.UTC).toLocalDate()
+                        onPick(d.toString())
+                    }
+                    show = false
+                }) { Text(stringResource(android.R.string.ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { show = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        ) { DatePicker(state = state) }
     }
 }
