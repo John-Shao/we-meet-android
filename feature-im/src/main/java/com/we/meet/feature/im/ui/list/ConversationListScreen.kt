@@ -319,7 +319,8 @@ private fun ConversationRow(
 private fun GroupAvatar(title: String) {
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer,
-        shape = androidx.compose.foundation.shape.CircleShape,
+        // 圆角方形,与 Web / MemberAvatar 一致(边长 20%)。
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(9.dp),
         modifier = Modifier.size(44.dp),
     ) {
         Box(contentAlignment = Alignment.Center) {

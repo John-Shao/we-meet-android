@@ -3,7 +3,7 @@ package com.we.meet.core.directory.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,7 +24,8 @@ import coil.request.ImageRequest
 import kotlin.math.abs
 
 /**
- * Circular avatar with an initials fallback.
+ * Rounded-square avatar (WeChat/企业微信 style, 与 Web Avatar 一致:圆角 = 边长 20%)
+ * with an initials fallback.
  *
  * [cacheKey] must be a STABLE identity (e.g. "avatar:<userId>"), never the URL:
  * avatar URLs are short-lived presigned links whose query signature changes on
@@ -45,7 +46,7 @@ fun MemberAvatar(
     Box(
         modifier = modifier
             .size(size)
-            .clip(CircleShape)
+            .clip(RoundedCornerShape(size * 0.2f))
             .background(if (showImage) Color.Transparent else fallbackColor(name)),
         contentAlignment = Alignment.Center,
     ) {
