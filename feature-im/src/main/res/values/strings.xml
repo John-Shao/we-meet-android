@@ -64,6 +64,10 @@
     <!-- Group management. -->
     <string name="im_group_info">Group info</string>
     <string name="im_group_name_label">Group name</string>
+    <string name="im_group_announce_label">Announcement</string>
+    <string name="im_group_announce_empty">No announcement</string>
+    <string name="im_group_announce_hint">Enter a group announcement (optional)</string>
+    <string name="im_group_announce_edit">Edit</string>
     <string name="im_group_rename">Rename</string>
     <string name="im_group_members_count">Members (%1$d)</string>
     <string name="im_group_add_members">Add members</string>

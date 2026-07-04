@@ -24,6 +24,9 @@ interface CalendarApi {
     suspend fun listEvents(
         @Query("page") page: Int = 1,
         @Query("page_size") pageSize: Int = 100,
+        /** ISO 8601 window (overlap filter, list-only) — narrows to the visible months. */
+        @Query("start") start: String? = null,
+        @Query("end") end: String? = null,
     ): PagedCalendarEventsDto
 
     @GET("api/v1.0/calendar-events/{id}/")

@@ -8,6 +8,8 @@ import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.CalendarEventDto
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,7 +44,7 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
     fun refresh() {
         viewModelScope.launch {
             _ui.update { it.copy(loading = it.eventsByDay.isEmpty(), error = false) }
-            runCatching { fetchAll() }
+            runCatching { fetchWindow(_ui.value.monthAnchor) }
                 .onSuccess { events ->
                     val parsed = events.mapNotNull { it.toParsed() }
                     _ui.update {
@@ -57,32 +59,42 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun selectDate(date: LocalDate) {
-        _ui.update { it.copy(selectedDate = date, monthAnchor = YearMonth.from(date)) }
+        val month = YearMonth.from(date)
+        val changed = month != _ui.value.monthAnchor
+        _ui.update { it.copy(selectedDate = date, monthAnchor = month) }
+        if (changed) refresh()
     }
 
     fun goToMonth(month: YearMonth) {
+        if (month == _ui.value.monthAnchor) return
         _ui.update { it.copy(monthAnchor = month) }
+        refresh()
     }
 
     fun goToToday() {
         _ui.update {
             it.copy(selectedDate = LocalDate.now(), monthAnchor = YearMonth.now())
         }
+        refresh()
     }
 
-    private suspend fun fetchAll(): List<CalendarEventDto> {
+    /** Fetch only the events overlapping the visible window (focus month ±1),
+     *  server-side (?start&end). Replaces the old full-list pull + 500 cap. */
+    private suspend fun fetchWindow(month: YearMonth): List<CalendarEventDto> {
+        val zone = ZoneId.systemDefault()
+        val startIso = DateTimeFormatter.ISO_INSTANT.format(
+            month.minusMonths(1).atDay(1).atStartOfDay(zone).toInstant()
+        )
+        val endIso = DateTimeFormatter.ISO_INSTANT.format(
+            month.plusMonths(2).atDay(1).atStartOfDay(zone).toInstant() // exclusive upper bound
+        )
         val all = mutableListOf<CalendarEventDto>()
         var page = 1
         while (page <= MAX_PAGES) {
-            val res = calendarApi.listEvents(page = page)
+            val res = calendarApi.listEvents(page = page, start = startIso, end = endIso)
             all += res.results
             if (res.next == null) break
             page++
-        }
-        if (page > MAX_PAGES) {
-            // No date-range filter server-side yet; log the truncation instead
-            // of silently pretending we covered everything.
-            Log.w(TAG, "calendar list truncated at ${all.size} events")
         }
         return all
     }

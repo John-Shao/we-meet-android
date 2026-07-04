@@ -59,6 +59,10 @@
 
     <string name="im_group_info">Gruppeninfo</string>
     <string name="im_group_name_label">Gruppenname</string>
+    <string name="im_group_announce_label">Ankündigung</string>
+    <string name="im_group_announce_empty">Keine Ankündigung</string>
+    <string name="im_group_announce_hint">Gruppenankündigung eingeben (optional)</string>
+    <string name="im_group_announce_edit">Bearbeiten</string>
     <string name="im_group_rename">Umbenennen</string>
     <string name="im_group_members_count">Mitglieder (%1$d)</string>
     <string name="im_group_add_members">Mitglieder hinzufügen</string>

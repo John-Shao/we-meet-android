@@ -122,6 +122,18 @@ class GroupInfoViewModel internal constructor(
         session.conversations.refresh()
     }
 
+    /** 群公告(description):owner-only, kind="description" 触发对应系统消息。 */
+    fun setDescription(newDesc: String) = mutate {
+        session.bridge.updateGroupMeta(
+            cid = cid,
+            name = _ui.value.name,
+            description = newDesc,
+            kind = "description",
+        )
+        _ui.update { it.copy(description = newDesc) }
+        session.conversations.refresh()
+    }
+
     fun transferOwner(member: GroupMemberUi) = mutate {
         session.client.transferOwner(cid, member.uid)
         refresh()

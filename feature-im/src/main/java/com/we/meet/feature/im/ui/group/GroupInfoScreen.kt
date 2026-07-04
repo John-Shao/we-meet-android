@@ -61,6 +61,7 @@ fun GroupInfoScreen(
     val ui by vm.ui.collectAsStateWithLifecycle()
 
     var showRename by remember { mutableStateOf(false) }
+    var showAnnounce by remember { mutableStateOf(false) }
     var removeTarget by remember { mutableStateOf<GroupMemberUi?>(null) }
     var transferTarget by remember { mutableStateOf<GroupMemberUi?>(null) }
     var showTransferPicker by remember { mutableStateOf(false) }
@@ -122,6 +123,40 @@ fun GroupInfoScreen(
                                 text = stringResource(R.string.im_group_rename),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                    HorizontalDivider()
+                    // Group announcement (description) row — owner taps to edit.
+                    Row(
+                        verticalAlignment = Alignment.Top,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = ui.isOwner) { showAnnounce = true }
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.im_group_announce_label),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                text = ui.description.ifBlank {
+                                    stringResource(R.string.im_group_announce_empty)
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (ui.description.isBlank()) {
+                                    MaterialTheme.colorScheme.outline
+                                } else MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                        if (ui.isOwner) {
+                            Text(
+                                text = stringResource(R.string.im_group_announce_edit),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(start = 12.dp),
                             )
                         }
                     }
@@ -224,6 +259,35 @@ fun GroupInfoScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showRename = false }) {
+                    Text(stringResource(R.string.im_action_cancel))
+                }
+            },
+        )
+    }
+
+    if (showAnnounce) {
+        var desc by remember(ui.description) { mutableStateOf(ui.description) }
+        AlertDialog(
+            onDismissRequest = { showAnnounce = false },
+            title = { Text(stringResource(R.string.im_group_announce_label)) },
+            text = {
+                OutlinedTextField(
+                    value = desc,
+                    onValueChange = { if (it.length <= 200) desc = it },
+                    placeholder = { Text(stringResource(R.string.im_group_announce_hint)) },
+                    minLines = 3,
+                    maxLines = 6,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { vm.setDescription(desc.trim()); showAnnounce = false },
+                    enabled = desc.trim() != ui.description,
+                ) { Text(stringResource(R.string.im_action_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAnnounce = false }) {
                     Text(stringResource(R.string.im_action_cancel))
                 }
             },
