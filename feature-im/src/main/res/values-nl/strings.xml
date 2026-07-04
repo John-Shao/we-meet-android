@@ -63,6 +63,9 @@
     <string name="im_group_announce_empty">Geen aankondiging</string>
     <string name="im_group_announce_hint">Groepsaankondiging invoeren (optioneel)</string>
     <string name="im_group_announce_edit">Bewerken</string>
+    <string name="im_group_my_nickname_label">Mijn bijnaam</string>
+    <string name="im_group_my_nickname_empty">Niet ingesteld</string>
+    <string name="im_group_my_nickname_hint">Voer je bijnaam in deze groep in</string>
     <string name="im_group_rename">Hernoemen</string>
     <string name="im_group_members_count">Leden (%1$d)</string>
     <string name="im_group_add_members">Leden toevoegen</string>

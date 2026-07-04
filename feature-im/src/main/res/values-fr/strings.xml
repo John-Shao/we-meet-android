@@ -63,6 +63,9 @@
     <string name="im_group_announce_empty">Aucune annonce</string>
     <string name="im_group_announce_hint">Saisir une annonce de groupe (facultatif)</string>
     <string name="im_group_announce_edit">Modifier</string>
+    <string name="im_group_my_nickname_label">Mon surnom</string>
+    <string name="im_group_my_nickname_empty">Non défini</string>
+    <string name="im_group_my_nickname_hint">Saisir votre surnom dans ce groupe</string>
     <string name="im_group_rename">Renommer</string>
     <string name="im_group_members_count">Membres (%1$d)</string>
     <string name="im_group_add_members">Ajouter des membres</string>

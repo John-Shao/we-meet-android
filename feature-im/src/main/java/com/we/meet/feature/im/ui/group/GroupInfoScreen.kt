@@ -62,6 +62,7 @@ fun GroupInfoScreen(
 
     var showRename by remember { mutableStateOf(false) }
     var showAnnounce by remember { mutableStateOf(false) }
+    var showNickname by remember { mutableStateOf(false) }
     var removeTarget by remember { mutableStateOf<GroupMemberUi?>(null) }
     var transferTarget by remember { mutableStateOf<GroupMemberUi?>(null) }
     var showTransferPicker by remember { mutableStateOf(false) }
@@ -159,6 +160,37 @@ fun GroupInfoScreen(
                                 modifier = Modifier.padding(start = 12.dp),
                             )
                         }
+                    }
+                    HorizontalDivider()
+                    // My per-group nickname row — any member may edit their own.
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showNickname = true }
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.im_group_my_nickname_label),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                text = ui.myNickname.ifBlank {
+                                    stringResource(R.string.im_group_my_nickname_empty)
+                                },
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = if (ui.myNickname.isBlank()) {
+                                    MaterialTheme.colorScheme.outline
+                                } else MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.im_group_announce_edit),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
                     }
                     HorizontalDivider()
                     Row(
@@ -288,6 +320,34 @@ fun GroupInfoScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showAnnounce = false }) {
+                    Text(stringResource(R.string.im_action_cancel))
+                }
+            },
+        )
+    }
+
+    if (showNickname) {
+        var nick by remember(ui.myNickname) { mutableStateOf(ui.myNickname) }
+        AlertDialog(
+            onDismissRequest = { showNickname = false },
+            title = { Text(stringResource(R.string.im_group_my_nickname_label)) },
+            text = {
+                OutlinedTextField(
+                    value = nick,
+                    onValueChange = { if (it.length <= 40) nick = it },
+                    placeholder = { Text(stringResource(R.string.im_group_my_nickname_hint)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { vm.setMyNickname(nick.trim()); showNickname = false },
+                    enabled = nick.trim() != ui.myNickname,
+                ) { Text(stringResource(R.string.im_action_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNickname = false }) {
                     Text(stringResource(R.string.im_action_cancel))
                 }
             },

@@ -68,6 +68,9 @@
     <string name="im_group_announce_empty">No announcement</string>
     <string name="im_group_announce_hint">Enter a group announcement (optional)</string>
     <string name="im_group_announce_edit">Edit</string>
+    <string name="im_group_my_nickname_label">My nickname</string>
+    <string name="im_group_my_nickname_empty">Not set</string>
+    <string name="im_group_my_nickname_hint">Enter your nickname in this group</string>
     <string name="im_group_rename">Rename</string>
     <string name="im_group_members_count">Members (%1$d)</string>
     <string name="im_group_add_members">Add members</string>

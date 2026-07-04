@@ -54,6 +54,8 @@ data class ChatUiState(
     val readMarkers: Map<String, Long> = emptyMap(),
     /** Group roster (uids), for read-receipt counting; empty for directs. */
     val memberUids: List<String> = emptyList(),
+    /** P10 群昵称:uid → per-conversation nickname (blank names omitted). */
+    val nicknames: Map<String, String> = emptyMap(),
     val selfUid: String? = null,
     val error: String? = null,
     /** Stable upload-error code the UI maps to an i18n string; null = none. */
@@ -227,29 +229,25 @@ class ChatViewModel internal constructor(
             else -> ""
         }
 
-    /** @-mention candidates for the input dropdown: 所有人 + other members' names. */
+    /** @-mention candidates for the input dropdown: 所有人 + other members (群昵称 优先). */
     fun mentionCandidates(): List<String> {
         if (!_ui.value.isGroup) return emptyList()
         val self = _ui.value.selfUid
-        val names = _ui.value.memberUids
-            .filter { it != self }
-            .mapNotNull { session.userDirectory.get(it)?.displayName?.takeIf { n -> n.isNotBlank() } }
+        val names = _ui.value.memberUids.filter { it != self }.mapNotNull { senderName(it) }
         return listOf(session.everyoneLabel()) + names
     }
 
-    /** Names highlightable as @mentions inside bubbles: 所有人 + ALL members (incl self). */
+    /** Names highlightable as @mentions inside bubbles: 所有人 + ALL members (群昵称 优先). */
     fun mentionHighlightNames(): List<String> {
         if (!_ui.value.isGroup) return emptyList()
-        val names = _ui.value.memberUids
-            .mapNotNull { session.userDirectory.get(it)?.displayName?.takeIf { n -> n.isNotBlank() } }
+        val names = _ui.value.memberUids.mapNotNull { senderName(it) }
         return listOf(session.everyoneLabel()) + names
     }
 
-    /** Subset that means "you" (self name + 所有人) → stronger highlight. */
+    /** Subset that means "you" (self 群昵称/名 + 所有人) → stronger highlight. */
     fun selfMentionNames(): List<String> {
         if (!_ui.value.isGroup) return emptyList()
-        val self = _ui.value.selfUid
-            ?.let { session.userDirectory.get(it)?.displayName?.takeIf { n -> n.isNotBlank() } }
+        val self = _ui.value.selfUid?.let { senderName(it) }
         return listOfNotNull(session.everyoneLabel(), self)
     }
 
@@ -437,6 +435,12 @@ class ChatViewModel internal constructor(
 
     fun resolveUser(uid: String): ImUserInfo? = session.userDirectory.get(uid)
 
+    /** Display name honouring the per-conversation 群昵称 (P10): nickname → directory
+     *  name → null. Used for the sender label + @mention candidates. */
+    fun senderName(uid: String): String? =
+        _ui.value.nicknames[uid]?.takeIf { it.isNotBlank() }
+            ?: session.userDirectory.get(uid)?.displayName?.takeIf { it.isNotBlank() }
+
     /** Resolve a chat-media object key to a presigned URL (suspend, cached). */
     suspend fun resolveMediaUrl(objectKey: String): String? =
         session.mediaResolver.resolve(objectKey)
@@ -557,7 +561,12 @@ class ChatViewModel internal constructor(
         viewModelScope.launch {
             runCatching { session.client.listMembers(cid) }
                 .onSuccess { roster: List<ConvMember> ->
-                    _ui.update { it.copy(memberUids = roster.map { m -> m.uid }) }
+                    val nicks = roster.mapNotNull { m ->
+                        m.nickname?.takeIf { it.isNotBlank() }?.let { m.uid to it }
+                    }.toMap()
+                    _ui.update {
+                        it.copy(memberUids = roster.map { m -> m.uid }, nicknames = nicks)
+                    }
                     session.userDirectory.requestResolve(roster.map { it.uid })
                 }
         }

@@ -251,7 +251,7 @@ fun ChatScreen(
                                     message = message,
                                     isOwn = isOwn,
                                     isGroup = ui.isGroup,
-                                    senderName = sender?.displayName,
+                                    senderName = vm.senderName(message.senderUid),
                                     senderAvatarUrl = sender?.avatarUrl?.takeIf { it.isNotBlank() },
                                     receiptLabel = receipt,
                                     onReceiptClick = if (receipt != null && ui.isGroup) {

@@ -68,6 +68,9 @@
     <string name="im_group_announce_empty">暂无群公告</string>
     <string name="im_group_announce_hint">输入群公告(选填)</string>
     <string name="im_group_announce_edit">编辑</string>
+    <string name="im_group_my_nickname_label">我的群昵称</string>
+    <string name="im_group_my_nickname_empty">未设置</string>
+    <string name="im_group_my_nickname_hint">输入我的群昵称</string>
     <string name="im_group_rename">修改</string>
     <string name="im_group_members_count">群成员 (%1$d)</string>
     <string name="im_group_add_members">添加成员</string>

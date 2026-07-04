@@ -32,6 +32,8 @@ data class GroupInfoUiState(
     val description: String = "",
     val members: List<GroupMemberUi> = emptyList(),
     val isOwner: Boolean = false,
+    /** Caller's own per-conversation 群昵称 (P10); blank = use directory name. */
+    val myNickname: String = "",
     val busy: Boolean = false,
     val error: String? = null,
 )
@@ -92,6 +94,10 @@ class GroupInfoViewModel internal constructor(
                     rosterUids = roster.map { it.uid }
                     ownerUid = roster.firstOrNull { it.role == "owner" }?.uid
                         ?: summary?.ownerUid
+                    val myNick = roster
+                        .firstOrNull { it.uid == session.selfUid.value }
+                        ?.nickname.orEmpty()
+                    _ui.update { it.copy(myNickname = myNick) }
                     session.userDirectory.requestResolve(rosterUids)
                     rebuildRoster()
                 }
@@ -120,6 +126,14 @@ class GroupInfoViewModel internal constructor(
         )
         _ui.update { it.copy(name = newName) }
         session.conversations.refresh()
+    }
+
+    /** 我的群昵称(P10):每成员私有,本会话内覆盖显示名。任何成员可改自己的。 */
+    fun setMyNickname(nick: String) = mutate {
+        session.client.setConversationSettings(cid, nickname = nick)
+        _ui.update { it.copy(myNickname = nick) }
+        session.conversations.refresh()
+        refresh()
     }
 
     /** 群公告(description):owner-only, kind="description" 触发对应系统消息。 */
