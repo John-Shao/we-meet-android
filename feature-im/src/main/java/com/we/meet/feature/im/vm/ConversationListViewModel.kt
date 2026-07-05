@@ -31,6 +31,8 @@ data class ConversationRowUi(
     val unread: Long,
     val pinned: Boolean,
     val muted: Boolean,
+    /** True when @all messages are suppressed for this conversation. */
+    val muteAtAll: Boolean = false,
     /** True when the caller owns this group — drives the delete-menu wording. */
     val isOwner: Boolean,
     /** An unread message @-mentioned me → red "@" marker. */
@@ -84,6 +86,9 @@ class ConversationListViewModel internal constructor(
     fun toggleMute(row: ConversationRowUi) =
         session.conversations.setMuted(row.cid, !row.muted)
 
+    fun toggleMuteAtAll(row: ConversationRowUi) =
+        session.conversations.setMuteAtAll(row.cid, !row.muteAtAll)
+
     /**
      * Direct → hide; group member → leave; group owner → server auto-transfers
      * to the earliest member (or dissolves when last). A leave announcement is
@@ -125,6 +130,7 @@ class ConversationListViewModel internal constructor(
             unread = unreadCount,
             pinned = pinned,
             muted = muted,
+            muteAtAll = muteAtAll,
             isOwner = isGroup && ownerUid != null && ownerUid == selfUid,
         )
     }

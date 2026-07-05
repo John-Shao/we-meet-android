@@ -23,6 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -192,6 +193,23 @@ fun GroupInfoScreen(
                             color = MaterialTheme.colorScheme.primary,
                         )
                     }
+                    HorizontalDivider()
+                    // P10: private per-conversation toggles (pin / mute / mute @all).
+                    SwitchRow(
+                        label = stringResource(R.string.im_menu_pin),
+                        checked = ui.pinned,
+                        onToggle = { vm.togglePin() },
+                    )
+                    SwitchRow(
+                        label = stringResource(R.string.im_menu_mute),
+                        checked = ui.muted,
+                        onToggle = { vm.toggleMute() },
+                    )
+                    SwitchRow(
+                        label = stringResource(R.string.im_menu_mute_at_all),
+                        checked = ui.muteAtAll,
+                        onToggle = { vm.toggleMuteAtAll() },
+                    )
                     HorizontalDivider()
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -491,4 +509,23 @@ private fun ActionRow(text: String, destructive: Boolean = false, onClick: () ->
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 14.dp),
     )
+}
+
+/** Toggle row with label + switch — mirrors the Web GroupSettingsPanel toggles (P10). */
+@Composable
+private fun SwitchRow(label: String, checked: Boolean, onToggle: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggle)
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        Switch(checked = checked, onCheckedChange = { onToggle() })
+    }
 }

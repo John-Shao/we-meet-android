@@ -34,6 +34,10 @@ data class GroupInfoUiState(
     val isOwner: Boolean = false,
     /** Caller's own per-conversation 群昵称 (P10); blank = use directory name. */
     val myNickname: String = "",
+    /** Per-member private toggles (P10) — mirrors the conversation summary flags. */
+    val pinned: Boolean = false,
+    val muted: Boolean = false,
+    val muteAtAll: Boolean = false,
     val busy: Boolean = false,
     val error: String? = null,
 )
@@ -87,6 +91,9 @@ class GroupInfoViewModel internal constructor(
                     name = summary?.name?.ifBlank { (meta?.get("name") as? String).orEmpty() }
                         ?: it.name,
                     description = (meta?.get("description") as? String).orEmpty(),
+                    pinned = summary?.pinned ?: false,
+                    muted = summary?.muted ?: false,
+                    muteAtAll = summary?.muteAtAll ?: false,
                 )
             }
             runCatching { session.client.listMembers(cid) }
@@ -166,6 +173,27 @@ class GroupInfoViewModel internal constructor(
         session.client.leaveConversation(cid)
         session.conversations.refresh()
         _events.tryEmit(GroupInfoEvent.LeftGroup)
+    }
+
+    /** Toggle per-conversation pin (P10). */
+    fun togglePin() {
+        val next = !_ui.value.pinned
+        _ui.update { it.copy(pinned = next) }
+        session.conversations.setPinned(cid, next)
+    }
+
+    /** Toggle per-conversation mute (P10). */
+    fun toggleMute() {
+        val next = !_ui.value.muted
+        _ui.update { it.copy(muted = next) }
+        session.conversations.setMuted(cid, next)
+    }
+
+    /** Toggle @all notification suppression (P10). */
+    fun toggleMuteAtAll() {
+        val next = !_ui.value.muteAtAll
+        _ui.update { it.copy(muteAtAll = next) }
+        session.conversations.setMuteAtAll(cid, next)
     }
 
     // ---- internals ----

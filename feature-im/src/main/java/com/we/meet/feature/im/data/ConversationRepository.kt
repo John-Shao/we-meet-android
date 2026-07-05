@@ -92,6 +92,9 @@ internal class ConversationRepository(
     fun setMuted(cid: String, muted: Boolean) = patchSettings(cid) { it.copy(muted = muted) }
         .also { scope.launch { runCatching { client.setConversationSettings(cid, muted = muted) } } }
 
+    fun setMuteAtAll(cid: String, muteAtAll: Boolean) = patchSettings(cid) { it.copy(muteAtAll = muteAtAll) }
+        .also { scope.launch { runCatching { client.setConversationSettings(cid, muteAtAll = muteAtAll) } } }
+
     /** Delete/leave; on success the row disappears locally right away. */
     suspend fun deleteOrLeave(cid: String, transferTo: String? = null): Result<Unit> =
         runCatching { client.leaveConversation(cid, transferTo) }
