@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -57,28 +58,33 @@ class ConversationListViewModel internal constructor(
     private val _actionError = MutableStateFlow<String?>(null)
     val actionError: StateFlow<String?> = _actionError.asStateFlow()
 
-    val rows: StateFlow<List<ConversationRowUi>> = combine(
-        session.conversations.conversations,
-        session.userDirectory.version,
-        session.selfUid,
-        session.mentionedCids,
-    ) { conversations, _, selfUid, mentioned ->
-        // Resolve every uid we are about to render; cached hits are free and
-        // misses fan into one batched request that bumps `version` to re-run us.
-        val wanted = buildSet {
-            conversations.forEach { c ->
-                c.lastSenderUid?.let { add(it) }
-                if (c.type != "group") {
-                    addAll(c.members.filterNot { it == selfUid })
-                } else {
-                    // Group: resolve member uids for the 9-grid group avatar.
-                    addAll(c.members.take(9))
+    val rows: StateFlow<List<ConversationRowUi>> =
+        session.conversations.conversations.flatMapLatest { conversations ->
+            // Resolve every uid we are about to render BEFORE the first emission so
+            // display names and avatar URLs are already cached when Compose renders
+            // group-avatar tiles.  Without this the fire-and-forget requestResolve
+            // races ahead of Compose and the first frame always falls back to letter
+            // avatars (which then pop-in later after the version bump).
+            val wanted = buildSet<String> {
+                conversations.forEach { c ->
+                    c.lastSenderUid?.let { add(it) }
+                    if (c.type != "group") {
+                        addAll(c.members.filterNot { it == session.selfUid.value })
+                    } else {
+                        addAll(c.members.take(9))
+                    }
                 }
             }
-        }
-        session.userDirectory.requestResolve(wanted)
-        conversations.map { it.toRow(selfUid).copy(mentioned = it.cid in mentioned) }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+            session.userDirectory.resolve(wanted)
+
+            combine(
+                session.userDirectory.version,
+                session.selfUid,
+                session.mentionedCids,
+            ) { _, selfUid, mentioned ->
+                conversations.map { it.toRow(selfUid).copy(mentioned = it.cid in mentioned) }
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun refresh() {
         viewModelScope.launch { session.conversations.refresh() }

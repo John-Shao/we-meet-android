@@ -84,9 +84,8 @@ fun MainTabScreen(
     onEventClick: (eventId: String) -> Unit,
     onCreateEvent: (epochDay: Long) -> Unit,
 ) {
-    // Default to the Meeting tab — preserves the app's meeting-first behavior
-    // from the 4-tab era.
-    var selectedTab by rememberSaveable { mutableIntStateOf(MainTab.Meeting.ordinal) }
+    // Default to the Messages tab.
+    var selectedTab by rememberSaveable { mutableIntStateOf(MainTab.Messages.ordinal) }
     val app = LocalContext.current.applicationContext as WeMeetApp
 
     // Live unread total for the 消息 tab badge — fed by the process-wide IM
