@@ -26,6 +26,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.we.meet.core.directory.ui.MemberAvatar
@@ -98,16 +101,27 @@ fun GroupAvatar(
             .size(size)
             .clip(RoundedCornerShape(size * 0.2f))
             .background(MaterialTheme.colorScheme.surfaceVariant),
-        contentAlignment = Alignment.Center,
     ) {
+        val density = LocalDensity.current
+        val sizePx = with(density) { size.toPx() }
+        val tileSidePx = sizePx * sidePct
+        val tileSideDp = with(density) { tileSidePx.toDp() }
         var idx = 0
         for (r in 0 until rows) {
             val k = if (r == 0) firstRow else cols
+            val leftStartPx = (sizePx - k * tileSidePx) / 2f
             for (c in 0 until k) {
                 val uid = members[idx++]
                 val info = resolveUser(uid)
                 Box(
-                    modifier = Modifier.size(size * sidePct),
+                    modifier = Modifier
+                        .offset {
+                            IntOffset(
+                                (leftStartPx + c * tileSidePx).toInt(),
+                                (r * tileSidePx).toInt(),
+                            )
+                        }
+                        .size(tileSideDp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Tile(
