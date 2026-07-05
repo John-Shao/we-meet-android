@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -305,7 +306,7 @@ private fun ConversationRow(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (row.muted) {
                         Icon(
-                            Icons.AutoMirrored.Filled.VolumeOff,
+                            Icons.Filled.NotificationsOff,
                             contentDescription = stringResource(R.string.im_menu_mute),
                             tint = MaterialTheme.colorScheme.outline,
                             modifier = Modifier.size(14.dp),
