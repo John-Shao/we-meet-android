@@ -76,8 +76,8 @@
     <string name="im_group_transfer_owner">Transférer la propriété</string>
     <string name="im_group_transfer_confirm">Transférer la propriété du groupe à %1$s ?</string>
     <string name="im_group_clear_history">Effacer l\'historique</string>
-    <string name="im_group_clear_confirm">N\'efface que votre propre vue ; les autres membres conservent leur historique.</string>
-    <string name="im_removed_from_group">Vous avez été retiré de ce groupe</string>
+    <string name="im_group_clear_confirm">N\'efface que votre propre vue ; les autres membres conservent leur historique.</string>    <string name="im_direct_settings_title">Paramètres de discussion</string>
+    <string name="im_group_button">Nouveau groupe</string>    <string name="im_removed_from_group">Vous avez été retiré de ce groupe</string>
 
     <string name="im_unread_overflow">99+</string>
     <string name="im_preview_voice">[Message vocal]</string>

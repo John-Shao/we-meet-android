@@ -77,6 +77,8 @@
     <string name="im_group_transfer_confirm">Gruppenbesitz an %1$s übertragen?</string>
     <string name="im_group_clear_history">Chatverlauf leeren</string>
     <string name="im_group_clear_confirm">Leert nur deine eigene Ansicht; andere Mitglieder behalten ihren Verlauf.</string>
+    <string name="im_direct_settings_title">Chat-Einstellungen</string>
+    <string name="im_group_button">Neue Gruppe</string>
     <string name="im_removed_from_group">Du wurdest aus dieser Gruppe entfernt</string>
 
     <string name="im_unread_overflow">99+</string>

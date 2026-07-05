@@ -39,6 +39,7 @@ import com.we.meet.R
 import com.we.meet.data.auth.SessionState
 import com.we.meet.feature.assistant.aicall.ui.AssistantCallScreen
 import com.we.meet.feature.im.ui.chat.ChatScreen
+import com.we.meet.feature.im.ui.chat.DirectChatSettingsScreen
 import com.we.meet.feature.im.ui.group.GroupInfoScreen
 import com.we.meet.feature.im.ui.newchat.AddMembersScreen
 import com.we.meet.feature.im.ui.newchat.NewChatScreen
@@ -90,6 +91,8 @@ object Routes {
     const val IM_NEW_CHAT = "im_new_chat"
     private const val IM_ADD_MEMBERS_BASE = "im_add_members"
     const val IM_ADD_MEMBERS = "$IM_ADD_MEMBERS_BASE/{cid}"
+    private const val IM_DIRECT_SETTINGS_BASE = "im_direct_settings"
+    const val IM_DIRECT_SETTINGS = "$IM_DIRECT_SETTINGS_BASE/{cid}"
 
     // Contacts / Calendar detail routes.
     private const val MEMBER_DETAIL_BASE = "member_detail"
@@ -106,6 +109,9 @@ object Routes {
 
     fun imAddMembers(cid: String): String =
         "$IM_ADD_MEMBERS_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
+
+    fun imDirectSettings(cid: String): String =
+        "$IM_DIRECT_SETTINGS_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
 
     fun memberDetail(userId: String): String =
         "$MEMBER_DETAIL_BASE/${URLEncoder.encode(userId, StandardCharsets.UTF_8.name())}"
@@ -288,6 +294,7 @@ fun AppNav() {
                 cid = cid,
                 onBack = rememberOnceOnly(safePop),
                 onOpenInfo = { navController.navigate(Routes.imGroupInfo(it)) },
+                onOpenDirectSettings = { navController.navigate(Routes.imDirectSettings(it)) },
             )
         }
 
@@ -305,6 +312,24 @@ fun AppNav() {
                     navController.popBackStack(Routes.HOME, inclusive = false)
                 },
                 onAddMembers = { navController.navigate(Routes.imAddMembers(it)) },
+            )
+        }
+
+        composable(
+            route = Routes.IM_DIRECT_SETTINGS,
+            arguments = listOf(navArgument("cid") { type = NavType.StringType }),
+        ) { entry ->
+            val cid = Routes.decode(entry.arguments?.getString("cid").orEmpty())
+            DirectChatSettingsScreen(
+                deps = app,
+                cid = cid,
+                onBack = rememberOnceOnly(safePop),
+                onCreateGroup = {
+                    // Navigate to NewChatScreen seeded with the peer.
+                    navController.navigate(Routes.IM_NEW_CHAT) {
+                        launchSingleTop = true
+                    }
+                },
             )
         }
 

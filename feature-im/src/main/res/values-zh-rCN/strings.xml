@@ -82,6 +82,8 @@
     <string name="im_group_transfer_confirm">将群主转让给 %1$s？</string>
     <string name="im_group_clear_history">清空聊天记录</string>
     <string name="im_group_clear_confirm">仅清空你自己可见的记录,其他成员不受影响。</string>
+    <string name="im_direct_settings_title">聊天设置</string>
+    <string name="im_group_button">新建群聊</string>
     <string name="im_removed_from_group">你已被移出该群聊</string>
 
     <!-- 未读数超过 99 时的徽标文案。 -->

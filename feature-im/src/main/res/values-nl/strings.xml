@@ -77,6 +77,8 @@
     <string name="im_group_transfer_confirm">Groepseigendom overdragen aan %1$s?</string>
     <string name="im_group_clear_history">Chatgeschiedenis wissen</string>
     <string name="im_group_clear_confirm">Wist alleen je eigen weergave; andere leden behouden hun geschiedenis.</string>
+    <string name="im_direct_settings_title">Chat-instellingen</string>
+    <string name="im_group_button">Nieuwe groep</string>
     <string name="im_removed_from_group">Je bent uit deze groep verwijderd</string>
 
     <string name="im_unread_overflow">99+</string>

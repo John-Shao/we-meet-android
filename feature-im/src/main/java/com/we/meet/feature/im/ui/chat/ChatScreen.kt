@@ -116,6 +116,7 @@ fun ChatScreen(
     cid: String,
     onBack: () -> Unit,
     onOpenInfo: (cid: String) -> Unit,
+    onOpenDirectSettings: ((cid: String) -> Unit)? = null,
 ) {
     val vm: ChatViewModel =
         viewModel(key = "chat-$cid", factory = remember(deps, cid) { ChatViewModel.Factory(deps, cid) })
@@ -228,9 +229,15 @@ fun ChatScreen(
                     }
                 },
                 actions = {
-                    if (ui.isGroup && !selectMode) {
-                        IconButton(onClick = { onOpenInfo(cid) }) {
-                            Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.im_group_info))
+                    if (!selectMode) {
+                        if (ui.isGroup) {
+                            IconButton(onClick = { onOpenInfo(cid) }) {
+                                Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.im_group_info))
+                            }
+                        } else if (onOpenDirectSettings != null) {
+                            IconButton(onClick = { onOpenDirectSettings(cid) }) {
+                                Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.im_direct_settings_title))
+                            }
                         }
                     }
                 },
