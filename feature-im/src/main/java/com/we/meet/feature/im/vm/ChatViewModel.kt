@@ -165,6 +165,13 @@ class ChatViewModel internal constructor(
         }
     }
 
+    /** Reload the newest page from the server — called on resume so that
+     *  "clear history" / external mutations take effect immediately. */
+    fun reloadHistory() {
+        loadNewest()
+        loadReadSnapshot()
+    }
+
     /** A conversation the user can forward into (excludes the current one). */
     data class ForwardTarget(val cid: String, val title: String)
 
@@ -520,6 +527,7 @@ class ChatViewModel internal constructor(
         viewModelScope.launch {
             runCatching { session.client.loadHistory(cid, limit = PAGE_SIZE) }
                 .onSuccess { res ->
+                    raw = emptyList()  // Replace — clear history in SDK returns empty page.
                     mergeRaw(res.messages.asReversed())
                     _ui.update { s -> deriveRows(s.copy(hasMore = res.hasMore, error = null)) }
                     if (visible) {

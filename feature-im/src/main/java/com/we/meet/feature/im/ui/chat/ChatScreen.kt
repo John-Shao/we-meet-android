@@ -145,8 +145,10 @@ fun ChatScreen(
     androidx.activity.compose.BackHandler(enabled = selectMode) { exitSelect() }
 
     // Read marking only while RESUMED — a backgrounded chat must not eat unread.
+    // Also reload newest page on resume so "clear history" takes effect.
     LifecycleResumeEffect(Unit) {
         vm.setVisible(true)
+        vm.reloadHistory()
         onPauseOrDispose { vm.setVisible(false) }
     }
 
