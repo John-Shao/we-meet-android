@@ -295,6 +295,7 @@ fun AppNav() {
                 onBack = rememberOnceOnly(safePop),
                 onOpenInfo = { navController.navigate(Routes.imGroupInfo(it)) },
                 onOpenDirectSettings = { navController.navigate(Routes.imDirectSettings(it)) },
+                onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
             )
         }
 

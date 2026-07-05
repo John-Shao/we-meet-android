@@ -89,6 +89,8 @@ fun MessageBubble(
     /** @-mention highlighting (P10): all candidate names + the subset meaning "you". */
     mentionNames: List<String> = emptyList(),
     selfMentionNames: List<String> = emptyList(),
+    /** Tap the sender's avatar → navigate to their personal info page. */
+    onAvatarClick: (() -> Unit)? = null,
 ) {
     val content = remember(message.mid) {
         MessageContentParser.parse(message.contentType, message.body)
@@ -132,6 +134,7 @@ fun MessageBubble(
                 url = senderAvatarUrl,
                 cacheKey = "im-avatar:${message.senderUid}",
                 size = 36.dp,
+                modifier = if (onAvatarClick != null) Modifier.clickable(onClick = onAvatarClick) else Modifier,
             )
             Spacer(Modifier.width(8.dp))
         }

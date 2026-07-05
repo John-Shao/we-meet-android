@@ -117,6 +117,7 @@ fun ChatScreen(
     onBack: () -> Unit,
     onOpenInfo: (cid: String) -> Unit,
     onOpenDirectSettings: ((cid: String) -> Unit)? = null,
+    onMemberClick: ((userId: String) -> Unit)? = null,
 ) {
     val vm: ChatViewModel =
         viewModel(key = "chat-$cid", factory = remember(deps, cid) { ChatViewModel.Factory(deps, cid) })
@@ -351,6 +352,9 @@ fun ChatScreen(
                                     reactions = ui.reactions[message.mid].orEmpty(),
                                     onLongPress = if (!selectMode && message.mid !in ui.recalledMids) {
                                         { actionTarget = message }
+                                    } else null,
+                                    onAvatarClick = if (onMemberClick != null && !isOwn && sender?.id != null) {
+                                        { onMemberClick(sender.id) }
                                     } else null,
                                     mentionNames = mentionHi,
                                     selfMentionNames = selfHi,
