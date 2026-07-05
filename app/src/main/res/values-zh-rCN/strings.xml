@@ -237,7 +237,7 @@
     <string name="contacts_load_error">通讯录加载失败</string>
     <string name="contacts_retry">重试</string>
     <string name="contacts_load_more">加载更多</string>
-    <string name="member_detail_title">成员详情</string>
+    <string name="member_detail_title">个人信息</string>
     <string name="member_action_message">发消息</string>
     <string name="member_label_email">邮箱</string>
     <string name="member_label_department">部门</string>
