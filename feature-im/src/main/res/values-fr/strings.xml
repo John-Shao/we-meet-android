@@ -36,6 +36,7 @@
     <string name="im_menu_unpin">Désépingler</string>
     <string name="im_menu_mute">Mettre en sourdine</string>
     <string name="im_menu_unmute">Réactiver les notifications</string>
+    <string name="im_menu_mute_at_all">Désactiver les notifications @tout le monde</string>
     <string name="im_menu_delete">Supprimer la conversation</string>
     <string name="im_menu_leave">Quitter le groupe</string>
     <string name="im_menu_leave_dissolve">Quitter ou dissoudre le groupe</string>
@@ -113,6 +114,11 @@
     <string name="im_action_forward">Transférer</string>
     <string name="im_action_multi_select">Sélectionner</string>
     <string name="im_action_forward_merged">Transférer comme historique</string>
+    <string name="im_action_forward_one_by_one">Transférer un par un</string>
     <string name="im_forward_to">Transférer à</string>
     <string name="im_selected_count">%1$d sélectionné(s)</string>
+    <string name="im_action_delete">Supprimer</string>
+    <string name="im_delete_confirm_title">Supprimer les messages ?</string>
+    <string name="im_delete_confirm_message">Supprimer %1$d messages sélectionnés ? Ils seront masqués pour tous les membres.</string>
+    <string name="im_delete_failed">Échec de la suppression</string>
 </resources>

@@ -38,6 +38,7 @@
     <string name="im_menu_unpin">Unpin</string>
     <string name="im_menu_mute">Mute</string>
     <string name="im_menu_unmute">Unmute</string>
+    <string name="im_menu_mute_at_all">Don\'t notify for @everyone</string>
     <string name="im_menu_delete">Delete conversation</string>
     <string name="im_menu_leave">Leave group</string>
     <string name="im_menu_leave_dissolve">Leave or dissolve group</string>
@@ -119,6 +120,11 @@
     <string name="im_action_forward">Forward</string>
     <string name="im_action_multi_select">Select</string>
     <string name="im_action_forward_merged">Forward as record</string>
+    <string name="im_action_forward_one_by_one">Forward one by one</string>
     <string name="im_forward_to">Forward to</string>
     <string name="im_selected_count">%1$d selected</string>
+    <string name="im_action_delete">Delete</string>
+    <string name="im_delete_confirm_title">Delete messages?</string>
+    <string name="im_delete_confirm_message">Delete %1$d selected messages? They will be hidden for all members.</string>
+    <string name="im_delete_failed">Delete failed</string>
 </resources>

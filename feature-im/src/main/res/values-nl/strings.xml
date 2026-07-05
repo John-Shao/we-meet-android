@@ -36,6 +36,7 @@
     <string name="im_menu_unpin">Losmaken</string>
     <string name="im_menu_mute">Dempen</string>
     <string name="im_menu_unmute">Dempen opheffen</string>
+    <string name="im_menu_mute_at_all">@iedereen meldingen uitschakelen</string>
     <string name="im_menu_delete">Gesprek verwijderen</string>
     <string name="im_menu_leave">Groep verlaten</string>
     <string name="im_menu_leave_dissolve">Groep verlaten of opheffen</string>
@@ -113,6 +114,11 @@
     <string name="im_action_forward">Doorsturen</string>
     <string name="im_action_multi_select">Selecteren</string>
     <string name="im_action_forward_merged">Als gesprek doorsturen</string>
+    <string name="im_action_forward_one_by_one">Eén voor één doorsturen</string>
     <string name="im_forward_to">Doorsturen naar</string>
     <string name="im_selected_count">%1$d geselecteerd</string>
+    <string name="im_action_delete">Verwijderen</string>
+    <string name="im_delete_confirm_title">Berichten verwijderen?</string>
+    <string name="im_delete_confirm_message">%1$d geselecteerde berichten verwijderen? Ze worden voor alle leden verborgen.</string>
+    <string name="im_delete_failed">Verwijderen mislukt</string>
 </resources>

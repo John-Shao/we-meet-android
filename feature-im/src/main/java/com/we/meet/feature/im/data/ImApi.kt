@@ -88,4 +88,10 @@ internal interface ImApi {
     suspend fun resolveMedia(
         @Body body: Map<String, @JvmSuppressWildcards Any>,
     ): Map<String, String>
+
+    /** Batch-delete messages: `{"cid": ..., "mids": [...]}`. Any member may delete. */
+    @POST("api/v1.0/im/messages/delete/")
+    suspend fun deleteMessages(
+        @Body body: Map<String, @JvmSuppressWildcards Any>,
+    ): Map<String, Any>
 }

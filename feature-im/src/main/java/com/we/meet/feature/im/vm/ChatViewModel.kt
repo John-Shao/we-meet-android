@@ -217,6 +217,22 @@ class ChatViewModel internal constructor(
         }
     }
 
+    /**
+     * Forward each selected message individually (逐条转发) to [targetCid].
+     * Sends messages in seq order so the target conversation displays them
+     * in the same chronological sequence.
+     */
+    fun forwardOneByOne(messages: List<Message>, targetCid: String) {
+        if (messages.isEmpty()) return
+        viewModelScope.launch {
+            messages.sortedBy { it.seq }.forEach { m ->
+                runCatching {
+                    session.client.sendText(targetCid, m.body, contentType = m.contentType)
+                }.onFailure { Log.w(TAG, "forwardOneByOne failed for mid=${m.mid}", it) }
+            }
+        }
+    }
+
     /** Full plain-text for a merged line (media → placeholder, text/quote → full). */
     private fun mergedTextOf(m: Message): String =
         when (val c = MessageContentParser.parse(m.contentType, m.body)) {
@@ -368,6 +384,32 @@ class ChatViewModel internal constructor(
             } catch (e: Throwable) {
                 Log.w(TAG, "recall failed", e)
                 _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
+            }
+        }
+    }
+
+    /**
+     * Batch-delete selected messages via the backend bridge. On success, the
+     * messages are removed from the local cache so the UI updates immediately.
+     */
+    fun deleteMessages(
+        mids: Collection<Long>,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        viewModelScope.launch {
+            try {
+                session.bridge.deleteMessages(cid, mids)
+                // Remove deleted mids from the raw list + recompute renderable rows.
+                raw = raw.filterNot { it.mid in mids }
+                _ui.update { s ->
+                    deriveRows(s).copy(error = null)
+                }
+                onSuccess()
+            } catch (e: Throwable) {
+                Log.w(TAG, "deleteMessages failed", e)
+                _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
+                onError(e.message ?: e::class.simpleName ?: "")
             }
         }
     }

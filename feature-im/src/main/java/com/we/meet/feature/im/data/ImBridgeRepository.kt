@@ -66,4 +66,9 @@ internal class ImBridgeRepository(private val api: ImApi) {
     suspend fun resolveMedia(objectKeys: Collection<String>): Map<String, String> =
         if (objectKeys.isEmpty()) emptyMap()
         else api.resolveMedia(mapOf("object_keys" to objectKeys.toList()))
+
+    /** Batch-delete messages from a conversation. Any member may delete. */
+    suspend fun deleteMessages(cid: String, mids: Collection<Long>) {
+        api.deleteMessages(mapOf("cid" to cid, "mids" to mids.toList()))
+    }
 }

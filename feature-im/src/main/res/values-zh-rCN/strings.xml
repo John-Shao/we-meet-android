@@ -38,6 +38,7 @@
     <string name="im_menu_unpin">取消置顶</string>
     <string name="im_menu_mute">消息免打扰</string>
     <string name="im_menu_unmute">取消免打扰</string>
+    <string name="im_menu_mute_at_all">@所有人的消息不提示</string>
     <string name="im_menu_delete">删除会话</string>
     <string name="im_menu_leave">退出群聊</string>
     <string name="im_menu_leave_dissolve">退出或解散群聊</string>
@@ -119,6 +120,11 @@
     <string name="im_action_forward">转发</string>
     <string name="im_action_multi_select">多选</string>
     <string name="im_action_forward_merged">合并转发</string>
+    <string name="im_action_forward_one_by_one">逐条转发</string>
     <string name="im_forward_to">转发到</string>
     <string name="im_selected_count">已选 %1$d 条</string>
+    <string name="im_action_delete">删除</string>
+    <string name="im_delete_confirm_title">删除消息？</string>
+    <string name="im_delete_confirm_message">确定删除选中的 %1$d 条消息？删除后所有成员均不可见。</string>
+    <string name="im_delete_failed">删除失败</string>
 </resources>

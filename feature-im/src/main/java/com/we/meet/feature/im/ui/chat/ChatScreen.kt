@@ -94,8 +94,11 @@ import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.VideoCall
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
@@ -134,6 +137,8 @@ fun ChatScreen(
     var selectMode by remember { mutableStateOf(false) }
     var selectedMids by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var pickMergedTarget by remember { mutableStateOf(false) }
+    var pickOneByOneTarget by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     fun exitSelect() { selectMode = false; selectedMids = emptySet() }
     androidx.activity.compose.BackHandler(enabled = selectMode) { exitSelect() }
 
@@ -374,9 +379,11 @@ fun ChatScreen(
             }
 
             if (selectMode) {
-                ForwardActionBar(
+                SelectActionBar(
                     enabled = selectedMids.isNotEmpty(),
+                    onOneByOne = { pickOneByOneTarget = true },
                     onMerged = { pickMergedTarget = true },
+                    onDelete = { showDeleteConfirm = true },
                 )
             } else
             MessageInputBar(
@@ -452,6 +459,66 @@ fun ChatScreen(
             onDismiss = { pickMergedTarget = false },
         )
     }
+    if (pickOneByOneTarget) {
+        val chosen = ui.messages.filter { it.mid in selectedMids }
+        ForwardTargetDialog(
+            targets = vm.forwardTargets(),
+            onPick = { targetCid ->
+                vm.forwardOneByOne(chosen, targetCid)
+                pickOneByOneTarget = false
+                exitSelect()
+            },
+            onDismiss = { pickOneByOneTarget = false },
+        )
+    }
+
+    // Delete confirmation dialog.
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text(stringResource(R.string.im_delete_confirm_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.im_delete_confirm_message,
+                        selectedMids.size,
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirm = false
+                        vm.deleteMessages(
+                            mids = selectedMids,
+                            onSuccess = {
+                                exitSelect()
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.im_action_delete),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            },
+                            onError = { msg ->
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.im_delete_failed) + ": $msg",
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            },
+                        )
+                    },
+                ) {
+                    Text(stringResource(R.string.im_action_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text(stringResource(R.string.im_action_cancel))
+                }
+            },
+        )
+    }
 
     lightboxKey?.let { key ->
         ImageLightbox(
@@ -487,9 +554,14 @@ private fun receiptLabel(
     stringResource(R.string.im_read_count, readCount, memberCount)
 }
 
-/** Bottom bar shown in multi-select mode: merge-forward the selected messages. */
+/** Bottom bar shown in multi-select mode: forward one-by-one, merge-forward, delete. */
 @Composable
-private fun ForwardActionBar(enabled: Boolean, onMerged: () -> Unit) {
+private fun SelectActionBar(
+    enabled: Boolean,
+    onOneByOne: () -> Unit,
+    onMerged: () -> Unit,
+    onDelete: () -> Unit,
+) {
     androidx.compose.material3.Surface(
         tonalElevation = 3.dp,
         modifier = Modifier.fillMaxWidth(),
@@ -498,10 +570,22 @@ private fun ForwardActionBar(enabled: Boolean, onMerged: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+            horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
-            androidx.compose.material3.TextButton(onClick = onMerged, enabled = enabled) {
+            TextButton(onClick = onOneByOne, enabled = enabled) {
+                Text(stringResource(R.string.im_action_forward_one_by_one))
+            }
+            TextButton(onClick = onMerged, enabled = enabled) {
                 Text(stringResource(R.string.im_action_forward_merged))
+            }
+            TextButton(
+                onClick = onDelete,
+                enabled = enabled,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error,
+                ),
+            ) {
+                Text(stringResource(R.string.im_action_delete))
             }
         }
     }
