@@ -172,6 +172,9 @@ class ChatViewModel internal constructor(
         loadReadSnapshot()
     }
 
+    /** Hard retry the WS connection — mirrors ConversationListViewModel.retryConnection. */
+    fun retryConnection() = session.retry()
+
     /** A conversation the user can forward into (excludes the current one). */
     data class ForwardTarget(val cid: String, val title: String)
 

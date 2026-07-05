@@ -145,10 +145,16 @@ fun ChatScreen(
     androidx.activity.compose.BackHandler(enabled = selectMode) { exitSelect() }
 
     // Read marking only while RESUMED — a backgrounded chat must not eat unread.
-    // Also reload newest page on resume so "clear history" takes effect.
+    // Also reload newest page on resume so "clear history" takes effect,
+    // and retry the WS if in a terminal state (mirrors ConversationListScreen).
     LifecycleResumeEffect(Unit) {
         vm.setVisible(true)
         vm.reloadHistory()
+        if (connection == ConnectionState.AUTH_FAILED ||
+            connection == ConnectionState.DISCONNECTED
+        ) {
+            vm.retryConnection()
+        }
         onPauseOrDispose { vm.setVisible(false) }
     }
 
