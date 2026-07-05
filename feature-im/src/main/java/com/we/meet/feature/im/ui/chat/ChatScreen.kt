@@ -46,6 +46,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -147,13 +148,15 @@ fun ChatScreen(
     // Read marking only while RESUMED — a backgrounded chat must not eat unread.
     // Also reload newest page on resume so "clear history" takes effect,
     // and retry the WS if in a terminal state (mirrors ConversationListScreen).
+    val currentConn by rememberUpdatedState(connection)
     LifecycleResumeEffect(Unit) {
         vm.setVisible(true)
         vm.reloadHistory()
-        if (connection == ConnectionState.AUTH_FAILED ||
-            connection == ConnectionState.DISCONNECTED
+        if (currentConn == ConnectionState.AUTH_FAILED ||
+            currentConn == ConnectionState.DISCONNECTED
         ) {
             vm.retryConnection()
+            Toast.makeText(context, context.getString(R.string.im_status_reconnecting), Toast.LENGTH_SHORT).show()
         }
         onPauseOrDispose { vm.setVisible(false) }
     }

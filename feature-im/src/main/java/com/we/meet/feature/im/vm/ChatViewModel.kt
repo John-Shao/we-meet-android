@@ -304,6 +304,11 @@ class ChatViewModel internal constructor(
         val trimmed = body.trim()
         if (trimmed.isEmpty()) return
         viewModelScope.launch {
+            // Auto-retry if the socket is in a terminal state.
+            val s = connectionState.value
+            if (s == ConnectionState.DISCONNECTED || s == ConnectionState.AUTH_FAILED) {
+                session.retry()
+            }
             try {
                 session.client.sendText(cid, trimmed)
                 _ui.update { it.copy(error = null, sentTick = it.sentTick + 1) }
