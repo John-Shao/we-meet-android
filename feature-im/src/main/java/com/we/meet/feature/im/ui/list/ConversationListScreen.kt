@@ -51,6 +51,7 @@ import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.ui.common.ConnectionStatusBar
 import com.we.meet.feature.im.ui.common.ErrorBanner
+import com.we.meet.feature.im.ui.common.GroupAvatar
 import com.we.meet.feature.im.ui.common.previewText
 import com.we.meet.feature.im.vm.ConversationListViewModel
 import com.we.meet.feature.im.vm.ConversationRowUi
@@ -136,6 +137,7 @@ fun ConversationListScreen(
                 items(rows, key = { it.cid }) { row ->
                     ConversationRow(
                         row = row,
+                        resolveUser = { vm.resolveUser(it) },
                         onClick = { onOpenChat(row.cid) },
                         onLongClick = { menuFor = row },
                     )
@@ -218,6 +220,7 @@ fun ConversationListScreen(
 @Composable
 private fun ConversationRow(
     row: ConversationRowUi,
+    resolveUser: (String) -> com.we.meet.feature.im.data.ImUserInfo?,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
@@ -233,7 +236,10 @@ private fun ConversationRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (row.isGroup) {
-                GroupAvatar(title = row.title)
+                GroupAvatar(
+                    memberUids = row.memberUids,
+                    resolveUser = resolveUser,
+                )
             } else {
                 MemberAvatar(
                     name = row.title,
@@ -310,33 +316,6 @@ private fun ConversationRow(
                         UnreadBadge(count = row.unread, subdued = row.muted)
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun GroupAvatar(title: String) {
-    Surface(
-        color = MaterialTheme.colorScheme.primaryContainer,
-        // 圆角方形,与 Web / MemberAvatar 一致(边长 20%)。
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(9.dp),
-        modifier = Modifier.size(44.dp),
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            if (title.isNotBlank()) {
-                Text(
-                    text = title.first().uppercase(),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    fontWeight = FontWeight.Medium,
-                )
-            } else {
-                Icon(
-                    Icons.Filled.Groups,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(24.dp),
-                )
             }
         }
     }

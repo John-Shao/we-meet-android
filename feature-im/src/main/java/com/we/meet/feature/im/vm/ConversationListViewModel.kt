@@ -7,6 +7,7 @@ import com.jusi.lightim.ConnectionState
 import com.jusi.lightim.ConversationSummary
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
+import com.we.meet.feature.im.data.ImUserInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +24,8 @@ data class ConversationRowUi(
     val avatarUrl: String?,
     /** Stable identity for the avatar cache (peer uid for directs). */
     val avatarKey: String,
+    /** Group member IM uids — used by the 9-grid group avatar. */
+    val memberUids: List<String> = emptyList(),
     /** Resolved display name of the last sender (groups prefix the preview). */
     val lastSenderName: String?,
     val lastContentType: String?,
@@ -67,6 +70,9 @@ class ConversationListViewModel internal constructor(
                 c.lastSenderUid?.let { add(it) }
                 if (c.type != "group") {
                     addAll(c.members.filterNot { it == selfUid })
+                } else {
+                    // Group: resolve member uids for the 9-grid group avatar.
+                    addAll(c.members.take(9))
                 }
             }
         }
@@ -106,6 +112,9 @@ class ConversationListViewModel internal constructor(
         _actionError.value = null
     }
 
+    /** Resolve a member uid → display identity (for the 9-grid group avatar). */
+    fun resolveUser(uid: String): ImUserInfo? = session.userDirectory.get(uid)
+
     private fun ConversationSummary.toRow(selfUid: String?): ConversationRowUi {
         val isGroup = type == "group"
         val peerUid = if (!isGroup) members.firstOrNull { it != selfUid } else null
@@ -123,6 +132,7 @@ class ConversationListViewModel internal constructor(
             title = title,
             avatarUrl = if (!isGroup) peer?.avatarUrl?.takeIf { it.isNotBlank() } else null,
             avatarKey = peerUid ?: cid,
+            memberUids = if (isGroup) members else emptyList(),
             lastSenderName = if (isGroup) sender else null,
             lastContentType = lastContentType,
             lastMessage = lastMessage,
