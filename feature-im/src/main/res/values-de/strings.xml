@@ -121,6 +121,6 @@
     <string name="im_selected_count">%1$d ausgewählt</string>
     <string name="im_action_delete">Löschen</string>
     <string name="im_delete_confirm_title">Nachrichten löschen?</string>
-    <string name="im_delete_confirm_message">%1$d ausgewählte Nachrichten löschen? Sie werden für alle Mitglieder ausgeblendet.</string>
+    <string name="im_delete_confirm_message">%1$d ausgewählte Nachrichten löschen? Sie werden nur aus deiner Ansicht entfernt; andere Mitglieder sehen sie weiterhin.</string>
     <string name="im_delete_failed">Löschen fehlgeschlagen</string>
 </resources>

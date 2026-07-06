@@ -7,6 +7,7 @@ import com.jusi.lightim.Client
 import com.jusi.lightim.ConnectionState
 import com.we.meet.feature.im.data.ChatUploadRepository
 import com.we.meet.feature.im.data.ConversationRepository
+import com.we.meet.feature.im.data.DeletedMessageStore
 import com.we.meet.feature.im.data.ImApi
 import com.we.meet.feature.im.data.ImBridgeRepository
 import com.we.meet.feature.im.data.MediaResolver
@@ -67,6 +68,9 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
     internal val userDirectory = UserDirectory(bridge, scope)
     internal val mediaResolver = MediaResolver(bridge)
     internal val uploads = ChatUploadRepository(bridge, appContext.contentResolver)
+
+    /** Per-device 「删除消息」持久化(仅本端隐藏,jusi 无服务端删除)。 */
+    internal val deletedMessages = DeletedMessageStore(appContext)
 
     val connectionState: StateFlow<ConnectionState> = client.state
 

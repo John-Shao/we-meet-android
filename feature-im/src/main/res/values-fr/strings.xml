@@ -76,8 +76,10 @@
     <string name="im_group_transfer_owner">Transférer la propriété</string>
     <string name="im_group_transfer_confirm">Transférer la propriété du groupe à %1$s ?</string>
     <string name="im_group_clear_history">Effacer l\'historique</string>
-    <string name="im_group_clear_confirm">N\'efface que votre propre vue ; les autres membres conservent leur historique.</string>    <string name="im_direct_settings_title">Paramètres de discussion</string>
-    <string name="im_group_button">Nouveau groupe</string>    <string name="im_removed_from_group">Vous avez été retiré de ce groupe</string>
+    <string name="im_group_clear_confirm">N\'efface que votre propre vue ; les autres membres conservent leur historique.</string>
+    <string name="im_direct_settings_title">Paramètres de discussion</string>
+    <string name="im_group_button">Nouveau groupe</string>
+    <string name="im_removed_from_group">Vous avez été retiré de ce groupe</string>
 
     <string name="im_unread_overflow">99+</string>
     <string name="im_preview_voice">[Message vocal]</string>
@@ -119,6 +121,6 @@
     <string name="im_selected_count">%1$d sélectionné(s)</string>
     <string name="im_action_delete">Supprimer</string>
     <string name="im_delete_confirm_title">Supprimer les messages ?</string>
-    <string name="im_delete_confirm_message">Supprimer %1$d messages sélectionnés ? Ils seront masqués pour tous les membres.</string>
+    <string name="im_delete_confirm_message">Supprimer %1$d messages sélectionnés ? Ils seront retirés de votre affichage uniquement ; les autres membres les voient toujours.</string>
     <string name="im_delete_failed">Échec de la suppression</string>
 </resources>

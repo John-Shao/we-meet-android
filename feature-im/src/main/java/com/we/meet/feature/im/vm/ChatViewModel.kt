@@ -103,6 +103,13 @@ class ChatViewModel internal constructor(
      */
     private var raw: List<Message> = emptyList()
 
+    /** Locally-deleted mids (仅本端删除,持久化);filtered out of rendered rows. */
+    private var deletedMids: Set<Long> = session.deletedMessages.get(cid)
+
+    /** Skip the first resume-triggered reload — init() already loaded the newest
+     *  page + read snapshot, so the first RESUMED tick would double-fetch. */
+    private var reloadArmed = false
+
     init {
         _ui.update { it.copy(selfUid = session.selfUid.value) }
         viewModelScope.launch { session.selfUid.collect { uid -> _ui.update { s -> s.copy(selfUid = uid) } } }
@@ -184,6 +191,13 @@ class ChatViewModel internal constructor(
     /** Reload the newest page from the server — called on resume so that
      *  "clear history" / external mutations take effect immediately. */
     fun reloadHistory() {
+        // init() already did the first load; skip the first RESUMED tick to avoid
+        // a redundant double-fetch on entering the chat. Later resumes (real
+        // background→foreground / clear-history / resync) reload as before.
+        if (!reloadArmed) {
+            reloadArmed = true
+            return
+        }
         loadNewest()
         loadReadSnapshot()
     }
@@ -431,7 +445,9 @@ class ChatViewModel internal constructor(
         viewModelScope.launch {
             try {
                 session.bridge.deleteMessages(cid, mids)
-                // Remove deleted mids from the raw list + recompute renderable rows.
+                // 仅本端删除:持久化已删 mid(重进/重启不复现)+ 立即从渲染中过滤。
+                session.deletedMessages.add(cid, mids)
+                deletedMids = deletedMids + mids
                 raw = raw.filterNot { it.mid in mids }
                 _ui.update { s ->
                     deriveRows(s).copy(error = null)
@@ -605,7 +621,9 @@ class ChatViewModel internal constructor(
             }
         }
         return s.copy(
-            messages = raw.filterNot { MessageContentParser.isControlType(it.contentType) },
+            messages = raw.filterNot {
+                MessageContentParser.isControlType(it.contentType) || it.mid in deletedMids
+            },
             recalledMids = recalled,
             reactions = reactions
                 .mapValues { (_, perEmoji) ->

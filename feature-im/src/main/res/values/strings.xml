@@ -127,6 +127,6 @@
     <string name="im_selected_count">%1$d selected</string>
     <string name="im_action_delete">Delete</string>
     <string name="im_delete_confirm_title">Delete messages?</string>
-    <string name="im_delete_confirm_message">Delete %1$d selected messages? They will be hidden for all members.</string>
+    <string name="im_delete_confirm_message">Delete %1$d selected messages? They\'ll be removed from your view only — other members can still see them.</string>
     <string name="im_delete_failed">Delete failed</string>
 </resources>
