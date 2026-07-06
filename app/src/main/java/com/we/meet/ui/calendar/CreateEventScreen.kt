@@ -114,11 +114,17 @@ fun CreateEventScreen(
         runCatching { app.apiClient.calendarApi.getEvent(editEventId) }
             .onSuccess { e ->
                 val zone = ZoneId.systemDefault()
+                // All-day events are anchored to their AUTHORED zone's midnight;
+                // parse them in that zone (device-TZ parsing shifts the shown day
+                // ±1 vs the calendar grid — same bug fixed on the detail page).
+                // Timed events keep device wall-clock, matching the timed pickers.
+                val eventZone = runCatching { ZoneId.of(e.timezone) }.getOrNull() ?: zone
+                val parseZone = if (e.allDay) eventZone else zone
                 title = e.title
                 description = e.description
                 allDay = e.allDay
-                val startLdt = OffsetDateTime.parse(e.startAt).atZoneSameInstant(zone).toLocalDateTime()
-                val endLdt = OffsetDateTime.parse(e.endAt).atZoneSameInstant(zone).toLocalDateTime()
+                val startLdt = OffsetDateTime.parse(e.startAt).atZoneSameInstant(parseZone).toLocalDateTime()
+                val endLdt = OffsetDateTime.parse(e.endAt).atZoneSameInstant(parseZone).toLocalDateTime()
                 start = startLdt
                 // All-day end is stored exclusive (next midnight) → show inclusive last day.
                 end = if (e.allDay) endLdt.minusDays(1) else endLdt
