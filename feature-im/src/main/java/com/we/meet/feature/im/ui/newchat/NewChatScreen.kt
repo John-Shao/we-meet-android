@@ -33,6 +33,8 @@ fun NewChatScreen(
     deps: ImDeps,
     onChatReady: (cid: String) -> Unit,
     onCancel: () -> Unit,
+    /** 从直聊「新建群聊」进入时预选的对端 userId(在选人器里预勾选)。 */
+    preselectUserId: String? = null,
 ) {
     val session = remember(deps) { ImSession.get(deps) }
     val context = LocalContext.current
@@ -54,6 +56,7 @@ fun NewChatScreen(
         ContactPicker(
             deps = deps,
             mode = ContactPickerMode.Multi,
+            preselectUserIds = setOfNotNull(preselectUserId),
             onConfirm = { picked ->
                 when {
                     picked.isEmpty() -> onCancel()

@@ -74,6 +74,8 @@ fun ContactPicker(
     mode: ContactPickerMode,
     excludeSelf: Boolean = true,
     excludeUserIds: Set<String> = emptySet(),
+    /** Multi 模式下预勾选的 userId(如从直聊「新建群聊」带入对端);加载到即选中一次。 */
+    preselectUserIds: Set<String> = emptySet(),
     onConfirm: (List<PickedMember>) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -86,6 +88,18 @@ fun ContactPicker(
     var error by remember { mutableStateOf(false) }
     var reloadTick by remember { mutableStateOf(0) }
     val selected = remember { mutableStateOf<Map<String, PickedMember>>(linkedMapOf()) }
+
+    // 预勾选:成员加载到后,把 preselectUserIds 里出现的成员选中一次(seeded 后不再
+    // 重复,尊重用户随后的取消)。仅 Multi 模式有意义(Single 点选即确认)。
+    var seeded by remember { mutableStateOf(false) }
+    LaunchedEffect(members) {
+        if (seeded || preselectUserIds.isEmpty()) return@LaunchedEffect
+        val add = members.filter { it.id in preselectUserIds && it.id !in selected.value }
+        if (add.isNotEmpty()) {
+            selected.value = selected.value + add.associate { it.id to it.toPicked() }
+            seeded = true
+        }
+    }
 
     LaunchedEffect(repository, reloadTick) {
         snapshotFlow { query }

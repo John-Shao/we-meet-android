@@ -5,11 +5,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -28,11 +25,6 @@ data class DirectSettingsUiState(
     val error: String? = null,
 )
 
-sealed interface DirectSettingsEvent {
-    /** History cleared — the chat screen should reload. */
-    data object HistoryCleared : DirectSettingsEvent
-}
-
 /**
  * Direct (1-on-1) chat settings VM — mirrors Web DirectSettingsPanel.
  *
@@ -46,9 +38,6 @@ class DirectChatSettingsViewModel internal constructor(
 
     private val _ui = MutableStateFlow(DirectSettingsUiState(cid = cid))
     val ui: StateFlow<DirectSettingsUiState> = _ui.asStateFlow()
-
-    private val _events = MutableSharedFlow<DirectSettingsEvent>(extraBufferCapacity = 2)
-    val events: SharedFlow<DirectSettingsEvent> = _events.asSharedFlow()
 
     private var peerUid: String? = null
 
@@ -108,7 +97,7 @@ class DirectChatSettingsViewModel internal constructor(
     fun clearHistory() = mutate {
         session.client.clearHistory(cid)
         session.conversations.refresh()
-        _events.tryEmit(DirectSettingsEvent.HistoryCleared)
+        // 清空后由返回 ChatScreen 的 resume→reloadHistory 生效(无需事件通道)。
     }
 
     private fun mutate(block: suspend () -> Unit) {

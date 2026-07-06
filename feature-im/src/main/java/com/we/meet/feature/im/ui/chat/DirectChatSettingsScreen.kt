@@ -52,7 +52,8 @@ fun DirectChatSettingsScreen(
     deps: ImDeps,
     cid: String,
     onBack: () -> Unit,
-    onCreateGroup: () -> Unit,
+    /** Open the group picker seeded with this direct chat's peer (userId, 可空)。 */
+    onCreateGroup: (peerUserId: String?) -> Unit,
 ) {
     val vm: DirectChatSettingsViewModel =
         viewModel(key = "direct-settings-$cid", factory = remember(deps, cid) {
@@ -108,7 +109,7 @@ fun DirectChatSettingsScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(enabled = !ui.busy) { onCreateGroup() }
+                    .clickable(enabled = !ui.busy) { onCreateGroup(ui.peerUserId) }
                     .padding(horizontal = 20.dp, vertical = 14.dp),
             ) {
                 Text(

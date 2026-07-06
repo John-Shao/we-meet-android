@@ -88,7 +88,7 @@ object Routes {
     const val IM_CHAT = "$IM_CHAT_BASE/{cid}"
     private const val IM_GROUP_INFO_BASE = "im_group_info"
     const val IM_GROUP_INFO = "$IM_GROUP_INFO_BASE/{cid}"
-    const val IM_NEW_CHAT = "im_new_chat"
+    const val IM_NEW_CHAT = "im_new_chat?peer={peer}"
     private const val IM_ADD_MEMBERS_BASE = "im_add_members"
     const val IM_ADD_MEMBERS = "$IM_ADD_MEMBERS_BASE/{cid}"
     private const val IM_DIRECT_SETTINGS_BASE = "im_direct_settings"
@@ -100,6 +100,11 @@ object Routes {
     private const val EVENT_DETAIL_BASE = "event_detail"
     const val EVENT_DETAIL = "$EVENT_DETAIL_BASE/{eventId}"
     const val CREATE_EVENT = "create_event?epochDay={epochDay}&eventId={eventId}"
+
+    /** New-chat picker, optionally seeded with a peer (从直聊「新建群聊」预选对端)。 */
+    fun imNewChat(peerUserId: String? = null): String =
+        if (peerUserId.isNullOrBlank()) "im_new_chat"
+        else "im_new_chat?peer=${URLEncoder.encode(peerUserId, StandardCharsets.UTF_8.name())}"
 
     fun imChat(cid: String): String =
         "$IM_CHAT_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
@@ -240,7 +245,7 @@ fun AppNav() {
                     }
                 },
                 onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
-                onNewChat = { navController.navigate(Routes.IM_NEW_CHAT) },
+                onNewChat = { navController.navigate(Routes.imNewChat()) },
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 onEventClick = { eventId -> navController.navigate(Routes.eventDetail(eventId)) },
                 onCreateEvent = { epochDay -> navController.navigate(Routes.createEvent(epochDay)) },
@@ -325,19 +330,30 @@ fun AppNav() {
                 deps = app,
                 cid = cid,
                 onBack = rememberOnceOnly(safePop),
-                onCreateGroup = {
-                    // Navigate to NewChatScreen seeded with the peer.
-                    navController.navigate(Routes.IM_NEW_CHAT) {
+                onCreateGroup = { peerUserId ->
+                    // Open the group picker seeded with this direct chat's peer.
+                    navController.navigate(Routes.imNewChat(peerUserId)) {
                         launchSingleTop = true
                     }
                 },
             )
         }
 
-        composable(Routes.IM_NEW_CHAT) {
+        composable(
+            route = Routes.IM_NEW_CHAT,
+            arguments = listOf(
+                navArgument("peer") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
+        ) { entry ->
             val onceBack = rememberOnceOnly(safePop)
+            val peer = entry.arguments?.getString("peer")?.let { Routes.decode(it) }
             NewChatScreen(
                 deps = app,
+                preselectUserId = peer,
                 onChatReady = { cid ->
                     navController.navigate(Routes.imChat(cid)) {
                         // Replace the picker so back from the chat lands on the tabs.
