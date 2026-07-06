@@ -89,8 +89,11 @@ fun MainTabScreen(
     val app = LocalContext.current.applicationContext as WeMeetApp
 
     // Live unread total for the 消息 tab badge — fed by the process-wide IM
-    // session so it counts even while another tab is selected.
-    val imUnread by ImSession.get(app).totalUnread.collectAsStateWithLifecycle()
+    // session so it counts even while another tab is selected. remember-gated so
+    // a recomposition after sign-out (which calls ImSession.shutdown()) can't
+    // resurrect a fresh session/socket for the user just logged out.
+    val imSession = remember { ImSession.get(app) }
+    val imUnread by imSession.totalUnread.collectAsStateWithLifecycle()
 
     // Single source of truth: each tab pairs its bar appearance with its content, so
     // adding/reordering a tab is one edit and the bar can't drift out of sync with

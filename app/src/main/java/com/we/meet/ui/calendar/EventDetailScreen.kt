@@ -237,7 +237,8 @@ private fun EventBody(
     onRsvp: (String) -> Unit,
     onJoinSlug: (String) -> Unit,
 ) {
-    val parsed = event.toParsed()?.ui
+    val parsedFull = event.toParsed()
+    val parsed = parsedFull?.ui
     val dateFmt = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")
     val dayFmt = DateTimeFormatter.ofPattern("yyyy/MM/dd")
 
@@ -268,7 +269,11 @@ private fun EventBody(
         if (parsed != null) {
             Text(
                 text = if (parsed.allDay) {
-                    "${parsed.start.format(dayFmt)} · ${stringResource(R.string.calendar_all_day)}"
+                    // All-day dates render in the event's authored zone (device-TZ
+                    // formatting would shift the shown day ±1 vs the calendar grid).
+                    val eventZone = parsedFull?.zone ?: parsed.start.zone
+                    val allDayDate = parsed.start.withZoneSameInstant(eventZone)
+                    "${allDayDate.format(dayFmt)} · ${stringResource(R.string.calendar_all_day)}"
                 } else {
                     "${parsed.start.format(dateFmt)} – ${parsed.end.format(dateFmt)}"
                 },

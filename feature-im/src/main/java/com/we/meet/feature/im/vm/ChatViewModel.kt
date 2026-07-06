@@ -151,6 +151,22 @@ class ChatViewModel internal constructor(
                 loadReadSnapshot()
             }
         }
+        // Re-derive a direct chat's title once the peer's profile resolves —
+        // refreshConversationShape only reads the cache once, so a cold peer
+        // (e.g. opened from contacts) would otherwise stay "Untitled chat".
+        viewModelScope.launch {
+            session.userDirectory.version.collect {
+                val s = _ui.value
+                if (s.isGroup) return@collect
+                val self = session.selfUid.value
+                val peerUid = session.conversations.conversations.value
+                    .firstOrNull { it.cid == cid }?.members?.firstOrNull { it != self } ?: return@collect
+                val name = session.userDirectory.get(peerUid)?.displayName
+                if (!name.isNullOrBlank() && name != s.title) {
+                    _ui.update { it.copy(title = name) }
+                }
+            }
+        }
     }
 
     // ---- lifecycle ----
@@ -287,7 +303,7 @@ class ChatViewModel internal constructor(
         viewModelScope.launch {
             runCatching { session.client.loadHistory(cid, beforeSeq = oldest, limit = PAGE_SIZE) }
                 .onSuccess { res ->
-                    mergeRaw(res.messages.asReversed())
+                    mergeRaw(res.messages.asReversed(), keepOldest = true)
                     _ui.update { s ->
                         deriveRows(s.copy(hasMore = res.hasMore, loadingOlder = false))
                     }
@@ -555,11 +571,18 @@ class ChatViewModel internal constructor(
         requestNameResolution()
     }
 
-    private fun mergeRaw(incoming: List<Message>) {
-        raw = (raw + incoming)
+    /**
+     * Merge [incoming] into the in-memory window, capped at [MAX_IN_MEMORY].
+     * [keepOldest] controls which end survives the cap: append/live paths keep
+     * the newest (default); upward paging keeps the oldest — otherwise `takeLast`
+     * would discard the just-fetched older page, leaving `oldest` unchanged and
+     * making the top sentinel re-fire loadOlder forever with the same beforeSeq.
+     */
+    private fun mergeRaw(incoming: List<Message>, keepOldest: Boolean = false) {
+        val merged = (raw + incoming)
             .distinctBy { it.mid }
             .sortedBy { it.seq }
-            .takeLast(MAX_IN_MEMORY)
+        raw = if (keepOldest) merged.take(MAX_IN_MEMORY) else merged.takeLast(MAX_IN_MEMORY)
     }
 
     /**

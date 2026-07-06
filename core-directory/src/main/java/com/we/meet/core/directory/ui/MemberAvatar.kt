@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import kotlin.math.abs
 
 /**
  * Rounded-square avatar (WeChat/企业微信 style, 与 Web Avatar 一致:圆角 = 边长 20%)
@@ -78,5 +77,7 @@ private fun fallbackColor(name: String): Color {
         Color(0xFF5B8DEF), Color(0xFF7C6FE0), Color(0xFF43A88A),
         Color(0xFFE0876F), Color(0xFFD46A9C), Color(0xFF6FA8DC),
     )
-    return palette[abs(name.hashCode()) % palette.size]
+    // floorMod (not abs %): abs(Int.MIN_VALUE) is still negative → would crash
+    // with a negative index for a name whose hashCode is exactly Int.MIN_VALUE.
+    return palette[Math.floorMod(name.hashCode(), palette.size)]
 }

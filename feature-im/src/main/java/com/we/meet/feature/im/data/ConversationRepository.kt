@@ -46,11 +46,15 @@ internal class ConversationRepository(
                     refresh()
                     return@collect
                 }
+                // Our own echoed message must not bump our unread badge — only
+                // the peer's read-echo (below) resets it, so a self +1 would show
+                // a phantom unread until that arrives. Still update preview/seq.
+                val isOwn = m.senderUid == selfUid()
                 mutate { list ->
                     list.map { c ->
                         if (c.cid == m.cid) c.copy(
                             lastSeq = maxOf(c.lastSeq, m.seq),
-                            unreadCount = c.unreadCount + 1,
+                            unreadCount = if (isOwn) c.unreadCount else c.unreadCount + 1,
                             lastMessage = m.body,
                             lastMessageTs = m.createdAt,
                             lastSenderUid = m.senderUid,

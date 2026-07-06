@@ -31,7 +31,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.feature.im.data.ImUserInfo
 import kotlin.math.abs
 
@@ -127,6 +126,9 @@ fun GroupAvatar(
                     Tile(
                         avatarUrl = info?.avatarUrl?.takeIf { it.isNotBlank() },
                         name = info?.displayName ?: uid.take(2),
+                        // 稳定 key:presigned URL 每次签名都变,用 uid 才能命中缓存
+                        // (对齐 MemberAvatar 的约定,避免 9 宫格每格 cache-miss)。
+                        cacheKey = "im-avatar:$uid",
                     )
                 }
             }
@@ -135,14 +137,16 @@ fun GroupAvatar(
 }
 
 @Composable
-private fun Tile(avatarUrl: String?, name: String) {
+private fun Tile(avatarUrl: String?, name: String, cacheKey: String) {
     val fallbackColor = tintFor(name)
-    var imageFailed by remember(name) { mutableStateOf(false) }
+    var imageFailed by remember(cacheKey) { mutableStateOf(false) }
 
     if (!avatarUrl.isNullOrBlank() && !imageFailed) {
         AsyncImage(
             model = ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
                 .data(avatarUrl)
+                .memoryCacheKey(cacheKey)
+                .diskCacheKey(cacheKey)
                 .crossfade(true)
                 .build(),
             contentDescription = null,

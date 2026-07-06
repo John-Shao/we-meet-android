@@ -108,14 +108,23 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
             }
         }
         // Resync-on-reconnect: WS gaps are silent message loss.
+        // The SDK transitions RECONNECTING → CONNECTING → CONNECTED, so we can't
+        // compare against the immediate previous state (it's always CONNECTING
+        // at the CONNECTED tick). Latch on RECONNECTING, consume on the next
+        // CONNECTED. The initial connect (DISCONNECTED → CONNECTING → CONNECTED)
+        // never sets the latch, so it doesn't trigger a spurious resync.
         scope.launch {
-            var previous: ConnectionState = ConnectionState.DISCONNECTED
+            var sawReconnect = false
             client.state.collect { state ->
-                if (state == ConnectionState.CONNECTED && previous == ConnectionState.RECONNECTING) {
-                    conversations.refresh()
-                    _onResynced.tryEmit(Unit)
+                when (state) {
+                    ConnectionState.RECONNECTING -> sawReconnect = true
+                    ConnectionState.CONNECTED -> if (sawReconnect) {
+                        sawReconnect = false
+                        conversations.refresh()
+                        _onResynced.tryEmit(Unit)
+                    }
+                    else -> Unit
                 }
-                previous = state
             }
         }
         connect()

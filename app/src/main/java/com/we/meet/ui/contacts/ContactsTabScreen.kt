@@ -50,8 +50,11 @@ fun ContactsTabScreen(onMemberClick: (userId: String) -> Unit) {
     val vm: ContactsViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
 
-    // System back pops one drill level instead of leaving the app.
-    BackHandler(enabled = ui.deptStack.isNotEmpty() && !ui.searching) { vm.popOne() }
+    // System back clears an active search first, then pops one drill level —
+    // otherwise back while searching would leave the tab entirely.
+    BackHandler(enabled = ui.searching || ui.deptStack.isNotEmpty()) {
+        if (ui.searching) vm.onQueryChange("") else vm.popOne()
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
