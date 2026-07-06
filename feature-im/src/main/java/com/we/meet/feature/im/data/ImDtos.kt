@@ -50,6 +50,17 @@ data class ImUserInfo(
         get() = fullName.ifBlank { shortName }
 }
 
+/**
+ * One pre-resolved tile for the 9-grid group avatar. Resolved eagerly in the
+ * VM (not via a callback that reads a directory snapshot at composition), so a
+ * later resolve changes this value and Compose actually recomposes the avatar.
+ */
+data class GroupTile(
+    val uid: String,
+    val name: String,
+    val avatarUrl: String?,
+)
+
 /** Result of POST im/{images,files,audio}/upload-url/ — presigned PUT target. */
 @JsonClass(generateAdapter = true)
 internal data class UploadUrlResponse(

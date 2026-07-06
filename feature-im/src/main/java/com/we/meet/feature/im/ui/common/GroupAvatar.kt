@@ -31,7 +31,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.we.meet.feature.im.data.ImUserInfo
+import com.we.meet.feature.im.data.GroupTile
 import kotlin.math.abs
 
 /** Deterministic palette — same member always gets the same tint. */
@@ -57,17 +57,18 @@ private fun initialOf(name: String): String =
  * - 2–4 → 2×2 grid
  * - 5–9 → 3×3 grid, top row centred
  *
- * Each tile shows the member's uploaded image (if available via [resolveUser]),
- * otherwise a tinted initial.
+ * Each tile shows the member's uploaded image (if present in [tiles]),
+ * otherwise a tinted initial. Tiles are pre-resolved by the caller so a later
+ * directory resolve changes this param and Compose recomposes the grid — a
+ * snapshot-reading callback would leave stale initials frozen on screen.
  */
 @Composable
 fun GroupAvatar(
-    memberUids: List<String>,
-    resolveUser: (uid: String) -> ImUserInfo?,
+    tiles: List<GroupTile>,
     size: Dp = 44.dp,
     modifier: Modifier = Modifier,
 ) {
-    val members = memberUids.take(9)
+    val members = tiles.take(9)
     val n = members.size
 
     if (n == 0) {
@@ -110,8 +111,7 @@ fun GroupAvatar(
             val k = if (r == 0) firstRow else cols
             val leftStartPx = (sizePx - k * tileSidePx) / 2f
             for (c in 0 until k) {
-                val uid = members[idx++]
-                val info = resolveUser(uid)
+                val tile = members[idx++]
                 Box(
                     modifier = Modifier
                         .offset {
@@ -124,11 +124,11 @@ fun GroupAvatar(
                     contentAlignment = Alignment.Center,
                 ) {
                     Tile(
-                        avatarUrl = info?.avatarUrl?.takeIf { it.isNotBlank() },
-                        name = info?.displayName ?: uid.take(2),
+                        avatarUrl = tile.avatarUrl?.takeIf { it.isNotBlank() },
+                        name = tile.name,
                         // 稳定 key:presigned URL 每次签名都变,用 uid 才能命中缓存
                         // (对齐 MemberAvatar 的约定,避免 9 宫格每格 cache-miss)。
-                        cacheKey = "im-avatar:$uid",
+                        cacheKey = "im-avatar:${tile.uid}",
                     )
                 }
             }

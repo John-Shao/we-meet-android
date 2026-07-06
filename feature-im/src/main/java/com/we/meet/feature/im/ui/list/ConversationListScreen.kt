@@ -138,7 +138,6 @@ fun ConversationListScreen(
                 items(rows, key = { it.cid }) { row ->
                     ConversationRow(
                         row = row,
-                        resolveUser = { vm.resolveUser(it) },
                         onClick = { onOpenChat(row.cid) },
                         onLongClick = { menuFor = row },
                     )
@@ -221,7 +220,6 @@ fun ConversationListScreen(
 @Composable
 private fun ConversationRow(
     row: ConversationRowUi,
-    resolveUser: (String) -> com.we.meet.feature.im.data.ImUserInfo?,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
@@ -238,8 +236,7 @@ private fun ConversationRow(
         ) {
             if (row.isGroup) {
                 GroupAvatar(
-                    memberUids = row.memberUids,
-                    resolveUser = resolveUser,
+                    tiles = row.memberTiles,
                 )
             } else {
                 MemberAvatar(
