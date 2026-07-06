@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -59,31 +58,27 @@ class ConversationListViewModel internal constructor(
     val actionError: StateFlow<String?> = _actionError.asStateFlow()
 
     val rows: StateFlow<List<ConversationRowUi>> =
-        session.conversations.conversations.flatMapLatest { conversations ->
-            // Resolve every uid we are about to render BEFORE the first emission so
-            // display names and avatar URLs are already cached when Compose renders
-            // group-avatar tiles.  Without this the fire-and-forget requestResolve
-            // races ahead of Compose and the first frame always falls back to letter
-            // avatars (which then pop-in later after the version bump).
+        combine(
+            session.conversations.conversations,
+            session.userDirectory.version,
+            session.selfUid,
+            session.mentionedCids,
+        ) { conversations, _, selfUid, mentioned ->
+            // 触发 resolve 但不阻塞首帧:列表立即用字母兜底头像渲染,真实头像随
+            // userDirectory.version 下次 bump 补上(微信/飞书式)。之前在这里挂起
+            // resolve(阻塞)会让冷启动/弱网时整列表空白直到返回——比短暂字母帧更差。
             val wanted = buildSet<String> {
                 conversations.forEach { c ->
                     c.lastSenderUid?.let { add(it) }
                     if (c.type != "group") {
-                        addAll(c.members.filterNot { it == session.selfUid.value })
+                        addAll(c.members.filterNot { it == selfUid })
                     } else {
                         addAll(c.members.take(9))
                     }
                 }
             }
-            session.userDirectory.resolve(wanted)
-
-            combine(
-                session.userDirectory.version,
-                session.selfUid,
-                session.mentionedCids,
-            ) { _, selfUid, mentioned ->
-                conversations.map { it.toRow(selfUid).copy(mentioned = it.cid in mentioned) }
-            }
+            session.userDirectory.requestResolve(wanted)
+            conversations.map { it.toRow(selfUid).copy(mentioned = it.cid in mentioned) }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun refresh() {

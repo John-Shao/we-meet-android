@@ -21,8 +21,10 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 
 /** One in-flight optimistic send shown at the bottom of the thread. */
@@ -334,11 +336,7 @@ class ChatViewModel internal constructor(
         val trimmed = body.trim()
         if (trimmed.isEmpty()) return
         viewModelScope.launch {
-            // Auto-retry if the socket is in a terminal state.
-            val s = connectionState.value
-            if (s == ConnectionState.DISCONNECTED || s == ConnectionState.AUTH_FAILED) {
-                session.retry()
-            }
+            ensureConnected()
             try {
                 session.client.sendText(cid, trimmed)
                 _ui.update { it.copy(error = null, sentTick = it.sentTick + 1) }
@@ -346,6 +344,24 @@ class ChatViewModel internal constructor(
                 Log.w(TAG, "sendText failed", e)
                 _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
             }
+        }
+    }
+
+    /**
+     * Bring the socket up before a send. A terminal-state socket gets a retry;
+     * then we WAIT (bounded) for CONNECTED — otherwise the send races the async
+     * reconnect and the current attempt fails even though a retry was kicked off
+     * (the user then has to tap send again). Times out gracefully so a truly
+     * offline send still falls through to sendText's error handling.
+     */
+    private suspend fun ensureConnected() {
+        val s = connectionState.value
+        if (s == ConnectionState.CONNECTED) return
+        if (s == ConnectionState.DISCONNECTED || s == ConnectionState.AUTH_FAILED) {
+            session.retry()
+        }
+        withTimeoutOrNull(CONNECT_WAIT_MS) {
+            connectionState.first { it == ConnectionState.CONNECTED }
         }
     }
 
@@ -722,6 +738,9 @@ class ChatViewModel internal constructor(
         const val MAX_IN_MEMORY = 500
         const val SNIPPET_MAX = 40
         const val RECALL_WINDOW_MS = 2 * 60 * 1000L
+        /** Max wait for the socket to reconnect before a send gives up (falls
+         *  through to the send's own error handling). */
+        const val CONNECT_WAIT_MS = 8_000L
     }
 }
 
