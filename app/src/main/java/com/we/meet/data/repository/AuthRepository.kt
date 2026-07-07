@@ -5,6 +5,7 @@ import com.we.meet.data.api.AuthApi
 import com.we.meet.data.api.dto.SendOtpRequest
 import com.we.meet.data.api.dto.VerifyOtpRequest
 import com.we.meet.data.auth.TokenStore
+import com.we.meet.push.PushTokenUploader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -38,6 +39,9 @@ class AuthRepository(
         tokenStore.accessToken = resp.access_token
         tokenStore.refreshToken = resp.refresh_token
         tokenStore.phone = phone
+        // Push: now that a Bearer exists, register the Getui cid (no-op when
+        // the cid callback hasn't fired yet — that path retries by itself).
+        com.we.meet.push.PushTokenUploader.uploadIfPossible()
         // Best-effort: pre-fetch the user's nickname so displayUsername uses it
         // right away instead of falling back to the phone number. Failure here
         // must not block login — the phone number fallback still works.
@@ -86,6 +90,9 @@ class AuthRepository(
     fun isLoggedIn(): Boolean = tokenStore.isLoggedIn()
 
     fun signOut() {
+        // Best-effort push-token unregister; fired before the token clear
+        // (races it — a lost race is harmless, see unregisterQuietly's doc).
+        PushTokenUploader.unregisterQuietly()
         tokenStore.clear()
     }
 

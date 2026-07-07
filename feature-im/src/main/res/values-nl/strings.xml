@@ -93,6 +93,10 @@
     <string name="im_action_copy">Kopiëren</string>
     <string name="im_action_reply">Antwoorden</string>
     <string name="im_action_recall">Intrekken</string>
+    <string name="im_action_pin">Bericht vastzetten</string>
+    <string name="im_action_unpin">Losmaken</string>
+    <string name="im_pin_count">%1$d vastgezet</string>
+    <string name="im_pin_no_preview">[Geen voorbeeld]</string>
     <string name="im_reply_cancel">Antwoord annuleren</string>
     <string name="im_attach_voice">Spraakbericht</string>
     <string name="im_recording">Opnemen… loslaten om te verzenden</string>

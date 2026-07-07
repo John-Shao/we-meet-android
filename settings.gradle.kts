@@ -23,6 +23,8 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven("https://jitpack.io")
+        // Getui (个推) push SDK — only published on Getui's own Nexus.
+        maven("https://mvn.getui.com/nexus/content/repositories/releases/")
     }
 }
 

@@ -89,6 +89,19 @@
                 <data android:host="meet.we-meet.online" />
                 <data android:pathPattern="/........" />
             </intent-filter>
+
+            <!--
+                Internal deep-link scheme used by push notifications:
+                wemeet://im?cid=<conversation id> opens (or foregrounds,
+                launchMode=singleTask) the app and stashes the cid on
+                WeMeetApp.pendingChatCid for AppNav to route into the chat.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="wemeet" android:host="im" />
+            </intent-filter>
         </activity>
 
         <service
@@ -127,6 +140,31 @@
                 android:name="autoStoreLocales"
                 android:value="true" />
         </service>
+
+        <!-- ==================== Getui (个推) offline push ==================== -->
+        <!-- Credentials are injected as manifestPlaceholders from
+             gradle.properties / local.properties (see app/build.gradle.kts).
+             Only AppId/AppKey/AppSecret live on the client; the MasterSecret
+             stays on the backend. -->
+        <meta-data android:name="GETUI_APPID" android:value="${GETUI_APPID}" />
+        <meta-data android:name="GETUI_APPKEY" android:value="${GETUI_APPKEY}" />
+        <meta-data android:name="GETUI_APPSECRET" android:value="${GETUI_APPSECRET}" />
+
+        <!-- Getui's long-lived push process. Subclassed (empty shell) so the
+             service runs under our own component name; ":pushservice" keeps
+             it out of the main process per Getui's integration guide. -->
+        <service
+            android:name=".push.WeMeetPushService"
+            android:exported="false"
+            android:label="WeMeetPushService"
+            android:process=":pushservice" />
+
+        <!-- Receives Getui callbacks (cid, transparent messages) in the main
+             process; registered at runtime via
+             PushManager.registerPushIntentService in WeMeetApp. -->
+        <service
+            android:name=".push.WeMeetGtIntentService"
+            android:exported="false" />
 
     </application>
 

@@ -287,6 +287,15 @@ fun ChatScreen(
                 }
             }
 
+            // P17 Pin 栏:有置顶时显示 📌 摘要,点击展开列表(解除按服务端权限)。
+            if (ui.pins.isNotEmpty()) {
+                PinnedBar(
+                    pins = ui.pins,
+                    senderName = { uid -> vm.resolveUser(uid)?.displayName ?: uid },
+                    onUnpin = { mid -> vm.unpin(mid) },
+                )
+            }
+
             Box(modifier = Modifier.weight(1f)) {
                 if (ui.messages.isEmpty() && ui.pending.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -449,6 +458,7 @@ fun ChatScreen(
         MessageActionSheet(
             canRecall = vm.canRecall(target),
             myReactions = QUICK_REACTIONS.filter { vm.hasMyReaction(target.mid, it) }.toSet(),
+            isPinned = vm.isPinned(target.mid),
             onReact = { emoji -> vm.toggleReaction(target, emoji) },
             onCopy = {
                 clipboard.setText(androidx.compose.ui.text.AnnotatedString(vm.snippetPreview(target)))
@@ -457,6 +467,7 @@ fun ChatScreen(
             onForward = { forwardSingle = target },
             onMultiSelect = { selectMode = true; selectedMids = setOf(target.mid) },
             onRecall = { vm.recall(target) },
+            onTogglePin = { vm.togglePin(target) },
             onDismiss = { actionTarget = null },
         )
     }

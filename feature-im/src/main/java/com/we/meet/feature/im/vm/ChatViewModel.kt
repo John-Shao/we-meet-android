@@ -9,6 +9,8 @@ import com.jusi.lightim.ConnectionState
 import com.jusi.lightim.ConvMember
 import com.jusi.lightim.Message
 import com.jusi.lightim.MsgOutPayload
+import com.jusi.lightim.PinnedMessage
+import com.jusi.lightim.ReactionGroup
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.data.ChatUploadException
@@ -64,6 +66,8 @@ data class ChatUiState(
     val uploadError: ChatUploadException.Code? = null,
     /** Bumps after each acked text send — the composer clears on this. */
     val sentTick: Int = 0,
+    /** P17 会话共享置顶(newest first,快照内联)。 */
+    val pins: List<PinnedMessage> = emptyList(),
 )
 
 /** One-shot events the screen reacts to (toast + pop, etc.). */
@@ -129,6 +133,46 @@ class ChatViewModel internal constructor(
                 if (visible) markRead(m.seq)
             }
         }
+        // P16 native recall:patch the raw final state and re-derive — the
+        // legacy tombstone replay in deriveRows keeps covering pre-P16 rows.
+        viewModelScope.launch {
+            session.client.recalledMessages.collect { e ->
+                if (e.cid != cid) return@collect
+                raw = raw.map { if (it.mid == e.mid) it.copy(recalled = true, body = "") else it }
+                _ui.update { deriveRows(it) }
+            }
+        }
+        // P16 native reaction deltas → patch the message's aggregate in place.
+        viewModelScope.launch {
+            session.client.reactions.collect { e ->
+                if (e.cid != cid) return@collect
+                raw = raw.map { m ->
+                    if (m.mid != e.mid) m
+                    else {
+                        val groups = m.reactions.toMutableList()
+                        val idx = groups.indexOfFirst { it.emoji == e.emoji }
+                        when {
+                            e.op == "add" && idx < 0 ->
+                                groups += ReactionGroup(e.emoji, listOf(e.uid))
+                            e.op == "add" && e.uid !in groups[idx].uids ->
+                                groups[idx] = groups[idx].copy(uids = groups[idx].uids + e.uid)
+                            e.op == "remove" && idx >= 0 ->
+                                groups[idx] = groups[idx].copy(uids = groups[idx].uids - e.uid)
+                        }
+                        m.copy(reactions = groups.filter { it.uids.isNotEmpty() })
+                    }
+                }
+                _ui.update { deriveRows(it) }
+            }
+        }
+        // P17 pin set changed (own or peers') → refetch the snapshot list.
+        viewModelScope.launch {
+            session.client.pins.collect { e ->
+                if (e.cid != cid) return@collect
+                loadPins()
+            }
+        }
+        loadPins()
         // Live read markers — monotonic merge, everyone's (receipts need peers').
         viewModelScope.launch {
             session.client.reads.collect { r ->
@@ -433,15 +477,12 @@ class ChatViewModel internal constructor(
         }
     }
 
-    /** Recall [message] (tombstone `{target_mid}`). Only own messages, ≤2 min old. */
+    /** Recall [message] — P16 服务端原生(仅本人 + 服务端时窗;成功经
+     *  recalledMessages 事件回流)。不再发 content_type='recall' 控制消息。 */
     fun recall(message: Message) {
         viewModelScope.launch {
             try {
-                session.client.sendText(
-                    cid,
-                    JSONObject().put("target_mid", message.mid).toString(),
-                    contentType = "recall",
-                )
+                session.client.recall(cid, message.mid)
             } catch (e: Throwable) {
                 Log.w(TAG, "recall failed", e)
                 _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
@@ -483,24 +524,53 @@ class ChatViewModel internal constructor(
         return _ui.value.reactions[mid]?.get(emoji)?.contains(self) == true
     }
 
-    /** Toggle [emoji] on [message]: sends `{target_mid,emoji,op}`, op derived from current state. */
+    /** Toggle [emoji] on [message] — P16 服务端原生(幂等;增量经 reactions
+     *  事件回流)。不再发 content_type='reaction' 控制消息。 */
     fun toggleReaction(message: Message, emoji: String) {
         val op = if (hasMyReaction(message.mid, emoji)) "remove" else "add"
         viewModelScope.launch {
             try {
-                session.client.sendText(
-                    cid,
-                    JSONObject()
-                        .put("target_mid", message.mid)
-                        .put("emoji", emoji)
-                        .put("op", op)
-                        .toString(),
-                    contentType = "reaction",
-                )
+                session.client.react(cid, message.mid, emoji, op)
             } catch (e: Throwable) {
                 Log.w(TAG, "reaction failed", e)
                 _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
             }
+        }
+    }
+
+    // ---- P17 pins(会话共享置顶)----
+
+    /** Whether [mid] is currently pinned (drives the action-sheet label). */
+    fun isPinned(mid: Long): Boolean = _ui.value.pins.any { it.mid == mid }
+
+    /** Pin / unpin [message] for the whole conversation. 权限由服务端裁决。 */
+    fun togglePin(message: Message) {
+        val op = if (isPinned(message.mid)) "remove" else "add"
+        viewModelScope.launch {
+            try {
+                session.client.pin(cid, message.mid, op)
+            } catch (e: Throwable) {
+                Log.w(TAG, "pin failed", e)
+                _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
+            }
+        }
+    }
+
+    /** Unpin from the pin bar (may be someone else's pin — server decides). */
+    fun unpin(mid: Long) {
+        viewModelScope.launch {
+            try {
+                session.client.pin(cid, mid, "remove")
+            } catch (e: Throwable) {
+                Log.w(TAG, "unpin failed", e)
+            }
+        }
+    }
+
+    private fun loadPins() {
+        viewModelScope.launch {
+            runCatching { session.client.listPins(cid) }
+                .onSuccess { p -> _ui.update { it.copy(pins = p) } }
         }
     }
 
@@ -624,6 +694,17 @@ class ChatViewModel internal constructor(
     private fun deriveRows(s: ChatUiState): ChatUiState {
         val recalled = mutableSetOf<Long>()
         val reactions = mutableMapOf<Long, LinkedHashMap<String, MutableList<String>>>()
+        // P16 native final state first (history snapshot + live-patched raw):
+        // recalled flag + aggregated reactions arrive on the message itself.
+        raw.forEach { m ->
+            if (m.recalled) recalled += m.mid
+            if (m.reactions.isNotEmpty()) {
+                val perEmoji = reactions.getOrPut(m.mid) { linkedMapOf() }
+                m.reactions.forEach { g -> perEmoji[g.emoji] = g.uids.toMutableList() }
+            }
+        }
+        // Legacy control-message replay (pre-P16 rows only — disjoint from
+        // native, so merging can't double count). 双读兜底,与 Web 端一致。
         raw.forEach { m ->
             when (val c = MessageContentParser.parse(m.contentType, m.body)) {
                 is MessageContent.Recall -> recalled += c.targetMid

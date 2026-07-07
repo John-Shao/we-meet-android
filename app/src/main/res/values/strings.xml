@@ -370,4 +370,6 @@
     <string name="approval_no_templates">No templates available</string>
     <string name="approval_submit_failed">Failed to submit</string>
     <string name="profile_approval_entry">Approvals</string>
+    <string name="im_push_channel_name">Messages</string>
+    <string name="im_push_default_title">New message</string>
 </resources>

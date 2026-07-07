@@ -93,6 +93,10 @@
     <string name="im_action_copy">Kopieren</string>
     <string name="im_action_reply">Antworten</string>
     <string name="im_action_recall">Zurückrufen</string>
+    <string name="im_action_pin">Nachricht anheften</string>
+    <string name="im_action_unpin">Lösen</string>
+    <string name="im_pin_count">%1$d angeheftet</string>
+    <string name="im_pin_no_preview">[Keine Vorschau]</string>
     <string name="im_reply_cancel">Antwort abbrechen</string>
     <string name="im_attach_voice">Sprachnachricht</string>
     <string name="im_recording">Aufnahme… zum Senden loslassen</string>

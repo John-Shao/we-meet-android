@@ -110,6 +110,14 @@ class MainActivity : AppCompatActivity() {
     private fun handleDeepLink(intent: Intent?) {
         val uri: Uri = intent?.data ?: return
         if (intent.action != Intent.ACTION_VIEW) return
+        // wemeet://im?cid=<conversation id> — IM offline-push notification tap.
+        // Same stash-on-Application pattern as pendingJoinSlug; AppNav owns
+        // the consumption side.
+        if (uri.scheme == "wemeet" && uri.host == "im") {
+            val cid = uri.getQueryParameter("cid")?.takeIf { it.isNotBlank() } ?: return
+            (application as? WeMeetApp)?.pendingChatCid?.value = cid
+            return
+        }
         val slug = uri.pathSegments?.firstOrNull()?.takeIf {
             DEEP_LINK_SLUG_REGEX.matches(it)
         } ?: return

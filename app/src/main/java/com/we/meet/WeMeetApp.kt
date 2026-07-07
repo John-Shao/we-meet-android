@@ -20,6 +20,7 @@ import com.we.meet.data.repository.QrLoginRepository
 import com.we.meet.data.repository.RoomRepository
 import com.we.meet.data.settings.SettingsStore
 import com.we.meet.overlay.ScreenShareOverlay
+import com.we.meet.push.PushTokenUploader
 import kotlinx.coroutines.flow.MutableStateFlow
 import okhttp3.OkHttpClient
 
@@ -65,6 +66,14 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
      */
     val pendingJoinSlug: MutableStateFlow<String?> = MutableStateFlow(null)
 
+    /**
+     * Same pattern as [pendingJoinSlug] but for IM push deep links:
+     * `wemeet://im?cid=...` (tapped offline-push notification). MainActivity
+     * writes the conversation id; AppNav collects once, routes into the chat,
+     * and resets to null.
+     */
+    val pendingChatCid: MutableStateFlow<String?> = MutableStateFlow(null)
+
     override fun onCreate() {
         super.onCreate()
         tokenStore = TokenStore(this)
@@ -86,6 +95,27 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
         ScreenShareOverlay.init(this)
         // PostHog: no-op when WE_MEET_POSTHOG_KEY is blank (default).
         com.we.meet.analytics.Analytics.init(this)
+        initGetuiPush()
+    }
+
+    /**
+     * Getui (个推) offline-push bootstrap. Wrapped in try/catch so a bad SDK
+     * state (missing meta-data, OEM quirks, blocked push process) degrades to
+     * "no offline push" instead of crashing app startup.
+     */
+    private fun initGetuiPush() {
+        PushTokenUploader.init(this)
+        try {
+            com.igexin.sdk.PushManager.getInstance().initialize(this)
+            com.igexin.sdk.PushManager.getInstance()
+                .registerPushIntentService(this, com.we.meet.push.WeMeetGtIntentService::class.java)
+        } catch (t: Throwable) {
+            android.util.Log.w("WeMeetApp", "Getui push init failed", t)
+        }
+        // If a cid from a previous run is already on disk and the user is
+        // logged in, this re-registers immediately (covers app-update /
+        // token-cleared-server-side cases). No-ops otherwise.
+        PushTokenUploader.uploadIfPossible()
     }
 
     // AssistantDeps / ImDeps — lets :feature-assistant and :feature-im reuse the

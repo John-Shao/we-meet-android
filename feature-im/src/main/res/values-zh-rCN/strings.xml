@@ -99,6 +99,10 @@
     <string name="im_action_copy">复制</string>
     <string name="im_action_reply">引用</string>
     <string name="im_action_recall">撤回</string>
+    <string name="im_action_pin">置顶消息</string>
+    <string name="im_action_unpin">取消置顶</string>
+    <string name="im_pin_count">%1$d 条置顶</string>
+    <string name="im_pin_no_preview">[无预览]</string>
     <string name="im_reply_cancel">取消引用</string>
     <string name="im_attach_voice">语音消息</string>
     <string name="im_recording">正在录音…松开发送</string>

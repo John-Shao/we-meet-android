@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -42,12 +43,15 @@ val QUICK_REACTIONS = listOf("👍", "❤️", "😂", "😮", "😢", "🙏")
 fun MessageActionSheet(
     canRecall: Boolean,
     myReactions: Set<String>,
+    /** P17: whether the message is currently pinned (drives the label). */
+    isPinned: Boolean,
     onReact: (String) -> Unit,
     onCopy: () -> Unit,
     onReply: () -> Unit,
     onForward: () -> Unit,
     onMultiSelect: () -> Unit,
     onRecall: () -> Unit,
+    onTogglePin: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -87,6 +91,13 @@ fun MessageActionSheet(
         }
         ActionRow(Icons.Filled.Checklist, stringResource(R.string.im_action_multi_select)) {
             onMultiSelect(); onDismiss()
+        }
+        // P17 会话共享置顶:按当前状态切换文案;权限由服务端裁决。
+        ActionRow(
+            Icons.Filled.PushPin,
+            stringResource(if (isPinned) R.string.im_action_unpin else R.string.im_action_pin),
+        ) {
+            onTogglePin(); onDismiss()
         }
         if (canRecall) {
             ActionRow(Icons.Filled.Undo, stringResource(R.string.im_action_recall)) {

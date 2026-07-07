@@ -215,6 +215,22 @@ fun AppNav() {
         }
     }
 
+    // IM push deep link (wemeet://im?cid=...) — same stash/consume-once pattern
+    // as pendingJoinSlug. Routes into the chat thread; requires login, else
+    // discarded (a push for a signed-out account shouldn't exist anyway —
+    // tokens re-bind on account switch).
+    LaunchedEffect(Unit) {
+        app.pendingChatCid.collect { cid ->
+            if (cid.isNullOrBlank()) return@collect
+            app.pendingChatCid.value = null
+            if (!app.tokenStore.isLoggedIn()) return@collect
+            navController.navigate(Routes.imChat(cid)) {
+                launchSingleTop = true
+                popUpTo(Routes.HOME)
+            }
+        }
+    }
+
     NavHost(navController = navController, startDestination = startDestination) {
 
         composable(Routes.LOGIN) {

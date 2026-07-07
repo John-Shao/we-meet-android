@@ -26,6 +26,12 @@ val jusiImBaseUrl = cfg("JUSI_IM_BASE_URL", "https://im.we-meet.online")
 // for any dev build that doesn't want to pollute the project's events.
 val posthogKey = cfg("WE_MEET_POSTHOG_KEY", "")
 val posthogHost = cfg("WE_MEET_POSTHOG_HOST", "https://app.posthog.com")
+// Getui (个推) offline-push credentials. AppId/AppKey/AppSecret ship inside the
+// APK by design (normal Getui practice); the sensitive MasterSecret lives
+// server-side only and must never appear here.
+val getuiAppId = cfg("GETUI_APPID")
+val getuiAppKey = cfg("GETUI_APPKEY")
+val getuiAppSecret = cfg("GETUI_APPSECRET")
 
 android {
     namespace = "com.we.meet"
@@ -47,6 +53,13 @@ android {
         buildConfigField("String", "WE_MEET_POSTHOG_KEY", "\"$posthogKey\"")
         buildConfigField("String", "WE_MEET_POSTHOG_HOST", "\"$posthogHost\"")
         buildConfigField("String", "JUSI_IM_BASE_URL", "\"$jusiImBaseUrl\"")
+
+        // Getui: the gtsdk AAR's manifest references ${GETUI_APPID} etc., and
+        // our own <meta-data> entries in AndroidManifest.xml use the same
+        // placeholders so credentials stay in gradle/local.properties.
+        manifestPlaceholders["GETUI_APPID"] = getuiAppId
+        manifestPlaceholders["GETUI_APPKEY"] = getuiAppKey
+        manifestPlaceholders["GETUI_APPSECRET"] = getuiAppSecret
     }
 
     buildTypes {
@@ -137,6 +150,12 @@ dependencies {
 
     // Image loading
     implementation(libs.coil.compose)
+
+    // Getui (个推) unified push SDK — offline IM notifications (P0). Versions
+    // pinned to what actually exists on mvn.getui.com (checked maven-metadata):
+    // gtsdk latest 3.3.15.0, gtc (core runtime) latest 3.3.3.0.
+    implementation("com.getui:gtsdk:3.3.15.0")
+    implementation("com.getui:gtc:3.3.3.0")
 
     // QR scanning — self-contained CaptureActivity + ScanContract for the
     // Activity Result API. Pulled in as a direct coordinate rather than via
