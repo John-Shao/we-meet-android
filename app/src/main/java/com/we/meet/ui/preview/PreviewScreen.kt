@@ -77,6 +77,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.WeMeetApp
 import com.we.meet.R
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.audio.AudioOutput
 import com.we.meet.audio.AudioOutputController
 import com.we.meet.audio.AudioOutputStore
@@ -358,7 +359,7 @@ fun PreviewScreen(
                 enabled = actionEnabled,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(Dimens.ButtonHeight),
                 shape = RoundedCornerShape(12.dp),
             ) {
                 if (state.isLoading) {

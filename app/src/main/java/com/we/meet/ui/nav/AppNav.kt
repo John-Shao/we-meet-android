@@ -36,6 +36,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.we.meet.WeMeetApp
 import com.we.meet.R
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.data.auth.SessionState
 import com.we.meet.feature.assistant.aicall.ui.AssistantCallScreen
 import com.we.meet.feature.im.ui.chat.ChatScreen
@@ -728,7 +729,7 @@ private fun HostEndedSheet(onDismiss: () -> Unit) {
                 onClick = onDismiss,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(Dimens.ButtonHeight),
             ) {
                 Text(
                     text = if (remaining > 0)

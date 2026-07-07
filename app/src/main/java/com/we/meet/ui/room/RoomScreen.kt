@@ -110,6 +110,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.LocalIsInPipMode
 import com.we.meet.MainActivity
 import com.we.meet.R
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.audio.AudioOutput
 import com.we.meet.audio.AudioOutputController
 import com.we.meet.audio.AudioOutputStore
@@ -1674,7 +1675,7 @@ private fun LeaveDialog(
                 onClick = onLeave,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(Dimens.ButtonHeight),
             ) {
                 Text(
                     text = stringResource(R.string.room_leave),
@@ -1689,7 +1690,7 @@ private fun LeaveDialog(
                     onClick = onEndMeeting,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
+                        .height(Dimens.ButtonHeight),
                     colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF4444)),
                 ) {
                     Text(

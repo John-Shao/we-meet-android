@@ -50,6 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.WeMeetApp
 import com.we.meet.R
+import com.we.meet.ui.theme.Dimens
 
 @Composable
 fun LoginScreen(onLoggedIn: () -> Unit) {
@@ -165,7 +166,7 @@ private fun PhoneInputPage(
                 enabled = isPhoneValid && !state.isSendingOtp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(Dimens.ButtonHeight),
                 shape = RoundedCornerShape(26.dp),
             ) {
                 if (state.isSendingOtp) {
@@ -270,7 +271,7 @@ private fun OtpInputPage(
                 enabled = state.resendCooldown == 0 && !state.isSendingOtp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(Dimens.ButtonHeight),
                 shape = RoundedCornerShape(26.dp),
             ) {
                 if (state.resendCooldown > 0) {

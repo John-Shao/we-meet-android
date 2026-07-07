@@ -58,6 +58,7 @@ import coil.request.ImageRequest
 import com.we.meet.BuildConfig
 import com.we.meet.WeMeetApp
 import com.we.meet.R
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.data.repository.ProfileRepository
 import kotlinx.coroutines.launch
 
@@ -285,7 +286,7 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .height(52.dp),
+                .height(Dimens.ButtonHeight),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.surface,

@@ -33,6 +33,7 @@ import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.we.meet.R
 import com.we.meet.WeMeetApp
+import com.we.meet.ui.theme.Dimens
 
 /**
  * Web → app QR login confirmation flow.
@@ -165,7 +166,7 @@ private fun ConfirmCard(
         Button(
             onClick = onConfirm,
             enabled = !isPending,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
+            modifier = Modifier.fillMaxWidth().height(Dimens.ButtonHeight),
         ) {
             if (isPending) {
                 CircularProgressIndicator(
@@ -180,7 +181,7 @@ private fun ConfirmCard(
         OutlinedButton(
             onClick = onCancel,
             enabled = !isPending,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
+            modifier = Modifier.fillMaxWidth().height(Dimens.ButtonHeight),
         ) {
             Text(stringResource(R.string.qr_scan_cancel_button))
         }
@@ -207,7 +208,7 @@ private fun ErrorCard(reason: ErrorReason, onDismiss: () -> Unit) {
         )
         Button(
             onClick = onDismiss,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
+            modifier = Modifier.fillMaxWidth().height(Dimens.ButtonHeight),
         ) {
             Text(stringResource(R.string.qr_scan_back_button))
         }
