@@ -86,7 +86,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.EmojiEmotions
@@ -102,6 +104,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
@@ -781,17 +784,50 @@ private fun MessageInputBar(
                     modifier = Modifier.weight(1f),
                 )
             } else {
-                OutlinedTextField(
-                    value = field,
-                    onValueChange = { field = it },
-                    placeholder = { Text(stringResource(R.string.im_input_placeholder)) },
-                    enabled = canSend,
-                    maxLines = 4,
+                // 紧凑输入框:自控内边距(上下 8dp),对齐飞书/企业微信的高度,
+                // 单行承载更多文字。焦点态描边转主色。
+                var inputFocused by remember { mutableStateOf(false) }
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(
+                        1.dp,
+                        if (inputFocused) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.outlineVariant,
+                    ),
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 4.dp)
-                        .onFocusChanged { if (it.isFocused) panel = InputPanel.None },
-                )
+                        .padding(horizontal = 4.dp),
+                ) {
+                    Box(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
+                        if (field.text.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.im_input_placeholder),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        BasicTextField(
+                            value = field,
+                            onValueChange = { field = it },
+                            enabled = canSend,
+                            maxLines = 4,
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                color = MaterialTheme.colorScheme.onSurface,
+                            ),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onFocusChanged {
+                                    inputFocused = it.isFocused
+                                    if (it.isFocused) panel = InputPanel.None
+                                },
+                        )
+                    }
+                }
             }
             // 表情
             IconButton(onClick = { openPanel(InputPanel.Emoji) }, enabled = canSend) {
