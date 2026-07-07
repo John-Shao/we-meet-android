@@ -212,9 +212,8 @@ private fun CompactTabBar(
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = stringResource(tab.labelRes),
-                        fontSize = 10.sp,
+                        style = MaterialTheme.typography.labelMedium,
                         color = color,
-                        lineHeight = 12.sp,
                     )
                 }
             }
