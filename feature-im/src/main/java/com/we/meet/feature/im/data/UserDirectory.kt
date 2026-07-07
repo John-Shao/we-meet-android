@@ -15,8 +15,11 @@ import kotlinx.coroutines.sync.withLock
  *
  * Batch-resolves misses, dedupes in-flight uids, and bumps [version] on every
  * write so Compose recomposes rows that called [get] synchronously. Entries
- * expire after 1h (names rarely change; avatar staleness is tolerated because
- * Coil caches the bytes under a stable key anyway).
+ * expire after 60s — matching the web client's `resolveImUsers` staleTime — so
+ * a peer's avatar / name change on another client propagates within a minute
+ * (the previous 1h TTL left avatars stale for up to an hour). Cheap: resolves
+ * are batched + in-flight-deduped, and fire only when an avatar-bearing screen
+ * re-reads a stale uid.
  */
 internal class UserDirectory(
     private val bridge: ImBridgeRepository,
@@ -86,6 +89,7 @@ internal class UserDirectory(
     }
 
     private companion object {
-        const val TTL_MS = 60L * 60L * 1000L
+        // 60s — 对齐 web resolveImUsers 的 staleTime, 让对端头像/昵称改动 1 分钟内传播。
+        const val TTL_MS = 60L * 1000L
     }
 }

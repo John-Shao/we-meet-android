@@ -23,13 +23,31 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 
 /**
+ * Coil cache key for an avatar image.
+ *
+ * Presigned GET URLs rotate their query signature on every fetch, so keying by
+ * the full URL would cache-miss every render. But the backend mints a NEW object
+ * key on every avatar upload (utils.build_profile_object_key → `{uid}/{uuid}.ext`),
+ * so the URL *path* is stable per-image yet changes when the avatar changes.
+ * Keying by the path (query stripped) therefore:
+ *   - hits the cache across presign rotation (same image → same path), and
+ *   - misses → re-fetches when the avatar actually changes (new key → new path).
+ * Falls back to [stableId] when the URL is blank (nothing to render anyway).
+ */
+fun avatarCacheKey(url: String?, stableId: String): String {
+    if (url.isNullOrBlank()) return stableId
+    val q = url.indexOf('?')
+    val path = if (q >= 0) url.substring(0, q) else url
+    return path.ifBlank { stableId }
+}
+
+/**
  * Rounded-square avatar (WeChat/企业微信 style, 与 Web Avatar 一致:圆角 = 边长 20%)
  * with an initials fallback.
  *
- * [cacheKey] must be a STABLE identity (e.g. "avatar:<userId>"), never the URL:
- * avatar URLs are short-lived presigned links whose query signature changes on
- * every fetch — keying by URL would cache-miss every render and bloat the disk
- * cache, while a stable key keeps the bytes valid even after the URL expires.
+ * [cacheKey] is a STABLE per-user identity (e.g. "avatar:<userId>") used only as
+ * a fallback: the effective Coil key is derived from the avatar URL's path via
+ * [avatarCacheKey], so a changed avatar (new object key) actually re-fetches.
  */
 @Composable
 fun MemberAvatar(
@@ -39,7 +57,8 @@ fun MemberAvatar(
     size: Dp = 40.dp,
     modifier: Modifier = Modifier,
 ) {
-    var failed by remember(cacheKey) { mutableStateOf(false) }
+    val effectiveKey = avatarCacheKey(url, cacheKey)
+    var failed by remember(effectiveKey) { mutableStateOf(false) }
     val showImage = !url.isNullOrBlank() && !failed
 
     Box(
@@ -53,8 +72,8 @@ fun MemberAvatar(
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(url)
-                    .memoryCacheKey(cacheKey)
-                    .diskCacheKey(cacheKey)
+                    .memoryCacheKey(effectiveKey)
+                    .diskCacheKey(effectiveKey)
                     .build(),
                 contentDescription = name,
                 onError = { failed = true },

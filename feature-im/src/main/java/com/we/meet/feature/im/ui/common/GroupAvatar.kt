@@ -126,8 +126,8 @@ fun GroupAvatar(
                     Tile(
                         avatarUrl = tile.avatarUrl?.takeIf { it.isNotBlank() },
                         name = tile.name,
-                        // 稳定 key:presigned URL 每次签名都变,用 uid 才能命中缓存
-                        // (对齐 MemberAvatar 的约定,避免 9 宫格每格 cache-miss)。
+                        // fallback 用 uid;真实 Coil key 由 URL path 推导(见
+                        // avatarCacheKey),换头像后 object key 变 -> path 变 -> 刷新。
                         cacheKey = "im-avatar:${tile.uid}",
                     )
                 }
@@ -139,14 +139,15 @@ fun GroupAvatar(
 @Composable
 private fun Tile(avatarUrl: String?, name: String, cacheKey: String) {
     val fallbackColor = tintFor(name)
-    var imageFailed by remember(cacheKey) { mutableStateOf(false) }
+    val effectiveKey = com.we.meet.core.directory.ui.avatarCacheKey(avatarUrl, cacheKey)
+    var imageFailed by remember(effectiveKey) { mutableStateOf(false) }
 
     if (!avatarUrl.isNullOrBlank() && !imageFailed) {
         AsyncImage(
             model = ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
                 .data(avatarUrl)
-                .memoryCacheKey(cacheKey)
-                .diskCacheKey(cacheKey)
+                .memoryCacheKey(effectiveKey)
+                .diskCacheKey(effectiveKey)
                 .crossfade(true)
                 .build(),
             contentDescription = null,
