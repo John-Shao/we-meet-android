@@ -1,6 +1,14 @@
 package com.we.meet.feature.im.ui.list
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -98,6 +106,22 @@ fun ConversationListScreen(
             vm.retryConnection()
         }
         onPauseOrDispose {}
+    }
+
+    // 首次进入「消息」页时请求通知权限(Android 13+)——离线 IM 推送要靠它才能在
+    // 通知栏展示(之前只在会前 PreviewScreen 请求,纯 IM 用户从没被问过)。只在未
+    // 授予时请求一次;拒绝不纠缠(系统二次拒绝后自动不再弹),推送侧本就静默降级。
+    val context = LocalContext.current
+    val notifPermLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { /* 结果无需处理:授予→推送可展示;拒绝→静默降级 */ }
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            notifPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
