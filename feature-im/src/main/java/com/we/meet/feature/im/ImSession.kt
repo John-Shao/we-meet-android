@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
 
 /**
  * Process-wide IM session — owns the single jusi-light-im [Client], the bridge
@@ -49,9 +51,18 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
     private val _selfUid = MutableStateFlow<String?>(null)
     val selfUid: StateFlow<String?> = _selfUid.asStateFlow()
 
-    // SDK 用自己的默认 OkHttp (无 Interceptor), 不能复用 we-meet 主 OkHttp:
+    // SDK 用自己独立的 OkHttp (无 Interceptor), 不能复用 we-meet 主 OkHttp:
     // 主 OkHttp 的 AuthInterceptor 会把 Keycloak Bearer 无差别覆盖到 jusi 请求,
     // 顶掉 SDK 内部塞的 IM JWT, 触发 jusi 401 -> Authenticator 死循环 refresh.
+    //
+    // pingInterval 是移动端「经常发送失败」的关键:默认 OkHttp 不发 WS 心跳,
+    // 闲置/切后台时连接被服务端 70s 读超时静默关闭,半开死连接要到下次写才暴露。
+    // 20s 客户端心跳既保活 NAT, 又能在 ~20s 内检测到断连 -> onFailure -> 触发重连,
+    // 20s < 服务端 WS_PING_INTERVAL(30s) < WS_READ_TIMEOUT(70s), 留足余量。
+    private val imOkHttp: OkHttpClient = OkHttpClient.Builder()
+        .pingInterval(20, TimeUnit.SECONDS)
+        .build()
+
     val client: Client = Client(
         baseUrl = deps.jusiImBaseUrl,
         // Minting the IM token also tells us our own jusi uid — cache it for
@@ -61,6 +72,7 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
             _selfUid.value = tok.uid
             tok.token
         },
+        okHttp = imOkHttp,
         backoffConfig = BackoffConfig.default(),
     )
 

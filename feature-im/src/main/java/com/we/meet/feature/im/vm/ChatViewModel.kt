@@ -401,7 +401,10 @@ class ChatViewModel internal constructor(
     private suspend fun ensureConnected() {
         val s = connectionState.value
         if (s == ConnectionState.CONNECTED) return
-        if (s == ConnectionState.DISCONNECTED || s == ConnectionState.AUTH_FAILED) {
+        // CONNECTING 已有一次建连在途,静候即可;其余状态——尤其 RECONNECTING
+        // 可能正卡在退避到 30s 的等待节拍上——用户主动发消息时强制立刻重连:
+        // retry() 会 disconnect+connect 并复位退避,避免发送干等而报 not connected。
+        if (s != ConnectionState.CONNECTING) {
             session.retry()
         }
         withTimeoutOrNull(CONNECT_WAIT_MS) {
@@ -467,6 +470,7 @@ class ChatViewModel internal constructor(
             .put("text", trimmed)
             .toString()
         viewModelScope.launch {
+            ensureConnected()
             try {
                 session.client.sendText(cid, body, contentType = "quote")
                 _ui.update { it.copy(error = null, sentTick = it.sentTick + 1) }
@@ -627,6 +631,7 @@ class ChatViewModel internal constructor(
         _ui.update { it.copy(pending = it.pending + PendingSend(localId, kind)) }
         viewModelScope.launch {
             try {
+                ensureConnected()
                 block()
                 _ui.update { s -> s.copy(pending = s.pending.filterNot { it.localId == localId }) }
             } catch (e: ChatUploadException) {
