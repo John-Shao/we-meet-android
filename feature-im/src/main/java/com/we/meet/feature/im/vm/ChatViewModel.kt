@@ -9,6 +9,7 @@ import com.jusi.lightim.ConnectionState
 import com.jusi.lightim.ConvMember
 import com.jusi.lightim.Message
 import com.jusi.lightim.MsgOutPayload
+import com.jusi.lightim.NetworkException
 import com.jusi.lightim.PinnedMessage
 import com.jusi.lightim.ReactionGroup
 import com.we.meet.feature.im.ImDeps
@@ -204,6 +205,19 @@ class ChatViewModel internal constructor(
                 loadReadSnapshot()
             }
         }
+        // Drop a stale connection-error banner (e.g. "sendText: not connected")
+        // once the socket recovers — only on the recovery EDGE, so a genuine
+        // error raised while already CONNECTED isn't wiped by the initial emit.
+        viewModelScope.launch {
+            var wasConnected = connectionState.value == ConnectionState.CONNECTED
+            connectionState.collect { st ->
+                val nowConnected = st == ConnectionState.CONNECTED
+                if (nowConnected && !wasConnected) {
+                    _ui.update { s -> if (s.error != null) s.copy(error = null) else s }
+                }
+                wasConnected = nowConnected
+            }
+        }
         // Re-derive a direct chat's title once the peer's profile resolves —
         // refreshConversationShape only reads the cache once, so a cold peer
         // (e.g. opened from contacts) would otherwise stay "Untitled chat".
@@ -380,14 +394,37 @@ class ChatViewModel internal constructor(
         val trimmed = body.trim()
         if (trimmed.isEmpty()) return
         viewModelScope.launch {
-            ensureConnected()
             try {
-                session.client.sendText(cid, trimmed)
+                sendViaSocket(trimmed, "text")
                 _ui.update { it.copy(error = null, sentTick = it.sentTick + 1) }
             } catch (e: Throwable) {
                 Log.w(TAG, "sendText failed", e)
                 _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
             }
+        }
+    }
+
+    /**
+     * Send one WS text frame, resilient to a dead-but-not-yet-detected socket.
+     *
+     * A [NetworkException] means the frame never reached the server (socket
+     * closed, or died inside the ~ping-detection window while [connectionState]
+     * still read CONNECTED so [ensureConnected] was a no-op). Since nothing was
+     * acked, force a reconnect and retry the send ONCE — safe from duplication.
+     * Ack timeouts are deliberately NOT retried (the server may have received
+     * it). Throws if still unconnected after the retry → caller shows the error.
+     */
+    private suspend fun sendViaSocket(body: String, contentType: String) {
+        ensureConnected()
+        try {
+            session.client.sendText(cid, body, contentType = contentType)
+        } catch (e: NetworkException) {
+            session.retry()
+            val reconnected = withTimeoutOrNull(CONNECT_WAIT_MS) {
+                connectionState.first { it == ConnectionState.CONNECTED }
+            } != null
+            if (!reconnected) throw e
+            session.client.sendText(cid, body, contentType = contentType)
         }
     }
 
@@ -470,9 +507,8 @@ class ChatViewModel internal constructor(
             .put("text", trimmed)
             .toString()
         viewModelScope.launch {
-            ensureConnected()
             try {
-                session.client.sendText(cid, body, contentType = "quote")
+                sendViaSocket(body, "quote")
                 _ui.update { it.copy(error = null, sentTick = it.sentTick + 1) }
             } catch (e: Throwable) {
                 Log.w(TAG, "sendQuote failed", e)
