@@ -30,19 +30,28 @@ fun ConnectionStatusBar(state: ConnectionState, onRetry: (() -> Unit)?) {
         ConnectionState.RECONNECTING -> R.string.im_status_reconnecting
         ConnectionState.AUTH_FAILED -> R.string.im_status_auth_failed
     }
-    val bgColor = when (state) {
-        ConnectionState.CONNECTED -> Color(0xFFE7F5E7)
-        ConnectionState.CONNECTING, ConnectionState.RECONNECTING -> Color(0xFFFFF6E0)
-        ConnectionState.AUTH_FAILED -> Color(0xFFFCE4E4)
-        ConnectionState.DISCONNECTED -> Color(0xFFEDEDED)
+    // Fixed light-tint backgrounds paired with an EXPLICIT dark foreground, so the
+    // strip reads in BOTH light and dark themes. Without an explicit fg the text
+    // inherits LocalContentColor — light-on-light-pink in dark mode (unreadable).
+    // Same approach as [ErrorBanner] below, which was never reported broken.
+    val (bgColor, fgColor) = when (state) {
+        ConnectionState.CONNECTED -> Color(0xFFE7F5E7) to Color(0xFF1B5E20)
+        ConnectionState.CONNECTING, ConnectionState.RECONNECTING ->
+            Color(0xFFFFF6E0) to Color(0xFF7A4F01)
+        ConnectionState.AUTH_FAILED -> Color(0xFFFCE4E4) to Color(0xFF8B0000)
+        ConnectionState.DISCONNECTED -> Color(0xFFEDEDED) to Color(0xFF444444)
     }
-    Surface(color = bgColor, modifier = Modifier.fillMaxWidth()) {
+    Surface(color = bgColor, contentColor = fgColor, modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(text = stringResource(labelRes), style = MaterialTheme.typography.bodySmall)
+            Text(
+                text = stringResource(labelRes),
+                style = MaterialTheme.typography.bodySmall,
+                color = fgColor,
+            )
             if (onRetry != null) {
                 Button(onClick = onRetry) {
                     Text(stringResource(R.string.im_action_retry))
