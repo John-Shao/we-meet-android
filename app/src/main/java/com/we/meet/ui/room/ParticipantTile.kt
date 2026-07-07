@@ -32,7 +32,6 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.we.meet.R
 import io.livekit.android.compose.ui.ScaleType
 import io.livekit.android.compose.ui.VideoTrackView
@@ -196,7 +195,6 @@ fun ParticipantTile(
                 text = participant.name,
                 color = Color.White,
                 style = MaterialTheme.typography.labelMedium,
-                fontSize = 12.sp,
             )
         }
 

@@ -40,7 +40,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -223,7 +222,7 @@ private fun MonthGrid(
                         ) {
                             Text(
                                 text = date.dayOfMonth.toString(),
-                                fontSize = 13.sp,
+                                style = MaterialTheme.typography.labelLarge,
                                 color = when {
                                     isSelected -> MaterialTheme.colorScheme.onPrimary
                                     !inMonth -> MaterialTheme.colorScheme.outlineVariant

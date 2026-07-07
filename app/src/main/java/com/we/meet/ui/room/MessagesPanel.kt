@@ -48,10 +48,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.we.meet.R
 import com.we.meet.data.chat.ChatMessageUi
 import java.text.SimpleDateFormat
@@ -211,8 +209,7 @@ private fun Avatar(name: String, identity: String) {
         Text(
             text = initials,
             color = Color.White,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.labelLarge,
         )
     }
 }
