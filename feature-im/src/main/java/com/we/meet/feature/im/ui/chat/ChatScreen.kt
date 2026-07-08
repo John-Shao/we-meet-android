@@ -86,12 +86,12 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.EmojiEmotions
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.filled.PhotoCamera
@@ -750,24 +750,13 @@ private fun MessageInputBar(
                 }
             }
         }
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.Bottom,
+        // 抖音风格两态输入:折叠为灰底胶囊 + 尾部快捷图标(图片 / 表情);
+        // 聚焦或有草稿后展开为大圆角框,下方浮出完整工具栏与发送键。
+        var inputFocused by remember { mutableStateOf(false) }
+        val expanded = inputFocused || text.isNotBlank() || voiceMode || panel != InputPanel.None
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
         ) {
-            // 左:语音 ⇄ 键盘 切换
-            IconButton(
-                onClick = { voiceMode = !voiceMode; panel = InputPanel.None; focus.clearFocus() },
-                enabled = canSend,
-            ) {
-                Icon(
-                    if (voiceMode) Icons.Filled.Keyboard else Icons.Filled.KeyboardVoice,
-                    contentDescription = stringResource(
-                        if (voiceMode) R.string.im_input_keyboard_switch
-                        else R.string.im_input_voice_switch
-                    ),
-                )
-            }
-            // 中:文本框 / 按住说话
             if (voiceMode) {
                 HoldToTalkBar(
                     recording = recording,
@@ -781,79 +770,122 @@ private fun MessageInputBar(
                             recorder.stop()?.let { onVoiceRecorded(it.file, it.durationMs) }
                         }
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                 )
             } else {
-                // 紧凑输入框:自控内边距(上下 8dp),对齐飞书/企业微信的高度,
-                // 单行承载更多文字。焦点态描边转主色。
-                var inputFocused by remember { mutableStateOf(false) }
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(
-                        1.dp,
-                        if (inputFocused) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.outlineVariant,
-                    ),
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 4.dp),
+                    shape = RoundedCornerShape(if (expanded) 16.dp else 22.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Box(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-                        if (field.text.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.im_input_placeholder),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 14.dp, vertical = 9.dp),
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            if (text.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.im_input_placeholder),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            BasicTextField(
+                                value = field,
+                                onValueChange = { field = it },
+                                enabled = canSend,
+                                maxLines = if (expanded) 5 else 1,
+                                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                ),
+                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onFocusChanged { inputFocused = it.isFocused },
                             )
                         }
-                        BasicTextField(
-                            value = field,
-                            onValueChange = { field = it },
-                            enabled = canSend,
-                            maxLines = 4,
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                color = MaterialTheme.colorScheme.onSurface,
-                            ),
-                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .onFocusChanged {
-                                    inputFocused = it.isFocused
-                                    if (it.isFocused) panel = InputPanel.None
-                                },
-                        )
+                        // 折叠态:胶囊尾部快捷图标
+                        if (!expanded) {
+                            IconButton(
+                                onClick = { onPickImage() },
+                                enabled = canSend,
+                                modifier = Modifier.size(38.dp),
+                            ) {
+                                Icon(
+                                    Icons.Filled.Image,
+                                    contentDescription = stringResource(R.string.im_attach_image),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(22.dp),
+                                )
+                            }
+                            IconButton(
+                                onClick = { openPanel(InputPanel.Emoji) },
+                                enabled = canSend,
+                                modifier = Modifier.size(38.dp).padding(end = 4.dp),
+                            ) {
+                                Icon(
+                                    Icons.Filled.EmojiEmotions,
+                                    contentDescription = stringResource(R.string.im_input_emoji),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(22.dp),
+                                )
+                            }
+                        }
                     }
                 }
             }
-            // 表情
-            IconButton(onClick = { openPanel(InputPanel.Emoji) }, enabled = canSend) {
-                Icon(
-                    Icons.Filled.EmojiEmotions,
-                    contentDescription = stringResource(R.string.im_input_emoji),
-                    tint = if (panel == InputPanel.Emoji) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            // 有文字 → 发送;否则 → 「+」
-            if (text.isNotBlank() && !voiceMode) {
-                Button(
-                    onClick = { onSend(text) },
-                    enabled = canSend,
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                    modifier = Modifier.padding(start = 2.dp),
-                ) { Text(stringResource(R.string.im_input_send)) }
-            } else {
-                IconButton(onClick = { openPanel(InputPanel.Plus) }, enabled = canSend) {
-                    Icon(
-                        Icons.Filled.Add,
-                        contentDescription = stringResource(R.string.im_input_more),
-                        tint = if (panel == InputPanel.Plus) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            // 展开态:下方完整工具栏 + 发送键
+            AnimatedVisibility(visible = expanded) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = { onPickImage() }, enabled = canSend) {
+                        Icon(
+                            Icons.Filled.Image,
+                            contentDescription = stringResource(R.string.im_attach_image),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    IconButton(onClick = { openPanel(InputPanel.Emoji) }, enabled = canSend) {
+                        Icon(
+                            Icons.Filled.EmojiEmotions,
+                            contentDescription = stringResource(R.string.im_input_emoji),
+                            tint = if (panel == InputPanel.Emoji) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    IconButton(
+                        onClick = { voiceMode = !voiceMode; panel = InputPanel.None; focus.clearFocus() },
+                        enabled = canSend,
+                    ) {
+                        Icon(
+                            if (voiceMode) Icons.Filled.Keyboard else Icons.Filled.KeyboardVoice,
+                            contentDescription = stringResource(
+                                if (voiceMode) R.string.im_input_keyboard_switch
+                                else R.string.im_input_voice_switch
+                            ),
+                            tint = if (voiceMode) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    IconButton(onClick = { openPanel(InputPanel.Plus) }, enabled = canSend) {
+                        Icon(
+                            Icons.Filled.Add,
+                            contentDescription = stringResource(R.string.im_input_more),
+                            tint = if (panel == InputPanel.Plus) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(Modifier.weight(1f))
+                    Button(
+                        onClick = { onSend(text) },
+                        enabled = canSend && text.isNotBlank(),
+                        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
+                        modifier = Modifier.height(36.dp),
+                    ) { Text(stringResource(R.string.im_input_send)) }
                 }
             }
         }
