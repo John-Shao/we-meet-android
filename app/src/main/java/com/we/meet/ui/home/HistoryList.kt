@@ -1,18 +1,15 @@
 package com.we.meet.ui.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Videocam
@@ -71,27 +68,11 @@ private fun HistoryRow(
     onClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    SwipeRevealRow(
-        // Right-swiping the row (drag back toward zero) retracts the
-        // drawer — that's the cancel gesture, no explicit button needed.
-        actionsWidth = ACTION_BUTTON_WIDTH,
-        actions = { close ->
-            ActionButton(
-                label = stringResource(R.string.history_action_delete),
-                bg = MaterialTheme.colorScheme.errorContainer,
-                fg = MaterialTheme.colorScheme.onErrorContainer,
-                onClick = {
-                    onDelete()
-                    close()
-                },
-            )
-        },
-    ) {
+    DeletableRow(onClick = onClick, onDelete = onDelete) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
                 .padding(vertical = 12.dp),
         ) {
             Box(
@@ -131,31 +112,6 @@ private fun HistoryRow(
         thickness = 0.5.dp,
     )
 }
-
-@Composable
-internal fun ActionButton(
-    label: String,
-    bg: androidx.compose.ui.graphics.Color,
-    fg: androidx.compose.ui.graphics.Color,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .width(ACTION_BUTTON_WIDTH)
-            .fillMaxHeight()
-            .background(bg)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = label,
-            color = fg,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-    }
-}
-
-internal val ACTION_BUTTON_WIDTH = 80.dp
 
 object HistoryTimeFormatter {
     private fun timeFmt() = SimpleDateFormat("HH:mm", Locale.getDefault())

@@ -1,7 +1,6 @@
 package com.we.meet.ui.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,7 +38,7 @@ import java.util.TimeZone
  * Each row shows the room name on the first line and the formatted
  * scheduled time (M月d日 HH:mm) on the second. Tapping the row routes
  * to PreviewScreen via [onEntryClick] (same target as a history row).
- * Left-swipe reveals delete/cancel actions in the same shape the
+ * Long-pressing opens the delete context menu, in the same shape the
  * history list uses; backend semantics are identical.
  */
 @Composable
@@ -74,26 +73,11 @@ private fun ScheduledRow(
     onClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    SwipeRevealRow(
-        // Right-swipe retracts the drawer; no explicit cancel button.
-        actionsWidth = ACTION_BUTTON_WIDTH,
-        actions = { close ->
-            ActionButton(
-                label = stringResource(R.string.history_action_delete),
-                bg = MaterialTheme.colorScheme.errorContainer,
-                fg = MaterialTheme.colorScheme.onErrorContainer,
-                onClick = {
-                    onDelete()
-                    close()
-                },
-            )
-        },
-    ) {
+    DeletableRow(onClick = onClick, onDelete = onDelete) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
                 .padding(vertical = 12.dp),
         ) {
             Box(
