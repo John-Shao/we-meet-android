@@ -162,7 +162,13 @@ fun ConversationListScreen(
             connection == ConnectionState.DISCONNECTED ||
             (connecting && (connectStuck || error != null))
         ConnectionStatusBar(state = connection, onRetry = if (canRetry) ({ vm.retryConnection() }) else null)
-        (actionError ?: error)?.let { if (connection != ConnectionState.AUTH_FAILED) ErrorBanner(it) }
+        // 断网时连接条已用本地化文案说清了故障,再叠一条错误横幅纯属重复 —— 而且
+        // REST 层透传的是原始技术串(SDK 的 NetworkException("transport failed")),
+        // 对用户不可读。只在已连接时才暴露刷新/操作错误:「在线却失败」才是连接条
+        // 覆盖不到、值得单独提示的信息。AUTH_FAILED 也因此被自然涵盖。
+        if (connection == ConnectionState.CONNECTED) {
+            (actionError ?: error)?.let { ErrorBanner(it) }
+        }
 
         if (rows.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
