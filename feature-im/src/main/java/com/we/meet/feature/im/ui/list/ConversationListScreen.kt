@@ -64,6 +64,7 @@ import com.we.meet.feature.im.ui.common.GroupAvatar
 import com.we.meet.feature.im.ui.common.previewText
 import com.we.meet.feature.im.vm.ConversationListViewModel
 import com.we.meet.feature.im.vm.ConversationRowUi
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -142,10 +143,24 @@ fun ConversationListScreen(
             }
         }
 
+        // 「重试」不在连接中立刻出现:每次回前台 SDK 都会走 RECONNECTING → CONNECTING,
+        // 秒级完成,按钮闪现又消失只会让状态条抖动。但退避循环会一直停在 RECONNECTING、
+        // 永远不会自己落到 DISCONNECTED(见 SDK Client.disconnect 是 DISCONNECTED 的唯一
+        // 来源),所以卡住超过 5s 必须给出补救入口,否则用户无从恢复。
+        // 注意 key 取布尔:RECONNECTING ↔ CONNECTING 的抖动不会重启计时。
+        val connecting = connection == ConnectionState.CONNECTING ||
+            connection == ConnectionState.RECONNECTING
+        var connectStuck by remember { mutableStateOf(false) }
+        LaunchedEffect(connecting) {
+            connectStuck = false
+            if (connecting) {
+                delay(5_000)
+                connectStuck = true
+            }
+        }
         val canRetry = connection == ConnectionState.AUTH_FAILED ||
             connection == ConnectionState.DISCONNECTED ||
-            connection == ConnectionState.RECONNECTING ||
-            (connection == ConnectionState.CONNECTING && error != null)
+            (connecting && (connectStuck || error != null))
         ConnectionStatusBar(state = connection, onRetry = if (canRetry) ({ vm.retryConnection() }) else null)
         (actionError ?: error)?.let { if (connection != ConnectionState.AUTH_FAILED) ErrorBanner(it) }
 

@@ -1,13 +1,15 @@
 package com.we.meet.feature.im.ui.common
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,11 +25,14 @@ import com.we.meet.feature.im.model.MessageContentParser
 @Composable
 fun ConnectionStatusBar(state: ConnectionState, onRetry: (() -> Unit)?) {
     if (state == ConnectionState.CONNECTED) return
+    // CONNECTING and RECONNECTING mean the same thing to a user: the socket is
+    // coming up. The SDK walks RECONNECTING → CONNECTING on every resume, so
+    // giving them separate labels made the strip flip its text mid-reconnect
+    // ("正在重连…" then "正在连接…"). One label, one message.
     val labelRes = when (state) {
         ConnectionState.DISCONNECTED -> R.string.im_status_disconnected
-        ConnectionState.CONNECTING -> R.string.im_status_connecting
+        ConnectionState.CONNECTING, ConnectionState.RECONNECTING -> R.string.im_status_connecting
         ConnectionState.CONNECTED -> R.string.im_status_connected
-        ConnectionState.RECONNECTING -> R.string.im_status_reconnecting
         ConnectionState.AUTH_FAILED -> R.string.im_status_auth_failed
     }
     // Fixed light-tint backgrounds paired with an EXPLICIT dark foreground, so the
@@ -43,7 +48,10 @@ fun ConnectionStatusBar(state: ConnectionState, onRetry: (() -> Unit)?) {
     }
     Surface(color = bgColor, contentColor = fgColor, modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 40.dp)
+                .padding(start = 16.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -53,8 +61,18 @@ fun ConnectionStatusBar(state: ConnectionState, onRetry: (() -> Unit)?) {
                 color = fgColor,
             )
             if (onRetry != null) {
-                Button(onClick = onRetry) {
-                    Text(stringResource(R.string.im_action_retry))
+                // A compact text action, not a filled Button: this is an ambient
+                // status strip, and a 40dp-tall button ballooned it into a banner
+                // that looked nothing like the button-less states.
+                TextButton(
+                    onClick = onRetry,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.im_action_retry),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = fgColor,
+                    )
                 }
             }
         }
