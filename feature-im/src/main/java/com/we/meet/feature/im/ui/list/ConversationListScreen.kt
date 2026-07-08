@@ -3,7 +3,11 @@ package com.we.meet.feature.im.ui.list
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.runtime.LaunchedEffect
@@ -17,7 +21,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -152,9 +155,18 @@ fun ConversationListScreen(
         }
     }
 
-    var searchActive by remember { mutableStateOf(false) }
-    var query by remember { mutableStateOf("") }
+    // Saveable: a rotation mid-search must not silently drop the query and snap
+    // the list back to unfiltered. menuOpen is transient and deliberately isn't.
+    var searchActive by rememberSaveable { mutableStateOf(false) }
+    var query by rememberSaveable { mutableStateOf("") }
     var menuOpen by remember { mutableStateOf(false) }
+
+    // While searching, the header hides the avatar and the whole "more" menu, so
+    // Back is the gesture users reach for — without this it pops the tab screen.
+    BackHandler(enabled = searchActive) {
+        searchActive = false
+        query = ""
+    }
 
     // Local filter over the loaded rows — no server-side conversation search.
     val visibleRows = remember(rows, query) {
@@ -258,7 +270,13 @@ fun ConversationListScreen(
         if (visibleRows.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = stringResource(R.string.im_list_empty),
+                    // "No conversations yet" is only true of an empty inbox. A search
+                    // that matches nothing must say so, or a user with 30 chats is
+                    // told their history is gone.
+                    text = stringResource(
+                        if (rows.isEmpty()) R.string.im_list_empty
+                        else R.string.im_search_no_results
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.outline,
                 )
@@ -500,6 +518,11 @@ private fun SearchHeader(
     onQueryChange: (String) -> Unit,
     onCancel: () -> Unit,
 ) {
+    // Tapping the search icon should land the caret and raise the IME; otherwise the
+    // bar just sits there looking dead until the user taps it a second time.
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -538,7 +561,9 @@ private fun SearchHeader(
                             color = MaterialTheme.colorScheme.onSurface,
                         ),
                         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusRequester),
                     )
                 }
             }

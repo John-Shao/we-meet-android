@@ -37,8 +37,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -107,18 +109,46 @@ fun MainTabScreen(
     val imSession = remember { ImSession.get(app) }
     val imUnread by imSession.totalUnread.collectAsStateWithLifecycle()
 
-    // Profile drawer, opened by the avatar in the 消息 header. Swipe-to-open is
-    // limited to that tab so a left-edge swipe elsewhere can't summon a profile
-    // page the user has no visible entry point for.
+    // rememberSaveable can restore an index from a build that had more tabs (我的
+    // used to be ordinal 4). Normalize ONCE here and use `safeTab` at every read
+    // site: coercing only where the content is looked up would still leave
+    // CompactTabBar's `selectedTab == index` highlight matching nothing.
+    val safeTab = selectedTab.coerceIn(MainTab.entries.indices)
+
+    // Profile drawer, opened by tapping the avatar in the 消息 header.
+    //
+    // Swipe-to-OPEN is deliberately off (gesturesEnabled is true only once open,
+    // i.e. swipe-to-close): drawerContent is composed lazily below, and
+    // DrawerState exposes no "drag started" signal — `isAnimationRunning` is false
+    // during a finger drag — so an edge swipe would drag out an empty sheet.
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    // Identity for the 消息 header. TokenStore already caches these (synced by
-    // ProfileScreen on each /users/me/ read), so the header costs no extra call.
-    // Fall back to the phone number when the nickname hasn't synced yet.
+    // Identity for the 消息 header. TokenStore's getters are plain prefs reads, not
+    // snapshot state, so they can never trigger a recomposition — hold them in
+    // Compose state instead and refresh explicitly. One /users/me/ at startup is
+    // required, not waste: the header is always on screen and `avatar_url` is a
+    // short-lived signed URL (CLAUDE.md: re-fetch rather than cache long-term).
     val tokenStore = app.tokenStore
-    val selfName = tokenStore.nickname?.takeIf { it.isNotBlank() }
+    fun readSelfName() = tokenStore.nickname?.takeIf { it.isNotBlank() }
         ?: tokenStore.phone.orEmpty()
+
+    var selfName by remember { mutableStateOf(readSelfName()) }
+    var selfAvatarUrl by remember { mutableStateOf(tokenStore.avatarUrl) }
+
+    LaunchedEffect(Unit) {
+        app.profileRepository.refreshProfile()
+        selfName = readSelfName()
+        selfAvatarUrl = tokenStore.avatarUrl
+    }
+    // The drawer is the only place the user can change their nickname/avatar, so
+    // re-read once it closes — ProfileScreen writes TokenStore, not this state.
+    LaunchedEffect(drawerState.isOpen) {
+        if (!drawerState.isOpen) {
+            selfName = readSelfName()
+            selfAvatarUrl = tokenStore.avatarUrl
+        }
+    }
 
     // Single source of truth: each tab pairs its bar appearance with its content, so
     // adding/reordering a tab is one edit and the bar can't drift out of sync with
@@ -163,22 +193,35 @@ fun MainTabScreen(
 
     ModalNavigationDrawer(
         drawerState = drawerState,
-        gesturesEnabled = drawerState.isOpen || selectedTab == MainTab.Messages.ordinal,
+        // Swipe-to-close only; see the drawerState declaration for why opening by
+        // gesture is off.
+        gesturesEnabled = drawerState.isOpen,
         drawerContent = {
-            // Square edge + full height: the drawer IS the profile page, not a
-            // rounded sheet floating over it.
-            ModalDrawerSheet(drawerShape = RectangleShape) {
-                ProfileScreen(
-                    onSettingsClick = onSettingsClick,
-                    onOpenAiHub = onOpenAiHub,
-                    onOpenApproval = onOpenApproval,
-                    onSignedOut = {
-                        // Drop the IM socket + caches so the next login doesn't
-                        // inherit this user's session.
-                        ImSession.shutdown()
-                        onSignedOut()
-                    },
-                )
+            // Passing drawerState is what installs DrawerPredictiveBackHandler —
+            // the overload without it does NOT handle back, so system Back would
+            // fall through to the NavHost and exit the app instead of closing the
+            // drawer. Square edge: the drawer IS the profile page, not a rounded
+            // sheet floating over it.
+            ModalDrawerSheet(drawerState = drawerState, drawerShape = RectangleShape) {
+                // ModalNavigationDrawer composes drawerContent EAGERLY — "closed" is
+                // just a negative x-offset, not a composition gate. Left unguarded,
+                // ProfileScreen fires its /users/me/ LaunchedEffect(Unit) on every
+                // cold start, and — never being disposed — never re-fetches when the
+                // drawer is reopened. Mount it only while the drawer is on screen so
+                // the fetch follows the user's intent and re-runs on each open.
+                if (drawerState.isOpen || drawerState.isAnimationRunning) {
+                    ProfileScreen(
+                        onSettingsClick = onSettingsClick,
+                        onOpenAiHub = onOpenAiHub,
+                        onOpenApproval = onOpenApproval,
+                        onSignedOut = {
+                            // Drop the IM socket + caches so the next login doesn't
+                            // inherit this user's session.
+                            ImSession.shutdown()
+                            onSignedOut()
+                        },
+                    )
+                }
             }
         },
     ) {
@@ -186,15 +229,13 @@ fun MainTabScreen(
             bottomBar = {
                 CompactTabBar(
                     tabs = tabs,
-                    selectedTab = selectedTab,
+                    selectedTab = safeTab,
                     onTabSelected = { selectedTab = it },
                 )
             },
         ) { padding ->
             Box(modifier = Modifier.padding(padding)) {
-                // coerceIn defends against a restored index pointing past the list (e.g.
-                // a saved tab count from an older app version).
-                tabs[selectedTab.coerceIn(tabs.indices)].content()
+                tabs[safeTab].content()
             }
         }
     }
