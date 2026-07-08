@@ -1,15 +1,21 @@
 package com.we.meet.feature.im.vm
 
+import android.util.Log
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
+import com.we.meet.feature.im.R
+import com.we.meet.feature.im.userMessageRes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+private const val TAG = "DirectSettingsVM"
 
 data class DirectSettingsUiState(
     val cid: String = "",
@@ -22,7 +28,8 @@ data class DirectSettingsUiState(
     val pinned: Boolean = false,
     val muted: Boolean = false,
     val busy: Boolean = false,
-    val error: String? = null,
+    /** Localized message resource, not raw exception text — see [userMessageRes]. */
+    @StringRes val error: Int? = null,
 )
 
 /**
@@ -54,7 +61,7 @@ class DirectChatSettingsViewModel internal constructor(
     fun refresh() {
         val summary = session.conversations.conversations.value.firstOrNull { it.cid == cid }
         if (summary == null) {
-            _ui.update { it.copy(error = "Conversation not found") }
+            _ui.update { it.copy(error = R.string.im_error_conversation_not_found) }
             return
         }
         val self = session.selfUid.value
@@ -107,7 +114,8 @@ class DirectChatSettingsViewModel internal constructor(
                 block()
                 _ui.update { it.copy(busy = false) }
             } catch (e: Throwable) {
-                _ui.update { it.copy(busy = false, error = e.message ?: e::class.simpleName) }
+                Log.w(TAG, "direct settings action failed", e)
+                _ui.update { it.copy(busy = false, error = e.userMessageRes()) }
             }
         }
     }

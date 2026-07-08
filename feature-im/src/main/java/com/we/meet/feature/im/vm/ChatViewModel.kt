@@ -2,6 +2,7 @@ package com.we.meet.feature.im.vm
 
 import android.net.Uri
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -14,6 +15,7 @@ import com.jusi.lightim.PinnedMessage
 import com.jusi.lightim.ReactionGroup
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
+import com.we.meet.feature.im.userMessageRes
 import com.we.meet.feature.im.data.ChatUploadException
 import com.we.meet.feature.im.data.ImUserInfo
 import com.we.meet.feature.im.model.MessageContent
@@ -62,7 +64,8 @@ data class ChatUiState(
     /** P10 群昵称:uid → per-conversation nickname (blank names omitted). */
     val nicknames: Map<String, String> = emptyMap(),
     val selfUid: String? = null,
-    val error: String? = null,
+    /** Localized message resource, not raw exception text — see [userMessageRes]. */
+    @StringRes val error: Int? = null,
     /** Stable upload-error code the UI maps to an i18n string; null = none. */
     val uploadError: ChatUploadException.Code? = null,
     /** Bumps after each acked text send — the composer clears on this. */
@@ -383,7 +386,8 @@ class ChatViewModel internal constructor(
                     }
                 }
                 .onFailure { e ->
-                    _ui.update { it.copy(loadingOlder = false, error = e.message) }
+                    Log.w(TAG, "loadOlder failed", e)
+                    _ui.update { it.copy(loadingOlder = false, error = e.userMessageRes()) }
                 }
         }
     }
@@ -399,7 +403,7 @@ class ChatViewModel internal constructor(
                 _ui.update { it.copy(error = null, sentTick = it.sentTick + 1) }
             } catch (e: Throwable) {
                 Log.w(TAG, "sendText failed", e)
-                _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
+                _ui.update { it.copy(error = e.userMessageRes()) }
             }
         }
     }
@@ -512,7 +516,7 @@ class ChatViewModel internal constructor(
                 _ui.update { it.copy(error = null, sentTick = it.sentTick + 1) }
             } catch (e: Throwable) {
                 Log.w(TAG, "sendQuote failed", e)
-                _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
+                _ui.update { it.copy(error = e.userMessageRes()) }
             }
         }
     }
@@ -525,7 +529,7 @@ class ChatViewModel internal constructor(
                 session.client.recall(cid, message.mid)
             } catch (e: Throwable) {
                 Log.w(TAG, "recall failed", e)
-                _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
+                _ui.update { it.copy(error = e.userMessageRes()) }
             }
         }
     }
@@ -537,7 +541,8 @@ class ChatViewModel internal constructor(
     fun deleteMessages(
         mids: Collection<Long>,
         onSuccess: () -> Unit,
-        onError: (String) -> Unit,
+        /** Receives a localized message resource, not raw exception text. */
+        onError: (Int) -> Unit,
     ) {
         viewModelScope.launch {
             try {
@@ -552,8 +557,8 @@ class ChatViewModel internal constructor(
                 onSuccess()
             } catch (e: Throwable) {
                 Log.w(TAG, "deleteMessages failed", e)
-                _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
-                onError(e.message ?: e::class.simpleName ?: "")
+                _ui.update { it.copy(error = e.userMessageRes()) }
+                onError(e.userMessageRes())
             }
         }
     }
@@ -573,7 +578,7 @@ class ChatViewModel internal constructor(
                 session.client.react(cid, message.mid, emoji, op)
             } catch (e: Throwable) {
                 Log.w(TAG, "reaction failed", e)
-                _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
+                _ui.update { it.copy(error = e.userMessageRes()) }
             }
         }
     }
@@ -591,7 +596,7 @@ class ChatViewModel internal constructor(
                 session.client.pin(cid, message.mid, op)
             } catch (e: Throwable) {
                 Log.w(TAG, "pin failed", e)
-                _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
+                _ui.update { it.copy(error = e.userMessageRes()) }
             }
         }
     }
@@ -683,7 +688,7 @@ class ChatViewModel internal constructor(
                 _ui.update { s ->
                     s.copy(
                         pending = s.pending.filterNot { it.localId == localId },
-                        error = e.message ?: e::class.simpleName,
+                        error = e.userMessageRes(),
                     )
                 }
             }
@@ -703,7 +708,7 @@ class ChatViewModel internal constructor(
                     requestNameResolution()
                 }
                 .onFailure { e ->
-                    _ui.update { it.copy(error = e.message ?: e::class.simpleName) }
+                    _ui.update { it.copy(error = e.userMessageRes()) }
                 }
         }
     }

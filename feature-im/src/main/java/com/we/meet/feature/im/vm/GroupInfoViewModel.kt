@@ -1,11 +1,13 @@
 package com.we.meet.feature.im.vm
 
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
+import com.we.meet.feature.im.userMessageRes
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -39,7 +41,8 @@ data class GroupInfoUiState(
     val muted: Boolean = false,
     val muteAtAll: Boolean = false,
     val busy: Boolean = false,
-    val error: String? = null,
+    /** Localized message resource, not raw exception text — see [userMessageRes]. */
+    @StringRes val error: Int? = null,
 )
 
 sealed interface GroupInfoEvent {
@@ -108,7 +111,10 @@ class GroupInfoViewModel internal constructor(
                     session.userDirectory.requestResolve(rosterUids)
                     rebuildRoster()
                 }
-                .onFailure { e -> _ui.update { it.copy(error = e.message) } }
+                .onFailure { e ->
+                    Log.w(TAG, "group info refresh failed", e)
+                    _ui.update { it.copy(error = e.userMessageRes()) }
+                }
         }
     }
 
@@ -227,7 +233,7 @@ class GroupInfoViewModel internal constructor(
                 _ui.update { it.copy(busy = false) }
             } catch (e: Throwable) {
                 Log.w(TAG, "group action failed", e)
-                _ui.update { it.copy(busy = false, error = e.message ?: e::class.simpleName) }
+                _ui.update { it.copy(busy = false, error = e.userMessageRes()) }
             }
         }
     }

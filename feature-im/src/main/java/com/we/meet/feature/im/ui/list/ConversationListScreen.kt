@@ -167,7 +167,7 @@ fun ConversationListScreen(
         // 对用户不可读。只在已连接时才暴露刷新/操作错误:「在线却失败」才是连接条
         // 覆盖不到、值得单独提示的信息。AUTH_FAILED 也因此被自然涵盖。
         if (connection == ConnectionState.CONNECTED) {
-            (actionError ?: error)?.let { ErrorBanner(it) }
+            (actionError ?: error)?.let { ErrorBanner(stringResource(it)) }
         }
 
         if (rows.isEmpty()) {

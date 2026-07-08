@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.vm
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -8,6 +9,7 @@ import com.jusi.lightim.ConversationSummary
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.data.GroupTile
+import com.we.meet.feature.im.userMessageRes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -15,6 +17,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+private const val TAG = "ConvListVM"
 
 /** Everything one conversation row needs; preview text is derived in the UI. */
 data class ConversationRowUi(
@@ -55,10 +59,12 @@ class ConversationListViewModel internal constructor(
 ) : ViewModel() {
 
     val connectionState: StateFlow<ConnectionState> = session.connectionState
-    val error: StateFlow<String?> = session.conversations.error
 
-    private val _actionError = MutableStateFlow<String?>(null)
-    val actionError: StateFlow<String?> = _actionError.asStateFlow()
+    /** Localized message resources, not raw exception text — see [userMessageRes]. */
+    val error: StateFlow<Int?> = session.conversations.error
+
+    private val _actionError = MutableStateFlow<Int?>(null)
+    val actionError: StateFlow<Int?> = _actionError.asStateFlow()
 
     val rows: StateFlow<List<ConversationRowUi>> =
         combine(
@@ -108,7 +114,10 @@ class ConversationListViewModel internal constructor(
         viewModelScope.launch {
             if (row.isGroup) session.bridge.announceLeave(row.cid)
             session.conversations.deleteOrLeave(row.cid)
-                .onFailure { _actionError.value = it.message ?: it::class.simpleName }
+                .onFailure {
+                    Log.w(TAG, "deleteOrLeave failed cid=${row.cid}", it)
+                    _actionError.value = it.userMessageRes()
+                }
         }
     }
 

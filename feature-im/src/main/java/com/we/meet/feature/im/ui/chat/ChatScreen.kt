@@ -266,7 +266,7 @@ fun ChatScreen(
                 .imePadding(),
         ) {
             ConnectionStatusBar(state = connection, onRetry = null)
-            ui.error?.let { ErrorBanner(it) }
+            ui.error?.let { ErrorBanner(stringResource(it)) }
 
             val listState = rememberLazyListState()
             // reverseLayout: index 0 = visual bottom = newest message.
@@ -535,10 +535,11 @@ fun ChatScreen(
                                     Toast.LENGTH_SHORT,
                                 ).show()
                             },
-                            onError = { msg ->
+                            onError = { msgRes ->
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.im_delete_failed) + ": $msg",
+                                    "${context.getString(R.string.im_delete_failed)}: " +
+                                        context.getString(msgRes),
                                     Toast.LENGTH_SHORT,
                                 ).show()
                             },

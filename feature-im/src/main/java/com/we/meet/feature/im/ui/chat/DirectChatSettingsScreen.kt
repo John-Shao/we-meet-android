@@ -80,7 +80,7 @@ fun DirectChatSettingsScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            ui.error?.let { ErrorBanner(it) }
+            ui.error?.let { ErrorBanner(stringResource(it)) }
 
             // Peer identity: avatar + name.
             Row(

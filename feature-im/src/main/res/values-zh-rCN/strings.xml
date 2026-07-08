@@ -10,6 +10,12 @@
     <string name="im_action_confirm">确定</string>
     <string name="im_action_cancel">取消</string>
 
+    <string name="im_error_network">网络不可用,请检查网络连接</string>
+    <string name="im_error_timeout">请求超时,请重试</string>
+    <string name="im_error_auth">登录已过期,请重新登录</string>
+    <string name="im_error_unknown">出错了,请稍后重试</string>
+    <string name="im_error_conversation_not_found">会话不存在</string>
+
     <string name="im_list_title">消息</string>
     <string name="im_list_empty">还没有会话</string>
     <string name="im_untitled_chat">会话</string>

@@ -1,7 +1,10 @@
 package com.we.meet.feature.im.data
 
+import android.util.Log
+import androidx.annotation.StringRes
 import com.jusi.lightim.Client
 import com.jusi.lightim.ConversationSummary
+import com.we.meet.feature.im.userMessageRes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,8 +37,10 @@ internal class ConversationRepository(
         get() = _totalUnread.asStateFlow()
     private val _totalUnread = MutableStateFlow(0L)
 
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
+    /** Localized message resource, not raw exception text — see [userMessageRes]. */
+    @StringRes
+    private val _error = MutableStateFlow<Int?>(null)
+    val error: StateFlow<Int?> = _error.asStateFlow()
 
     fun start() {
         scope.launch {
@@ -86,7 +91,10 @@ internal class ConversationRepository(
                 _error.value = null
                 mutate { list }
             }
-            .onFailure { e -> _error.value = e.message ?: e::class.simpleName }
+            .onFailure { e ->
+                Log.w(TAG, "conversation refresh failed", e)
+                _error.value = e.userMessageRes()
+            }
     }
 
     /** Optimistic local patch + server settings write. */
@@ -132,6 +140,8 @@ internal class ConversationRepository(
     }
 
     private companion object {
+        const val TAG = "ConversationRepo"
+
         /** P12 control messages that must not bump activity/unread/preview. */
         val NON_BUMPING = setOf("reaction", "recall")
 

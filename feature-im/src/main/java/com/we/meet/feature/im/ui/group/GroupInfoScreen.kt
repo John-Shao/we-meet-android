@@ -96,7 +96,7 @@ fun GroupInfoScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            ui.error?.let { ErrorBanner(it) }
+            ui.error?.let { ErrorBanner(stringResource(it)) }
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 item {

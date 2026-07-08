@@ -10,6 +10,15 @@
     <string name="im_action_confirm">OK</string>
     <string name="im_action_cancel">Cancel</string>
 
+    <!-- User-facing failure messages. SDK exception messages are developer
+         strings ("transport failed", "404 Not Found: {…}") and must never be
+         shown verbatim — Throwable.userMessageRes() maps to these instead. -->
+    <string name="im_error_network">Network unavailable — check your connection</string>
+    <string name="im_error_timeout">Request timed out — please try again</string>
+    <string name="im_error_auth">Sign-in expired — please sign in again</string>
+    <string name="im_error_unknown">Something went wrong — please try again</string>
+    <string name="im_error_conversation_not_found">Conversation not found</string>
+
     <string name="im_list_title">Messages</string>
     <string name="im_list_empty">No conversations yet</string>
     <string name="im_untitled_chat">Conversation</string>

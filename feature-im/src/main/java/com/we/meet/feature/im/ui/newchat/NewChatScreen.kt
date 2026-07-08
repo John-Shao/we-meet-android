@@ -22,6 +22,7 @@ import com.we.meet.core.directory.ui.PickedMember
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.R
+import com.we.meet.feature.im.userMessageRes
 import kotlinx.coroutines.launch
 
 /**
@@ -47,7 +48,8 @@ fun NewChatScreen(
         creating = false
         Toast.makeText(
             context,
-            e.message ?: context.getString(R.string.im_create_chat_failed),
+            "${context.getString(R.string.im_create_chat_failed)}: " +
+                context.getString(e.userMessageRes()),
             Toast.LENGTH_SHORT,
         ).show()
     }
