@@ -9,7 +9,14 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,10 +33,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.VideoCall
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -72,14 +85,28 @@ import java.util.Locale
 
 /**
  * 消息 tab root — phone-first conversation list. Chats open as full-screen
- * app-level routes via [onOpenChat]; "+" starts the contact-picker flow.
+ * app-level routes via [onOpenChat].
+ *
+ * Feishu-style header: the user's avatar + name on the left (tapping the avatar
+ * calls [onAvatarClick], which the host turns into a profile drawer), search and
+ * a "more" menu on the right. Identity is passed down rather than read here —
+ * this module can't see the app's TokenStore.
+ *
+ * Search filters the already-loaded [ConversationRowUi.title]s locally; there is
+ * no server-side conversation search to call.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConversationListScreen(
     deps: ImDeps,
+    selfName: String,
+    selfAvatarUrl: String?,
+    onAvatarClick: () -> Unit,
     onOpenChat: (cid: String) -> Unit,
     onNewChat: () -> Unit,
+    onScanQrCode: () -> Unit,
+    onCreateMeeting: () -> Unit,
+    onJoinMeeting: () -> Unit,
 ) {
     val vm: ConversationListViewModel =
         viewModel(factory = remember(deps) { ConversationListViewModel.Factory(deps) })
@@ -125,21 +152,79 @@ fun ConversationListScreen(
         }
     }
 
+    var searchActive by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
+    var menuOpen by remember { mutableStateOf(false) }
+
+    // Local filter over the loaded rows — no server-side conversation search.
+    val visibleRows = remember(rows, query) {
+        val q = query.trim()
+        if (q.isBlank()) rows else rows.filter { it.title.contains(q, ignoreCase = true) }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = stringResource(R.string.im_list_title),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+        if (searchActive) {
+            SearchHeader(
+                query = query,
+                onQueryChange = { query = it },
+                onCancel = { searchActive = false; query = "" },
             )
-            IconButton(onClick = onNewChat) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.im_new_chat))
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                MemberAvatar(
+                    name = selfName,
+                    url = selfAvatarUrl,
+                    cacheKey = "self",
+                    size = 36.dp,
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .clickable(
+                            onClickLabel = stringResource(R.string.im_open_profile),
+                            onClick = onAvatarClick,
+                        ),
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = selfName.ifBlank { stringResource(R.string.im_list_title) },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = { searchActive = true }) {
+                    Icon(
+                        Icons.Filled.Search,
+                        contentDescription = stringResource(R.string.im_search),
+                    )
+                }
+                Box {
+                    IconButton(onClick = { menuOpen = true }) {
+                        Icon(
+                            Icons.Filled.Add,
+                            contentDescription = stringResource(R.string.im_more),
+                        )
+                    }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        MoreMenuItem(R.string.im_new_chat, Icons.Filled.Groups) {
+                            menuOpen = false; onNewChat()
+                        }
+                        MoreMenuItem(R.string.im_menu_scan_login, Icons.Filled.QrCodeScanner) {
+                            menuOpen = false; onScanQrCode()
+                        }
+                        MoreMenuItem(R.string.im_menu_create_meeting, Icons.Filled.VideoCall) {
+                            menuOpen = false; onCreateMeeting()
+                        }
+                        MoreMenuItem(R.string.im_menu_join_meeting, Icons.Filled.AddCircleOutline) {
+                            menuOpen = false; onJoinMeeting()
+                        }
+                    }
+                }
             }
         }
 
@@ -170,7 +255,7 @@ fun ConversationListScreen(
             (actionError ?: error)?.let { ErrorBanner(stringResource(it)) }
         }
 
-        if (rows.isEmpty()) {
+        if (visibleRows.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     text = stringResource(R.string.im_list_empty),
@@ -180,7 +265,7 @@ fun ConversationListScreen(
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(rows, key = { it.cid }) { row ->
+                items(visibleRows, key = { it.cid }) { row ->
                     ConversationRow(
                         row = row,
                         onClick = { onOpenChat(row.cid) },
@@ -406,4 +491,76 @@ private fun timeLabel(tsMs: Long): String {
         else -> "yyyy/M/d"
     }
     return SimpleDateFormat(pattern, Locale.getDefault()).format(Date(tsMs))
+}
+
+/** Search bar that replaces the header while [ConversationListScreen] is filtering. */
+@Composable
+private fun SearchHeader(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onCancel: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.weight(1f),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            ) {
+                Icon(
+                    Icons.Filled.Search,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+                Box(Modifier.weight(1f)) {
+                    if (query.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.im_search_hint),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    BasicTextField(
+                        value = query,
+                        onValueChange = onQueryChange,
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurface,
+                        ),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+        TextButton(onClick = onCancel) {
+            Text(stringResource(R.string.im_action_cancel))
+        }
+    }
+}
+
+/** One row of the header's "more" dropdown. */
+@Composable
+private fun MoreMenuItem(
+    labelRes: Int,
+    icon: ImageVector,
+    onClick: () -> Unit,
+) {
+    DropdownMenuItem(
+        text = { Text(stringResource(labelRes)) },
+        leadingIcon = {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        },
+        onClick = onClick,
+    )
 }

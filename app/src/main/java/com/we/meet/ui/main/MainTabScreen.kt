@@ -22,26 +22,30 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Contacts
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Contacts
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Videocam
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -56,9 +60,16 @@ import com.we.meet.ui.calendar.CalendarTabScreen
 import com.we.meet.ui.contacts.ContactsTabScreen
 import com.we.meet.ui.home.HomeScreen
 import com.we.meet.ui.profile.ProfileScreen
+import kotlinx.coroutines.launch
 
-/** Bottom tabs, in bar order. Feishu-style: 消息 · 日历 · 会议 · 通讯录 · 我的. */
-enum class MainTab { Messages, Calendar, Meeting, Contacts, Profile }
+/**
+ * Bottom tabs, in bar order. Feishu-style: 消息 · 日历 · 会议 · 通讯录.
+ *
+ * There is deliberately no 我的 tab — the profile page lives behind the avatar
+ * in the 消息 header (see the [ModalNavigationDrawer] below), matching Feishu.
+ * That means 消息 is the ONLY route to the profile page.
+ */
+enum class MainTab { Messages, Calendar, Meeting, Contacts }
 
 private data class TabItem(
     val labelRes: Int,
@@ -96,6 +107,19 @@ fun MainTabScreen(
     val imSession = remember { ImSession.get(app) }
     val imUnread by imSession.totalUnread.collectAsStateWithLifecycle()
 
+    // Profile drawer, opened by the avatar in the 消息 header. Swipe-to-open is
+    // limited to that tab so a left-edge swipe elsewhere can't summon a profile
+    // page the user has no visible entry point for.
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    // Identity for the 消息 header. TokenStore already caches these (synced by
+    // ProfileScreen on each /users/me/ read), so the header costs no extra call.
+    // Fall back to the phone number when the nickname hasn't synced yet.
+    val tokenStore = app.tokenStore
+    val selfName = tokenStore.nickname?.takeIf { it.isNotBlank() }
+        ?: tokenStore.phone.orEmpty()
+
     // Single source of truth: each tab pairs its bar appearance with its content, so
     // adding/reordering a tab is one edit and the bar can't drift out of sync with
     // the screen shown.
@@ -108,8 +132,14 @@ fun MainTabScreen(
         ) {
             ConversationListScreen(
                 deps = app,
+                selfName = selfName,
+                selfAvatarUrl = tokenStore.avatarUrl,
+                onAvatarClick = { scope.launch { drawerState.open() } },
                 onOpenChat = onOpenChat,
                 onNewChat = onNewChat,
+                onScanQrCode = onScanQrCode,
+                onCreateMeeting = onCreateMeeting,
+                onJoinMeeting = onJoinMeeting,
             )
         },
         TabItem(R.string.tab_calendar, Icons.Filled.CalendarMonth, Icons.Outlined.CalendarMonth) {
@@ -123,41 +153,49 @@ fun MainTabScreen(
                 onCreateMeeting = onCreateMeeting,
                 onJoinMeeting = onJoinMeeting,
                 onJoinSlug = onJoinSlug,
-                onScanQrCode = onScanQrCode,
                 onHistoryClick = onHistoryClick,
             )
         },
         TabItem(R.string.tab_contacts, Icons.Filled.Contacts, Icons.Outlined.Contacts) {
             ContactsTabScreen(onMemberClick = onMemberClick)
         },
-        TabItem(R.string.tab_profile, Icons.Filled.Person, Icons.Outlined.Person) {
-            ProfileScreen(
-                onSettingsClick = onSettingsClick,
-                onOpenAiHub = onOpenAiHub,
-                onOpenApproval = onOpenApproval,
-                onSignedOut = {
-                    // Drop the IM socket + caches so the next login doesn't
-                    // inherit this user's session.
-                    ImSession.shutdown()
-                    onSignedOut()
-                },
-            )
-        },
     )
 
-    Scaffold(
-        bottomBar = {
-            CompactTabBar(
-                tabs = tabs,
-                selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it },
-            )
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        gesturesEnabled = drawerState.isOpen || selectedTab == MainTab.Messages.ordinal,
+        drawerContent = {
+            // Square edge + full height: the drawer IS the profile page, not a
+            // rounded sheet floating over it.
+            ModalDrawerSheet(drawerShape = RectangleShape) {
+                ProfileScreen(
+                    onSettingsClick = onSettingsClick,
+                    onOpenAiHub = onOpenAiHub,
+                    onOpenApproval = onOpenApproval,
+                    onSignedOut = {
+                        // Drop the IM socket + caches so the next login doesn't
+                        // inherit this user's session.
+                        ImSession.shutdown()
+                        onSignedOut()
+                    },
+                )
+            }
         },
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
-            // coerceIn defends against a restored index pointing past the list (e.g.
-            // a saved tab count from an older app version).
-            tabs[selectedTab.coerceIn(tabs.indices)].content()
+    ) {
+        Scaffold(
+            bottomBar = {
+                CompactTabBar(
+                    tabs = tabs,
+                    selectedTab = selectedTab,
+                    onTabSelected = { selectedTab = it },
+                )
+            },
+        ) { padding ->
+            Box(modifier = Modifier.padding(padding)) {
+                // coerceIn defends against a restored index pointing past the list (e.g.
+                // a saved tab count from an older app version).
+                tabs[selectedTab.coerceIn(tabs.indices)].content()
+            }
         }
     }
 }

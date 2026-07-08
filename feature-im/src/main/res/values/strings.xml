@@ -19,6 +19,15 @@
     <string name="im_error_unknown">Something went wrong — please try again</string>
     <string name="im_error_conversation_not_found">Conversation not found</string>
 
+    <!-- 消息 tab header: avatar + name on the left, search + more on the right. -->
+    <string name="im_open_profile">Open profile</string>
+    <string name="im_search">Search</string>
+    <string name="im_search_hint">Search conversations</string>
+    <string name="im_more">More</string>
+    <string name="im_menu_scan_login">Scan to sign in</string>
+    <string name="im_menu_create_meeting">New video meeting</string>
+    <string name="im_menu_join_meeting">Join video meeting</string>
+
     <string name="im_list_title">Messages</string>
     <string name="im_list_empty">No conversations yet</string>
     <string name="im_untitled_chat">Conversation</string>

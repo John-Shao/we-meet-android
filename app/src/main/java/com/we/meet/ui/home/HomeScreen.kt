@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddBox
-import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
@@ -26,7 +25,6 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SelectableDates
@@ -61,7 +59,6 @@ fun HomeScreen(
     onCreateMeeting: () -> Unit,
     onJoinMeeting: () -> Unit,
     onJoinSlug: (slug: String) -> Unit,
-    onScanQrCode: () -> Unit,
     onHistoryClick: (roomId: String) -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
@@ -85,24 +82,8 @@ fun HomeScreen(
     // meeting lists below scroll when the user swipes up. Same Feishu /
     // WeChat-style "fixed action shelf + scrolling timeline" layout.
     Column(modifier = Modifier.fillMaxSize()) {
-        // Top bar — scan-QR entry on the left of settings on the right.
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            IconButton(onClick = onScanQrCode) {
-                Icon(
-                    imageVector = Icons.Default.QrCodeScanner,
-                    contentDescription = stringResource(R.string.home_scan_qr),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            // Settings entry was moved to the Profile tab — language /
-            // theme / codec are app-level prefs that don't belong in
-            // the meetings tab's header.
-        }
+        // No top bar: settings moved to the Profile page, and scan-QR moved to
+        // the 消息 header's "more" menu. Nothing app-level belongs here.
 
         // Action zone — padded, same background as the page.
         Row(

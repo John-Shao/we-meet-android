@@ -16,6 +16,14 @@
     <string name="im_error_unknown">出错了,请稍后重试</string>
     <string name="im_error_conversation_not_found">会话不存在</string>
 
+    <string name="im_open_profile">打开个人主页</string>
+    <string name="im_search">搜索</string>
+    <string name="im_search_hint">搜索会话</string>
+    <string name="im_more">更多</string>
+    <string name="im_menu_scan_login">扫码登录</string>
+    <string name="im_menu_create_meeting">发起视频会议</string>
+    <string name="im_menu_join_meeting">加入视频会议</string>
+
     <string name="im_list_title">消息</string>
     <string name="im_list_empty">还没有会话</string>
     <string name="im_untitled_chat">会话</string>
