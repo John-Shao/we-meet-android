@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.R
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.core.directory.data.DepartmentDto
 import com.we.meet.core.directory.data.MemberDto
 import com.we.meet.core.directory.ui.MemberAvatar
@@ -70,7 +71,7 @@ fun ContactsTabScreen(onMemberClick: (userId: String) -> Unit) {
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = 4.dp),
         )
 
         if (!ui.searching) {
@@ -167,7 +168,7 @@ private fun Breadcrumbs(
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = 8.dp),
     ) {
         Text(
             text = stringResource(R.string.contacts_root_org),
@@ -202,7 +203,7 @@ private fun DepartmentRow(dept: DepartmentDto, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = 12.dp),
     ) {
         Icon(
             Icons.Filled.Folder,
@@ -232,7 +233,7 @@ private fun MemberRow(member: MemberDto, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = 10.dp),
     ) {
         MemberAvatar(
             name = member.displayName,

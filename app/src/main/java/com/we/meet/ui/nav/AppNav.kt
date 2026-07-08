@@ -715,7 +715,7 @@ private fun HostEndedSheet(onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding)) {
             Text(
                 text = stringResource(R.string.room_host_ended_title),
                 style = MaterialTheme.typography.titleMedium,

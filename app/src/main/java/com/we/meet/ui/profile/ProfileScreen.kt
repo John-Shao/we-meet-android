@@ -212,7 +212,7 @@ fun ProfileScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = Dimens.ScreenPadding)
                 .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.surface),
         ) {
@@ -221,13 +221,13 @@ fun ProfileScreen(
                 value = nickname.ifBlank { stringResource(R.string.profile_not_set) },
                 onClick = { showNicknameDialog = true },
             )
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            HorizontalDivider(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding))
             SettingsRow(
                 label = stringResource(R.string.profile_intro),
                 value = intro.ifBlank { stringResource(R.string.profile_not_set) },
                 onClick = { showIntroDialog = true },
             )
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            HorizontalDivider(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding))
             SettingsRow(
                 label = stringResource(R.string.profile_phone),
                 value = phone,
@@ -244,7 +244,7 @@ fun ProfileScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = Dimens.ScreenPadding)
                 .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.surface),
         ) {
@@ -254,14 +254,14 @@ fun ProfileScreen(
                 value = null,
                 onClick = onOpenAiHub,
             )
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            HorizontalDivider(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding))
             // Approval lives here rather than a 6th bottom tab (Feishu-style workbench app).
             SettingsRow(
                 label = stringResource(R.string.profile_approval_entry),
                 value = null,
                 onClick = onOpenApproval,
             )
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            HorizontalDivider(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding))
             SettingsRow(
                 label = stringResource(R.string.profile_settings),
                 value = null,
@@ -275,7 +275,7 @@ fun ProfileScreen(
                 text = errorMessage!!,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(horizontal = 16.dp),
+                modifier = Modifier.padding(horizontal = Dimens.ScreenPadding),
             )
         }
 
@@ -285,7 +285,7 @@ fun ProfileScreen(
             onClick = { showSignOutConfirm = true },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = Dimens.ScreenPadding)
                 .height(Dimens.ButtonHeight),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
@@ -310,7 +310,7 @@ fun ProfileScreen(
                 onClick = { tokenStore.accessToken = "invalid.debug.token" },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = Dimens.ScreenPadding),
             ) {
                 Text("Debug: 弄坏 access token")
             }
@@ -506,7 +506,7 @@ private fun SettingsRow(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(

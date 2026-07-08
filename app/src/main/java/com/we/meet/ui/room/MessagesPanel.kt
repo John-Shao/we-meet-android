@@ -51,6 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.we.meet.R
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.data.chat.ChatMessageUi
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -142,7 +143,7 @@ private fun MessageList(
         state = listState,
         modifier = modifier,
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            horizontal = 16.dp,
+            horizontal = Dimens.ScreenPadding,
             vertical = 12.dp,
         ),
         verticalArrangement = Arrangement.spacedBy(16.dp),

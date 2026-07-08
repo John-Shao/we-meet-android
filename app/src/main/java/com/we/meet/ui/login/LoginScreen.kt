@@ -106,7 +106,7 @@ private fun PhoneInputPage(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                    .padding(horizontal = Dimens.ScreenPadding, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(

@@ -50,6 +50,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.we.meet.R
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.ApprovalTemplateDto
 import com.we.meet.data.api.dto.SubmitApprovalRequest
@@ -158,7 +159,7 @@ fun SubmitApprovalScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = Dimens.ScreenPadding),
         ) {
             when {
                 ui.loading -> CircularProgressIndicator(Modifier.padding(24.dp))

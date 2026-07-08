@@ -472,7 +472,7 @@ private fun AudioOutputSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)) {
             AudioOutputOption(
                 icon = Icons.AutoMirrored.Filled.VolumeUp,
                 label = stringResource(R.string.preview_speaker),

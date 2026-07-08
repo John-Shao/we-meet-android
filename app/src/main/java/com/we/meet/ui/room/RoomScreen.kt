@@ -977,7 +977,7 @@ private fun ParticipantsSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)) {
             Text(
                 text = stringResource(R.string.room_participants, participants.size),
                 style = MaterialTheme.typography.titleMedium,
@@ -1242,7 +1242,7 @@ private fun WaitingListSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1326,7 +1326,7 @@ private fun HostSettingsSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)) {
             Text(
                 text = stringResource(R.string.room_host_settings_title),
                 style = MaterialTheme.typography.titleMedium,
@@ -1466,7 +1466,7 @@ private fun MoreActionsSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             Row(modifier = Modifier.fillMaxWidth()) {
@@ -1577,7 +1577,7 @@ private fun ScreenShareChooserSheet(
     val sheetState = rememberModalBottomSheetState()
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)) {
             ShareOptionRow(
                 icon = Icons.Default.PhoneAndroid,
                 title = stringResource(R.string.room_screen_share_screen),
@@ -1656,7 +1656,7 @@ private fun LeaveDialog(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = Dimens.ScreenPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (isAdmin) {
@@ -1736,7 +1736,7 @@ private fun AudioOutputSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)) {
             AudioOutputOption(
                 icon = Icons.AutoMirrored.Filled.VolumeUp,
                 label = stringResource(R.string.preview_speaker),

@@ -45,6 +45,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.we.meet.R
+import com.we.meet.ui.theme.Dimens
 import kotlinx.coroutines.launch
 
 /**
@@ -94,7 +95,7 @@ fun RoomAiSheet(
                 .fillMaxWidth()
                 .fillMaxHeight(0.618f)
                 .imePadding()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = Dimens.ScreenPadding),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),

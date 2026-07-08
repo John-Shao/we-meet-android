@@ -27,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.we.meet.R
+import com.we.meet.ui.theme.Dimens
 
 /**
  * Landing for the "AI" tab — an aggregation hub for AI features. v1 surfaces
@@ -40,7 +41,7 @@ fun AiHubScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = Dimens.ScreenPadding),
     ) {
         Text(
             text = stringResource(R.string.ai_hub_title),

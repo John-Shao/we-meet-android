@@ -23,7 +23,10 @@ object Dimens {
     val SpaceXl = 24.dp
     val SpaceXxl = 32.dp
 
-    /** Standard left/right inset for phone screen content. */
+    /**
+     * Standard horizontal content inset (screen bodies, dialogs, sheets, list
+     * rows). Prefer this over inline `horizontal = 16.dp`.
+     */
     val ScreenPadding = 16.dp
 
     // ---- Controls ----

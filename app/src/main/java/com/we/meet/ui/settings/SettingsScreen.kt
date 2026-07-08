@@ -56,6 +56,7 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.WeMeetApp
 import com.we.meet.R
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.data.settings.ThemeMode
 import com.we.meet.data.settings.VideoCodecPref
 
@@ -159,7 +160,7 @@ private fun AccountSection(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = Dimens.ScreenPadding)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface),
     ) {
@@ -167,7 +168,7 @@ private fun AccountSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onDeregisterClick)
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
         ) {
@@ -268,7 +269,7 @@ private fun ThemeSection(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = Dimens.ScreenPadding)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface),
     ) {
@@ -294,7 +295,7 @@ private fun ThemeDropdownRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { expanded = true }
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -378,7 +379,7 @@ private fun LanguageSection() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = Dimens.ScreenPadding)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface),
     ) {
@@ -412,7 +413,7 @@ private fun LanguageDropdownRow(label: String) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { expanded = true }
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -492,7 +493,7 @@ private fun CodecSection(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = Dimens.ScreenPadding)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface),
     ) {
@@ -527,7 +528,7 @@ private fun CodecDropdownRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { expanded = true }
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
