@@ -131,6 +131,11 @@
     <string name="im_action_forward_merged">Als Verlauf weiterleiten</string>
     <string name="im_action_forward_one_by_one">Einzeln weiterleiten</string>
     <string name="im_forward_to">Weiterleiten an</string>
+    <string name="im_forward_multi">Mehrfachauswahl</string>
+    <string name="im_forward_new_group">Gruppe erstellen und weiterleiten</string>
+    <string name="im_forward_recent">Letzte Chats</string>
+    <string name="im_forward_send">Senden</string>
+    <string name="im_forward_confirm">An „%1$s“ senden?</string>
     <string name="im_selected_count">%1$d ausgewählt</string>
     <string name="im_action_delete">Löschen</string>
     <string name="im_delete_confirm_title">Nachrichten löschen?</string>

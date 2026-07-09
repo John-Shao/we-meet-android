@@ -143,6 +143,11 @@
     <string name="im_action_forward_merged">合并转发</string>
     <string name="im_action_forward_one_by_one">逐条转发</string>
     <string name="im_forward_to">转发到</string>
+    <string name="im_forward_multi">多选</string>
+    <string name="im_forward_new_group">创建群组并转发</string>
+    <string name="im_forward_recent">最近对话</string>
+    <string name="im_forward_send">发送</string>
+    <string name="im_forward_confirm">发送给「%1$s」?</string>
     <string name="im_selected_count">已选 %1$d 条</string>
     <string name="im_action_delete">删除</string>
     <string name="im_delete_confirm_title">删除消息？</string>

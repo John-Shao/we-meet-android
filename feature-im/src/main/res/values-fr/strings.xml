@@ -131,6 +131,11 @@
     <string name="im_action_forward_merged">Transférer comme historique</string>
     <string name="im_action_forward_one_by_one">Transférer un par un</string>
     <string name="im_forward_to">Transférer à</string>
+    <string name="im_forward_multi">Sélection multiple</string>
+    <string name="im_forward_new_group">Créer un groupe et transférer</string>
+    <string name="im_forward_recent">Conversations récentes</string>
+    <string name="im_forward_send">Envoyer</string>
+    <string name="im_forward_confirm">Envoyer à « %1$s » ?</string>
     <string name="im_selected_count">%1$d sélectionné(s)</string>
     <string name="im_action_delete">Supprimer</string>
     <string name="im_delete_confirm_title">Supprimer les messages ?</string>

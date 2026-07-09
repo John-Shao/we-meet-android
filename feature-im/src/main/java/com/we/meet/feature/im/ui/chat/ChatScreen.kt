@@ -138,12 +138,14 @@ fun ChatScreen(
     // Long-press target for the action menu; and the message being replied to.
     var actionTarget by remember { mutableStateOf<com.jusi.lightim.Message?>(null) }
     var replyTarget by remember { mutableStateOf<com.jusi.lightim.Message?>(null) }
-    // Forwarding: a single message pending a target, or multi-select mode.
-    var forwardSingle by remember { mutableStateOf<com.jusi.lightim.Message?>(null) }
+    // Forwarding: a pending "send this into cid" job (set by single-message
+    // forward or a multi-select bundle); the ForwardPicker is shown whenever it's
+    // non-null. forwardCreateGroup diverts to the create-group flow, keeping the
+    // job so the new group's cid receives the payload.
+    var forwardJob by remember { mutableStateOf<((String) -> Unit)?>(null) }
+    var forwardCreateGroup by remember { mutableStateOf(false) }
     var selectMode by remember { mutableStateOf(false) }
     var selectedMids by remember { mutableStateOf<Set<Long>>(emptySet()) }
-    var pickMergedTarget by remember { mutableStateOf(false) }
-    var pickOneByOneTarget by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     fun exitSelect() { selectMode = false; selectedMids = emptySet() }
     androidx.activity.compose.BackHandler(enabled = selectMode) { exitSelect() }
@@ -415,8 +417,14 @@ fun ChatScreen(
             if (selectMode) {
                 SelectActionBar(
                     enabled = selectedMids.isNotEmpty(),
-                    onOneByOne = { pickOneByOneTarget = true },
-                    onMerged = { pickMergedTarget = true },
+                    onOneByOne = {
+                        val chosen = ui.messages.filter { it.mid in selectedMids }
+                        forwardJob = { cid -> vm.forwardOneByOne(chosen, cid) }
+                    },
+                    onMerged = {
+                        val chosen = ui.messages.filter { it.mid in selectedMids }
+                        forwardJob = { cid -> vm.forwardMerged(chosen, cid) }
+                    },
                     onDelete = { showDeleteConfirm = true },
                 )
             } else
@@ -467,7 +475,7 @@ fun ChatScreen(
                 clipboard.setText(androidx.compose.ui.text.AnnotatedString(vm.snippetPreview(target)))
             },
             onReply = { replyTarget = target },
-            onForward = { forwardSingle = target },
+            onForward = { forwardJob = { cid -> vm.forward(target, cid) } },
             onMultiSelect = { selectMode = true; selectedMids = setOf(target.mid) },
             onRecall = { vm.recall(target) },
             onTogglePin = { vm.togglePin(target) },
@@ -475,37 +483,36 @@ fun ChatScreen(
         )
     }
 
-    // Forward pickers: single message, or the merged multi-select bundle.
-    forwardSingle?.let { msg ->
-        ForwardTargetDialog(
+    // Feishu-style forward: one picker for all three sources (single message,
+    // merged bundle, one-by-one). `forwardJob` sends the payload into a cid;
+    // the create-group branch makes a new group then forwards into it.
+    forwardJob?.let { job ->
+        // The picker stays mounted while forwarding; the create-group sheet
+        // layers ON TOP of it (Feishu shows the forward page dimmed behind the
+        // drawer). Gating the picker out on forwardCreateGroup — as before —
+        // unmounted it and revealed the chat behind the sheet instead.
+        ForwardPicker(
             targets = vm.forwardTargets(),
-            onPick = { targetCid -> vm.forward(msg, targetCid); forwardSingle = null },
-            onDismiss = { forwardSingle = null },
-        )
-    }
-    if (pickMergedTarget) {
-        val chosen = ui.messages.filter { it.mid in selectedMids }
-        ForwardTargetDialog(
-            targets = vm.forwardTargets(),
-            onPick = { targetCid ->
-                vm.forwardMerged(chosen, targetCid)
-                pickMergedTarget = false
-                exitSelect()
+            onForward = { cids ->
+                cids.forEach { job(it) }
+                forwardJob = null
+                if (selectMode) exitSelect()
             },
-            onDismiss = { pickMergedTarget = false },
+            onCreateGroupForward = { forwardCreateGroup = true },
+            onDismiss = { forwardJob = null },
         )
-    }
-    if (pickOneByOneTarget) {
-        val chosen = ui.messages.filter { it.mid in selectedMids }
-        ForwardTargetDialog(
-            targets = vm.forwardTargets(),
-            onPick = { targetCid ->
-                vm.forwardOneByOne(chosen, targetCid)
-                pickOneByOneTarget = false
-                exitSelect()
-            },
-            onDismiss = { pickOneByOneTarget = false },
-        )
+        if (forwardCreateGroup) {
+            ForwardCreateGroupFlow(
+                deps = deps,
+                onCreated = { newCid ->
+                    job(newCid)
+                    forwardCreateGroup = false
+                    forwardJob = null
+                    if (selectMode) exitSelect()
+                },
+                onCancel = { forwardCreateGroup = false },
+            )
+        }
     }
 
     // Delete confirmation dialog.

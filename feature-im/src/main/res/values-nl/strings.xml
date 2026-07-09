@@ -131,6 +131,11 @@
     <string name="im_action_forward_merged">Als gesprek doorsturen</string>
     <string name="im_action_forward_one_by_one">Eén voor één doorsturen</string>
     <string name="im_forward_to">Doorsturen naar</string>
+    <string name="im_forward_multi">Meervoudige selectie</string>
+    <string name="im_forward_new_group">Groep maken en doorsturen</string>
+    <string name="im_forward_recent">Recente gesprekken</string>
+    <string name="im_forward_send">Verzenden</string>
+    <string name="im_forward_confirm">Verzenden naar “%1$s”?</string>
     <string name="im_selected_count">%1$d geselecteerd</string>
     <string name="im_action_delete">Verwijderen</string>
     <string name="im_delete_confirm_title">Berichten verwijderen?</string>

@@ -147,6 +147,11 @@
     <string name="im_action_forward_merged">Forward as record</string>
     <string name="im_action_forward_one_by_one">Forward one by one</string>
     <string name="im_forward_to">Forward to</string>
+    <string name="im_forward_multi">Multi-select</string>
+    <string name="im_forward_new_group">Create a group and forward</string>
+    <string name="im_forward_recent">Recent chats</string>
+    <string name="im_forward_send">Send</string>
+    <string name="im_forward_confirm">Send to “%1$s”?</string>
     <string name="im_selected_count">%1$d selected</string>
     <string name="im_action_delete">Delete</string>
     <string name="im_delete_confirm_title">Delete messages?</string>

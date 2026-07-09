@@ -17,6 +17,7 @@ import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.userMessageRes
 import com.we.meet.feature.im.data.ChatUploadException
+import com.we.meet.feature.im.data.GroupTile
 import com.we.meet.feature.im.data.ImUserInfo
 import com.we.meet.feature.im.model.MessageContent
 import com.we.meet.feature.im.model.MessageContentParser
@@ -268,22 +269,52 @@ class ChatViewModel internal constructor(
     /** Hard retry the WS connection — mirrors ConversationListViewModel.retryConnection. */
     fun retryConnection() = session.retry()
 
-    /** A conversation the user can forward into (excludes the current one). */
-    data class ForwardTarget(val cid: String, val title: String)
+    /**
+     * A conversation the user can forward into (excludes the current one).
+     * Carries avatar data so the Feishu-style picker can render the same
+     * direct/group avatars the conversation list uses.
+     */
+    data class ForwardTarget(
+        val cid: String,
+        val title: String,
+        val isGroup: Boolean,
+        /** Direct-chat peer avatar (null for groups). */
+        val avatarUrl: String?,
+        /** Stable avatar cache identity (peer uid for directs, cid otherwise). */
+        val avatarKey: String,
+        /** Pre-resolved tiles for the 9-grid group avatar (groups only). */
+        val memberTiles: List<GroupTile>,
+    )
 
-    /** Forward destinations: every other conversation, titled for display. */
+    /** Forward destinations: every other conversation, titled + avatared for display. */
     fun forwardTargets(): List<ForwardTarget> {
         val self = _ui.value.selfUid
         return session.conversations.conversations.value
             .filter { it.cid != cid }
             .map { c ->
-                val title = if (c.type == "group") {
+                val isGroup = c.type == "group"
+                val peerUid = if (!isGroup) c.members.firstOrNull { it != self } else null
+                val peer = peerUid?.let { session.userDirectory.get(it) }
+                val title = if (isGroup) {
                     c.name.ifBlank { ((c.meta as? Map<*, *>)?.get("name") as? String).orEmpty() }
                 } else {
-                    c.members.firstOrNull { it != self }
-                        ?.let { session.userDirectory.get(it)?.displayName }.orEmpty()
+                    peer?.displayName.orEmpty()
                 }
-                ForwardTarget(c.cid, title)
+                ForwardTarget(
+                    cid = c.cid,
+                    title = title,
+                    isGroup = isGroup,
+                    avatarUrl = if (!isGroup) peer?.avatarUrl?.takeIf { it.isNotBlank() } else null,
+                    avatarKey = peerUid ?: c.cid,
+                    memberTiles = if (isGroup) c.members.take(9).map { uid ->
+                        val info = session.userDirectory.get(uid)
+                        GroupTile(
+                            uid = uid,
+                            name = info?.displayName ?: uid.take(2),
+                            avatarUrl = info?.avatarUrl?.takeIf { it.isNotBlank() },
+                        )
+                    } else emptyList(),
+                )
             }
     }
 
