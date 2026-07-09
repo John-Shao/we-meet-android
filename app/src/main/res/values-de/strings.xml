@@ -17,7 +17,7 @@
     <string name="home_title">We Meet</string>
     <string name="home_room_label">Meeting-ID</string>
     <string name="home_room_hint">z. B. 499707</string>
-    <string name="home_create_meeting">Meeting starten</string>
+    <string name="home_create_meeting">Sofortmeeting</string>
     <string name="home_join_meeting">Meeting beitreten</string>
     <string name="home_create_later_meeting">Meeting planen</string>
     <string name="home_create_later_name_label">Meeting-Name</string>

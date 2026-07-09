@@ -17,7 +17,7 @@
     <string name="home_title">We Meet</string>
     <string name="home_room_label">Vergader-ID</string>
     <string name="home_room_hint">bv. 499707</string>
-    <string name="home_create_meeting">Vergadering starten</string>
+    <string name="home_create_meeting">Directe vergadering</string>
     <string name="home_join_meeting">Deelnemen aan vergadering</string>
     <string name="home_create_later_meeting">Vergadering plannen</string>
     <string name="home_create_later_name_label">Naam vergadering</string>

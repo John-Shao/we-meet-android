@@ -17,7 +17,7 @@
     <string name="home_title">We Meet</string>
     <string name="home_room_label">Meeting ID</string>
     <string name="home_room_hint">e.g. 499707</string>
-    <string name="home_create_meeting">Start meeting</string>
+    <string name="home_create_meeting">Instant meeting</string>
     <string name="home_join_meeting">Join meeting</string>
     <string name="home_create_later_meeting">Schedule meeting</string>
     <string name="home_create_later_name_label">Meeting name</string>

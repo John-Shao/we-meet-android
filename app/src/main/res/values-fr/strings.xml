@@ -17,7 +17,7 @@
     <string name="home_title">We Meet</string>
     <string name="home_room_label">ID de réunion</string>
     <string name="home_room_hint">ex. 499707</string>
-    <string name="home_create_meeting">Démarrer une réunion</string>
+    <string name="home_create_meeting">Réunion instantanée</string>
     <string name="home_join_meeting">Rejoindre une réunion</string>
     <string name="home_create_later_meeting">Planifier une réunion</string>
     <string name="home_create_later_name_label">Nom de la réunion</string>
