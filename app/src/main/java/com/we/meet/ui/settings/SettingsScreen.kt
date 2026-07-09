@@ -15,18 +15,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.text.input.KeyboardType
-import kotlinx.coroutines.launch
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.DropdownMenu
@@ -56,26 +51,21 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.WeMeetApp
 import com.we.meet.R
+import com.we.meet.feature.im.ImSession
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.data.settings.ThemeMode
-import com.we.meet.data.settings.VideoCodecPref
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    onAccountDeregistered: () -> Unit,
+    onSignedOut: () -> Unit,
+    onOpenAccountSecurity: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val settingsStore = app.settingsStore
-    val selectedCodec by settingsStore.videoCodec.collectAsStateWithLifecycle()
     val themeMode by settingsStore.themeMode.collectAsStateWithLifecycle()
-    val expectedPhone = app.tokenStore.phone.orEmpty()
-    var showDeregisterDialog by remember { mutableStateOf(false) }
-    var deregistering by remember { mutableStateOf(false) }
-    var deregisterError by remember { mutableStateOf<String?>(null) }
-    val deregisterFailedText = stringResource(R.string.profile_deregister_error)
-    val scope = rememberCoroutineScope()
+    var showSignOutConfirm by remember { mutableStateOf(false) }
 
     var backPending by remember { mutableStateOf(false) }
 
@@ -103,59 +93,85 @@ fun SettingsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState()),
         ) {
-            CodecSection(
-                selected = selectedCodec,
-                onSelect = settingsStore::setVideoCodec,
-            )
             ThemeSection(
                 selected = themeMode,
                 onSelect = settingsStore::setThemeMode,
             )
             LanguageSection()
             AccountSection(
-                onDeregisterClick = { showDeregisterDialog = true },
-                errorMessage = deregisterError,
+                onAccountSecurityClick = onOpenAccountSecurity,
+                onSignOutClick = { showSignOutConfirm = true },
             )
         }
     }
 
-    if (showDeregisterDialog) {
-        DeregisterDialog(
-            expectedPhone = expectedPhone,
-            inFlight = deregistering,
-            onConfirm = {
-                deregistering = true
-                deregisterError = null
-                scope.launch {
-                    app.profileRepository.deregister()
-                        .onSuccess {
-                            showDeregisterDialog = false
-                            deregistering = false
-                            com.we.meet.analytics.Analytics.reset()
-                            onAccountDeregistered()
-                        }
-                        .onFailure {
-                            deregistering = false
-                            deregisterError = deregisterFailedText
-                            showDeregisterDialog = false
-                        }
+    if (showSignOutConfirm) {
+        AlertDialog(
+            onDismissRequest = { showSignOutConfirm = false },
+            title = { Text(stringResource(R.string.profile_sign_out)) },
+            text = { Text(stringResource(R.string.profile_sign_out_confirm)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showSignOutConfirm = false
+                    app.authRepository.signOut()
+                    com.we.meet.analytics.Analytics.reset()
+                    // Drop the IM socket + caches so the next login doesn't
+                    // inherit this user's session.
+                    ImSession.shutdown()
+                    onSignedOut()
+                }) {
+                    Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.error)
                 }
             },
-            onDismiss = {
-                if (!deregistering) showDeregisterDialog = false
+            dismissButton = {
+                TextButton(onClick = { showSignOutConfirm = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
             },
         )
     }
+
 }
 
 // ── Account ─────────────────────────────────────────────────────────────
 
 @Composable
 private fun AccountSection(
-    onDeregisterClick: () -> Unit,
-    errorMessage: String?,
+    onAccountSecurityClick: () -> Unit,
+    onSignOutClick: () -> Unit,
 ) {
     Spacer(Modifier.height(8.dp))
+
+    // 账号与安全 entry (navigates to the account-scoped surface: phone number +
+    // the destructive deregister flow) sits above the reversible sign-out.
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.ScreenPadding)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onAccountSecurityClick)
+                .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.settings_account_security),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Spacer(Modifier.weight(1f))
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+
+    Spacer(Modifier.height(16.dp))
 
     Box(
         modifier = Modifier
@@ -167,94 +183,20 @@ private fun AccountSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onDeregisterClick)
+                .clickable(onClick = onSignOutClick)
                 .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = stringResource(R.string.profile_deregister),
+                text = stringResource(R.string.profile_sign_out),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.error,
             )
         }
     }
 
-    if (errorMessage != null) {
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = errorMessage,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.padding(horizontal = 24.dp),
-        )
-    }
     Spacer(Modifier.height(16.dp))
-}
-
-/**
- * High-friction account-delete dialog — moved verbatim from ProfileScreen
- * when account settings consolidated under Settings → Account. The
- * confirm button only enables when the user re-types their bound phone
- * number, matching the desktop client's destructive-action gate.
- */
-@Composable
-private fun DeregisterDialog(
-    expectedPhone: String,
-    inFlight: Boolean,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var input by remember { mutableStateOf("") }
-    val matches = input.trim() == expectedPhone
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.profile_deregister_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = stringResource(R.string.profile_deregister_warning),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                OutlinedTextField(
-                    value = input,
-                    onValueChange = { input = it },
-                    singleLine = true,
-                    placeholder = {
-                        Text(stringResource(R.string.profile_deregister_phone_hint))
-                    },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !inFlight,
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                enabled = matches && !inFlight,
-            ) {
-                if (inFlight) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                } else {
-                    Text(
-                        text = stringResource(R.string.profile_deregister_confirm),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !inFlight) {
-                Text(stringResource(R.string.cancel))
-            }
-        },
-    )
 }
 
 // ── Theme ───────────────────────────────────────────────────────────────
@@ -483,107 +425,3 @@ private fun LanguageDropdownRow(label: String) {
     }
 }
 
-@Composable
-private fun CodecSection(
-    selected: VideoCodecPref,
-    onSelect: (VideoCodecPref) -> Unit,
-) {
-    Spacer(Modifier.height(8.dp))
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surface),
-    ) {
-        CodecDropdownRow(
-            label = stringResource(R.string.settings_video_codec),
-            selected = selected,
-            onSelect = onSelect,
-        )
-    }
-
-    Spacer(Modifier.height(8.dp))
-    Text(
-        text = stringResource(R.string.settings_video_codec_hint),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 24.dp),
-    )
-    Spacer(Modifier.height(16.dp))
-}
-
-@Composable
-private fun CodecDropdownRow(
-    label: String,
-    selected: VideoCodecPref,
-    onSelect: (VideoCodecPref) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    // Wrap the trigger row + DropdownMenu in a wrapContentSize Box so the
-    // menu anchors to the row's right edge rather than the screen's top-left.
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { expanded = true }
-            .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-        Spacer(Modifier.weight(1f))
-        Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = selectedDisplay(selected),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.width(2.dp))
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-            ) {
-                VideoCodecPref.entries.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(itemDisplay(option)) },
-                        onClick = {
-                            onSelect(option)
-                            expanded = false
-                        },
-                        trailingIcon = if (option == selected) {
-                            {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                        } else null,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun selectedDisplay(option: VideoCodecPref): String {
-    val suffix = stringResource(R.string.settings_video_codec_default_suffix)
-    return if (option == VideoCodecPref.DEFAULT) "${option.displayLabel} $suffix"
-    else option.displayLabel
-}
-
-@Composable
-private fun itemDisplay(option: VideoCodecPref): String = selectedDisplay(option)

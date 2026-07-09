@@ -19,12 +19,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddBox
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SelectableDates
@@ -46,6 +48,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.we.meet.ui.theme.WeMeetTheme
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -60,6 +63,7 @@ fun HomeScreen(
     onJoinMeeting: () -> Unit,
     onJoinSlug: (slug: String) -> Unit,
     onHistoryClick: (roomId: String) -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(app))
@@ -82,8 +86,29 @@ fun HomeScreen(
     // meeting lists below scroll when the user swipes up. Same Feishu /
     // WeChat-style "fixed action shelf + scrolling timeline" layout.
     Column(modifier = Modifier.fillMaxSize()) {
-        // No top bar: settings moved to the Profile page, and scan-QR moved to
-        // the 消息 header's "more" menu. Nothing app-level belongs here.
+        // Top bar: tab title on the left, meeting-settings gear on the right.
+        // (Scan-QR lives in the 消息 header's "more" menu; profile/app settings
+        // stay behind the 消息 avatar — only meeting-scoped settings are here.)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 24.dp, end = 4.dp, top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.tab_meeting),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = onOpenSettings) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = stringResource(R.string.meeting_settings_title),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
 
         // Action zone — padded, same background as the page.
         Row(

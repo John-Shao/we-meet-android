@@ -104,6 +104,7 @@ fun ConversationListScreen(
     deps: ImDeps,
     selfName: String,
     selfAvatarUrl: String?,
+    selfDepartment: String?,
     onAvatarClick: () -> Unit,
     onOpenChat: (cid: String) -> Unit,
     onNewChat: () -> Unit,
@@ -201,14 +202,26 @@ fun ConversationListScreen(
                         ),
                 )
                 Spacer(Modifier.width(12.dp))
-                Text(
-                    text = selfName.ifBlank { stringResource(R.string.im_list_title) },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = selfName.ifBlank { stringResource(R.string.im_list_title) },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    // Feishu shows the company here; we show the department. Hidden
+                    // when the user has no department or the directory fetch failed.
+                    if (!selfDepartment.isNullOrBlank()) {
+                        Text(
+                            text = selfDepartment,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
                 IconButton(onClick = { searchActive = true }) {
                     Icon(
                         Icons.Filled.Search,

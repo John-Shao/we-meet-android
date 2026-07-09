@@ -46,6 +46,8 @@
 
     <!-- Settings screen -->
     <string name="settings_title">Paramètres</string>
+    <string name="settings_account_security">Compte et sécurité</string>
+    <string name="meeting_settings_title">Paramètres de réunion</string>
     <string name="settings_video_codec">Codec vidéo</string>
     <string name="settings_video_codec_default_suffix">(par défaut)</string>
     <string name="settings_video_codec_hint">S\'applique à votre prochaine réunion.</string>

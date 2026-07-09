@@ -89,9 +89,9 @@ fun MainTabScreen(
     onScanQrCode: () -> Unit,
     onHistoryClick: (roomId: String) -> Unit,
     onSettingsClick: () -> Unit,
+    onOpenMeetingSettings: () -> Unit,
     onOpenAiHub: () -> Unit,
     onOpenApproval: () -> Unit,
-    onSignedOut: () -> Unit,
     onOpenChat: (cid: String) -> Unit,
     onNewChat: () -> Unit,
     onMemberClick: (userId: String) -> Unit,
@@ -135,11 +135,21 @@ fun MainTabScreen(
 
     var selfName by remember { mutableStateOf(readSelfName()) }
     var selfAvatarUrl by remember { mutableStateOf(tokenStore.avatarUrl) }
+    // Department line under the name in the 消息 header (Feishu shows the company;
+    // we show the department). It has no TokenStore/`users/me/` source — only the
+    // org directory carries it, on the current user's member record — so fetch it
+    // once here and pass it down like the other identity fields.
+    var selfDepartment by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         app.profileRepository.refreshProfile()
         selfName = readSelfName()
         selfAvatarUrl = tokenStore.avatarUrl
+        tokenStore.userId?.let { uid ->
+            app.directoryRepository.getMember(uid).onSuccess {
+                selfDepartment = it.department?.name
+            }
+        }
     }
     // The drawer is the only place the user can change their nickname/avatar, so
     // re-read once it closes — ProfileScreen writes TokenStore, not this state.
@@ -164,6 +174,7 @@ fun MainTabScreen(
                 deps = app,
                 selfName = selfName,
                 selfAvatarUrl = tokenStore.avatarUrl,
+                selfDepartment = selfDepartment,
                 onAvatarClick = { scope.launch { drawerState.open() } },
                 onOpenChat = onOpenChat,
                 onNewChat = onNewChat,
@@ -184,6 +195,7 @@ fun MainTabScreen(
                 onJoinMeeting = onJoinMeeting,
                 onJoinSlug = onJoinSlug,
                 onHistoryClick = onHistoryClick,
+                onOpenSettings = onOpenMeetingSettings,
             )
         },
         TabItem(R.string.tab_contacts, Icons.Filled.Contacts, Icons.Outlined.Contacts) {
@@ -214,12 +226,6 @@ fun MainTabScreen(
                     onSettingsClick = onSettingsClick,
                     onOpenAiHub = onOpenAiHub,
                     onOpenApproval = onOpenApproval,
-                    onSignedOut = {
-                        // Drop the IM socket + caches so the next login doesn't
-                        // inherit this user's session.
-                        ImSession.shutdown()
-                        onSignedOut()
-                    },
                     active = drawerState.isOpen || drawerState.isAnimationRunning,
                 )
             }

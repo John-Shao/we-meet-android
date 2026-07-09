@@ -28,8 +28,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -55,7 +53,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.we.meet.BuildConfig
 import com.we.meet.WeMeetApp
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
@@ -78,7 +75,6 @@ fun ProfileScreen(
     onSettingsClick: () -> Unit,
     onOpenAiHub: () -> Unit,
     onOpenApproval: () -> Unit,
-    onSignedOut: () -> Unit,
     // When hosted in a drawer this is false while closed: the composable must stay
     // in the tree (gating its composition breaks the drawer's drag anchors), but
     // its /users/me/ fetch should follow the user actually opening the page.
@@ -98,7 +94,6 @@ fun ProfileScreen(
 
     var showNicknameDialog by remember { mutableStateOf(false) }
     var showIntroDialog by remember { mutableStateOf(false) }
-    var showSignOutConfirm by remember { mutableStateOf(false) }
     var uploadingKind by remember { mutableStateOf<ProfileRepository.Kind?>(null) }
     var cropRequest by remember { mutableStateOf<CropRequest?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -234,12 +229,7 @@ fun ProfileScreen(
                 value = intro.ifBlank { stringResource(R.string.profile_not_set) },
                 onClick = { showIntroDialog = true },
             )
-            HorizontalDivider(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding))
-            SettingsRow(
-                label = stringResource(R.string.profile_phone),
-                value = phone,
-                onClick = null,
-            )
+            // Phone moved to Settings → 账号与安全 alongside the deregister flow.
         }
 
         Spacer(Modifier.height(20.dp))
@@ -286,42 +276,10 @@ fun ProfileScreen(
             )
         }
 
-        Spacer(Modifier.height(32.dp))
-
-        Button(
-            onClick = { showSignOutConfirm = true },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Dimens.ScreenPadding)
-                .height(Dimens.ButtonHeight),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.error,
-            ),
-        ) {
-            Text(
-                text = stringResource(R.string.profile_sign_out),
-                style = MaterialTheme.typography.titleMedium,
-            )
-        }
-
-        // Deregister moved into Settings → Account so it lives next to the
-        // other account-wide knobs instead of cluttering the profile edit
-        // surface. Phone number still drives the confirm-friction prompt;
-        // SettingsScreen pulls it from TokenStore.
-
-        if (BuildConfig.DEBUG) {
-            Spacer(Modifier.height(12.dp))
-            TextButton(
-                onClick = { tokenStore.accessToken = "invalid.debug.token" },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Dimens.ScreenPadding),
-            ) {
-                Text("Debug: 弄坏 access token")
-            }
-        }
+        // Sign-out and deregister both live in Settings → Account now, next to
+        // the other account-wide knobs, instead of cluttering the profile edit
+        // surface. Phone number still drives the deregister confirm-friction
+        // prompt; SettingsScreen pulls it from TokenStore.
 
         Spacer(Modifier.height(24.dp))
     }
@@ -373,29 +331,6 @@ fun ProfileScreen(
                 }
             },
             onDismiss = { showIntroDialog = false },
-        )
-    }
-
-    if (showSignOutConfirm) {
-        AlertDialog(
-            onDismissRequest = { showSignOutConfirm = false },
-            title = { Text(stringResource(R.string.profile_sign_out)) },
-            text = { Text(stringResource(R.string.profile_sign_out_confirm)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showSignOutConfirm = false
-                    app.authRepository.signOut()
-                    com.we.meet.analytics.Analytics.reset()
-                    onSignedOut()
-                }) {
-                    Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showSignOutConfirm = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            },
         )
     }
 

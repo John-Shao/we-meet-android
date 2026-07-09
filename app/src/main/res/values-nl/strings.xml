@@ -46,6 +46,8 @@
 
     <!-- Settings screen -->
     <string name="settings_title">Instellingen</string>
+    <string name="settings_account_security">Account en beveiliging</string>
+    <string name="meeting_settings_title">Vergaderinstellingen</string>
     <string name="settings_video_codec">Videocodec</string>
     <string name="settings_video_codec_default_suffix">(standaard)</string>
     <string name="settings_video_codec_hint">Toegepast op je volgende vergadering.</string>

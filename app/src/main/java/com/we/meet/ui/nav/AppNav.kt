@@ -54,6 +54,8 @@ import com.we.meet.ui.preview.PreviewScreen
 import com.we.meet.ui.qrscan.QrScanResult
 import com.we.meet.ui.qrscan.QrScanScreen
 import com.we.meet.ui.room.RoomScreen
+import com.we.meet.ui.settings.AccountSecurityScreen
+import com.we.meet.ui.settings.MeetingSettingsScreen
 import com.we.meet.ui.settings.SettingsScreen
 import com.we.meet.ui.waiting.WaitingRoomScreen
 import kotlinx.coroutines.delay
@@ -65,6 +67,8 @@ object Routes {
     const val LOGIN = "login"
     const val HOME = "home"
     const val SETTINGS = "settings"
+    const val ACCOUNT_SECURITY = "account_security"
+    const val MEETING_SETTINGS = "meeting_settings"
     const val CREATE_PREVIEW = "create_preview"
     /**
      * `slug` is an optional query parameter — empty when the user navigated
@@ -254,13 +258,9 @@ fun AppNav() {
                     navController.navigate(Routes.historyDetail(roomId))
                 },
                 onSettingsClick = { navController.navigate(Routes.SETTINGS) },
+                onOpenMeetingSettings = { navController.navigate(Routes.MEETING_SETTINGS) },
                 onOpenAiHub = { navController.navigate(Routes.AI_HUB) },
                 onOpenApproval = { navController.navigate(Routes.APPROVAL) },
-                onSignedOut = {
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(Routes.HOME) { inclusive = true }
-                    }
-                },
                 onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
                 onNewChat = { navController.navigate(Routes.imNewChat()) },
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
@@ -458,9 +458,28 @@ fun AppNav() {
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 onBack = rememberOnceOnly(safePop),
-                // Deregister flow lives in Settings → Account. After the
-                // backend wipe succeeds we share the same redirect-to-login
-                // path the regular Sign-out button uses.
+                // Sign-out redirects to login, popping HOME so back can't return
+                // to the authed session.
+                onSignedOut = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.HOME) { inclusive = true }
+                    }
+                },
+                onOpenAccountSecurity = { navController.navigate(Routes.ACCOUNT_SECURITY) },
+            )
+        }
+
+        composable(Routes.MEETING_SETTINGS) {
+            MeetingSettingsScreen(
+                onBack = rememberOnceOnly(safePop),
+            )
+        }
+
+        composable(Routes.ACCOUNT_SECURITY) {
+            AccountSecurityScreen(
+                onBack = rememberOnceOnly(safePop),
+                // Deregister shares the same redirect-to-login path as sign-out,
+                // popping HOME after the backend wipe succeeds.
                 onAccountDeregistered = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(Routes.HOME) { inclusive = true }

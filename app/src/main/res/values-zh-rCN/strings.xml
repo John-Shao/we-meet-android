@@ -46,6 +46,8 @@
 
     <!-- 设置页 -->
     <string name="settings_title">设置</string>
+    <string name="settings_account_security">账号与安全</string>
+    <string name="meeting_settings_title">会议设置</string>
     <string name="settings_video_codec">视频编解码</string>
     <string name="settings_video_codec_default_suffix">（默认）</string>
     <string name="settings_video_codec_hint">将在下一次加入会议时生效。</string>
