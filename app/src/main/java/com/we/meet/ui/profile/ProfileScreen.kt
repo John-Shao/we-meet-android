@@ -79,6 +79,10 @@ fun ProfileScreen(
     onOpenAiHub: () -> Unit,
     onOpenApproval: () -> Unit,
     onSignedOut: () -> Unit,
+    // When hosted in a drawer this is false while closed: the composable must stay
+    // in the tree (gating its composition breaks the drawer's drag anchors), but
+    // its /users/me/ fetch should follow the user actually opening the page.
+    active: Boolean = true,
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as WeMeetApp
@@ -136,7 +140,10 @@ fun ProfileScreen(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri -> if (uri != null) cropRequest = CropRequest(ProfileRepository.Kind.COVER, uri, 1200, 900) }
 
-    LaunchedEffect(Unit) {
+    // Keyed on `active` so re-opening the drawer re-fetches (signed avatar/cover
+    // URLs expire); a cold start with the drawer closed does nothing.
+    LaunchedEffect(active) {
+        if (!active) return@LaunchedEffect
         profileRepo.refreshProfile()
             .onSuccess { user ->
                 if (user.full_name?.isNotBlank() == true) nickname = user.full_name

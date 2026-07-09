@@ -203,25 +203,25 @@ fun MainTabScreen(
             // drawer. Square edge: the drawer IS the profile page, not a rounded
             // sheet floating over it.
             ModalDrawerSheet(drawerState = drawerState, drawerShape = RectangleShape) {
-                // ModalNavigationDrawer composes drawerContent EAGERLY — "closed" is
-                // just a negative x-offset, not a composition gate. Left unguarded,
-                // ProfileScreen fires its /users/me/ LaunchedEffect(Unit) on every
-                // cold start, and — never being disposed — never re-fetches when the
-                // drawer is reopened. Mount it only while the drawer is on screen so
-                // the fetch follows the user's intent and re-runs on each open.
-                if (drawerState.isOpen || drawerState.isAnimationRunning) {
-                    ProfileScreen(
-                        onSettingsClick = onSettingsClick,
-                        onOpenAiHub = onOpenAiHub,
-                        onOpenApproval = onOpenApproval,
-                        onSignedOut = {
-                            // Drop the IM socket + caches so the next login doesn't
-                            // inherit this user's session.
-                            ImSession.shutdown()
-                            onSignedOut()
-                        },
-                    )
-                }
+                // ProfileScreen must stay composed even while closed — gating the
+                // sheet's content composition on drawerState collapses the drawer's
+                // drag anchors and makes open() snap straight back to closed. Defer
+                // only its network via `active` instead: ModalNavigationDrawer
+                // composes drawerContent eagerly (closed is just a negative offset),
+                // so an unguarded LaunchedEffect(Unit) would fetch on every cold
+                // start and — never being disposed — never re-fetch on reopen.
+                ProfileScreen(
+                    onSettingsClick = onSettingsClick,
+                    onOpenAiHub = onOpenAiHub,
+                    onOpenApproval = onOpenApproval,
+                    onSignedOut = {
+                        // Drop the IM socket + caches so the next login doesn't
+                        // inherit this user's session.
+                        ImSession.shutdown()
+                        onSignedOut()
+                    },
+                    active = drawerState.isOpen || drawerState.isAnimationRunning,
+                )
             }
         },
     ) {
