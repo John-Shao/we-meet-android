@@ -214,7 +214,15 @@ fun MainTabScreen(
             // fall through to the NavHost and exit the app instead of closing the
             // drawer. Square edge: the drawer IS the profile page, not a rounded
             // sheet floating over it.
-            ModalDrawerSheet(drawerState = drawerState, drawerShape = RectangleShape) {
+            // Feishu-style: full-height page that leaves a narrow strip of the
+            // underlying content peeking on the right. The drawerState overload of
+            // ModalDrawerSheet doesn't apply DrawerDefaults.MaximumDrawerWidth, so
+            // width is unconstrained by default — cap it to 88% of screen width.
+            ModalDrawerSheet(
+                drawerState = drawerState,
+                drawerShape = RectangleShape,
+                modifier = Modifier.fillMaxWidth(0.88f),
+            ) {
                 // ProfileScreen must stay composed even while closed — gating the
                 // sheet's content composition on drawerState collapses the drawer's
                 // drag anchors and makes open() snap straight back to closed. Defer
