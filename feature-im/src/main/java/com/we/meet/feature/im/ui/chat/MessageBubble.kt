@@ -163,6 +163,7 @@ fun MessageBubble(
                 is MessageContent.Image -> ImageBubble(
                     objectKey = content.objectKey,
                     onClick = { onImageClick(content.objectKey) },
+                    onLongPress = onLongPress,
                     resolveMediaUrl = resolveMediaUrl,
                 )
                 is MessageContent.File -> FileBubble(
@@ -170,16 +171,18 @@ fun MessageBubble(
                     size = content.size,
                     isOwn = isOwn,
                     onClick = { onFileClick(content.key, content.name) },
+                    onLongPress = onLongPress,
                 )
                 is MessageContent.Voice -> VoiceBubble(
                     key = content.key,
                     durationMs = content.durationMs,
                     isOwn = isOwn,
                     resolveMediaUrl = resolveMediaUrl,
+                    onLongPress = onLongPress,
                 )
                 is MessageContent.Quote ->
                     QuoteBubble(content, isOwn, mentionNames, selfMentionNames)
-                is MessageContent.Merged -> MergedBubble(content, isOwn)
+                is MessageContent.Merged -> MergedBubble(content, isOwn, onLongPress)
                 is MessageContent.Unsupported -> UnsupportedBubble(isOwn)
                 // Control/system rows never reach here (filtered / early-returned).
                 is MessageContent.Recall, is MessageContent.Reaction,
@@ -280,10 +283,12 @@ private fun mentionAnnotated(
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun ImageBubble(
     objectKey: String,
     onClick: () -> Unit,
+    onLongPress: (() -> Unit)?,
     resolveMediaUrl: suspend (String) -> String?,
 ) {
     var url by remember(objectKey) { mutableStateOf<String?>(null) }
@@ -299,7 +304,7 @@ private fun ImageBubble(
             .heightIn(min = 80.dp, max = 280.dp)
             .clip(bubbleShape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable(onClick = onClick),
+            .combinedClickable(onClick = onClick, onLongClick = onLongPress),
         contentAlignment = Alignment.Center,
     ) {
         when {
@@ -326,13 +331,20 @@ private fun ImageBubble(
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun FileBubble(name: String, size: Long, isOwn: Boolean, onClick: () -> Unit) {
+private fun FileBubble(
+    name: String,
+    size: Long,
+    isOwn: Boolean,
+    onClick: () -> Unit,
+    onLongPress: (() -> Unit)?,
+) {
     Surface(
         color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
         else MaterialTheme.colorScheme.surfaceVariant,
         shape = bubbleShape,
-        onClick = onClick,
+        modifier = Modifier.combinedClickable(onClick = onClick, onLongClick = onLongPress),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -371,12 +383,14 @@ private fun FileBubble(name: String, size: Long, isOwn: Boolean, onClick: () -> 
  * duration (web parity). Playback uses a throwaway MediaPlayer on the
  * presigned URL — released on dispose or when a new clip starts.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun VoiceBubble(
     key: String,
     durationMs: Long,
     isOwn: Boolean,
     resolveMediaUrl: suspend (String) -> String?,
+    onLongPress: (() -> Unit)?,
 ) {
     val seconds = ((durationMs + 999) / 1000).coerceAtLeast(1L)
     var playing by remember(key) { mutableStateOf(false) }
@@ -384,22 +398,25 @@ private fun VoiceBubble(
     val player = remember(key) { VoicePlayerHolder() }
     DisposableEffect(key) { onDispose { player.release() } }
 
+    val onToggle = {
+        if (playing) {
+            player.stop()
+            playing = false
+        } else {
+            scope.launch {
+                val url = resolveMediaUrl(key) ?: return@launch
+                playing = true
+                player.play(url) { playing = false }
+            }
+            Unit
+        }
+    }
+
     Surface(
         color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
         else MaterialTheme.colorScheme.surfaceVariant,
         shape = bubbleShape,
-        onClick = {
-            if (playing) {
-                player.stop()
-                playing = false
-            } else {
-                scope.launch {
-                    val url = resolveMediaUrl(key) ?: return@launch
-                    playing = true
-                    player.play(url) { playing = false }
-                }
-            }
-        },
+        modifier = Modifier.combinedClickable(onClick = onToggle, onLongClick = onLongPress),
     ) {
         // Web parity: longer clip → wider bubble, clamped.
         val bubbleWidth = (96 + seconds.coerceAtMost(60L).toInt() * 2).coerceAtMost(220)
@@ -491,14 +508,18 @@ private fun QuoteBubble(
 }
 
 /** Merged chat-record card: title + first lines; tap opens the full record dialog. */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun MergedBubble(content: MessageContent.Merged, isOwn: Boolean) {
+private fun MergedBubble(content: MessageContent.Merged, isOwn: Boolean, onLongPress: (() -> Unit)?) {
     var showDialog by remember { mutableStateOf(false) }
     Surface(
         color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
         else MaterialTheme.colorScheme.surfaceVariant,
         shape = bubbleShape,
-        onClick = { showDialog = true },
+        modifier = Modifier.combinedClickable(
+            onClick = { showDialog = true },
+            onLongClick = onLongPress,
+        ),
     ) {
         Column(
             modifier = Modifier
