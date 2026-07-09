@@ -1,6 +1,9 @@
 package com.we.meet.ui.contacts
 
 import android.app.Application
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
@@ -26,12 +30,22 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.we.meet.core.directory.ui.avatarCacheKey
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -168,6 +182,11 @@ private fun MemberDetailBody(
     chatError: Boolean,
     onStartChat: () -> Unit,
 ) {
+    // Only a real photo is worth enlarging — the initials fallback isn't, so the
+    // tap-to-zoom affordance is gated on the member actually having an avatar.
+    val hasAvatar = !member.avatarUrl.isNullOrBlank()
+    var showAvatar by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -180,6 +199,11 @@ private fun MemberDetailBody(
             url = member.avatarUrl,
             cacheKey = "avatar:${member.id}",
             size = 88.dp,
+            modifier = if (hasAvatar) {
+                Modifier
+                    .clip(RoundedCornerShape(88.dp * 0.2f))
+                    .clickable { showAvatar = true }
+            } else Modifier,
         )
         Spacer(Modifier.height(16.dp))
         Text(
@@ -212,6 +236,59 @@ private fun MemberDetailBody(
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
+        }
+    }
+
+    if (showAvatar && hasAvatar) {
+        AvatarViewerDialog(
+            name = member.displayName,
+            url = member.avatarUrl!!,
+            cacheKey = "avatar:${member.id}",
+            onDismiss = { showAvatar = false },
+        )
+    }
+}
+
+/**
+ * Full-screen avatar viewer: the tapped photo enlarged on a dark scrim, dismissed
+ * by tapping anywhere or system Back. Reuses [avatarCacheKey] so it renders from
+ * the same Coil cache entry the thumbnail already fetched (presigned avatar URLs
+ * rotate their signature, but the path-based key is stable).
+ */
+@Composable
+private fun AvatarViewerDialog(
+    name: String,
+    url: String,
+    cacheKey: String,
+    onDismiss: () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        val key = avatarCacheKey(url, cacheKey)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.92f))
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    onClick = onDismiss,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(url)
+                    .memoryCacheKey(key)
+                    .diskCacheKey(key)
+                    .build(),
+                contentDescription = name,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+            )
         }
     }
 }
