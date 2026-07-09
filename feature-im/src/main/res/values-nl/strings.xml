@@ -18,6 +18,15 @@
     <string name="im_new_group_name_hint">Groepsnaam</string>
     <string name="im_create_chat_failed">Kan het gesprek niet aanmaken</string>
 
+    <string name="im_open_profile">Profiel openen</string>
+    <string name="im_search">Zoeken</string>
+    <string name="im_search_hint">Gesprekken zoeken</string>
+    <string name="im_search_no_results">Geen overeenkomende gesprekken</string>
+    <string name="im_more">Meer</string>
+    <string name="im_menu_scan_login">Scannen om in te loggen</string>
+    <string name="im_menu_create_meeting">Nieuwe videovergadering</string>
+    <string name="im_menu_join_meeting">Deelnemen aan videovergadering</string>
+
     <string name="im_chat_empty">Nog geen berichten — stuur het eerste</string>
     <string name="im_time_yesterday">Gisteren</string>
 

@@ -18,6 +18,15 @@
     <string name="im_new_group_name_hint">Gruppenname</string>
     <string name="im_create_chat_failed">Unterhaltung konnte nicht erstellt werden</string>
 
+    <string name="im_open_profile">Profil öffnen</string>
+    <string name="im_search">Suchen</string>
+    <string name="im_search_hint">Unterhaltungen durchsuchen</string>
+    <string name="im_search_no_results">Keine passenden Unterhaltungen</string>
+    <string name="im_more">Mehr</string>
+    <string name="im_menu_scan_login">Zum Anmelden scannen</string>
+    <string name="im_menu_create_meeting">Neue Videokonferenz</string>
+    <string name="im_menu_join_meeting">Videokonferenz beitreten</string>
+
     <string name="im_chat_empty">Noch keine Nachrichten — schreib die erste</string>
     <string name="im_time_yesterday">Gestern</string>
 

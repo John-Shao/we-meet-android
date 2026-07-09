@@ -58,7 +58,11 @@ fun MemberAvatar(
     modifier: Modifier = Modifier,
 ) {
     val effectiveKey = avatarCacheKey(url, cacheKey)
-    var failed by remember(effectiveKey) { mutableStateOf(false) }
+    // Reset on the FULL url, not effectiveKey: a presign rotation keeps the same
+    // path (so the Coil cache key is stable) but yields a fresh signature that
+    // deserves a retry. Keying `failed` on effectiveKey would pin the avatar to
+    // initials forever after one expired-URL 403.
+    var failed by remember(url) { mutableStateOf(false) }
     val showImage = !url.isNullOrBlank() && !failed
 
     Box(
