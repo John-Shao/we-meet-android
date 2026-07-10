@@ -38,11 +38,17 @@ sealed interface MessageContent {
     data class System(val body: String) : MessageContent
 
     /**
-     * P1 一对一通话 log — body = JSON `{media,result}`. Sent by the caller on
-     * every non-connected terminal (canceled/missed/declined/busy/unreachable)
-     * so both sides see the attempt in the thread. media = audio | video.
+     * P1 一对一通话 log — body = JSON `{media,result,duration?}`. Sent by the
+     * caller on every terminal: non-connected (canceled/missed/declined/busy/
+     * unreachable) AND completed calls, where [durationSec] carries the 通话
+     * 时长. media = audio | video. Rendering is perspective-aware: the sender
+     * is always the CALLER, so isOwn ⇒ caller wording, !isOwn ⇒ callee wording.
      */
-    data class CallLog(val media: String, val result: String) : MessageContent
+    data class CallLog(
+        val media: String,
+        val result: String,
+        val durationSec: Long = 0,
+    ) : MessageContent
 
     /** Anything this client version doesn't render natively yet. */
     data class Unsupported(val contentType: String, val body: String) : MessageContent
@@ -99,6 +105,7 @@ object MessageContentParser {
             MessageContent.CallLog(
                 media = it.optString("media", "audio"),
                 result = it.optString("result", "missed"),
+                durationSec = it.optLong("duration", 0L),
             )
         }
         else -> MessageContent.Unsupported(contentType, body)
@@ -125,6 +132,15 @@ object MessageContentParser {
     } catch (_: Throwable) {
         MessageContent.Unsupported(contentType, body)
     }
+}
+
+/** 通话时长 mm:ss (h:mm:ss beyond an hour) for completed call-log rows. */
+fun formatCallDuration(sec: Long): String {
+    val s = sec.coerceAtLeast(0)
+    val h = s / 3600
+    val m = (s % 3600) / 60
+    val ss = s % 60
+    return if (h > 0) "%d:%02d:%02d".format(h, m, ss) else "%02d:%02d".format(m, ss)
 }
 
 /** Human-readable byte count for file bubbles (matches web's rendering scale). */

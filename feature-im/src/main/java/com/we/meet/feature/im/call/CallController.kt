@@ -56,6 +56,12 @@ class CallController(
     private var timeoutJob: Job? = null
     private var resendJob: Job? = null
 
+    /**
+     * Set on the CALLER's accept; consumed by [onCallRoomEnded] to write the
+     * "completed + duration" call-log when the LiveKit session tears down.
+     */
+    private var connectedCall: ConnectedCall? = null
+
     /** callIds already terminally settled — late/duplicate frames are dropped. */
     private val finishedCallIds = ArrayDeque<String>()
 
@@ -220,6 +226,14 @@ class CallController(
                     finish(info, CallEndReason.FAILED, endRoom = true)
                     return
                 }
+                // Track the connected call so the meeting-FGS teardown can
+                // persist a "通话时长 mm:ss" log (caller side only — exactly
+                // one party writes chat records, same as 拍板 #2).
+                connectedCall = ConnectedCall(
+                    cid = info.cid,
+                    media = info.media,
+                    startedAtMs = System.currentTimeMillis(),
+                )
                 _events.tryEmit(CallUiEvent.EnterRoom(room, info))
                 finishQuietly(info)
             }
@@ -235,14 +249,37 @@ class CallController(
         val current = _state.value as? WithInfo ?: return
         val info = current.info
         if (info.callId != p.callId) return
-        // My own echo of a terminal I initiated — already handled locally.
+        // My own echo of a terminal I initiated — already handled locally. On
+        // a still-ringing OTHER device of mine, converge with the right label:
+        // an echoed reject means "declined elsewhere", not "answered".
         if (p.from == self && reason != CallEndReason.HUNG_UP) {
-            if (_state.value is CallState.Incoming) finish(info, CallEndReason.ANSWERED_ELSEWHERE)
+            if (_state.value is CallState.Incoming) {
+                finish(
+                    info,
+                    if (reason == CallEndReason.DECLINED) CallEndReason.DECLINED_ELSEWHERE
+                    else CallEndReason.ANSWERED_ELSEWHERE,
+                )
+            }
             return
         }
         // Caller-side non-connected terminals persist a call-log (拍板 #2).
         if (info.outgoing && logResult != null) requestCallLog(info, logResult)
         finish(info, reason, endRoom = info.outgoing)
+    }
+
+    /**
+     * Called by the host when the LiveKit session ends (meeting FGS teardown).
+     * If a connected 1:1 call was in flight on this device as the CALLER,
+     * persist the "completed + duration" call-log. Meetings and callee-side
+     * sessions no-op ([connectedCall] is only set on the caller's accept).
+     */
+    fun onCallRoomEnded() {
+        val c = connectedCall ?: return
+        connectedCall = null
+        val durationSec = ((System.currentTimeMillis() - c.startedAtMs) / 1000).coerceAtLeast(1)
+        _callLogRequests.tryEmit(
+            CallLogRequest(cid = c.cid, media = c.media, result = "completed", durationSec = durationSec)
+        )
     }
 
     // ---- timers ----
@@ -436,6 +473,7 @@ enum class CallEndReason {
     UNREACHABLE,        // peer offline (server short-circuit)
     HUNG_UP,            // in-call hangup (P1: via room, frame reserved)
     ANSWERED_ELSEWHERE, // another of my devices took it
+    DECLINED_ELSEWHERE, // another of my devices rejected it
     FAILED,             // room create/resolve or socket failure
 }
 
@@ -445,5 +483,20 @@ sealed interface CallUiEvent {
     data class Error(val message: String) : CallUiEvent
 }
 
-/** Ask the chat layer to persist a call-log message (caller side only). */
-data class CallLogRequest(val cid: String, val media: String, val result: String)
+/**
+ * Ask the chat layer to persist a call-log message (caller side only).
+ * [durationSec] is non-zero only for result="completed" (通话时长).
+ */
+data class CallLogRequest(
+    val cid: String,
+    val media: String,
+    val result: String,
+    val durationSec: Long = 0,
+)
+
+/** A connected 1:1 call in flight on this device as the caller (drives the duration log). */
+internal data class ConnectedCall(
+    val cid: String,
+    val media: String,
+    val startedAtMs: Long,
+)

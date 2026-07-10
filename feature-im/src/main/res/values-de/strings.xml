@@ -97,6 +97,12 @@
     <string name="im_calllog_declined">Abgelehnt</string>
     <string name="im_calllog_busy">Besetzt</string>
     <string name="im_calllog_unreachable">Offline</string>
+    <string name="im_call_end_declined_elsewhere">Auf anderem Gerät abgelehnt</string>
+    <string name="im_calllog_canceled_peer">Vom Anrufer abgebrochen</string>
+    <string name="im_calllog_missed_peer">Verpasst</string>
+    <string name="im_calllog_declined_peer">Abgelehnt</string>
+    <string name="im_calllog_busy_peer">Verpasst (besetzt)</string>
+    <string name="im_calllog_unreachable_peer">Verpasst (offline)</string>
     <string name="im_group_name_label">Gruppenname</string>
     <string name="im_group_announce_label">Ankündigung</string>
     <string name="im_group_announce_empty">Keine Ankündigung</string>
