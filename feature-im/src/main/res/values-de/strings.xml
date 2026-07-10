@@ -68,6 +68,12 @@
     <string name="im_upload_failed">Upload fehlgeschlagen — bitte erneut versuchen</string>
 
     <string name="im_group_info">Gruppeninfo</string>
+    <string name="im_start_meeting">Meeting starten</string>
+    <string name="im_group_meeting_name">Videomeeting von %1$s</string>
+    <string name="im_call">Anruf</string>
+    <string name="im_call_video">Videoanruf</string>
+    <string name="im_call_phone">Telefonieren</string>
+    <string name="im_call_room_name">Anruf mit %1$s</string>
     <string name="im_group_name_label">Gruppenname</string>
     <string name="im_group_announce_label">Ankündigung</string>
     <string name="im_group_announce_empty">Keine Ankündigung</string>

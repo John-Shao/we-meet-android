@@ -68,6 +68,12 @@
     <string name="im_upload_failed">Échec de l\'envoi — réessayez</string>
 
     <string name="im_group_info">Infos du groupe</string>
+    <string name="im_start_meeting">Démarrer une réunion</string>
+    <string name="im_group_meeting_name">Réunion vidéo de %1$s</string>
+    <string name="im_call">Appel</string>
+    <string name="im_call_video">Appel vidéo</string>
+    <string name="im_call_phone">Appeler</string>
+    <string name="im_call_room_name">Appel avec %1$s</string>
     <string name="im_group_name_label">Nom du groupe</string>
     <string name="im_group_announce_label">Annonce</string>
     <string name="im_group_announce_empty">Aucune annonce</string>

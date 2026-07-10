@@ -103,6 +103,19 @@ fun PreviewScreen(
      */
     initialMeetingId: String? = null,
     /**
+     * When non-null, seeds the editable meeting-name field in Create mode
+     * (used when 发起会议 came from a group chat, so the name defaults to
+     * "{群名}的视频会议"). Falls back to [PreviewViewModel.defaultMeetingName]
+     * when null. Ignored in Join mode.
+     */
+    initialMeetingName: String? = null,
+    /**
+     * Create mode only: start with the camera off and hide its toggle, for
+     * 语音通话 launched from a 1:1 chat. The user still gets mic + speaker
+     * controls; it's an audio call, not a locked-down one. Ignored in Join mode.
+     */
+    audioOnly: Boolean = false,
+    /**
      * Fired in Join mode when the target room exists but the current
      * user can't access it directly (typically access_level=restricted).
      * AppNav should navigate to the waiting-room screen, passing the
@@ -157,7 +170,7 @@ fun PreviewScreen(
     }
 
     var micEnabled by remember { mutableStateOf(true) }
-    var cameraEnabled by remember { mutableStateOf(true) }
+    var cameraEnabled by remember { mutableStateOf(!audioOnly) }
     var audioOutput by remember { mutableStateOf(AudioOutputStore.lastChoice) }
     var showAudioSheet by remember { mutableStateOf(false) }
 
@@ -171,7 +184,9 @@ fun PreviewScreen(
     }
 
     // Mode-specific state
-    var meetingName by remember { mutableStateOf(previewViewModel.defaultMeetingName) }
+    var meetingName by remember {
+        mutableStateOf(initialMeetingName?.takeIf { it.isNotBlank() } ?: previewViewModel.defaultMeetingName)
+    }
     var meetingId by remember { mutableStateOf(initialMeetingId.orEmpty()) }
 
     val doAction: () -> Unit = {
@@ -310,13 +325,17 @@ fun PreviewScreen(
                     onClick = { micEnabled = !micEnabled },
                     modifier = Modifier.weight(1f),
                 )
-                ToggleCard(
-                    icon = if (cameraEnabled) Icons.Default.Videocam else Icons.Default.VideocamOff,
-                    label = stringResource(R.string.preview_camera),
-                    isOn = cameraEnabled,
-                    onClick = { cameraEnabled = !cameraEnabled },
-                    modifier = Modifier.weight(1f),
-                )
+                // Hidden for 语音通话 — an audio call keeps the camera off and
+                // out of reach; mic + speaker remain.
+                if (!audioOnly) {
+                    ToggleCard(
+                        icon = if (cameraEnabled) Icons.Default.Videocam else Icons.Default.VideocamOff,
+                        label = stringResource(R.string.preview_camera),
+                        isOn = cameraEnabled,
+                        onClick = { cameraEnabled = !cameraEnabled },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
                 ToggleCard(
                     icon = when (audioOutput) {
                         AudioOutput.Speaker -> Icons.AutoMirrored.Filled.VolumeUp

@@ -68,6 +68,12 @@
     <string name="im_upload_failed">Upload mislukt — probeer opnieuw</string>
 
     <string name="im_group_info">Groepsinfo</string>
+    <string name="im_start_meeting">Vergadering starten</string>
+    <string name="im_group_meeting_name">Videovergadering van %1$s</string>
+    <string name="im_call">Bellen</string>
+    <string name="im_call_video">Video-oproep</string>
+    <string name="im_call_phone">Telefoneren</string>
+    <string name="im_call_room_name">Gesprek met %1$s</string>
     <string name="im_group_name_label">Groepsnaam</string>
     <string name="im_group_announce_label">Aankondiging</string>
     <string name="im_group_announce_empty">Geen aankondiging</string>

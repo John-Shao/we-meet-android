@@ -122,6 +122,20 @@ fun ChatScreen(
     onOpenInfo: (cid: String) -> Unit,
     onOpenDirectSettings: ((cid: String) -> Unit)? = null,
     onMemberClick: ((userId: String) -> Unit)? = null,
+    /**
+     * Group-only: fired when the user taps the video button in the top bar to
+     * 发起「快速会议」. Receives a pre-composed meeting name derived from the
+     * group title ("{群名}的视频会议"); the host wires this to the create-meeting
+     * preview. Null hides the button.
+     */
+    onStartMeeting: ((meetingName: String) -> Unit)? = null,
+    /**
+     * Direct-only (P0): fired from the 通话 chooser in the top bar. [video] is
+     * true for 视频通话, false for 语音通话 (audio-only). [callName] is the
+     * room name derived from the peer's name ("与{对方}的通话"). The host enters
+     * a LiveKit room; there is no ringing yet. Null hides the button.
+     */
+    onStartCall: ((callName: String, video: Boolean) -> Unit)? = null,
 ) {
     val vm: ChatViewModel =
         viewModel(key = "chat-$cid", factory = remember(deps, cid) { ChatViewModel.Factory(deps, cid) })
@@ -147,6 +161,7 @@ fun ChatScreen(
     var selectMode by remember { mutableStateOf(false) }
     var selectedMids by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showCallSheet by remember { mutableStateOf(false) }
     fun exitSelect() { selectMode = false; selectedMids = emptySet() }
     androidx.activity.compose.BackHandler(enabled = selectMode) { exitSelect() }
 
@@ -247,6 +262,18 @@ fun ChatScreen(
                 },
                 actions = {
                     if (!selectMode) {
+                        if (ui.isGroup && onStartMeeting != null) {
+                            val groupTitle = ui.title.ifBlank { stringResource(R.string.im_untitled_chat) }
+                            val meetingName = stringResource(R.string.im_group_meeting_name, groupTitle)
+                            IconButton(onClick = { onStartMeeting(meetingName) }) {
+                                Icon(Icons.Filled.VideoCall, contentDescription = stringResource(R.string.im_start_meeting))
+                            }
+                        }
+                        if (!ui.isGroup && onStartCall != null) {
+                            IconButton(onClick = { showCallSheet = true }) {
+                                Icon(Icons.Filled.Call, contentDescription = stringResource(R.string.im_call))
+                            }
+                        }
                         if (ui.isGroup) {
                             IconButton(onClick = { onOpenInfo(cid) }) {
                                 Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.im_group_info))
@@ -561,6 +588,22 @@ fun ChatScreen(
                     Text(stringResource(R.string.im_action_cancel))
                 }
             },
+        )
+    }
+
+    // 1:1 call chooser (P0). Peer phone is unavailable until the backend
+    // exposes it (see P3), so 拨打电话 stays disabled for now.
+    if (showCallSheet) {
+        val callName = stringResource(
+            R.string.im_call_room_name,
+            ui.title.ifBlank { stringResource(R.string.im_untitled_chat) },
+        )
+        CallOptionsSheet(
+            peerPhone = null,
+            onVoiceCall = { onStartCall?.invoke(callName, false) },
+            onVideoCall = { onStartCall?.invoke(callName, true) },
+            onDialPhone = {},
+            onDismiss = { showCallSheet = false },
         )
     }
 

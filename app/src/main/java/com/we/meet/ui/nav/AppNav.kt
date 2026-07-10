@@ -69,7 +69,14 @@ object Routes {
     const val SETTINGS = "settings"
     const val ACCOUNT_SECURITY = "account_security"
     const val MEETING_SETTINGS = "meeting_settings"
-    const val CREATE_PREVIEW = "create_preview"
+    /**
+     * `name` optionally seeds the meeting-name field in Create mode — populated
+     * when 发起会议 came from a group chat ("{群名}的视频会议"), empty from the
+     * home/tab entry. `audioOnly` starts the preview with the camera off and
+     * hidden (used by 语音通话 from a 1:1 chat). Both are query params so they
+     * stay optional (see [createPreview]).
+     */
+    const val CREATE_PREVIEW = "create_preview?name={name}&audioOnly={audioOnly}"
     /**
      * `slug` is an optional query parameter — empty when the user navigated
      * via the tab bar's "join meeting" entry, populated when they came in
@@ -140,6 +147,22 @@ object Routes {
     fun waitingRoom(idOrSlug: String, name: String, mic: Boolean, cam: Boolean): String {
         fun enc(s: String) = URLEncoder.encode(s, StandardCharsets.UTF_8.name())
         return "$WAITING_ROOM_BASE/${enc(idOrSlug)}/${enc(name)}/$mic/$cam"
+    }
+
+    /**
+     * Build a CreatePreview route URL, optionally seeding the meeting name and
+     * starting in audio-only mode (语音通话). Only appends the params actually
+     * set, so the bare "create_preview" (home/tab entry) still matches.
+     */
+    fun createPreview(meetingName: String? = null, audioOnly: Boolean = false): String {
+        val params = buildList {
+            meetingName?.takeIf { it.isNotBlank() }?.let {
+                add("name=${URLEncoder.encode(it, StandardCharsets.UTF_8.name())}")
+            }
+            if (audioOnly) add("audioOnly=true")
+        }
+        return if (params.isEmpty()) "create_preview"
+        else "create_preview?${params.joinToString("&")}"
     }
 
     /** Build a JoinPreview route URL, optionally seeding the meeting-id input. */
@@ -250,7 +273,7 @@ fun AppNav() {
 
         composable(Routes.HOME) {
             MainTabScreen(
-                onCreateMeeting = { navController.navigate(Routes.CREATE_PREVIEW) },
+                onCreateMeeting = { navController.navigate(Routes.createPreview()) },
                 onJoinMeeting = { navController.navigate(Routes.joinPreview()) },
                 onJoinSlug = { slug -> navController.navigate(Routes.joinPreview(slug)) },
                 onScanQrCode = { navController.navigate(Routes.QR_SCAN) },
@@ -318,6 +341,10 @@ fun AppNav() {
                 onOpenInfo = { navController.navigate(Routes.imGroupInfo(it)) },
                 onOpenDirectSettings = { navController.navigate(Routes.imDirectSettings(it)) },
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
+                onStartMeeting = { meetingName -> navController.navigate(Routes.createPreview(meetingName)) },
+                onStartCall = { callName, video ->
+                    navController.navigate(Routes.createPreview(callName, audioOnly = !video))
+                },
             )
         }
 
@@ -488,9 +515,24 @@ fun AppNav() {
             )
         }
 
-        composable(Routes.CREATE_PREVIEW) {
+        composable(
+            route = Routes.CREATE_PREVIEW,
+            arguments = listOf(
+                navArgument("name") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("audioOnly") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+            ),
+        ) { entry ->
+            val seedName = entry.arguments?.getString("name").orEmpty()
             PreviewScreen(
                 mode = PreviewMode.Create,
+                initialMeetingName = seedName.takeIf { it.isNotBlank() },
+                audioOnly = entry.arguments?.getBoolean("audioOnly") == true,
                 onEnterRoom = { roomId, url, token, name, slug, host, createdAtMs, isAdmin, mic, cam ->
                     navController.navigate(Routes.room(roomId, url, token, name, slug, host, createdAtMs, isAdmin, mic, cam)) {
                         popUpTo(Routes.HOME)
