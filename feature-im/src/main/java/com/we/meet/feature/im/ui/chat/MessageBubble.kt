@@ -21,8 +21,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -183,6 +185,7 @@ fun MessageBubble(
                 is MessageContent.Quote ->
                     QuoteBubble(content, isOwn, mentionNames, selfMentionNames)
                 is MessageContent.Merged -> MergedBubble(content, isOwn, onLongPress)
+                is MessageContent.CallLog -> CallLogBubble(content, isOwn)
                 is MessageContent.Unsupported -> UnsupportedBubble(isOwn)
                 // Control/system rows never reach here (filtered / early-returned).
                 is MessageContent.Recall, is MessageContent.Reaction,
@@ -604,6 +607,46 @@ private fun ReactionChips(reactions: Map<String, List<String>>) {
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun CallLogBubble(content: MessageContent.CallLog, isOwn: Boolean) {
+    // "语音通话 · 对方无应答" style, with a phone/camera glyph — mirrors Feishu's
+    // missed-call rows. Tapping to redial is a P2 nicety.
+    val media = stringResource(
+        if (content.media == "video") R.string.im_calllog_video else R.string.im_calllog_voice
+    )
+    val result = stringResource(
+        when (content.result) {
+            "canceled" -> R.string.im_calllog_canceled
+            "declined" -> R.string.im_calllog_declined
+            "busy" -> R.string.im_calllog_busy
+            "unreachable" -> R.string.im_calllog_unreachable
+            else -> R.string.im_calllog_missed
+        }
+    )
+    Surface(
+        color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.surfaceVariant,
+        shape = bubbleShape,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+        ) {
+            Icon(
+                if (content.media == "video") Icons.Filled.Videocam else Icons.Filled.Call,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = "$media · $result",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(start = 6.dp),
+            )
         }
     }
 }

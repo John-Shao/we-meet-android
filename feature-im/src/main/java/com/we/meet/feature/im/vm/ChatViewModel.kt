@@ -49,6 +49,8 @@ data class ChatUiState(
     val cid: String = "",
     val isGroup: Boolean = false,
     val title: String = "",
+    /** Direct chats only: the peer's uid (P1 通话 needs a call target); null for groups. */
+    val peerUid: String? = null,
     /** Renderable rows only — control messages (recall/reaction) are filtered out. */
     val messages: List<Message> = emptyList(),
     /** mids replaced by a recall tombstone. */
@@ -860,6 +862,7 @@ class ChatViewModel internal constructor(
             _ui.update { s ->
                 s.copy(
                     isGroup = isGroup,
+                    peerUid = peerUid ?: s.peerUid,
                     title = when {
                         summary == null -> s.title
                         isGroup -> summary.name.ifBlank {

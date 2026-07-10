@@ -39,6 +39,10 @@ import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.data.auth.SessionState
 import com.we.meet.feature.assistant.aicall.ui.AssistantCallScreen
+import com.we.meet.feature.im.ImSession
+import com.we.meet.feature.im.call.CallState
+import com.we.meet.feature.im.call.CallUiEvent
+import com.we.meet.feature.im.ui.call.CallScreen
 import com.we.meet.feature.im.ui.chat.ChatScreen
 import com.we.meet.feature.im.ui.chat.DirectChatSettingsScreen
 import com.we.meet.feature.im.ui.group.GroupInfoScreen
@@ -59,6 +63,7 @@ import com.we.meet.ui.settings.MeetingSettingsScreen
 import com.we.meet.ui.settings.SettingsScreen
 import com.we.meet.ui.waiting.WaitingRoomScreen
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -105,6 +110,8 @@ object Routes {
     const val IM_ADD_MEMBERS = "$IM_ADD_MEMBERS_BASE/{cid}"
     private const val IM_DIRECT_SETTINGS_BASE = "im_direct_settings"
     const val IM_DIRECT_SETTINGS = "$IM_DIRECT_SETTINGS_BASE/{cid}"
+    /** P1 一对一通话 — full-screen call UI (outgoing/incoming/connecting). */
+    const val IM_CALL = "im_call"
 
     // Contacts / Calendar detail routes.
     private const val MEMBER_DETAIL_BASE = "member_detail"
@@ -259,6 +266,68 @@ fun AppNav() {
         }
     }
 
+    // P1 一对一通话: watch the IM call machine and drive navigation.
+    //   Idle → Outgoing/Incoming: push the full-screen call UI.
+    //   EnterRoom event: jump into the LiveKit room (audio call → cam off),
+    //     replacing the call screen if it's still on the stack.
+    //   Error event: toast (busy-local / call failed).
+    // Hooked lazily on the first back-stack tick where the user is logged in,
+    // so ImSession isn't instantiated while sitting on the login screen.
+    LaunchedEffect(Unit) {
+        var hooked = false
+        navController.currentBackStackEntryFlow.collect {
+            if (hooked || !app.tokenStore.isLoggedIn()) return@collect
+            hooked = true
+            val calls = ImSession.get(app).calls
+            launch {
+                calls.state.collect { st ->
+                    val onCallScreen =
+                        navController.currentDestination?.route == Routes.IM_CALL
+                    val wantsScreen = st is CallState.Outgoing ||
+                        st is CallState.Incoming || st is CallState.Connecting
+                    if (wantsScreen && !onCallScreen) {
+                        navController.navigate(Routes.IM_CALL) { launchSingleTop = true }
+                    }
+                }
+            }
+            launch {
+                calls.events.collect { ev ->
+                    when (ev) {
+                        is CallUiEvent.EnterRoom -> {
+                            navController.navigate(
+                                Routes.room(
+                                    roomId = ev.room.roomId,
+                                    url = ev.room.livekitUrl,
+                                    token = ev.room.livekitToken,
+                                    name = ev.room.roomName,
+                                    slug = ev.room.slug,
+                                    // Caller created the room → owner/admin.
+                                    host = null,
+                                    createdAtMs = ev.room.createdAtMs,
+                                    isAdmin = ev.info.outgoing,
+                                    mic = true,
+                                    cam = ev.info.media == "video",
+                                )
+                            ) {
+                                // Replace the call screen; no-op if it already popped.
+                                popUpTo(Routes.IM_CALL) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                        is CallUiEvent.Error -> {
+                            val msgRes = if (ev.message == "busy-local") {
+                                com.we.meet.feature.im.R.string.im_call_busy_local
+                            } else {
+                                com.we.meet.feature.im.R.string.im_call_end_failed
+                            }
+                            android.widget.Toast.makeText(context, msgRes, android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     NavHost(navController = navController, startDestination = startDestination) {
 
         composable(Routes.LOGIN) {
@@ -342,10 +411,14 @@ fun AppNav() {
                 onOpenDirectSettings = { navController.navigate(Routes.imDirectSettings(it)) },
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 onStartMeeting = { meetingName -> navController.navigate(Routes.createPreview(meetingName)) },
-                onStartCall = { callName, video ->
-                    navController.navigate(Routes.createPreview(callName, audioOnly = !video))
-                },
+                // 1:1 通话 no longer flows through here — ChatScreen drives
+                // CallController directly and the top-level collector below
+                // pushes Routes.IM_CALL when the call machine leaves Idle.
             )
+        }
+
+        composable(Routes.IM_CALL) {
+            CallScreen(deps = app, onExit = rememberOnceOnly(safePop))
         }
 
         composable(

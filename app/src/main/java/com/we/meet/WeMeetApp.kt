@@ -9,6 +9,9 @@ import com.we.meet.core.directory.data.DirectoryRepository
 import com.we.meet.core.directory.net.DirectoryNetwork
 import com.we.meet.feature.assistant.AssistantDeps
 import com.we.meet.feature.im.ImDeps
+import com.we.meet.feature.im.call.CallHost
+import com.we.meet.feature.im.call.CallRoom
+import com.we.meet.service.ConferenceForegroundService
 import com.we.meet.data.api.ApiClient
 import com.we.meet.data.auth.TokenStore
 import com.we.meet.data.history.HistoryStore
@@ -32,7 +35,7 @@ import okhttp3.OkHttpClient
  * If the app grows beyond a few screens, swap this for Hilt without churning
  * the call sites: every screen reads dependencies from a single property.
  */
-class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, DirectoryDeps {
+class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, DirectoryDeps, CallHost {
 
     lateinit var tokenStore: TokenStore
         private set
@@ -129,6 +132,57 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
     /** ImDeps — jusi-light-im server origin (no trailing slash). */
     override val jusiImBaseUrl: String
         get() = BuildConfig.JUSI_IM_BASE_URL
+
+    // ---- CallHost (P1 一对一通话) — room ops for feature-im's CallController ----
+
+    private val callDisplayName: String
+        get() = tokenStore.nickname?.takeIf { it.isNotBlank() } ?: tokenStore.phone ?: "Android User"
+
+    override suspend fun createCallRoom(name: String): CallRoom {
+        val room = roomRepository.createRoom(callDisplayName, name).getOrThrow()
+        val lk = room.livekit ?: error("create-room response missing livekit")
+        return CallRoom(
+            roomId = room.id,
+            slug = room.slug ?: room.id,
+            roomName = room.name ?: name,
+            livekitUrl = lk.url,
+            livekitToken = lk.token,
+            createdAtMs = parseIsoMillisOrNow(room.created_at),
+        )
+    }
+
+    override suspend fun resolveCallRoom(slug: String): CallRoom? {
+        val room = roomRepository.getRoom(slug, callDisplayName).getOrNull() ?: return null
+        // Ended room (caller gave up before we resolved) → call is over.
+        if (!room.closed_at.isNullOrBlank()) return null
+        val lk = room.livekit ?: return null // trusted rooms hand tokens to any logged-in user
+        return CallRoom(
+            roomId = room.id,
+            slug = room.slug ?: slug,
+            roomName = room.name ?: slug,
+            livekitUrl = lk.url,
+            livekitToken = lk.token,
+            createdAtMs = parseIsoMillisOrNow(room.created_at),
+        )
+    }
+
+    override suspend fun endCallRoom(roomId: String) {
+        roomRepository.endRoom(roomId).getOrThrow()
+    }
+
+    /** The meeting FGS runs exactly while a LiveKit session is live → busy. */
+    override fun isInMeeting(): Boolean = ConferenceForegroundService.isRunning
+
+    private fun parseIsoMillisOrNow(iso: String?): Long {
+        if (iso.isNullOrBlank()) return System.currentTimeMillis()
+        val normalized = iso
+            .replace(Regex("\\.\\d+"), "")
+            .let { if (it.endsWith("Z")) it.dropLast(1) + "+0000" else it }
+        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", java.util.Locale.US).apply {
+            timeZone = java.util.TimeZone.getTimeZone("UTC")
+        }
+        return runCatching { fmt.parse(normalized)?.time }.getOrNull() ?: System.currentTimeMillis()
+    }
 
     /**
      * Custom Coil [ImageLoader] used by every [coil.compose.AsyncImage].

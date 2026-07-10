@@ -5,6 +5,8 @@ import android.util.Log
 import com.jusi.lightim.BackoffConfig
 import com.jusi.lightim.Client
 import com.jusi.lightim.ConnectionState
+import com.we.meet.feature.im.call.CallController
+import com.we.meet.feature.im.call.CallHost
 import com.we.meet.feature.im.data.ChatUploadRepository
 import com.we.meet.feature.im.data.ConversationRepository
 import com.we.meet.feature.im.data.DeletedMessageStore
@@ -77,6 +79,13 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
     )
 
     internal val conversations = ConversationRepository(client, scope) { _selfUid.value }
+
+    /**
+     * P1 一对一通话 state machine. Room ops come from the host app when it
+     * implements [CallHost] (WeMeetApp does); a host without it degrades to
+     * "call buttons error out", never a crash.
+     */
+    val calls = CallController(client, scope, { _selfUid.value }, deps as? CallHost)
     internal val userDirectory = UserDirectory(bridge, scope)
     internal val mediaResolver = MediaResolver(bridge)
     internal val uploads = ChatUploadRepository(bridge, appContext.contentResolver)
@@ -121,6 +130,20 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
                 if (mentionsSelf || (mentionsAll && !summary.muteAtAll)) {
                     _mentionedCids.value = _mentionedCids.value + m.cid
                 }
+            }
+        }
+        // 拍板 #2: non-connected call terminals persist a "未接来电" message so
+        // both sides see the attempt in the chat (and the callee learns about
+        // invites lost to a WS gap). Caller-side only (CallController gates).
+        scope.launch {
+            calls.callLogRequests.collect { req ->
+                runCatching {
+                    client.sendText(
+                        cid = req.cid,
+                        body = "{\"media\":\"${req.media}\",\"result\":\"${req.result}\"}",
+                        contentType = "call-log",
+                    )
+                }.onFailure { Log.w(TAG, "call-log send failed", it) }
             }
         }
         // Resync-on-reconnect: WS gaps are silent message loss.

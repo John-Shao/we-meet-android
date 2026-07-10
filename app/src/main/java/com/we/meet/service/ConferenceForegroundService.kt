@@ -51,7 +51,13 @@ class ConferenceForegroundService : Service() {
 
         // Don't auto-restart a meeting service the OS killed — by the time
         // we'd be re-summoned the room is almost certainly gone.
+        isRunning = true
         return START_NOT_STICKY
+    }
+
+    override fun onDestroy() {
+        isRunning = false
+        super.onDestroy()
     }
 
     private fun ensureChannel() {
@@ -97,6 +103,15 @@ class ConferenceForegroundService : Service() {
         private const val CHANNEL_ID = "meeting_in_progress"
         private const val NOTIFICATION_ID = 1001
         private const val EXTRA_ROOM_NAME = "room_name"
+
+        /**
+         * True while the meeting FGS is alive — the service runs exactly for
+         * the duration of a LiveKit room session, so this doubles as the
+         * "user is in a meeting/call" busy signal for 1:1 call handling.
+         */
+        @Volatile
+        var isRunning: Boolean = false
+            private set
 
         fun start(context: Context, roomName: String) {
             val intent = Intent(context, ConferenceForegroundService::class.java)

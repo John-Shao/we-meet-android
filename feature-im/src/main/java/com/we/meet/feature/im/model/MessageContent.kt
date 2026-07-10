@@ -37,6 +37,13 @@ sealed interface MessageContent {
     /** Server-injected notices (member joined/left, meeting summary, ...). */
     data class System(val body: String) : MessageContent
 
+    /**
+     * P1 一对一通话 log — body = JSON `{media,result}`. Sent by the caller on
+     * every non-connected terminal (canceled/missed/declined/busy/unreachable)
+     * so both sides see the attempt in the thread. media = audio | video.
+     */
+    data class CallLog(val media: String, val result: String) : MessageContent
+
     /** Anything this client version doesn't render natively yet. */
     data class Unsupported(val contentType: String, val body: String) : MessageContent
 }
@@ -88,6 +95,12 @@ object MessageContentParser {
             )
         }
         "system" -> MessageContent.System(body)
+        "call-log" -> parseJson(contentType, body) {
+            MessageContent.CallLog(
+                media = it.optString("media", "audio"),
+                result = it.optString("result", "missed"),
+            )
+        }
         else -> MessageContent.Unsupported(contentType, body)
     }
 

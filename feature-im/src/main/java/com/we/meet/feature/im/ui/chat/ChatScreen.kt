@@ -129,13 +129,6 @@ fun ChatScreen(
      * preview. Null hides the button.
      */
     onStartMeeting: ((meetingName: String) -> Unit)? = null,
-    /**
-     * Direct-only (P0): fired from the 通话 chooser in the top bar. [video] is
-     * true for 视频通话, false for 语音通话 (audio-only). [callName] is the
-     * room name derived from the peer's name ("与{对方}的通话"). The host enters
-     * a LiveKit room; there is no ringing yet. Null hides the button.
-     */
-    onStartCall: ((callName: String, video: Boolean) -> Unit)? = null,
 ) {
     val vm: ChatViewModel =
         viewModel(key = "chat-$cid", factory = remember(deps, cid) { ChatViewModel.Factory(deps, cid) })
@@ -269,7 +262,7 @@ fun ChatScreen(
                                 Icon(Icons.Filled.VideoCall, contentDescription = stringResource(R.string.im_start_meeting))
                             }
                         }
-                        if (!ui.isGroup && onStartCall != null) {
+                        if (!ui.isGroup) {
                             IconButton(onClick = { showCallSheet = true }) {
                                 Icon(Icons.Filled.Call, contentDescription = stringResource(R.string.im_call))
                             }
@@ -591,17 +584,34 @@ fun ChatScreen(
         )
     }
 
-    // 1:1 call chooser (P0). Peer phone is unavailable until the backend
-    // exposes it (see P3), so 拨打电话 stays disabled for now.
+    // 1:1 call chooser (P1: drives CallController — real ringing; AppNav
+    // watches the controller's state and shows the call screen). Peer phone is
+    // unavailable until the backend exposes it (see P3), so 拨打电话 stays
+    // disabled for now.
     if (showCallSheet) {
         val callName = stringResource(
             R.string.im_call_room_name,
             ui.title.ifBlank { stringResource(R.string.im_untitled_chat) },
         )
+        val calls = remember(deps) { com.we.meet.feature.im.ImSession.get(deps).calls }
+        val startCall: (Boolean) -> Unit = { video ->
+            val peer = ui.peerUid
+            if (peer == null) {
+                Toast.makeText(context, R.string.im_call_end_failed, Toast.LENGTH_SHORT).show()
+            } else {
+                calls.startCall(
+                    cid = cid,
+                    peerUid = peer,
+                    peerName = ui.title,
+                    roomName = callName,
+                    video = video,
+                )
+            }
+        }
         CallOptionsSheet(
             peerPhone = null,
-            onVoiceCall = { onStartCall?.invoke(callName, false) },
-            onVideoCall = { onStartCall?.invoke(callName, true) },
+            onVoiceCall = { startCall(false) },
+            onVideoCall = { startCall(true) },
             onDialPhone = {},
             onDismiss = { showCallSheet = false },
         )

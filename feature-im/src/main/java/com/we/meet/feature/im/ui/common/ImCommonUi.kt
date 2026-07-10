@@ -108,6 +108,9 @@ fun previewText(contentType: String?, body: String?): String {
         is MessageContent.Recall -> stringResource(R.string.im_recalled_preview)
         is MessageContent.Reaction -> stringResource(R.string.im_preview_reaction)
         is MessageContent.System -> content.body
+        is MessageContent.CallLog -> stringResource(
+            if (content.media == "video") R.string.im_calllog_video else R.string.im_calllog_voice
+        )
         is MessageContent.Unsupported -> stringResource(R.string.im_preview_unsupported)
     }
 }
