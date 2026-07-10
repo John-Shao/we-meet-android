@@ -138,9 +138,11 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
         scope.launch {
             calls.callLogRequests.collect { req ->
                 runCatching {
+                    val duration =
+                        if (req.durationSec > 0) ",\"duration\":${req.durationSec}" else ""
                     client.sendText(
                         cid = req.cid,
-                        body = "{\"media\":\"${req.media}\",\"result\":\"${req.result}\"}",
+                        body = "{\"media\":\"${req.media}\",\"result\":\"${req.result}\"$duration}",
                         contentType = "call-log",
                     )
                 }.onFailure { Log.w(TAG, "call-log send failed", it) }
@@ -227,6 +229,14 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
                 instance ?: ImSession(deps, deps as Context).also { instance = it }
             }
         }
+
+        /**
+         * The live session if one exists — does NOT lazily create. For hooks
+         * that fire outside the IM lifecycle (e.g. the meeting FGS teardown
+         * notifying the call controller) where creating a session as a side
+         * effect would be wrong.
+         */
+        fun peek(): ImSession? = instance
 
         /** Tear down on sign-out; the next [get] builds a fresh session. */
         fun shutdown() {

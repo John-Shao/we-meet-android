@@ -112,6 +112,12 @@
     <string name="im_calllog_declined">Declined</string>
     <string name="im_calllog_busy">Busy</string>
     <string name="im_calllog_unreachable">Offline</string>
+    <string name="im_call_end_declined_elsewhere">Declined on another device</string>
+    <string name="im_calllog_canceled_peer">Canceled by the other party</string>
+    <string name="im_calllog_missed_peer">Missed</string>
+    <string name="im_calllog_declined_peer">Declined</string>
+    <string name="im_calllog_busy_peer">Missed (busy)</string>
+    <string name="im_calllog_unreachable_peer">Missed (offline)</string>
     <string name="im_group_name_label">Group name</string>
     <string name="im_group_announce_label">Announcement</string>
     <string name="im_group_announce_empty">No announcement</string>

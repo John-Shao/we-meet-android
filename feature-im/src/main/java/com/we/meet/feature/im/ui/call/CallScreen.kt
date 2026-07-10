@@ -333,6 +333,7 @@ private fun endReasonText(context: Context, reason: CallEndReason): String? = wh
     CallEndReason.UNREACHABLE -> context.getString(R.string.im_call_end_unreachable)
     CallEndReason.CANCELED_REMOTE -> context.getString(R.string.im_call_end_canceled_remote)
     CallEndReason.ANSWERED_ELSEWHERE -> context.getString(R.string.im_call_end_answered_elsewhere)
+    CallEndReason.DECLINED_ELSEWHERE -> context.getString(R.string.im_call_end_declined_elsewhere)
     CallEndReason.FAILED -> context.getString(R.string.im_call_end_failed)
     // Locally-initiated endings need no toast — the user did it themselves.
     CallEndReason.CANCELED, CallEndReason.DECLINED_LOCAL, CallEndReason.HUNG_UP -> null

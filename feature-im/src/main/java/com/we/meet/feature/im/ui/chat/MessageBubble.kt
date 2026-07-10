@@ -63,6 +63,7 @@ import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.model.MessageContent
 import com.we.meet.feature.im.model.MessageContentParser
+import com.we.meet.feature.im.model.formatCallDuration
 import com.we.meet.feature.im.model.formatFileSize
 
 /**
@@ -615,18 +616,32 @@ private fun ReactionChips(reactions: Map<String, List<String>>) {
 private fun CallLogBubble(content: MessageContent.CallLog, isOwn: Boolean) {
     // "语音通话 · 对方无应答" style, with a phone/camera glyph — mirrors Feishu's
     // missed-call rows. Tapping to redial is a P2 nicety.
+    //
+    // Perspective-aware wording: the call-log's SENDER is always the caller,
+    // so isOwn means "I placed this call". The same declined record must read
+    // 「对方已拒绝」 to the caller but 「已拒绝」 to the callee who tapped it.
+    // Completed calls render the duration instead — identical on both sides.
     val media = stringResource(
         if (content.media == "video") R.string.im_calllog_video else R.string.im_calllog_voice
     )
-    val result = stringResource(
-        when (content.result) {
-            "canceled" -> R.string.im_calllog_canceled
-            "declined" -> R.string.im_calllog_declined
-            "busy" -> R.string.im_calllog_busy
-            "unreachable" -> R.string.im_calllog_unreachable
-            else -> R.string.im_calllog_missed
-        }
-    )
+    val result = if (content.result == "completed") {
+        formatCallDuration(content.durationSec)
+    } else {
+        stringResource(
+            when (content.result) {
+                "canceled" ->
+                    if (isOwn) R.string.im_calllog_canceled else R.string.im_calllog_canceled_peer
+                "declined" ->
+                    if (isOwn) R.string.im_calllog_declined else R.string.im_calllog_declined_peer
+                "busy" ->
+                    if (isOwn) R.string.im_calllog_busy else R.string.im_calllog_busy_peer
+                "unreachable" ->
+                    if (isOwn) R.string.im_calllog_unreachable else R.string.im_calllog_unreachable_peer
+                else ->
+                    if (isOwn) R.string.im_calllog_missed else R.string.im_calllog_missed_peer
+            }
+        )
+    }
     Surface(
         color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
         else MaterialTheme.colorScheme.surfaceVariant,

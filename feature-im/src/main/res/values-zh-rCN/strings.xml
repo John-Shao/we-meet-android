@@ -108,6 +108,12 @@
     <string name="im_calllog_declined">对方已拒绝</string>
     <string name="im_calllog_busy">对方忙线中</string>
     <string name="im_calllog_unreachable">对方不在线</string>
+    <string name="im_call_end_declined_elsewhere">已在其他设备拒绝</string>
+    <string name="im_calllog_canceled_peer">对方已取消</string>
+    <string name="im_calllog_missed_peer">未接听</string>
+    <string name="im_calllog_declined_peer">已拒绝</string>
+    <string name="im_calllog_busy_peer">忙线未接</string>
+    <string name="im_calllog_unreachable_peer">离线未接</string>
     <string name="im_group_name_label">群名称</string>
     <string name="im_group_announce_label">群公告</string>
     <string name="im_group_announce_empty">暂无群公告</string>

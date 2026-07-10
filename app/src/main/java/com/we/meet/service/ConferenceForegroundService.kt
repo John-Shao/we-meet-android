@@ -57,6 +57,12 @@ class ConferenceForegroundService : Service() {
 
     override fun onDestroy() {
         isRunning = false
+        // The FGS lives exactly as long as the LiveKit session, so its
+        // teardown IS the "call/meeting ended" signal. The call controller
+        // uses it to persist the 1:1 call's "通话时长" log; plain meetings
+        // no-op inside (no connected call tracked). peek() (not get()) so a
+        // teardown never lazily constructs an IM session as a side effect.
+        com.we.meet.feature.im.ImSession.peek()?.calls?.onCallRoomEnded()
         super.onDestroy()
     }
 
