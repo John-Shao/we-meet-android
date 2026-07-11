@@ -364,8 +364,7 @@ private fun RingtoneAndVibration() {
     }
 }
 
-private val HangupRed = Color(0xFFE5484D)
-private val AcceptGreen = Color(0xFF30A46C)
+// HangupRed / AcceptGreen shared with the minimal call pages (MinimalVoiceCallScreen.kt).
 
 private fun endReasonText(context: Context, reason: CallEndReason): String? = when (reason) {
     CallEndReason.DECLINED -> context.getString(R.string.im_call_end_declined)

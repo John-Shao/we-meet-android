@@ -87,6 +87,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -115,8 +116,11 @@ import com.we.meet.audio.AudioOutput
 import com.we.meet.audio.AudioOutputController
 import com.we.meet.audio.AudioOutputStore
 import com.we.meet.feature.im.ImDeps
+import com.we.meet.feature.im.ui.call.MinimalVideoCallScreen
 import com.we.meet.feature.im.ui.call.MinimalVoiceCallScreen
 import com.we.meet.overlay.ScreenShareOverlay
+import io.livekit.android.compose.ui.ScaleType
+import io.livekit.android.compose.ui.VideoTrackView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -211,15 +215,17 @@ fun RoomScreen(
                 RoomUiState.Phase.Error -> ErrorView(state.errorMessage) { onLeave(false) }
                 RoomUiState.Phase.Connected,
                 RoomUiState.Phase.Disconnected -> {
-                    // 1:1 voice call → Feishu-style minimal in-call UI instead
-                    // of the meeting grid. Same viewModel/room underneath, so
-                    // media, call-log duration and hangup semantics are shared.
-                    if (callPeerUid != null && callMedia == "audio") {
-                        MinimalVoiceCallHost(
+                    // 1:1 call → Feishu/WeChat-style minimal in-call UI instead
+                    // of the meeting grid (voice and video variants). Same
+                    // viewModel/room underneath, so media, call-log duration
+                    // and hangup semantics are shared.
+                    if (callPeerUid != null && (callMedia == "audio" || callMedia == "video")) {
+                        MinimalCallHost(
                             state = state,
                             viewModel = viewModel,
                             peerUid = callPeerUid,
                             peerName = callPeerName ?: callPeerUid,
+                            isVideo = callMedia == "video",
                             onLeave = {
                                 viewModel.leave()
                                 onLeave(false)
@@ -271,17 +277,20 @@ fun RoomScreen(
 }
 
 /**
- * Wires the minimal 1:1 voice-call UI (feature-im) to this room: mic state
- * from the RoomViewModel, audio routing via [AudioOutputController] — starting
- * on EARPIECE (a voice call is a phone call; meetings default to speaker) —
+ * Wires the minimal 1:1 call UI (feature-im, voice or video variant) to this
+ * room: mic/camera state from the RoomViewModel, audio routing via
+ * [AudioOutputController] — voice starts on EARPIECE (a voice call is a phone
+ * call), video on SPEAKER (the phone is held at arm's length) — video
+ * surfaces injected as [io.livekit.android.compose.ui.VideoTrackView] slots,
  * and hangup via the caller-provided leave.
  */
 @Composable
-private fun MinimalVoiceCallHost(
+private fun MinimalCallHost(
     state: RoomUiState,
     viewModel: RoomViewModel,
     peerUid: String,
     peerName: String,
+    isVideo: Boolean,
     onLeave: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -292,7 +301,9 @@ private fun MinimalVoiceCallHost(
             pinPreferredDevice = viewModel.callAudioDeviceModule::setPreferredDevice,
         )
     }
-    var audioOutput by remember { mutableStateOf(AudioOutput.Earpiece) }
+    var audioOutput by remember {
+        mutableStateOf(if (isVideo) AudioOutput.Speaker else AudioOutput.Earpiece)
+    }
     DisposableEffect(audioOutputController) {
         audioOutputController.start()
         onDispose { audioOutputController.stop() }
@@ -317,23 +328,77 @@ private fun MinimalVoiceCallHost(
             onLeave()
         }
     }
-    MinimalVoiceCallScreen(
-        deps = context.applicationContext as ImDeps,
-        peerUid = peerUid,
-        fallbackName = peerName,
-        connected = state.phase == RoomUiState.Phase.Connected,
-        micEnabled = state.micEnabled,
-        onToggleMic = viewModel::toggleMic,
-        speakerOn = audioOutput == AudioOutput.Speaker,
-        onToggleSpeaker = {
-            audioOutput = if (audioOutput == AudioOutput.Speaker) {
-                AudioOutput.Earpiece
-            } else {
-                AudioOutput.Speaker
-            }
-        },
-        onHangup = onLeave,
-    )
+    val deps = context.applicationContext as ImDeps
+    val connected = state.phase == RoomUiState.Phase.Connected
+    val onToggleSpeaker = {
+        audioOutput = if (audioOutput == AudioOutput.Speaker) {
+            AudioOutput.Earpiece
+        } else {
+            AudioOutput.Speaker
+        }
+    }
+    if (isVideo) {
+        // Camera tiles only (a 1:1 call has no screen share). Slots are null
+        // while the corresponding camera track is absent, letting the screen
+        // fall back to avatar / hide the self-view.
+        val remote = state.participants.firstOrNull { !it.isLocal && !it.isScreenShare }
+        val local = state.participants.firstOrNull { it.isLocal && !it.isScreenShare }
+        val remoteTrack = remote?.videoTrack
+        val localTrack = local?.videoTrack
+        MinimalVideoCallScreen(
+            deps = deps,
+            peerUid = peerUid,
+            fallbackName = peerName,
+            connected = connected,
+            micEnabled = state.micEnabled,
+            onToggleMic = viewModel::toggleMic,
+            speakerOn = audioOutput == AudioOutput.Speaker,
+            onToggleSpeaker = onToggleSpeaker,
+            cameraEnabled = state.cameraEnabled,
+            onToggleCamera = viewModel::toggleCamera,
+            onFlipCamera = viewModel::switchCamera,
+            onHangup = onLeave,
+            remoteVideo = remoteTrack?.let { track ->
+                {
+                    // Re-key across reconnects, same reason as the meeting
+                    // grid: a kept SurfaceView stays bound to the dead track.
+                    key(state.sessionGeneration, remote.identity) {
+                        VideoTrackView(
+                            videoTrack = track,
+                            modifier = Modifier.fillMaxSize(),
+                            passedRoom = viewModel.room,
+                            scaleType = ScaleType.Fill,
+                        )
+                    }
+                }
+            },
+            localVideo = localTrack?.let { track ->
+                {
+                    key(state.sessionGeneration, local.identity) {
+                        VideoTrackView(
+                            videoTrack = track,
+                            modifier = Modifier.fillMaxSize(),
+                            passedRoom = viewModel.room,
+                            mirror = true,
+                            scaleType = ScaleType.Fill,
+                        )
+                    }
+                }
+            },
+        )
+    } else {
+        MinimalVoiceCallScreen(
+            deps = deps,
+            peerUid = peerUid,
+            fallbackName = peerName,
+            connected = connected,
+            micEnabled = state.micEnabled,
+            onToggleMic = viewModel::toggleMic,
+            speakerOn = audioOutput == AudioOutput.Speaker,
+            onToggleSpeaker = onToggleSpeaker,
+            onHangup = onLeave,
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

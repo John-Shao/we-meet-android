@@ -95,6 +95,9 @@
     <string name="im_call_speaker">Lautsprecher</string>
     <string name="im_call_earpiece">Hörer</string>
     <string name="im_call_hangup">Auflegen</string>
+    <string name="im_call_camera_on">Kamera an</string>
+    <string name="im_call_camera_off">Kamera aus</string>
+    <string name="im_call_flip">Wechseln</string>
     <string name="im_calllog_voice">Sprachanruf</string>
     <string name="im_calllog_video">Videoanruf</string>
     <string name="im_phone_viewed_by_peer">Deine Telefonnummer wurde angesehen</string>

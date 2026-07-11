@@ -106,6 +106,9 @@
     <string name="im_call_speaker">扬声器</string>
     <string name="im_call_earpiece">听筒</string>
     <string name="im_call_hangup">挂断</string>
+    <string name="im_call_camera_on">摄像头已开</string>
+    <string name="im_call_camera_off">摄像头已关</string>
+    <string name="im_call_flip">翻转</string>
     <string name="im_calllog_voice">语音通话</string>
     <string name="im_calllog_video">视频通话</string>
     <string name="im_phone_viewed_by_peer">对方查看了你的手机号码</string>

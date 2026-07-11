@@ -110,6 +110,9 @@
     <string name="im_call_speaker">Speaker</string>
     <string name="im_call_earpiece">Earpiece</string>
     <string name="im_call_hangup">Hang up</string>
+    <string name="im_call_camera_on">Camera on</string>
+    <string name="im_call_camera_off">Camera off</string>
+    <string name="im_call_flip">Flip</string>
     <string name="im_calllog_voice">Voice call</string>
     <string name="im_calllog_video">Video call</string>
     <string name="im_phone_viewed_by_peer">They viewed your phone number</string>

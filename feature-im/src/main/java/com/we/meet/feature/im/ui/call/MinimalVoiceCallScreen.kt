@@ -148,12 +148,14 @@ fun MinimalVoiceCallScreen(
     }
 }
 
+/** Shared control button of the minimal call pages (voice + video). */
 @Composable
-private fun RoundButton(
+internal fun RoundButton(
     icon: ImageVector,
     label: String,
     background: Color,
     onClick: () -> Unit,
+    labelColor: Color? = null,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Surface(
@@ -170,12 +172,12 @@ private fun RoundButton(
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = labelColor ?: MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
 
-private fun formatElapsed(sec: Long): String {
+internal fun formatElapsed(sec: Long): String {
     val s = sec.coerceAtLeast(0)
     val h = s / 3600
     val m = (s % 3600) / 60
@@ -183,7 +185,7 @@ private fun formatElapsed(sec: Long): String {
     return if (h > 0) "%d:%02d:%02d".format(h, m, ss) else "%02d:%02d".format(m, ss)
 }
 
-private val HangupRed = Color(0xFFE5484D)
-private val AcceptGreen = Color(0xFF30A46C)
-private val NeutralControl = Color(0xFF6B7280)
-private val MutedControl = Color(0xFF9CA3AF)
+internal val HangupRed = Color(0xFFE5484D)
+internal val AcceptGreen = Color(0xFF30A46C)
+internal val NeutralControl = Color(0xFF6B7280)
+internal val MutedControl = Color(0xFF9CA3AF)
