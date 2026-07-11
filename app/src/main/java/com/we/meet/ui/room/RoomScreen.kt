@@ -300,6 +300,23 @@ private fun MinimalVoiceCallHost(
     LaunchedEffect(audioOutput) {
         audioOutputController.apply(audioOutput)
     }
+    // 1:1 semantics: the peer leaving ends the call on this side too (a
+    // meeting outlives any participant; a call doesn't). Armed only after
+    // the peer has actually been seen, and debounced so the participant-list
+    // blip of a LiveKit reconnect doesn't fake a hangup — the effect restarts
+    // whenever the list changes, cancelling the pending leave.
+    var peerSeen by remember { mutableStateOf(false) }
+    LaunchedEffect(state.participants, state.phase) {
+        val remoteCount = state.participants.count { !it.isLocal }
+        if (remoteCount > 0) {
+            peerSeen = true
+            return@LaunchedEffect
+        }
+        if (peerSeen && state.phase == RoomUiState.Phase.Connected) {
+            delay(1_500)
+            onLeave()
+        }
+    }
     MinimalVoiceCallScreen(
         deps = context.applicationContext as ImDeps,
         peerUid = peerUid,
