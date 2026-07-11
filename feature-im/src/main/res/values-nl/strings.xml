@@ -94,6 +94,7 @@
     <string name="im_call_mic_off">Gedempt</string>
     <string name="im_call_speaker">Luidspreker</string>
     <string name="im_call_earpiece">Oortje</string>
+    <string name="im_call_hangup">Ophangen</string>
     <string name="im_calllog_voice">Spraakoproep</string>
     <string name="im_calllog_video">Video-oproep</string>
     <string name="im_phone_viewed_by_peer">Je nummer is bekeken</string>

@@ -132,7 +132,7 @@ fun MinimalVoiceCallScreen(
             )
             RoundButton(
                 icon = Icons.Filled.CallEnd,
-                label = stringResource(R.string.im_action_cancel),
+                label = stringResource(R.string.im_call_hangup),
                 background = HangupRed,
                 onClick = onHangup,
             )

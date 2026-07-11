@@ -109,6 +109,7 @@
     <string name="im_call_mic_off">Muted</string>
     <string name="im_call_speaker">Speaker</string>
     <string name="im_call_earpiece">Earpiece</string>
+    <string name="im_call_hangup">Hang up</string>
     <string name="im_calllog_voice">Voice call</string>
     <string name="im_calllog_video">Video call</string>
     <string name="im_phone_viewed_by_peer">They viewed your phone number</string>
