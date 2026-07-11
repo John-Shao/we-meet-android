@@ -77,6 +77,16 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
      */
     val pendingChatCid: MutableStateFlow<String?> = MutableStateFlow(null)
 
+    /**
+     * True while MainActivity is started (visible). Set from its
+     * onStart/onStop. The call-push receiver uses this to decide whether a
+     * full-screen-intent notification is needed: in the foreground the seeded
+     * [com.we.meet.feature.im.call.CallController] already flips the in-app
+     * incoming-call screen, and a second ringing notification would double up.
+     */
+    @Volatile
+    var isForeground: Boolean = false
+
     override fun onCreate() {
         super.onCreate()
         tokenStore = TokenStore(this)

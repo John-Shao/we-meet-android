@@ -43,6 +43,7 @@ import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.call.CallState
 import com.we.meet.feature.im.call.CallUiEvent
 import com.we.meet.feature.im.ui.call.CallScreen
+import com.we.meet.push.CallNotifier
 import com.we.meet.feature.im.ui.chat.ChatScreen
 import com.we.meet.feature.im.ui.chat.DirectChatSettingsScreen
 import com.we.meet.feature.im.ui.group.GroupInfoScreen
@@ -287,6 +288,14 @@ fun AppNav() {
                         st is CallState.Incoming || st is CallState.Connecting
                     if (wantsScreen && !onCallScreen) {
                         navController.navigate(Routes.IM_CALL) { launchSingleTop = true }
+                    }
+                    // P2: the in-app call UI supersedes the push notification —
+                    // clear it as soon as the call is on screen, and on every
+                    // terminal (canceled while still ringing in the shade).
+                    when (st) {
+                        is CallState.Incoming -> CallNotifier.cancel(context, st.info.callId)
+                        is CallState.Ended -> CallNotifier.cancel(context, st.info.callId)
+                        else -> Unit
                     }
                 }
             }

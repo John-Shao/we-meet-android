@@ -18,6 +18,9 @@ import com.igexin.sdk.message.GTNotificationMessage
 import com.igexin.sdk.message.GTTransmitMessage
 import com.we.meet.MainActivity
 import com.we.meet.R
+import com.we.meet.WeMeetApp
+import com.we.meet.feature.im.ImSession
+import com.we.meet.feature.im.call.CallSeed
 import org.json.JSONObject
 
 private const val TAG = "WeMeetPush"
@@ -59,7 +62,30 @@ class WeMeetGtIntentService : GTIntentService() {
                 body = json.optString("body"),
                 cid = json.optString("cid"),
             )
+            "call" -> handleCallPush(context, json.toString())
             else -> Log.d(TAG, "unhandled push type: $type")
+        }
+    }
+
+    /**
+     * P2 来电透传 — reaches us only while the process is alive (a cold-killed
+     * app gets the server-built manufacturer notification instead). Seed the
+     * call state machine directly — in the foreground the in-app incoming
+     * screen flips instantly; otherwise add a full-screen-intent notification
+     * so the phone rings from the background/lock screen too.
+     */
+    private fun handleCallPush(context: Context, payloadJson: String) {
+        val seed = CallSeed.fromJson(payloadJson) ?: run {
+            Log.w(TAG, "call push payload malformed, dropping")
+            return
+        }
+        val app = context.applicationContext as? WeMeetApp ?: return
+        if (!app.tokenStore.isLoggedIn()) return
+        // seedIncoming re-checks freshness/busy/idempotency; it also answers
+        // busy and starts the remainder-of-60s ring timer.
+        ImSession.get(app).calls.seedIncoming(seed)
+        if (!app.isForeground) {
+            CallNotifier.show(context, seed, payloadJson)
         }
     }
 

@@ -2,13 +2,21 @@ package com.we.meet.feature.im.ui.call
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioManager
 import android.media.Ringtone
 import android.media.RingtoneManager
+import android.media.ToneGenerator
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.widget.Toast
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -116,6 +124,10 @@ private fun OutgoingContent(
     waitingAnswer: Boolean,
     onCancel: () -> Unit,
 ) {
+    // Ringback (国标 450Hz 1s/4s) plays once the callee's device confirms it's
+    // ringing — before that (dialing / waking a pushed callee) we stay silent,
+    // matching what the caller expects ("the other phone isn't ringing yet").
+    if (waitingAnswer) RingbackTone()
     CallScaffold(
         session = session,
         peerUid = info.peerUid,
@@ -133,6 +145,35 @@ private fun OutgoingContent(
             background = HangupRed,
             onClick = onCancel,
         )
+    }
+}
+
+/**
+ * Caller-side ringback: the Chinese national tone — 450Hz, 1s on / 4s off,
+ * looping — while the callee's phone rings. Uses ToneGenerator's built-in
+ * CDMA/PSTN ringback which is exactly 450Hz-based; routed on the voice-call
+ * stream so it ducks correctly and follows the earpiece/speaker choice.
+ */
+@Composable
+private fun RingbackTone() {
+    DisposableEffect(Unit) {
+        val tone = runCatching {
+            ToneGenerator(AudioManager.STREAM_VOICE_CALL, 80)
+        }.getOrNull()
+        val scope = CoroutineScope(Dispatchers.Default)
+        scope.launch {
+            // 1s tone, 4s silence, repeat — TONE_SUP_RINGTONE is the supervisory
+            // ringback (450Hz). We drive the cadence ourselves for the 1/4 duty.
+            while (isActive) {
+                runCatching { tone?.startTone(ToneGenerator.TONE_SUP_RINGTONE, 1000) }
+                delay(5000)
+            }
+        }
+        onDispose {
+            scope.cancel()
+            runCatching { tone?.stopTone() }
+            runCatching { tone?.release() }
+        }
     }
 }
 

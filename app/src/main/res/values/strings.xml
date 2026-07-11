@@ -374,4 +374,10 @@
     <string name="profile_approval_entry">Approvals</string>
     <string name="im_push_channel_name">Messages</string>
     <string name="im_push_default_title">New message</string>
+    <string name="push_call_channel_name">Incoming calls</string>
+    <string name="push_call_title_audio">Voice call invitation</string>
+    <string name="push_call_title_video">Video call invitation</string>
+    <string name="push_call_body_audio">%1$s invites you to a voice call</string>
+    <string name="push_call_body_video">%1$s invites you to a video call</string>
+    <string name="push_call_peer_fallback">Someone</string>
 </resources>

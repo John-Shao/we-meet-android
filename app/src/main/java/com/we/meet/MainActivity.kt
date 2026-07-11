@@ -20,6 +20,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
+import com.we.meet.feature.im.ImSession
+import com.we.meet.feature.im.call.CallSeed
+import com.we.meet.push.CallNotifier
 import com.we.meet.overlay.ScreenShareOverlay
 import com.we.meet.ui.nav.AppNav
 import com.we.meet.ui.theme.WeMeetTheme
@@ -118,6 +121,19 @@ class MainActivity : AppCompatActivity() {
             (application as? WeMeetApp)?.pendingChatCid?.value = cid
             return
         }
+        // wemeet://call?payload=<json> — P2 来电通知点击(厂商通道通知 or 本地
+        // FSI 通知)。Seed the call machine directly — AppNav's state collector
+        // pushes the incoming-call screen once composition catches up, which
+        // also covers the cold-start ordering (StateFlow, not an event).
+        if (uri.scheme == "wemeet" && uri.host == "call") {
+            val payloadJson = uri.getQueryParameter("payload")?.takeIf { it.isNotBlank() } ?: return
+            val app = application as? WeMeetApp ?: return
+            if (!app.tokenStore.isLoggedIn()) return
+            val seed = CallSeed.fromJson(payloadJson) ?: return
+            ImSession.get(app).calls.seedIncoming(seed)
+            CallNotifier.cancel(this, seed.callId)
+            return
+        }
         val slug = uri.pathSegments?.firstOrNull()?.takeIf {
             DEEP_LINK_SLUG_REGEX.matches(it)
         } ?: return
@@ -130,11 +146,13 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         ScreenShareOverlay.setForeground(true)
+        (application as? WeMeetApp)?.isForeground = true
     }
 
     override fun onStop() {
         super.onStop()
         ScreenShareOverlay.setForeground(false)
+        (application as? WeMeetApp)?.isForeground = false
     }
 
     /**

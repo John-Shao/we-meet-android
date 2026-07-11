@@ -123,6 +123,47 @@ class CallController(
 
     // ---- callee side ----
 
+    /**
+     * P2: seed an incoming call from an offline push. The WS invite frame is
+     * gone (no offline buffering) — the push payload IS the invite. Freshness
+     * is checked against the caller's 60s window; the local ring lasts only
+     * the REMAINDER so both sides still converge without talking.
+     */
+    fun seedIncoming(seed: CallSeed) {
+        if (seed.callId.isBlank() || seed.fromUid.isBlank() || seed.cid.isBlank()) return
+        if (seed.callId in finishedCallIds) return
+        val ageMs = System.currentTimeMillis() - seed.tsMs
+        if (ageMs !in 0 until SEED_MAX_AGE_MS) {
+            Log.i(TAG, "seedIncoming: stale push (age=${ageMs}ms), dropping")
+            return
+        }
+        val current = _state.value
+        if ((current as? WithInfo)?.info?.callId == seed.callId) return // dup push tap
+        if (current != CallState.Idle || host?.isInMeeting() == true) {
+            // Busy: best-effort busy reply (retried — WS may still be dialing).
+            sendRetrying(seed.callId, seed.cid, seed.fromUid, CallEvent.BUSY, "busy") { false }
+            return
+        }
+        val info = CallInfo(
+            callId = seed.callId,
+            cid = seed.cid,
+            peerUid = seed.fromUid,
+            // Push carries the resolved display name (Django side); the
+            // incoming screen's directory lookup still refines it if needed.
+            peerName = seed.fromName ?: seed.fromUid,
+            media = seed.media,
+            outgoing = false,
+            roomSlug = seed.roomSlug,
+        )
+        _state.value = CallState.Incoming(info)
+        // Ringing receipt flips the caller to 等待接听. The process may have
+        // just been woken — the socket is still connecting, so retry.
+        sendRetrying(info.callId, info.cid, info.peerUid, CallEvent.RINGING) {
+            (_state.value as? CallState.Incoming)?.info?.callId != info.callId
+        }
+        startTimeout(info, asCaller = false, timeoutMs = RING_TIMEOUT_MS - ageMs)
+    }
+
     /** 被叫接听: send accept, resolve the slug to a LiveKit token, enter the room. */
     fun accept() {
         val inc = _state.value as? CallState.Incoming ?: return
@@ -133,7 +174,12 @@ class CallController(
             return
         }
         _state.value = CallState.Connecting(inc.info)
-        sendFrame(inc.info, CallEvent.ACCEPT)
+        // Retried: on a push-seeded call the WS may still be reconnecting when
+        // the user taps 接听 — a lost accept would leave the caller ringing
+        // into a room the callee already joined.
+        sendRetrying(inc.info.callId, inc.info.cid, inc.info.peerUid, CallEvent.ACCEPT) {
+            inc.info.callId in finishedCallIds
+        }
         scope.launch {
             val room = try {
                 h.resolveCallRoom(slug)
@@ -296,10 +342,10 @@ class CallController(
         }
     }
 
-    private fun startTimeout(info: CallInfo, asCaller: Boolean) {
+    private fun startTimeout(info: CallInfo, asCaller: Boolean, timeoutMs: Long = RING_TIMEOUT_MS) {
         timeoutJob?.cancel()
         timeoutJob = scope.launch {
-            delay(RING_TIMEOUT_MS)
+            delay(timeoutMs.coerceAtLeast(1_000L))
             val current = _state.value as? WithInfo ?: return@launch
             if (current.info.callId != info.callId) return@launch
             if (asCaller) {
@@ -335,6 +381,40 @@ class CallController(
         } catch (e: Throwable) {
             Log.w(TAG, "sendCall($event) failed", e)
             onResult?.invoke(true)
+        }
+    }
+
+    /**
+     * Send a frame with a short retry loop — for the push-seeded path where
+     * the process was just woken and the WS is still dialing. Stops early when
+     * [obsolete] turns true (the call settled some other way) or one send
+     * succeeds. Fire-and-forget by design: after the retries the usual
+     * timeout/converge machinery is the fallback.
+     */
+    private fun sendRetrying(
+        callId: String,
+        cid: String,
+        to: String,
+        event: String,
+        reason: String? = null,
+        obsolete: () -> Boolean,
+    ) {
+        scope.launch {
+            repeat(SEND_RETRIES) { attempt ->
+                if (obsolete()) return@launch
+                val ok = try {
+                    client.sendCall(
+                        CallPayload(event = event, callId = callId, cid = cid, to = to, reason = reason)
+                    )
+                    true
+                } catch (e: Throwable) {
+                    Log.i(TAG, "sendCall($event) attempt ${attempt + 1} failed: ${e.message}")
+                    false
+                }
+                if (ok) return@launch
+                delay(SEND_RETRY_INTERVAL_MS)
+            }
+            Log.w(TAG, "sendCall($event) gave up after $SEND_RETRIES attempts")
         }
     }
 
@@ -401,6 +481,50 @@ class CallController(
         private const val INVITE_RESENDS = 3
         private const val ENDED_LINGER_MS = 2_500L
         private const val FINISHED_CACHE = 32
+
+        // P2 push-seeded calls: matches the push TTL (55s) — older seeds mean
+        // the caller's 60s window is (nearly) over, ringing would be cruel.
+        private const val SEED_MAX_AGE_MS = 55_000L
+        private const val SEND_RETRIES = 5
+        private const val SEND_RETRY_INTERVAL_MS = 1_000L
+    }
+}
+
+/**
+ * P2: one call invite carried by an offline push (`type:"call"`), parsed from
+ * the transparent-message / deeplink JSON. Field names mirror the wire payload
+ * (see docs 一对一通话P2 §3); both the Getui receiver and MainActivity's
+ * `wemeet://call` deeplink funnel through [fromJson].
+ */
+data class CallSeed(
+    val callId: String,
+    val cid: String,
+    val fromUid: String,
+    val fromName: String?,
+    val media: String,
+    val roomSlug: String?,
+    val tsMs: Long,
+) {
+    companion object {
+        /** Lenient parse — null on malformed/incomplete JSON (drop the push). */
+        fun fromJson(json: String): CallSeed? = try {
+            val o = org.json.JSONObject(json)
+            val callId = o.optString("call_id")
+            val cid = o.optString("cid")
+            val from = o.optString("from")
+            if (callId.isBlank() || cid.isBlank() || from.isBlank()) null
+            else CallSeed(
+                callId = callId,
+                cid = cid,
+                fromUid = from,
+                fromName = o.optString("from_name").takeIf { it.isNotBlank() },
+                media = o.optString("media").ifBlank { "audio" },
+                roomSlug = o.optString("room_slug").takeIf { it.isNotBlank() },
+                tsMs = o.optLong("ts"),
+            )
+        } catch (_: Throwable) {
+            null
+        }
     }
 }
 

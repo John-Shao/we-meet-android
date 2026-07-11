@@ -31,6 +31,10 @@
          that pins the foreground service. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- P2 来电: full-screen intent so a push-delivered call invite can light
+         up the lock screen / launch straight into the incoming-call UI. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
     <!-- Lets us draw the "stop screen share" floating button on top of the
          desktop / other apps while the user is screen-sharing. Granted
          explicitly by the user via Settings > Special app access on API 23+. -->
