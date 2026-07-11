@@ -50,6 +50,14 @@ sealed interface MessageContent {
         val durationSec: Long = 0,
     ) : MessageContent
 
+    /**
+     * P3 手机号被查看提示 — content_type `phone-viewed`, sent server-side when
+     * someone reveals the owner's full number. Sender is always the VIEWER, so
+     * rendering is perspective-aware: !isOwn (owner receiving) ⇒「对方查看了你的
+     * 手机号码」; isOwn (viewer) ⇒「你查看了对方的手机号码」. Body carries nothing.
+     */
+    data object PhoneViewed : MessageContent
+
     /** Anything this client version doesn't render natively yet. */
     data class Unsupported(val contentType: String, val body: String) : MessageContent
 }
@@ -101,6 +109,7 @@ object MessageContentParser {
             )
         }
         "system" -> MessageContent.System(body)
+        "phone-viewed" -> MessageContent.PhoneViewed
         "call-log" -> parseJson(contentType, body) {
             MessageContent.CallLog(
                 media = it.optString("media", "audio"),

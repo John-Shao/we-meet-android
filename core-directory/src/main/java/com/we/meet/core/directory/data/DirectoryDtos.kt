@@ -46,6 +46,12 @@ data class MemberDto(
     @Json(name = "full_name") val fullName: String? = null,
     @Json(name = "short_name") val shortName: String? = null,
     val email: String? = null,
+    /**
+     * Masked mobile for others (138****1990), full for self; empty when unset.
+     * The full number for another member comes only from the reveal-phone
+     * endpoint (which notifies the owner). P3.
+     */
+    val phone: String? = null,
     /** Short-lived presigned URL — render immediately, never persist. */
     @Json(name = "avatar_url") val avatarUrl: String? = null,
     val title: String? = null,
@@ -58,6 +64,12 @@ data class MemberDto(
             ?: shortName?.takeIf { it.isNotBlank() }
             ?: email.orEmpty()
 }
+
+/** Response of POST directory/members/{userId}/reveal-phone/ — full number ("" if unset). */
+@JsonClass(generateAdapter = true)
+data class RevealPhoneDto(
+    val phone: String? = null,
+)
 
 @JsonClass(generateAdapter = true)
 data class PagedMembersDto(

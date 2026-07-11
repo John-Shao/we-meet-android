@@ -92,6 +92,9 @@
     <string name="im_call_busy_local">Je bent al in gesprek</string>
     <string name="im_calllog_voice">Spraakoproep</string>
     <string name="im_calllog_video">Video-oproep</string>
+    <string name="im_phone_viewed_by_peer">Je nummer is bekeken</string>
+    <string name="im_phone_viewed_by_me">Je hebt hun nummer bekeken</string>
+    <string name="im_phone_viewed_preview">Telefoonnummer bekeken</string>
     <string name="im_calllog_canceled">Geannuleerd</string>
     <string name="im_calllog_missed">Geen antwoord</string>
     <string name="im_calllog_declined">Geweigerd</string>

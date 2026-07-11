@@ -380,4 +380,9 @@
     <string name="push_call_body_audio">%1$s 邀请你进行语音通话</string>
     <string name="push_call_body_video">%1$s 邀请你进行视频通话</string>
     <string name="push_call_peer_fallback">对方</string>
+    <string name="dial_no_number">对方未提供手机号</string>
+    <string name="dial_unsupported">当前设备不支持拨号</string>
+    <string name="member_label_phone">手机号</string>
+    <string name="member_phone_reveal">显示</string>
+    <string name="member_phone_call">拨打</string>
 </resources>

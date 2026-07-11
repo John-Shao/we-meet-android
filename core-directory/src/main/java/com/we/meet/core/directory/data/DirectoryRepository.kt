@@ -39,6 +39,13 @@ class DirectoryRepository(private val api: DirectoryApi) {
     suspend fun getMember(userId: String): Result<MemberDto> =
         runCatching { api.getMember(userId) }
 
+    /**
+     * Reveal a member's full phone number ("" when unset). Revealing another
+     * member's number notifies them via the direct chat (server-side). P3.
+     */
+    suspend fun revealPhone(userId: String): Result<String> =
+        runCatching { api.revealPhone(userId).phone.orEmpty() }
+
     private fun PagedMembersDto.toPage(page: Int) = MemberPage(
         members = results,
         hasMore = next != null,

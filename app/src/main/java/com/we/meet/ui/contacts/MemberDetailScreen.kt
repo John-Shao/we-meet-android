@@ -26,6 +26,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,6 +56,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.R
 import com.we.meet.WeMeetApp
+import com.we.meet.util.dialNumber
 import com.we.meet.core.directory.data.MemberDto
 import com.we.meet.core.directory.ui.MemberAvatar
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -72,6 +74,9 @@ data class MemberDetailUiState(
     val creatingChat: Boolean = false,
     val error: Boolean = false,
     val chatError: Boolean = false,
+    /** Full phone after 显示 (P3). Null = still masked; "" = revealed-but-empty. */
+    val revealedPhone: String? = null,
+    val revealing: Boolean = false,
 )
 
 class MemberDetailViewModel(
@@ -93,6 +98,21 @@ class MemberDetailViewModel(
             weMeetApp.directoryRepository.getMember(userId)
                 .onSuccess { m -> _ui.update { it.copy(member = m, loading = false) } }
                 .onFailure { _ui.update { it.copy(loading = false, error = true) } }
+        }
+    }
+
+    /**
+     * P3: reveal the member's full phone. Revealing another member's number
+     * notifies them (server-side). Idempotent per screen — once revealed it
+     * stays revealed. Returns via state; callers read [MemberDetailUiState.revealedPhone].
+     */
+    fun revealPhone() {
+        val st = _ui.value
+        if (st.revealing || st.revealedPhone != null) return
+        _ui.update { it.copy(revealing = true) }
+        viewModelScope.launch {
+            val phone = weMeetApp.directoryRepository.revealPhone(userId).getOrNull().orEmpty()
+            _ui.update { it.copy(revealing = false, revealedPhone = phone) }
         }
     }
 
@@ -169,6 +189,9 @@ fun MemberDetailScreen(
                     creatingChat = ui.creatingChat,
                     chatError = ui.chatError,
                     onStartChat = { vm.startChat() },
+                    revealedPhone = ui.revealedPhone,
+                    revealing = ui.revealing,
+                    onRevealPhone = { vm.revealPhone() },
                 )
             }
         }
@@ -181,6 +204,9 @@ private fun MemberDetailBody(
     creatingChat: Boolean,
     chatError: Boolean,
     onStartChat: () -> Unit,
+    revealedPhone: String?,
+    revealing: Boolean,
+    onRevealPhone: () -> Unit,
 ) {
     // Only a real photo is worth enlarging — the initials fallback isn't, so the
     // tap-to-zoom affordance is gated on the member actually having an avatar.
@@ -216,6 +242,13 @@ private fun MemberDetailBody(
         InfoRow(stringResource(R.string.member_label_department), member.department?.name)
         InfoRow(stringResource(R.string.member_label_title), member.title)
         InfoRow(stringResource(R.string.member_label_email), member.email)
+        PhoneRow(
+            masked = member.phone,
+            isSelf = member.isSelf,
+            revealedPhone = revealedPhone,
+            revealing = revealing,
+            onReveal = onRevealPhone,
+        )
 
         Spacer(Modifier.height(32.dp))
         if (!member.isSelf) {
@@ -309,6 +342,61 @@ private fun InfoRow(label: String, value: String?) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(text = value, style = MaterialTheme.typography.bodyMedium)
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    }
+}
+
+/**
+ * Phone row (P3): shows the masked number with a 「显示」 action; tapping it
+ * reveals the full number (server-side, which notifies the owner). Once
+ * revealed, a 「拨打」 action opens the system dialer. Own card / no number →
+ * plain masked value (self is already full) or the row is hidden.
+ */
+@Composable
+private fun PhoneRow(
+    masked: String?,
+    isSelf: Boolean,
+    revealedPhone: String?,
+    revealing: Boolean,
+    onReveal: () -> Unit,
+) {
+    if (masked.isNullOrBlank()) return
+    val context = LocalContext.current
+    // Self card carries the full number already; others start masked.
+    val shown = revealedPhone?.takeIf { it.isNotBlank() } ?: masked
+    val isRevealed = isSelf || revealedPhone != null
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.member_label_phone),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = shown, style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.padding(start = 12.dp))
+                when {
+                    revealing -> CircularProgressIndicator(
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.padding(start = 4.dp).height(16.dp),
+                    )
+                    // Revealed-but-empty (owner had no number after all).
+                    revealedPhone != null && revealedPhone.isBlank() -> Unit
+                    isRevealed -> TextButton(onClick = { dialNumber(context, shown) }) {
+                        Text(stringResource(R.string.member_phone_call))
+                    }
+                    else -> TextButton(onClick = onReveal) {
+                        Text(stringResource(R.string.member_phone_reveal))
+                    }
+                }
+            }
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }

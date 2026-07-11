@@ -124,6 +124,21 @@ fun MessageBubble(
         return
     }
 
+    if (content is MessageContent.PhoneViewed) {
+        // Centered notice, perspective-aware: sender = the viewer (P3).
+        Box(Modifier.fillMaxWidth().padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
+            Text(
+                text = stringResource(
+                    if (isOwn) R.string.im_phone_viewed_by_me
+                    else R.string.im_phone_viewed_by_peer
+                ),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+            )
+        }
+        return
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -190,7 +205,7 @@ fun MessageBubble(
                 is MessageContent.Unsupported -> UnsupportedBubble(isOwn)
                 // Control/system rows never reach here (filtered / early-returned).
                 is MessageContent.Recall, is MessageContent.Reaction,
-                is MessageContent.System -> Unit
+                is MessageContent.System, is MessageContent.PhoneViewed -> Unit
             }
             if (reactions.isNotEmpty()) {
                 ReactionChips(reactions)

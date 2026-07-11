@@ -103,6 +103,9 @@
     <string name="im_call_busy_local">当前正在通话中,无法发起新通话</string>
     <string name="im_calllog_voice">语音通话</string>
     <string name="im_calllog_video">视频通话</string>
+    <string name="im_phone_viewed_by_peer">对方查看了你的手机号码</string>
+    <string name="im_phone_viewed_by_me">你查看了对方的手机号码</string>
+    <string name="im_phone_viewed_preview">手机号码查看提醒</string>
     <string name="im_calllog_canceled">已取消</string>
     <string name="im_calllog_missed">对方无应答</string>
     <string name="im_calllog_declined">对方已拒绝</string>

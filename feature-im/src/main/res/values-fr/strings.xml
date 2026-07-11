@@ -92,6 +92,9 @@
     <string name="im_call_busy_local">Vous êtes déjà en communication</string>
     <string name="im_calllog_voice">Appel vocal</string>
     <string name="im_calllog_video">Appel vidéo</string>
+    <string name="im_phone_viewed_by_peer">On a consulté votre numéro</string>
+    <string name="im_phone_viewed_by_me">Vous avez consulté son numéro</string>
+    <string name="im_phone_viewed_preview">Numéro consulté</string>
     <string name="im_calllog_canceled">Annulé</string>
     <string name="im_calllog_missed">Pas de réponse</string>
     <string name="im_calllog_declined">Refusé</string>

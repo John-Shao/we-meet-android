@@ -23,19 +23,18 @@ import androidx.compose.ui.unit.dp
 import com.we.meet.feature.im.R
 
 /**
- * Feishu-style 1:1 call chooser (P0). Three actions: 语音通话 / 视频通话 /
- * 拨打电话. Voice & video both enter a LiveKit room (audio-only vs video) via
- * the host; there is no ringing yet (P1+). 拨打电话 dials the peer's phone via
- * the system dialer — but the backend does not expose peer phone numbers yet,
- * so [peerPhone] is null and that row renders disabled (see P3).
+ * Feishu-style 1:1 call chooser. Three actions: 语音通话 / 视频通话 / 拨打电话.
+ * Voice & video enter a LiveKit room (audio-only vs video) via the host with
+ * full ringing (P1). 拨打电话 (P3) reveals the peer's full number server-side
+ * (which notifies them) then hands off to the system dialer — [onDialPhone]
+ * null renders that row disabled (e.g. group context / no dial capability).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CallOptionsSheet(
-    peerPhone: String?,
     onVoiceCall: () -> Unit,
     onVideoCall: () -> Unit,
-    onDialPhone: (phone: String) -> Unit,
+    onDialPhone: (() -> Unit)?,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -48,9 +47,9 @@ fun CallOptionsSheet(
         CallRow(
             icon = Icons.Filled.PhoneAndroid,
             label = stringResource(R.string.im_call_phone),
-            enabled = peerPhone != null,
+            enabled = onDialPhone != null,
         ) {
-            peerPhone?.let { onDialPhone(it); onDismiss() }
+            onDialPhone?.let { it(); onDismiss() }
         }
         Column(Modifier.padding(bottom = 16.dp)) {}
     }

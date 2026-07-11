@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +45,7 @@ import com.we.meet.feature.im.call.CallState
 import com.we.meet.feature.im.call.CallUiEvent
 import com.we.meet.feature.im.ui.call.CallScreen
 import com.we.meet.push.CallNotifier
+import com.we.meet.util.dialNumber
 import com.we.meet.feature.im.ui.chat.ChatScreen
 import com.we.meet.feature.im.ui.chat.DirectChatSettingsScreen
 import com.we.meet.feature.im.ui.group.GroupInfoScreen
@@ -209,6 +211,9 @@ fun AppNav() {
     val context = LocalContext.current
     val app = context.applicationContext as WeMeetApp
     val navController = rememberNavController()
+    // Scope for one-shot host actions triggered from screen callbacks (e.g. the
+    // P3 reveal-phone → system-dial handoff), which outlive a single frame.
+    val dialScope = rememberCoroutineScope()
 
     // Guard against a Compose double-tap on any back button popping past
     // the root and leaving NavHost without a destination (blank screen).
@@ -423,6 +428,20 @@ fun AppNav() {
                 // 1:1 通话 no longer flows through here — ChatScreen drives
                 // CallController directly and the top-level collector below
                 // pushes Routes.IM_CALL when the call machine leaves Idle.
+                // P3 拨打电话: reveal the peer's full number (server notifies the
+                // owner) then hand off to the system dialer.
+                onDialPeer = { peerUserId ->
+                    dialScope.launch {
+                        val phone = app.directoryRepository.revealPhone(peerUserId).getOrNull()
+                        if (phone.isNullOrBlank()) {
+                            android.widget.Toast.makeText(
+                                context, R.string.dial_no_number, android.widget.Toast.LENGTH_SHORT,
+                            ).show()
+                        } else {
+                            dialNumber(context, phone)
+                        }
+                    }
+                },
             )
         }
 

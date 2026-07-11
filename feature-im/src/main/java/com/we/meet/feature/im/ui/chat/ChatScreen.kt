@@ -129,6 +129,12 @@ fun ChatScreen(
      * preview. Null hides the button.
      */
     onStartMeeting: ((meetingName: String) -> Unit)? = null,
+    /**
+     * Direct-only (P3): fired from 拨打电话 in the call chooser. Receives the
+     * peer's we-meet user id; the host reveals the full phone (server notifies
+     * the owner) and hands off to the system dialer. Null → the row is disabled.
+     */
+    onDialPeer: ((peerUserId: String) -> Unit)? = null,
 ) {
     val vm: ChatViewModel =
         viewModel(key = "chat-$cid", factory = remember(deps, cid) { ChatViewModel.Factory(deps, cid) })
@@ -585,9 +591,8 @@ fun ChatScreen(
     }
 
     // 1:1 call chooser (P1: drives CallController — real ringing; AppNav
-    // watches the controller's state and shows the call screen). Peer phone is
-    // unavailable until the backend exposes it (see P3), so 拨打电话 stays
-    // disabled for now.
+    // watches the controller's state and shows the call screen). 拨打电话 (P3)
+    // hands the peer's we-meet id to the host to reveal + system-dial.
     if (showCallSheet) {
         val callName = stringResource(
             R.string.im_call_room_name,
@@ -608,11 +613,14 @@ fun ChatScreen(
                 )
             }
         }
+        // Peer's we-meet user id (reveal-phone is keyed by it, not the IM uid).
+        val peerWeMeetId = ui.peerUid?.let { vm.resolveUser(it)?.id }?.takeIf { it.isNotBlank() }
         CallOptionsSheet(
-            peerPhone = null,
             onVoiceCall = { startCall(false) },
             onVideoCall = { startCall(true) },
-            onDialPhone = {},
+            onDialPhone = if (onDialPeer != null && peerWeMeetId != null) {
+                { onDialPeer(peerWeMeetId) }
+            } else null,
             onDismiss = { showCallSheet = false },
         )
     }

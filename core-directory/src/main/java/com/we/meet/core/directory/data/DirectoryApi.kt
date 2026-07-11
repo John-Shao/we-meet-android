@@ -1,6 +1,7 @@
 package com.we.meet.core.directory.data
 
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -29,4 +30,12 @@ interface DirectoryApi {
 
     @GET("api/v1.0/directory/members/{userId}/")
     suspend fun getMember(@Path("userId") userId: String): MemberDto
+
+    /**
+     * Reveal a member's FULL phone (the only place it's served un-masked).
+     * Same-org enforced server-side; revealing another member's number posts a
+     * 「对方查看了你的手机号码」 notice into the direct chat. P3.
+     */
+    @POST("api/v1.0/directory/members/{userId}/reveal-phone/")
+    suspend fun revealPhone(@Path("userId") userId: String): RevealPhoneDto
 }
