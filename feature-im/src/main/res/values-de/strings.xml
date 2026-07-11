@@ -90,6 +90,10 @@
     <string name="im_call_end_answered_elsewhere">Auf anderem Gerät angenommen</string>
     <string name="im_call_end_failed">Anruf fehlgeschlagen, bitte erneut versuchen</string>
     <string name="im_call_busy_local">Du bist bereits in einem Anruf</string>
+    <string name="im_call_mic_on">Mikro an</string>
+    <string name="im_call_mic_off">Stumm</string>
+    <string name="im_call_speaker">Lautsprecher</string>
+    <string name="im_call_earpiece">Hörer</string>
     <string name="im_calllog_voice">Sprachanruf</string>
     <string name="im_calllog_video">Videoanruf</string>
     <string name="im_phone_viewed_by_peer">Deine Telefonnummer wurde angesehen</string>

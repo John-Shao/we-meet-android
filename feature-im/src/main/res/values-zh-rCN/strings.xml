@@ -101,6 +101,10 @@
     <string name="im_call_end_answered_elsewhere">已在其他设备接听</string>
     <string name="im_call_end_failed">呼叫失败,请稍后重试</string>
     <string name="im_call_busy_local">当前正在通话中,无法发起新通话</string>
+    <string name="im_call_mic_on">麦克风已开</string>
+    <string name="im_call_mic_off">已静音</string>
+    <string name="im_call_speaker">扬声器</string>
+    <string name="im_call_earpiece">听筒</string>
     <string name="im_calllog_voice">语音通话</string>
     <string name="im_calllog_video">视频通话</string>
     <string name="im_phone_viewed_by_peer">对方查看了你的手机号码</string>

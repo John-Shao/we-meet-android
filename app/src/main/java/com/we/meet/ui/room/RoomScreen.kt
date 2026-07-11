@@ -114,6 +114,8 @@ import com.we.meet.ui.theme.Dimens
 import com.we.meet.audio.AudioOutput
 import com.we.meet.audio.AudioOutputController
 import com.we.meet.audio.AudioOutputStore
+import com.we.meet.feature.im.ImDeps
+import com.we.meet.feature.im.ui.call.MinimalVoiceCallScreen
 import com.we.meet.overlay.ScreenShareOverlay
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -139,6 +141,11 @@ fun RoomScreen(
     isAdmin: Boolean,
     initialMicEnabled: Boolean = true,
     initialCameraEnabled: Boolean = true,
+    // Set when the room was entered from a 1:1 call. callMedia == "audio" (with
+    // a non-null peer) swaps the meeting grid for the minimal voice-call UI.
+    callPeerUid: String? = null,
+    callPeerName: String? = null,
+    callMedia: String? = null,
     onLeave: (hostEnded: Boolean) -> Unit,
 ) {
     val context = LocalContext.current
@@ -204,6 +211,21 @@ fun RoomScreen(
                 RoomUiState.Phase.Error -> ErrorView(state.errorMessage) { onLeave(false) }
                 RoomUiState.Phase.Connected,
                 RoomUiState.Phase.Disconnected -> {
+                    // 1:1 voice call → Feishu-style minimal in-call UI instead
+                    // of the meeting grid. Same viewModel/room underneath, so
+                    // media, call-log duration and hangup semantics are shared.
+                    if (callPeerUid != null && callMedia == "audio") {
+                        MinimalVoiceCallHost(
+                            state = state,
+                            viewModel = viewModel,
+                            peerUid = callPeerUid,
+                            peerName = callPeerName ?: callPeerUid,
+                            onLeave = {
+                                viewModel.leave()
+                                onLeave(false)
+                            },
+                        )
+                    } else {
                         RoomContent(
                         state = state,
                         room = viewModel.room,
@@ -241,10 +263,60 @@ fun RoomScreen(
                             viewModel.endMeeting { onLeave(false) }
                         },
                     )
+                    }
                 }
             }
         }
     }
+}
+
+/**
+ * Wires the minimal 1:1 voice-call UI (feature-im) to this room: mic state
+ * from the RoomViewModel, audio routing via [AudioOutputController] — starting
+ * on EARPIECE (a voice call is a phone call; meetings default to speaker) —
+ * and hangup via the caller-provided leave.
+ */
+@Composable
+private fun MinimalVoiceCallHost(
+    state: RoomUiState,
+    viewModel: RoomViewModel,
+    peerUid: String,
+    peerName: String,
+    onLeave: () -> Unit,
+) {
+    val context = LocalContext.current
+    val audioOutputController = remember(context) {
+        AudioOutputController(
+            context = context,
+            muteOutput = viewModel.room::setSpeakerMute,
+            pinPreferredDevice = viewModel.callAudioDeviceModule::setPreferredDevice,
+        )
+    }
+    var audioOutput by remember { mutableStateOf(AudioOutput.Earpiece) }
+    DisposableEffect(audioOutputController) {
+        audioOutputController.start()
+        onDispose { audioOutputController.stop() }
+    }
+    LaunchedEffect(audioOutput) {
+        audioOutputController.apply(audioOutput)
+    }
+    MinimalVoiceCallScreen(
+        deps = context.applicationContext as ImDeps,
+        peerUid = peerUid,
+        fallbackName = peerName,
+        connected = state.phase == RoomUiState.Phase.Connected,
+        micEnabled = state.micEnabled,
+        onToggleMic = viewModel::toggleMic,
+        speakerOn = audioOutput == AudioOutput.Speaker,
+        onToggleSpeaker = {
+            audioOutput = if (audioOutput == AudioOutput.Speaker) {
+                AudioOutput.Earpiece
+            } else {
+                AudioOutput.Speaker
+            }
+        },
+        onHangup = onLeave,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

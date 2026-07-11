@@ -90,6 +90,10 @@
     <string name="im_call_end_answered_elsewhere">Op een ander apparaat opgenomen</string>
     <string name="im_call_end_failed">Oproep mislukt, probeer opnieuw</string>
     <string name="im_call_busy_local">Je bent al in gesprek</string>
+    <string name="im_call_mic_on">Microfoon aan</string>
+    <string name="im_call_mic_off">Gedempt</string>
+    <string name="im_call_speaker">Luidspreker</string>
+    <string name="im_call_earpiece">Oortje</string>
     <string name="im_calllog_voice">Spraakoproep</string>
     <string name="im_calllog_video">Video-oproep</string>
     <string name="im_phone_viewed_by_peer">Je nummer is bekeken</string>

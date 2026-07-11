@@ -105,6 +105,10 @@
     <string name="im_call_end_answered_elsewhere">Answered on another device</string>
     <string name="im_call_end_failed">Call failed, please try again</string>
     <string name="im_call_busy_local">You are already in a call</string>
+    <string name="im_call_mic_on">Mic on</string>
+    <string name="im_call_mic_off">Muted</string>
+    <string name="im_call_speaker">Speaker</string>
+    <string name="im_call_earpiece">Earpiece</string>
     <string name="im_calllog_voice">Voice call</string>
     <string name="im_calllog_video">Video call</string>
     <string name="im_phone_viewed_by_peer">They viewed your phone number</string>

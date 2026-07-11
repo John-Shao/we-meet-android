@@ -182,7 +182,10 @@ object Routes {
     }
 
     private const val ROOM_BASE = "room"
-    const val ROOM = "$ROOM_BASE/{roomId}/{url}/{token}/{name}/{slug}/{host}/{createdAt}/{isAdmin}/{mic}/{cam}"
+    // peerUid / media are optional query params — set only when the room was
+    // entered from a 1:1 call (drives the minimal voice-call UI). Absent for
+    // meetings, so those match unchanged.
+    const val ROOM = "$ROOM_BASE/{roomId}/{url}/{token}/{name}/{slug}/{host}/{createdAt}/{isAdmin}/{mic}/{cam}?peerUid={peerUid}&peerName={peerName}&media={media}"
 
     private const val HISTORY_BASE = "history_detail"
     const val HISTORY_DETAIL = "$HISTORY_BASE/{roomId}"
@@ -190,11 +193,19 @@ object Routes {
     fun room(
         roomId: String, url: String, token: String, name: String, slug: String,
         host: String?, createdAtMs: Long, isAdmin: Boolean, mic: Boolean, cam: Boolean,
+        peerUid: String? = null, peerName: String? = null, media: String? = null,
     ): String {
         fun enc(s: String) = URLEncoder.encode(s, StandardCharsets.UTF_8.name())
         // Empty host serialises as "" which decode() round-trips cleanly; the
         // receiver treats blank as null.
-        return "$ROOM_BASE/${enc(roomId)}/${enc(url)}/${enc(token)}/${enc(name)}/${enc(slug)}/${enc(host.orEmpty())}/$createdAtMs/$isAdmin/$mic/$cam"
+        val base =
+            "$ROOM_BASE/${enc(roomId)}/${enc(url)}/${enc(token)}/${enc(name)}/${enc(slug)}/${enc(host.orEmpty())}/$createdAtMs/$isAdmin/$mic/$cam"
+        val query = buildList {
+            peerUid?.takeIf { it.isNotBlank() }?.let { add("peerUid=${enc(it)}") }
+            peerName?.takeIf { it.isNotBlank() }?.let { add("peerName=${enc(it)}") }
+            media?.takeIf { it.isNotBlank() }?.let { add("media=${enc(it)}") }
+        }
+        return if (query.isEmpty()) base else "$base?${query.joinToString("&")}"
     }
 
     fun historyDetail(roomId: String): String {
@@ -321,6 +332,11 @@ fun AppNav() {
                                     isAdmin = ev.info.outgoing,
                                     mic = true,
                                     cam = ev.info.media == "video",
+                                    // Carry the peer + media so RoomScreen can
+                                    // render the minimal voice-call UI (audio).
+                                    peerUid = ev.info.peerUid,
+                                    peerName = ev.info.peerName,
+                                    media = ev.info.media,
                                 )
                             ) {
                                 // Replace the call screen; no-op if it already popped.
@@ -729,6 +745,9 @@ fun AppNav() {
                 navArgument("isAdmin") { type = NavType.BoolType },
                 navArgument("mic") { type = NavType.BoolType },
                 navArgument("cam") { type = NavType.BoolType },
+                navArgument("peerUid") { type = NavType.StringType; defaultValue = "" },
+                navArgument("peerName") { type = NavType.StringType; defaultValue = "" },
+                navArgument("media") { type = NavType.StringType; defaultValue = "" },
             ),
         ) { entry ->
             val args = entry.arguments!!
@@ -744,6 +763,9 @@ fun AppNav() {
                 isAdmin = args.getBoolean("isAdmin", false),
                 initialMicEnabled = args.getBoolean("mic", true),
                 initialCameraEnabled = args.getBoolean("cam", true),
+                callPeerUid = Routes.decode(args.getString("peerUid").orEmpty()).takeIf { it.isNotBlank() },
+                callPeerName = Routes.decode(args.getString("peerName").orEmpty()).takeIf { it.isNotBlank() },
+                callMedia = Routes.decode(args.getString("media").orEmpty()).takeIf { it.isNotBlank() },
                 onLeave = { hostEnded ->
                     if (hostEnded) hostEndedSheetVisible = true
                     navController.popBackStack(Routes.HOME, inclusive = false)
