@@ -13,7 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material.icons.filled.Undo
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -99,7 +99,7 @@ fun MessageActionSheet(
             onTogglePin(); onDismiss()
         }
         if (canRecall) {
-            ActionRow(Icons.Filled.Undo, stringResource(R.string.im_action_recall)) {
+            ActionRow(Icons.AutoMirrored.Filled.Undo, stringResource(R.string.im_action_recall)) {
                 onRecall(); onDismiss()
             }
         }

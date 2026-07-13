@@ -115,7 +115,16 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
      * Getui (个推) offline-push bootstrap. Wrapped in try/catch so a bad SDK
      * state (missing meta-data, OEM quirks, blocked push process) degrades to
      * "no offline push" instead of crashing app startup.
+     *
+     * `registerPushIntentService` is deprecated in gtsdk 3.3.15 but kept on
+     * purpose: the manifest declares WeMeetGtIntentService as a plain <service>
+     * with no Getui meta-data, so this runtime call is what actually tells the
+     * SDK where to deliver cid/message callbacks — it is load-bearing, not
+     * redundant. Migrating to manifest-only wiring must be verified with a live
+     * device push (call-notification path is mid-审核) before it can be trusted,
+     * so we @Suppress the warning rather than risk silently breaking push.
      */
+    @Suppress("DEPRECATION")
     private fun initGetuiPush() {
         PushTokenUploader.init(this)
         try {
