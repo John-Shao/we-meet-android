@@ -97,12 +97,15 @@ import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.VideoCall
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
@@ -123,10 +126,11 @@ fun ChatScreen(
     onOpenDirectSettings: ((cid: String) -> Unit)? = null,
     onMemberClick: ((userId: String) -> Unit)? = null,
     /**
-     * Group-only: fired when the user taps the video button in the top bar to
-     * 发起「快速会议」. Receives a pre-composed meeting name derived from the
-     * group title ("{群名}的视频会议"); the host wires this to the create-meeting
-     * preview. Null hides the button.
+     * Group-only: fired to 发起「快速会议」— from the top-bar video button and
+     * from the「+」面板「快速会议」item. Receives a pre-composed meeting name
+     * derived from the group title ("{群名}的视频会议"); the host wires this to
+     * the create-meeting preview. Null hides the top-bar button (the「+」面板
+     * item then falls back to 即将推出).
      */
     onStartMeeting: ((meetingName: String) -> Unit)? = null,
     /**
@@ -238,6 +242,33 @@ fun ChatScreen(
         if (granted) startCamera() else requestCamera.launch(Manifest.permission.CAMERA)
     }
 
+    // 1:1 呼叫入口:顶栏「通话」选择器与私聊「+」面板的「视频通话」都经此发起,
+    // 故上提到此处共享(避免在两处各建一份 startCall)。
+    val calls = remember(deps) { com.we.meet.feature.im.ImSession.get(deps).calls }
+    val callRoomName = stringResource(
+        R.string.im_call_room_name,
+        ui.title.ifBlank { stringResource(R.string.im_untitled_chat) },
+    )
+    val startCall: (Boolean) -> Unit = { video ->
+        val peer = ui.peerUid
+        if (peer == null) {
+            Toast.makeText(context, R.string.im_call_end_failed, Toast.LENGTH_SHORT).show()
+        } else {
+            calls.startCall(
+                cid = cid,
+                peerUid = peer,
+                peerName = ui.title,
+                roomName = callRoomName,
+                video = video,
+            )
+        }
+    }
+    // 群聊「快速会议」名称,与顶栏发起会议按钮一致("{群名}的视频会议")。
+    val groupMeetingName = stringResource(
+        R.string.im_group_meeting_name,
+        ui.title.ifBlank { stringResource(R.string.im_untitled_chat) },
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -262,9 +293,7 @@ fun ChatScreen(
                 actions = {
                     if (!selectMode) {
                         if (ui.isGroup && onStartMeeting != null) {
-                            val groupTitle = ui.title.ifBlank { stringResource(R.string.im_untitled_chat) }
-                            val meetingName = stringResource(R.string.im_group_meeting_name, groupTitle)
-                            IconButton(onClick = { onStartMeeting(meetingName) }) {
+                            IconButton(onClick = { onStartMeeting(groupMeetingName) }) {
                                 Icon(Icons.Filled.VideoCall, contentDescription = stringResource(R.string.im_start_meeting))
                             }
                         }
@@ -479,12 +508,24 @@ fun ChatScreen(
                 onPickFile = { pickFile.launch(arrayOf("*/*")) },
                 onCamera = { launchCamera() },
                 onVoiceRecorded = { file, durationMs -> vm.sendVoice(file, durationMs) },
-                onComingSoon = {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.im_coming_soon),
-                        Toast.LENGTH_SHORT,
-                    ).show()
+                isGroup = ui.isGroup,
+                // 「+」面板私聊专属「语音通话」:直接拉起 1:1 语音通话(极简 UI)。
+                onVoiceCall = { startCall(false) },
+                // 「+」面板末位:私聊=视频通话(直接拨号),群聊=快速会议(创建会议房间)。
+                onQuickMeeting = {
+                    if (ui.isGroup) {
+                        if (onStartMeeting != null) {
+                            onStartMeeting(groupMeetingName)
+                        } else {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.im_coming_soon),
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                    } else {
+                        startCall(true)
+                    }
                 },
                 mentionCandidates = if (ui.isGroup) vm.mentionCandidates() else emptyList(),
             )
@@ -594,25 +635,6 @@ fun ChatScreen(
     // watches the controller's state and shows the call screen). 拨打电话 (P3)
     // hands the peer's we-meet id to the host to reveal + system-dial.
     if (showCallSheet) {
-        val callName = stringResource(
-            R.string.im_call_room_name,
-            ui.title.ifBlank { stringResource(R.string.im_untitled_chat) },
-        )
-        val calls = remember(deps) { com.we.meet.feature.im.ImSession.get(deps).calls }
-        val startCall: (Boolean) -> Unit = { video ->
-            val peer = ui.peerUid
-            if (peer == null) {
-                Toast.makeText(context, R.string.im_call_end_failed, Toast.LENGTH_SHORT).show()
-            } else {
-                calls.startCall(
-                    cid = cid,
-                    peerUid = peer,
-                    peerName = ui.title,
-                    roomName = callName,
-                    video = video,
-                )
-            }
-        }
         // Peer's we-meet user id (reveal-phone is keyed by it, not the IM uid).
         val peerWeMeetId = ui.peerUid?.let { vm.resolveUser(it)?.id }?.takeIf { it.isNotBlank() }
         CallOptionsSheet(
@@ -743,7 +765,12 @@ private fun MessageInputBar(
     onPickFile: () -> Unit,
     onCamera: () -> Unit,
     onVoiceRecorded: (java.io.File, Long) -> Unit,
-    onComingSoon: () -> Unit,
+    /** 私聊=false → 「+」面板显示 语音通话+视频通话;群聊=true → 仅显示 快速会议。 */
+    isGroup: Boolean,
+    /** 私聊专属:「+」面板「语音通话」点击 → 拉起 1:1 语音通话(群聊不显示此项)。 */
+    onVoiceCall: () -> Unit,
+    /** 「+」面板末位点击:私聊拉起视频通话、群聊创建快速会议(见 [isGroup])。 */
+    onQuickMeeting: () -> Unit,
     mentionCandidates: List<String> = emptyList(),
 ) {
     var field by remember { mutableStateOf(TextFieldValue("")) }
@@ -779,9 +806,18 @@ private fun MessageInputBar(
 
     var voiceMode by remember { mutableStateOf(false) }
     var panel by remember { mutableStateOf(InputPanel.None) }
+    val inputFocusRequester = remember { FocusRequester() }
     fun openPanel(p: InputPanel) {
-        panel = if (panel == p) InputPanel.None else p
-        if (panel != InputPanel.None) { voiceMode = false; focus.clearFocus() }
+        if (panel == p) {
+            // 再次点击同一按钮:收起面板并把焦点还给输入框——重新聚焦使
+            // inputFocused=true,expanded 保持 true(工具栏不隐藏),键盘回归。
+            panel = InputPanel.None
+            inputFocusRequester.requestFocus()
+        } else {
+            panel = p
+            voiceMode = false
+            focus.clearFocus()
+        }
     }
     fun insertEmoji(e: String) {
         val t = field.text
@@ -872,7 +908,13 @@ private fun MessageInputBar(
                                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .onFocusChanged { inputFocused = it.isFocused },
+                                    .focusRequester(inputFocusRequester)
+                                    .onFocusChanged {
+                                        inputFocused = it.isFocused
+                                        // 点击输入框拉起键盘时,自动收起已展开的表情/「+」
+                                        // 面板(二者互斥);inputFocused=true 使工具栏不隐藏。
+                                        if (it.isFocused) panel = InputPanel.None
+                                    },
                             )
                         }
                         // 折叠态:胶囊尾部快捷图标
@@ -965,8 +1007,9 @@ private fun MessageInputBar(
                     onImage = { panel = InputPanel.None; onPickImage() },
                     onCamera = { panel = InputPanel.None; onCamera() },
                     onFile = { panel = InputPanel.None; onPickFile() },
-                    onCall = onComingSoon,
-                    onMeeting = onComingSoon,
+                    isGroup = isGroup,
+                    onVoiceCall = { panel = InputPanel.None; onVoiceCall() },
+                    onMeeting = { panel = InputPanel.None; onQuickMeeting() },
                 )
                 InputPanel.None -> Unit
             }
@@ -1053,7 +1096,8 @@ private fun PlusPanel(
     onImage: () -> Unit,
     onCamera: () -> Unit,
     onFile: () -> Unit,
-    onCall: () -> Unit,
+    isGroup: Boolean,
+    onVoiceCall: () -> Unit,
     onMeeting: () -> Unit,
 ) {
     data class PlusItem(
@@ -1061,13 +1105,21 @@ private fun PlusPanel(
         val labelRes: Int,
         val onClick: () -> Unit,
     )
-    val items = listOf(
-        PlusItem(Icons.Filled.PhotoLibrary, R.string.im_plus_album, onImage),
-        PlusItem(Icons.Filled.PhotoCamera, R.string.im_plus_camera, onCamera),
-        PlusItem(Icons.AutoMirrored.Filled.InsertDriveFile, R.string.im_plus_file, onFile),
-        PlusItem(Icons.Filled.Call, R.string.im_plus_call, onCall),
-        PlusItem(Icons.Filled.VideoCall, R.string.im_plus_meeting, onMeeting),
-    )
+    val items = buildList {
+        add(PlusItem(Icons.Filled.PhotoLibrary, R.string.im_plus_album, onImage))
+        add(PlusItem(Icons.Filled.PhotoCamera, R.string.im_plus_camera, onCamera))
+        add(PlusItem(Icons.AutoMirrored.Filled.InsertDriveFile, R.string.im_plus_file, onFile))
+        if (isGroup) {
+            // 群聊(≥3 人):仅「快速会议」(VideoCall 含「+」,发起多人会议)。
+            // 群内没有 1:1 语音/视频通话目标,故不展示这两项。
+            add(PlusItem(Icons.Filled.VideoCall, R.string.im_plus_meeting, onMeeting))
+        } else {
+            // 私聊(2 人):语音通话 + 视频通话,直接拉起 1:1 通话(极简 UI);
+            // 视频通话用 Videocam,与顶栏通话选择器图标一致。
+            add(PlusItem(Icons.Filled.Call, R.string.im_plus_call, onVoiceCall))
+            add(PlusItem(Icons.Filled.Videocam, R.string.im_call_video, onMeeting))
+        }
+    }
     LazyVerticalGrid(
         columns = GridCells.Fixed(4),
         modifier = Modifier
