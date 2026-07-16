@@ -103,6 +103,16 @@ private class DocsWebViewClient : WebViewClient() {
 @SuppressLint("SetJavaScriptEnabled")
 fun createDocsWebView(context: Context): WebView =
     WebView(context).apply {
+        // A programmatically-built WebView has no LayoutParams, so its host
+        // measures it as WRAP_CONTENT — and Chromium then reports a CSS viewport
+        // height of 0, making EVERY viewport unit (vh/dvh/svh/lvh) resolve to 0
+        // while % still works. docs' left panel is `height: 100dvh`, so it
+        // collapsed to 0 and (being overflow:hidden) rendered as an empty drawer:
+        // tapping the panel toggle showed only the dim backdrop. Pin the size.
+        layoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT,
+        )
         if (BuildConfig.DEBUG) WebView.setWebContentsDebuggingEnabled(true)
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
