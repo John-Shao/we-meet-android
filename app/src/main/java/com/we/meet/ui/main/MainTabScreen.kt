@@ -238,11 +238,11 @@ fun MainTabScreen(
             // Feishu-style: full-height page that leaves a narrow strip of the
             // underlying content peeking on the right. The drawerState overload of
             // ModalDrawerSheet doesn't apply DrawerDefaults.MaximumDrawerWidth, so
-            // width is unconstrained by default — cap it to 88% of screen width.
+            // width is unconstrained by default — cap it to 80% of screen width.
             ModalDrawerSheet(
                 drawerState = drawerState,
                 drawerShape = RectangleShape,
-                modifier = Modifier.fillMaxWidth(0.88f),
+                modifier = Modifier.fillMaxWidth(0.8f),
             ) {
                 // ProfileScreen must stay composed even while closed — gating the
                 // sheet's content composition on drawerState collapses the drawer's
