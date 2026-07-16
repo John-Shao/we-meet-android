@@ -36,6 +36,7 @@ import okhttp3.Route
 class TokenRefreshAuthenticator(
     private val tokenStore: TokenStore,
     private val authApi: AuthApi,
+    private val keycloakOidc: KeycloakOidc,
 ) : Authenticator {
 
     @Synchronized
@@ -63,22 +64,36 @@ class TokenRefreshAuthenticator(
                 .build()
         }
 
-        val refreshed = try {
-            runBlocking {
-                authApi.refresh(RefreshTokenRequest(refresh_token = storedRefresh))
+        // Dual refresh path (p3-docs-app.md D4): a refresh token can only be
+        // refreshed by the client that issued it. Web-login tokens belong to
+        // the public `app` client → refresh directly at Keycloak (no secret,
+        // via KeycloakOidc's own plain OkHttp). Legacy OTP-exchange tokens
+        // keep going through the backend, which holds the client secret.
+        val newAccess: String
+        try {
+            if (tokenStore.isWebFlow()) {
+                val t = keycloakOidc.refresh(storedRefresh)
+                tokenStore.accessToken = t.accessToken
+                tokenStore.refreshToken = t.refreshToken
+                t.idToken?.let { tokenStore.idToken = it }
+                newAccess = t.accessToken
+            } else {
+                val t = runBlocking {
+                    authApi.refresh(RefreshTokenRequest(refresh_token = storedRefresh))
+                }
+                tokenStore.accessToken = t.access_token
+                tokenStore.refreshToken = t.refresh_token
+                newAccess = t.access_token
             }
         } catch (e: Exception) {
-            // Backend returned 4xx/5xx, or network failure. Bail; the 401
-            // propagates so the user is sent back to login.
+            // 4xx/5xx or network failure. Bail; the 401 propagates so the
+            // user is sent back to login.
             Log.w(TAG, "refresh failed; surfacing 401", e)
             return null
         }
 
-        tokenStore.accessToken = refreshed.access_token
-        tokenStore.refreshToken = refreshed.refresh_token
-
         return request.newBuilder()
-            .header("Authorization", "Bearer ${refreshed.access_token}")
+            .header("Authorization", "Bearer $newAccess")
             .build()
     }
 

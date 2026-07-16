@@ -55,6 +55,7 @@ import com.we.meet.ui.calendar.CreateEventScreen
 import com.we.meet.ui.calendar.EventDetailScreen
 import com.we.meet.ui.contacts.MemberDetailScreen
 import com.we.meet.ui.login.LoginScreen
+import com.we.meet.ui.login.WebLoginScreen
 import com.we.meet.ui.main.MainTabScreen
 import com.we.meet.ui.preview.PreviewMode
 import com.we.meet.ui.preview.PreviewScreen
@@ -361,13 +362,19 @@ fun AppNav() {
     NavHost(navController = navController, startDestination = startDestination) {
 
         composable(Routes.LOGIN) {
-            LoginScreen(
-                onLoggedIn = {
-                    navController.navigate(Routes.HOME) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
-                    }
+            val onLoggedIn = {
+                navController.navigate(Routes.HOME) {
+                    popUpTo(Routes.LOGIN) { inclusive = true }
                 }
-            )
+            }
+            // WebView Keycloak unified login by default — it seeds the KC
+            // session cookie the Docs tab SSOs with (p3-docs-app.md D1).
+            // Flip WE_MEET_WEB_LOGIN=false to fall back to the native OTP.
+            if (com.we.meet.BuildConfig.WE_MEET_WEB_LOGIN) {
+                WebLoginScreen(onLoggedIn = onLoggedIn)
+            } else {
+                LoginScreen(onLoggedIn = onLoggedIn)
+            }
         }
 
         composable(Routes.HOME) {

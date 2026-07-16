@@ -227,7 +227,12 @@
     <string name="tab_messages">Berichten</string>
     <string name="tab_calendar">Agenda</string>
     <string name="tab_contacts">Contacten</string>
+    <string name="tab_docs">Documenten</string>
     <string name="tab_profile">Ik</string>
+
+    <!-- WebView Keycloak login -->
+    <string name="web_login_error">Inloggen mislukt</string>
+    <string name="web_login_retry">Opnieuw proberen</string>
     <string name="profile_ai_entry">AI-assistent</string>
 
     <!-- Contacts -->

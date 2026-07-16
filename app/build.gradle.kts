@@ -20,6 +20,10 @@ val baseUrl = cfg("WE_MEET_BASE_URL", "https://meet.we-meet.online")
 val keycloakUrl = cfg("WE_MEET_KEYCLOAK_URL", "https://id.we-meet.online")
 val livekitOverride = cfg("WE_MEET_LIVEKIT_URL_OVERRIDE", "")
 val jusiImBaseUrl = cfg("JUSI_IM_BASE_URL", "https://im.we-meet.online")
+val docsUrl = cfg("WE_MEET_DOCS_URL", "https://docs.we-meet.online")
+val oidcClientId = cfg("WE_MEET_OIDC_CLIENT_ID", "app")
+// WebView Keycloak login vs legacy native OTP — the rollback fuse (p3-docs-app.md D1).
+val webLogin = cfg("WE_MEET_WEB_LOGIN", "true")
 // PostHog: leave WE_MEET_POSTHOG_KEY empty to keep analytics off. The
 // Analytics singleton no-ops when the key is blank — useful for the
 // aliyun-prod deployment which currently doesn't ship analytics, and
@@ -53,6 +57,9 @@ android {
         buildConfigField("String", "WE_MEET_POSTHOG_KEY", "\"$posthogKey\"")
         buildConfigField("String", "WE_MEET_POSTHOG_HOST", "\"$posthogHost\"")
         buildConfigField("String", "JUSI_IM_BASE_URL", "\"$jusiImBaseUrl\"")
+        buildConfigField("String", "WE_MEET_DOCS_URL", "\"$docsUrl\"")
+        buildConfigField("String", "WE_MEET_OIDC_CLIENT_ID", "\"$oidcClientId\"")
+        buildConfigField("boolean", "WE_MEET_WEB_LOGIN", webLogin)
 
         // Getui: the gtsdk AAR's manifest references ${GETUI_APPID} etc., and
         // our own <meta-data> entries in AndroidManifest.xml use the same

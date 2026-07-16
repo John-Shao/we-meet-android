@@ -1,0 +1,190 @@
+package com.we.meet.ui.login
+
+import android.annotation.SuppressLint
+import android.net.Uri
+import android.webkit.CookieManager
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import com.we.meet.R
+import com.we.meet.WeMeetApp
+import com.we.meet.data.auth.KeycloakOidc
+import kotlinx.coroutines.launch
+
+/**
+ * In-WebView Keycloak login (p3-docs-app.md D1): loads the realm's unified
+ * login page (phone-OTP + QR columns — the exact page the web frontend uses)
+ * and intercepts the `com.we.meet://oidc/callback` redirect to finish the
+ * authorization-code + PKCE exchange.
+ *
+ * Logging in INSIDE a WebView is the whole point, not a shortcut: it seeds
+ * the Keycloak session cookie into the process-wide CookieManager, which is
+ * the only thing that lets the Docs tab's WebView SSO silently. (Custom Tabs
+ * would be the usual OIDC choice, but their cookies are NOT shared with
+ * WebViews — the Docs tab would stay logged out.)
+ *
+ * If the KC session cookie is still alive (e.g. we landed here because a
+ * token refresh failed), the authorize request silently re-issues a code and
+ * the user never sees the form — free re-login.
+ */
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+fun WebLoginScreen(onLoggedIn: () -> Unit) {
+    val app = LocalContext.current.applicationContext as WeMeetApp
+    val scope = rememberCoroutineScope()
+    val oidc = app.apiClient.keycloakOidc
+
+    // A bumped attempt regenerates PKCE material and rebuilds the WebView —
+    // an authorization code/verifier pair is single-use, so retrying after
+    // any failure must start a fresh authorize round trip.
+    var attempt by remember { mutableIntStateOf(0) }
+    var loading by remember { mutableStateOf(true) }
+    var exchanging by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    val verifier = remember(attempt) { oidc.newVerifier() }
+    val authState = remember(attempt) { oidc.newState() }
+    val authorizeUrl = remember(attempt) {
+        oidc.authorizeUrl(authState, oidc.challengeS256(verifier))
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .systemBarsPadding(),
+    ) {
+        key(attempt) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx ->
+                    WebView(ctx).apply {
+                        settings.javaScriptEnabled = true
+                        settings.domStorageEnabled = true
+                        CookieManager.getInstance().setAcceptCookie(true)
+                        webViewClient = object : WebViewClient() {
+                            override fun shouldOverrideUrlLoading(
+                                view: WebView?,
+                                request: WebResourceRequest?,
+                            ): Boolean {
+                                val url = request?.url?.toString() ?: return false
+                                if (!url.startsWith(KeycloakOidc.REDIRECT_URI)) return false
+                                handleCallback(Uri.parse(url))
+                                return true
+                            }
+
+                            override fun onPageFinished(view: WebView?, url: String?) {
+                                loading = false
+                            }
+
+                            override fun onReceivedError(
+                                view: WebView?,
+                                request: WebResourceRequest?,
+                                err: WebResourceError?,
+                            ) {
+                                if (request?.isForMainFrame == true) {
+                                    loading = false
+                                    error = err?.description?.toString() ?: "network error"
+                                }
+                            }
+
+                            private fun handleCallback(uri: Uri) {
+                                val kcError = uri.getQueryParameter("error")
+                                val code = uri.getQueryParameter("code")
+                                val returnedState = uri.getQueryParameter("state")
+                                if (kcError != null || code.isNullOrBlank() ||
+                                    returnedState != authState
+                                ) {
+                                    error = kcError ?: "invalid callback"
+                                    return
+                                }
+                                if (exchanging) return
+                                exchanging = true
+                                scope.launch {
+                                    app.authRepository.completeWebLogin(code, verifier)
+                                        .onSuccess {
+                                            // Persist the KC session cookie NOW —
+                                            // it is what the Docs tab SSOs with.
+                                            CookieManager.getInstance().flush()
+                                            onLoggedIn()
+                                        }
+                                        .onFailure { e ->
+                                            exchanging = false
+                                            error = e.message ?: "token exchange failed"
+                                        }
+                                }
+                            }
+                        }
+                        loadUrl(authorizeUrl)
+                    }
+                },
+            )
+        }
+
+        if (loading || exchanging) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        }
+
+        error?.let { message ->
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.surface,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = stringResource(R.string.web_login_error),
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 24.dp),
+                    )
+                    Button(onClick = {
+                        error = null
+                        loading = true
+                        exchanging = false
+                        attempt++
+                    }) {
+                        Text(stringResource(R.string.web_login_retry))
+                    }
+                }
+            }
+        }
+    }
+}

@@ -91,7 +91,12 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
         super.onCreate()
         tokenStore = TokenStore(this)
         apiClient = ApiClient(tokenStore)
-        authRepository = AuthRepository(apiClient.authApi, tokenStore, apiClient.okHttp)
+        authRepository = AuthRepository(
+            apiClient.authApi,
+            tokenStore,
+            apiClient.okHttp,
+            apiClient.keycloakOidc,
+        )
         profileRepository = ProfileRepository(
             apiClient.userApi,
             tokenStore,

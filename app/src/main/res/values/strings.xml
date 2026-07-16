@@ -227,7 +227,12 @@
     <string name="tab_messages">Messages</string>
     <string name="tab_calendar">Calendar</string>
     <string name="tab_contacts">Contacts</string>
+    <string name="tab_docs">Docs</string>
     <string name="tab_profile">Me</string>
+
+    <!-- WebView Keycloak login -->
+    <string name="web_login_error">Sign-in failed</string>
+    <string name="web_login_retry">Retry</string>
     <string name="profile_ai_entry">AI Assistant</string>
 
     <!-- Contacts (通讯录) -->

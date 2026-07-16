@@ -227,8 +227,13 @@
     <string name="tab_messages">消息</string>
     <string name="tab_calendar">日历</string>
     <string name="tab_contacts">通讯录</string>
+    <string name="tab_docs">云文档</string>
     <string name="tab_profile">我的</string>
     <string name="profile_ai_entry">AI 助手</string>
+
+    <!-- WebView Keycloak 登录 -->
+    <string name="web_login_error">登录失败</string>
+    <string name="web_login_retry">重试</string>
 
     <!-- Contacts (通讯录) -->
     <string name="contacts_title">通讯录</string>

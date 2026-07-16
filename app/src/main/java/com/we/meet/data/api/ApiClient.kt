@@ -4,6 +4,7 @@ import android.util.Log
 import com.we.meet.BuildConfig
 import com.we.meet.data.auth.AuthInterceptor
 import com.we.meet.data.auth.InMemoryCookieJar
+import com.we.meet.data.auth.KeycloakOidc
 import com.we.meet.data.auth.SessionExpiredInterceptor
 import com.we.meet.data.auth.TokenRefreshAuthenticator
 import com.we.meet.data.auth.TokenStore
@@ -53,6 +54,10 @@ class ApiClient(tokenStore: TokenStore) {
 
     private val refreshAuthApi: AuthApi = refreshRetrofit.create(AuthApi::class.java)
 
+    // Keycloak OIDC client for the in-WebView PKCE login (p3-docs-app.md).
+    // Owns its own plain OkHttp — safe to call from inside the authenticator.
+    val keycloakOidc: KeycloakOidc = KeycloakOidc()
+
     val okHttp: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
@@ -71,7 +76,7 @@ class ApiClient(tokenStore: TokenStore) {
         // existing "session expired" flow kicks in.
         // The refresh call goes through the standalone refreshAuthApi to
         // avoid self-dependency on this client's dispatcher.
-        .authenticator(TokenRefreshAuthenticator(tokenStore, refreshAuthApi))
+        .authenticator(TokenRefreshAuthenticator(tokenStore, refreshAuthApi, keycloakOidc))
         .apply { if (BuildConfig.DEBUG) addInterceptor(debugLoggingInterceptor()) }
         .build()
 

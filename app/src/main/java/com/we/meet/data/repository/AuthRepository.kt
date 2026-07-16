@@ -1,9 +1,11 @@
 package com.we.meet.data.repository
 
+import android.webkit.CookieManager
 import com.we.meet.BuildConfig
 import com.we.meet.data.api.AuthApi
 import com.we.meet.data.api.dto.SendOtpRequest
 import com.we.meet.data.api.dto.VerifyOtpRequest
+import com.we.meet.data.auth.KeycloakOidc
 import com.we.meet.data.auth.TokenStore
 import com.we.meet.push.PushTokenUploader
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +19,14 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * Login / logout flow.  Wraps the mobile auth endpoints and persists the
  * resulting tokens via [TokenStore].
  *
+ * Two login flows coexist (p3-docs-app.md D1/D4):
+ *  - web:   in-WebView Keycloak unified login (authorization code + PKCE,
+ *           public client `app`) — [completeWebLogin]. Seeds the KC session
+ *           cookie in the process-wide CookieManager, which is what lets the
+ *           Docs tab WebView SSO silently.
+ *  - legacy: native OTP → backend token exchange — [sendOtp]/[verifyOtp].
+ *           Kept as the BuildConfig.WE_MEET_WEB_LOGIN=false fallback.
+ *
  * The send-otp / verify-otp endpoints do not require authentication; the
  * AuthInterceptor only attaches a Bearer header when one is already present
  * in the TokenStore, so callers don't need to opt out explicitly.
@@ -25,6 +35,7 @@ class AuthRepository(
     private val authApi: AuthApi,
     private val tokenStore: TokenStore,
     private val okHttpClient: OkHttpClient,
+    private val keycloakOidc: KeycloakOidc,
 ) {
 
     /** Send a 6-digit SMS code to [phone].  Returns Result.failure on any error. */
@@ -46,6 +57,29 @@ class AuthRepository(
         // right away instead of falling back to the phone number. Failure here
         // must not block login — the phone number fallback still works.
         runCatching { fetchNickname() }
+    }
+
+    /**
+     * Finish the in-WebView Keycloak login: trade the authorization [code]
+     * (+ PKCE [verifier]) for tokens and persist them, mirroring verifyOtp's
+     * side effects (push registration, nickname prefetch). Runs off-main.
+     */
+    suspend fun completeWebLogin(code: String, verifier: String): Result<Unit> = runCatching {
+        withContext(Dispatchers.IO) {
+            val tokens = keycloakOidc.exchangeCode(code, verifier)
+            tokenStore.accessToken = tokens.accessToken
+            tokenStore.refreshToken = tokens.refreshToken
+            tokenStore.idToken = tokens.idToken
+            tokenStore.authFlow = TokenStore.AUTH_FLOW_WEB
+            // Display identity straight from the id_token (username = phone for
+            // mobile-provisioned users); Account API prefetch stays best-effort.
+            val claims = keycloakOidc.parseIdClaims(tokens.idToken)
+            claims.phone?.let { tokenStore.phone = it }
+            claims.nickname?.let { tokenStore.nickname = it }
+            PushTokenUploader.uploadIfPossible()
+            runCatching { fetchNickname() }
+        }
+        Unit
     }
 
     /** Fetch the user's nickname (firstName) from Keycloak Account API. */
@@ -93,6 +127,19 @@ class AuthRepository(
         // Best-effort push-token unregister; fired before the token clear
         // (races it — a lost race is harmless, see unregisterQuietly's doc).
         PushTokenUploader.unregisterQuietly()
+        if (tokenStore.isWebFlow()) {
+            // Kill the KC server-side session (fire-and-forget) and wipe the
+            // WebView cookies — otherwise the next login page would silently
+            // re-issue a code for the account that just signed out, and the
+            // Docs tab would stay logged in as them (p3-docs-app.md D8).
+            keycloakOidc.endSessionQuietly(tokenStore.idToken)
+            runCatching {
+                CookieManager.getInstance().apply {
+                    removeAllCookies(null)
+                    flush()
+                }
+            }
+        }
         tokenStore.clear()
     }
 

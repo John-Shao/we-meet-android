@@ -22,10 +22,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Contacts
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Contacts
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
@@ -37,6 +39,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -59,7 +62,10 @@ import com.we.meet.WeMeetApp
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.ui.list.ConversationListScreen
 import com.we.meet.ui.calendar.CalendarTabScreen
+import android.view.ViewGroup
 import com.we.meet.ui.contacts.ContactsTabScreen
+import com.we.meet.ui.docs.DocsTabScreen
+import com.we.meet.ui.docs.createDocsWebView
 import com.we.meet.ui.home.HomeScreen
 import com.we.meet.ui.profile.ProfileScreen
 import kotlinx.coroutines.launch
@@ -71,7 +77,7 @@ import kotlinx.coroutines.launch
  * in the 消息 header (see the [ModalNavigationDrawer] below), matching Feishu.
  * That means 消息 is the ONLY route to the profile page.
  */
-enum class MainTab { Messages, Calendar, Meeting, Contacts }
+enum class MainTab { Messages, Calendar, Meeting, Contacts, Docs }
 
 private data class TabItem(
     val labelRes: Int,
@@ -100,7 +106,19 @@ fun MainTabScreen(
 ) {
     // Default to the Messages tab.
     var selectedTab by rememberSaveable { mutableIntStateOf(MainTab.Messages.ordinal) }
-    val app = LocalContext.current.applicationContext as WeMeetApp
+    val ctx = LocalContext.current
+    val app = ctx.applicationContext as WeMeetApp
+
+    // 云文档 WebView 提升到 tab 层持有:tabs 是 `tabs[safeTab].content()` 重组切换,
+    // 若放进 content lambda,每次切 tab 都会重建 WebView、重走加载 + KC SSO 重定向。
+    // remember 一次跨 tab 存活;MainTabScreen 退出(登出)时销毁,避免泄漏。
+    val docsWebView = remember { createDocsWebView(ctx) }
+    DisposableEffect(Unit) {
+        onDispose {
+            (docsWebView.parent as? ViewGroup)?.removeView(docsWebView)
+            docsWebView.destroy()
+        }
+    }
 
     // Live unread total for the 消息 tab badge — fed by the process-wide IM
     // session so it counts even while another tab is selected. remember-gated so
@@ -200,6 +218,9 @@ fun MainTabScreen(
         },
         TabItem(R.string.tab_contacts, Icons.Filled.Contacts, Icons.Outlined.Contacts) {
             ContactsTabScreen(onMemberClick = onMemberClick)
+        },
+        TabItem(R.string.tab_docs, Icons.Filled.Description, Icons.Outlined.Description) {
+            DocsTabScreen(docsWebView)
         },
     )
 

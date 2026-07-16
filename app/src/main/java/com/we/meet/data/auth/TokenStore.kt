@@ -66,21 +66,42 @@ class TokenStore(context: Context) {
         get() = prefs.getString(KEY_USER_ID, null)
         set(value) = prefs.edit().putString(KEY_USER_ID, value).apply()
 
+    /** OIDC id_token from the WebView login — kept for logout's id_token_hint. */
+    var idToken: String?
+        get() = prefs.getString(KEY_ID_TOKEN, null)
+        set(value) = prefs.edit().putString(KEY_ID_TOKEN, value).apply()
+
+    /**
+     * Which flow issued the stored tokens: [AUTH_FLOW_WEB] for the in-WebView
+     * Keycloak PKCE login, null/empty for the legacy backend OTP exchange.
+     * TokenRefreshAuthenticator picks the matching refresh path — a refresh
+     * token can only be refreshed by the client that issued it, so tokens
+     * from an old install keep refreshing via the backend until re-login.
+     */
+    var authFlow: String?
+        get() = prefs.getString(KEY_AUTH_FLOW, null)
+        set(value) = prefs.edit().putString(KEY_AUTH_FLOW, value).apply()
+
+    fun isWebFlow(): Boolean = authFlow == AUTH_FLOW_WEB
+
     fun isLoggedIn(): Boolean = !accessToken.isNullOrBlank()
 
     fun clear() {
         prefs.edit().clear().apply()
     }
 
-    private companion object {
-        const val FILE_NAME = "jusi_meet_tokens"
-        const val KEY_ACCESS = "access_token"
-        const val KEY_REFRESH = "refresh_token"
-        const val KEY_PHONE = "phone"
-        const val KEY_NICKNAME = "nickname"
-        const val KEY_INTRO = "intro"
-        const val KEY_AVATAR_URL = "avatar_url"
-        const val KEY_COVER_URL = "cover_url"
-        const val KEY_USER_ID = "user_id"
+    companion object {
+        const val AUTH_FLOW_WEB = "web"
+        private const val FILE_NAME = "jusi_meet_tokens"
+        private const val KEY_ACCESS = "access_token"
+        private const val KEY_REFRESH = "refresh_token"
+        private const val KEY_PHONE = "phone"
+        private const val KEY_NICKNAME = "nickname"
+        private const val KEY_INTRO = "intro"
+        private const val KEY_AVATAR_URL = "avatar_url"
+        private const val KEY_COVER_URL = "cover_url"
+        private const val KEY_USER_ID = "user_id"
+        private const val KEY_ID_TOKEN = "id_token"
+        private const val KEY_AUTH_FLOW = "auth_flow"
     }
 }
