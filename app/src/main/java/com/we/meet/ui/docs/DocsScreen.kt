@@ -30,6 +30,13 @@ import java.util.Locale
 private const val TAG = "WeMeetDocs"
 
 /**
+ * Appended to the docs WebView's User-Agent; docs' `useIsEmbedded` matches on it
+ * to hide its own user area. Keep this string in sync with we-meet-docs
+ * `src/frontend/apps/impress/src/hooks/useIsEmbedded.tsx`.
+ */
+private const val EMBED_UA_MARKER = "WeMeetApp/1.0 (embedded-docs)"
+
+/**
  * 云文档 tab (p3-docs-app.md D6): a WebView on La Suite Docs.
  *
  * Auth is invisible by design — the in-WebView Keycloak login seeded the KC
@@ -116,6 +123,13 @@ fun createDocsWebView(context: Context): WebView =
         if (BuildConfig.DEBUG) WebView.setWebContentsDebuggingEnabled(true)
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
+        // Tell docs it is embedded so it collapses its own user area (logout /
+        // language / avatar) — meet already owns identity. The UA is the only
+        // signal that survives here: this WebView is TOP-LEVEL, so docs'
+        // `window.self !== window.top` check is false, and `?embed=1` is dropped
+        // by the authenticate → returnTo → `/` redirect chain. The UA is not.
+        // Appended (not replaced) so docs still sees a normal Chrome/Android UA.
+        settings.userAgentString = "${settings.userAgentString} $EMBED_UA_MARKER"
         // Deliberately NOT useWideViewPort/loadWithOverviewMode: docs ships a
         // responsive viewport meta, and forcing the desktop viewport rendered the
         // page zoomed out to a few pixels. Pinch-zoom stays available.
