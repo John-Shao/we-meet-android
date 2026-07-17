@@ -854,10 +854,10 @@ class RoomViewModel(
      */
     // ---- P4-M2: escalation-invite broadcast (topic "meet-invites") ----
 
-    /** sender identity → their ringing-invite chips (label to state). */
+    /** sender identity → their ringing-invite chips (label, state, avatarUrl). */
     private val _remoteMeetInvites =
-        MutableStateFlow<Map<String, List<Pair<String, String>>>>(emptyMap())
-    val remoteMeetInvites: StateFlow<Map<String, List<Pair<String, String>>>> =
+        MutableStateFlow<Map<String, List<Triple<String, String, String?>>>>(emptyMap())
+    val remoteMeetInvites: StateFlow<Map<String, List<Triple<String, String, String?>>>> =
         _remoteMeetInvites.asStateFlow()
 
     /** Broadcast the LOCAL active-invite snapshot (empty json clears peers'
@@ -888,7 +888,13 @@ class RoomViewModel(
                     val o = arr!!.optJSONObject(i) ?: continue
                     val label = o.optString("label")
                     if (label.isBlank()) continue
-                    add(label to o.optString("state").ifBlank { "inviting" })
+                    add(
+                        Triple(
+                            label,
+                            o.optString("state").ifBlank { "inviting" },
+                            o.optString("avatarUrl").takeIf { it.isNotBlank() },
+                        ),
+                    )
                 }
             }
             _remoteMeetInvites.value = _remoteMeetInvites.value + (sender to chips)

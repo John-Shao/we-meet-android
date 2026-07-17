@@ -267,6 +267,7 @@ fun RoomScreen(
                                         put(
                                             org.json.JSONObject().apply {
                                                 put("label", inv.label)
+                                                inv.avatarUrl?.let { put("avatarUrl", it) }
                                                 put(
                                                     "state",
                                                     if (inv.state == MeetInviteTracker.InviteState.RINGING) {
@@ -398,7 +399,7 @@ private fun MinimalCallHost(
     isVideo: Boolean,
     roomSlug: String,
     imSession: ImSession,
-    remoteInvites: List<Pair<String, String>> = emptyList(),
+    remoteInvites: List<Triple<String, String, String?>> = emptyList(),
     onLeave: () -> Unit,
 ) {
     val context = LocalContext.current

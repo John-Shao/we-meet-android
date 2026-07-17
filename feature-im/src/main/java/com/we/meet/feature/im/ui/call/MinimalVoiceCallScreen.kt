@@ -90,8 +90,8 @@ fun MinimalVoiceCallScreen(
     onToggleSpeaker: () -> Unit,
     onHangup: () -> Unit,
     gridParticipants: List<CallGridParticipant> = emptyList(),
-    /** M2: co-participants' ringing invites (label to state) via data message. */
-    remoteInvites: List<Pair<String, String>> = emptyList(),
+    /** M2: co-participants' ringing invites (label, state, avatarUrl) via data message. */
+    remoteInvites: List<Triple<String, String, String?>> = emptyList(),
     onAddMember: (() -> Unit)? = null,
 ) {
     val session = remember(deps) { ImSession.get(deps) }
@@ -241,7 +241,7 @@ private fun VoiceGrid(
     participants: List<CallGridParticipant>,
     resolved: Map<String, ImUserInfo>,
     invites: List<MeetInviteTracker.MeetInvite>,
-    remoteInvites: List<Pair<String, String>>,
+    remoteInvites: List<Triple<String, String, String?>>,
     status: String,
     modifier: Modifier = Modifier,
 ) {
@@ -289,10 +289,11 @@ private fun VoiceGrid(
                 )
             }
             items(remoteInvites.size, key = { "r:$it:${remoteInvites[it].first}" }) { idx ->
-                val (label, st) = remoteInvites[idx]
+                val (label, st, avatar) = remoteInvites[idx]
                 GridCell(
                     id = "remote:$label",
                     name = label,
+                    avatarUrl = avatar,
                     dimmed = true,
                     stateText = stringResource(
                         if (st == "ringing") {
