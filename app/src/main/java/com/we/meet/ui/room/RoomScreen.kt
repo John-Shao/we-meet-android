@@ -239,14 +239,87 @@ fun RoomScreen(
                     val imSession = remember {
                         ImSession.get(context.applicationContext as ImDeps)
                     }
+                    val isCallEntry = callPeerUid != null || callMeet
                     val invitesSent by imSession.meetInvites.upgraded
+                        .collectAsStateWithLifecycle()
+                    val invites by imSession.meetInvites.invites
                         .collectAsStateWithLifecycle()
                     var upgradeLatch by rememberSaveable { mutableStateOf(callMeet) }
                     val remoteCount = state.participants.count { !it.isLocal && !it.isScreenShare }
-                    LaunchedEffect(invitesSent, remoteCount) {
-                        if (invitesSent || remoteCount >= 2) upgradeLatch = true
+
+                    // M2: broadcast the LOCAL active-invite snapshot on change
+                    // (empty json clears peers' chips). Lives above the form
+                    // fork so it keeps firing after video switches to the
+                    // full meeting UI while invitees still ring.
+                    val activeLocal = invites.filter { !it.terminal }
+                    val activeKey = activeLocal.joinToString(",") { "${it.callId}:${it.state}" }
+                    var publishedKey by remember { mutableStateOf<String?>(null) }
+                    LaunchedEffect(activeKey) {
+                        if (!isCallEntry) return@LaunchedEffect
+                        if (publishedKey == activeKey) return@LaunchedEffect
+                        if (publishedKey == null && activeKey.isEmpty()) return@LaunchedEffect
+                        publishedKey = activeKey
+                        val json = org.json.JSONObject().apply {
+                            put(
+                                "invites",
+                                org.json.JSONArray().apply {
+                                    activeLocal.forEach { inv ->
+                                        put(
+                                            org.json.JSONObject().apply {
+                                                put("label", inv.label)
+                                                put(
+                                                    "state",
+                                                    if (inv.state == MeetInviteTracker.InviteState.RINGING) {
+                                                        "ringing"
+                                                    } else {
+                                                        "inviting"
+                                                    },
+                                                )
+                                            },
+                                        )
+                                    }
+                                },
+                            )
+                        }.toString()
+                        viewModel.publishMeetInvites(json)
                     }
-                    val isCallEntry = callPeerUid != null || callMeet
+
+                    // M2: co-participants' ringing invites — a sender leaving
+                    // the room invalidates their snapshot (invites were
+                    // canceled on leave).
+                    val remoteInvitesMap by viewModel.remoteMeetInvites
+                        .collectAsStateWithLifecycle()
+                    val presentIds = state.participants
+                        .filter { !it.isLocal }.map { it.identity }.toSet()
+                    val remoteChips = remoteInvitesMap
+                        .filterKeys { it in presentIds }.values.flatten()
+
+                    LaunchedEffect(invitesSent, remoteCount, remoteChips.size) {
+                        if (invitesSent || remoteCount >= 2 ||
+                            (isCallEntry && remoteChips.isNotEmpty())
+                        ) {
+                            upgradeLatch = true
+                        }
+                    }
+
+                    // M2: owner-side rename once the call truly became
+                    // multi-party (meeting history stops showing「与X的通话」).
+                    var renamed by rememberSaveable { mutableStateOf(false) }
+                    LaunchedEffect(remoteCount) {
+                        if (renamed || !isCallEntry || !isAdmin || remoteCount < 2) {
+                            return@LaunchedEffect
+                        }
+                        renamed = true
+                        val selfName = state.participants
+                            .firstOrNull { it.isLocal }?.name.orEmpty()
+                        viewModel.renameRoom(
+                            context.getString(
+                                com.we.meet.feature.im.R.string.im_meet_invite_room_name,
+                                selfName,
+                            ),
+                        )
+                    }
+
                     val callIsVideo = callMedia == "video"
                     if (isCallEntry && (callMedia == "audio" || (callIsVideo && !upgradeLatch))) {
                         MinimalCallHost(
@@ -257,6 +330,7 @@ fun RoomScreen(
                             isVideo = callIsVideo,
                             roomSlug = roomSlug,
                             imSession = imSession,
+                            remoteInvites = remoteChips,
                             onLeave = {
                                 viewModel.leave()
                                 onLeave(false)
@@ -324,6 +398,7 @@ private fun MinimalCallHost(
     isVideo: Boolean,
     roomSlug: String,
     imSession: ImSession,
+    remoteInvites: List<Pair<String, String>> = emptyList(),
     onLeave: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -468,7 +543,10 @@ private fun MinimalCallHost(
             onHangup = onLeave,
             gridParticipants = state.participants
                 .filter { !it.isScreenShare }
-                .map { CallGridParticipant(it.identity, it.name, it.isLocal) },
+                .map {
+                    CallGridParticipant(it.identity, it.name, it.isLocal, it.isSpeaking)
+                },
+            remoteInvites = remoteInvites,
             onAddMember = onAddMember,
         )
     }

@@ -415,7 +415,10 @@ class RoomViewModel(
                         refreshParticipants()
                     }
 
-                    is RoomEvent.DataReceived -> onLegacyChatPacket(event)
+                    is RoomEvent.DataReceived -> {
+                        onLegacyChatPacket(event)
+                        onMeetInvitesPacket(event)
+                    }
 
                     is RoomEvent.Disconnected -> {
                         // Ephemeral chat, matches web: "消息仅对发送时在场的
@@ -849,6 +852,49 @@ class RoomViewModel(
      * we'll have already received the Text-Stream copy through the handler
      * above. Any other DataReceived topic is silently ignored.
      */
+    // ---- P4-M2: escalation-invite broadcast (topic "meet-invites") ----
+
+    /** sender identity → their ringing-invite chips (label to state). */
+    private val _remoteMeetInvites =
+        MutableStateFlow<Map<String, List<Pair<String, String>>>>(emptyMap())
+    val remoteMeetInvites: StateFlow<Map<String, List<Pair<String, String>>>> =
+        _remoteMeetInvites.asStateFlow()
+
+    /** Broadcast the LOCAL active-invite snapshot (empty json clears peers'
+     * chips). Fire-and-forget — chips are cosmetic, the roster is the truth. */
+    fun publishMeetInvites(json: String) {
+        viewModelScope.launch {
+            controller.publishMeetInvites(json)
+                .onFailure { Log.i(TAG, "publishMeetInvites failed: ${it.message}") }
+        }
+    }
+
+    /** P4-M2 owner-side rename once the call became multi-party. Best-effort. */
+    fun renameRoom(name: String) {
+        viewModelScope.launch {
+            roomRepository.renameRoom(roomId, name)
+                .onFailure { Log.i(TAG, "renameRoom failed: ${it.message}") }
+        }
+    }
+
+    private fun onMeetInvitesPacket(event: RoomEvent.DataReceived) {
+        if (event.topic != LiveKitController.MEET_INVITES_TOPIC) return
+        val sender = event.participant?.identity?.value ?: return
+        runCatching {
+            val json = JSONObject(String(event.data, Charsets.UTF_8))
+            val arr = json.optJSONArray("invites")
+            val chips = buildList {
+                for (i in 0 until (arr?.length() ?: 0)) {
+                    val o = arr!!.optJSONObject(i) ?: continue
+                    val label = o.optString("label")
+                    if (label.isBlank()) continue
+                    add(label to o.optString("state").ifBlank { "inviting" })
+                }
+            }
+            _remoteMeetInvites.value = _remoteMeetInvites.value + (sender to chips)
+        }.onFailure { Log.w(TAG, "onMeetInvitesPacket: malformed payload", it) }
+    }
+
     private fun onLegacyChatPacket(event: RoomEvent.DataReceived) {
         if (event.topic != LiveKitController.LEGACY_CHAT_TOPIC) return
         runCatching {

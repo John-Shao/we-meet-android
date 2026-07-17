@@ -232,9 +232,19 @@ class LiveKitController(
         )
     }
 
+    /** P4-M2: broadcast the local escalation-invite snapshot (small JSON) so
+     * co-participants render the ringing chips / pre-switch to the meeting UI. */
+    suspend fun publishMeetInvites(json: String): Result<Unit> =
+        room.localParticipant.publishData(
+            data = json.toByteArray(Charsets.UTF_8),
+            reliability = DataPublishReliability.RELIABLE,
+            topic = MEET_INVITES_TOPIC,
+        )
+
     companion object {
         private const val TAG = "LiveKitController"
         const val CHAT_TOPIC = "lk.chat"
         const val LEGACY_CHAT_TOPIC = "lk-chat-topic"
+        const val MEET_INVITES_TOPIC = "meet-invites"
     }
 }

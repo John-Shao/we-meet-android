@@ -1,6 +1,7 @@
 package com.we.meet.feature.im.ui.call
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,6 +60,8 @@ data class CallGridParticipant(
     val id: String,
     val name: String,
     val isLocal: Boolean,
+    /** M2: active-speaker ring on the tile. */
+    val speaking: Boolean = false,
 )
 
 /**
@@ -87,6 +90,8 @@ fun MinimalVoiceCallScreen(
     onToggleSpeaker: () -> Unit,
     onHangup: () -> Unit,
     gridParticipants: List<CallGridParticipant> = emptyList(),
+    /** M2: co-participants' ringing invites (label to state) via data message. */
+    remoteInvites: List<Pair<String, String>> = emptyList(),
     onAddMember: (() -> Unit)? = null,
 ) {
     val session = remember(deps) { ImSession.get(deps) }
@@ -100,7 +105,7 @@ fun MinimalVoiceCallScreen(
     // exactly one remote. Auto-end when alone lives in the host (needs leave).
     val remotes = gridParticipants.filter { !it.isLocal }
     val pendingCount = invites.count { !it.terminal }
-    val grid = remotes.size >= 2 || pendingCount > 0
+    val grid = remotes.size >= 2 || pendingCount > 0 || remoteInvites.isNotEmpty()
 
     // Resolve room occupants (LiveKit identity = OIDC sub) to directory
     // profiles — the token name is a self-chosen join-preview name
@@ -149,6 +154,7 @@ fun MinimalVoiceCallScreen(
                 participants = gridParticipants,
                 resolved = resolvedSubs,
                 invites = invites,
+                remoteInvites = remoteInvites,
                 status = status,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -235,6 +241,7 @@ private fun VoiceGrid(
     participants: List<CallGridParticipant>,
     resolved: Map<String, ImUserInfo>,
     invites: List<MeetInviteTracker.MeetInvite>,
+    remoteInvites: List<Pair<String, String>>,
     status: String,
     modifier: Modifier = Modifier,
 ) {
@@ -263,6 +270,7 @@ private fun VoiceGrid(
                         name
                     },
                     avatarUrl = prof?.avatarUrl?.takeIf { it.isNotBlank() },
+                    speaking = p.speaking,
                 )
             }
             items(pending, key = { "i:${it.callId}" }) { inv ->
@@ -273,6 +281,21 @@ private fun VoiceGrid(
                     dimmed = true,
                     stateText = stringResource(
                         if (inv.state == MeetInviteTracker.InviteState.RINGING) {
+                            R.string.im_call_invite_ringing
+                        } else {
+                            R.string.im_call_invite_inviting
+                        }
+                    ),
+                )
+            }
+            items(remoteInvites.size, key = { "r:$it:${remoteInvites[it].first}" }) { idx ->
+                val (label, st) = remoteInvites[idx]
+                GridCell(
+                    id = "remote:$label",
+                    name = label,
+                    dimmed = true,
+                    stateText = stringResource(
+                        if (st == "ringing") {
                             R.string.im_call_invite_ringing
                         } else {
                             R.string.im_call_invite_inviting
@@ -315,13 +338,22 @@ private fun GridCell(
     name: String,
     avatarUrl: String? = null,
     dimmed: Boolean = false,
+    speaking: Boolean = false,
     stateText: String? = null,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = if (dimmed) Modifier.alpha(0.45f) else Modifier,
     ) {
-        GroupAvatar(tiles = listOf(GroupTile(id, name, avatarUrl)), size = 72.dp)
+        Box(
+            modifier = if (speaking) {
+                Modifier.border(2.dp, AcceptGreen, RoundedCornerShape(18.dp))
+            } else {
+                Modifier
+            },
+        ) {
+            GroupAvatar(tiles = listOf(GroupTile(id, name, avatarUrl)), size = 72.dp)
+        }
         Spacer(Modifier.height(6.dp))
         Text(
             text = name,

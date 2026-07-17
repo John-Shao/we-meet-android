@@ -17,4 +17,6 @@ import com.squareup.moshi.JsonClass
 @JsonClass(generateAdapter = true)
 data class UpdateRoomRequest(
     val access_level: String? = null,
+    /** P4-M2: owner-side rename once a 1:1 call became multi-party. */
+    val name: String? = null,
 )

@@ -126,6 +126,12 @@ class RoomRepository(
      * Backend identifies the participant from the supplied LiveKit token,
      * so callers must pass the same token the SDK is using on the wire.
      */
+    /** P4-M2: owner-only room rename (standard ModelViewSet PATCH gating). */
+    suspend fun renameRoom(idOrSlug: String, name: String): Result<Unit> = runCatching {
+        roomApi.updateRoom(idOrSlug, UpdateRoomRequest(name = name))
+        Unit
+    }
+
     suspend fun renameSelf(
         idOrSlug: String,
         livekitToken: String,
