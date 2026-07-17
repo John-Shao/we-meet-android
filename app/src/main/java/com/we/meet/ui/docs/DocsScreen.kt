@@ -15,6 +15,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -154,10 +155,28 @@ fun createDocsWebView(context: Context): WebView =
         loadUrl(docsUrl())
     }
 
+/**
+ * The language docs should render in: the app's own in-app language (我的 → 设置
+ * → 语言, stored by [AppCompatDelegate.setApplicationLocales]), falling back to
+ * the system locale when the user picked "follow system".
+ *
+ * NOT `Locale.getDefault()` alone: that is the *device* locale, which is exactly
+ * what the WebView's `navigator`/Accept-Language already reports — using it would
+ * make docs ignore an in-app language that differs from the device's.
+ * Lowercased because docs' i18next runs with `lowerCaseLng` and soft-matches
+ * ("zh-cn" → the `zh` bundle).
+ */
+private fun appLanguageTag(): String {
+    val appLocales = AppCompatDelegate.getApplicationLocales()
+    val locale = if (!appLocales.isEmpty) appLocales[0] else null
+    return (locale ?: Locale.getDefault()).toLanguageTag().lowercase(Locale.ROOT)
+}
+
 private fun docsUrl(): String {
-    // i18next on the docs side lowercases + soft-matches ("zh-cn" → zh).
-    val lang = Locale.getDefault().toLanguageTag().lowercase(Locale.ROOT)
+    val lang = appLanguageTag()
     val base = BuildConfig.WE_MEET_DOCS_URL.trimEnd('/')
+    // ?lang= is kept as belt-and-braces (it wins when it does survive, e.g. if the
+    // redirect chain ever preserves the query); the cookie is what actually lands.
     val target = "$base/?embed=1&lang=${Uri.encode(lang)}"
     // Enter through docs' OIDC authenticate endpoint instead of the bare root.
     // A fresh WebView has no docs session, and docs does NOT auto-login on `/` —
