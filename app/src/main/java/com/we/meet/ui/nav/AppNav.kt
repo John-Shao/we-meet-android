@@ -352,6 +352,8 @@ fun AppNav() {
                         is CallUiEvent.Error -> {
                             val msgRes = if (ev.message == "busy-local") {
                                 com.we.meet.feature.im.R.string.im_call_busy_local
+                            } else if (ev.message == "group-call-ended") {
+                                com.we.meet.feature.im.R.string.im_group_card_ended_toast
                             } else {
                                 com.we.meet.feature.im.R.string.im_call_end_failed
                             }

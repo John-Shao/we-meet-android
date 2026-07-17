@@ -340,6 +340,17 @@ fun ChatScreen(
             val listState = rememberLazyListState()
             // reverseLayout: index 0 = visual bottom = newest message.
             val reversed = remember(ui.messages, directoryVersion) { ui.messages.asReversed() }
+            // P4.1 群语音卡片: end-records (call-log 带 slug) 把同 slug 的
+            // 进行中卡片翻成已结束态。
+            val endedGroupCallSlugs = remember(ui.messages) {
+                ui.messages.mapNotNull { m ->
+                    if (m.contentType != "call-log") return@mapNotNull null
+                    runCatching {
+                        org.json.JSONObject(m.body).optString("slug")
+                            .takeIf { it.isNotBlank() }
+                    }.getOrNull()
+                }.toSet()
+            }
 
             // Auto-stick to the newest message when it arrives while at/near bottom.
             LaunchedEffect(ui.messages.lastOrNull()?.mid) {
@@ -445,6 +456,13 @@ fun ChatScreen(
                                     onLongPress = if (!selectMode && message.mid !in ui.recalledMids) {
                                         { actionTarget = message }
                                     } else null,
+                                    onJoinGroupCall = { slug -> calls.joinGroupCall(slug) },
+                                    groupCallEnded = if (message.contentType == "group-call") {
+                                        val s = runCatching {
+                                            org.json.JSONObject(message.body).optString("slug")
+                                        }.getOrNull()
+                                        s.isNullOrBlank() || s in endedGroupCallSlugs
+                                    } else false,
                                     onAvatarClick = if (onMemberClick != null && !isOwn && sender?.id != null) {
                                         { onMemberClick(sender.id) }
                                     } else null,
@@ -679,6 +697,15 @@ fun ChatScreen(
                         // 群语音只留群记录,被拉人不写 direct 记录(P4.1 拍板)。
                         kind = "group",
                     )
+                    // P4.1 进行中卡片:全群可见、可点加入;结束记录(同 slug)
+                    // 会把它翻成已结束态。
+                    runCatching {
+                        session.client.sendText(
+                            cid = cid,
+                            body = "{\"slug\":\"${room.slug}\",\"media\":\"audio\"}",
+                            contentType = "group-call",
+                        )
+                    }
                 }
             },
         )

@@ -207,4 +207,8 @@
     <string name="im_group_voice_call_title">Démarrer un appel vocal</string>
     <string name="im_group_voice_call_count">%1$d sélectionnés</string>
     <string name="im_group_voice_call_confirm">Appeler</string>
+    <string name="im_group_card_ongoing">En cours</string>
+    <string name="im_group_card_ended">Terminé</string>
+    <string name="im_group_card_join">Rejoindre</string>
+    <string name="im_group_card_ended_toast">Appel terminé</string>
 </resources>

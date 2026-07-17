@@ -48,7 +48,18 @@ sealed interface MessageContent {
         val media: String,
         val result: String,
         val durationSec: Long = 0,
+        /** P4.1: group end-records carry the room slug to flip the matching
+         * ongoing card to its ended state. */
+        val slug: String? = null,
     ) : MessageContent
+
+    /**
+     * P4.1 群语音「进行中」卡片 — body = JSON `{slug,media}`. Sent by the
+     * initiator when the group call starts; every member can tap to join the
+     * live voice grid. Rendered as ended once a CallLog with the same slug
+     * exists downstream (or the join-time room resolve fails).
+     */
+    data class GroupCall(val slug: String, val media: String) : MessageContent
 
     /**
      * P3 手机号被查看提示 — content_type `phone-viewed`, sent server-side when
@@ -115,6 +126,13 @@ object MessageContentParser {
                 media = it.optString("media", "audio"),
                 result = it.optString("result", "missed"),
                 durationSec = it.optLong("duration", 0L),
+                slug = it.optString("slug").takeIf { s -> s.isNotBlank() },
+            )
+        }
+        "group-call" -> parseJson(contentType, body) {
+            MessageContent.GroupCall(
+                slug = it.getString("slug"),
+                media = it.optString("media", "audio"),
             )
         }
         else -> MessageContent.Unsupported(contentType, body)

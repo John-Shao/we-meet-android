@@ -143,9 +143,11 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
                 runCatching {
                     val duration =
                         if (req.durationSec > 0) ",\"duration\":${req.durationSec}" else ""
+                    val slug =
+                        req.slug?.let { ",\"slug\":\"$it\"" } ?: ""
                     client.sendText(
                         cid = req.cid,
-                        body = "{\"media\":\"${req.media}\",\"result\":\"${req.result}\"$duration}",
+                        body = "{\"media\":\"${req.media}\",\"result\":\"${req.result}\"$duration$slug}",
                         contentType = "call-log",
                     )
                 }.onFailure { Log.w(TAG, "call-log send failed", it) }

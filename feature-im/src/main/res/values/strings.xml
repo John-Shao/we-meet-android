@@ -223,4 +223,8 @@
     <string name="im_group_voice_call_title">Start voice call</string>
     <string name="im_group_voice_call_count">%1$d selected</string>
     <string name="im_group_voice_call_confirm">Call</string>
+    <string name="im_group_card_ongoing">In progress</string>
+    <string name="im_group_card_ended">Ended</string>
+    <string name="im_group_card_join">Join</string>
+    <string name="im_group_card_ended_toast">The call has ended</string>
 </resources>

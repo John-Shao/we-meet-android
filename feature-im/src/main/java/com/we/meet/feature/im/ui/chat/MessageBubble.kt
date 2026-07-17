@@ -94,6 +94,10 @@ fun MessageBubble(
     selfMentionNames: List<String> = emptyList(),
     /** Tap the sender's avatar → navigate to their personal info page. */
     onAvatarClick: (() -> Unit)? = null,
+    /** P4.1 群语音卡片: tap Join on an ongoing group-call card. */
+    onJoinGroupCall: ((slug: String) -> Unit)? = null,
+    /** P4.1: this card's call already ended (matching end-record downstream). */
+    groupCallEnded: Boolean = false,
 ) {
     val content = remember(message.mid) {
         MessageContentParser.parse(message.contentType, message.body)
@@ -202,6 +206,9 @@ fun MessageBubble(
                     QuoteBubble(content, isOwn, mentionNames, selfMentionNames)
                 is MessageContent.Merged -> MergedBubble(content, isOwn, onLongPress)
                 is MessageContent.CallLog -> CallLogBubble(content, isOwn)
+                is MessageContent.GroupCall -> GroupCallBubble(
+                    content, groupCallEnded, onJoinGroupCall,
+                )
                 is MessageContent.Unsupported -> UnsupportedBubble(isOwn)
                 // Control/system rows never reach here (filtered / early-returned).
                 is MessageContent.Recall, is MessageContent.Reaction,
@@ -677,6 +684,53 @@ private fun CallLogBubble(content: MessageContent.CallLog, isOwn: Boolean) {
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(start = 6.dp),
             )
+        }
+    }
+}
+
+/** P4.1 群语音「进行中」卡片:通话中可点加入,结束后灰态。 */
+@Composable
+private fun GroupCallBubble(
+    content: MessageContent.GroupCall,
+    ended: Boolean,
+    onJoin: ((slug: String) -> Unit)?,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = bubbleShape,
+        modifier = if (!ended && onJoin != null) {
+            Modifier.clickable { onJoin(content.slug) }
+        } else {
+            Modifier
+        },
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+        ) {
+            Icon(
+                Icons.Filled.Call,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = stringResource(R.string.im_calllog_voice) + " · " +
+                    stringResource(
+                        if (ended) R.string.im_group_card_ended
+                        else R.string.im_group_card_ongoing
+                    ),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(start = 6.dp),
+            )
+            if (!ended) {
+                Text(
+                    text = stringResource(R.string.im_group_card_join),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
         }
     }
 }

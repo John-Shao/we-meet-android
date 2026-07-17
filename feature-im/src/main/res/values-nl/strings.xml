@@ -207,4 +207,8 @@
     <string name="im_group_voice_call_title">Spraakoproep starten</string>
     <string name="im_group_voice_call_count">%1$d geselecteerd</string>
     <string name="im_group_voice_call_confirm">Bellen</string>
+    <string name="im_group_card_ongoing">Bezig</string>
+    <string name="im_group_card_ended">Beëindigd</string>
+    <string name="im_group_card_join">Deelnemen</string>
+    <string name="im_group_card_ended_toast">De oproep is beëindigd</string>
 </resources>

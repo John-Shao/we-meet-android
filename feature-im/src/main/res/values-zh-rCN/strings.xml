@@ -219,4 +219,8 @@
     <string name="im_group_voice_call_title">发起语音通话</string>
     <string name="im_group_voice_call_count">已选 %1$d 人</string>
     <string name="im_group_voice_call_confirm">呼叫</string>
+    <string name="im_group_card_ongoing">通话中</string>
+    <string name="im_group_card_ended">已结束</string>
+    <string name="im_group_card_join">加入</string>
+    <string name="im_group_card_ended_toast">通话已结束</string>
 </resources>

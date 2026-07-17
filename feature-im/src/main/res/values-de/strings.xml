@@ -207,4 +207,8 @@
     <string name="im_group_voice_call_title">Sprachanruf starten</string>
     <string name="im_group_voice_call_count">%1$d ausgewählt</string>
     <string name="im_group_voice_call_confirm">Anrufen</string>
+    <string name="im_group_card_ongoing">Läuft</string>
+    <string name="im_group_card_ended">Beendet</string>
+    <string name="im_group_card_join">Beitreten</string>
+    <string name="im_group_card_ended_toast">Der Anruf ist beendet</string>
 </resources>

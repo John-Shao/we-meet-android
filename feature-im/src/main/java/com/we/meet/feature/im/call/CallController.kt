@@ -156,7 +156,7 @@ class CallController(
             emitError("room-create-failed")
             return null
         }
-        groupCall = GroupCallSession(cid = groupCid)
+        groupCall = GroupCallSession(cid = groupCid, slug = room.slug)
         _events.tryEmit(
             CallUiEvent.EnterRoom(
                 room,
@@ -173,6 +173,46 @@ class CallController(
             )
         )
         return room
+    }
+
+    /**
+     * P4.1 加入进行中的群语音(卡片入口):resolve 房间——已结束的房不发
+     * LiveKit token → resolveCallRoom 为 null → 报「通话已结束」;活着则经
+     * EnterRoom 管道直落语音宫格(非发起人身份,不建 GroupCallSession)。
+     */
+    fun joinGroupCall(slug: String) {
+        val h = host ?: run { emitError("call host missing"); return }
+        if (_state.value != CallState.Idle || h.isInMeeting()) {
+            emitError("busy-local")
+            return
+        }
+        scope.launch {
+            val room = try {
+                h.resolveCallRoom(slug)
+            } catch (e: Throwable) {
+                Log.w(TAG, "joinGroupCall: resolve failed", e)
+                null
+            }
+            if (room == null) {
+                emitError("group-call-ended")
+                return@launch
+            }
+            _events.tryEmit(
+                CallUiEvent.EnterRoom(
+                    room,
+                    CallInfo(
+                        callId = UUID.randomUUID().toString(),
+                        cid = "",
+                        peerUid = "",
+                        peerName = "",
+                        media = "audio",
+                        outgoing = false,
+                        room = room,
+                        kind = "meet",
+                    ),
+                )
+            )
+        }
     }
 
     /** 主叫取消 (user tap / back). */
@@ -420,11 +460,14 @@ class CallController(
             if (connectedAt != null) {
                 val durationSec = ((now - connectedAt) / 1000).coerceAtLeast(1)
                 _callLogRequests.tryEmit(
-                    CallLogRequest(cid = g.cid, media = "audio", result = "completed", durationSec = durationSec)
+                    CallLogRequest(
+                        cid = g.cid, media = "audio", result = "completed",
+                        durationSec = durationSec, slug = g.slug,
+                    )
                 )
             } else {
                 _callLogRequests.tryEmit(
-                    CallLogRequest(cid = g.cid, media = "audio", result = "canceled")
+                    CallLogRequest(cid = g.cid, media = "audio", result = "canceled", slug = g.slug)
                 )
             }
         }
@@ -724,6 +767,8 @@ data class CallLogRequest(
     val media: String,
     val result: String,
     val durationSec: Long = 0,
+    /** P4.1: group end-records carry the room slug (ties them to the card). */
+    val slug: String? = null,
 )
 
 /** A connected 1:1 call in flight on this device as the caller (drives the duration log). */
@@ -736,5 +781,6 @@ internal data class ConnectedCall(
 /** P4.1: a group voice call this device initiated (drives the group record). */
 internal data class GroupCallSession(
     val cid: String,
+    val slug: String,
     var connectedAtMs: Long? = null,
 )
