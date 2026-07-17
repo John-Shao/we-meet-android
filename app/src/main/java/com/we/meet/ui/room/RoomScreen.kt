@@ -475,9 +475,14 @@ private fun MinimalCallHost(
     val pendingInvites = invites.count { !it.terminal }
     var peerSeen by remember { mutableStateOf(false) }
     LaunchedEffect(state.participants, state.phase, pendingInvites) {
+        val remoteCountNow = state.participants.count { !it.isLocal }
+        if (remoteCountNow > 0) {
+            // P4.1: stamps the group-call connect instant (no-op otherwise)
+            // so the group record's duration excludes the ring wait.
+            imSession.calls.markGroupCallConnected()
+        }
         if (pendingInvites > 0) return@LaunchedEffect
-        val remoteCount = state.participants.count { !it.isLocal }
-        if (remoteCount > 0) {
+        if (remoteCountNow > 0) {
             peerSeen = true
             return@LaunchedEffect
         }

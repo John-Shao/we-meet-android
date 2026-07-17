@@ -669,7 +669,7 @@ fun ChatScreen(
             onDismiss = { showGroupCallSheet = false },
             onCall = { targets ->
                 scope.launch {
-                    val room = calls.startGroupVoiceCall(groupCallRoomName)
+                    val room = calls.startGroupVoiceCall(groupCallRoomName, cid)
                         ?: return@launch
                     session.meetInvites.sendInvites(
                         targets = targets,

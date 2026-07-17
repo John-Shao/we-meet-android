@@ -69,6 +69,20 @@ class CallController(
      */
     private var connectedMeetCall: ConnectedCall? = null
 
+    /**
+     * P4.1: a group voice call THIS device initiated — drives the GROUP-chat
+     * record on teardown: `completed` + duration from the FIRST answer
+     * (微信口径, ring wait excluded), or `canceled` when nobody ever joined.
+     */
+    private var groupCall: GroupCallSession? = null
+
+    /** Stamped by the room UI the moment a remote appears. Idempotent; no-op
+     * outside group-call sessions. */
+    fun markGroupCallConnected() {
+        val g = groupCall ?: return
+        if (g.connectedAtMs == null) g.connectedAtMs = System.currentTimeMillis()
+    }
+
     /** callIds already terminally settled — late/duplicate frames are dropped. */
     private val finishedCallIds = ArrayDeque<String>()
 
@@ -129,7 +143,7 @@ class CallController(
      * invites → auto-end" converges every outcome. Returns the room so the
      * caller can fan out [MeetInviteTracker] invites with its slug.
      */
-    suspend fun startGroupVoiceCall(roomName: String): CallRoom? {
+    suspend fun startGroupVoiceCall(roomName: String, groupCid: String): CallRoom? {
         val h = host ?: run { emitError("call host missing"); return null }
         if (_state.value != CallState.Idle || h.isInMeeting()) {
             emitError("busy-local")
@@ -142,6 +156,7 @@ class CallController(
             emitError("room-create-failed")
             return null
         }
+        groupCall = GroupCallSession(cid = groupCid)
         _events.tryEmit(
             CallUiEvent.EnterRoom(
                 room,
@@ -393,6 +408,23 @@ class CallController(
             _callLogRequests.tryEmit(
                 CallLogRequest(cid = m.cid, media = m.media, result = "completed", durationSec = durationSec)
             )
+        }
+        // P4.1: the group-call record lands in the GROUP conversation —
+        // completed + first-answer-anchored duration, or canceled when nobody
+        // ever joined.
+        groupCall?.let { g ->
+            groupCall = null
+            val connectedAt = g.connectedAtMs
+            if (connectedAt != null) {
+                val durationSec = ((now - connectedAt) / 1000).coerceAtLeast(1)
+                _callLogRequests.tryEmit(
+                    CallLogRequest(cid = g.cid, media = "audio", result = "completed", durationSec = durationSec)
+                )
+            } else {
+                _callLogRequests.tryEmit(
+                    CallLogRequest(cid = g.cid, media = "audio", result = "canceled")
+                )
+            }
         }
     }
 
@@ -697,4 +729,10 @@ internal data class ConnectedCall(
     val cid: String,
     val media: String,
     val startedAtMs: Long,
+)
+
+/** P4.1: a group voice call this device initiated (drives the group record). */
+internal data class GroupCallSession(
+    val cid: String,
+    var connectedAtMs: Long? = null,
 )
