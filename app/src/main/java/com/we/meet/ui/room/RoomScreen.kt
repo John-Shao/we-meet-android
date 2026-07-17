@@ -230,11 +230,12 @@ fun RoomScreen(
                     // viewModel/room underneath, so media, call-log duration
                     // and hangup semantics are shared.
                     //
-                    // P4 upgrade fork: upgraded := entered as escalation
-                    // invitee ∥ this side sent an invite ∥ the room grew past
-                    // 1:1 (roster = truth source). One-way latch — no falling
-                    // back when people leave. Voice stays on the minimal stage
-                    // (grid form); video switches to the full meeting UI.
+                    // P4 fork(2026-07-17 现状模型拍板):
+                    //   voice = CALL semantics throughout — always the minimal
+                    //     stage; its form follows the live roster inside
+                    //     (grid ↔ 1:1 ↔ auto-end when alone).
+                    //   video = escalation LATCHES into the full meeting UI
+                    //     (meeting semantics — no fallback at 2, no auto-end).
                     val imSession = remember {
                         ImSession.get(context.applicationContext as ImDeps)
                     }
@@ -254,7 +255,6 @@ fun RoomScreen(
                             peerUid = callPeerUid.orEmpty(),
                             peerName = callPeerName ?: callPeerUid.orEmpty(),
                             isVideo = callIsVideo,
-                            upgraded = upgradeLatch,
                             roomSlug = roomSlug,
                             imSession = imSession,
                             onLeave = {
@@ -322,7 +322,6 @@ private fun MinimalCallHost(
     peerUid: String,
     peerName: String,
     isVideo: Boolean,
-    upgraded: Boolean,
     roomSlug: String,
     imSession: ImSession,
     onLeave: () -> Unit,
@@ -336,9 +335,9 @@ private fun MinimalCallHost(
         )
     }
     var audioOutput by remember {
-        // Voice starts on EARPIECE (a call is a phone call); video and the
-        // multi-party voice form start on SPEAKER (held at arm's length).
-        mutableStateOf(if (isVideo || upgraded) AudioOutput.Speaker else AudioOutput.Earpiece)
+        // Voice starts on EARPIECE (a call is a phone call), video on SPEAKER
+        // (the phone is held at arm's length).
+        mutableStateOf(if (isVideo) AudioOutput.Speaker else AudioOutput.Earpiece)
     }
     DisposableEffect(audioOutputController) {
         audioOutputController.start()
@@ -347,16 +346,17 @@ private fun MinimalCallHost(
     LaunchedEffect(audioOutput) {
         audioOutputController.apply(audioOutput)
     }
-    // 1:1 semantics: the peer leaving ends the call on this side too (a
-    // meeting outlives any participant; a call doesn't). Armed only after
-    // the peer has actually been seen, and debounced so the participant-list
-    // blip of a LiveKit reconnect doesn't fake a hangup — the effect restarts
-    // whenever the list changes, cancelling the pending leave.
-    // P4: upgrading DISARMS this for good — in the multi-party form people
-    // come and go, and only a manual hangup leaves.
+    // Call semantics: everyone else leaving ends the call on this side too —
+    // 1:1 AND multi-party voice alike (现状1/问题5 拍板: a call is a call;
+    // only meetings outlive their participants). Armed only after a peer has
+    // actually been seen, debounced against LiveKit-reconnect roster blips,
+    // and HELD while an escalation invite is still ringing (auto-ending
+    // would cancel the invitee mid-ring).
+    val invites by imSession.meetInvites.invites.collectAsStateWithLifecycle()
+    val pendingInvites = invites.count { !it.terminal }
     var peerSeen by remember { mutableStateOf(false) }
-    LaunchedEffect(state.participants, state.phase, upgraded) {
-        if (upgraded) return@LaunchedEffect
+    LaunchedEffect(state.participants, state.phase, pendingInvites) {
+        if (pendingInvites > 0) return@LaunchedEffect
         val remoteCount = state.participants.count { !it.isLocal }
         if (remoteCount > 0) {
             peerSeen = true
@@ -466,7 +466,6 @@ private fun MinimalCallHost(
             speakerOn = audioOutput == AudioOutput.Speaker,
             onToggleSpeaker = onToggleSpeaker,
             onHangup = onLeave,
-            upgraded = upgraded,
             gridParticipants = state.participants
                 .filter { !it.isScreenShare }
                 .map { CallGridParticipant(it.identity, it.name, it.isLocal) },

@@ -86,7 +86,6 @@ fun MinimalVoiceCallScreen(
     speakerOn: Boolean,
     onToggleSpeaker: () -> Unit,
     onHangup: () -> Unit,
-    upgraded: Boolean = false,
     gridParticipants: List<CallGridParticipant> = emptyList(),
     onAddMember: (() -> Unit)? = null,
 ) {
@@ -94,19 +93,36 @@ fun MinimalVoiceCallScreen(
     LaunchedEffect(peerUid) { session.userDirectory.requestResolve(listOf(peerUid)) }
     val directoryVersion by session.userDirectory.version.collectAsStateWithLifecycle()
     val peer = remember(peerUid, directoryVersion) { session.userDirectory.get(peerUid) }
-    val displayName = peer?.displayName?.takeIf { it.isNotBlank() } ?: fallbackName
     val invites by session.meetInvites.invites.collectAsStateWithLifecycle()
 
-    // P4 grid: resolve room occupants (LiveKit identity = OIDC sub) to
-    // directory profiles — the token name is a self-chosen join-preview name
+    // Voice form follows the roster (2026-07-17 现状模型拍板): grid at ≥2
+    // remotes or while invitees are still ringing; back to the 1:1 layout at
+    // exactly one remote. Auto-end when alone lives in the host (needs leave).
+    val remotes = gridParticipants.filter { !it.isLocal }
+    val pendingCount = invites.count { !it.terminal }
+    val grid = remotes.size >= 2 || pendingCount > 0
+
+    // Resolve room occupants (LiveKit identity = OIDC sub) to directory
+    // profiles — the token name is a self-chosen join-preview name
     // (stale/synthetic-email, 实测问题2) and LiveKit carries no photo.
     var resolvedSubs by remember { mutableStateOf<Map<String, ImUserInfo>>(emptyMap()) }
     val gridIds = gridParticipants.map { it.id }
-    LaunchedEffect(upgraded, gridIds) {
-        if (!upgraded || gridIds.isEmpty()) return@LaunchedEffect
+    LaunchedEffect(gridIds) {
+        if (gridIds.isEmpty()) return@LaunchedEffect
         runCatching { session.bridge.resolveSubs(gridIds) }
             .onSuccess { resolvedSubs = resolvedSubs + it }
     }
+
+    // 1:1 layout target: whoever is actually in the room (after a grid → 1:1
+    // fallback that may be someone OTHER than the original peer); the invite
+    // peer is the pre-connection fallback.
+    val soloRemote = remotes.firstOrNull()
+    val soloProf = soloRemote?.let { resolvedSubs[it.id] }
+    val displayName = soloProf?.displayName?.takeIf { it.isNotBlank() }
+        ?: soloRemote?.name?.takeIf { it.isNotBlank() && soloRemote.id != peerUid }
+        ?: peer?.displayName?.takeIf { it.isNotBlank() }
+        ?: fallbackName
+    val displayAvatar = soloProf?.avatarUrl?.takeIf { it.isNotBlank() } ?: peer?.avatarUrl
 
     // Duration ticks from the moment the call connects. Anchored once via the
     // connected flag flipping true, so a recompose doesn't restart the clock.
@@ -128,7 +144,7 @@ fun MinimalVoiceCallScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface),
     ) {
-        if (upgraded) {
+        if (grid) {
             VoiceGrid(
                 participants = gridParticipants,
                 resolved = resolvedSubs,
@@ -148,7 +164,9 @@ fun MinimalVoiceCallScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 GroupAvatar(
-                    tiles = listOf(GroupTile(peerUid, displayName, peer?.avatarUrl)),
+                    tiles = listOf(
+                        GroupTile(soloRemote?.id ?: peerUid, displayName, displayAvatar)
+                    ),
                     size = 112.dp,
                 )
                 Spacer(Modifier.height(24.dp))
