@@ -43,6 +43,8 @@ class MeetInviteTracker internal constructor(
         val userId: String,
         /** Display label captured at pick time (grid chip + fallbacks). */
         val label: String,
+        /** Presigned avatar URL captured at pick time (dimmed grid chip). */
+        val avatarUrl: String? = null,
         val state: InviteState,
         val peerUid: String? = null,
         val cid: String? = null,
@@ -51,7 +53,7 @@ class MeetInviteTracker internal constructor(
             get() = state != InviteState.INVITING && state != InviteState.RINGING
     }
 
-    data class Target(val userId: String, val label: String)
+    data class Target(val userId: String, val label: String, val avatarUrl: String? = null)
 
     private val _invites = MutableStateFlow<List<MeetInvite>>(emptyList())
     val invites: StateFlow<List<MeetInvite>> = _invites.asStateFlow()
@@ -81,6 +83,7 @@ class MeetInviteTracker internal constructor(
                 callId = UUID.randomUUID().toString(),
                 userId = target.userId,
                 label = target.label,
+                avatarUrl = target.avatarUrl,
                 state = InviteState.INVITING,
             )
             _invites.value = _invites.value + invite

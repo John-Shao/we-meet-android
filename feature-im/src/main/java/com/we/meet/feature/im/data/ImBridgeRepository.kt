@@ -47,6 +47,11 @@ internal class ImBridgeRepository(private val api: ImApi) {
     }
 
     /** Map IM uids → display identities (org-scoped; unknown uids absent). */
+    /** P4 通话多人宫格: LiveKit identity(=sub) → 目录显示名/头像(组织内)。 */
+    suspend fun resolveSubs(subs: Collection<String>): Map<String, ImUserInfo> =
+        if (subs.isEmpty()) emptyMap()
+        else api.resolveSubs(mapOf("subs" to subs.toList()))
+
     suspend fun resolveUsers(imUids: Collection<String>): Map<String, ImUserInfo> =
         if (imUids.isEmpty()) emptyMap()
         else api.resolveUsers(mapOf("im_uids" to imUids.toList()))

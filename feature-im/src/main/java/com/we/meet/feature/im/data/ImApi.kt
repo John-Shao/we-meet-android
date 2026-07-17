@@ -62,6 +62,13 @@ internal interface ImApi {
         @Body body: Map<String, @JvmSuppressWildcards Any>,
     ): Map<String, ImUserInfo>
 
+    /** P4: map OIDC subs (= LiveKit identities) → display identities for the
+     * in-call multi-party grid. Body `{"subs": [...]}`. */
+    @POST("api/v1.0/im/users/resolve-subs/")
+    suspend fun resolveSubs(
+        @Body body: Map<String, @JvmSuppressWildcards Any>,
+    ): Map<String, ImUserInfo>
+
     /** Presigned PUT for a chat image. Body `{"content_type": ..., "size": ...}`. */
     @POST("api/v1.0/im/images/upload-url/")
     suspend fun imageUploadUrl(

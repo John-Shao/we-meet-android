@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,6 +49,7 @@ import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.call.MeetInviteTracker
 import com.we.meet.feature.im.data.GroupTile
+import com.we.meet.feature.im.data.ImUserInfo
 import com.we.meet.feature.im.ui.common.GroupAvatar
 import kotlinx.coroutines.delay
 
@@ -95,6 +97,17 @@ fun MinimalVoiceCallScreen(
     val displayName = peer?.displayName?.takeIf { it.isNotBlank() } ?: fallbackName
     val invites by session.meetInvites.invites.collectAsStateWithLifecycle()
 
+    // P4 grid: resolve room occupants (LiveKit identity = OIDC sub) to
+    // directory profiles — the token name is a self-chosen join-preview name
+    // (stale/synthetic-email, 实测问题2) and LiveKit carries no photo.
+    var resolvedSubs by remember { mutableStateOf<Map<String, ImUserInfo>>(emptyMap()) }
+    val gridIds = gridParticipants.map { it.id }
+    LaunchedEffect(upgraded, gridIds) {
+        if (!upgraded || gridIds.isEmpty()) return@LaunchedEffect
+        runCatching { session.bridge.resolveSubs(gridIds) }
+            .onSuccess { resolvedSubs = resolvedSubs + it }
+    }
+
     // Duration ticks from the moment the call connects. Anchored once via the
     // connected flag flipping true, so a recompose doesn't restart the clock.
     var connectedAt by remember { mutableLongStateOf(0L) }
@@ -118,6 +131,7 @@ fun MinimalVoiceCallScreen(
         if (upgraded) {
             VoiceGrid(
                 participants = gridParticipants,
+                resolved = resolvedSubs,
                 invites = invites,
                 status = status,
                 modifier = Modifier
@@ -201,6 +215,7 @@ fun MinimalVoiceCallScreen(
 @Composable
 private fun VoiceGrid(
     participants: List<CallGridParticipant>,
+    resolved: Map<String, ImUserInfo>,
     invites: List<MeetInviteTracker.MeetInvite>,
     status: String,
     modifier: Modifier = Modifier,
@@ -220,19 +235,23 @@ private fun VoiceGrid(
                 .heightIn(max = 420.dp),
         ) {
             items(participants, key = { "p:${it.id}" }) { p ->
+                val prof = resolved[p.id]
+                val name = prof?.displayName?.takeIf { it.isNotBlank() } ?: p.name
                 GridCell(
                     id = p.id,
                     name = if (p.isLocal) {
-                        stringResource(R.string.im_call_grid_self, p.name)
+                        stringResource(R.string.im_call_grid_self, name)
                     } else {
-                        p.name
+                        name
                     },
+                    avatarUrl = prof?.avatarUrl?.takeIf { it.isNotBlank() },
                 )
             }
             items(pending, key = { "i:${it.callId}" }) { inv ->
                 GridCell(
                     id = inv.userId,
                     name = inv.label,
+                    avatarUrl = inv.avatarUrl,
                     dimmed = true,
                     stateText = stringResource(
                         if (inv.state == MeetInviteTracker.InviteState.RINGING) {
@@ -276,6 +295,7 @@ private fun VoiceGrid(
 private fun GridCell(
     id: String,
     name: String,
+    avatarUrl: String? = null,
     dimmed: Boolean = false,
     stateText: String? = null,
 ) {
@@ -283,7 +303,7 @@ private fun GridCell(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = if (dimmed) Modifier.alpha(0.45f) else Modifier,
     ) {
-        GroupAvatar(tiles = listOf(GroupTile(id, name, null)), size = 72.dp)
+        GroupAvatar(tiles = listOf(GroupTile(id, name, avatarUrl)), size = 72.dp)
         Spacer(Modifier.height(6.dp))
         Text(
             text = name,

@@ -390,7 +390,7 @@ private fun MinimalCallHost(
                         .firstOrNull { it.isLocal }?.name.orEmpty()
                     imSession.meetInvites.sendInvites(
                         targets = picked.map {
-                            MeetInviteTracker.Target(it.userId, it.displayName)
+                            MeetInviteTracker.Target(it.userId, it.displayName, it.avatarUrl)
                         },
                         media = if (isVideo) "video" else "audio",
                         roomSlug = roomSlug,
