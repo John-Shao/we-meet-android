@@ -154,6 +154,7 @@ class CallController(
             media = seed.media,
             outgoing = false,
             roomSlug = seed.roomSlug,
+            kind = seed.kind,
         )
         _state.value = CallState.Incoming(info)
         // Ringing receipt flips the caller to 等待接听. The process may have
@@ -247,6 +248,8 @@ class CallController(
             outgoing = false,
             roomSlug = p.roomSlug,
             roomName = p.roomName,
+            // P4: "meet" = escalation invite into an existing multi-party room.
+            kind = p.kind,
         )
         _state.value = CallState.Incoming(info)
         replyTo(p, CallEvent.RINGING)
@@ -504,6 +507,8 @@ data class CallSeed(
     val media: String,
     val roomSlug: String?,
     val tsMs: Long,
+    /** P4 (P19): "meet" = escalation invite; absent on plain 1:1 pushes. */
+    val kind: String? = null,
 ) {
     companion object {
         /** Lenient parse — null on malformed/incomplete JSON (drop the push). */
@@ -521,6 +526,7 @@ data class CallSeed(
                 media = o.optString("media").ifBlank { "audio" },
                 roomSlug = o.optString("room_slug").takeIf { it.isNotBlank() },
                 tsMs = o.optLong("ts"),
+                kind = o.optString("kind").takeIf { it.isNotBlank() },
             )
         } catch (_: Throwable) {
             null
@@ -570,6 +576,9 @@ data class CallInfo(
     /** Callee side: slug/name carried by the invite (room not resolved yet). */
     val roomSlug: String? = null,
     val roomName: String? = null,
+    /** P4: "meet" = escalation invite — ring text differs, accept lands in the
+     * multi-party form (voice grid / full meeting UI) instead of the 1:1 stage. */
+    val kind: String? = null,
 )
 
 /** Marker for states that carry a [CallInfo]. */

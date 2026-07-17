@@ -199,4 +199,18 @@
     <string name="im_delete_confirm_title">删除消息？</string>
     <string name="im_delete_confirm_message">确定删除选中的 %1$d 条消息？仅从你的消息记录中移除，其他成员仍可见。</string>
     <string name="im_delete_failed">删除失败</string>
+    <!-- P4 通话中拉人升级会议 -->
+    <string name="im_call_incoming_meet_voice">邀请你加入语音通话</string>
+    <string name="im_call_incoming_meet_video">邀请你加入视频通话</string>
+    <string name="im_call_add_member">添加成员</string>
+    <string name="im_call_left_alone">其他人已离开</string>
+    <string name="im_call_grid_self">%1$s(我)</string>
+    <string name="im_call_invite_inviting">邀请中…</string>
+    <string name="im_call_invite_ringing">响铃中…</string>
+    <string name="im_call_invite_rejected">已拒绝</string>
+    <string name="im_call_invite_busy">忙线</string>
+    <string name="im_call_invite_unreachable">不在线</string>
+    <string name="im_call_invite_timeout">无应答</string>
+    <string name="im_call_invite_failed">邀请失败</string>
+    <string name="im_meet_invite_room_name">%1$s发起的多人通话</string>
 </resources>

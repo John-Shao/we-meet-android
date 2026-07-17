@@ -115,7 +115,14 @@ import com.we.meet.ui.theme.Dimens
 import com.we.meet.audio.AudioOutput
 import com.we.meet.audio.AudioOutputController
 import com.we.meet.audio.AudioOutputStore
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.we.meet.core.directory.DirectoryDeps
+import com.we.meet.core.directory.ui.ContactPicker
+import com.we.meet.core.directory.ui.ContactPickerMode
 import com.we.meet.feature.im.ImDeps
+import com.we.meet.feature.im.ImSession
+import com.we.meet.feature.im.call.MeetInviteTracker
+import com.we.meet.feature.im.ui.call.CallGridParticipant
 import com.we.meet.feature.im.ui.call.MinimalVideoCallScreen
 import com.we.meet.feature.im.ui.call.MinimalVoiceCallScreen
 import com.we.meet.overlay.ScreenShareOverlay
@@ -150,6 +157,9 @@ fun RoomScreen(
     callPeerUid: String? = null,
     callPeerName: String? = null,
     callMedia: String? = null,
+    // P4: entered as an accepted escalation invite — start in the multi-party
+    // form (voice grid / full meeting UI), never the 1:1 stage.
+    callMeet: Boolean = false,
     onLeave: (hostEnded: Boolean) -> Unit,
 ) {
     val context = LocalContext.current
@@ -219,13 +229,34 @@ fun RoomScreen(
                     // of the meeting grid (voice and video variants). Same
                     // viewModel/room underneath, so media, call-log duration
                     // and hangup semantics are shared.
-                    if (callPeerUid != null && (callMedia == "audio" || callMedia == "video")) {
+                    //
+                    // P4 upgrade fork: upgraded := entered as escalation
+                    // invitee ∥ this side sent an invite ∥ the room grew past
+                    // 1:1 (roster = truth source). One-way latch — no falling
+                    // back when people leave. Voice stays on the minimal stage
+                    // (grid form); video switches to the full meeting UI.
+                    val imSession = remember {
+                        ImSession.get(context.applicationContext as ImDeps)
+                    }
+                    val invitesSent by imSession.meetInvites.upgraded
+                        .collectAsStateWithLifecycle()
+                    var upgradeLatch by rememberSaveable { mutableStateOf(callMeet) }
+                    val remoteCount = state.participants.count { !it.isLocal && !it.isScreenShare }
+                    LaunchedEffect(invitesSent, remoteCount) {
+                        if (invitesSent || remoteCount >= 2) upgradeLatch = true
+                    }
+                    val isCallEntry = callPeerUid != null || callMeet
+                    val callIsVideo = callMedia == "video"
+                    if (isCallEntry && (callMedia == "audio" || (callIsVideo && !upgradeLatch))) {
                         MinimalCallHost(
                             state = state,
                             viewModel = viewModel,
-                            peerUid = callPeerUid,
-                            peerName = callPeerName ?: callPeerUid,
-                            isVideo = callMedia == "video",
+                            peerUid = callPeerUid.orEmpty(),
+                            peerName = callPeerName ?: callPeerUid.orEmpty(),
+                            isVideo = callIsVideo,
+                            upgraded = upgradeLatch,
+                            roomSlug = roomSlug,
+                            imSession = imSession,
                             onLeave = {
                                 viewModel.leave()
                                 onLeave(false)
@@ -291,6 +322,9 @@ private fun MinimalCallHost(
     peerUid: String,
     peerName: String,
     isVideo: Boolean,
+    upgraded: Boolean,
+    roomSlug: String,
+    imSession: ImSession,
     onLeave: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -302,7 +336,9 @@ private fun MinimalCallHost(
         )
     }
     var audioOutput by remember {
-        mutableStateOf(if (isVideo) AudioOutput.Speaker else AudioOutput.Earpiece)
+        // Voice starts on EARPIECE (a call is a phone call); video and the
+        // multi-party voice form start on SPEAKER (held at arm's length).
+        mutableStateOf(if (isVideo || upgraded) AudioOutput.Speaker else AudioOutput.Earpiece)
     }
     DisposableEffect(audioOutputController) {
         audioOutputController.start()
@@ -316,8 +352,11 @@ private fun MinimalCallHost(
     // the peer has actually been seen, and debounced so the participant-list
     // blip of a LiveKit reconnect doesn't fake a hangup — the effect restarts
     // whenever the list changes, cancelling the pending leave.
+    // P4: upgrading DISARMS this for good — in the multi-party form people
+    // come and go, and only a manual hangup leaves.
     var peerSeen by remember { mutableStateOf(false) }
-    LaunchedEffect(state.participants, state.phase) {
+    LaunchedEffect(state.participants, state.phase, upgraded) {
+        if (upgraded) return@LaunchedEffect
         val remoteCount = state.participants.count { !it.isLocal }
         if (remoteCount > 0) {
             peerSeen = true
@@ -337,6 +376,35 @@ private fun MinimalCallHost(
             AudioOutput.Speaker
         }
     }
+    // P4 拉人 picker: multi-select org members → parallel meet-invites over
+    // the tracker (kind="meet", current room slug — no new room).
+    var showEscalatePicker by rememberSaveable { mutableStateOf(false) }
+    if (showEscalatePicker) {
+        ContactPicker(
+            deps = context.applicationContext as DirectoryDeps,
+            mode = ContactPickerMode.Multi,
+            onConfirm = { picked ->
+                showEscalatePicker = false
+                if (picked.isNotEmpty()) {
+                    val selfName = state.participants
+                        .firstOrNull { it.isLocal }?.name.orEmpty()
+                    imSession.meetInvites.sendInvites(
+                        targets = picked.map {
+                            MeetInviteTracker.Target(it.userId, it.displayName)
+                        },
+                        media = if (isVideo) "video" else "audio",
+                        roomSlug = roomSlug,
+                        roomName = context.getString(
+                            com.we.meet.feature.im.R.string.im_meet_invite_room_name,
+                            selfName,
+                        ),
+                    )
+                }
+            },
+            onDismiss = { showEscalatePicker = false },
+        )
+    }
+    val onAddMember = { showEscalatePicker = true }
     if (isVideo) {
         // Camera tiles only (a 1:1 call has no screen share). Slots are null
         // while the corresponding camera track is absent, letting the screen
@@ -385,6 +453,7 @@ private fun MinimalCallHost(
                     }
                 }
             },
+            onAddMember = onAddMember,
         )
     } else {
         MinimalVoiceCallScreen(
@@ -397,6 +466,11 @@ private fun MinimalCallHost(
             speakerOn = audioOutput == AudioOutput.Speaker,
             onToggleSpeaker = onToggleSpeaker,
             onHangup = onLeave,
+            upgraded = upgraded,
+            gridParticipants = state.participants
+                .filter { !it.isScreenShare }
+                .map { CallGridParticipant(it.identity, it.name, it.isLocal) },
+            onAddMember = onAddMember,
         )
     }
 }

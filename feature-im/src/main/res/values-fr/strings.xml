@@ -187,4 +187,18 @@
     <string name="im_delete_confirm_title">Supprimer les messages ?</string>
     <string name="im_delete_confirm_message">Supprimer %1$d messages sélectionnés ? Ils seront retirés de votre affichage uniquement ; les autres membres les voient toujours.</string>
     <string name="im_delete_failed">Échec de la suppression</string>
+    <!-- P4 call escalation -->
+    <string name="im_call_incoming_meet_voice">Vous invite à rejoindre un appel vocal</string>
+    <string name="im_call_incoming_meet_video">Vous invite à rejoindre un appel vidéo</string>
+    <string name="im_call_add_member">Ajouter un membre</string>
+    <string name="im_call_left_alone">Tous les autres sont partis</string>
+    <string name="im_call_grid_self">%1$s (Moi)</string>
+    <string name="im_call_invite_inviting">Invitation…</string>
+    <string name="im_call_invite_ringing">Sonnerie…</string>
+    <string name="im_call_invite_rejected">Refusé</string>
+    <string name="im_call_invite_busy">Occupé</string>
+    <string name="im_call_invite_unreachable">Hors ligne</string>
+    <string name="im_call_invite_timeout">Sans réponse</string>
+    <string name="im_call_invite_failed">Invitation échouée</string>
+    <string name="im_meet_invite_room_name">Appel de groupe de %1$s</string>
 </resources>

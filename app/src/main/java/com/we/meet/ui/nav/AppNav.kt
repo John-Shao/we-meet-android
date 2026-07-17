@@ -186,7 +186,7 @@ object Routes {
     // peerUid / media are optional query params — set only when the room was
     // entered from a 1:1 call (drives the minimal voice-call UI). Absent for
     // meetings, so those match unchanged.
-    const val ROOM = "$ROOM_BASE/{roomId}/{url}/{token}/{name}/{slug}/{host}/{createdAt}/{isAdmin}/{mic}/{cam}?peerUid={peerUid}&peerName={peerName}&media={media}"
+    const val ROOM = "$ROOM_BASE/{roomId}/{url}/{token}/{name}/{slug}/{host}/{createdAt}/{isAdmin}/{mic}/{cam}?peerUid={peerUid}&peerName={peerName}&media={media}&meet={meet}"
 
     private const val HISTORY_BASE = "history_detail"
     const val HISTORY_DETAIL = "$HISTORY_BASE/{roomId}"
@@ -195,6 +195,7 @@ object Routes {
         roomId: String, url: String, token: String, name: String, slug: String,
         host: String?, createdAtMs: Long, isAdmin: Boolean, mic: Boolean, cam: Boolean,
         peerUid: String? = null, peerName: String? = null, media: String? = null,
+        meet: Boolean = false,
     ): String {
         fun enc(s: String) = URLEncoder.encode(s, StandardCharsets.UTF_8.name())
         // Empty host serialises as "" which decode() round-trips cleanly; the
@@ -205,6 +206,8 @@ object Routes {
             peerUid?.takeIf { it.isNotBlank() }?.let { add("peerUid=${enc(it)}") }
             peerName?.takeIf { it.isNotBlank() }?.let { add("peerName=${enc(it)}") }
             media?.takeIf { it.isNotBlank() }?.let { add("media=${enc(it)}") }
+            // P4: accepted escalation invite — land in the multi-party form.
+            if (meet) add("meet=true")
         }
         return if (query.isEmpty()) base else "$base?${query.joinToString("&")}"
     }
@@ -338,6 +341,7 @@ fun AppNav() {
                                     peerUid = ev.info.peerUid,
                                     peerName = ev.info.peerName,
                                     media = ev.info.media,
+                                    meet = ev.info.kind == "meet",
                                 )
                             ) {
                                 // Replace the call screen; no-op if it already popped.
@@ -755,6 +759,7 @@ fun AppNav() {
                 navArgument("peerUid") { type = NavType.StringType; defaultValue = "" },
                 navArgument("peerName") { type = NavType.StringType; defaultValue = "" },
                 navArgument("media") { type = NavType.StringType; defaultValue = "" },
+                navArgument("meet") { type = NavType.BoolType; defaultValue = false },
             ),
         ) { entry ->
             val args = entry.arguments!!
@@ -773,6 +778,7 @@ fun AppNav() {
                 callPeerUid = Routes.decode(args.getString("peerUid").orEmpty()).takeIf { it.isNotBlank() },
                 callPeerName = Routes.decode(args.getString("peerName").orEmpty()).takeIf { it.isNotBlank() },
                 callMedia = Routes.decode(args.getString("media").orEmpty()).takeIf { it.isNotBlank() },
+                callMeet = args.getBoolean("meet", false),
                 onLeave = { hostEnded ->
                     if (hostEnded) hostEndedSheetVisible = true
                     navController.popBackStack(Routes.HOME, inclusive = false)

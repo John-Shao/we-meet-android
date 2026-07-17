@@ -63,6 +63,15 @@ class ConferenceForegroundService : Service() {
         // no-op inside (no connected call tracked). peek() (not get()) so a
         // teardown never lazily constructs an IM session as a side effect.
         com.we.meet.feature.im.ImSession.peek()?.calls?.onCallRoomEnded()
+        // P4: leaving the room also cancels any still-ringing escalation
+        // invites (拍板 #1 — the invite dies with the inviter) and resets the
+        // upgrade latch for the next call session. Same lifecycle anchor as
+        // the call-log above — the FGS survives recompositions, so this fires
+        // exactly once per LiveKit session.
+        com.we.meet.feature.im.ImSession.peek()?.meetInvites?.apply {
+            cancelPending()
+            reset()
+        }
         super.onDestroy()
     }
 

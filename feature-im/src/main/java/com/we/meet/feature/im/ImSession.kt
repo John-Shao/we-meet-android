@@ -86,6 +86,9 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
      * "call buttons error out", never a crash.
      */
     val calls = CallController(client, scope, { _selfUid.value }, deps as? CallHost)
+
+    /** P4 通话中拉人 — parallel escalation-invite fan-out (the 1:1 machine above stays untouched). */
+    val meetInvites = com.we.meet.feature.im.call.MeetInviteTracker(client, scope, bridge)
     internal val userDirectory = UserDirectory(bridge, scope)
     internal val mediaResolver = MediaResolver(bridge)
     internal val uploads = ChatUploadRepository(bridge, appContext.contentResolver)

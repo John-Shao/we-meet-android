@@ -187,4 +187,18 @@
     <string name="im_delete_confirm_title">Nachrichten löschen?</string>
     <string name="im_delete_confirm_message">%1$d ausgewählte Nachrichten löschen? Sie werden nur aus deiner Ansicht entfernt; andere Mitglieder sehen sie weiterhin.</string>
     <string name="im_delete_failed">Löschen fehlgeschlagen</string>
+    <!-- P4 call escalation -->
+    <string name="im_call_incoming_meet_voice">Lädt Sie zu einem Sprachanruf ein</string>
+    <string name="im_call_incoming_meet_video">Lädt Sie zu einem Videoanruf ein</string>
+    <string name="im_call_add_member">Mitglied hinzufügen</string>
+    <string name="im_call_left_alone">Alle anderen haben verlassen</string>
+    <string name="im_call_grid_self">%1$s (Ich)</string>
+    <string name="im_call_invite_inviting">Einladung läuft…</string>
+    <string name="im_call_invite_ringing">Klingelt…</string>
+    <string name="im_call_invite_rejected">Abgelehnt</string>
+    <string name="im_call_invite_busy">Besetzt</string>
+    <string name="im_call_invite_unreachable">Offline</string>
+    <string name="im_call_invite_timeout">Keine Antwort</string>
+    <string name="im_call_invite_failed">Einladung fehlgeschlagen</string>
+    <string name="im_meet_invite_room_name">Gruppenanruf von %1$s</string>
 </resources>

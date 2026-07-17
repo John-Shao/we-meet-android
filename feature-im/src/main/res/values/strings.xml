@@ -203,4 +203,18 @@
     <string name="im_delete_confirm_title">Delete messages?</string>
     <string name="im_delete_confirm_message">Delete %1$d selected messages? They\'ll be removed from your view only — other members can still see them.</string>
     <string name="im_delete_failed">Delete failed</string>
+    <!-- P4 call escalation (通话中拉人升级会议) -->
+    <string name="im_call_incoming_meet_voice">Invites you to join a voice call</string>
+    <string name="im_call_incoming_meet_video">Invites you to join a video call</string>
+    <string name="im_call_add_member">Add member</string>
+    <string name="im_call_left_alone">Everyone else has left</string>
+    <string name="im_call_grid_self">%1$s (Me)</string>
+    <string name="im_call_invite_inviting">Inviting…</string>
+    <string name="im_call_invite_ringing">Ringing…</string>
+    <string name="im_call_invite_rejected">Declined</string>
+    <string name="im_call_invite_busy">Busy</string>
+    <string name="im_call_invite_unreachable">Offline</string>
+    <string name="im_call_invite_timeout">No answer</string>
+    <string name="im_call_invite_failed">Invite failed</string>
+    <string name="im_meet_invite_room_name">%1$s’s group call</string>
 </resources>

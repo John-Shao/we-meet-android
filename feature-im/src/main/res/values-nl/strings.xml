@@ -187,4 +187,18 @@
     <string name="im_delete_confirm_title">Berichten verwijderen?</string>
     <string name="im_delete_confirm_message">%1$d geselecteerde berichten verwijderen? Ze worden alleen uit jouw weergave verwijderd; andere leden zien ze nog.</string>
     <string name="im_delete_failed">Verwijderen mislukt</string>
+    <!-- P4 call escalation -->
+    <string name="im_call_incoming_meet_voice">Nodigt je uit voor een spraakoproep</string>
+    <string name="im_call_incoming_meet_video">Nodigt je uit voor een video-oproep</string>
+    <string name="im_call_add_member">Lid toevoegen</string>
+    <string name="im_call_left_alone">Alle anderen zijn vertrokken</string>
+    <string name="im_call_grid_self">%1$s (Ik)</string>
+    <string name="im_call_invite_inviting">Uitnodigen…</string>
+    <string name="im_call_invite_ringing">Gaat over…</string>
+    <string name="im_call_invite_rejected">Geweigerd</string>
+    <string name="im_call_invite_busy">Bezet</string>
+    <string name="im_call_invite_unreachable">Offline</string>
+    <string name="im_call_invite_timeout">Geen antwoord</string>
+    <string name="im_call_invite_failed">Uitnodiging mislukt</string>
+    <string name="im_meet_invite_room_name">Groepsgesprek van %1$s</string>
 </resources>

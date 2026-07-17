@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Hearing
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VideocamOff
 import androidx.compose.material3.MaterialTheme
@@ -73,6 +74,9 @@ fun MinimalVideoCallScreen(
     onHangup: () -> Unit,
     remoteVideo: (@Composable () -> Unit)?,
     localVideo: (@Composable () -> Unit)?,
+    /** P4: opens the escalation picker; sending an invite flips the room to
+     * the full meeting UI (RoomScreen's upgrade latch). */
+    onAddMember: (() -> Unit)? = null,
 ) {
     val session = remember(deps) { ImSession.get(deps) }
     LaunchedEffect(peerUid) { session.userDirectory.requestResolve(listOf(peerUid)) }
@@ -205,6 +209,15 @@ fun MinimalVideoCallScreen(
                     onClick = onFlipCamera,
                     labelColor = VideoStageLabel,
                 )
+                if (onAddMember != null) {
+                    RoundButton(
+                        icon = Icons.Filled.PersonAdd,
+                        label = stringResource(R.string.im_call_add_member),
+                        background = NeutralControl,
+                        onClick = onAddMember,
+                        labelColor = VideoStageLabel,
+                    )
+                }
             }
             Spacer(Modifier.height(28.dp))
             RoundButton(
