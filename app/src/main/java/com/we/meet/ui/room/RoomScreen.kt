@@ -110,6 +110,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.LocalIsInPipMode
 import com.we.meet.MainActivity
+import com.we.meet.WeMeetApp
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.audio.AudioOutput
@@ -307,14 +308,20 @@ fun RoomScreen(
                             return@LaunchedEffect
                         }
                         renamed = true
-                        val selfName = state.participants
-                            .firstOrNull { it.isLocal }?.name.orEmpty()
-                        viewModel.renameRoom(
-                            context.getString(
-                                com.we.meet.feature.im.R.string.im_meet_invite_room_name,
-                                selfName,
-                            ),
-                        )
+                        // Token participant name can be blank/synthetic for
+                        // call-flow entrants — the cached directory nickname
+                        // (users/me full_name) is the reliable fallback.
+                        val selfName = (context.applicationContext as WeMeetApp)
+                            .tokenStore.nickname?.takeIf { it.isNotBlank() }
+                            ?: state.participants.firstOrNull { it.isLocal }?.name.orEmpty()
+                        if (selfName.isNotBlank()) {
+                            viewModel.renameRoom(
+                                context.getString(
+                                    com.we.meet.feature.im.R.string.im_meet_invite_room_name,
+                                    selfName,
+                                ),
+                            )
+                        }
                     }
 
                     val callIsVideo = callMedia == "video"
