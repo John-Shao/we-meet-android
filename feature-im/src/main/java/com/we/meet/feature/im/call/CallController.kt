@@ -62,6 +62,13 @@ class CallController(
      */
     private var connectedCall: ConnectedCall? = null
 
+    /**
+     * P4: a meet-invite THIS device accepted — the invitee writes the
+     * `completed`+duration record into the inviter↔invitee conversation on
+     * teardown (single writer there; the tracker never writes logs).
+     */
+    private var connectedMeetCall: ConnectedCall? = null
+
     /** callIds already terminally settled — late/duplicate frames are dropped. */
     private val finishedCallIds = ArrayDeque<String>()
 
@@ -191,6 +198,14 @@ class CallController(
             if (room == null) {
                 finish(inc.info, CallEndReason.FAILED)
                 return@launch
+            }
+            // P4: accepted meet-invite → invitee-side duration record on teardown.
+            if (inc.info.kind == "meet") {
+                connectedMeetCall = ConnectedCall(
+                    cid = inc.info.cid,
+                    media = inc.info.media,
+                    startedAtMs = System.currentTimeMillis(),
+                )
             }
             _events.tryEmit(CallUiEvent.EnterRoom(room, inc.info))
             finishQuietly(inc.info)
@@ -323,12 +338,22 @@ class CallController(
      * sessions no-op ([connectedCall] is only set on the caller's accept).
      */
     fun onCallRoomEnded() {
-        val c = connectedCall ?: return
-        connectedCall = null
-        val durationSec = ((System.currentTimeMillis() - c.startedAtMs) / 1000).coerceAtLeast(1)
-        _callLogRequests.tryEmit(
-            CallLogRequest(cid = c.cid, media = c.media, result = "completed", durationSec = durationSec)
-        )
+        val now = System.currentTimeMillis()
+        connectedCall?.let { c ->
+            connectedCall = null
+            val durationSec = ((now - c.startedAtMs) / 1000).coerceAtLeast(1)
+            _callLogRequests.tryEmit(
+                CallLogRequest(cid = c.cid, media = c.media, result = "completed", durationSec = durationSec)
+            )
+        }
+        // P4: invitee-side record for an accepted meet-invite (its own stay).
+        connectedMeetCall?.let { m ->
+            connectedMeetCall = null
+            val durationSec = ((now - m.startedAtMs) / 1000).coerceAtLeast(1)
+            _callLogRequests.tryEmit(
+                CallLogRequest(cid = m.cid, media = m.media, result = "completed", durationSec = durationSec)
+            )
+        }
     }
 
     // ---- timers ----
