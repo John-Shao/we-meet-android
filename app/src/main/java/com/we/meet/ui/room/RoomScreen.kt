@@ -240,8 +240,6 @@ fun RoomScreen(
                         ImSession.get(context.applicationContext as ImDeps)
                     }
                     val isCallEntry = callPeerUid != null || callMeet
-                    val invitesSent by imSession.meetInvites.upgraded
-                        .collectAsStateWithLifecycle()
                     val invites by imSession.meetInvites.invites
                         .collectAsStateWithLifecycle()
                     var upgradeLatch by rememberSaveable { mutableStateOf(callMeet) }
@@ -295,12 +293,10 @@ fun RoomScreen(
                     val remoteChips = remoteInvitesMap
                         .filterKeys { it in presentIds }.values.flatten()
 
-                    LaunchedEffect(invitesSent, remoteCount, remoteChips.size) {
-                        if (invitesSent || remoteCount >= 2 ||
-                            (isCallEntry && remoteChips.isNotEmpty())
-                        ) {
-                            upgradeLatch = true
-                        }
+                    // 拍板(2026-07-17 三次): 视频切会议页的时机 = 第三人真正
+                    // 进房(远端≥2),发邀/响铃期间双方都留在 1:1 视频页。
+                    LaunchedEffect(remoteCount) {
+                        if (remoteCount >= 2) upgradeLatch = true
                     }
 
                     // M2: owner-side rename once the call truly became
