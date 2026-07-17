@@ -201,4 +201,10 @@
     <string name="im_call_invite_timeout">Geen antwoord</string>
     <string name="im_call_invite_failed">Uitnodiging mislukt</string>
     <string name="im_meet_invite_room_name">Groepsgesprek van %1$s</string>
+    <!-- P4.1 group voice call -->
+    <string name="im_group_voice_call">Spraakoproep</string>
+    <string name="im_group_call_room_name">Spraakoproep %1$s</string>
+    <string name="im_group_voice_call_title">Spraakoproep starten</string>
+    <string name="im_group_voice_call_count">%1$d geselecteerd</string>
+    <string name="im_group_voice_call_confirm">Bellen</string>
 </resources>

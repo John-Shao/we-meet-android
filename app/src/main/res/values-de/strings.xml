@@ -377,4 +377,5 @@
     <string name="approval_no_templates">Keine Vorlagen verfügbar</string>
     <string name="approval_submit_failed">Senden fehlgeschlagen</string>
     <string name="profile_approval_entry">Genehmigungen</string>
+    <string name="room_more_invite_members">Mitglieder einladen</string>
 </resources>

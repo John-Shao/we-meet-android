@@ -120,6 +120,46 @@ class CallController(
         }
     }
 
+    /**
+     * P4.1 群语音通话: create the room and hand navigation to the usual
+     * [CallUiEvent.EnterRoom] pipe (kind="meet" + media="audio" + blank peer
+     * → RoomScreen lands straight in the voice grid). Deliberately does NOT
+     * enter the Outgoing state — there is no single callee to wait on; the
+     * grid's ringing chips are the waiting UI, and "alone + no pending
+     * invites → auto-end" converges every outcome. Returns the room so the
+     * caller can fan out [MeetInviteTracker] invites with its slug.
+     */
+    suspend fun startGroupVoiceCall(roomName: String): CallRoom? {
+        val h = host ?: run { emitError("call host missing"); return null }
+        if (_state.value != CallState.Idle || h.isInMeeting()) {
+            emitError("busy-local")
+            return null
+        }
+        val room = try {
+            h.createCallRoom(roomName)
+        } catch (e: Throwable) {
+            Log.w(TAG, "startGroupVoiceCall: createCallRoom failed", e)
+            emitError("room-create-failed")
+            return null
+        }
+        _events.tryEmit(
+            CallUiEvent.EnterRoom(
+                room,
+                CallInfo(
+                    callId = UUID.randomUUID().toString(),
+                    cid = "",
+                    peerUid = "",
+                    peerName = "",
+                    media = "audio",
+                    outgoing = true,
+                    room = room,
+                    kind = "meet",
+                ),
+            )
+        )
+        return room
+    }
+
     /** 主叫取消 (user tap / back). */
     fun cancel() {
         val out = _state.value as? CallState.Outgoing ?: return

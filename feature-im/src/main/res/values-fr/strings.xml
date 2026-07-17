@@ -201,4 +201,10 @@
     <string name="im_call_invite_timeout">Sans réponse</string>
     <string name="im_call_invite_failed">Invitation échouée</string>
     <string name="im_meet_invite_room_name">Appel de groupe de %1$s</string>
+    <!-- P4.1 group voice call -->
+    <string name="im_group_voice_call">Appel vocal</string>
+    <string name="im_group_call_room_name">Appel vocal %1$s</string>
+    <string name="im_group_voice_call_title">Démarrer un appel vocal</string>
+    <string name="im_group_voice_call_count">%1$d sélectionnés</string>
+    <string name="im_group_voice_call_confirm">Appeler</string>
 </resources>

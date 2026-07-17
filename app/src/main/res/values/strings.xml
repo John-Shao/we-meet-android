@@ -390,4 +390,5 @@
     <string name="member_label_phone">Phone</string>
     <string name="member_phone_reveal">Show</string>
     <string name="member_phone_call">Call</string>
+    <string name="room_more_invite_members">Invite members</string>
 </resources>

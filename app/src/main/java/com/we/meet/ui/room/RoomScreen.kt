@@ -62,6 +62,7 @@ import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PanTool
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Videocam
@@ -302,9 +303,11 @@ fun RoomScreen(
 
                     // M2: owner-side rename once the call truly became
                     // multi-party (meeting history stops showing「与X的通话」).
+                    // ONLY for the 1:1-escalation entry (callPeerUid) — group
+                    // voice rooms are already named「{群名}的语音通话」(P4.1).
                     var renamed by rememberSaveable { mutableStateOf(false) }
                     LaunchedEffect(remoteCount) {
-                        if (renamed || !isCallEntry || !isAdmin || remoteCount < 2) {
+                        if (renamed || callPeerUid == null || !isAdmin || remoteCount < 2) {
                             return@LaunchedEffect
                         }
                         renamed = true
@@ -323,6 +326,10 @@ fun RoomScreen(
                             )
                         }
                     }
+
+                    // P4.1 会议拉人 picker visibility (hosted at this level so
+                    // it can reach imSession + roomSlug).
+                    var showMeetingInvitePicker by rememberSaveable { mutableStateOf(false) }
 
                     val callIsVideo = callMedia == "video"
                     if (isCallEntry && (callMedia == "audio" || (callIsVideo && !upgradeLatch))) {
@@ -377,7 +384,40 @@ fun RoomScreen(
                         onEndMeeting = {
                             viewModel.endMeeting { onLeave(false) }
                         },
+                        onInviteMembers = { showMeetingInvitePicker = true },
                     )
+                    // P4.1 会议拉人: org-member picker → parallel kind=meet
+                    // ringing invites into THIS meeting (media=video → the
+                    // invitee accepts straight into the full meeting UI).
+                    if (showMeetingInvitePicker) {
+                        ContactPicker(
+                            deps = context.applicationContext as DirectoryDeps,
+                            mode = ContactPickerMode.Multi,
+                            onConfirm = { picked ->
+                                showMeetingInvitePicker = false
+                                if (picked.isNotEmpty()) {
+                                    val selfName = (context.applicationContext as WeMeetApp)
+                                        .tokenStore.nickname?.takeIf { it.isNotBlank() }
+                                        ?: state.participants
+                                            .firstOrNull { it.isLocal }?.name.orEmpty()
+                                    imSession.meetInvites.sendInvites(
+                                        targets = picked.map {
+                                            MeetInviteTracker.Target(
+                                                it.userId, it.displayName, it.avatarUrl,
+                                            )
+                                        },
+                                        media = "video",
+                                        roomSlug = roomSlug,
+                                        roomName = context.getString(
+                                            com.we.meet.feature.im.R.string.im_meet_invite_room_name,
+                                            selfName,
+                                        ),
+                                    )
+                                }
+                            },
+                            onDismiss = { showMeetingInvitePicker = false },
+                        )
+                    }
                     }
                 }
             }
@@ -589,6 +629,8 @@ private fun RoomContent(
     onClearAi: () -> Unit,
     onLeave: () -> Unit,
     onEndMeeting: () -> Unit,
+    /** P4.1 会议拉人: opens the org-member ringing picker (RoomScreen hosts it). */
+    onInviteMembers: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -934,6 +976,10 @@ private fun RoomContent(
                 showMore = false
                 scope.launch { onRefreshAccessLevel() }
                 showHostSettings = true
+            },
+            onInviteMembersClick = {
+                showMore = false
+                onInviteMembers()
             },
             onDismiss = { showMore = false },
         )
@@ -1738,6 +1784,7 @@ private fun MoreActionsSheet(
     onSubtitlesClick: () -> Unit,
     onAiClick: () -> Unit,
     onHostSettingsClick: () -> Unit,
+    onInviteMembersClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -1856,9 +1903,21 @@ private fun MoreActionsSheet(
                     iconBgColor = sheetBg,
                     iconTintColor = sheetTint,
                 )
-                // Reserve 4 empty cells so Settings keeps the col-1
+                // P4.1 会议拉人: org-member picker → parallel kind=meet
+                // ringing invites into THIS room (no link sharing needed).
+                ControlButton(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.PersonAdd,
+                    label = stringResource(R.string.room_more_invite_members),
+                    isOn = true,
+                    onClick = onInviteMembersClick,
+                    labelColor = sheetTint,
+                    iconBgColor = sheetBg,
+                    iconTintColor = sheetTint,
+                )
+                // Reserve empty cells so Settings keeps the col-1
                 // position when more entries land on row 2 later.
-                Spacer(Modifier.weight(4f))
+                Spacer(Modifier.weight(3f))
             }
         }
         Spacer(Modifier.height(24.dp))

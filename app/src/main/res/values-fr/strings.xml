@@ -377,4 +377,5 @@
     <string name="approval_no_templates">Aucun modèle disponible</string>
     <string name="approval_submit_failed">"Échec de l'envoi"</string>
     <string name="profile_approval_entry">Approbations</string>
+    <string name="room_more_invite_members">Inviter des membres</string>
 </resources>

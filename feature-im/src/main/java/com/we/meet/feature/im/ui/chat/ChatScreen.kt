@@ -268,6 +268,13 @@ fun ChatScreen(
         R.string.im_group_meeting_name,
         ui.title.ifBlank { stringResource(R.string.im_untitled_chat) },
     )
+    // P4.1 群语音通话: 成员多选 → 建房 → 并行响铃邀请 → 直落语音宫格。
+    var showGroupCallSheet by remember { mutableStateOf(false) }
+    val session = remember(deps) { com.we.meet.feature.im.ImSession.get(deps) }
+    val groupCallRoomName = stringResource(
+        R.string.im_group_call_room_name,
+        ui.title.ifBlank { stringResource(R.string.im_untitled_chat) },
+    )
 
     Scaffold(
         topBar = {
@@ -292,6 +299,11 @@ fun ChatScreen(
                 },
                 actions = {
                     if (!selectMode) {
+                        if (ui.isGroup) {
+                            IconButton(onClick = { showGroupCallSheet = true }) {
+                                Icon(Icons.Filled.Call, contentDescription = stringResource(R.string.im_group_voice_call))
+                            }
+                        }
                         if (ui.isGroup && onStartMeeting != null) {
                             IconButton(onClick = { onStartMeeting(groupMeetingName) }) {
                                 Icon(Icons.Filled.VideoCall, contentDescription = stringResource(R.string.im_start_meeting))
@@ -509,8 +521,10 @@ fun ChatScreen(
                 onCamera = { launchCamera() },
                 onVoiceRecorded = { file, durationMs -> vm.sendVoice(file, durationMs) },
                 isGroup = ui.isGroup,
-                // 「+」面板私聊专属「语音通话」:直接拉起 1:1 语音通话(极简 UI)。
-                onVoiceCall = { startCall(false) },
+                // 「+」面板「语音通话」:私聊=1:1 极简通话;群聊=P4.1 群语音(成员多选)。
+                onVoiceCall = {
+                    if (ui.isGroup) showGroupCallSheet = true else startCall(false)
+                },
                 // 「+」面板末位:私聊=视频通话(直接拨号),群聊=快速会议(创建会议房间)。
                 onQuickMeeting = {
                     if (ui.isGroup) {
@@ -644,6 +658,27 @@ fun ChatScreen(
                 { onDialPeer(peerWeMeetId) }
             } else null,
             onDismiss = { showCallSheet = false },
+        )
+    }
+
+    // P4.1 群语音通话: 成员多选(默认全选) → 建房 → 并行响铃 → 进语音宫格。
+    if (showGroupCallSheet) {
+        GroupVoiceCallSheet(
+            session = session,
+            memberUids = ui.memberUids,
+            onDismiss = { showGroupCallSheet = false },
+            onCall = { targets ->
+                scope.launch {
+                    val room = calls.startGroupVoiceCall(groupCallRoomName)
+                        ?: return@launch
+                    session.meetInvites.sendInvites(
+                        targets = targets,
+                        media = "audio",
+                        roomSlug = room.slug,
+                        roomName = groupCallRoomName,
+                    )
+                }
+            },
         )
     }
 
@@ -1110,8 +1145,8 @@ private fun PlusPanel(
         add(PlusItem(Icons.Filled.PhotoCamera, R.string.im_plus_camera, onCamera))
         add(PlusItem(Icons.AutoMirrored.Filled.InsertDriveFile, R.string.im_plus_file, onFile))
         if (isGroup) {
-            // 群聊(≥3 人):仅「快速会议」(VideoCall 含「+」,发起多人会议)。
-            // 群内没有 1:1 语音/视频通话目标,故不展示这两项。
+            // 群聊(≥3 人):语音通话(P4.1 成员多选响铃)+「快速会议」。
+            add(PlusItem(Icons.Filled.Call, R.string.im_group_voice_call, onVoiceCall))
             add(PlusItem(Icons.Filled.VideoCall, R.string.im_plus_meeting, onMeeting))
         } else {
             // 私聊(2 人):语音通话 + 视频通话,直接拉起 1:1 通话(极简 UI);

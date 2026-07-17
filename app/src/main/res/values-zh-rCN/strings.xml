@@ -390,4 +390,5 @@
     <string name="member_label_phone">手机号</string>
     <string name="member_phone_reveal">显示</string>
     <string name="member_phone_call">拨打</string>
+    <string name="room_more_invite_members">邀请成员</string>
 </resources>
