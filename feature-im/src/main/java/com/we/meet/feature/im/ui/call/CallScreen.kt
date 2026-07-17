@@ -193,8 +193,10 @@ private fun IncomingContent(
             // P4: an escalation invite rings as「邀请你加入…」— accept then
             // lands in the multi-party form instead of the 1:1 stage.
             when {
-                info.kind == "meet" && info.media == "video" -> R.string.im_call_incoming_meet_video
-                info.kind == "meet" -> R.string.im_call_incoming_meet_voice
+                (info.kind == "meet" || info.kind == "group") && info.media == "video" ->
+                    R.string.im_call_incoming_meet_video
+                info.kind == "meet" || info.kind == "group" ->
+                    R.string.im_call_incoming_meet_voice
                 info.media == "video" -> R.string.im_call_incoming_video
                 else -> R.string.im_call_incoming_voice
             }

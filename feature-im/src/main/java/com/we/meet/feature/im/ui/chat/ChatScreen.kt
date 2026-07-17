@@ -676,6 +676,8 @@ fun ChatScreen(
                         media = "audio",
                         roomSlug = room.slug,
                         roomName = groupCallRoomName,
+                        // 群语音只留群记录,被拉人不写 direct 记录(P4.1 拍板)。
+                        kind = "group",
                     )
                 }
             },

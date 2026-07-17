@@ -341,7 +341,7 @@ fun AppNav() {
                                     peerUid = ev.info.peerUid,
                                     peerName = ev.info.peerName,
                                     media = ev.info.media,
-                                    meet = ev.info.kind == "meet",
+                                    meet = ev.info.kind == "meet" || ev.info.kind == "group",
                                 )
                             ) {
                                 // Replace the call screen; no-op if it already popped.

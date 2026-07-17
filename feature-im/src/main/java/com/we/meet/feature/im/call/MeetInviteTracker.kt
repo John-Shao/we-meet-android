@@ -72,7 +72,16 @@ class MeetInviteTracker internal constructor(
      * Fan out escalation invites to the picked members. Latches [upgraded]
      * immediately (拍板: the inviter's UI upgrades on send, not on answer).
      */
-    fun sendInvites(targets: List<Target>, media: String, roomSlug: String, roomName: String) {
+    fun sendInvites(
+        targets: List<Target>,
+        media: String,
+        roomSlug: String,
+        roomName: String,
+        /** "meet" (1:1 escalation / meeting pull — invitee logs the direct
+         * chat) vs "group" (群语音 — only the group record; invitee must not
+         * double-log). Relayed verbatim by jusi. */
+        kind: String = "meet",
+    ) {
         if (targets.isEmpty()) return
         _upgraded.value = true
         for (target in targets) {
@@ -87,7 +96,7 @@ class MeetInviteTracker internal constructor(
                 state = InviteState.INVITING,
             )
             _invites.value = _invites.value + invite
-            dispatch(invite, media, roomSlug, roomName)
+            dispatch(invite, media, roomSlug, roomName, kind)
         }
     }
 
@@ -111,7 +120,13 @@ class MeetInviteTracker internal constructor(
 
     // ---- internals ----
 
-    private fun dispatch(invite: MeetInvite, media: String, roomSlug: String, roomName: String) {
+    private fun dispatch(
+        invite: MeetInvite,
+        media: String,
+        roomSlug: String,
+        roomName: String,
+        kind: String,
+    ) {
         scope.launch {
             val conv = try {
                 // Idempotent create-or-get; the backend resolves the peer's IM
@@ -132,21 +147,27 @@ class MeetInviteTracker internal constructor(
             val armed = live.copy(cid = conv.cid, peerUid = peerUid)
             replace(armed)
 
-            if (!sendFrame(armed, CallEvent.INVITE, media = media, roomSlug = roomSlug, roomName = roomName)) {
+            if (!sendFrame(armed, CallEvent.INVITE, media = media, roomSlug = roomSlug, roomName = roomName, kind = kind)) {
                 setState(invite.callId, InviteState.FAILED)
                 return@launch
             }
-            startTimers(armed, media, roomSlug, roomName)
+            startTimers(armed, media, roomSlug, roomName, kind)
         }
     }
 
-    private fun startTimers(invite: MeetInvite, media: String, roomSlug: String, roomName: String) {
+    private fun startTimers(
+        invite: MeetInvite,
+        media: String,
+        roomSlug: String,
+        roomName: String,
+        kind: String,
+    ) {
         val resend = scope.launch {
             repeat(INVITE_RESENDS) {
                 delay(INVITE_RESEND_INTERVAL_MS)
                 val live = find(invite.callId) ?: return@launch
                 if (live.state != InviteState.INVITING) return@launch
-                sendFrame(live, CallEvent.INVITE, media = media, roomSlug = roomSlug, roomName = roomName)
+                sendFrame(live, CallEvent.INVITE, media = media, roomSlug = roomSlug, roomName = roomName, kind = kind)
             }
         }
         val timeout = scope.launch {
@@ -183,6 +204,7 @@ class MeetInviteTracker internal constructor(
         media: String? = null,
         roomSlug: String? = null,
         roomName: String? = null,
+        kind: String = "meet",
     ): Boolean {
         val cid = invite.cid ?: return false
         val to = invite.peerUid ?: return false
@@ -197,7 +219,7 @@ class MeetInviteTracker internal constructor(
                     roomSlug = roomSlug,
                     roomName = roomName,
                     reason = reason,
-                    kind = if (event == CallEvent.INVITE) "meet" else null,
+                    kind = if (event == CallEvent.INVITE) kind else null,
                 )
             )
             true

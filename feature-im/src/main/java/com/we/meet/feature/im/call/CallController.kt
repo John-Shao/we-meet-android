@@ -254,7 +254,9 @@ class CallController(
                 finish(inc.info, CallEndReason.FAILED)
                 return@launch
             }
-            // P4: accepted meet-invite → invitee-side duration record on teardown.
+            // P4: accepted meet-invite → invitee-side duration record on
+            // teardown. 群语音 (kind="group") deliberately does NOT — the
+            // group chat carries the single record (P4.1 拍板).
             if (inc.info.kind == "meet") {
                 connectedMeetCall = ConnectedCall(
                     cid = inc.info.cid,
