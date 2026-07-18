@@ -394,7 +394,7 @@ fun ChatScreen(
             if (ui.pins.isNotEmpty()) {
                 PinnedBar(
                     pins = ui.pins,
-                    senderName = { uid -> vm.resolveUser(uid)?.displayName ?: uid },
+                    senderName = { uid -> vm.senderName(uid) ?: uid },
                     onUnpin = { mid -> vm.unpin(mid) },
                     // P3-M3 后补:点条目按需定位(回翻+滚动+高亮同 P1-M3 搜索)。
                     onJump = { seq -> vm.locateToSeq(seq) },
@@ -545,7 +545,8 @@ fun ChatScreen(
                 canSend = connection == ConnectionState.CONNECTED,
                 sentTick = ui.sentTick,
                 replyPreview = replyTarget?.let { rt ->
-                    val name = vm.resolveUser(rt.senderUid)?.displayName.orEmpty()
+                    // 群昵称(P10)优先,与气泡发送者名一致。
+                    val name = vm.senderName(rt.senderUid).orEmpty()
                     ReplyPreview(name, vm.snippetPreview(rt))
                 },
                 onClearReply = { replyTarget = null },
@@ -756,6 +757,7 @@ fun ChatScreen(
                 readMarkers = ui.readMarkers,
                 seq = latestOwnSeq,
                 resolveUser = { vm.resolveUser(it) },
+                nameOf = { vm.senderName(it) ?: "" },
                 onDismiss = { showReceipts = false },
             )
         }

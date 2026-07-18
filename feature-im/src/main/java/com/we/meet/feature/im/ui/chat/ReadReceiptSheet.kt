@@ -29,6 +29,8 @@ fun ReadReceiptSheet(
     readMarkers: Map<String, Long>,
     seq: Long,
     resolveUser: (String) -> ImUserInfo?,
+    /** 群昵称(P10)优先的显示名解析,与消息气泡发送者名口径一致。 */
+    nameOf: (String) -> String,
     onDismiss: () -> Unit,
 ) {
     val (read, unread) = remember(memberUids, readMarkers, seq) {
@@ -40,11 +42,11 @@ fun ReadReceiptSheet(
             item {
                 SectionHeader(stringResource(R.string.im_receipt_read_section, read.size))
             }
-            items(read, key = { "r-$it" }) { uid -> MemberLine(uid, resolveUser) }
+            items(read, key = { "r-$it" }) { uid -> MemberLine(uid, resolveUser, nameOf) }
             item {
                 SectionHeader(stringResource(R.string.im_receipt_unread_section, unread.size))
             }
-            items(unread, key = { "u-$it" }) { uid -> MemberLine(uid, resolveUser) }
+            items(unread, key = { "u-$it" }) { uid -> MemberLine(uid, resolveUser, nameOf) }
         }
     }
 }
@@ -61,8 +63,14 @@ private fun SectionHeader(text: String) {
 }
 
 @Composable
-private fun MemberLine(uid: String, resolveUser: (String) -> ImUserInfo?) {
+private fun MemberLine(
+    uid: String,
+    resolveUser: (String) -> ImUserInfo?,
+    nameOf: (String) -> String,
+) {
     val info = resolveUser(uid)
+    // 群昵称优先,空则退回目录名;头像字母兜底同步用该显示名。
+    val label = nameOf(uid).ifBlank { info?.displayName.orEmpty() }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -70,13 +78,13 @@ private fun MemberLine(uid: String, resolveUser: (String) -> ImUserInfo?) {
             .padding(horizontal = 24.dp, vertical = 6.dp),
     ) {
         MemberAvatar(
-            name = info?.displayName.orEmpty(),
+            name = label,
             url = info?.avatarUrl,
             cacheKey = "im-avatar:$uid",
             size = 32.dp,
         )
         Text(
-            text = info?.displayName.orEmpty().ifBlank { uid.take(8) },
+            text = label.ifBlank { uid.take(8) },
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(start = 12.dp),
         )
