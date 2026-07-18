@@ -236,5 +236,6 @@
     <string name="im_search_ai_sources">Sources</string>
     <string name="im_search_ai_degraded">Réponse IA momentanément indisponible — voici les résultats trouvés pour vous.</string>
     <string name="im_search_ai_error">Échec de la requête : %1$s</string>
+    <string name="im_search_ai_quota">Trop de requêtes ou limite quotidienne atteinte — réessayez plus tard.</string>
     <string name="im_search_ai_im_skipped">Les messages de discussion n’ont pas été inclus cette fois.</string>
 </resources>

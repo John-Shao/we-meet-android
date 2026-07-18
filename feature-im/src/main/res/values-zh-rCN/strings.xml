@@ -248,5 +248,6 @@
     <string name="im_search_ai_sources">参考来源</string>
     <string name="im_search_ai_degraded">AI 回答暂不可用——以下是为你检索到的相关内容。</string>
     <string name="im_search_ai_error">请求失败:%1$s</string>
+    <string name="im_search_ai_quota">提问太频繁或今日额度已用完,请稍后再试。</string>
     <string name="im_search_ai_im_skipped">本次未包含聊天消息来源。</string>
 </resources>

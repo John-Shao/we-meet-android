@@ -252,5 +252,6 @@
     <string name="im_search_ai_sources">Sources</string>
     <string name="im_search_ai_degraded">AI answering is temporarily unavailable — here are the matching results found for you.</string>
     <string name="im_search_ai_error">Request failed: %1$s</string>
+    <string name="im_search_ai_quota">Too many requests or daily limit reached — try again later.</string>
     <string name="im_search_ai_im_skipped">Chat messages were not included this time.</string>
 </resources>

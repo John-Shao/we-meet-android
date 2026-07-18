@@ -236,5 +236,6 @@
     <string name="im_search_ai_sources">Quellen</string>
     <string name="im_search_ai_degraded">KI-Antwort vorübergehend nicht verfügbar — hier sind die gefundenen Treffer.</string>
     <string name="im_search_ai_error">Anfrage fehlgeschlagen: %1$s</string>
+    <string name="im_search_ai_quota">Zu viele Anfragen oder Tageslimit erreicht — bitte später erneut versuchen.</string>
     <string name="im_search_ai_im_skipped">Chatnachrichten wurden diesmal nicht einbezogen.</string>
 </resources>

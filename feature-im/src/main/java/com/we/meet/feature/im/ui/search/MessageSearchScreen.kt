@@ -632,7 +632,12 @@ private fun AiAskPanel(
             state.error?.let { err ->
                 item(key = "err") {
                     Text(
-                        text = stringResource(R.string.im_search_ai_error, err),
+                        // 429 = 限流(10/min 突发或日 quota),专属文案。
+                        text = if (err.contains("429")) {
+                            stringResource(R.string.im_search_ai_quota)
+                        } else {
+                            stringResource(R.string.im_search_ai_error, err)
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(bottom = 6.dp),
