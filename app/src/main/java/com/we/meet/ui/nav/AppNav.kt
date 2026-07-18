@@ -560,7 +560,7 @@ fun AppNav() {
                         }
                 },
                 searchMeetings = { q ->
-                    app.historyStore.entries.value
+                    val local = app.historyStore.entries.value
                         .filter { it.name.contains(q, ignoreCase = true) }
                         .take(8)
                         .map { e ->
@@ -570,6 +570,39 @@ fun AppNav() {
                                 timeMs = e.lastLeftAtMs ?: e.firstJoinedAtMs,
                             )
                         }
+                    // 排期会议并入(Web fetchScheduledMeetings 口径:scheduled_at
+                    // ≥今天且未关闭)。历史优先去重——已进过的会保持历史详情行为,
+                    // 纯新增「没进过的排期会」;断网/失败静默退回纯本地。
+                    val seen = local.map { it.roomId }.toSet()
+                    val scheduled = runCatching {
+                        val startOfToday = java.time.LocalDate.now()
+                            .atStartOfDay(java.time.ZoneId.systemDefault())
+                            .toInstant()
+                        app.apiClient.roomApi.listMyRooms().results
+                            .filter { r ->
+                                r.id !in seen &&
+                                    (r.name ?: "").contains(q, ignoreCase = true) &&
+                                    r.closed_at == null &&
+                                    !r.scheduled_at.isNullOrBlank()
+                            }
+                            .mapNotNull { r ->
+                                val at = runCatching {
+                                    java.time.OffsetDateTime.parse(r.scheduled_at)
+                                        .toInstant()
+                                }.getOrNull() ?: return@mapNotNull null
+                                if (at < startOfToday) return@mapNotNull null
+                                com.we.meet.feature.im.ui.search.GlobalSearchMeeting(
+                                    roomId = r.id,
+                                    name = r.name ?: "—",
+                                    timeMs = at.toEpochMilli(),
+                                    slug = r.slug,
+                                    scheduled = true,
+                                )
+                            }
+                            .sortedBy { it.timeMs }
+                            .take(5)
+                    }.getOrDefault(emptyList())
+                    local + scheduled
                 },
                 searchDocs = { q ->
                     app.apiClient.searchApi.searchDocs(q).results
@@ -591,6 +624,10 @@ fun AppNav() {
                 // AI 日历引用:直开事件详情(EventDetailScreen 按 id 自加载)。
                 onOpenEvent = { eventId ->
                     navController.navigate(Routes.eventDetail(eventId))
+                },
+                // 排期会议命中 → 进会预览(与首页「加入会议」同动线)。
+                onOpenScheduled = { slug ->
+                    navController.navigate(Routes.joinPreview(slug))
                 },
                 // P1-4 M3:AI 问答 SSE(鉴权 OkHttp,契约同 Web §D2)。
                 askAi = { question ->

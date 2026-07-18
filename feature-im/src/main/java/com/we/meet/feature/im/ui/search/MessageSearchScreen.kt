@@ -64,11 +64,16 @@ data class GlobalSearchContact(
     val subtitle: String? = null,
 )
 
-/** 会议命中(app 层来自本地 HistoryStore;roomId 进历史详情)。 */
+/**
+ * 会议命中:本地 HistoryStore(roomId 进历史详情)+ 排期会议(Web 口径:
+ * scheduled_at≥今天且未关闭;[scheduled]=true 携 [slug] 进会预览)。
+ */
 data class GlobalSearchMeeting(
     val roomId: String,
     val name: String,
     val timeMs: Long,
+    val slug: String? = null,
+    val scheduled: Boolean = false,
 )
 
 /** 文档命中(后端 /docs/search/ 代理;url 进应用内 WebView)。 */
@@ -113,6 +118,8 @@ fun MessageSearchScreen(
     onOpenDoc: ((url: String) -> Unit)? = null,
     /** 日历引用直开事件详情;null = 该类引用仅展示。 */
     onOpenEvent: ((eventId: String) -> Unit)? = null,
+    /** 排期会议命中进会预览(slug);null = 排期命中退回 onOpenMeeting。 */
+    onOpenScheduled: ((slug: String) -> Unit)? = null,
     /** P1-4 M3:AI 问答 SSE(app 层实现);null = 隐藏 AI 分类。 */
     askAi: ((String) -> kotlinx.coroutines.flow.Flow<AskEvent>)? = null,
 ) {
@@ -436,14 +443,23 @@ fun MessageSearchScreen(
                     item(key = "sec-meetings") {
                         SectionHeader(stringResource(R.string.im_search_cat_meetings))
                     }
-                    items(shown, key = { "r:${it.roomId}" }) { meeting ->
+                    // key 带 scheduled 标志:app 层已按 roomId 去重(历史优先),
+                    // 这里再防一手宿主不去重时的 LazyColumn key 冲突崩溃。
+                    items(shown, key = { "r:${it.scheduled}:${it.roomId}" }) { meeting ->
                         TwoLineRow(
-                            emoji = "📹",
+                            emoji = if (meeting.scheduled) "📅" else "📹",
                             title = meeting.name.ifBlank { "—" },
                             subtitle = DateFormat.getDateTimeInstance(
                                 DateFormat.SHORT, DateFormat.SHORT,
                             ).format(Date(meeting.timeMs)),
-                            onClick = { onOpenMeeting?.invoke(meeting.roomId) },
+                            onClick = {
+                                val slug = meeting.slug
+                                if (meeting.scheduled && slug != null && onOpenScheduled != null) {
+                                    onOpenScheduled(slug)
+                                } else {
+                                    onOpenMeeting?.invoke(meeting.roomId)
+                                }
+                            },
                         )
                     }
                 }
