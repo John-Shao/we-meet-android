@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -27,6 +28,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -40,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -110,10 +113,14 @@ class EventDetailViewModel(
         }
     }
 
-    /** Delete the event (organizer only); [onDone] fires on success so the screen pops. */
-    fun delete(onDone: () -> Unit) {
+    /**
+     * Delete the event (organizer only); [onDone] fires on success so the screen
+     * pops. [scope] = "following"(仅重复子场次)截断该场次及之后;null = 缺省
+     * (子场次=仅此次记 exdate;主事件=删整个系列)。
+     */
+    fun delete(scope: String? = null, onDone: () -> Unit) {
         viewModelScope.launch {
-            runCatching { api.deleteEvent(eventId) }
+            runCatching { api.deleteEvent(eventId, scope) }
                 .onSuccess { onDone() }
                 .onFailure { _ui.update { it.copy(deleteError = true) } }
         }
@@ -145,7 +152,8 @@ fun EventDetailScreen(
     eventId: String,
     onBack: () -> Unit,
     onJoinSlug: (slug: String) -> Unit,
-    onEdit: (eventId: String) -> Unit,
+    /** [scope] = one/following/all(重复子场次)或 null(单次/主事件)。 */
+    onEdit: (eventId: String, scope: String?) -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val vm: EventDetailViewModel = viewModel(
@@ -153,11 +161,12 @@ fun EventDetailScreen(
         factory = EventDetailViewModel.factory(app, eventId),
     )
     val ui by vm.ui.collectAsStateWithLifecycle()
+    // 单次/主事件删除:原确认弹窗(主事件=删整个系列)。
     var confirmDelete by remember { mutableStateOf(false) }
-    // P2-M2 重复日程的三选编辑/删除语义(仅此次/此次及以后/全部)尚未在 App 端落地
-    // (roadmap M3);在此之前,重复日程一律引导到网页端管理,避免无 edit_scope 的
-    // 编辑被后端静默按「全部」重写整条系列。
-    var showRecurringHint by remember { mutableStateOf(false) }
+    // P2-M2 重复子场次:编辑/删除先弹三选范围(编辑=仅此次/此次及以后/全部;
+    // 删除=仅此次/此次及以后)。主事件走直连(编辑=全部,删除=系列确认)。
+    var editScopeAsk by remember { mutableStateOf(false) }
+    var deleteScopeAsk by remember { mutableStateOf(false) }
 
     // Re-fetch on resume so an edit made on the edit screen shows on return.
     androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
@@ -176,9 +185,11 @@ fun EventDetailScreen(
                 },
                 actions = {
                     if (ui.canManage) {
-                        val recurring = ui.event?.isRecurring == true
+                        // 重复「子场次」(recurrence_parent 非空)先弹三选;主事件/
+                        // 单次直连(主事件编辑=后端全部,删除=系列确认)。
+                        val isOccurrence = ui.event?.recurrenceParent != null
                         IconButton(onClick = {
-                            if (recurring) showRecurringHint = true else onEdit(eventId)
+                            if (isOccurrence) editScopeAsk = true else onEdit(eventId, null)
                         }) {
                             Icon(
                                 Icons.Filled.Edit,
@@ -186,7 +197,7 @@ fun EventDetailScreen(
                             )
                         }
                         IconButton(onClick = {
-                            if (recurring) showRecurringHint = true else confirmDelete = true
+                            if (isOccurrence) deleteScopeAsk = true else confirmDelete = true
                         }) {
                             Icon(
                                 Icons.Filled.Delete,
@@ -204,7 +215,7 @@ fun EventDetailScreen(
                 confirmButton = {
                     androidx.compose.material3.TextButton(onClick = {
                         confirmDelete = false
-                        vm.delete(onDone = onBack)
+                        vm.delete(scope = null, onDone = onBack)
                     }) { Text(stringResource(R.string.event_action_delete)) }
                 },
                 dismissButton = {
@@ -215,15 +226,32 @@ fun EventDetailScreen(
                 text = { Text(stringResource(R.string.event_delete_confirm)) },
             )
         }
-        if (showRecurringHint) {
-            androidx.compose.material3.AlertDialog(
-                onDismissRequest = { showRecurringHint = false },
-                confirmButton = {
-                    androidx.compose.material3.TextButton(
-                        onClick = { showRecurringHint = false },
-                    ) { Text(stringResource(R.string.ok)) }
+        if (editScopeAsk) {
+            EventScopeDialog(
+                title = stringResource(R.string.event_edit_scope_title),
+                options = listOf("one", "following", "all"),
+                danger = false,
+                onConfirm = { scope ->
+                    editScopeAsk = false
+                    onEdit(eventId, scope)
                 },
-                text = { Text(stringResource(R.string.event_recurring_manage_on_web)) },
+                onDismiss = { editScopeAsk = false },
+            )
+        }
+        if (deleteScopeAsk) {
+            EventScopeDialog(
+                title = stringResource(R.string.event_delete_scope_title),
+                options = listOf("one", "following"),
+                danger = true,
+                onConfirm = { scope ->
+                    deleteScopeAsk = false
+                    // one=后端缺省(仅此次记 exdate);following=截断该场次及之后。
+                    vm.delete(
+                        scope = if (scope == "following") "following" else null,
+                        onDone = onBack,
+                    )
+                },
+                onDismiss = { deleteScopeAsk = false },
             )
         }
         Box(
@@ -418,3 +446,65 @@ private fun reminderLabel(res: android.content.res.Resources, minutes: Int): Str
         1440 -> res.getString(R.string.calendar_reminder_day)
         else -> res.getString(R.string.calendar_reminder_minutes, minutes)
     }
+
+/**
+ * P2-M2 重复日程三选范围弹窗(编辑/删除共用)。弹窗本身即确认步骤——确认后
+ * 直接执行,不再二次确认(对齐 Web EditScopeDialog)。[options] 决定给几项:
+ * 编辑=one/following/all,删除=one/following。
+ */
+@Composable
+private fun EventScopeDialog(
+    title: String,
+    options: List<String>,
+    danger: Boolean,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var selected by remember { mutableStateOf(options.first()) }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column {
+                options.forEach { option ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selected = option }
+                            .padding(vertical = 4.dp),
+                    ) {
+                        RadioButton(
+                            selected = selected == option,
+                            onClick = { selected = option },
+                        )
+                        Text(
+                            text = scopeLabel(option),
+                            modifier = Modifier.padding(start = 4.dp),
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = { onConfirm(selected) }) {
+                Text(
+                    text = stringResource(R.string.ok),
+                    color = if (danger) MaterialTheme.colorScheme.error else Color.Unspecified,
+                )
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.common_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun scopeLabel(scope: String): String = when (scope) {
+    "one" -> stringResource(R.string.event_scope_one)
+    "following" -> stringResource(R.string.event_scope_following)
+    else -> stringResource(R.string.event_scope_all)
+}

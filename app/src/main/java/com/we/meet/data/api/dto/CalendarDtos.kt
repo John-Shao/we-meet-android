@@ -97,6 +97,11 @@ data class UpdateEventRequest(
     @Json(name = "end_at") val endAt: String,
     @Json(name = "all_day") val allDay: Boolean,
     val reminders: List<Int>,
+    /**
+     * P2-M2 重复子场次的编辑范围:one|following|all。单次/主事件传 null——
+     * 后端 `get('edit_scope') or ''` 会把 null 当缺省(主事件缺省=全部)。
+     */
+    @Json(name = "edit_scope") val editScope: String? = null,
 )
 
 @JsonClass(generateAdapter = true)

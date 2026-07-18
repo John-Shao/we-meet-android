@@ -340,7 +340,11 @@
     <string name="event_action_edit">Bearbeiten</string>
     <string name="event_action_delete">Löschen</string>
     <string name="event_delete_confirm">Diesen Termin löschen?</string>
-    <string name="event_recurring_manage_on_web">Dies ist ein wiederkehrender Termin. Bitte bearbeiten oder löschen Sie ihn in der Web-App.</string>
+    <string name="event_edit_scope_title">Wiederkehrenden Termin bearbeiten</string>
+    <string name="event_delete_scope_title">Wiederkehrenden Termin löschen</string>
+    <string name="event_scope_one">Nur dieser Termin</string>
+    <string name="event_scope_following">Dieser und folgende Termine</string>
+    <string name="event_scope_all">Alle Termine</string>
     <string name="event_delete_failed">Löschen fehlgeschlagen</string>
     <string name="common_cancel">Abbrechen</string>
     <string name="approval_title">Genehmigungen</string>

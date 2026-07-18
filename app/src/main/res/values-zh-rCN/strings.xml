@@ -340,7 +340,11 @@
     <string name="event_action_edit">编辑</string>
     <string name="event_action_delete">删除</string>
     <string name="event_delete_confirm">确定删除该日程？</string>
-    <string name="event_recurring_manage_on_web">这是重复日程，请在网页端编辑或删除。</string>
+    <string name="event_edit_scope_title">编辑重复日程</string>
+    <string name="event_delete_scope_title">删除重复日程</string>
+    <string name="event_scope_one">仅此场次</string>
+    <string name="event_scope_following">此场次及以后</string>
+    <string name="event_scope_all">所有场次</string>
     <string name="event_delete_failed">删除失败</string>
     <string name="common_cancel">取消</string>
     <string name="approval_title">审批</string>

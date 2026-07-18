@@ -340,7 +340,11 @@
     <string name="event_action_edit">Modifier</string>
     <string name="event_action_delete">Supprimer</string>
     <string name="event_delete_confirm">Supprimer cet événement ?</string>
-    <string name="event_recurring_manage_on_web">Il s\'agit d\'un événement récurrent. Veuillez le modifier ou le supprimer depuis l\'application web.</string>
+    <string name="event_edit_scope_title">Modifier l\'événement récurrent</string>
+    <string name="event_delete_scope_title">Supprimer l\'événement récurrent</string>
+    <string name="event_scope_one">Cet événement uniquement</string>
+    <string name="event_scope_following">Cet événement et les suivants</string>
+    <string name="event_scope_all">Tous les événements</string>
     <string name="event_delete_failed">Échec de la suppression</string>
     <string name="common_cancel">Annuler</string>
     <string name="approval_title">Approbations</string>

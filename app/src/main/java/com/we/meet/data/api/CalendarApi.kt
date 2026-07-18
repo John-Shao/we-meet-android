@@ -45,6 +45,13 @@ interface CalendarApi {
     @PATCH("api/v1.0/calendar-events/{id}/")
     suspend fun updateEvent(@Path("id") id: String, @Body body: UpdateEventRequest): CalendarEventDto
 
+    /**
+     * Delete an event. [scope] = "following"(仅重复子场次)截断该场次及之后;
+     * null = 缺省语义(子场次=仅此次记 exdate;主事件=删整个系列)。
+     */
     @DELETE("api/v1.0/calendar-events/{id}/")
-    suspend fun deleteEvent(@Path("id") id: String)
+    suspend fun deleteEvent(
+        @Path("id") id: String,
+        @Query("scope") scope: String? = null,
+    )
 }

@@ -125,7 +125,8 @@ object Routes {
     const val MEMBER_DETAIL = "$MEMBER_DETAIL_BASE/{userId}"
     private const val EVENT_DETAIL_BASE = "event_detail"
     const val EVENT_DETAIL = "$EVENT_DETAIL_BASE/{eventId}"
-    const val CREATE_EVENT = "create_event?epochDay={epochDay}&eventId={eventId}"
+    const val CREATE_EVENT =
+        "create_event?epochDay={epochDay}&eventId={eventId}&editScope={editScope}"
 
     /** New-chat picker, optionally seeded with a peer (从直聊「新建群聊」预选对端)。 */
     fun imNewChat(peerUserId: String? = null): String =
@@ -155,8 +156,11 @@ object Routes {
 
     fun createEvent(epochDay: Long): String = "create_event?epochDay=$epochDay"
 
-    fun editEvent(eventId: String): String =
-        "create_event?eventId=${URLEncoder.encode(eventId, StandardCharsets.UTF_8.name())}"
+    fun editEvent(eventId: String, editScope: String? = null): String {
+        val base = "create_event?eventId=${URLEncoder.encode(eventId, StandardCharsets.UTF_8.name())}"
+        // P2-M2 重复子场次:携带编辑范围(one/following/all),单次/主事件不带。
+        return if (editScope != null) "$base&editScope=$editScope" else base
+    }
 
     private const val WAITING_ROOM_BASE = "waiting_room"
     const val WAITING_ROOM = "$WAITING_ROOM_BASE/{idOrSlug}/{name}/{mic}/{cam}"
@@ -595,7 +599,7 @@ fun AppNav() {
                 eventId = eventId,
                 onBack = rememberOnceOnly(safePop),
                 onJoinSlug = { slug -> navController.navigate(Routes.joinPreview(slug)) },
-                onEdit = { id -> navController.navigate(Routes.editEvent(id)) },
+                onEdit = { id, scope -> navController.navigate(Routes.editEvent(id, scope)) },
             )
         }
 
@@ -611,6 +615,11 @@ fun AppNav() {
                     nullable = true
                     defaultValue = null
                 },
+                navArgument("editScope") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
             ),
         ) { entry ->
             CreateEventScreen(
@@ -618,6 +627,7 @@ fun AppNav() {
                 onClose = rememberOnceOnly(safePop),
                 editEventId = entry.arguments?.getString("eventId")
                     ?.let { Routes.decode(it) },
+                editScope = entry.arguments?.getString("editScope"),
             )
         }
 

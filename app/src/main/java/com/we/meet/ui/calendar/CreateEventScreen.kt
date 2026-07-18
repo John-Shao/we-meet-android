@@ -82,6 +82,8 @@ fun CreateEventScreen(
     initialEpochDay: Long?,
     onClose: () -> Unit,
     editEventId: String? = null,
+    /** P2-M2 重复子场次编辑范围(one/following/all);单次/主事件为 null。 */
+    editScope: String? = null,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val scope = rememberCoroutineScope()
@@ -167,6 +169,7 @@ fun CreateEventScreen(
                             endAt = isoUtc(endInstant),
                             allDay = allDay,
                             reminders = reminderMinutes?.let { listOf(it) } ?: emptyList(),
+                            editScope = editScope,
                         ),
                     )
                 } else {
