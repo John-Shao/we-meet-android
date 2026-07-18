@@ -406,4 +406,5 @@
     <string name="meeting_detail_tab_chapters">Chapitres</string>
     <string name="meeting_detail_chapters_empty">Pas encore de chapitres — générés avec le compte rendu.</string>
     <string name="meeting_detail_summary_edited">Modifié</string>
+    <string name="docs_viewer_title">Document</string>
 </resources>

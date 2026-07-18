@@ -232,4 +232,11 @@
     <string name="im_msg_search_loading">加载中…</string>
     <!-- P4-M3 未接会议邀请记录 -->
     <string name="im_calllog_meet_invite">会议邀请</string>
+
+    <!-- 搜索统一 M2 分类标签 -->
+    <string name="im_search_cat_all">全部</string>
+    <string name="im_search_cat_contacts">联系人</string>
+    <string name="im_search_cat_meetings">会议</string>
+    <string name="im_search_cat_messages">消息</string>
+    <string name="im_search_cat_docs">文档</string>
 </resources>

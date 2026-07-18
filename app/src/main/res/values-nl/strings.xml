@@ -406,4 +406,5 @@
     <string name="meeting_detail_tab_chapters">Hoofdstukken</string>
     <string name="meeting_detail_chapters_empty">Nog geen hoofdstukken — gegenereerd met de samenvatting.</string>
     <string name="meeting_detail_summary_edited">Bewerkt</string>
+    <string name="docs_viewer_title">Document</string>
 </resources>

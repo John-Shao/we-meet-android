@@ -220,4 +220,11 @@
     <string name="im_msg_search_loading">Chargement…</string>
     <!-- P4-M3 未接会议邀请记录 -->
     <string name="im_calllog_meet_invite">Invitation à la réunion</string>
+
+    <!-- 搜索统一 M2 分类标签 -->
+    <string name="im_search_cat_all">Tout</string>
+    <string name="im_search_cat_contacts">Contacts</string>
+    <string name="im_search_cat_meetings">Réunions</string>
+    <string name="im_search_cat_messages">Messages</string>
+    <string name="im_search_cat_docs">Documents</string>
 </resources>

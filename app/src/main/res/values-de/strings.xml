@@ -406,4 +406,5 @@
     <string name="meeting_detail_tab_chapters">Kapitel</string>
     <string name="meeting_detail_chapters_empty">Noch keine Kapitel — sie entstehen mit der Zusammenfassung.</string>
     <string name="meeting_detail_summary_edited">Bearbeitet</string>
+    <string name="docs_viewer_title">Dokument</string>
 </resources>

@@ -1,6 +1,7 @@
 package com.we.meet.feature.im.ui.search
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,12 +12,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,12 +55,38 @@ import com.we.meet.feature.im.ui.common.previewText
 import java.text.DateFormat
 import java.util.Date
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+/** 搜索统一 M2:联系人命中(app 层经 directory 解析后传入)。 */
+data class GlobalSearchContact(
+    val userId: String,
+    val name: String,
+    val subtitle: String? = null,
+)
+
+/** 会议命中(app 层来自本地 HistoryStore;roomId 进历史详情)。 */
+data class GlobalSearchMeeting(
+    val roomId: String,
+    val name: String,
+    val timeMs: Long,
+)
+
+/** 文档命中(后端 /docs/search/ 代理;url 进应用内 WebView)。 */
+data class GlobalSearchDoc(
+    val title: String,
+    val url: String,
+    val updatedAt: String,
+)
+
+private enum class SearchCategory { ALL, CONTACTS, MEETINGS, MESSAGES, DOCS }
 
 /**
- * P1-M3 全局搜索页(对齐 Web GlobalSearch 的飞书式分区心智):
- *  - 「会话」= 本地标题过滤(即时,接替原会话列表内的本地过滤);
- *  - 「消息」= 服务端全文检索(GET /im/search/,q≥2、300ms debounce、
- *    next_before_mid 翻页),命中点击 → 进入会话并定位到该条(seq 随回调)。
+ * 全局搜索页(搜索统一 M2,对齐 Web GlobalSearch 的分类标签心智):
+ * 全部 / 联系人 / 会议 / 消息 / 文档。
+ *  - 「会话」= 本地标题过滤(全部/消息 分类下显示,直达群聊的快捷径);
+ *  - 「消息」= 服务端全文检索(P1-M3,300ms debounce、next_before_mid 翻页);
+ *  - 「联系人/会议/文档」= app 层以 suspend provider 注入(feature-im 不
+ *    反向依赖 app 模块);provider 为 null 时该分类隐藏(向后兼容)。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,18 +94,28 @@ fun MessageSearchScreen(
     deps: ImDeps,
     onBack: () -> Unit,
     onOpenChat: (cid: String, seq: Long?) -> Unit,
+    searchContacts: (suspend (String) -> List<GlobalSearchContact>)? = null,
+    searchMeetings: (suspend (String) -> List<GlobalSearchMeeting>)? = null,
+    searchDocs: (suspend (String) -> List<GlobalSearchDoc>)? = null,
+    onOpenMeeting: ((roomId: String) -> Unit)? = null,
+    onOpenDoc: ((url: String) -> Unit)? = null,
 ) {
     val session = remember(deps) { ImSession.get(deps) }
     val summaries by session.conversations.conversations.collectAsStateWithLifecycle()
     val directoryVersion by session.userDirectory.version.collectAsStateWithLifecycle()
     val selfUid by session.selfUid.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
 
     var query by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf(SearchCategory.ALL) }
     var items by remember { mutableStateOf<List<ImSearchItem>>(emptyList()) }
     var nextBeforeMid by remember { mutableStateOf<Long?>(null) }
     var searching by remember { mutableStateOf(false) }
     var loadingMore by remember { mutableStateOf(false) }
     var searchedOnce by remember { mutableStateOf(false) }
+    var contacts by remember { mutableStateOf<List<GlobalSearchContact>>(emptyList()) }
+    var meetings by remember { mutableStateOf<List<GlobalSearchMeeting>>(emptyList()) }
+    var docs by remember { mutableStateOf<List<GlobalSearchDoc>>(emptyList()) }
 
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
@@ -100,7 +140,7 @@ fun MessageSearchScreen(
         else summaries.filter { titleOf(it.cid).contains(q, ignoreCase = true) }.take(8)
     }
 
-    // 「消息」分区:300ms debounce 的服务端检索;命中后解析发送者名。
+    // 消息:300ms debounce 的服务端检索(P1-M3 原状)。
     LaunchedEffect(query) {
         val q = query.trim()
         if (q.length < 2) {
@@ -117,6 +157,34 @@ fun MessageSearchScreen(
         items = res?.items ?: emptyList()
         nextBeforeMid = res?.nextBeforeMid
         session.userDirectory.requestResolve(items.map { it.senderUid }.distinct())
+    }
+
+    // 联系人/会议:轻量源,同样 300ms debounce(q≥1)。
+    LaunchedEffect(query) {
+        val q = query.trim()
+        if (q.isEmpty()) {
+            contacts = emptyList()
+            meetings = emptyList()
+            return@LaunchedEffect
+        }
+        delay(300)
+        if (searchContacts != null) {
+            contacts = runCatching { searchContacts(q) }.getOrDefault(emptyList())
+        }
+        if (searchMeetings != null) {
+            meetings = runCatching { searchMeetings(q) }.getOrDefault(emptyList())
+        }
+    }
+
+    // 文档:网络源,q≥2(与后端校验一致)。
+    LaunchedEffect(query) {
+        val q = query.trim()
+        if (q.length < 2 || searchDocs == null) {
+            docs = emptyList()
+            return@LaunchedEffect
+        }
+        delay(300)
+        docs = runCatching { searchDocs(q) }.getOrDefault(emptyList())
     }
 
     val loadMore: () -> Unit = {
@@ -145,6 +213,35 @@ fun MessageSearchScreen(
             session.userDirectory.requestResolve(res.items.map { it.senderUid }.distinct())
         }
         loadingMore = false
+    }
+
+    // 分类可见性:provider 缺失的分类不出现(向后兼容宿主未接线的场景)。
+    val categories = remember(searchContacts, searchMeetings, searchDocs) {
+        buildList {
+            add(SearchCategory.ALL)
+            if (searchContacts != null) add(SearchCategory.CONTACTS)
+            if (searchMeetings != null) add(SearchCategory.MEETINGS)
+            add(SearchCategory.MESSAGES)
+            if (searchDocs != null) add(SearchCategory.DOCS)
+        }
+    }
+    val showConv = category == SearchCategory.ALL || category == SearchCategory.MESSAGES
+    val showContacts = searchContacts != null &&
+        (category == SearchCategory.ALL || category == SearchCategory.CONTACTS)
+    val showMeetings = searchMeetings != null &&
+        (category == SearchCategory.ALL || category == SearchCategory.MEETINGS)
+    val showMessages = category == SearchCategory.ALL || category == SearchCategory.MESSAGES
+    val showDocs = searchDocs != null &&
+        (category == SearchCategory.ALL || category == SearchCategory.DOCS)
+    val inAll = category == SearchCategory.ALL
+
+    @Composable
+    fun labelFor(cat: SearchCategory): String = when (cat) {
+        SearchCategory.ALL -> stringResource(R.string.im_search_cat_all)
+        SearchCategory.CONTACTS -> stringResource(R.string.im_search_cat_contacts)
+        SearchCategory.MEETINGS -> stringResource(R.string.im_search_cat_meetings)
+        SearchCategory.MESSAGES -> stringResource(R.string.im_search_cat_messages)
+        SearchCategory.DOCS -> stringResource(R.string.im_search_cat_docs)
     }
 
     Scaffold(
@@ -182,123 +279,233 @@ fun MessageSearchScreen(
             )
         },
     ) { padding ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            if (convHits.isNotEmpty()) {
-                item(key = "sec-conv") {
-                    SectionHeader(stringResource(R.string.im_msg_search_sec_conversations))
+            // 分类标签行(飞书式,对齐 Web 面板)。
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+            ) {
+                categories.forEach { cat ->
+                    FilterChip(
+                        selected = category == cat,
+                        onClick = { category = cat },
+                        label = { Text(labelFor(cat)) },
+                    )
                 }
-                items(convHits, key = { "c:${it.cid}" }) { s ->
-                    val title = titleOf(s.cid).ifBlank {
-                        stringResource(R.string.im_untitled_chat)
+            }
+
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                if (showConv && convHits.isNotEmpty()) {
+                    item(key = "sec-conv") {
+                        SectionHeader(stringResource(R.string.im_msg_search_sec_conversations))
                     }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onOpenChat(s.cid, null) }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                    ) {
-                        GroupAvatar(
-                            tiles = listOf(GroupTile(s.cid, title, null)),
-                            size = 40.dp,
+                    items(convHits, key = { "c:${it.cid}" }) { s ->
+                        val title = titleOf(s.cid).ifBlank {
+                            stringResource(R.string.im_untitled_chat)
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onOpenChat(s.cid, null) }
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                        ) {
+                            GroupAvatar(
+                                tiles = listOf(GroupTile(s.cid, title, null)),
+                                size = 40.dp,
+                            )
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(start = 12.dp),
+                            )
+                        }
+                    }
+                }
+
+                if (showContacts && contacts.isNotEmpty()) {
+                    val shown = if (inAll) contacts.take(3) else contacts
+                    item(key = "sec-contacts") {
+                        SectionHeader(stringResource(R.string.im_search_cat_contacts))
+                    }
+                    items(shown, key = { "p:${it.userId}" }) { contact ->
+                        TwoLineRow(
+                            emoji = "👤",
+                            title = contact.name,
+                            subtitle = contact.subtitle,
+                            onClick = {
+                                // 联系人命中 = 直接开聊(Web 口径):建/取直聊再进会话。
+                                scope.launch {
+                                    runCatching {
+                                        session.bridge.createDirectByUserId(contact.userId)
+                                    }.onSuccess { conv -> onOpenChat(conv.cid, null) }
+                                }
+                            },
                         )
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.bodyLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(start = 12.dp),
+                    }
+                }
+
+                if (showMeetings && meetings.isNotEmpty()) {
+                    val shown = if (inAll) meetings.take(3) else meetings
+                    item(key = "sec-meetings") {
+                        SectionHeader(stringResource(R.string.im_search_cat_meetings))
+                    }
+                    items(shown, key = { "r:${it.roomId}" }) { meeting ->
+                        TwoLineRow(
+                            emoji = "📹",
+                            title = meeting.name.ifBlank { "—" },
+                            subtitle = DateFormat.getDateTimeInstance(
+                                DateFormat.SHORT, DateFormat.SHORT,
+                            ).format(Date(meeting.timeMs)),
+                            onClick = { onOpenMeeting?.invoke(meeting.roomId) },
+                        )
+                    }
+                }
+
+                if (showMessages && query.trim().length >= 2) {
+                    item(key = "sec-msg") {
+                        SectionHeader(stringResource(R.string.im_msg_search_sec_messages))
+                    }
+                    if (searching && items.isEmpty()) {
+                        item(key = "spinner") {
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                            ) { CircularProgressIndicator(Modifier.width(24.dp)) }
+                        }
+                    } else if (items.isEmpty() && searchedOnce) {
+                        item(key = "empty") {
+                            Text(
+                                text = stringResource(R.string.im_msg_search_no_results),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(16.dp),
+                            )
+                        }
+                    }
+                    val shownMsgs = if (inAll) items.take(5) else items
+                    items(shownMsgs, key = { "m:${it.mid}" }) { hit ->
+                        val sender = session.userDirectory.get(hit.senderUid)?.displayName
+                            ?: hit.senderUid
+                        val conv = titleOf(hit.cid).ifBlank {
+                            stringResource(R.string.im_untitled_chat)
+                        }
+                        // directoryVersion 参与重组:解析回来后名字自动刷新。
+                        @Suppress("UNUSED_EXPRESSION") directoryVersion
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onOpenChat(hit.cid, hit.seq) }
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(
+                                    text = conv,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = DateFormat.getDateTimeInstance(
+                                        DateFormat.SHORT, DateFormat.SHORT,
+                                    ).format(Date(hit.createdAt)),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Text(
+                                text = "$sender: ${previewText(hit.contentType, hit.body)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                    if (nextBeforeMid != null && !inAll) {
+                        item(key = "more") {
+                            Text(
+                                text = stringResource(
+                                    if (loadingMore) R.string.im_msg_search_loading
+                                    else R.string.im_msg_search_more
+                                ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(enabled = !loadingMore) { loadMore() }
+                                    .padding(16.dp),
+                            )
+                        }
+                    }
+                }
+
+                if (showDocs && docs.isNotEmpty()) {
+                    val shown = if (inAll) docs.take(3) else docs
+                    item(key = "sec-docs") {
+                        SectionHeader(stringResource(R.string.im_search_cat_docs))
+                    }
+                    items(shown, key = { "d:${it.url}" }) { doc ->
+                        TwoLineRow(
+                            emoji = "📄",
+                            title = doc.title.ifBlank { "—" },
+                            subtitle = doc.updatedAt.takeIf { it.isNotBlank() },
+                            onClick = { onOpenDoc?.invoke(doc.url) },
                         )
                     }
                 }
             }
-            if (query.trim().length >= 2) {
-                item(key = "sec-msg") {
-                    SectionHeader(stringResource(R.string.im_msg_search_sec_messages))
-                }
-                if (searching && items.isEmpty()) {
-                    item(key = "spinner") {
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                        ) { CircularProgressIndicator(Modifier.width(24.dp)) }
-                    }
-                } else if (items.isEmpty() && searchedOnce) {
-                    item(key = "empty") {
-                        Text(
-                            text = stringResource(R.string.im_msg_search_no_results),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(16.dp),
-                        )
-                    }
-                }
-                items(items, key = { "m:${it.mid}" }) { hit ->
-                    val sender = session.userDirectory.get(hit.senderUid)?.displayName
-                        ?: hit.senderUid
-                    val conv = titleOf(hit.cid).ifBlank {
-                        stringResource(R.string.im_untitled_chat)
-                    }
-                    // directoryVersion 参与重组:解析回来后名字自动刷新。
-                    @Suppress("UNUSED_EXPRESSION") directoryVersion
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onOpenChat(hit.cid, hit.seq) }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(
-                                text = conv,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f),
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = DateFormat.getDateTimeInstance(
-                                    DateFormat.SHORT, DateFormat.SHORT,
-                                ).format(Date(hit.createdAt)),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Text(
-                            text = "$sender: ${previewText(hit.contentType, hit.body)}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-                if (nextBeforeMid != null) {
-                    item(key = "more") {
-                        Text(
-                            text = stringResource(
-                                if (loadingMore) R.string.im_msg_search_loading
-                                else R.string.im_msg_search_more
-                            ),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable(enabled = !loadingMore) { loadMore() }
-                                .padding(16.dp),
-                        )
-                    }
-                }
+        }
+    }
+}
+
+@Composable
+private fun TwoLineRow(
+    emoji: String,
+    title: String,
+    subtitle: String?,
+    onClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        Text(text = emoji, style = MaterialTheme.typography.titleLarge)
+        Column(Modifier.padding(start = 12.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (!subtitle.isNullOrBlank()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }

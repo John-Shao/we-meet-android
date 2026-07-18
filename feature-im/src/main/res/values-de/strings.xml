@@ -220,4 +220,11 @@
     <string name="im_msg_search_loading">Wird geladen…</string>
     <!-- P4-M3 未接会议邀请记录 -->
     <string name="im_calllog_meet_invite">Besprechungseinladung</string>
+
+    <!-- 搜索统一 M2 分类标签 -->
+    <string name="im_search_cat_all">Alle</string>
+    <string name="im_search_cat_contacts">Kontakte</string>
+    <string name="im_search_cat_meetings">Meetings</string>
+    <string name="im_search_cat_messages">Nachrichten</string>
+    <string name="im_search_cat_docs">Dokumente</string>
 </resources>

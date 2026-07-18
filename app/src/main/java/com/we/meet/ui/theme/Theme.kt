@@ -56,12 +56,25 @@ private val DarkExtras = WeMeetExtras(
 
 private val LocalWeMeetExtras = staticCompositionLocalOf { LightExtras }
 
+/**
+ * Whether the app is painting its dark palette (mirrors [WeMeetTheme]'s
+ * `darkTheme`). Lets non-color consumers — e.g. the docs WebView, which must
+ * tell embedded docs which scheme to render — read the active mode without
+ * re-deriving it from settings. Read via [WeMeetTheme.isDark].
+ */
+private val LocalWeMeetIsDark = staticCompositionLocalOf { false }
+
 /** Accessor mirroring `MaterialTheme.colorScheme` for our extras. */
 object WeMeetTheme {
     val extras: WeMeetExtras
         @Composable
         @ReadOnlyComposable
         get() = LocalWeMeetExtras.current
+
+    val isDark: Boolean
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalWeMeetIsDark.current
 }
 
 @Composable
@@ -79,6 +92,7 @@ fun WeMeetTheme(
     }
     CompositionLocalProvider(
         LocalWeMeetExtras provides if (darkTheme) DarkExtras else LightExtras,
+        LocalWeMeetIsDark provides darkTheme,
     ) {
         MaterialTheme(
             colorScheme = if (darkTheme) DarkColors else LightColors,

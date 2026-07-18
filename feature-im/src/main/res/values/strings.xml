@@ -236,4 +236,11 @@
     <string name="im_msg_search_loading">Loading…</string>
     <!-- P4-M3 未接会议邀请记录 -->
     <string name="im_calllog_meet_invite">Meeting invite</string>
+
+    <!-- 搜索统一 M2 分类标签 -->
+    <string name="im_search_cat_all">All</string>
+    <string name="im_search_cat_contacts">Contacts</string>
+    <string name="im_search_cat_meetings">Meetings</string>
+    <string name="im_search_cat_messages">Messages</string>
+    <string name="im_search_cat_docs">Docs</string>
 </resources>

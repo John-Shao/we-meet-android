@@ -227,6 +227,15 @@ object Routes {
         return "$HISTORY_BASE/$enc"
     }
 
+    // 搜索统一 M2:全局搜索「文档」命中的应用内查看器。
+    private const val DOCS_VIEWER_BASE = "docs_viewer"
+    const val DOCS_VIEWER = "$DOCS_VIEWER_BASE/{url}"
+
+    fun docsViewer(url: String): String {
+        val enc = URLEncoder.encode(url, StandardCharsets.UTF_8.name())
+        return "$DOCS_VIEWER_BASE/$enc"
+    }
+
     fun decode(value: String): String =
         URLDecoder.decode(value, StandardCharsets.UTF_8.name())
 }
@@ -530,12 +539,66 @@ fun AppNav() {
         }
 
         composable(route = Routes.IM_SEARCH) {
+            // 搜索统一 M2:app 层把 联系人/会议/文档 三个数据源以 provider
+            // 注入(feature-im 不反向依赖 app 模块)。
             MessageSearchScreen(
                 deps = app,
                 onBack = rememberOnceOnly(safePop),
                 onOpenChat = { cid, seq ->
                     navController.navigate(Routes.imChat(cid, seq))
                 },
+                searchContacts = { q ->
+                    app.directoryRepository.searchMembers(q)
+                        .getOrNull()?.members.orEmpty()
+                        .take(8)
+                        .map { m ->
+                            com.we.meet.feature.im.ui.search.GlobalSearchContact(
+                                userId = m.id,
+                                name = m.fullName ?: m.shortName ?: m.email ?: m.id,
+                                subtitle = m.email,
+                            )
+                        }
+                },
+                searchMeetings = { q ->
+                    app.historyStore.entries.value
+                        .filter { it.name.contains(q, ignoreCase = true) }
+                        .take(8)
+                        .map { e ->
+                            com.we.meet.feature.im.ui.search.GlobalSearchMeeting(
+                                roomId = e.roomId,
+                                name = e.name,
+                                timeMs = e.lastLeftAtMs ?: e.firstJoinedAtMs,
+                            )
+                        }
+                },
+                searchDocs = { q ->
+                    app.apiClient.searchApi.searchDocs(q).results
+                        .filter { it.url.isNotBlank() }
+                        .map { d ->
+                            com.we.meet.feature.im.ui.search.GlobalSearchDoc(
+                                title = d.title,
+                                url = d.url,
+                                updatedAt = d.updatedAt,
+                            )
+                        }
+                },
+                onOpenMeeting = { roomId ->
+                    navController.navigate(Routes.historyDetail(roomId))
+                },
+                onOpenDoc = { url ->
+                    navController.navigate(Routes.docsViewer(url))
+                },
+            )
+        }
+
+        composable(
+            route = Routes.DOCS_VIEWER,
+            arguments = listOf(navArgument("url") { type = NavType.StringType }),
+        ) { entry ->
+            val url = Routes.decode(entry.arguments?.getString("url").orEmpty())
+            com.we.meet.ui.docs.DocsViewerScreen(
+                url = url,
+                onClose = rememberOnceOnly(safePop),
             )
         }
 

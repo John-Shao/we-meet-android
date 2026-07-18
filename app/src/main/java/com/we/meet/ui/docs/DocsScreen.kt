@@ -45,7 +45,7 @@ private const val EMBED_UA_MARKER = "WeMeetApp/1.0 (embedded-docs)"
  * through docs' OIDC authenticate endpoint, which trades that cookie for an
  * authenticated docs session with no user interaction.
  */
-private class DocsWebViewClient : WebViewClient() {
+internal class DocsWebViewClient : WebViewClient() {
 
     /** Set by [DocsTabScreen] while it is on screen, to drive the back handler. */
     var onHistoryChanged: (() -> Unit)? = null
@@ -109,7 +109,7 @@ private class DocsWebViewClient : WebViewClient() {
 }
 
 @SuppressLint("SetJavaScriptEnabled")
-fun createDocsWebView(context: Context): WebView =
+fun createDocsWebView(context: Context, initialUrl: String? = null): WebView =
     WebView(context).apply {
         // A programmatically-built WebView has no LayoutParams, so its host
         // measures it as WRAP_CONTENT — and Chromium then reports a CSS viewport
@@ -130,7 +130,13 @@ fun createDocsWebView(context: Context): WebView =
         // `window.self !== window.top` check is false, and `?embed=1` is dropped
         // by the authenticate → returnTo → `/` redirect chain. The UA is not.
         // Appended (not replaced) so docs still sees a normal Chrome/Android UA.
-        settings.userAgentString = "${settings.userAgentString} $EMBED_UA_MARKER"
+        // 追加深浅标记:docs 的 embedderTheme() 从 UA 解析初始主题(?theme= 活不过
+        // authenticate→returnTo→`/` 的重定向链,UA 挺得住)。运行时切换深浅另由
+        // DocsTabScreen 注入 postMessage,无需重载。改动需与 we-meet-docs
+        // useIsEmbedded.embedderTheme() 的解析同步。
+        val themeTag = if (darkTheme) "theme=dark" else "theme=light"
+        settings.userAgentString =
+            "${settings.userAgentString} $EMBED_UA_MARKER; $themeTag"
         // Deliberately NOT useWideViewPort/loadWithOverviewMode: docs ships a
         // responsive viewport meta, and forcing the desktop viewport rendered the
         // page zoomed out to a few pixels. Pinch-zoom stays available.
@@ -152,7 +158,9 @@ fun createDocsWebView(context: Context): WebView =
         // WebView: silently dropped without a gesture (blank page), or popping
         // Chrome once a tab tap supplied one.
         webViewClient = DocsWebViewClient()
-        loadUrl(docsUrl())
+        // 搜索统一 M2:文档命中查看器复用同一构造,直载目标文档深链
+        // (KC session cookie 由 CookieManager 全局共享,登录态自动带上)。
+        loadUrl(initialUrl ?: docsUrl())
     }
 
 /**

@@ -419,4 +419,5 @@
     <string name="meeting_detail_tab_chapters">智能章节</string>
     <string name="meeting_detail_chapters_empty">暂无章节——章节随纪要一起生成。</string>
     <string name="meeting_detail_summary_edited">已编辑</string>
+    <string name="docs_viewer_title">文档</string>
 </resources>

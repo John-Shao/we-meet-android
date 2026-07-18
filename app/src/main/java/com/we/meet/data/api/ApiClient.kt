@@ -94,6 +94,7 @@ class ApiClient(tokenStore: TokenStore) {
     val calendarApi: CalendarApi = retrofit.create(CalendarApi::class.java)
     val approvalApi: ApprovalApi = retrofit.create(ApprovalApi::class.java)
     val pushApi: PushApi = retrofit.create(PushApi::class.java)
+    val searchApi: SearchApi = retrofit.create(SearchApi::class.java)
 
     private fun normalizedBaseUrl(raw: String): String =
         if (raw.endsWith("/")) raw else "$raw/"
