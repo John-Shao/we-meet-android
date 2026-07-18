@@ -396,6 +396,8 @@ fun ChatScreen(
                     pins = ui.pins,
                     senderName = { uid -> vm.resolveUser(uid)?.displayName ?: uid },
                     onUnpin = { mid -> vm.unpin(mid) },
+                    // P3-M3 后补:点条目按需定位(回翻+滚动+高亮同 P1-M3 搜索)。
+                    onJump = { seq -> vm.locateToSeq(seq) },
                 )
             }
 

@@ -39,6 +39,8 @@ fun PinnedBar(
     pins: List<PinnedMessage>,
     senderName: (String) -> String,
     onUnpin: (Long) -> Unit,
+    /** P3-M3 后补子项:点击置顶条目跳转定位到消息(seq)。 */
+    onJump: ((Long) -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val latest = pins.first()
@@ -84,7 +86,18 @@ fun PinnedBar(
                             .padding(horizontal = 16.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Column(Modifier.weight(1f)) {
+                        Column(
+                            Modifier
+                                .weight(1f)
+                                .then(
+                                    if (onJump != null) {
+                                        Modifier.clickable {
+                                            expanded = false
+                                            onJump(pin.message.seq)
+                                        }
+                                    } else Modifier
+                                ),
+                        ) {
                             Text(
                                 text = senderName(pin.message.senderUid),
                                 style = MaterialTheme.typography.labelSmall,

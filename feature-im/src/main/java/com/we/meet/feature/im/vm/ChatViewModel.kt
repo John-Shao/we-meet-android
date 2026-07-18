@@ -786,6 +786,11 @@ class ChatViewModel internal constructor(
         _ui.update { it.copy(locateMid = null) }
     }
 
+    /** P3-M3 后补:Pin 条目点击等场景的按需定位(同一套回翻+高亮)。 */
+    fun locateToSeq(seq: Long) {
+        viewModelScope.launch { locateTo(seq) }
+    }
+
     private fun appendMessages(list: List<Message>) {
         mergeRaw(list)
         _ui.update { s -> deriveRows(s) }
