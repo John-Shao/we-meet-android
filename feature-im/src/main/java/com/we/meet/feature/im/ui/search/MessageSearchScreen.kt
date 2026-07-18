@@ -111,6 +111,8 @@ fun MessageSearchScreen(
     searchDocs: (suspend (String) -> List<GlobalSearchDoc>)? = null,
     onOpenMeeting: ((roomId: String) -> Unit)? = null,
     onOpenDoc: ((url: String) -> Unit)? = null,
+    /** 日历引用直开事件详情;null = 该类引用仅展示。 */
+    onOpenEvent: ((eventId: String) -> Unit)? = null,
     /** P1-4 M3:AI 问答 SSE(app 层实现);null = 隐藏 AI 分类。 */
     askAi: ((String) -> kotlinx.coroutines.flow.Flow<AskEvent>)? = null,
 ) {
@@ -368,7 +370,8 @@ fun MessageSearchScreen(
                                 onOpenChat(citation.cid, citation.seq)
                             citation.kind == "meeting" && citation.roomId != null ->
                                 onOpenMeeting?.invoke(citation.roomId)
-                            // calendar:App 端暂无按日定位路由,仅展示(M3 注记)。
+                            citation.kind == "calendar" && citation.eventId != null ->
+                                onOpenEvent?.invoke(citation.eventId)
                         }
                     },
                 )

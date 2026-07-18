@@ -99,6 +99,7 @@ private fun parseEvent(payload: String): AskEvent? = runCatching {
                             seq = if (c.has("seq") && !c.isNull("seq")) c.optLong("seq") else null,
                             roomId = c.optString("room_id").takeIf { it.isNotBlank() },
                             date = c.optString("date").takeIf { it.isNotBlank() },
+                            eventId = c.optString("event_id").takeIf { it.isNotBlank() },
                         )
                     )
                 }

@@ -19,6 +19,8 @@ data class AskCitation(
     val seq: Long? = null,
     val roomId: String? = null,
     val date: String? = null,
+    /** calendar 引用的具体场次 id(重复系列=最近一场),直开事件详情。 */
+    val eventId: String? = null,
 )
 
 sealed interface AskEvent {

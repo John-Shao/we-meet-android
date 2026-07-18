@@ -588,6 +588,10 @@ fun AppNav() {
                 onOpenDoc = { url ->
                     navController.navigate(Routes.docsViewer(url))
                 },
+                // AI 日历引用:直开事件详情(EventDetailScreen 按 id 自加载)。
+                onOpenEvent = { eventId ->
+                    navController.navigate(Routes.eventDetail(eventId))
+                },
                 // P1-4 M3:AI 问答 SSE(鉴权 OkHttp,契约同 Web §D2)。
                 askAi = { question ->
                     com.we.meet.data.api.globalAskStream(
