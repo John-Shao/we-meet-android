@@ -72,6 +72,9 @@ class GroupInfoViewModel internal constructor(
     // which reads these fields — declared after init they would still be null.
     private var rosterUids: List<String> = emptyList()
     private var ownerUid: String? = null
+    // 每个成员在本会话的群昵称(P10):uid → 非空昵称。昵称优先于目录名显示,
+    // 与 Web GroupInfoPanel 的 nameOf 口径一致;随 refresh() 重新拉取而更新。
+    private var nicknames: Map<String, String> = emptyMap()
 
     init {
         refresh()
@@ -104,6 +107,12 @@ class GroupInfoViewModel internal constructor(
                     rosterUids = roster.map { it.uid }
                     ownerUid = roster.firstOrNull { it.role == "owner" }?.uid
                         ?: summary?.ownerUid
+                    // 收集所有成员的群昵称(含他人),供成员列表覆盖目录名显示。
+                    nicknames = roster
+                        .mapNotNull { m ->
+                            m.nickname?.takeIf { it.isNotBlank() }?.let { m.uid to it }
+                        }
+                        .toMap()
                     val myNick = roster
                         .firstOrNull { it.uid == session.selfUid.value }
                         ?.nickname.orEmpty()
@@ -211,7 +220,8 @@ class GroupInfoViewModel internal constructor(
             GroupMemberUi(
                 uid = uid,
                 userId = info?.id?.takeIf { it.isNotBlank() },
-                displayName = info?.displayName ?: "",
+                // 群昵称(P10)优先覆盖目录名,与 Web nameOf 口径一致。
+                displayName = nicknames[uid] ?: info?.displayName ?: "",
                 avatarUrl = info?.avatarUrl?.takeIf { it.isNotBlank() },
                 isOwner = uid == ownerUid,
                 isSelf = uid == self,
