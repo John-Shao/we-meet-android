@@ -108,6 +108,8 @@ fun ConversationListScreen(
     onAvatarClick: () -> Unit,
     onOpenChat: (cid: String) -> Unit,
     onNewChat: () -> Unit,
+    /** P1-M3: open the global search page (conversations + message full-text). */
+    onOpenSearch: () -> Unit,
     onScanQrCode: () -> Unit,
     onCreateMeeting: () -> Unit,
     onJoinMeeting: () -> Unit,
@@ -156,33 +158,10 @@ fun ConversationListScreen(
         }
     }
 
-    // Saveable: a rotation mid-search must not silently drop the query and snap
-    // the list back to unfiltered. menuOpen is transient and deliberately isn't.
-    var searchActive by rememberSaveable { mutableStateOf(false) }
-    var query by rememberSaveable { mutableStateOf("") }
     var menuOpen by remember { mutableStateOf(false) }
 
-    // While searching, the header hides the avatar and the whole "more" menu, so
-    // Back is the gesture users reach for — without this it pops the tab screen.
-    BackHandler(enabled = searchActive) {
-        searchActive = false
-        query = ""
-    }
-
-    // Local filter over the loaded rows — no server-side conversation search.
-    val visibleRows = remember(rows, query) {
-        val q = query.trim()
-        if (q.isBlank()) rows else rows.filter { it.title.contains(q, ignoreCase = true) }
-    }
-
     Column(modifier = Modifier.fillMaxSize()) {
-        if (searchActive) {
-            SearchHeader(
-                query = query,
-                onQueryChange = { query = it },
-                onCancel = { searchActive = false; query = "" },
-            )
-        } else {
+        run {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -222,7 +201,8 @@ fun ConversationListScreen(
                         )
                     }
                 }
-                IconButton(onClick = { searchActive = true }) {
+                // P1-M3: 全局搜索页(会话过滤 + 消息全文检索),接替原本地过滤。
+                IconButton(onClick = onOpenSearch) {
                     Icon(
                         Icons.Filled.Search,
                         contentDescription = stringResource(R.string.im_search),
@@ -280,23 +260,17 @@ fun ConversationListScreen(
             (actionError ?: error)?.let { ErrorBanner(stringResource(it)) }
         }
 
-        if (visibleRows.isEmpty()) {
+        if (rows.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    // "No conversations yet" is only true of an empty inbox. A search
-                    // that matches nothing must say so, or a user with 30 chats is
-                    // told their history is gone.
-                    text = stringResource(
-                        if (rows.isEmpty()) R.string.im_list_empty
-                        else R.string.im_search_no_results
-                    ),
+                    text = stringResource(R.string.im_list_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.outline,
                 )
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(visibleRows, key = { it.cid }) { row ->
+                items(rows, key = { it.cid }) { row ->
                     ConversationRow(
                         row = row,
                         onClick = { onOpenChat(row.cid) },
@@ -522,69 +496,6 @@ private fun timeLabel(tsMs: Long): String {
         else -> "yyyy/M/d"
     }
     return SimpleDateFormat(pattern, Locale.getDefault()).format(Date(tsMs))
-}
-
-/** Search bar that replaces the header while [ConversationListScreen] is filtering. */
-@Composable
-private fun SearchHeader(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onCancel: () -> Unit,
-) {
-    // Tapping the search icon should land the caret and raise the IME; otherwise the
-    // bar just sits there looking dead until the user taps it a second time.
-    val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.weight(1f),
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            ) {
-                Icon(
-                    Icons.Filled.Search,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(Modifier.width(8.dp))
-                Box(Modifier.weight(1f)) {
-                    if (query.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.im_search_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    BasicTextField(
-                        value = query,
-                        onValueChange = onQueryChange,
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.onSurface,
-                        ),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(focusRequester),
-                    )
-                }
-            }
-        }
-        TextButton(onClick = onCancel) {
-            Text(stringResource(R.string.im_action_cancel))
-        }
-    }
 }
 
 /** One row of the header's "more" dropdown. */

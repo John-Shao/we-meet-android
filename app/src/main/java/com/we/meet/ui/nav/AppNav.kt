@@ -51,6 +51,7 @@ import com.we.meet.feature.im.ui.chat.DirectChatSettingsScreen
 import com.we.meet.feature.im.ui.group.GroupInfoScreen
 import com.we.meet.feature.im.ui.newchat.AddMembersScreen
 import com.we.meet.feature.im.ui.newchat.NewChatScreen
+import com.we.meet.feature.im.ui.search.MessageSearchScreen
 import com.we.meet.ui.calendar.CreateEventScreen
 import com.we.meet.ui.calendar.EventDetailScreen
 import com.we.meet.ui.contacts.MemberDetailScreen
@@ -106,7 +107,9 @@ object Routes {
 
     // IM — full-screen chat routes above the tab scaffold.
     private const val IM_CHAT_BASE = "im_chat"
-    const val IM_CHAT = "$IM_CHAT_BASE/{cid}"
+    const val IM_CHAT = "$IM_CHAT_BASE/{cid}?seq={seq}"
+    /** P1-M3 全局搜索页(会话过滤 + 消息全文检索)。 */
+    const val IM_SEARCH = "im_search"
     private const val IM_GROUP_INFO_BASE = "im_group_info"
     const val IM_GROUP_INFO = "$IM_GROUP_INFO_BASE/{cid}"
     const val IM_NEW_CHAT = "im_new_chat?peer={peer}"
@@ -129,8 +132,11 @@ object Routes {
         if (peerUserId.isNullOrBlank()) "im_new_chat"
         else "im_new_chat?peer=${URLEncoder.encode(peerUserId, StandardCharsets.UTF_8.name())}"
 
-    fun imChat(cid: String): String =
-        "$IM_CHAT_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
+    fun imChat(cid: String, seq: Long? = null): String {
+        val base = "$IM_CHAT_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
+        // P1-M3 消息定位:搜索命中携带 seq,ChatScreen 加载至该条并高亮。
+        return if (seq != null && seq > 0) "$base?seq=$seq" else base
+    }
 
     fun imGroupInfo(cid: String): String =
         "$IM_GROUP_INFO_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
@@ -398,6 +404,7 @@ fun AppNav() {
                 onOpenApproval = { navController.navigate(Routes.APPROVAL) },
                 onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
                 onNewChat = { navController.navigate(Routes.imNewChat()) },
+                onOpenSearch = { navController.navigate(Routes.IM_SEARCH) },
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 onEventClick = { eventId -> navController.navigate(Routes.eventDetail(eventId)) },
                 onCreateEvent = { epochDay -> navController.navigate(Routes.createEvent(epochDay)) },
@@ -443,12 +450,17 @@ fun AppNav() {
 
         composable(
             route = Routes.IM_CHAT,
-            arguments = listOf(navArgument("cid") { type = NavType.StringType }),
+            arguments = listOf(
+                navArgument("cid") { type = NavType.StringType },
+                navArgument("seq") { type = NavType.LongType; defaultValue = -1L },
+            ),
         ) { entry ->
             val cid = Routes.decode(entry.arguments?.getString("cid").orEmpty())
+            val locateSeq = entry.arguments?.getLong("seq")?.takeIf { it > 0 }
             ChatScreen(
                 deps = app,
                 cid = cid,
+                locateSeq = locateSeq,
                 onBack = rememberOnceOnly(safePop),
                 onOpenInfo = { navController.navigate(Routes.imGroupInfo(it)) },
                 onOpenDirectSettings = { navController.navigate(Routes.imDirectSettings(it)) },
@@ -509,6 +521,16 @@ fun AppNav() {
                     navController.navigate(Routes.imNewChat(peerUserId)) {
                         launchSingleTop = true
                     }
+                },
+            )
+        }
+
+        composable(route = Routes.IM_SEARCH) {
+            MessageSearchScreen(
+                deps = app,
+                onBack = rememberOnceOnly(safePop),
+                onOpenChat = { cid, seq ->
+                    navController.navigate(Routes.imChat(cid, seq))
                 },
             )
         }

@@ -139,9 +139,14 @@ fun ChatScreen(
      * the owner) and hands off to the system dialer. Null → the row is disabled.
      */
     onDialPeer: ((peerUserId: String) -> Unit)? = null,
+    /** P1-M3 搜索定位:非空则进入后回翻到该 seq 并短暂高亮。 */
+    locateSeq: Long? = null,
 ) {
     val vm: ChatViewModel =
-        viewModel(key = "chat-$cid", factory = remember(deps, cid) { ChatViewModel.Factory(deps, cid) })
+        viewModel(
+            key = "chat-$cid",
+            factory = remember(deps, cid, locateSeq) { ChatViewModel.Factory(deps, cid, locateSeq) },
+        )
     val ui by vm.ui.collectAsStateWithLifecycle()
     val connection by vm.connectionState.collectAsStateWithLifecycle()
     // Recompose name labels when new identities resolve.
@@ -358,6 +363,21 @@ fun ChatScreen(
                     listState.animateScrollToItem(0)
                 }
             }
+            // P1-M3 搜索定位:VM 回翻找到目标后滚过去并高亮 ~2.5s。
+            var flashMid by remember { mutableStateOf<Long?>(null) }
+            LaunchedEffect(ui.locateMid) {
+                val mid = ui.locateMid ?: return@LaunchedEffect
+                val idx = reversed.indexOfFirst { it.mid == mid }
+                if (idx >= 0) {
+                    listState.scrollToItem(ui.pending.size + idx)
+                    flashMid = mid
+                    vm.consumeLocate()
+                    kotlinx.coroutines.delay(2500)
+                    flashMid = null
+                } else {
+                    vm.consumeLocate()
+                }
+            }
             // Top sentinel: fetch older pages as the user scrolls up.
             LaunchedEffect(listState, ui.hasMore) {
                 if (!ui.hasMore) return@LaunchedEffect
@@ -470,7 +490,13 @@ fun ChatScreen(
                                     selfMentionNames = selfHi,
                                 )
                             }
-                            Column {
+                            // P1-M3 定位高亮:命中行短暂着色(LaunchedEffect 2.5s 后清除)。
+                            val rowMod = if (flashMid == message.mid) {
+                                Modifier.background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                )
+                            } else Modifier
+                            Column(modifier = rowMod) {
                                 if (showDivider) TimeDivider(message.ts)
                                 if (selectMode) {
                                     Row(

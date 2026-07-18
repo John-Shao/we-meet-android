@@ -76,4 +76,12 @@ internal class ImBridgeRepository(private val api: ImApi) {
     suspend fun deleteMessages(cid: String, mids: Collection<Long>) {
         api.deleteMessages(mapOf("cid" to cid, "mids" to mids.toList()))
     }
+
+    /** P1-M3 消息全文检索(q≥2 才有意义;beforeMid 翻更旧一页)。 */
+    suspend fun searchMessages(
+        q: String,
+        cid: String? = null,
+        limit: Int? = null,
+        beforeMid: Long? = null,
+    ): ImSearchResponse = api.searchMessages(q, cid, limit, beforeMid)
 }

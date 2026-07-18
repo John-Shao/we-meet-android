@@ -1,7 +1,9 @@
 package com.we.meet.feature.im.data
 
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Query
 
 /**
  * we-meet backend IM bridge endpoint surface (core/api/im.py). All requests ride
@@ -101,4 +103,13 @@ internal interface ImApi {
     suspend fun deleteMessages(
         @Body body: Map<String, @JvmSuppressWildcards Any>,
     ): Map<String, Any>
+
+    /** P1-M3 消息全文检索(代理 jusi p15;仅本人可见范围,已撤回排除)。 */
+    @GET("api/v1.0/im/search/")
+    suspend fun searchMessages(
+        @Query("q") q: String,
+        @Query("cid") cid: String? = null,
+        @Query("limit") limit: Int? = null,
+        @Query("before_mid") beforeMid: Long? = null,
+    ): ImSearchResponse
 }

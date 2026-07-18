@@ -211,4 +211,12 @@
     <string name="im_group_card_ended">Beendet</string>
     <string name="im_group_card_join">Beitreten</string>
     <string name="im_group_card_ended_toast">Der Anruf ist beendet</string>
+
+    <!-- P1-M3 全局搜索页 -->
+    <string name="im_msg_search_hint">Nachrichten durchsuchen</string>
+    <string name="im_msg_search_sec_conversations">Unterhaltungen</string>
+    <string name="im_msg_search_sec_messages">Nachrichten</string>
+    <string name="im_msg_search_no_results">Keine passenden Nachrichten</string>
+    <string name="im_msg_search_more">Mehr laden</string>
+    <string name="im_msg_search_loading">Wird geladen…</string>
 </resources>

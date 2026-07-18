@@ -227,4 +227,12 @@
     <string name="im_group_card_ended">Ended</string>
     <string name="im_group_card_join">Join</string>
     <string name="im_group_card_ended_toast">The call has ended</string>
+
+    <!-- P1-M3 全局搜索页 -->
+    <string name="im_msg_search_hint">Search messages</string>
+    <string name="im_msg_search_sec_conversations">Conversations</string>
+    <string name="im_msg_search_sec_messages">Messages</string>
+    <string name="im_msg_search_no_results">No matching messages</string>
+    <string name="im_msg_search_more">Load more</string>
+    <string name="im_msg_search_loading">Loading…</string>
 </resources>

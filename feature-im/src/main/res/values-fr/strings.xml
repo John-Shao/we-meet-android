@@ -211,4 +211,12 @@
     <string name="im_group_card_ended">Terminé</string>
     <string name="im_group_card_join">Rejoindre</string>
     <string name="im_group_card_ended_toast">Appel terminé</string>
+
+    <!-- P1-M3 全局搜索页 -->
+    <string name="im_msg_search_hint">Rechercher des messages</string>
+    <string name="im_msg_search_sec_conversations">Conversations</string>
+    <string name="im_msg_search_sec_messages">Messages</string>
+    <string name="im_msg_search_no_results">Aucun message correspondant</string>
+    <string name="im_msg_search_more">Charger plus</string>
+    <string name="im_msg_search_loading">Chargement…</string>
 </resources>

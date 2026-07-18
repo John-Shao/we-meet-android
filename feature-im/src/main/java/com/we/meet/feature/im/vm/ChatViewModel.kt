@@ -75,6 +75,8 @@ data class ChatUiState(
     val sentTick: Int = 0,
     /** P17 会话共享置顶(newest first,快照内联)。 */
     val pins: List<PinnedMessage> = emptyList(),
+    /** P1-M3 搜索定位:待滚动高亮的 mid(消费后置空)。 */
+    val locateMid: Long? = null,
 )
 
 /** One-shot events the screen reacts to (toast + pop, etc.). */
@@ -91,6 +93,8 @@ sealed interface ChatEvent {
 class ChatViewModel internal constructor(
     private val session: ImSession,
     private val cid: String,
+    /** P1-M3 搜索定位:进入后回翻到该 seq 并高亮(一次性)。 */
+    private val locateSeq: Long? = null,
 ) : ViewModel() {
 
     private val _ui = MutableStateFlow(ChatUiState(cid = cid))
@@ -739,11 +743,47 @@ class ChatViewModel internal constructor(
                         raw.lastOrNull()?.let { markRead(it.seq) }
                     }
                     requestNameResolution()
+                    locateSeq?.takeIf { !locateDone }?.let { locateTo(it) }
                 }
                 .onFailure { e ->
                     _ui.update { it.copy(error = e.userMessageRes()) }
                 }
         }
+    }
+
+    /** P1-M3: 定位只执行一次(resume 重载/重试不再回翻)。 */
+    private var locateDone = false
+
+    /**
+     * P1-M3 搜索定位:目标 seq 不在首屏时向旧回翻(每页 [LOCATE_PAGE],
+     * 上限 [MAX_LOCATE_PAGES] 页),找到后把 mid 写进 [ChatUiState.locateMid]
+     * 供屏幕滚动+高亮。找不到(被删/超上限)则静默放弃,停在最新页。
+     */
+    private suspend fun locateTo(target: Long) {
+        locateDone = true
+        var guard = 0
+        while (raw.none { it.seq == target } &&
+            (raw.firstOrNull()?.seq ?: 0L) > target &&
+            _ui.value.hasMore &&
+            guard < MAX_LOCATE_PAGES
+        ) {
+            guard++
+            val oldest = raw.firstOrNull()?.seq ?: break
+            val res = runCatching {
+                session.client.loadHistory(cid, beforeSeq = oldest, limit = LOCATE_PAGE)
+            }.getOrNull() ?: break
+            if (res.messages.isEmpty()) break
+            mergeRaw(res.messages.asReversed(), keepOldest = true)
+            _ui.update { s -> deriveRows(s.copy(hasMore = res.hasMore)) }
+        }
+        val mid = raw.firstOrNull { it.seq == target }?.mid ?: return
+        _ui.update { it.copy(locateMid = mid) }
+        requestNameResolution()
+    }
+
+    /** 屏幕滚动+高亮完成后调用,防重复触发。 */
+    fun consumeLocate() {
+        _ui.update { it.copy(locateMid = null) }
     }
 
     private fun appendMessages(list: List<Message>) {
@@ -885,11 +925,15 @@ class ChatViewModel internal constructor(
         session.userDirectory.requestResolve(_ui.value.messages.map { it.senderUid }.toSet())
     }
 
-    class Factory(private val deps: ImDeps, private val cid: String) : ViewModelProvider.Factory {
+    class Factory(
+        private val deps: ImDeps,
+        private val cid: String,
+        private val locateSeq: Long? = null,
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(ChatViewModel::class.java))
-            return ChatViewModel(ImSession.get(deps), cid) as T
+            return ChatViewModel(ImSession.get(deps), cid, locateSeq) as T
         }
     }
 
@@ -897,6 +941,9 @@ class ChatViewModel internal constructor(
         const val TAG = "ChatVM"
         const val PAGE_SIZE = 50
         const val MAX_IN_MEMORY = 500
+        /** P1-M3 定位回翻:页大小与页数上限(最多回看约 1000 条)。 */
+        const val LOCATE_PAGE = 200
+        const val MAX_LOCATE_PAGES = 5
         const val SNIPPET_MAX = 40
         const val RECALL_WINDOW_MS = 2 * 60 * 1000L
         /** Max wait for the socket to reconnect before a send gives up (falls

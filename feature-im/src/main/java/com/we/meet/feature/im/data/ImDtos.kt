@@ -69,3 +69,22 @@ internal data class UploadUrlResponse(
     @Json(name = "expires_in") val expiresIn: Long = 0,
     val headers: Map<String, String> = emptyMap(),
 )
+
+/** P1-M3 消息全文检索:GET im/search/ 的命中项(镜像 web ImSearchItem)。 */
+@JsonClass(generateAdapter = true)
+internal data class ImSearchItem(
+    val mid: Long,
+    val cid: String,
+    @Json(name = "sender_uid") val senderUid: String = "",
+    val seq: Long = 0,
+    @Json(name = "content_type") val contentType: String = "text",
+    val body: String = "",
+    @Json(name = "created_at") val createdAt: Long = 0,
+)
+
+/** P1-M3 消息全文检索:响应体(items 时间倒序 + 翻页游标)。 */
+@JsonClass(generateAdapter = true)
+internal data class ImSearchResponse(
+    val items: List<ImSearchItem> = emptyList(),
+    @Json(name = "next_before_mid") val nextBeforeMid: Long? = null,
+)
