@@ -48,7 +48,6 @@
     <string name="im_menu_mute_at_all">@Alle-Benachrichtigungen deaktivieren</string>
     <string name="im_menu_delete">Unterhaltung löschen</string>
     <string name="im_menu_leave">Gruppe verlassen</string>
-    <string name="im_menu_leave_dissolve">Gruppe verlassen oder auflösen</string>
     <string name="im_confirm_delete_title">Unterhaltung löschen?</string>
     <string name="im_confirm_delete_message">Blendet die Unterhaltung nur für dich aus. Sie erscheint bei einer neuen Nachricht wieder.</string>
     <string name="im_confirm_leave_title">Gruppe verlassen?</string>

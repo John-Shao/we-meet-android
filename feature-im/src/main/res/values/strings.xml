@@ -60,7 +60,6 @@
     <string name="im_menu_mute_at_all">Don\'t notify for @everyone</string>
     <string name="im_menu_delete">Delete conversation</string>
     <string name="im_menu_leave">Leave group</string>
-    <string name="im_menu_leave_dissolve">Leave or dissolve group</string>
     <string name="im_confirm_delete_title">Delete conversation?</string>
     <string name="im_confirm_delete_message">This hides the conversation for you. It reappears when a new message arrives.</string>
     <string name="im_confirm_leave_title">Leave group?</string>

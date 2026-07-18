@@ -48,7 +48,6 @@
     <string name="im_menu_mute_at_all">@iedereen meldingen uitschakelen</string>
     <string name="im_menu_delete">Gesprek verwijderen</string>
     <string name="im_menu_leave">Groep verlaten</string>
-    <string name="im_menu_leave_dissolve">Groep verlaten of opheffen</string>
     <string name="im_confirm_delete_title">Gesprek verwijderen?</string>
     <string name="im_confirm_delete_message">Verbergt het gesprek alleen voor jou. Het verschijnt weer bij een nieuw bericht.</string>
     <string name="im_confirm_leave_title">Groep verlaten?</string>

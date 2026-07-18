@@ -277,9 +277,7 @@ fun GroupInfoScreen(
                         }
                     }
                     ActionRow(
-                        text = stringResource(
-                            if (ui.isOwner) R.string.im_menu_leave_dissolve else R.string.im_menu_leave
-                        ),
+                        text = stringResource(R.string.im_menu_leave),
                         destructive = true,
                     ) { confirmLeave = true }
                     Spacer(Modifier.height(24.dp))
@@ -470,11 +468,7 @@ fun GroupInfoScreen(
         AlertDialog(
             onDismissRequest = { confirmLeave = false },
             title = {
-                Text(
-                    stringResource(
-                        if (ui.isOwner) R.string.im_menu_leave_dissolve else R.string.im_confirm_leave_title
-                    )
-                )
+                Text(stringResource(R.string.im_confirm_leave_title))
             },
             text = {
                 Text(

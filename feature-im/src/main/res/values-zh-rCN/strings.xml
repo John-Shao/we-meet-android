@@ -56,7 +56,6 @@
     <string name="im_menu_mute_at_all">@所有人的消息不提示</string>
     <string name="im_menu_delete">删除会话</string>
     <string name="im_menu_leave">退出群聊</string>
-    <string name="im_menu_leave_dissolve">退出或解散群聊</string>
     <string name="im_confirm_delete_title">删除会话？</string>
     <string name="im_confirm_delete_message">仅对你隐藏该会话,收到新消息时会重新出现。</string>
     <string name="im_confirm_leave_title">退出群聊？</string>

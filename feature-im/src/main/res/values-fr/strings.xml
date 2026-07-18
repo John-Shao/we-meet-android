@@ -48,7 +48,6 @@
     <string name="im_menu_mute_at_all">Désactiver les notifications @tout le monde</string>
     <string name="im_menu_delete">Supprimer la conversation</string>
     <string name="im_menu_leave">Quitter le groupe</string>
-    <string name="im_menu_leave_dissolve">Quitter ou dissoudre le groupe</string>
     <string name="im_confirm_delete_title">Supprimer la conversation ?</string>
     <string name="im_confirm_delete_message">Masque la conversation pour vous uniquement. Elle réapparaîtra à la prochaine nouvelle réception.</string>
     <string name="im_confirm_leave_title">Quitter le groupe ?</string>

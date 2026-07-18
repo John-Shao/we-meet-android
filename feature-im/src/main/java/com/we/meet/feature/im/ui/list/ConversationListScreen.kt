@@ -302,7 +302,6 @@ fun ConversationListScreen(
                     text = stringResource(
                         when {
                             !row.isGroup -> R.string.im_menu_delete
-                            row.isOwner -> R.string.im_menu_leave_dissolve
                             else -> R.string.im_menu_leave
                         }
                     ),
