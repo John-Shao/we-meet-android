@@ -109,7 +109,12 @@ internal class DocsWebViewClient : WebViewClient() {
 }
 
 @SuppressLint("SetJavaScriptEnabled")
-fun createDocsWebView(context: Context, initialUrl: String? = null): WebView =
+fun createDocsWebView(
+    context: Context,
+    initialUrl: String? = null,
+    /** UA 主题标记(docs embedderTheme 解析初始深浅);调用方传当前主题。 */
+    darkTheme: Boolean = false,
+): WebView =
     WebView(context).apply {
         // A programmatically-built WebView has no LayoutParams, so its host
         // measures it as WRAP_CONTENT — and Chromium then reports a CSS viewport
