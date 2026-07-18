@@ -197,6 +197,16 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
     /** The meeting FGS runs exactly while a LiveKit session is live → busy. */
     override fun isInMeeting(): Boolean = ConferenceForegroundService.isRunning
 
+    /** P5 建议参会: invitee report — errors surface as Result.failure upstream
+     * and the caller treats the whole thing as fire-and-forget. */
+    override suspend fun reportSuggestedParticipants(
+        slug: String,
+        userIds: List<String>,
+        source: String,
+    ) {
+        roomRepository.reportSuggestedParticipants(slug, userIds, source).getOrThrow()
+    }
+
     private fun parseIsoMillisOrNow(iso: String?): Long {
         if (iso.isNullOrBlank()) return System.currentTimeMillis()
         val normalized = iso

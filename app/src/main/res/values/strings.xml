@@ -420,4 +420,23 @@
     <string name="meeting_detail_chapters_empty">No chapters yet — generated with the summary.</string>
     <string name="meeting_detail_summary_edited">Edited</string>
     <string name="docs_viewer_title">Document</string>
+
+    <!-- P5 建议参会 + 统一邀请面板 -->
+    <string name="room_tab_all">All (%1$d)</string>
+    <string name="room_tab_suggested">Suggested (%1$d)</string>
+    <string name="room_search_or_call">Search or call</string>
+    <string name="room_invite_action">Invite</string>
+    <string name="room_suggested_empty">No suggested participants</string>
+    <string name="room_call_one">Call</string>
+    <string name="room_call_again">Call again</string>
+    <string name="room_call_cancel">Cancel call</string>
+    <string name="room_invite_state_inviting">Calling…</string>
+    <string name="room_invite_state_ringing">Ringing…</string>
+    <string name="room_invite_state_rejected">Declined</string>
+    <string name="room_invite_state_busy">Busy</string>
+    <string name="room_invite_state_unreachable">Unreachable</string>
+    <string name="room_invite_state_timeout">No answer</string>
+    <string name="room_invite_state_failed">Call failed</string>
+    <string name="room_meeting_code_label">Meeting code: %1$s</string>
+    <string name="room_invite_more_share">More sharing options</string>
 </resources>

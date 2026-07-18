@@ -8,9 +8,11 @@ import com.we.meet.data.api.dto.MuteParticipantRequest
 import com.we.meet.data.api.dto.RaiseHandRequest
 import com.we.meet.data.api.dto.RemoveParticipantRequest
 import com.we.meet.data.api.dto.RenameParticipantRequest
+import com.we.meet.data.api.dto.ReportInviteesRequest
 import com.we.meet.data.api.dto.RequestEntryRequest
 import com.we.meet.data.api.dto.RequestEntryResponse
 import com.we.meet.data.api.dto.RoomDto
+import com.we.meet.data.api.dto.SuggestedParticipantDto
 import com.we.meet.data.api.dto.UpdateRoomRequest
 import com.we.meet.data.api.dto.WaitingParticipantDto
 
@@ -130,6 +132,28 @@ class RoomRepository(
     suspend fun renameRoom(idOrSlug: String, name: String): Result<Unit> = runCatching {
         roomApi.updateRoom(idOrSlug, UpdateRoomRequest(name = name))
         Unit
+    }
+
+    /** P5 建议参会: fetch the room's invited list (presence diffing is the
+     * caller's job — drop entries whose sub is a live participant identity). */
+    suspend fun fetchSuggestedParticipants(
+        idOrSlug: String,
+    ): Result<List<SuggestedParticipantDto>> = runCatching {
+        roomApi.getSuggestedParticipants(idOrSlug).suggestions
+    }
+
+    /** P5 建议参会: idempotent invitee report (fire-and-forget at call sites —
+     * ringing must never block on suggestion bookkeeping). */
+    suspend fun reportSuggestedParticipants(
+        idOrSlug: String,
+        userIds: List<String>,
+        source: String,
+    ): Result<Unit> = runCatching {
+        if (userIds.isEmpty()) return@runCatching
+        roomApi.reportSuggestedParticipants(
+            idOrSlug,
+            ReportInviteesRequest(userIds = userIds, source = source),
+        )
     }
 
     suspend fun renameSelf(

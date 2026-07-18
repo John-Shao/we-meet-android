@@ -107,6 +107,15 @@ class MeetInviteTracker internal constructor(
         }
     }
 
+    /** P5 建议参会: cancel ONE in-flight invite (per-row ✕ in the suggested
+     * tab) — same frame + state transition as the leave-room bulk cancel. */
+    fun cancelOne(callId: String) {
+        val invite = find(callId) ?: return
+        if (invite.terminal) return
+        sendFrame(invite, CallEvent.CANCEL, reason = "canceled")
+        setState(invite.callId, InviteState.CANCELED)
+    }
+
     /** Cancel every non-terminal invitee — the inviter is leaving the room
      * (拍板 #1: the invite dies with the inviter's presence). */
     fun cancelPending() {

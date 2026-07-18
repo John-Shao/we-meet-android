@@ -420,4 +420,23 @@
     <string name="meeting_detail_chapters_empty">暂无章节——章节随纪要一起生成。</string>
     <string name="meeting_detail_summary_edited">已编辑</string>
     <string name="docs_viewer_title">文档</string>
+
+    <!-- P5 建议参会 + 统一邀请面板 -->
+    <string name="room_tab_all">全部 (%1$d)</string>
+    <string name="room_tab_suggested">建议参会 (%1$d)</string>
+    <string name="room_search_or_call">搜索或呼叫</string>
+    <string name="room_invite_action">邀请</string>
+    <string name="room_suggested_empty">暂无建议参会人</string>
+    <string name="room_call_one">呼叫</string>
+    <string name="room_call_again">再次呼叫</string>
+    <string name="room_call_cancel">取消呼叫</string>
+    <string name="room_invite_state_inviting">呼叫中…</string>
+    <string name="room_invite_state_ringing">响铃中…</string>
+    <string name="room_invite_state_rejected">已拒绝</string>
+    <string name="room_invite_state_busy">忙线中</string>
+    <string name="room_invite_state_unreachable">无法接通</string>
+    <string name="room_invite_state_timeout">无应答</string>
+    <string name="room_invite_state_failed">呼叫失败</string>
+    <string name="room_meeting_code_label">会议号:%1$s</string>
+    <string name="room_invite_more_share">更多分享方式</string>
 </resources>

@@ -342,6 +342,7 @@ class RoomViewModel(
                 )
                 registerChatHandler()
                 refreshParticipants()
+                refreshSuggestedParticipants() // P5 建议参会 initial load
                 if (isAdmin) startLobbyPolling()
             }.onFailure { e ->
                 _state.update {
@@ -860,6 +861,47 @@ class RoomViewModel(
     val remoteMeetInvites: StateFlow<Map<String, List<Triple<String, String, String?>>>> =
         _remoteMeetInvites.asStateFlow()
 
+    /**
+     * P5: sender identity → we-meet userIds they are actively ringing (the
+     * broadcast's optional `userId` field; pre-P5 senders simply contribute
+     * none). Parallel to [remoteMeetInvites] so the chip display pipeline
+     * (Triple-shaped, threaded through several composables) stays untouched
+     * while the suggested tab can grey out "someone is already calling them".
+     */
+    private val _remoteRingingUserIds = MutableStateFlow<Map<String, Set<String>>>(emptyMap())
+    val remoteRingingUserIds: StateFlow<Map<String, Set<String>>> =
+        _remoteRingingUserIds.asStateFlow()
+
+    // ---- P5 建议参会 (suggested participants) ----
+
+    /** The room's invited list, raw from the backend — presence subtraction
+     * happens in the UI layer against the live participant identities. */
+    private val _suggestedParticipants =
+        MutableStateFlow<List<com.we.meet.data.api.dto.SuggestedParticipantDto>>(emptyList())
+    val suggestedParticipants: StateFlow<List<com.we.meet.data.api.dto.SuggestedParticipantDto>> =
+        _suggestedParticipants.asStateFlow()
+
+    fun refreshSuggestedParticipants() {
+        viewModelScope.launch {
+            roomRepository.fetchSuggestedParticipants(roomSlug.ifBlank { roomId })
+                .onSuccess { _suggestedParticipants.value = it }
+                .onFailure { Log.i(TAG, "fetchSuggestedParticipants failed: ${it.message}") }
+        }
+    }
+
+    /** Fire-and-forget invitee report; refreshes the local list on success so
+     * newly rung people appear in the suggested tab without a reopen. */
+    fun reportSuggestedParticipants(userIds: List<String>, source: String) {
+        if (userIds.isEmpty()) return
+        viewModelScope.launch {
+            roomRepository.reportSuggestedParticipants(
+                roomSlug.ifBlank { roomId }, userIds, source,
+            )
+                .onSuccess { refreshSuggestedParticipants() }
+                .onFailure { Log.i(TAG, "reportSuggestedParticipants failed: ${it.message}") }
+        }
+    }
+
     /** Broadcast the LOCAL active-invite snapshot (empty json clears peers'
      * chips). Fire-and-forget — chips are cosmetic, the roster is the truth. */
     fun publishMeetInvites(json: String) {
@@ -883,11 +925,16 @@ class RoomViewModel(
         runCatching {
             val json = JSONObject(String(event.data, Charsets.UTF_8))
             val arr = json.optJSONArray("invites")
+            val ringingIds = mutableSetOf<String>()
             val chips = buildList {
                 for (i in 0 until (arr?.length() ?: 0)) {
                     val o = arr!!.optJSONObject(i) ?: continue
                     val label = o.optString("label")
                     if (label.isBlank()) continue
+                    // P5: optional userId lets the suggested tab match this
+                    // ring to a person row (absent from pre-P5 broadcasts).
+                    o.optString("userId").takeIf { it.isNotBlank() }
+                        ?.let(ringingIds::add)
                     add(
                         Triple(
                             label,
@@ -898,6 +945,7 @@ class RoomViewModel(
                 }
             }
             _remoteMeetInvites.value = _remoteMeetInvites.value + (sender to chips)
+            _remoteRingingUserIds.value = _remoteRingingUserIds.value + (sender to ringingIds)
         }.onFailure { Log.w(TAG, "onMeetInvitesPacket: malformed payload", it) }
     }
 

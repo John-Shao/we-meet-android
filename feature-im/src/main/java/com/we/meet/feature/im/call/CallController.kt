@@ -175,6 +175,17 @@ class CallController(
         return room
     }
 
+    /** P5 建议参会: fire-and-forget invitee report via the host (app owns the
+     * room API). Ringing must never block on suggestion bookkeeping. */
+    fun reportSuggestedParticipants(slug: String, userIds: List<String>, source: String) {
+        val h = host ?: return
+        if (userIds.isEmpty()) return
+        scope.launch {
+            runCatching { h.reportSuggestedParticipants(slug, userIds, source) }
+                .onFailure { Log.i(TAG, "reportSuggestedParticipants failed: ${it.message}") }
+        }
+    }
+
     /**
      * P4.1 加入进行中的群语音(卡片入口):resolve 房间——已结束的房不发
      * LiveKit token → resolveCallRoom 为 null → 报「通话已结束」;活着则经
@@ -694,6 +705,14 @@ interface CallHost {
 
     /** True while the user is in any LiveKit room (meeting or call) → busy. */
     fun isInMeeting(): Boolean
+
+    /** P5 建议参会: idempotent invitee report (group ring list / manual picks)
+     * so no-answer people stay recallable from the meeting's suggested tab. */
+    suspend fun reportSuggestedParticipants(
+        slug: String,
+        userIds: List<String>,
+        source: String,
+    )
 }
 
 /** LiveKit room target for one call — both sides end up with one of these. */

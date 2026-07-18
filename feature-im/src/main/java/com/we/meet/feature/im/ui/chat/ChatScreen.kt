@@ -715,10 +715,17 @@ fun ChatScreen(
             cid = cid,
             memberUids = ui.memberUids,
             onDismiss = { showGroupCallSheet = false },
-            onCall = { targets ->
+            onCall = { targets, allMembers ->
                 scope.launch {
                     val room = calls.startGroupVoiceCall(groupCallRoomName, cid)
                         ?: return@launch
+                    // P5 建议参会:全量群成员(勾选与否)进房间建议名单,会中
+                    // 参会人页可对未接/未选者再呼(飞书场景2)。fire-and-forget。
+                    calls.reportSuggestedParticipants(
+                        room.slug,
+                        allMembers.map { it.userId },
+                        "group",
+                    )
                     session.meetInvites.sendInvites(
                         targets = targets,
                         media = "audio",

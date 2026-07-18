@@ -76,6 +76,9 @@ fun ContactPicker(
     excludeUserIds: Set<String> = emptySet(),
     /** Multi 模式下预勾选的 userId(如从直聊「新建群聊」带入对端);加载到即选中一次。 */
     preselectUserIds: Set<String> = emptySet(),
+    /** P5 统一邀请面板:成员列表与确认钮之间的自定义区(会议号/复制链接等)。
+     * 默认 null——既有调用方零变化。 */
+    footer: (@Composable () -> Unit)? = null,
     onConfirm: (List<PickedMember>) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -207,6 +210,8 @@ fun ContactPicker(
                     }
                 }
             }
+
+            footer?.invoke()
 
             if (mode == ContactPickerMode.Multi) {
                 Button(

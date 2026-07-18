@@ -2,10 +2,14 @@ package com.we.meet.ui.room
 
 import android.app.Activity
 import android.app.Application
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -22,6 +26,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -49,6 +54,7 @@ import androidx.compose.material.icons.automirrored.filled.StopScreenShare
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.CallEnd
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FlipCameraIos
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FullscreenExit
@@ -81,8 +87,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -100,6 +109,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -107,10 +117,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.we.meet.BuildConfig
 import com.we.meet.LocalIsInPipMode
 import com.we.meet.MainActivity
 import com.we.meet.WeMeetApp
@@ -123,6 +135,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import com.we.meet.core.directory.DirectoryDeps
 import com.we.meet.core.directory.ui.ContactPicker
 import com.we.meet.core.directory.ui.ContactPickerMode
+import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.call.MeetInviteTracker
@@ -271,6 +284,9 @@ fun RoomScreen(
                                             org.json.JSONObject().apply {
                                                 put("label", inv.label)
                                                 inv.avatarUrl?.let { put("avatarUrl", it) }
+                                                // P5: lets receivers' suggested tab
+                                                // match this ring to a person row.
+                                                put("userId", inv.userId)
                                                 put(
                                                     "state",
                                                     if (inv.state == MeetInviteTracker.InviteState.RINGING) {
@@ -371,6 +387,37 @@ fun RoomScreen(
                                 addAll(remoteChips)
                             }
                         }
+                        // P5 建议参会: invited list + presence-diff signals for
+                        // the participants sheet's suggested tab.
+                        val suggestedAll by viewModel.suggestedParticipants
+                            .collectAsStateWithLifecycle()
+                        val remoteRingingMap by viewModel.remoteRingingUserIds
+                            .collectAsStateWithLifecycle()
+                        val remoteRingingIds = remember(remoteRingingMap, presentIds) {
+                            remoteRingingMap
+                                .filterKeys { it in presentIds }
+                                .values.flatten().toSet()
+                        }
+                        val callSuggested = { person: com.we.meet.data.api.dto.SuggestedParticipantDto ->
+                            val selfName = (context.applicationContext as WeMeetApp)
+                                .tokenStore.nickname?.takeIf { it.isNotBlank() }
+                                ?: state.participants.firstOrNull { it.isLocal }?.name.orEmpty()
+                            imSession.meetInvites.sendInvites(
+                                targets = listOf(
+                                    MeetInviteTracker.Target(
+                                        person.id, person.displayName, person.avatarUrl,
+                                    ),
+                                ),
+                                media = "video",
+                                roomSlug = roomSlug,
+                                roomName = context.getString(
+                                    com.we.meet.feature.im.R.string.im_meet_invite_room_name,
+                                    selfName,
+                                ),
+                            )
+                            // 幂等上报——再呼/首呼都保持名单最新。
+                            viewModel.reportSuggestedParticipants(listOf(person.id), "manual")
+                        }
                         RoomContent(
                         state = state,
                         room = viewModel.room,
@@ -379,6 +426,12 @@ fun RoomScreen(
                         roomName = roomName,
                         roomSlug = roomSlug,
                         isAdmin = isAdmin,
+                        suggestedParticipants = suggestedAll,
+                        myInvites = invites,
+                        remoteRingingUserIds = remoteRingingIds,
+                        onCallSuggested = callSuggested,
+                        onCancelInvite = { imSession.meetInvites.cancelOne(it) },
+                        onRefreshSuggested = viewModel::refreshSuggestedParticipants,
                         onToggleMic = viewModel::toggleMic,
                         onToggleCamera = viewModel::toggleCamera,
                         onSwitchCamera = viewModel::switchCamera,
@@ -414,9 +467,12 @@ fun RoomScreen(
                     // ringing invites into THIS meeting (media=video → the
                     // invitee accepts straight into the full meeting UI).
                     if (showMeetingInvitePicker) {
+                        // P5 统一邀请面板:选人振铃 + 底部会议号/复制链接/分享
+                        // 合一(footer slot);确认即幂等上报建议名单。
                         ContactPicker(
                             deps = context.applicationContext as DirectoryDeps,
                             mode = ContactPickerMode.Multi,
+                            footer = { UnifiedInviteFooter(roomSlug = roomSlug) },
                             onConfirm = { picked ->
                                 showMeetingInvitePicker = false
                                 if (picked.isNotEmpty()) {
@@ -436,6 +492,9 @@ fun RoomScreen(
                                             com.we.meet.feature.im.R.string.im_meet_invite_room_name,
                                             selfName,
                                         ),
+                                    )
+                                    viewModel.reportSuggestedParticipants(
+                                        picked.map { it.userId }, "manual",
                                     )
                                 }
                             },
@@ -531,6 +590,8 @@ private fun MinimalCallHost(
         ContactPicker(
             deps = context.applicationContext as DirectoryDeps,
             mode = ContactPickerMode.Multi,
+            // P5 统一邀请面板:通话舞台入口同样带会议号/复制链接区。
+            footer = { UnifiedInviteFooter(roomSlug = roomSlug) },
             onConfirm = { picked ->
                 showEscalatePicker = false
                 if (picked.isNotEmpty()) {
@@ -546,6 +607,10 @@ private fun MinimalCallHost(
                             com.we.meet.feature.im.R.string.im_meet_invite_room_name,
                             selfName,
                         ),
+                    )
+                    // P5 建议参会:拉人即幂等上报,未接者可在参会人页再呼。
+                    viewModel.reportSuggestedParticipants(
+                        picked.map { it.userId }, "manual",
                     )
                 }
             },
@@ -722,6 +787,16 @@ private fun RoomContent(
     onInviteMembers: () -> Unit = {},
     /** P4-M3 会议内邀请状态 chips:(label, stateKey, avatarUrl)。 */
     meetInviteChips: List<Triple<String, String, String?>> = emptyList(),
+    // ---- P5 建议参会 (participants sheet suggested tab) ----
+    /** Raw invited list — the sheet subtracts present subs itself. */
+    suggestedParticipants: List<com.we.meet.data.api.dto.SuggestedParticipantDto> = emptyList(),
+    /** My own invite lifecycle rows (per-person 呼叫中/终态). */
+    myInvites: List<MeetInviteTracker.MeetInvite> = emptyList(),
+    /** userIds co-participants are actively ringing (broadcast userId). */
+    remoteRingingUserIds: Set<String> = emptySet(),
+    onCallSuggested: (com.we.meet.data.api.dto.SuggestedParticipantDto) -> Unit = {},
+    onCancelInvite: (callId: String) -> Unit = {},
+    onRefreshSuggested: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -972,6 +1047,16 @@ private fun RoomContent(
         ParticipantsSheet(
             participants = state.participants,
             isAdmin = state.isAdmin,
+            suggested = suggestedParticipants,
+            myInvites = myInvites,
+            remoteRingingUserIds = remoteRingingUserIds,
+            onCallSuggested = onCallSuggested,
+            onCancelInvite = onCancelInvite,
+            onRefreshSuggested = onRefreshSuggested,
+            onInviteMembers = {
+                showParticipants = false
+                onInviteMembers()
+            },
             onRenameSelfClick = {
                 showParticipants = false
                 showRenameDialog = true
@@ -1426,22 +1511,115 @@ private fun ParticipantsSheet(
     onMuteClick: (identity: String) -> Unit,
     onRemoveClick: (identity: String, name: String) -> Unit,
     onDismiss: () -> Unit,
+    // ---- P5 建议参会 (设计 §6.1,对齐 Web §5.1) ----
+    suggested: List<com.we.meet.data.api.dto.SuggestedParticipantDto> = emptyList(),
+    myInvites: List<MeetInviteTracker.MeetInvite> = emptyList(),
+    remoteRingingUserIds: Set<String> = emptySet(),
+    onCallSuggested: (com.we.meet.data.api.dto.SuggestedParticipantDto) -> Unit = {},
+    onCancelInvite: (callId: String) -> Unit = {},
+    onRefreshSuggested: () -> Unit = {},
+    onInviteMembers: () -> Unit = {},
 ) {
     val sheetState = rememberModalBottomSheetState()
+
+    // Refresh the invited list whenever the sheet opens — cheap GET, and it
+    // keeps re-calls/joins from other devices from going stale.
+    LaunchedEffect(Unit) { onRefreshSuggested() }
+
+    var tab by rememberSaveable { mutableStateOf(0) }
+    var query by rememberSaveable { mutableStateOf("") }
+
+    // Presence diff: a suggestion whose sub is a live identity has "moved to
+    // the 全部 tab" (screen-share synthetic identities carry a #screen suffix
+    // and never collide with subs).
+    val presentSubs = participants.map { it.identity }.toSet()
+    val pendingSuggested = suggested.filter { !it.isSelf && it.sub !in presentSubs }
+
+    val q = query.trim()
+    val shownParticipants =
+        if (q.isEmpty()) participants
+        else participants.filter { it.name.contains(q, ignoreCase = true) }
+    val shownSuggested =
+        if (q.isEmpty()) pendingSuggested
+        else pendingSuggested.filter { person ->
+            listOfNotNull(person.fullName, person.shortName, person.email)
+                .any { it.contains(q, ignoreCase = true) }
+        }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
         Column(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)) {
-            Text(
-                text = stringResource(R.string.room_participants, participants.size),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 12.dp),
-            )
-            HorizontalDivider()
-            LazyColumn {
-                items(participants) { p ->
+            // P5: search-or-call box + invite button (Feishu-style header).
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = { Text(stringResource(R.string.room_search_or_call)) },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(8.dp))
+                Button(onClick = onInviteMembers) {
+                    Icon(
+                        imageVector = Icons.Default.PersonAdd,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(stringResource(R.string.room_invite_action))
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            TabRow(selectedTabIndex = tab) {
+                Tab(
+                    selected = tab == 0,
+                    onClick = { tab = 0 },
+                    text = {
+                        Text(stringResource(R.string.room_tab_all, participants.size))
+                    },
+                )
+                Tab(
+                    selected = tab == 1,
+                    onClick = { tab = 1 },
+                    text = {
+                        Text(
+                            stringResource(
+                                R.string.room_tab_suggested, pendingSuggested.size,
+                            ),
+                        )
+                    },
+                )
+            }
+            if (tab == 1) {
+                // ---- 建议参会 tab:受邀未到者,逐人呼叫/取消/再呼 ----
+                if (shownSuggested.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.room_suggested_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 24.dp),
+                    )
+                } else {
+                    LazyColumn {
+                        items(shownSuggested, key = { it.id }) { person ->
+                            SuggestedParticipantRow(
+                                person = person,
+                                // Latest invite per user wins — re-calls push a
+                                // fresh entry for the same person.
+                                invite = myInvites.lastOrNull { it.userId == person.id },
+                                remoteRinging = person.id in remoteRingingUserIds,
+                                onCall = { onCallSuggested(person) },
+                                onCancel = onCancelInvite,
+                            )
+                            HorizontalDivider()
+                        }
+                    }
+                }
+            } else {
+                LazyColumn {
+                    items(shownParticipants) { p ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1501,10 +1679,185 @@ private fun ParticipantsSheet(
                         }
                     }
                     HorizontalDivider()
+                    }
                 }
             }
             Spacer(Modifier.height(24.dp))
         }
+    }
+}
+
+/**
+ * P5: one row of the 建议参会 tab — avatar / name / title·department on the
+ * left, the per-person call lifecycle on the right:
+ *   idle → 〔呼叫〕;  mine in-flight → 呼叫中/响铃中…〔✕〕;
+ *   someone else ringing them → dimmed 响铃中;  my terminal → state +〔再呼〕.
+ */
+@Composable
+private fun SuggestedParticipantRow(
+    person: com.we.meet.data.api.dto.SuggestedParticipantDto,
+    invite: MeetInviteTracker.MeetInvite?,
+    remoteRinging: Boolean,
+    onCall: () -> Unit,
+    onCancel: (callId: String) -> Unit,
+) {
+    val mineActive = invite != null && !invite.terminal
+    val mineEnded = invite != null && invite.terminal &&
+        invite.state != MeetInviteTracker.InviteState.ACCEPTED &&
+        invite.state != MeetInviteTracker.InviteState.CANCELED
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(if (remoteRinging && !mineActive) 0.55f else 1f)
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        MemberAvatar(
+            name = person.displayName,
+            url = person.avatarUrl,
+            cacheKey = "avatar:${person.id}",
+        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 12.dp),
+        ) {
+            Text(
+                person.displayName,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            val subtitle = listOfNotNull(
+                person.title?.takeIf { it.isNotBlank() },
+                person.department?.name?.takeIf { it.isNotBlank() },
+            ).joinToString(" · ")
+            if (subtitle.isNotBlank()) {
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        when {
+            mineActive -> {
+                Text(
+                    text = stringResource(
+                        if (invite!!.state == MeetInviteTracker.InviteState.RINGING) {
+                            R.string.room_invite_state_ringing
+                        } else {
+                            R.string.room_invite_state_inviting
+                        },
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                IconButton(
+                    onClick = { onCancel(invite.callId) },
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.room_call_cancel),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+            remoteRinging -> Text(
+                text = stringResource(R.string.room_invite_state_ringing),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            else -> {
+                if (mineEnded) {
+                    Text(
+                        text = stringResource(
+                            when (invite!!.state) {
+                                MeetInviteTracker.InviteState.REJECTED ->
+                                    R.string.room_invite_state_rejected
+                                MeetInviteTracker.InviteState.BUSY ->
+                                    R.string.room_invite_state_busy
+                                MeetInviteTracker.InviteState.UNREACHABLE ->
+                                    R.string.room_invite_state_unreachable
+                                MeetInviteTracker.InviteState.TIMEOUT ->
+                                    R.string.room_invite_state_timeout
+                                else -> R.string.room_invite_state_failed
+                            },
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(end = 6.dp),
+                    )
+                }
+                OutlinedButton(
+                    onClick = onCall,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        stringResource(
+                            if (mineEnded) R.string.room_call_again else R.string.room_call_one,
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * P5 统一邀请面板 footer — the share fallbacks pinned under the picker list:
+ * meeting code + copy-link + system share (mirrors Web's UnifiedInvitePanel;
+ * the QR code stays on the top-bar InviteSheet, 渐进收敛 §3.3).
+ */
+@Composable
+private fun UnifiedInviteFooter(roomSlug: String) {
+    val context = LocalContext.current
+    val baseUrl = BuildConfig.WE_MEET_BASE_URL.trimEnd('/')
+    val joinUrl = "$baseUrl/$roomSlug"
+    val inviteText = stringResource(R.string.invite_clipboard_format, joinUrl, roomSlug)
+    val copiedToast = stringResource(R.string.invite_copied)
+    HorizontalDivider()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.room_meeting_code_label, roomSlug),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(
+            onClick = {
+                val clipboard =
+                    context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(ClipData.newPlainText("we-meet", inviteText))
+                Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT).show()
+            },
+        ) { Text(stringResource(R.string.invite_copy_link)) }
+        TextButton(
+            onClick = {
+                val send = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, inviteText)
+                }
+                context.startActivity(
+                    Intent.createChooser(
+                        send,
+                        context.getString(R.string.invite_share_chooser_title),
+                    ),
+                )
+            },
+        ) { Text(stringResource(R.string.invite_share)) }
     }
 }
 

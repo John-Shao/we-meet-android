@@ -47,7 +47,10 @@ fun GroupVoiceCallSheet(
     session: ImSession,
     cid: String,
     memberUids: List<String>,
-    onCall: (List<MeetInviteTracker.Target>) -> Unit,
+    /** P5: `allMembers` = the full resolved roster regardless of check state —
+     * the caller reports it as the room's suggested invitees (Feishu 场景2:
+     * 群发起会的建议参会 = 全体群成员)。 */
+    onCall: (List<MeetInviteTracker.Target>, allMembers: List<MeetInviteTracker.Target>) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var resolved by remember { mutableStateOf<Map<String, ImUserInfo>>(emptyMap()) }
@@ -131,14 +134,16 @@ fun GroupVoiceCallSheet(
             Button(
                 enabled = picked.isNotEmpty(),
                 onClick = {
+                    val toTarget = { uid: String, info: ImUserInfo ->
+                        MeetInviteTracker.Target(
+                            userId = info.id,
+                            label = nicknames[uid] ?: info.displayName,
+                            avatarUrl = info.avatarUrl?.takeIf { u -> u.isNotBlank() },
+                        )
+                    }
                     onCall(
-                        picked.map { (uid, info) ->
-                            MeetInviteTracker.Target(
-                                userId = info.id,
-                                label = nicknames[uid] ?: info.displayName,
-                                avatarUrl = info.avatarUrl?.takeIf { u -> u.isNotBlank() },
-                            )
-                        },
+                        picked.map { (uid, info) -> toTarget(uid, info) },
+                        candidates.map { (uid, info) -> toTarget(uid, info) },
                     )
                     onDismiss()
                 },

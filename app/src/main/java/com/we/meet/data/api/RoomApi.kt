@@ -13,8 +13,10 @@ import com.we.meet.data.api.dto.RemoveParticipantRequest
 import com.we.meet.data.api.dto.RenameParticipantRequest
 import com.we.meet.data.api.dto.RequestEntryRequest
 import com.we.meet.data.api.dto.RequestEntryResponse
+import com.we.meet.data.api.dto.ReportInviteesRequest
 import com.we.meet.data.api.dto.RoomDto
 import com.we.meet.data.api.dto.StartRecordingRequest
+import com.we.meet.data.api.dto.SuggestedParticipantsResponse
 import com.we.meet.data.api.dto.WaitingParticipantsResponse
 import com.we.meet.data.api.dto.UpdateRoomRequest
 import retrofit2.http.Body
@@ -216,6 +218,28 @@ interface RoomApi {
     suspend fun admitParticipant(
         @Path("idOrSlug") idOrSlug: String,
         @Body body: EnterRequest,
+    )
+
+    /**
+     * P5 建议参会: the room's invited-but-maybe-absent people (ResourceAccess
+     * members ∪ RoomInvitee rows). Any authenticated caller (参会者皆可);
+     * org-scoped server-side. Presence subtraction is the CLIENT's job:
+     * drop entries whose `sub` matches a live participant identity.
+     */
+    @GET("api/v1.0/rooms/{idOrSlug}/suggested-participants/")
+    suspend fun getSuggestedParticipants(
+        @Path("idOrSlug") idOrSlug: String,
+    ): SuggestedParticipantsResponse
+
+    /**
+     * P5 建议参会: idempotently report invitees (group-originated call ring
+     * list / in-meeting picks) so they appear in everyone's suggested tab.
+     * Ids outside the caller's organization are silently dropped.
+     */
+    @POST("api/v1.0/rooms/{idOrSlug}/suggested-participants/")
+    suspend fun reportSuggestedParticipants(
+        @Path("idOrSlug") idOrSlug: String,
+        @Body body: ReportInviteesRequest,
     )
 
     /**
