@@ -3,8 +3,10 @@ package com.we.meet.data.api
 import com.squareup.moshi.JsonClass
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.HTTP
 import retrofit2.http.POST
+import retrofit2.http.PUT
 
 /**
  * Push-token registry on the we-meet backend (P0 offline push). The App
@@ -21,6 +23,14 @@ interface PushApi {
     /** Unregister on logout so the backend stops pushing to this device. */
     @HTTP(method = "DELETE", path = "api/v1.0/push/tokens/", hasBody = true)
     suspend fun unregisterToken(@Body body: PushTokenDeleteRequest): Response<Unit>
+
+    /** P0-M3 免打扰时段:读取偏好(不存在时服务端惰性建默认)。 */
+    @GET("api/v1.0/push/preferences/")
+    suspend fun getPreferences(): PushPreferencesDto
+
+    /** P0-M3 免打扰时段:局部更新(HH:mm,按账号时区解释)。 */
+    @PUT("api/v1.0/push/preferences/")
+    suspend fun updatePreferences(@Body body: PushPreferencesUpdate): PushPreferencesDto
 }
 
 @JsonClass(generateAdapter = true)
@@ -34,4 +44,20 @@ data class PushTokenRequest(
 @JsonClass(generateAdapter = true)
 data class PushTokenDeleteRequest(
     val cid: String,
+)
+
+/** P0-M3 免打扰偏好(服务端序列化形状;timezone 只读展示用)。 */
+@JsonClass(generateAdapter = true)
+data class PushPreferencesDto(
+    val quiet_enabled: Boolean = false,
+    val quiet_start: String = "22:00",
+    val quiet_end: String = "08:00",
+    val timezone: String? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class PushPreferencesUpdate(
+    val quiet_enabled: Boolean,
+    val quiet_start: String,
+    val quiet_end: String,
 )

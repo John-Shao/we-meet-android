@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
+import android.widget.Toast
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,14 +32,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
+import com.we.meet.data.api.PushPreferencesUpdate
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -98,6 +104,7 @@ fun SettingsScreen(
                 onSelect = settingsStore::setThemeMode,
             )
             LanguageSection()
+            NotificationSection()
             AccountSection(
                 onAccountSecurityClick = onOpenAccountSecurity,
                 onSignOutClick = { showSignOutConfirm = true },
@@ -197,6 +204,141 @@ private fun AccountSection(
     }
 
     Spacer(Modifier.height(16.dp))
+}
+
+// ── Notifications (P0-M3 消息免打扰) ─────────────────────────────────────
+
+/**
+ * 免打扰时段:开关 + 起止时间(24h),存 we-meet 后端(`push/preferences/`),
+ * 服务端在离线推送发送前按账号时区过滤。仅静默消息通知,来电不受影响。
+ * 读失败仍放开 UI(保存时再报错),避免弱网下设置页卡死。
+ */
+@Composable
+private fun NotificationSection() {
+    val context = LocalContext.current
+    val app = context.applicationContext as WeMeetApp
+    val scope = rememberCoroutineScope()
+
+    var loaded by remember { mutableStateOf(false) }
+    var enabled by remember { mutableStateOf(false) }
+    var start by remember { mutableStateOf("22:00") }
+    var end by remember { mutableStateOf("08:00") }
+    var tz by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        runCatching { app.apiClient.pushApi.getPreferences() }
+            .onSuccess { p ->
+                enabled = p.quiet_enabled
+                start = p.quiet_start
+                end = p.quiet_end
+                tz = p.timezone.orEmpty()
+            }
+        loaded = true
+    }
+
+    fun save() {
+        scope.launch {
+            runCatching {
+                app.apiClient.pushApi.updatePreferences(
+                    PushPreferencesUpdate(
+                        quiet_enabled = enabled,
+                        quiet_start = start,
+                        quiet_end = end,
+                    )
+                )
+            }.onFailure {
+                Toast.makeText(
+                    context, R.string.settings_quiet_save_failed, Toast.LENGTH_SHORT,
+                ).show()
+            }
+        }
+    }
+
+    fun pickTime(current: String, onPicked: (String) -> Unit) {
+        val parts = current.split(":")
+        val h = parts.getOrNull(0)?.toIntOrNull() ?: 0
+        val m = parts.getOrNull(1)?.toIntOrNull() ?: 0
+        android.app.TimePickerDialog(
+            context,
+            { _, hh, mm ->
+                onPicked(String.format(java.util.Locale.US, "%02d:%02d", hh, mm))
+            },
+            h, m, true,
+        ).show()
+    }
+
+    Spacer(Modifier.height(8.dp))
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.ScreenPadding)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface),
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.ScreenPadding, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_quiet_hours),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Spacer(Modifier.weight(1f))
+                Switch(
+                    checked = enabled,
+                    enabled = loaded,
+                    onCheckedChange = { enabled = it; save() },
+                )
+            }
+            if (enabled) {
+                QuietTimeRow(
+                    label = stringResource(R.string.settings_quiet_start),
+                    value = start,
+                    onClick = { pickTime(start) { start = it; save() } },
+                )
+                QuietTimeRow(
+                    label = stringResource(R.string.settings_quiet_end),
+                    value = end,
+                    onClick = { pickTime(end) { end = it; save() } },
+                )
+                Spacer(Modifier.height(4.dp))
+            }
+        }
+    }
+
+    Spacer(Modifier.height(8.dp))
+    Text(
+        text = stringResource(
+            R.string.settings_quiet_hint,
+            tz.ifBlank { "-" },
+        ),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 24.dp),
+    )
+    Spacer(Modifier.height(16.dp))
+}
+
+@Composable
+private fun QuietTimeRow(label: String, value: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = Dimens.ScreenPadding, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyLarge)
+        Spacer(Modifier.weight(1f))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 // ── Theme ───────────────────────────────────────────────────────────────

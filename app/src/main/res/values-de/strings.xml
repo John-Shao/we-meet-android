@@ -378,4 +378,11 @@
     <string name="approval_submit_failed">Senden fehlgeschlagen</string>
     <string name="profile_approval_entry">Genehmigungen</string>
     <string name="room_more_invite_members">Mitglieder einladen</string>
+
+    <!-- P0-M3 消息免打扰 -->
+    <string name="settings_quiet_hours">Nachrichten-Ruhemodus</string>
+    <string name="settings_quiet_start">Beginn</string>
+    <string name="settings_quiet_end">Ende</string>
+    <string name="settings_quiet_hint">Während der Ruhezeit werden Nachrichtenbenachrichtigungen stummgeschaltet; Anrufe klingeln weiterhin (Kontozeitzone %1$s)</string>
+    <string name="settings_quiet_save_failed">Einstellungen konnten nicht gespeichert werden</string>
 </resources>

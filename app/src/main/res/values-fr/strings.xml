@@ -378,4 +378,11 @@
     <string name="approval_submit_failed">"Échec de l'envoi"</string>
     <string name="profile_approval_entry">Approbations</string>
     <string name="room_more_invite_members">Inviter des membres</string>
+
+    <!-- P0-M3 消息免打扰 -->
+    <string name="settings_quiet_hours">Ne pas déranger (messages)</string>
+    <string name="settings_quiet_start">Heure de début</string>
+    <string name="settings_quiet_end">Heure de fin</string>
+    <string name="settings_quiet_hint">Pendant cette période, les notifications de messages sont coupées ; les appels sonnent toujours (fuseau du compte %1$s)</string>
+    <string name="settings_quiet_save_failed">Échec de sauvegarde des réglages</string>
 </resources>

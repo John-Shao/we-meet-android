@@ -391,4 +391,11 @@
     <string name="member_phone_reveal">Show</string>
     <string name="member_phone_call">Call</string>
     <string name="room_more_invite_members">Invite members</string>
+
+    <!-- P0-M3 消息免打扰 -->
+    <string name="settings_quiet_hours">Message do-not-disturb</string>
+    <string name="settings_quiet_start">Start time</string>
+    <string name="settings_quiet_end">End time</string>
+    <string name="settings_quiet_hint">During quiet hours message notifications are muted; calls still ring (account timezone %1$s)</string>
+    <string name="settings_quiet_save_failed">Failed to save settings</string>
 </resources>

@@ -378,4 +378,11 @@
     <string name="approval_submit_failed">Verzenden mislukt</string>
     <string name="profile_approval_entry">Goedkeuringen</string>
     <string name="room_more_invite_members">Leden uitnodigen</string>
+
+    <!-- P0-M3 消息免打扰 -->
+    <string name="settings_quiet_hours">Niet storen (berichten)</string>
+    <string name="settings_quiet_start">Starttijd</string>
+    <string name="settings_quiet_end">Eindtijd</string>
+    <string name="settings_quiet_hint">Tijdens stille uren worden berichtmeldingen gedempt; oproepen gaan gewoon over (accounttijdzone %1$s)</string>
+    <string name="settings_quiet_save_failed">Instellingen opslaan mislukt</string>
 </resources>
