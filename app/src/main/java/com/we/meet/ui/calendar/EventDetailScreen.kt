@@ -154,6 +154,10 @@ fun EventDetailScreen(
     )
     val ui by vm.ui.collectAsStateWithLifecycle()
     var confirmDelete by remember { mutableStateOf(false) }
+    // P2-M2 重复日程的三选编辑/删除语义(仅此次/此次及以后/全部)尚未在 App 端落地
+    // (roadmap M3);在此之前,重复日程一律引导到网页端管理,避免无 edit_scope 的
+    // 编辑被后端静默按「全部」重写整条系列。
+    var showRecurringHint by remember { mutableStateOf(false) }
 
     // Re-fetch on resume so an edit made on the edit screen shows on return.
     androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
@@ -172,13 +176,18 @@ fun EventDetailScreen(
                 },
                 actions = {
                     if (ui.canManage) {
-                        IconButton(onClick = { onEdit(eventId) }) {
+                        val recurring = ui.event?.isRecurring == true
+                        IconButton(onClick = {
+                            if (recurring) showRecurringHint = true else onEdit(eventId)
+                        }) {
                             Icon(
                                 Icons.Filled.Edit,
                                 contentDescription = stringResource(R.string.event_action_edit),
                             )
                         }
-                        IconButton(onClick = { confirmDelete = true }) {
+                        IconButton(onClick = {
+                            if (recurring) showRecurringHint = true else confirmDelete = true
+                        }) {
                             Icon(
                                 Icons.Filled.Delete,
                                 contentDescription = stringResource(R.string.event_action_delete),
@@ -204,6 +213,17 @@ fun EventDetailScreen(
                     }
                 },
                 text = { Text(stringResource(R.string.event_delete_confirm)) },
+            )
+        }
+        if (showRecurringHint) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showRecurringHint = false },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(
+                        onClick = { showRecurringHint = false },
+                    ) { Text(stringResource(R.string.ok)) }
+                },
+                text = { Text(stringResource(R.string.event_recurring_manage_on_web)) },
             )
         }
         Box(

@@ -103,6 +103,9 @@ fun CreateEventScreen(
     var start by remember { mutableStateOf(defaultStart) }
     var end by remember { mutableStateOf(defaultStart.plusHours(1)) }
     var reminderMinutes by remember { mutableStateOf<Int?>(10) }
+    // P2-M3 重复日程(创建限定;编辑重复规则属三选语义,App 端 M3 不做)。
+    var repeat by remember { mutableStateOf("") }
+    var repeatUntil by remember { mutableStateOf<LocalDate?>(null) }
     var attendees by remember { mutableStateOf<List<PickedMember>>(emptyList()) }
 
     var showPicker by remember { mutableStateOf(false) }
@@ -177,6 +180,7 @@ fun CreateEventScreen(
                             attendeeIds = attendees.map { it.userId },
                             description = description.trim(),
                             timezone = zone.id,
+                            recurrence = composeRRule(repeat, repeatUntil),
                         )
                     )
                 }
@@ -279,6 +283,21 @@ fun CreateEventScreen(
                 onSelect = { reminderMinutes = it },
             )
             HorizontalDivider()
+
+            // P2-M3 重复日程:创建限定(编辑重复规则属三选语义,App 端不做)。
+            if (!isEdit) {
+                RepeatDropdown(
+                    selected = repeat,
+                    onSelect = { repeat = it },
+                )
+                if (repeat.isNotEmpty()) {
+                    RepeatUntilRow(
+                        until = repeatUntil,
+                        onPick = { repeatUntil = it },
+                    )
+                }
+                HorizontalDivider()
+            }
 
             // Edit mode omits attendees — backend update doesn't re-sync them.
             if (!isEdit) {
@@ -430,6 +449,109 @@ private fun DateTimeRow(
                 }
             },
         )
+    }
+}
+
+/**
+ * P2-M3 重复日程 RRULE 组装(与 Web CreateEventDialog 同一口径):
+ * UNTIL 用「浮动本地时刻」(无 Z)——后端按事件时区墙上钟展开,且 dateutil
+ * 在 naive dtstart 下拒绝 UTC(Z)形式的 UNTIL。
+ */
+private fun composeRRule(repeat: String, until: LocalDate?): String {
+    if (repeat.isEmpty()) return ""
+    var rule = if (repeat == "WEEKDAYS") {
+        "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"
+    } else {
+        "FREQ=$repeat"
+    }
+    if (until != null) {
+        rule += ";UNTIL=" + until.format(DateTimeFormatter.BASIC_ISO_DATE) + "T235959"
+    }
+    return rule
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RepeatDropdown(selected: String, onSelect: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val options = listOf("", "DAILY", "WEEKDAYS", "WEEKLY", "MONTHLY")
+
+    @Composable
+    fun labelFor(key: String): String = when (key) {
+        "DAILY" -> stringResource(R.string.calendar_repeat_daily)
+        "WEEKDAYS" -> stringResource(R.string.calendar_repeat_weekdays)
+        "WEEKLY" -> stringResource(R.string.calendar_repeat_weekly)
+        "MONTHLY" -> stringResource(R.string.calendar_repeat_monthly)
+        else -> stringResource(R.string.calendar_repeat_none)
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+    ) {
+        Text(stringResource(R.string.calendar_field_repeat))
+        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+            TextButton(
+                onClick = { expanded = true },
+                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable),
+            ) {
+                Text(labelFor(selected))
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            }
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
+                options.forEach { key ->
+                    DropdownMenuItem(
+                        text = { Text(labelFor(key)) },
+                        onClick = {
+                            onSelect(key)
+                            expanded = false
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RepeatUntilRow(until: LocalDate?, onPick: (LocalDate?) -> Unit) {
+    val context = LocalContext.current
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+    ) {
+        Text(stringResource(R.string.calendar_repeat_until))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = {
+                val base = until ?: LocalDate.now().plusMonths(1)
+                android.app.DatePickerDialog(
+                    context,
+                    { _, y, m, d -> onPick(LocalDate.of(y, m + 1, d)) },
+                    base.year,
+                    base.monthValue - 1,
+                    base.dayOfMonth,
+                ).show()
+            }) {
+                Text(
+                    until?.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                        ?: stringResource(R.string.calendar_repeat_until_none)
+                )
+            }
+            if (until != null) {
+                TextButton(onClick = { onPick(null) }) {
+                    Text(stringResource(R.string.calendar_repeat_until_clear))
+                }
+            }
+        }
     }
 }
 

@@ -340,6 +340,7 @@
     <string name="event_action_edit">Bewerken</string>
     <string name="event_action_delete">Verwijderen</string>
     <string name="event_delete_confirm">Deze afspraak verwijderen?</string>
+    <string name="event_recurring_manage_on_web">Dit is een terugkerende afspraak. Bewerk of verwijder deze in de web-app.</string>
     <string name="event_delete_failed">Verwijderen mislukt</string>
     <string name="common_cancel">Annuleren</string>
     <string name="approval_title">Goedkeuringen</string>
@@ -385,4 +386,15 @@
     <string name="settings_quiet_end">Eindtijd</string>
     <string name="settings_quiet_hint">Tijdens stille uren worden berichtmeldingen gedempt; oproepen gaan gewoon over (accounttijdzone %1$s)</string>
     <string name="settings_quiet_save_failed">Instellingen opslaan mislukt</string>
+
+    <!-- P2-M3 重复日程创建 -->
+    <string name="calendar_field_repeat">Herhalen</string>
+    <string name="calendar_repeat_none">Wordt niet herhaald</string>
+    <string name="calendar_repeat_daily">Dagelijks</string>
+    <string name="calendar_repeat_weekdays">Elke werkdag</string>
+    <string name="calendar_repeat_weekly">Wekelijks</string>
+    <string name="calendar_repeat_monthly">Maandelijks</string>
+    <string name="calendar_repeat_until">Tot</string>
+    <string name="calendar_repeat_until_none">Geen einddatum</string>
+    <string name="calendar_repeat_until_clear">Wissen</string>
 </resources>

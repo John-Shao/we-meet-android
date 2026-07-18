@@ -340,6 +340,7 @@
     <string name="event_action_edit">编辑</string>
     <string name="event_action_delete">删除</string>
     <string name="event_delete_confirm">确定删除该日程？</string>
+    <string name="event_recurring_manage_on_web">这是重复日程，请在网页端编辑或删除。</string>
     <string name="event_delete_failed">删除失败</string>
     <string name="common_cancel">取消</string>
     <string name="approval_title">审批</string>
@@ -398,4 +399,15 @@
     <string name="settings_quiet_end">结束时间</string>
     <string name="settings_quiet_hint">静默期间不推送消息通知，来电不受影响（按账号时区 %1$s）</string>
     <string name="settings_quiet_save_failed">设置保存失败</string>
+
+    <!-- P2-M3 重复日程创建 -->
+    <string name="calendar_field_repeat">重复</string>
+    <string name="calendar_repeat_none">不重复</string>
+    <string name="calendar_repeat_daily">每天</string>
+    <string name="calendar_repeat_weekdays">每个工作日</string>
+    <string name="calendar_repeat_weekly">每周</string>
+    <string name="calendar_repeat_monthly">每月</string>
+    <string name="calendar_repeat_until">截止</string>
+    <string name="calendar_repeat_until_none">无截止</string>
+    <string name="calendar_repeat_until_clear">清除</string>
 </resources>

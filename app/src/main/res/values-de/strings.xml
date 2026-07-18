@@ -340,6 +340,7 @@
     <string name="event_action_edit">Bearbeiten</string>
     <string name="event_action_delete">Löschen</string>
     <string name="event_delete_confirm">Diesen Termin löschen?</string>
+    <string name="event_recurring_manage_on_web">Dies ist ein wiederkehrender Termin. Bitte bearbeiten oder löschen Sie ihn in der Web-App.</string>
     <string name="event_delete_failed">Löschen fehlgeschlagen</string>
     <string name="common_cancel">Abbrechen</string>
     <string name="approval_title">Genehmigungen</string>
@@ -385,4 +386,15 @@
     <string name="settings_quiet_end">Ende</string>
     <string name="settings_quiet_hint">Während der Ruhezeit werden Nachrichtenbenachrichtigungen stummgeschaltet; Anrufe klingeln weiterhin (Kontozeitzone %1$s)</string>
     <string name="settings_quiet_save_failed">Einstellungen konnten nicht gespeichert werden</string>
+
+    <!-- P2-M3 重复日程创建 -->
+    <string name="calendar_field_repeat">Wiederholen</string>
+    <string name="calendar_repeat_none">Keine Wiederholung</string>
+    <string name="calendar_repeat_daily">Täglich</string>
+    <string name="calendar_repeat_weekdays">Jeden Werktag</string>
+    <string name="calendar_repeat_weekly">Wöchentlich</string>
+    <string name="calendar_repeat_monthly">Monatlich</string>
+    <string name="calendar_repeat_until">Bis</string>
+    <string name="calendar_repeat_until_none">Ohne Enddatum</string>
+    <string name="calendar_repeat_until_clear">Entfernen</string>
 </resources>

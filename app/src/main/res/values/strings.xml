@@ -340,6 +340,7 @@
     <string name="event_action_edit">Edit</string>
     <string name="event_action_delete">Delete</string>
     <string name="event_delete_confirm">Delete this event?</string>
+    <string name="event_recurring_manage_on_web">This is a recurring event. Please edit or delete it on the web app.</string>
     <string name="event_delete_failed">Failed to delete</string>
     <string name="common_cancel">Cancel</string>
     <string name="approval_title">Approvals</string>
@@ -398,4 +399,15 @@
     <string name="settings_quiet_end">End time</string>
     <string name="settings_quiet_hint">During quiet hours message notifications are muted; calls still ring (account timezone %1$s)</string>
     <string name="settings_quiet_save_failed">Failed to save settings</string>
+
+    <!-- P2-M3 重复日程创建 -->
+    <string name="calendar_field_repeat">Repeat</string>
+    <string name="calendar_repeat_none">Does not repeat</string>
+    <string name="calendar_repeat_daily">Daily</string>
+    <string name="calendar_repeat_weekdays">Every weekday</string>
+    <string name="calendar_repeat_weekly">Weekly</string>
+    <string name="calendar_repeat_monthly">Monthly</string>
+    <string name="calendar_repeat_until">Until</string>
+    <string name="calendar_repeat_until_none">No end date</string>
+    <string name="calendar_repeat_until_clear">Clear</string>
 </resources>
