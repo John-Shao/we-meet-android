@@ -45,25 +45,35 @@ import com.we.meet.feature.im.ui.common.GroupAvatar
 @Composable
 fun GroupVoiceCallSheet(
     session: ImSession,
+    cid: String,
     memberUids: List<String>,
     onCall: (List<MeetInviteTracker.Target>) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var resolved by remember { mutableStateOf<Map<String, ImUserInfo>>(emptyMap()) }
-    LaunchedEffect(memberUids) {
+    // 群昵称(P10):uid → 非空昵称,覆盖目录显示名,与群成员列表口径一致。
+    var nicknames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    LaunchedEffect(memberUids, cid) {
         if (memberUids.isEmpty()) return@LaunchedEffect
         runCatching { session.bridge.resolveUsers(memberUids) }
             .onSuccess { resolved = it }
+        runCatching { session.client.listMembers(cid) }
+            .onSuccess { roster ->
+                nicknames = roster.mapNotNull { m ->
+                    m.nickname?.takeIf { it.isNotBlank() }?.let { m.uid to it }
+                }.toMap()
+            }
     }
     val selfUid = session.selfUid.value
+    // 保留 uid,以便用会话昵称覆盖显示名(resolved 仅含目录信息)。
     val candidates = memberUids
         .filter { it != selfUid }
-        .mapNotNull { uid -> resolved[uid] }
-        .filter { it.id.isNotBlank() }
+        .mapNotNull { uid -> resolved[uid]?.let { uid to it } }
+        .filter { (_, info) -> info.id.isNotBlank() }
 
     // Deselection set — starts empty so the async roster arrives pre-checked.
     var deselected by remember { mutableStateOf<Set<String>>(emptySet()) }
-    val picked = candidates.filter { it.id !in deselected }
+    val picked = candidates.filter { (_, info) -> info.id !in deselected }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Text(
@@ -73,8 +83,9 @@ fun GroupVoiceCallSheet(
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
         )
         LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
-            items(candidates, key = { it.id }) { m ->
+            items(candidates, key = { it.second.id }) { (uid, m) ->
                 val checked = m.id !in deselected
+                val label = nicknames[uid] ?: m.displayName
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -93,11 +104,11 @@ fun GroupVoiceCallSheet(
                         },
                     )
                     GroupAvatar(
-                        tiles = listOf(GroupTile(m.id, m.displayName, m.avatarUrl)),
+                        tiles = listOf(GroupTile(m.id, label, m.avatarUrl)),
                         size = 36.dp,
                     )
                     Text(
-                        text = m.displayName,
+                        text = label,
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(start = 12.dp),
                     )
@@ -121,11 +132,11 @@ fun GroupVoiceCallSheet(
                 enabled = picked.isNotEmpty(),
                 onClick = {
                     onCall(
-                        picked.map {
+                        picked.map { (uid, info) ->
                             MeetInviteTracker.Target(
-                                userId = it.id,
-                                label = it.displayName,
-                                avatarUrl = it.avatarUrl?.takeIf { u -> u.isNotBlank() },
+                                userId = info.id,
+                                label = nicknames[uid] ?: info.displayName,
+                                avatarUrl = info.avatarUrl?.takeIf { u -> u.isNotBlank() },
                             )
                         },
                     )

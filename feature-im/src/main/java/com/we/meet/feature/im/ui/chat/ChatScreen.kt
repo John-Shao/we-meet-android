@@ -711,6 +711,7 @@ fun ChatScreen(
     if (showGroupCallSheet) {
         GroupVoiceCallSheet(
             session = session,
+            cid = cid,
             memberUids = ui.memberUids,
             onDismiss = { showGroupCallSheet = false },
             onCall = { targets ->
