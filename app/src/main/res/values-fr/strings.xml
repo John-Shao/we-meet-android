@@ -401,4 +401,9 @@
     <string name="calendar_repeat_until">Fin</string>
     <string name="calendar_repeat_until_none">Sans date de fin</string>
     <string name="calendar_repeat_until_clear">Effacer</string>
+
+    <!-- 纪要闭环 M3 智能章节 -->
+    <string name="meeting_detail_tab_chapters">Chapitres</string>
+    <string name="meeting_detail_chapters_empty">Pas encore de chapitres — générés avec le compte rendu.</string>
+    <string name="meeting_detail_summary_edited">Modifié</string>
 </resources>

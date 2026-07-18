@@ -414,4 +414,9 @@
     <string name="calendar_repeat_until">截止</string>
     <string name="calendar_repeat_until_none">无截止</string>
     <string name="calendar_repeat_until_clear">清除</string>
+
+    <!-- 纪要闭环 M3 智能章节 -->
+    <string name="meeting_detail_tab_chapters">智能章节</string>
+    <string name="meeting_detail_chapters_empty">暂无章节——章节随纪要一起生成。</string>
+    <string name="meeting_detail_summary_edited">已编辑</string>
 </resources>

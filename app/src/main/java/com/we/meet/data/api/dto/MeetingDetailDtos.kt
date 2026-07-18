@@ -38,6 +38,22 @@ data class SummaryDto(
     val created_at: String,
     val updated_at: String,
     val action_items: List<ActionItemDto> = emptyList(),
+    /** 纪要闭环 M3:智能章节(旧后端缺省空)。 */
+    val chapters: List<SummaryChapterDto> = emptyList(),
+    /** 纪要闭环 M2:编辑版正文——展示优先用它(空缺省=未编辑,回落 content)。 */
+    val effective_content: String? = null,
+    val is_edited: Boolean = false,
+)
+
+/** 智能章节(时间窗可空——LLM 未回填合法时间戳时仅展示标题要点)。 */
+@JsonClass(generateAdapter = true)
+data class SummaryChapterDto(
+    val id: String,
+    val title: String,
+    val digest: String = "",
+    val started_at: String? = null,
+    val ended_at: String? = null,
+    val sort_order: Int = 0,
 )
 
 @JsonClass(generateAdapter = true)

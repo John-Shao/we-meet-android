@@ -401,4 +401,9 @@
     <string name="calendar_repeat_until">Bis</string>
     <string name="calendar_repeat_until_none">Ohne Enddatum</string>
     <string name="calendar_repeat_until_clear">Entfernen</string>
+
+    <!-- 纪要闭环 M3 智能章节 -->
+    <string name="meeting_detail_tab_chapters">Kapitel</string>
+    <string name="meeting_detail_chapters_empty">Noch keine Kapitel — sie entstehen mit der Zusammenfassung.</string>
+    <string name="meeting_detail_summary_edited">Bearbeitet</string>
 </resources>

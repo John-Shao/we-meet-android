@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -151,6 +152,11 @@ fun HistoryDetailScreen(
 
             SectionHeader(stringResource(R.string.meeting_detail_tab_action_items))
             ActionItemsTab(state = actionItemsState)
+            SectionSpacer()
+
+            // 纪要闭环 M3:智能章节区块(与 Web 三板块对齐,App 只读)。
+            SectionHeader(stringResource(R.string.meeting_detail_tab_chapters))
+            ChaptersTab(state = summaryState)
             SectionSpacer()
 
             SectionHeader(stringResource(R.string.meeting_detail_tab_transcript))
@@ -377,16 +383,96 @@ private fun SummaryTab(
             // same: there's no summary to show. Web surfaces the raw
             // error_message; the App keeps it simple — the regenerate
             // button is the action the user can take regardless.
+            // 纪要闭环 M2:展示编辑版优先(effective_content),App 端只读。
+            val body = summary?.effective_content?.takeIf { it.isNotBlank() }
+                ?: summary?.content.orEmpty()
             val showEmpty = summary == null ||
-                summary.content.isBlank() ||
+                body.isBlank() ||
                 summary.status == "failed"
             if (showEmpty) {
                 Text(stringResource(R.string.meeting_detail_summary_empty))
             } else {
-                MarkdownText(content = summary!!.content)
+                if (summary!!.is_edited) {
+                    Text(
+                        text = stringResource(R.string.meeting_detail_summary_edited),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    )
+                }
+                MarkdownText(content = body)
             }
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Chapters section (纪要闭环 M3:智能章节原生渲染,只读)
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun ChaptersTab(
+    state: MeetingDetailViewModel.LoadState<SummaryDto?>,
+) {
+    when (state) {
+        is MeetingDetailViewModel.LoadState.Loading -> CenteredText(stringResource(R.string.meeting_detail_loading))
+        is MeetingDetailViewModel.LoadState.Failure -> CenteredText(stringResource(R.string.meeting_detail_load_failed))
+        is MeetingDetailViewModel.LoadState.Success -> {
+            val chapters = state.value?.chapters.orEmpty()
+            if (chapters.isEmpty()) {
+                Text(stringResource(R.string.meeting_detail_chapters_empty))
+                return
+            }
+            Column {
+                chapters.forEach { chapter ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                    ) {
+                        Text(
+                            text = chapterTimeLabel(chapter.started_at, chapter.ended_at),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.widthIn(min = 88.dp),
+                        )
+                        Column(Modifier.padding(start = 8.dp)) {
+                            Text(
+                                text = chapter.title,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            if (chapter.digest.isNotBlank()) {
+                                Text(
+                                    text = chapter.digest,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 2.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** ISO 时刻对 → 「HH:mm – HH:mm」;无合法时间窗时退化为 「—」。 */
+private fun chapterTimeLabel(startIso: String?, endIso: String?): String {
+    fun fmt(iso: String?): String? = try {
+        iso?.let {
+            java.time.OffsetDateTime.parse(it)
+                .atZoneSameInstant(java.time.ZoneId.systemDefault())
+                .toLocalTime()
+                .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+        }
+    } catch (_: Throwable) {
+        null
+    }
+    val start = fmt(startIso) ?: return "—"
+    val end = fmt(endIso)
+    return if (end != null) "$start – $end" else start
 }
 
 /**

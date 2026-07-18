@@ -401,4 +401,9 @@
     <string name="calendar_repeat_until">Tot</string>
     <string name="calendar_repeat_until_none">Geen einddatum</string>
     <string name="calendar_repeat_until_clear">Wissen</string>
+
+    <!-- 纪要闭环 M3 智能章节 -->
+    <string name="meeting_detail_tab_chapters">Hoofdstukken</string>
+    <string name="meeting_detail_chapters_empty">Nog geen hoofdstukken — gegenereerd met de samenvatting.</string>
+    <string name="meeting_detail_summary_edited">Bewerkt</string>
 </resources>

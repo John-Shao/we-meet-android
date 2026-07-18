@@ -414,4 +414,9 @@
     <string name="calendar_repeat_until">Until</string>
     <string name="calendar_repeat_until_none">No end date</string>
     <string name="calendar_repeat_until_clear">Clear</string>
+
+    <!-- 纪要闭环 M3 智能章节 -->
+    <string name="meeting_detail_tab_chapters">Chapters</string>
+    <string name="meeting_detail_chapters_empty">No chapters yet — generated with the summary.</string>
+    <string name="meeting_detail_summary_edited">Edited</string>
 </resources>
