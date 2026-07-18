@@ -26,8 +26,10 @@ import java.util.UUID
  * the P2 offline push ride along for free.
  *
  * Responsibilities (and nothing more): send + 3s×3 re-send + 60s timeout +
- * per-invitee state for the voice grid. No room create, no navigation, no
- * call-log (a rejected meet-invite must not fake a "missed call" entry).
+ * per-invitee state for the voice grid. No room create, no navigation.
+ * P4-M3 订正:未接通的 meet 邀请落一条带 kind:"meet" 的 call-log(渲染为
+ * 「会议邀请 · 未接/已拒绝…」)——当年不写记录是防伪装成未接电话,样式化后
+ * 解禁;group(群语音)邀请仍不落 direct 记录(群只留群记录)。
  */
 class MeetInviteTracker internal constructor(
     private val client: Client,
@@ -48,6 +50,9 @@ class MeetInviteTracker internal constructor(
         val state: InviteState,
         val peerUid: String? = null,
         val cid: String? = null,
+        /** P4-M3 未接记录用:发邀时的媒介与 kind(group 不落 direct 记录)。 */
+        val media: String = "audio",
+        val kind: String = "meet",
     ) {
         val terminal: Boolean
             get() = state != InviteState.INVITING && state != InviteState.RINGING
@@ -94,6 +99,8 @@ class MeetInviteTracker internal constructor(
                 label = target.label,
                 avatarUrl = target.avatarUrl,
                 state = InviteState.INVITING,
+                media = media,
+                kind = kind,
             )
             _invites.value = _invites.value + invite
             dispatch(invite, media, roomSlug, roomName, kind)
@@ -241,6 +248,34 @@ class MeetInviteTracker internal constructor(
         replace(invite.copy(state = state))
         if (state != InviteState.INVITING && state != InviteState.RINGING) {
             jobs.remove(callId)?.forEach { it.cancel() }
+            logMissedInvite(invite, state)
+        }
+    }
+
+    /** P4-M3: 未接通的 meet 邀请落 A↔C「会议邀请」记录(与 Web 同口径)。 */
+    private fun logMissedInvite(invite: MeetInvite, state: InviteState) {
+        val result = when (state) {
+            InviteState.TIMEOUT -> "missed"
+            InviteState.REJECTED -> "declined"
+            InviteState.BUSY -> "busy"
+            InviteState.UNREACHABLE -> "unreachable"
+            InviteState.CANCELED -> "canceled"
+            else -> return // accepted=离房结算写 completed;failed 多半无 cid
+        }
+        val cid = invite.cid ?: return
+        if (invite.kind == "group") return // 群语音只留群记录
+        scope.launch {
+            runCatching {
+                client.sendText(
+                    cid = cid,
+                    body = org.json.JSONObject().apply {
+                        put("media", invite.media)
+                        put("result", result)
+                        put("kind", "meet")
+                    }.toString(),
+                    contentType = "call-log",
+                )
+            }.onFailure { Log.w(TAG, "meet-invite miss-log send failed", it) }
         }
     }
 

@@ -51,6 +51,9 @@ sealed interface MessageContent {
         /** P4.1: group end-records carry the room slug to flip the matching
          * ongoing card to its ended state. */
         val slug: String? = null,
+        /** P4-M3: true = 未接通的会议邀请记录(body kind:"meet"),渲染为
+         * 「会议邀请 · x」而非未接来电。 */
+        val meetInvite: Boolean = false,
     ) : MessageContent
 
     /**
@@ -127,6 +130,7 @@ object MessageContentParser {
                 result = it.optString("result", "missed"),
                 durationSec = it.optLong("duration", 0L),
                 slug = it.optString("slug").takeIf { s -> s.isNotBlank() },
+                meetInvite = it.optString("kind") == "meet",
             )
         }
         "group-call" -> parseJson(contentType, body) {

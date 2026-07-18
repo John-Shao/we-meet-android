@@ -219,4 +219,6 @@
     <string name="im_msg_search_no_results">Aucun message correspondant</string>
     <string name="im_msg_search_more">Charger plus</string>
     <string name="im_msg_search_loading">Chargement…</string>
+    <!-- P4-M3 未接会议邀请记录 -->
+    <string name="im_calllog_meet_invite">Invitation à la réunion</string>
 </resources>

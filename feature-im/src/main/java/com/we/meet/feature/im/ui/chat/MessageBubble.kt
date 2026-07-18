@@ -643,9 +643,14 @@ private fun CallLogBubble(content: MessageContent.CallLog, isOwn: Boolean) {
     // so isOwn means "I placed this call". The same declined record must read
     // 「对方已拒绝」 to the caller but 「已拒绝」 to the callee who tapped it.
     // Completed calls render the duration instead — identical on both sides.
-    val media = stringResource(
-        if (content.media == "video") R.string.im_calllog_video else R.string.im_calllog_voice
-    )
+    // P4-M3: 未接通的会议邀请记录前缀「会议邀请」——样式上区别于未接来电。
+    val media = if (content.meetInvite) {
+        stringResource(R.string.im_calllog_meet_invite)
+    } else {
+        stringResource(
+            if (content.media == "video") R.string.im_calllog_video else R.string.im_calllog_voice
+        )
+    }
     val result = if (content.result == "completed") {
         formatCallDuration(content.durationSec)
     } else {

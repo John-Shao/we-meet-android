@@ -235,4 +235,6 @@
     <string name="im_msg_search_no_results">No matching messages</string>
     <string name="im_msg_search_more">Load more</string>
     <string name="im_msg_search_loading">Loading…</string>
+    <!-- P4-M3 未接会议邀请记录 -->
+    <string name="im_calllog_meet_invite">Meeting invite</string>
 </resources>
