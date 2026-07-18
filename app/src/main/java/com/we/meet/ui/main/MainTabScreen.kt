@@ -66,6 +66,7 @@ import android.view.ViewGroup
 import com.we.meet.ui.contacts.ContactsTabScreen
 import com.we.meet.ui.docs.DocsTabScreen
 import com.we.meet.ui.docs.createDocsWebView
+import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.ui.home.HomeScreen
 import com.we.meet.ui.profile.ProfileScreen
 import kotlinx.coroutines.launch
@@ -113,12 +114,22 @@ fun MainTabScreen(
     // 云文档 WebView 提升到 tab 层持有:tabs 是 `tabs[safeTab].content()` 重组切换,
     // 若放进 content lambda,每次切 tab 都会重建 WebView、重走加载 + KC SSO 重定向。
     // remember 一次跨 tab 存活;MainTabScreen 退出(登出)时销毁,避免泄漏。
-    val docsWebView = remember { createDocsWebView(ctx) }
+    val docsDark = WeMeetTheme.isDark
+    val docsWebView = remember { createDocsWebView(ctx, darkTheme = docsDark) }
     DisposableEffect(Unit) {
         onDispose {
             (docsWebView.parent as? ViewGroup)?.removeView(docsWebView)
             docsWebView.destroy()
         }
+    }
+    // 运行时切换深浅:UA 是创建时固化的,靠注入 postMessage 让常驻 docs 立即跟随
+    // (docs ConfigProvider 内嵌时监听 wemeet-theme 消息)。首帧主题已由 UA 覆盖。
+    LaunchedEffect(docsDark) {
+        val scheme = if (docsDark) "dark" else "light"
+        docsWebView.evaluateJavascript(
+            "window.postMessage({type:'wemeet-theme',theme:'$scheme'},'*')",
+            null,
+        )
     }
 
     // Live unread total for the 消息 tab badge — fed by the process-wide IM

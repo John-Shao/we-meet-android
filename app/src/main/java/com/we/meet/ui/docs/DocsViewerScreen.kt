@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import com.we.meet.R
+import com.we.meet.ui.theme.WeMeetTheme
 
 /**
  * 搜索统一 M2:全局搜索「文档」命中的应用内查看器。
@@ -36,7 +37,9 @@ import com.we.meet.R
 @Composable
 fun DocsViewerScreen(url: String, onClose: () -> Unit) {
     val context = LocalContext.current
-    val webView = remember { createDocsWebView(context, initialUrl = url) }
+    val darkTheme = WeMeetTheme.isDark
+    val webView =
+        remember { createDocsWebView(context, initialUrl = url, darkTheme = darkTheme) }
     var canGoBack by remember { mutableStateOf(false) }
 
     DisposableEffect(webView) {
