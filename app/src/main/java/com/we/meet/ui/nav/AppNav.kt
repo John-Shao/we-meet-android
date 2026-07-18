@@ -588,6 +588,14 @@ fun AppNav() {
                 onOpenDoc = { url ->
                     navController.navigate(Routes.docsViewer(url))
                 },
+                // P1-4 M3:AI 问答 SSE(鉴权 OkHttp,契约同 Web §D2)。
+                askAi = { question ->
+                    com.we.meet.data.api.globalAskStream(
+                        okHttp = app.apiClient.okHttp,
+                        baseUrl = com.we.meet.BuildConfig.WE_MEET_BASE_URL,
+                        question = question,
+                    )
+                },
             )
         }
 

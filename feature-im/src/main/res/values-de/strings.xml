@@ -227,4 +227,14 @@
     <string name="im_search_cat_meetings">Meetings</string>
     <string name="im_search_cat_messages">Nachrichten</string>
     <string name="im_search_cat_docs">Dokumente</string>
+
+    <!-- P1-4 M3 App AI 问答 -->
+    <string name="im_search_cat_ai">KI fragen</string>
+    <string name="im_search_ai_hint">Frage eingeben (≥2 Zeichen) und auf Fragen tippen — die KI antwortet mit Quellen.</string>
+    <string name="im_search_ai_submit">✨ KI fragen: %1$s</string>
+    <string name="im_search_ai_asking">Suche und Analyse…</string>
+    <string name="im_search_ai_sources">Quellen</string>
+    <string name="im_search_ai_degraded">KI-Antwort vorübergehend nicht verfügbar — hier sind die gefundenen Treffer.</string>
+    <string name="im_search_ai_error">Anfrage fehlgeschlagen: %1$s</string>
+    <string name="im_search_ai_im_skipped">Chatnachrichten wurden diesmal nicht einbezogen.</string>
 </resources>

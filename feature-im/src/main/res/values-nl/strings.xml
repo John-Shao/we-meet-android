@@ -227,4 +227,14 @@
     <string name="im_search_cat_meetings">Vergaderingen</string>
     <string name="im_search_cat_messages">Berichten</string>
     <string name="im_search_cat_docs">Documenten</string>
+
+    <!-- P1-4 M3 App AI 问答 -->
+    <string name="im_search_cat_ai">Vraag AI</string>
+    <string name="im_search_ai_hint">Typ een vraag (≥2 tekens) en tik op Vragen — AI antwoordt met bronnen.</string>
+    <string name="im_search_ai_submit">✨ Vraag AI: %1$s</string>
+    <string name="im_search_ai_asking">Zoeken en nadenken…</string>
+    <string name="im_search_ai_sources">Bronnen</string>
+    <string name="im_search_ai_degraded">AI-antwoord tijdelijk niet beschikbaar — dit zijn de gevonden resultaten.</string>
+    <string name="im_search_ai_error">Verzoek mislukt: %1$s</string>
+    <string name="im_search_ai_im_skipped">Chatberichten zijn deze keer niet meegenomen.</string>
 </resources>

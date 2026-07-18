@@ -78,7 +78,19 @@ data class GlobalSearchDoc(
     val updatedAt: String,
 )
 
-private enum class SearchCategory { ALL, CONTACTS, MEETINGS, MESSAGES, DOCS }
+private enum class SearchCategory { ALL, CONTACTS, MEETINGS, MESSAGES, DOCS, AI }
+
+/** AI 问答面板状态(P1-4 M3 App;契约同 Web §D2)。 */
+private data class AskUiState(
+    val status: String = "idle", // idle | asking | done
+    val question: String = "",
+    val answer: String = "",
+    val citations: List<AskCitation> = emptyList(),
+    val citationsUsed: List<Int> = emptyList(),
+    val degraded: Boolean = false,
+    val sources: Map<String, String> = emptyMap(),
+    val error: String? = null,
+)
 
 /**
  * 全局搜索页(搜索统一 M2,对齐 Web GlobalSearch 的分类标签心智):
@@ -99,6 +111,8 @@ fun MessageSearchScreen(
     searchDocs: (suspend (String) -> List<GlobalSearchDoc>)? = null,
     onOpenMeeting: ((roomId: String) -> Unit)? = null,
     onOpenDoc: ((url: String) -> Unit)? = null,
+    /** P1-4 M3:AI 问答 SSE(app 层实现);null = 隐藏 AI 分类。 */
+    askAi: ((String) -> kotlinx.coroutines.flow.Flow<AskEvent>)? = null,
 ) {
     val session = remember(deps) { ImSession.get(deps) }
     val summaries by session.conversations.conversations.collectAsStateWithLifecycle()
@@ -116,6 +130,46 @@ fun MessageSearchScreen(
     var contacts by remember { mutableStateOf<List<GlobalSearchContact>>(emptyList()) }
     var meetings by remember { mutableStateOf<List<GlobalSearchMeeting>>(emptyList()) }
     var docs by remember { mutableStateOf<List<GlobalSearchDoc>>(emptyList()) }
+    // AI 问答:仅显式触发(按钮/回车),绝不随输入自动发起(成本闸门,同 Web)。
+    var ask by remember { mutableStateOf(AskUiState()) }
+    var askJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+
+    fun submitAsk() {
+        val provider = askAi ?: return
+        val q = query.trim()
+        if (q.length < 2) return
+        askJob?.cancel()
+        ask = AskUiState(status = "asking", question = q)
+        askJob = scope.launch {
+            runCatching {
+                provider(q).collect { event ->
+                    when (event) {
+                        is AskEvent.Meta -> ask = ask.copy(
+                            citations = event.citations, sources = event.sources,
+                        )
+                        is AskEvent.Delta -> ask = ask.copy(answer = ask.answer + event.text)
+                        is AskEvent.Done -> ask = ask.copy(
+                            status = "done",
+                            citationsUsed = event.citationsUsed,
+                            degraded = event.degraded,
+                        )
+                        is AskEvent.Failure -> ask = ask.copy(
+                            status = "done", error = event.message,
+                        )
+                    }
+                }
+            }.onFailure { e ->
+                if (e !is kotlinx.coroutines.CancellationException) {
+                    ask = ask.copy(status = "done", error = e.message ?: "error")
+                }
+            }
+            if (ask.status == "asking") ask = ask.copy(status = "done")
+        }
+    }
+    // 离开页面即断流(SSE 占用服务端 worker,同 Web 关面板 abort 红线)。
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { askJob?.cancel() }
+    }
 
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
@@ -216,13 +270,14 @@ fun MessageSearchScreen(
     }
 
     // 分类可见性:provider 缺失的分类不出现(向后兼容宿主未接线的场景)。
-    val categories = remember(searchContacts, searchMeetings, searchDocs) {
+    val categories = remember(searchContacts, searchMeetings, searchDocs, askAi) {
         buildList {
             add(SearchCategory.ALL)
             if (searchContacts != null) add(SearchCategory.CONTACTS)
             if (searchMeetings != null) add(SearchCategory.MEETINGS)
             add(SearchCategory.MESSAGES)
             if (searchDocs != null) add(SearchCategory.DOCS)
+            if (askAi != null) add(SearchCategory.AI)
         }
     }
     val showConv = category == SearchCategory.ALL || category == SearchCategory.MESSAGES
@@ -242,6 +297,7 @@ fun MessageSearchScreen(
         SearchCategory.MEETINGS -> stringResource(R.string.im_search_cat_meetings)
         SearchCategory.MESSAGES -> stringResource(R.string.im_search_cat_messages)
         SearchCategory.DOCS -> stringResource(R.string.im_search_cat_docs)
+        SearchCategory.AI -> stringResource(R.string.im_search_cat_ai)
     }
 
     Scaffold(
@@ -299,6 +355,24 @@ fun MessageSearchScreen(
                         label = { Text(labelFor(cat)) },
                     )
                 }
+            }
+
+            if (category == SearchCategory.AI) {
+                AiAskPanel(
+                    state = ask,
+                    query = query.trim(),
+                    onSubmit = { submitAsk() },
+                    onOpenCitation = { citation ->
+                        when {
+                            citation.kind == "im" && citation.cid != null ->
+                                onOpenChat(citation.cid, citation.seq)
+                            citation.kind == "meeting" && citation.roomId != null ->
+                                onOpenMeeting?.invoke(citation.roomId)
+                            // calendar:App 端暂无按日定位路由,仅展示(M3 注记)。
+                        }
+                    },
+                )
+                return@Column
             }
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -470,6 +544,135 @@ fun MessageSearchScreen(
                             onClick = { onOpenDoc?.invoke(doc.url) },
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * AI 问答面板(P1-4 M3 App):显式触发 → 灰态引用 chips 先行 → 流式正文 →
+ * done 后已用引用高亮;degraded = 「检索结果模式」(chips 全可点 + 提示)。
+ * 正文按纯文本渲染(轻量;Markdown 富渲染留待后续)。
+ */
+@Composable
+private fun AiAskPanel(
+    state: AskUiState,
+    query: String,
+    onSubmit: () -> Unit,
+    onOpenCitation: (AskCitation) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        if (state.status == "idle") {
+            Text(
+                text = stringResource(R.string.im_search_ai_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (query.length >= 2) {
+                Spacer(Modifier.padding(top = 8.dp))
+                Text(
+                    text = stringResource(R.string.im_search_ai_submit, query),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clickable { onSubmit() }
+                        .padding(vertical = 8.dp),
+                )
+            }
+            return
+        }
+
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            item(key = "q") {
+                Text(
+                    text = "✨ ${state.question}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 6.dp),
+                )
+            }
+            if (state.degraded) {
+                item(key = "degraded") {
+                    Text(
+                        text = stringResource(R.string.im_search_ai_degraded),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 6.dp),
+                    )
+                }
+            }
+            state.error?.let { err ->
+                item(key = "err") {
+                    Text(
+                        text = stringResource(R.string.im_search_ai_error, err),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(bottom = 6.dp),
+                    )
+                }
+            }
+            if (state.status == "done" &&
+                state.sources["im"] == "skipped" && !state.degraded
+            ) {
+                item(key = "im-skip") {
+                    Text(
+                        text = stringResource(R.string.im_search_ai_im_skipped),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    )
+                }
+            }
+            if (state.answer.isNotEmpty()) {
+                item(key = "answer") {
+                    Text(
+                        text = state.answer,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
+            } else if (state.status == "asking") {
+                item(key = "asking") {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 8.dp),
+                    ) {
+                        CircularProgressIndicator(Modifier.width(20.dp))
+                        Text(
+                            text = stringResource(R.string.im_search_ai_asking),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                    }
+                }
+            }
+            if (state.citations.isNotEmpty()) {
+                item(key = "src-title") {
+                    SectionHeader(stringResource(R.string.im_search_ai_sources))
+                }
+                val used = state.citationsUsed.toSet()
+                val settled = state.status == "done"
+                items(state.citations, key = { "cit-${it.n}" }) { citation ->
+                    val highlighted =
+                        settled && !state.degraded && citation.n in used
+                    val emoji = when (citation.kind) {
+                        "im" -> "💬"
+                        "calendar" -> "📅"
+                        else -> "📹"
+                    }
+                    TwoLineRow(
+                        emoji = emoji,
+                        title = "[${citation.n}] ${citation.title}" +
+                            if (highlighted) " ★" else "",
+                        subtitle = citation.snippet.takeIf { it.isNotBlank() },
+                        onClick = { onOpenCitation(citation) },
+                    )
                 }
             }
         }

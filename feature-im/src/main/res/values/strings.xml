@@ -243,4 +243,14 @@
     <string name="im_search_cat_meetings">Meetings</string>
     <string name="im_search_cat_messages">Messages</string>
     <string name="im_search_cat_docs">Docs</string>
+
+    <!-- P1-4 M3 App AI 问答 -->
+    <string name="im_search_cat_ai">Ask AI</string>
+    <string name="im_search_ai_hint">Type a question (≥2 chars), then tap Ask — AI answers from your meetings, chats, calendar and minutes with citations.</string>
+    <string name="im_search_ai_submit">✨ Ask AI: %1$s</string>
+    <string name="im_search_ai_asking">Searching and thinking…</string>
+    <string name="im_search_ai_sources">Sources</string>
+    <string name="im_search_ai_degraded">AI answering is temporarily unavailable — here are the matching results found for you.</string>
+    <string name="im_search_ai_error">Request failed: %1$s</string>
+    <string name="im_search_ai_im_skipped">Chat messages were not included this time.</string>
 </resources>
