@@ -15,6 +15,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -255,7 +257,8 @@ fun RoomScreen(
                     val activeKey = activeLocal.joinToString(",") { "${it.callId}:${it.state}" }
                     var publishedKey by remember { mutableStateOf<String?>(null) }
                     LaunchedEffect(activeKey) {
-                        if (!isCallEntry) return@LaunchedEffect
+                        // P4-M3 起不限 call 入口:普通会议里拉人同样广播,
+                        // 全员的会议内 chips 可见「谁在被邀请」(对齐 Web)。
                         if (publishedKey == activeKey) return@LaunchedEffect
                         if (publishedKey == null && activeKey.isEmpty()) return@LaunchedEffect
                         publishedKey = activeKey
@@ -348,9 +351,30 @@ fun RoomScreen(
                             },
                         )
                     } else {
+                        // P4-M3 会议内 chips:本端(排除 已接受/已取消)+ 他人
+                        // 广播的响铃快照,统一 (label, stateKey, avatarUrl)。
+                        val overlayChips = remember(invites, remoteChips) {
+                            buildList {
+                                invites.forEach { inv ->
+                                    if (inv.state != MeetInviteTracker.InviteState.ACCEPTED &&
+                                        inv.state != MeetInviteTracker.InviteState.CANCELED
+                                    ) {
+                                        add(
+                                            Triple(
+                                                inv.label,
+                                                inv.state.name.lowercase(),
+                                                inv.avatarUrl,
+                                            ),
+                                        )
+                                    }
+                                }
+                                addAll(remoteChips)
+                            }
+                        }
                         RoomContent(
                         state = state,
                         room = viewModel.room,
+                        meetInviteChips = overlayChips,
                         pinPreferredAudioDevice = viewModel.callAudioDeviceModule::setPreferredDevice,
                         roomName = roomName,
                         roomSlug = roomSlug,
@@ -601,6 +625,66 @@ private fun MinimalCallHost(
     }
 }
 
+/**
+ * P4-M3: 完整会议 UI 顶部的邀请状态悬浮 chips——会议页没有语音宫格的占位
+ * 瓦片,拉人后本端毫无反馈,这里补上「响铃中/邀请中」与本端终态(已拒绝/
+ * 无应答/忙线)。只读轻量,重邀走「更多 → 邀请成员」。
+ */
+@Composable
+private fun MeetInviteChipsRow(
+    chips: List<Triple<String, String, String?>>,
+    modifier: Modifier = Modifier,
+) {
+    @Composable
+    fun stateLabel(key: String): String = when (key) {
+        "ringing" -> stringResource(com.we.meet.feature.im.R.string.im_call_invite_ringing)
+        "inviting" -> stringResource(com.we.meet.feature.im.R.string.im_call_invite_inviting)
+        "rejected" -> stringResource(com.we.meet.feature.im.R.string.im_call_invite_rejected)
+        "busy" -> stringResource(com.we.meet.feature.im.R.string.im_call_invite_busy)
+        "unreachable" -> stringResource(com.we.meet.feature.im.R.string.im_call_invite_unreachable)
+        "timeout" -> stringResource(com.we.meet.feature.im.R.string.im_call_invite_timeout)
+        else -> stringResource(com.we.meet.feature.im.R.string.im_call_invite_failed)
+    }
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = modifier
+            .padding(horizontal = 16.dp)
+            .horizontalScroll(rememberScrollState()),
+    ) {
+        chips.forEach { (label, stateKey, _) ->
+            val active = stateKey == "ringing" || stateKey == "inviting"
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .background(
+                        Color.Black.copy(alpha = 0.6f),
+                        RoundedCornerShape(999.dp),
+                    )
+                    .padding(horizontal = 10.dp, vertical = 5.dp),
+            ) {
+                Text(
+                    text = label,
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = stateLabel(stateKey),
+                    color = if (active) {
+                        Color(0xFF93C5FD)
+                    } else {
+                        Color.White.copy(alpha = 0.65f)
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RoomContent(
@@ -636,6 +720,8 @@ private fun RoomContent(
     onEndMeeting: () -> Unit,
     /** P4.1 会议拉人: opens the org-member ringing picker (RoomScreen hosts it). */
     onInviteMembers: () -> Unit = {},
+    /** P4-M3 会议内邀请状态 chips:(label, stateKey, avatarUrl)。 */
+    meetInviteChips: List<Triple<String, String, String?>> = emptyList(),
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -791,6 +877,16 @@ private fun RoomContent(
                 onPin = onPinParticipant,
                 onUnpin = onUnpinParticipant,
                 onStopScreenShare = onStopScreenShare,
+            )
+        }
+
+        // P4-M3 邀请状态悬浮 chips(响铃中/终态,只读;重邀走「邀请成员」)。
+        if (meetInviteChips.isNotEmpty()) {
+            MeetInviteChipsRow(
+                chips = meetInviteChips,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = topInset + 8.dp),
             )
         }
 
