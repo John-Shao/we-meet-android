@@ -555,7 +555,12 @@ fun AppNav() {
                             com.we.meet.feature.im.ui.search.GlobalSearchContact(
                                 userId = m.id,
                                 name = m.fullName ?: m.shortName ?: m.email ?: m.id,
-                                subtitle = m.email,
+                                // 与 Web 全局搜索同款「职务 · 部门」,空则退 email。
+                                subtitle = listOfNotNull(
+                                    m.title?.takeIf { it.isNotBlank() },
+                                    m.department?.name?.takeIf { it.isNotBlank() },
+                                ).joinToString(" · ").ifBlank { m.email.orEmpty() }
+                                    .takeIf { it.isNotBlank() },
                             )
                         }
                 },

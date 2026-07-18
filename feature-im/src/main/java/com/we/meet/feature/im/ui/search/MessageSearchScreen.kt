@@ -464,7 +464,11 @@ fun MessageSearchScreen(
                     }
                 }
 
-                if (showMessages && query.trim().length >= 2) {
+                // 「全部」下零命中的消息组整组隐藏(对齐 Web 只渲染非空组);
+                // 「消息」分类保留 spinner/空态反馈。
+                val hideEmptyMsgSection =
+                    inAll && !searching && searchedOnce && items.isEmpty()
+                if (showMessages && query.trim().length >= 2 && !hideEmptyMsgSection) {
                     item(key = "sec-msg") {
                         SectionHeader(stringResource(R.string.im_msg_search_sec_messages))
                     }
