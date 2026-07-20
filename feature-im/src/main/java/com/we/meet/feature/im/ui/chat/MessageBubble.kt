@@ -61,6 +61,7 @@ import coil.request.ImageRequest
 import com.jusi.lightim.Message
 import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.feature.im.R
+import com.we.meet.feature.im.model.IM_SYSTEM_UID
 import com.we.meet.feature.im.model.MessageContent
 import com.we.meet.feature.im.model.MessageContentParser
 import com.we.meet.feature.im.model.formatCallDuration
@@ -126,6 +127,18 @@ fun MessageBubble(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline,
             )
+        }
+        return
+    }
+
+    // P8-UX:后端 SYSTEM 兜底注入的日程变更/取消卡 → 居中,无发送者归属
+    // (正常路径卡片已由组织者 IM 身份发出,走下方常规气泡;此分支只兜
+    // uid 解析失败的降级,否则全零 uid 会渲染成「?」气泡)。
+    if (content is MessageContent.EventCard && message.senderUid == IM_SYSTEM_UID) {
+        Box(Modifier.fillMaxWidth().padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
+            EventCardBubble(content, isOwn = false, onLongPress = onLongPress) {
+                onOpenEvent?.invoke(content.eventId)
+            }
         }
         return
     }

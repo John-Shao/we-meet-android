@@ -97,6 +97,9 @@ sealed interface MessageContent {
 /** One line of a merged chat record; `ts` is unix millis. */
 data class MergedItem(val sender: String, val text: String, val ts: Long)
 
+/** jusi-light-im 服务端注入消息的 SYSTEM 身份 uid(与 Web IM_SYSTEM_UID 一致)。 */
+const val IM_SYSTEM_UID = "00000000-0000-0000-0000-000000000000"
+
 object MessageContentParser {
 
     fun parse(contentType: String, body: String): MessageContent = when (contentType) {
