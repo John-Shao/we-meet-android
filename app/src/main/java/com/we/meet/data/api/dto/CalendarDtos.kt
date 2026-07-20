@@ -100,6 +100,8 @@ data class CreateEventRequest(
     val timezone: String,
     /** P2-M3 重复日程:RRULE 串(UNTIL 用浮动本地时刻),空=单次。 */
     val recurrence: String = "",
+    /** P8:来源 IM 会话 cid(仅忙闲页链路传);变更/取消时后端向其推卡片。 */
+    @Json(name = "source_conversation_id") val sourceConversationId: String? = null,
 )
 
 /**

@@ -91,6 +91,8 @@ fun CreateEventScreen(
     prefillAttendeeIds: List<String> = emptyList(),
     /** P8:创建成功回调(仅创建模式,编辑不触发)——IM 链路用来回发日程卡片。 */
     onCreated: ((com.we.meet.data.api.dto.CalendarEventDto) -> Unit)? = null,
+    /** P8:来源 IM 会话 cid,随创建落库(M3 变更推送用);非 IM 链路为 null。 */
+    sourceConversationId: String? = null,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val scope = rememberCoroutineScope()
@@ -223,6 +225,7 @@ fun CreateEventScreen(
                             description = description.trim(),
                             timezone = zone.id,
                             recurrence = composeRRule(repeat, repeatUntil),
+                            sourceConversationId = sourceConversationId,
                         )
                     )
                 }

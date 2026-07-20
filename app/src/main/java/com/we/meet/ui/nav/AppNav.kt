@@ -814,6 +814,8 @@ fun AppNav() {
                     ?.split(',')
                     ?.filter { it.isNotBlank() }
                     .orEmpty(),
+                // P8-M3:cid 随创建落库,后端在改期/加人/取消时向该会话推卡片。
+                sourceConversationId = srcCid,
                 // P8:IM 链路创建成功 → best-effort 回发 event-card 卡片(协议 v1,
                 // 与 Web buildEventCardBody 一致);失败仅 log,不阻塞返回。
                 onCreated = if (srcCid.isNullOrBlank()) null else { dto ->
