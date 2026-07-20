@@ -347,8 +347,10 @@ fun RoomScreen(
                     }
 
                     // P4.1 会议拉人 picker visibility (hosted at this level so
-                    // it can reach imSession + roomSlug).
+                    // it can reach imSession + roomSlug). P5.1: seeded with the
+                    // participants-sheet search query (实测问题3).
                     var showMeetingInvitePicker by rememberSaveable { mutableStateOf(false) }
+                    var invitePickerQuery by rememberSaveable { mutableStateOf("") }
 
                     val callIsVideo = callMedia == "video"
                     if (isCallEntry && (callMedia == "audio" || (callIsVideo && !upgradeLatch))) {
@@ -461,7 +463,10 @@ fun RoomScreen(
                         onEndMeeting = {
                             viewModel.endMeeting { onLeave(false) }
                         },
-                        onInviteMembers = { showMeetingInvitePicker = true },
+                        onInviteMembers = { q ->
+                            invitePickerQuery = q
+                            showMeetingInvitePicker = true
+                        },
                     )
                     // P4.1 会议拉人: org-member picker → parallel kind=meet
                     // ringing invites into THIS meeting (media=video → the
@@ -473,6 +478,7 @@ fun RoomScreen(
                             deps = context.applicationContext as DirectoryDeps,
                             mode = ContactPickerMode.Multi,
                             footer = { UnifiedInviteFooter(roomSlug = roomSlug) },
+                            initialQuery = invitePickerQuery,
                             onConfirm = { picked ->
                                 showMeetingInvitePicker = false
                                 if (picked.isNotEmpty()) {
@@ -783,8 +789,10 @@ private fun RoomContent(
     onClearAi: () -> Unit,
     onLeave: () -> Unit,
     onEndMeeting: () -> Unit,
-    /** P4.1 会议拉人: opens the org-member ringing picker (RoomScreen hosts it). */
-    onInviteMembers: () -> Unit = {},
+    /** P4.1 会议拉人: opens the org-member ringing picker (RoomScreen hosts
+     * it). P5.1: carries the participants-sheet search query so the picker
+     * opens pre-seeded (实测问题3:输入不白打). */
+    onInviteMembers: (query: String) -> Unit = {},
     /** P4-M3 会议内邀请状态 chips:(label, stateKey, avatarUrl)。 */
     meetInviteChips: List<Triple<String, String, String?>> = emptyList(),
     // ---- P5 建议参会 (participants sheet suggested tab) ----
@@ -1053,9 +1061,9 @@ private fun RoomContent(
             onCallSuggested = onCallSuggested,
             onCancelInvite = onCancelInvite,
             onRefreshSuggested = onRefreshSuggested,
-            onInviteMembers = {
+            onInviteMembers = { q ->
                 showParticipants = false
-                onInviteMembers()
+                onInviteMembers(q)
             },
             onRenameSelfClick = {
                 showParticipants = false
@@ -1162,10 +1170,6 @@ private fun RoomContent(
                 showMore = false
                 scope.launch { onRefreshAccessLevel() }
                 showHostSettings = true
-            },
-            onInviteMembersClick = {
-                showMore = false
-                onInviteMembers()
             },
             onDismiss = { showMore = false },
         )
@@ -1518,7 +1522,8 @@ private fun ParticipantsSheet(
     onCallSuggested: (com.we.meet.data.api.dto.SuggestedParticipantDto) -> Unit = {},
     onCancelInvite: (callId: String) -> Unit = {},
     onRefreshSuggested: () -> Unit = {},
-    onInviteMembers: () -> Unit = {},
+    /** P5.1: carries this sheet's search query into the invite picker. */
+    onInviteMembers: (query: String) -> Unit = {},
 ) {
     val sheetState = rememberModalBottomSheetState()
 
@@ -1561,7 +1566,7 @@ private fun ParticipantsSheet(
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(Modifier.width(8.dp))
-                Button(onClick = onInviteMembers) {
+                Button(onClick = { onInviteMembers(query.trim()) }) {
                     Icon(
                         imageVector = Icons.Default.PersonAdd,
                         contentDescription = null,
@@ -2238,7 +2243,6 @@ private fun MoreActionsSheet(
     onSubtitlesClick: () -> Unit,
     onAiClick: () -> Unit,
     onHostSettingsClick: () -> Unit,
-    onInviteMembersClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState()

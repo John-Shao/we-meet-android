@@ -79,13 +79,16 @@ fun ContactPicker(
     /** P5 统一邀请面板:成员列表与确认钮之间的自定义区(会议号/复制链接等)。
      * 默认 null——既有调用方零变化。 */
     footer: (@Composable () -> Unit)? = null,
+    /** P5.1(实测问题3):把参会人页「搜索或呼叫」框已输入的词带进来当初始
+     * 搜索,输入不白打。默认空——既有调用方零变化。 */
+    initialQuery: String = "",
     onConfirm: (List<PickedMember>) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val repository = remember(deps) { DirectoryRepository(DirectoryNetwork.directoryApi(deps)) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    var query by remember { mutableStateOf("") }
+    var query by remember { mutableStateOf(initialQuery) }
     var members by remember { mutableStateOf<List<MemberDto>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf(false) }
