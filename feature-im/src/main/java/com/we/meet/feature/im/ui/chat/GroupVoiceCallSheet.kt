@@ -47,6 +47,9 @@ fun GroupVoiceCallSheet(
     session: ImSession,
     cid: String,
     memberUids: List<String>,
+    /** P5.1: heading override — the group video-meeting entry reuses this
+     * sheet (defaults to the group-voice-call title). */
+    title: String? = null,
     /** P5: `allMembers` = the full resolved roster regardless of check state —
      * the caller reports it as the room's suggested invitees (Feishu 场景2:
      * 群发起会的建议参会 = 全体群成员)。 */
@@ -80,7 +83,7 @@ fun GroupVoiceCallSheet(
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Text(
-            text = stringResource(R.string.im_group_voice_call_title),
+            text = title ?: stringResource(R.string.im_group_voice_call_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),

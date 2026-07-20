@@ -2357,21 +2357,11 @@ private fun MoreActionsSheet(
                     iconBgColor = sheetBg,
                     iconTintColor = sheetTint,
                 )
-                // P4.1 会议拉人: org-member picker → parallel kind=meet
-                // ringing invites into THIS room (no link sharing needed).
-                ControlButton(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.PersonAdd,
-                    label = stringResource(R.string.room_more_invite_members),
-                    isOn = true,
-                    onClick = onInviteMembersClick,
-                    labelColor = sheetTint,
-                    iconBgColor = sheetBg,
-                    iconTintColor = sheetTint,
-                )
+                // P5(实测问题3): 「邀请成员」入口移到参会人页(搜索框旁的
+                // 〔邀请〕钮,统一邀请面板),More 面板不再重复放置。
                 // Reserve empty cells so Settings keeps the col-1
                 // position when more entries land on row 2 later.
-                Spacer(Modifier.weight(3f))
+                Spacer(Modifier.weight(4f))
             }
         }
         Spacer(Modifier.height(24.dp))

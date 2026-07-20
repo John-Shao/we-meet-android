@@ -143,7 +143,13 @@ class CallController(
      * invites → auto-end" converges every outcome. Returns the room so the
      * caller can fan out [MeetInviteTracker] invites with its slug.
      */
-    suspend fun startGroupVoiceCall(roomName: String, groupCid: String): CallRoom? {
+    suspend fun startGroupVoiceCall(
+        roomName: String,
+        groupCid: String,
+        /** P5.1: "audio" (语音宫格) or "video" (full meeting UI on both the
+         * initiator — via EnterRoom media — and invitees — via invite media). */
+        media: String = "audio",
+    ): CallRoom? {
         val h = host ?: run { emitError("call host missing"); return null }
         if (_state.value != CallState.Idle || h.isInMeeting()) {
             emitError("busy-local")
@@ -156,7 +162,7 @@ class CallController(
             emitError("room-create-failed")
             return null
         }
-        groupCall = GroupCallSession(cid = groupCid, slug = room.slug)
+        groupCall = GroupCallSession(cid = groupCid, slug = room.slug, media = media)
         _events.tryEmit(
             CallUiEvent.EnterRoom(
                 room,
@@ -165,7 +171,7 @@ class CallController(
                     cid = "",
                     peerUid = "",
                     peerName = "",
-                    media = "audio",
+                    media = media,
                     outgoing = true,
                     room = room,
                     kind = "meet",
@@ -472,13 +478,13 @@ class CallController(
                 val durationSec = ((now - connectedAt) / 1000).coerceAtLeast(1)
                 _callLogRequests.tryEmit(
                     CallLogRequest(
-                        cid = g.cid, media = "audio", result = "completed",
+                        cid = g.cid, media = g.media, result = "completed",
                         durationSec = durationSec, slug = g.slug,
                     )
                 )
             } else {
                 _callLogRequests.tryEmit(
-                    CallLogRequest(cid = g.cid, media = "audio", result = "canceled", slug = g.slug)
+                    CallLogRequest(cid = g.cid, media = g.media, result = "canceled", slug = g.slug)
                 )
             }
         }
@@ -797,9 +803,11 @@ internal data class ConnectedCall(
     val startedAtMs: Long,
 )
 
-/** P4.1: a group voice call this device initiated (drives the group record). */
+/** P4.1: a group voice call this device initiated (drives the group record).
+ * P5.1: also carries the media so the end-record matches (群视频会议同管线)。 */
 internal data class GroupCallSession(
     val cid: String,
     val slug: String,
     var connectedAtMs: Long? = null,
+    val media: String = "audio",
 )

@@ -273,8 +273,10 @@ fun ChatScreen(
         R.string.im_group_meeting_name,
         ui.title.ifBlank { stringResource(R.string.im_untitled_chat) },
     )
-    // P4.1 群语音通话: 成员多选 → 建房 → 并行响铃邀请 → 直落语音宫格。
-    var showGroupCallSheet by remember { mutableStateOf(false) }
+    // P4.1 群语音通话 / P5.1 群视频会议: 成员多选(默认全选) → 建房 → 并行
+    // 响铃 → 语音落宫格 / 视频落完整会议页。null = sheet 关闭。
+    // (修复实测问题1/2:群视频原「快速会议」路径不振铃、不落建议参会名单。)
+    var groupCallMedia by remember { mutableStateOf<String?>(null) }
     val session = remember(deps) { com.we.meet.feature.im.ImSession.get(deps) }
     val groupCallRoomName = stringResource(
         R.string.im_group_call_room_name,
@@ -305,12 +307,14 @@ fun ChatScreen(
                 actions = {
                     if (!selectMode) {
                         if (ui.isGroup) {
-                            IconButton(onClick = { showGroupCallSheet = true }) {
+                            IconButton(onClick = { groupCallMedia = "audio" }) {
                                 Icon(Icons.Filled.Call, contentDescription = stringResource(R.string.im_group_voice_call))
                             }
                         }
-                        if (ui.isGroup && onStartMeeting != null) {
-                            IconButton(onClick = { onStartMeeting(groupMeetingName) }) {
+                        if (ui.isGroup) {
+                            // P5.1 群视频会议:同群语音管线(振铃+建议参会),
+                            // 不再走 onStartMeeting 快速会议(不振铃)路径。
+                            IconButton(onClick = { groupCallMedia = "video" }) {
                                 Icon(Icons.Filled.VideoCall, contentDescription = stringResource(R.string.im_start_meeting))
                             }
                         }
@@ -570,23 +574,12 @@ fun ChatScreen(
                 isGroup = ui.isGroup,
                 // 「+」面板「语音通话」:私聊=1:1 极简通话;群聊=P4.1 群语音(成员多选)。
                 onVoiceCall = {
-                    if (ui.isGroup) showGroupCallSheet = true else startCall(false)
+                    if (ui.isGroup) groupCallMedia = "audio" else startCall(false)
                 },
-                // 「+」面板末位:私聊=视频通话(直接拨号),群聊=快速会议(创建会议房间)。
+                // 「+」面板末位:私聊=视频通话(直接拨号);群聊=P5.1 群视频会议
+                // (同群语音管线:振铃 + 建议参会,替代原不振铃的快速会议)。
                 onQuickMeeting = {
-                    if (ui.isGroup) {
-                        if (onStartMeeting != null) {
-                            onStartMeeting(groupMeetingName)
-                        } else {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.im_coming_soon),
-                                Toast.LENGTH_SHORT,
-                            ).show()
-                        }
-                    } else {
-                        startCall(true)
-                    }
+                    if (ui.isGroup) groupCallMedia = "video" else startCall(true)
                 },
                 mentionCandidates = if (ui.isGroup) vm.mentionCandidates() else emptyList(),
             )
@@ -708,16 +701,20 @@ fun ChatScreen(
         )
     }
 
-    // P4.1 群语音通话: 成员多选(默认全选) → 建房 → 并行响铃 → 进语音宫格。
-    if (showGroupCallSheet) {
+    // P4.1 群语音 / P5.1 群视频: 成员多选(默认全选) → 建房 → 并行响铃 →
+    // 语音进宫格、视频进完整会议页(EnterRoom/invite 均按 media 分流)。
+    groupCallMedia?.let { media ->
+        val isVideo = media == "video"
+        val roomName = if (isVideo) groupMeetingName else groupCallRoomName
         GroupVoiceCallSheet(
             session = session,
             cid = cid,
             memberUids = ui.memberUids,
-            onDismiss = { showGroupCallSheet = false },
+            title = if (isVideo) stringResource(R.string.im_group_video_meeting_title) else null,
+            onDismiss = { groupCallMedia = null },
             onCall = { targets, allMembers ->
                 scope.launch {
-                    val room = calls.startGroupVoiceCall(groupCallRoomName, cid)
+                    val room = calls.startGroupVoiceCall(roomName, cid, media = media)
                         ?: return@launch
                     // P5 建议参会:全量群成员(勾选与否)进房间建议名单,会中
                     // 参会人页可对未接/未选者再呼(飞书场景2)。fire-and-forget。
@@ -728,10 +725,10 @@ fun ChatScreen(
                     )
                     session.meetInvites.sendInvites(
                         targets = targets,
-                        media = "audio",
+                        media = media,
                         roomSlug = room.slug,
-                        roomName = groupCallRoomName,
-                        // 群语音只留群记录,被拉人不写 direct 记录(P4.1 拍板)。
+                        roomName = roomName,
+                        // 群通话只留群记录,被拉人不写 direct 记录(P4.1 拍板)。
                         kind = "group",
                     )
                     // P4.1 进行中卡片:全群可见、可点加入;结束记录(同 slug)
@@ -739,7 +736,7 @@ fun ChatScreen(
                     runCatching {
                         session.client.sendText(
                             cid = cid,
-                            body = "{\"slug\":\"${room.slug}\",\"media\":\"audio\"}",
+                            body = "{\"slug\":\"${room.slug}\",\"media\":\"$media\"}",
                             contentType = "group-call",
                         )
                     }
