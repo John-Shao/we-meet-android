@@ -2,6 +2,7 @@ package com.we.meet.data.api
 
 import com.we.meet.data.api.dto.CalendarEventDto
 import com.we.meet.data.api.dto.CreateEventRequest
+import com.we.meet.data.api.dto.FreeBusyResponseDto
 import com.we.meet.data.api.dto.PagedCalendarEventsDto
 import com.we.meet.data.api.dto.RsvpRequest
 import com.we.meet.data.api.dto.UpdateEventRequest
@@ -31,6 +32,20 @@ interface CalendarApi {
 
     @GET("api/v1.0/calendar-events/{id}/")
     suspend fun getEvent(@Path("id") id: String): CalendarEventDto
+
+    /**
+     * P8 忙闲(P2-M3 端点):仅返回 busy 区间不泄露标题;窗口 ≤31 天;
+     * 跨组织/非法 id 被服务端静默丢弃 —— 该 user_id 直接缺席于 results,
+     * UI 必须把缺席列显式置灰(「日历不可见」),不得静默少列。
+     */
+    @GET("api/v1.0/calendar-events/freebusy/")
+    suspend fun freeBusy(
+        /** 逗号分隔的 we-meet user UUID。 */
+        @Query("attendee_ids") attendeeIds: String,
+        /** ISO 8601 (UTC)。 */
+        @Query("start") start: String,
+        @Query("end") end: String,
+    ): FreeBusyResponseDto
 
     @POST("api/v1.0/calendar-events/")
     suspend fun createEvent(@Body body: CreateEventRequest): CalendarEventDto

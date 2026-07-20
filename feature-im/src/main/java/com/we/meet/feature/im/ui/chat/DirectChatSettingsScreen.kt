@@ -54,6 +54,9 @@ fun DirectChatSettingsScreen(
     onBack: () -> Unit,
     /** Open the group picker seeded with this direct chat's peer (userId, 可空)。 */
     onCreateGroup: (peerUserId: String?) -> Unit,
+    /** P8 查看日历:双方忙闲对比页(app 层接 FREE_BUSY 路由)。resolve 未完成
+     * (peerUserId null,如跨组织)时该行置灰。null 隐藏入口。 */
+    onViewCalendar: ((peerUserId: String, peerName: String) -> Unit)? = null,
 ) {
     val vm: DirectChatSettingsViewModel =
         viewModel(key = "direct-settings-$cid", factory = remember(deps, cid) {
@@ -120,6 +123,30 @@ fun DirectChatSettingsScreen(
                 )
             }
             HorizontalDivider()
+
+            // P8 查看日历(对标飞书):对端 resolve 不出 we-meet id 时置灰。
+            if (onViewCalendar != null) {
+                val peerId = ui.peerUserId
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = peerId != null) {
+                            peerId?.let { onViewCalendar(it, ui.peerName) }
+                        }
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.im_view_calendar),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (peerId != null) {
+                            MaterialTheme.colorScheme.primary
+                        } else MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                HorizontalDivider()
+            }
 
             // Pin toggle.
             SwitchRow(

@@ -1,6 +1,8 @@
 package com.we.meet.feature.im.ui.group
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,9 +13,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -56,6 +61,9 @@ fun GroupInfoScreen(
     onBack: () -> Unit,
     onLeftGroup: () -> Unit,
     onAddMembers: (cid: String) -> Unit,
+    /** P8 群应用「群成员日历」:携带已解析出 we-meet id 的成员(未解析静默过滤,
+     * 忙闲页会对 freebusy 缺席列另行置灰)。null 隐藏宫格。 */
+    onOpenGroupCalendar: ((memberUserIds: List<String>) -> Unit)? = null,
 ) {
     val vm: GroupInfoViewModel =
         viewModel(key = "group-$cid", factory = remember(deps, cid) { GroupInfoViewModel.Factory(deps, cid) })
@@ -194,6 +202,55 @@ fun GroupInfoScreen(
                         )
                     }
                     HorizontalDivider()
+                    // P8 群应用宫格(首期仅「群成员日历」,对标飞书群设置)。
+                    if (onOpenGroupCalendar != null) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 12.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.im_group_apps),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Row(modifier = Modifier.padding(top = 10.dp)) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .clickable {
+                                            onOpenGroupCalendar(
+                                                ui.members.mapNotNull { it.userId },
+                                            )
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                ) {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .background(
+                                                MaterialTheme.colorScheme.primaryContainer,
+                                                RoundedCornerShape(10.dp),
+                                            ),
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.CalendarMonth,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
+                                    Text(
+                                        text = stringResource(R.string.im_group_calendar),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(top = 4.dp),
+                                    )
+                                }
+                            }
+                        }
+                        HorizontalDivider()
+                    }
                     // P10: private per-conversation toggles (pin / mute / mute @all).
                     SwitchRow(
                         label = stringResource(R.string.im_menu_pin),

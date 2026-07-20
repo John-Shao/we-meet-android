@@ -81,6 +81,22 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
     internal val conversations = ConversationRepository(client, scope) { _selfUid.value }
 
     /**
+     * P8:app 层跨模块发送自定义 content_type 消息(日程 event-card 回发)。
+     * SDK 的 Client 类型不对 app 模块暴露(implementation 依赖),经此转发;
+     * 用会话级 [scope] fire-and-forget —— 调用方(导航条目)可能在发送完成前
+     * 就已 pop 销毁,不能用它的 rememberCoroutineScope。失败仅记日志(best-effort,
+     * 日程本体是 source of truth,卡片只是投影)。
+     */
+    fun sendMessageAsync(cid: String, body: String, contentType: String) {
+        scope.launch {
+            runCatching { client.sendText(cid, body, contentType = contentType) }
+                .onFailure {
+                    android.util.Log.w("ImSession", "sendMessageAsync($contentType) failed", it)
+                }
+        }
+    }
+
+    /**
      * P1 一对一通话 state machine. Room ops come from the host app when it
      * implements [CallHost] (WeMeetApp does); a host without it degrades to
      * "call buttons error out", never a crash.

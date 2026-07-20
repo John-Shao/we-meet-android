@@ -258,6 +258,29 @@
     <string name="calendar_all_day">Ganztägig</string>
     <string name="calendar_load_error">Termine konnten nicht geladen werden</string>
     <string name="calendar_retry">Erneut versuchen</string>
+    <!-- P8: calendar view modes + agenda view -->
+    <string name="calendar_view_switch">Switch view</string>
+    <string name="calendar_view_agenda">Agenda</string>
+    <string name="calendar_view_day">Day</string>
+    <string name="calendar_view_week">Week</string>
+    <string name="calendar_view_month">Month</string>
+    <string name="calendar_week_range">Week %1$d, %2$s - %3$s</string>
+    <string name="calendar_agenda_empty_today">No events</string>
+    <string name="calendar_agenda_load_prev">Load previous month</string>
+    <string name="calendar_agenda_load_next">Load next month</string>
+    <!-- P8: free/busy compare screen -->
+    <string name="freebusy_title">View calendar</string>
+    <string name="freebusy_group_title">Members\' calendars</string>
+    <string name="freebusy_all_free">Everyone is available</string>
+    <string name="freebusy_conflict">%1$d busy at this time</string>
+    <string name="freebusy_unavailable">Calendar not visible</string>
+    <string name="freebusy_unresolved_hint">%1$d member(s) have no busy/free info</string>
+    <string name="freebusy_create">Create event</string>
+    <string name="freebusy_load_error">Failed to load busy/free</string>
+    <string name="freebusy_pick_hint">Tap an empty slot to pick a time</string>
+    <string name="freebusy_extend">+30 min</string>
+    <string name="freebusy_shrink">\u221230 min</string>
+    <string name="calendar_prefill_attendee_failed">Some attendees could not be added</string>
     <string name="calendar_create_title">Neuer Termin</string>
     <string name="calendar_field_title_hint">Termintitel</string>
     <string name="calendar_field_start">Beginn</string>

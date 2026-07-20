@@ -141,6 +141,8 @@ fun ChatScreen(
     onDialPeer: ((peerUserId: String) -> Unit)? = null,
     /** P1-M3 搜索定位:非空则进入后回翻到该 seq 并短暂高亮。 */
     locateSeq: Long? = null,
+    /** P8 日程卡片:点「查看详情」→ 日程详情页(app 层接 EVENT_DETAIL 路由)。 */
+    onOpenEvent: ((eventId: String) -> Unit)? = null,
 ) {
     val vm: ChatViewModel =
         viewModel(
@@ -482,6 +484,7 @@ fun ChatScreen(
                                     onLongPress = if (!selectMode && message.mid !in ui.recalledMids) {
                                         { actionTarget = message }
                                     } else null,
+                                    onOpenEvent = onOpenEvent,
                                     onJoinGroupCall = { slug -> calls.joinGroupCall(slug) },
                                     groupCallEnded = if (message.contentType == "group-call") {
                                         val s = runCatching {

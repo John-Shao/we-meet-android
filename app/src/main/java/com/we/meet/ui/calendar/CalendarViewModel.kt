@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.CalendarEventDto
+import com.we.meet.ui.calendar.views.CalendarViewMode
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -19,6 +20,8 @@ import kotlinx.coroutines.launch
 data class CalendarUiState(
     val monthAnchor: YearMonth = YearMonth.now(),
     val selectedDate: LocalDate = LocalDate.now(),
+    /** P8:日程(默认)/日/周/月 四视图;数据窗口不随视图变(恒 ±1 月)。 */
+    val viewMode: CalendarViewMode = CalendarViewMode.AGENDA,
     val eventsByDay: Map<LocalDate, List<EventUi>> = emptyMap(),
     val loading: Boolean = false,
     val error: Boolean = false,
@@ -56,6 +59,10 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
                     _ui.update { it.copy(loading = false, error = true) }
                 }
         }
+    }
+
+    fun setViewMode(mode: CalendarViewMode) {
+        _ui.update { it.copy(viewMode = mode) }
     }
 
     fun selectDate(date: LocalDate) {

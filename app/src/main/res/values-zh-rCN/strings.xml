@@ -258,6 +258,29 @@
     <string name="calendar_all_day">全天</string>
     <string name="calendar_load_error">日程加载失败</string>
     <string name="calendar_retry">重试</string>
+    <!-- P8: calendar view modes + agenda view -->
+    <string name="calendar_view_switch">切换视图</string>
+    <string name="calendar_view_agenda">日程</string>
+    <string name="calendar_view_day">日</string>
+    <string name="calendar_view_week">周</string>
+    <string name="calendar_view_month">月</string>
+    <string name="calendar_week_range">第%1$d周,%2$s - %3$s</string>
+    <string name="calendar_agenda_empty_today">暂无日程安排</string>
+    <string name="calendar_agenda_load_prev">加载上一月</string>
+    <string name="calendar_agenda_load_next">加载下一月</string>
+    <!-- P8: free/busy compare screen -->
+    <string name="freebusy_title">查看日历</string>
+    <string name="freebusy_group_title">群成员日历</string>
+    <string name="freebusy_all_free">所有参与者都有空</string>
+    <string name="freebusy_conflict">%1$d 人该时段忙碌</string>
+    <string name="freebusy_unavailable">日历不可见</string>
+    <string name="freebusy_unresolved_hint">另有 %1$d 位成员无法获取忙闲</string>
+    <string name="freebusy_create">创建日程</string>
+    <string name="freebusy_load_error">忙闲加载失败</string>
+    <string name="freebusy_pick_hint">点击空白时段选择时间</string>
+    <string name="freebusy_extend">+30 分钟</string>
+    <string name="freebusy_shrink">\u221230 分钟</string>
+    <string name="calendar_prefill_attendee_failed">部分参与者添加失败</string>
     <string name="calendar_create_title">新建日程</string>
     <string name="calendar_field_title_hint">日程标题</string>
     <string name="calendar_field_start">开始</string>

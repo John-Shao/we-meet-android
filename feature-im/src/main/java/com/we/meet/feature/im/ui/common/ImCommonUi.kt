@@ -112,6 +112,7 @@ fun previewText(contentType: String?, body: String?): String {
             if (content.media == "video") R.string.im_calllog_video else R.string.im_calllog_voice
         )
         is MessageContent.GroupCall -> stringResource(R.string.im_calllog_voice)
+        is MessageContent.EventCard -> stringResource(R.string.im_preview_event)
         is MessageContent.PhoneViewed -> stringResource(R.string.im_phone_viewed_preview)
         is MessageContent.Unsupported -> stringResource(R.string.im_preview_unsupported)
     }

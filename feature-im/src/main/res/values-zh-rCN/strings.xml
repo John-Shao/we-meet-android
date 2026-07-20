@@ -251,4 +251,15 @@
     <string name="im_search_ai_error">请求失败:%1$s</string>
     <string name="im_search_ai_quota">提问太频繁或今日额度已用完,请稍后再试。</string>
     <string name="im_search_ai_im_skipped">本次未包含聊天消息来源。</string>
+    <!-- P8: event card + calendar entries -->
+    <string name="im_view_calendar">查看日历</string>
+    <string name="im_group_apps">群应用</string>
+    <string name="im_group_calendar">群成员日历</string>
+    <string name="im_preview_event">[日程]</string>
+    <string name="im_event_card_meta">%1$d 人参与 · 组织者 %2$s</string>
+    <string name="im_event_card_view">查看详情</string>
+    <string name="im_event_card_all_day">全天</string>
+    <string name="im_event_card_time_changed">已改期</string>
+    <string name="im_event_card_attendees_changed">参会人变更</string>
+    <string name="im_event_card_cancelled">已取消</string>
 </resources>

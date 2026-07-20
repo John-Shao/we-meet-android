@@ -98,6 +98,8 @@ fun MessageBubble(
     onJoinGroupCall: ((slug: String) -> Unit)? = null,
     /** P4.1: this card's call already ended (matching end-record downstream). */
     groupCallEnded: Boolean = false,
+    /** P8 日程卡片: tap 查看详情 → 打开日程详情页(app 层接 EVENT_DETAIL 路由)。 */
+    onOpenEvent: ((eventId: String) -> Unit)? = null,
 ) {
     val content = remember(message.mid) {
         MessageContentParser.parse(message.contentType, message.body)
@@ -209,6 +211,9 @@ fun MessageBubble(
                 is MessageContent.GroupCall -> GroupCallBubble(
                     content, groupCallEnded, onJoinGroupCall,
                 )
+                is MessageContent.EventCard -> EventCardBubble(
+                    content, isOwn, onLongPress,
+                ) { onOpenEvent?.invoke(content.eventId) }
                 is MessageContent.Unsupported -> UnsupportedBubble(isOwn)
                 // Control/system rows never reach here (filtered / early-returned).
                 is MessageContent.Recall, is MessageContent.Reaction,

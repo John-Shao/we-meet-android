@@ -84,26 +84,41 @@ fun CreateEventScreen(
     editEventId: String? = null,
     /** P2-M2 重复子场次编辑范围(one/following/all);单次/主事件为 null。 */
     editScope: String? = null,
+    /** P8 忙闲页预填:精确起止时刻(epoch 秒,免时区串扰);优先于 epochDay。 */
+    initialStartEpochSecond: Long? = null,
+    initialEndEpochSecond: Long? = null,
+    /** P8 忙闲页预填:参与者 we-meet uuid,屏内经目录补全身份(失败静默丢弃)。 */
+    prefillAttendeeIds: List<String> = emptyList(),
+    /** P8:创建成功回调(仅创建模式,编辑不触发)——IM 链路用来回发日程卡片。 */
+    onCreated: ((com.we.meet.data.api.dto.CalendarEventDto) -> Unit)? = null,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val scope = rememberCoroutineScope()
     val isEdit = editEventId != null
 
     val initialDate = initialEpochDay?.let(LocalDate::ofEpochDay) ?: LocalDate.now()
-    // Default slot: next full hour (today) or 09:00 (another day), 1h long.
+    val zoneNow = ZoneId.systemDefault()
+    // Default slot: P8 精确预填 > next full hour (today) / 09:00 (another day), 1h long.
     val defaultStart = remember {
-        if (initialDate == LocalDate.now()) {
+        initialStartEpochSecond?.let {
+            Instant.ofEpochSecond(it).atZone(zoneNow).toLocalDateTime()
+        } ?: if (initialDate == LocalDate.now()) {
             LocalDateTime.now().plusHours(1).withMinute(0).withSecond(0).withNano(0)
         } else {
             initialDate.atTime(9, 0)
         }
+    }
+    val defaultEnd = remember {
+        initialEndEpochSecond?.let {
+            Instant.ofEpochSecond(it).atZone(zoneNow).toLocalDateTime()
+        } ?: defaultStart.plusHours(1)
     }
 
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var allDay by remember { mutableStateOf(false) }
     var start by remember { mutableStateOf(defaultStart) }
-    var end by remember { mutableStateOf(defaultStart.plusHours(1)) }
+    var end by remember { mutableStateOf(defaultEnd) }
     var reminderMinutes by remember { mutableStateOf<Int?>(10) }
     // P2-M3 重复日程(创建限定;编辑重复规则属三选语义,App 端 M3 不做)。
     var repeat by remember { mutableStateOf("") }
@@ -115,6 +130,30 @@ fun CreateEventScreen(
     var errorRes by remember { mutableStateOf<Int?>(null) }
     // Edit mode starts not-ready until the event loads.
     var loaded by remember { mutableStateOf(!isEdit) }
+
+    // P8:预填参与者 —— 逐个目录补全(并发),失败的 id 静默丢弃并提示一次。
+    val context = LocalContext.current
+    androidx.compose.runtime.LaunchedEffect(prefillAttendeeIds) {
+        if (isEdit || prefillAttendeeIds.isEmpty()) return@LaunchedEffect
+        val picked = prefillAttendeeIds.distinct().mapNotNull { id ->
+            app.directoryRepository.getMember(id).getOrNull()?.let { m ->
+                PickedMember(
+                    userId = m.id,
+                    displayName = m.fullName ?: m.shortName ?: m.email ?: m.id.take(8),
+                    email = m.email,
+                    avatarUrl = m.avatarUrl,
+                )
+            }
+        }
+        attendees = picked
+        if (picked.size < prefillAttendeeIds.distinct().size) {
+            android.widget.Toast.makeText(
+                context,
+                R.string.calendar_prefill_attendee_failed,
+                android.widget.Toast.LENGTH_SHORT,
+            ).show()
+        }
+    }
 
     androidx.compose.runtime.LaunchedEffect(editEventId) {
         if (editEventId == null) return@LaunchedEffect
@@ -188,7 +227,11 @@ fun CreateEventScreen(
                     )
                 }
             }
-                .onSuccess { onClose() }
+                .onSuccess { dto ->
+                    // P8:创建成功先回调(IM 链路回发日程卡片),再关屏。
+                    if (!isEdit) onCreated?.invoke(dto)
+                    onClose()
+                }
                 .onFailure {
                     submitting = false
                     errorRes = if (isEdit) R.string.event_update_failed else R.string.calendar_create_failed

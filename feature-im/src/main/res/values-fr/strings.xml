@@ -238,4 +238,15 @@
     <string name="im_search_ai_error">Échec de la requête : %1$s</string>
     <string name="im_search_ai_quota">Trop de requêtes ou limite quotidienne atteinte — réessayez plus tard.</string>
     <string name="im_search_ai_im_skipped">Les messages de discussion n’ont pas été inclus cette fois.</string>
+    <!-- P8: event card + calendar entries -->
+    <string name="im_view_calendar">View calendar</string>
+    <string name="im_group_apps">Group apps</string>
+    <string name="im_group_calendar">Members\' calendars</string>
+    <string name="im_preview_event">[Event]</string>
+    <string name="im_event_card_meta">%1$d attendees · Organizer %2$s</string>
+    <string name="im_event_card_view">View details</string>
+    <string name="im_event_card_all_day">All day</string>
+    <string name="im_event_card_time_changed">Rescheduled</string>
+    <string name="im_event_card_attendees_changed">Attendees changed</string>
+    <string name="im_event_card_cancelled">Cancelled</string>
 </resources>

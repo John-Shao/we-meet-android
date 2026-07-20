@@ -40,10 +40,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.R
+import com.we.meet.ui.calendar.views.AgendaView
+import com.we.meet.ui.calendar.views.CalendarViewMode
+import com.we.meet.ui.calendar.views.DayTimelineView
+import com.we.meet.ui.calendar.views.ViewSwitcherSheet
+import com.we.meet.ui.calendar.views.WeekTimelineView
+import com.we.meet.ui.calendar.views.icon
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -67,23 +76,38 @@ fun CalendarTabScreen(
         onPauseOrDispose { }
     }
 
+    // P8:视图切换滑窗开关。
+    var switcherOpen by remember { mutableStateOf(false) }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
+            // ‹ › 语义随视图:日=±1 天,周=±7 天,日程/月=±1 月。
             MonthHeader(
                 month = ui.monthAnchor,
-                onPrev = { vm.goToMonth(ui.monthAnchor.minusMonths(1)) },
-                onNext = { vm.goToMonth(ui.monthAnchor.plusMonths(1)) },
+                viewMode = ui.viewMode,
+                onPrev = {
+                    when (ui.viewMode) {
+                        CalendarViewMode.DAY -> vm.selectDate(ui.selectedDate.minusDays(1))
+                        CalendarViewMode.WEEK -> vm.selectDate(ui.selectedDate.minusDays(7))
+                        else -> vm.goToMonth(ui.monthAnchor.minusMonths(1))
+                    }
+                },
+                onNext = {
+                    when (ui.viewMode) {
+                        CalendarViewMode.DAY -> vm.selectDate(ui.selectedDate.plusDays(1))
+                        CalendarViewMode.WEEK -> vm.selectDate(ui.selectedDate.plusDays(7))
+                        else -> vm.goToMonth(ui.monthAnchor.plusMonths(1))
+                    }
+                },
                 onToday = { vm.goToToday() },
-            )
-            MonthGrid(
-                month = ui.monthAnchor,
-                selected = ui.selectedDate,
-                eventsByDay = ui.eventsByDay,
-                onSelect = { vm.selectDate(it) },
+                onSwitchView = { switcherOpen = true },
             )
 
             when {
-                ui.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                ui.loading && ui.eventsByDay.isEmpty() -> Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
                     CircularProgressIndicator()
                 }
 
@@ -101,26 +125,35 @@ fun CalendarTabScreen(
                     }
                 }
 
-                ui.selectedDayEvents.isEmpty() -> Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        stringResource(R.string.calendar_no_events),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                else -> when (ui.viewMode) {
+                    CalendarViewMode.AGENDA -> AgendaView(
+                        monthAnchor = ui.monthAnchor,
+                        eventsByDay = ui.eventsByDay,
+                        onEventClick = onEventClick,
+                        onLoadPrev = { vm.goToMonth(ui.monthAnchor.minusMonths(1)) },
+                        onLoadNext = { vm.goToMonth(ui.monthAnchor.plusMonths(1)) },
                     )
-                }
 
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                        start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp,
-                    ),
-                ) {
-                    items(ui.selectedDayEvents, key = { it.id }) { event ->
-                        AgendaCard(event = event, onClick = { onEventClick(event.id) })
-                        Spacer(Modifier.height(8.dp))
-                    }
+                    CalendarViewMode.DAY -> DayTimelineView(
+                        date = ui.selectedDate,
+                        events = ui.eventsByDay[ui.selectedDate].orEmpty(),
+                        onEventClick = onEventClick,
+                        onSlotTap = { _ -> onCreateEvent(ui.selectedDate.toEpochDay()) },
+                    )
+
+                    CalendarViewMode.WEEK -> WeekTimelineView(
+                        anchorDate = ui.selectedDate,
+                        eventsByDay = ui.eventsByDay,
+                        onEventClick = onEventClick,
+                        onDayClick = { vm.selectDate(it) },
+                        onSlotTap = { date, _ -> onCreateEvent(date.toEpochDay()) },
+                    )
+
+                    CalendarViewMode.MONTH -> MonthViewBody(
+                        ui = ui,
+                        onSelect = { vm.selectDate(it) },
+                        onEventClick = onEventClick,
+                    )
                 }
             }
         }
@@ -133,15 +166,68 @@ fun CalendarTabScreen(
         ) {
             Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.calendar_create_title))
         }
+
+        if (switcherOpen) {
+            ViewSwitcherSheet(
+                current = ui.viewMode,
+                onSelect = {
+                    vm.setViewMode(it)
+                    switcherOpen = false
+                },
+                onDismiss = { switcherOpen = false },
+            )
+        }
+    }
+}
+
+/** 月视图分支 = 原有月历网格 + 选中日列表(原样保留)。 */
+@Composable
+private fun MonthViewBody(
+    ui: CalendarUiState,
+    onSelect: (LocalDate) -> Unit,
+    onEventClick: (String) -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        MonthGrid(
+            month = ui.monthAnchor,
+            selected = ui.selectedDate,
+            eventsByDay = ui.eventsByDay,
+            onSelect = onSelect,
+        )
+        when {
+            ui.selectedDayEvents.isEmpty() -> Box(
+                Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    stringResource(R.string.calendar_no_events),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            else -> LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp,
+                ),
+            ) {
+                items(ui.selectedDayEvents, key = { it.id }) { event ->
+                    AgendaCard(event = event, onClick = { onEventClick(event.id) })
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+        }
     }
 }
 
 @Composable
 private fun MonthHeader(
     month: YearMonth,
+    viewMode: CalendarViewMode,
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onToday: () -> Unit,
+    onSwitchView: () -> Unit,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -155,6 +241,13 @@ private fun MonthHeader(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.weight(1f),
         )
+        // P8:视图切换入口(图标 = 当前视图)。
+        IconButton(onClick = onSwitchView) {
+            Icon(
+                viewMode.icon(),
+                contentDescription = stringResource(R.string.calendar_view_switch),
+            )
+        }
         TextButton(onClick = onToday) { Text(stringResource(R.string.calendar_today)) }
         IconButton(onClick = onPrev) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null)
@@ -252,7 +345,7 @@ private fun MonthGrid(
 }
 
 @Composable
-private fun AgendaCard(event: EventUi, onClick: () -> Unit) {
+internal fun AgendaCard(event: EventUi, onClick: () -> Unit) {
     val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
     Row(
         verticalAlignment = Alignment.CenterVertically,

@@ -54,6 +54,7 @@ import com.we.meet.feature.im.ui.newchat.NewChatScreen
 import com.we.meet.feature.im.ui.search.MessageSearchScreen
 import com.we.meet.ui.calendar.CreateEventScreen
 import com.we.meet.ui.calendar.EventDetailScreen
+import com.we.meet.ui.calendar.FreeBusyCompareScreen
 import com.we.meet.ui.contacts.MemberDetailScreen
 import com.we.meet.ui.login.LoginScreen
 import com.we.meet.ui.login.WebLoginScreen
@@ -126,7 +127,10 @@ object Routes {
     private const val EVENT_DETAIL_BASE = "event_detail"
     const val EVENT_DETAIL = "$EVENT_DETAIL_BASE/{eventId}"
     const val CREATE_EVENT =
-        "create_event?epochDay={epochDay}&eventId={eventId}&editScope={editScope}"
+        "create_event?epochDay={epochDay}&eventId={eventId}&editScope={editScope}" +
+            "&startSec={startSec}&endSec={endSec}&attendeeIds={attendeeIds}&srcCid={srcCid}"
+    /** P8 忙闲对比页:ids=逗号分隔 we-meet uuid;title=页标题;srcCid=回发日程卡片的会话。 */
+    const val FREE_BUSY = "free_busy?ids={ids}&title={title}&srcCid={srcCid}"
 
     /** New-chat picker, optionally seeded with a peer (从直聊「新建群聊」预选对端)。 */
     fun imNewChat(peerUserId: String? = null): String =
@@ -155,6 +159,26 @@ object Routes {
         "$EVENT_DETAIL_BASE/${URLEncoder.encode(eventId, StandardCharsets.UTF_8.name())}"
 
     fun createEvent(epochDay: Long): String = "create_event?epochDay=$epochDay"
+
+    /** P8 忙闲页预填创建:精确起止(epoch 秒)+ 预选参与者;可携 srcCid 回发卡片。 */
+    fun createEventPrefilled(
+        startSec: Long,
+        endSec: Long,
+        attendeeIds: List<String>,
+        srcCid: String? = null,
+    ): String {
+        fun enc(s: String) = URLEncoder.encode(s, StandardCharsets.UTF_8.name())
+        val base = "create_event?startSec=$startSec&endSec=$endSec" +
+            "&attendeeIds=${enc(attendeeIds.joinToString(","))}"
+        return if (srcCid.isNullOrBlank()) base else "$base&srcCid=${enc(srcCid)}"
+    }
+
+    /** P8 忙闲对比页(单聊「查看日历」/群聊「群成员日历」共用)。 */
+    fun freeBusy(userIds: List<String>, title: String, srcCid: String? = null): String {
+        fun enc(s: String) = URLEncoder.encode(s, StandardCharsets.UTF_8.name())
+        val base = "free_busy?ids=${enc(userIds.joinToString(","))}&title=${enc(title)}"
+        return if (srcCid.isNullOrBlank()) base else "$base&srcCid=${enc(srcCid)}"
+    }
 
     fun editEvent(eventId: String, editScope: String? = null): String {
         val base = "create_event?eventId=${URLEncoder.encode(eventId, StandardCharsets.UTF_8.name())}"
@@ -478,6 +502,8 @@ fun AppNav() {
                 onOpenInfo = { navController.navigate(Routes.imGroupInfo(it)) },
                 onOpenDirectSettings = { navController.navigate(Routes.imDirectSettings(it)) },
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
+                // P8 日程卡片 → 日程详情页(EVENT_DETAIL 已有)。
+                onOpenEvent = { eventId -> navController.navigate(Routes.eventDetail(eventId)) },
                 onStartMeeting = { meetingName -> navController.navigate(Routes.createPreview(meetingName)) },
                 // 1:1 通话 no longer flows through here — ChatScreen drives
                 // CallController directly and the top-level collector below
@@ -508,6 +534,8 @@ fun AppNav() {
             arguments = listOf(navArgument("cid") { type = NavType.StringType }),
         ) { entry ->
             val cid = Routes.decode(entry.arguments?.getString("cid").orEmpty())
+            val groupCalendarTitle =
+                androidx.compose.ui.res.stringResource(R.string.freebusy_group_title)
             GroupInfoScreen(
                 deps = app,
                 cid = cid,
@@ -517,6 +545,12 @@ fun AppNav() {
                     navController.popBackStack(Routes.HOME, inclusive = false)
                 },
                 onAddMembers = { navController.navigate(Routes.imAddMembers(it)) },
+                // P8 群应用「群成员日历」→ 全员忙闲对比;srcCid 供创建后回发卡片。
+                onOpenGroupCalendar = { memberIds ->
+                    navController.navigate(
+                        Routes.freeBusy(memberIds, groupCalendarTitle, cid),
+                    )
+                },
             )
         }
 
@@ -534,6 +568,12 @@ fun AppNav() {
                     navController.navigate(Routes.imNewChat(peerUserId)) {
                         launchSingleTop = true
                     }
+                },
+                // P8 查看日历:我 + 对端 两列忙闲;srcCid 供创建后回发卡片。
+                onViewCalendar = { peerUserId, peerName ->
+                    navController.navigate(
+                        Routes.freeBusy(listOf(peerUserId), peerName, cid),
+                    )
                 },
             )
         }
@@ -737,14 +777,97 @@ fun AppNav() {
                     nullable = true
                     defaultValue = null
                 },
+                // P8 忙闲页预填(全带默认值,既有 createEvent/editEvent 调用零变化)。
+                navArgument("startSec") {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                },
+                navArgument("endSec") {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                },
+                navArgument("attendeeIds") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("srcCid") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
             ),
         ) { entry ->
+            val srcCid = entry.arguments?.getString("srcCid")?.let { Routes.decode(it) }
             CreateEventScreen(
                 initialEpochDay = entry.arguments?.getLong("epochDay")?.takeIf { it >= 0 },
                 onClose = rememberOnceOnly(safePop),
                 editEventId = entry.arguments?.getString("eventId")
                     ?.let { Routes.decode(it) },
                 editScope = entry.arguments?.getString("editScope"),
+                initialStartEpochSecond = entry.arguments?.getLong("startSec")
+                    ?.takeIf { it > 0 },
+                initialEndEpochSecond = entry.arguments?.getLong("endSec")
+                    ?.takeIf { it > 0 },
+                prefillAttendeeIds = entry.arguments?.getString("attendeeIds")
+                    ?.let { Routes.decode(it) }
+                    ?.split(',')
+                    ?.filter { it.isNotBlank() }
+                    .orEmpty(),
+                // P8:IM 链路创建成功 → best-effort 回发 event-card 卡片(协议 v1,
+                // 与 Web buildEventCardBody 一致);失败仅 log,不阻塞返回。
+                onCreated = if (srcCid.isNullOrBlank()) null else { dto ->
+                    val body = org.json.JSONObject().apply {
+                        put("v", 1)
+                        put("kind", "created")
+                        put("event_id", dto.id)
+                        put("title", dto.title)
+                        put("start", dto.startAt)
+                        put("end", dto.endAt)
+                        put("all_day", dto.allDay)
+                        put("attendee_count", dto.attendees.size)
+                        put("organizer_name", dto.organizer?.fullName ?: "")
+                    }.toString()
+                    // 会话级 scope 发送:导航条目随 onClose pop 销毁,不能用它的 scope。
+                    ImSession.get(app).sendMessageAsync(srcCid, body, "event-card")
+                },
+            )
+        }
+
+        // P8 忙闲对比页(单聊「查看日历」/群聊「群成员日历」共用)。
+        composable(
+            route = Routes.FREE_BUSY,
+            arguments = listOf(
+                navArgument("ids") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("title") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("srcCid") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
+        ) { entry ->
+            val ids = Routes.decode(entry.arguments?.getString("ids").orEmpty())
+                .split(',')
+                .filter { it.isNotBlank() }
+            val srcCid = entry.arguments?.getString("srcCid")?.let { Routes.decode(it) }
+            val fallbackTitle = androidx.compose.ui.res.stringResource(R.string.freebusy_title)
+            FreeBusyCompareScreen(
+                userIds = ids,
+                title = Routes.decode(entry.arguments?.getString("title").orEmpty())
+                    .ifBlank { fallbackTitle },
+                onBack = rememberOnceOnly(safePop),
+                onCreateEvent = { startSec, endSec, attendeeIds ->
+                    navController.navigate(
+                        Routes.createEventPrefilled(startSec, endSec, attendeeIds, srcCid),
+                    )
+                },
             )
         }
 

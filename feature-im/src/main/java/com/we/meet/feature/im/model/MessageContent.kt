@@ -72,6 +72,24 @@ sealed interface MessageContent {
      */
     data object PhoneViewed : MessageContent
 
+    /**
+     * P8 日程卡片 — content_type `event-card`(与 Web/后端统一 kebab-case),
+     * body = 协议 v1 JSON `{v,kind,event_id,title,start,end,all_day,
+     * attendee_count,organizer_name,...}`。start/end 为 ISO-8601 UTC,渲染时转
+     * 本地时区;kind 未知按 created 渲染;创建卡由客户端发,变更/取消卡由后端发。
+     */
+    data class EventCard(
+        val eventId: String,
+        val title: String,
+        val startIso: String,
+        val endIso: String,
+        val allDay: Boolean = false,
+        val attendeeCount: Int = 0,
+        val organizerName: String = "",
+        /** created | time_changed | attendees_changed | cancelled */
+        val kind: String = "created",
+    ) : MessageContent
+
     /** Anything this client version doesn't render natively yet. */
     data class Unsupported(val contentType: String, val body: String) : MessageContent
 }
@@ -137,6 +155,19 @@ object MessageContentParser {
             MessageContent.GroupCall(
                 slug = it.getString("slug"),
                 media = it.optString("media", "audio"),
+            )
+        }
+        "event-card" -> parseJson(contentType, body) {
+            MessageContent.EventCard(
+                eventId = it.optString("event_id"),
+                // title 缺失视为坏卡 → getString 抛异常落 Unsupported 兜底。
+                title = it.getString("title"),
+                startIso = it.optString("start"),
+                endIso = it.optString("end"),
+                allDay = it.optBoolean("all_day", false),
+                attendeeCount = it.optInt("attendee_count", 0),
+                organizerName = it.optString("organizer_name"),
+                kind = it.optString("kind", "created"),
             )
         }
         else -> MessageContent.Unsupported(contentType, body)

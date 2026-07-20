@@ -22,6 +22,24 @@ data class EventAttendeeDto(
     val role: String? = null,
 )
 
+/** P8 忙闲:一个 busy 区间(ISO 8601 UTC,已按窗口裁剪、重叠合并)。 */
+@JsonClass(generateAdapter = true)
+data class BusyIntervalDto(
+    val start: String = "",
+    val end: String = "",
+)
+
+@JsonClass(generateAdapter = true)
+data class FreeBusyEntryDto(
+    @Json(name = "user_id") val userId: String = "",
+    val busy: List<BusyIntervalDto> = emptyList(),
+)
+
+@JsonClass(generateAdapter = true)
+data class FreeBusyResponseDto(
+    val results: List<FreeBusyEntryDto> = emptyList(),
+)
+
 @JsonClass(generateAdapter = true)
 data class EventOrganizerDto(
     val id: String = "",
