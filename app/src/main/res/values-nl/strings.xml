@@ -280,6 +280,10 @@
     <string name="freebusy_pick_hint">Tap an empty slot to pick a time</string>
     <string name="freebusy_extend">+30 min</string>
     <string name="freebusy_shrink">\u221230 min</string>
+    <string name="freebusy_pick_members">Select members</string>
+    <string name="freebusy_selected_count">Selected: %1$d</string>
+    <string name="freebusy_confirm">OK</string>
+    <string name="freebusy_search_members">Search members</string>
     <string name="calendar_prefill_attendee_failed">Some attendees could not be added</string>
     <string name="calendar_create_title">Nieuwe afspraak</string>
     <string name="calendar_field_title_hint">Titel van de afspraak</string>

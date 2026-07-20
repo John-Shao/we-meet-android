@@ -4,11 +4,14 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -40,6 +43,10 @@ import java.time.LocalDate
  * P8 纵向时间轴的共用积木:日视图(1 列)/周视图(7 列)/忙闲对比页(一人一列)
  * 共享同一份实现 —— Canvas 画格线 + offset 摆块 + verticalScroll,整格
  * pointerInput 命中(块 → onBlockTap,空白 → onSlotTap)。
+ *
+ * P8-UX 修正(对齐飞书):传 [minColumnWidth] 时列宽弹性但有下限,列多时
+ * **列头 + 网格整体横向滚动**(共享同一 hScroll);列头由 [columnHeader]
+ * 渲染在网格上方并与列严格对齐。不传时保持等分布局(日/周视图不变)。
  */
 
 /** 一个已裁剪到当日 [0,1440) 分钟制的渲染块(日程或忙碌区间通用)。 */
@@ -94,8 +101,11 @@ fun HourRail(hourHeight: Dp, modifier: Modifier = Modifier) {
 val HOUR_RAIL_WIDTH = 44.dp
 
 /**
- * 时间轴主体:等宽 [columns] 列 + 24h 格线 + 工作时间外淡阴影 + 当前时刻
- * 红线 + 选中时段高亮。[disabledColumn] 为 true 的列整体置灰(忙闲不可见)。
+ * 时间轴主体:[columns] 列 + 24h 格线 + 工作时间外淡阴影 + 当前时刻红线 +
+ * 选中时段高亮。[disabledColumn] 为 true 的列整体置灰(忙闲不可见)。
+ *
+ * 列宽:缺省等分;[minColumnWidth] 非空时 = max(下限, 可用宽/n),超出视口
+ * 则(连同 [columnHeader] 列头)整体横向滚动。
  */
 @Composable
 fun TimelineScaffold(
@@ -110,6 +120,8 @@ fun TimelineScaffold(
     selectionConflict: Boolean = false,
     onSlotTap: ((colIndex: Int, minuteOfDay: Int) -> Unit)? = null,
     onBlockTap: ((colIndex: Int, key: String) -> Unit)? = null,
+    minColumnWidth: Dp? = null,
+    columnHeader: (@Composable (colIndex: Int) -> Unit)? = null,
 ) {
     val n = columns.size.coerceAtLeast(1)
     val gridLine = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
@@ -118,141 +130,201 @@ fun TimelineScaffold(
     val eventBg = MaterialTheme.colorScheme.primaryContainer
     val eventFg = MaterialTheme.colorScheme.onPrimaryContainer
     val density = LocalDensity.current
+    // 列头与网格共享一个横向 ScrollState → 严格同步滚动(飞书样式)。
+    val hScroll = rememberScrollState()
 
-    Row(modifier = modifier.verticalScroll(scrollState)) {
-        HourRail(hourHeight)
-        BoxWithConstraints(
-            modifier = Modifier
-                .weight(1f)
-                .height(hourHeight * 24),
-        ) {
-            val colWidth: Dp = maxWidth / n
-            val hourHeightPx = with(density) { hourHeight.toPx() }
-            val colWidthPx = with(density) { colWidth.toPx() }
+    BoxWithConstraints(modifier = modifier) {
+        val available = maxWidth - HOUR_RAIL_WIDTH
+        val equalSplit = available / n
+        val colWidth: Dp =
+            if (minColumnWidth != null && equalSplit < minColumnWidth) minColumnWidth
+            else equalSplit
+        val contentWidth = colWidth * n
+        val hourHeightPx = with(density) { hourHeight.toPx() }
+        val colWidthPx = with(density) { colWidth.toPx() }
 
-            Canvas(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight()
-                    .pointerInput(n, hourHeightPx, columns) {
-                        detectTapGestures { off ->
-                            val col = (off.x / colWidthPx).toInt().coerceIn(0, n - 1)
-                            val minute =
-                                ((off.y / hourHeightPx) * 60).toInt().coerceIn(0, 24 * 60 - 1)
-                            val hit = columns[col].firstOrNull {
-                                minute >= it.startMin && minute < it.endMin
-                            }
-                            if (hit != null && onBlockTap != null) {
-                                onBlockTap(col, hit.key)
-                            } else {
-                                onSlotTap?.invoke(col, minute)
-                            }
-                        }
-                    },
-            ) {
-                // 工作时间(09–18)以外整行淡阴影。
-                drawRect(offWorkShade, size = Size(size.width, 9 * hourHeightPx))
-                drawRect(
-                    offWorkShade,
-                    topLeft = Offset(0f, 18 * hourHeightPx),
-                    size = Size(size.width, 6 * hourHeightPx),
-                )
-                for (h in 0..24) {
-                    val y = h * hourHeightPx
-                    drawLine(gridLine, Offset(0f, y), Offset(size.width, y), strokeWidth = 1f)
-                }
-                for (c in 1 until n) {
-                    val x = c * colWidthPx
-                    drawLine(gridLine, Offset(x, 0f), Offset(x, size.height), strokeWidth = 1f)
-                }
-            }
-
-            columns.forEachIndexed { i, blocks ->
-                if (disabledColumn(i)) {
-                    Box(
+        Column(modifier = Modifier.fillMaxSize()) {
+            if (columnHeader != null) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Spacer(Modifier.width(HOUR_RAIL_WIDTH))
+                    Row(
                         modifier = Modifier
-                            .offset(x = colWidth * i)
-                            .width(colWidth)
-                            .fillMaxHeight()
-                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)),
-                    )
-                }
-                blocks.forEach { b ->
-                    val top = hourHeight * (b.startMin / 60f)
-                    val blockHeight =
-                        (hourHeight * ((b.endMin - b.startMin) / 60f)).coerceAtLeast(10.dp)
-                    Box(
-                        modifier = Modifier
-                            .offset(x = colWidth * i, y = top)
-                            .width(colWidth)
-                            .height(blockHeight)
-                            .padding(horizontal = 1.5.dp, vertical = 1.dp)
-                            .background(
-                                color = if (b.label != null) {
-                                    if (b.faded) eventBg.copy(alpha = 0.45f) else eventBg
-                                } else busyColor,
-                                shape = RoundedCornerShape(4.dp),
-                            ),
+                            .weight(1f)
+                            .horizontalScroll(hScroll),
                     ) {
-                        if (b.label != null) {
-                            Text(
-                                text = b.label,
-                                fontSize = 10.sp,
-                                lineHeight = 12.sp,
-                                color = eventFg,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                textDecoration = if (b.faded) TextDecoration.LineThrough else null,
-                                modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp),
-                            )
+                        for (i in 0 until n) {
+                            Box(modifier = Modifier.width(colWidth)) { columnHeader(i) }
                         }
                     }
                 }
             }
-
-            // 当前时刻红线(仅 nowLineInColumn 的列;日视图整行,周视图今天列)。
-            if (nowMinute != null) {
-                val y = hourHeight * (nowMinute / 60f)
-                for (i in 0 until n) {
-                    if (!nowLineInColumn(i)) continue
-                    Box(
-                        modifier = Modifier
-                            .offset(x = colWidth * i, y = y - 1.dp)
-                            .width(colWidth)
-                            .height(2.dp)
-                            .background(NowLineColor),
-                    )
-                    Box(
-                        modifier = Modifier
-                            .offset(x = colWidth * i - 2.dp, y = y - 3.dp)
-                            .width(6.dp)
-                            .height(6.dp)
-                            .background(NowLineColor, CircleShape),
-                    )
-                }
-            }
-
-            // 选中时段:横贯所有列(忙闲页)。
-            if (selection != null) {
-                val selTop = hourHeight * (selection.startMin / 60f)
-                val selHeight =
-                    (hourHeight * ((selection.endMin - selection.startMin) / 60f))
-                        .coerceAtLeast(6.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(scrollState),
+            ) {
+                HourRail(hourHeight)
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .offset(y = selTop)
-                        .height(selHeight)
-                        .padding(horizontal = 1.dp)
-                        .background(
-                            color = if (selectionConflict) {
-                                Color(0xFFDC2626).copy(alpha = 0.18f)
-                            } else {
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-                            },
-                            shape = RoundedCornerShape(4.dp),
-                        ),
-                )
+                        .weight(1f)
+                        .horizontalScroll(hScroll),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(contentWidth)
+                            .height(hourHeight * 24),
+                    ) {
+                        Canvas(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .pointerInput(n, hourHeightPx, colWidthPx, columns) {
+                                    detectTapGestures { off ->
+                                        val col =
+                                            (off.x / colWidthPx).toInt().coerceIn(0, n - 1)
+                                        val minute = ((off.y / hourHeightPx) * 60)
+                                            .toInt()
+                                            .coerceIn(0, 24 * 60 - 1)
+                                        val hit = columns[col].firstOrNull {
+                                            minute >= it.startMin && minute < it.endMin
+                                        }
+                                        if (hit != null && onBlockTap != null) {
+                                            onBlockTap(col, hit.key)
+                                        } else {
+                                            onSlotTap?.invoke(col, minute)
+                                        }
+                                    }
+                                },
+                        ) {
+                            // 工作时间(09–18)以外整行淡阴影。
+                            drawRect(
+                                offWorkShade,
+                                size = Size(size.width, 9 * hourHeightPx),
+                            )
+                            drawRect(
+                                offWorkShade,
+                                topLeft = Offset(0f, 18 * hourHeightPx),
+                                size = Size(size.width, 6 * hourHeightPx),
+                            )
+                            for (h in 0..24) {
+                                val y = h * hourHeightPx
+                                drawLine(
+                                    gridLine,
+                                    Offset(0f, y),
+                                    Offset(size.width, y),
+                                    strokeWidth = 1f,
+                                )
+                            }
+                            for (c in 1 until n) {
+                                val x = c * colWidthPx
+                                drawLine(
+                                    gridLine,
+                                    Offset(x, 0f),
+                                    Offset(x, size.height),
+                                    strokeWidth = 1f,
+                                )
+                            }
+                        }
+
+                        columns.forEachIndexed { i, blocks ->
+                            if (disabledColumn(i)) {
+                                Box(
+                                    modifier = Modifier
+                                        .offset(x = colWidth * i)
+                                        .width(colWidth)
+                                        .fillMaxHeight()
+                                        .background(
+                                            MaterialTheme.colorScheme.onSurface
+                                                .copy(alpha = 0.06f),
+                                        ),
+                                )
+                            }
+                            blocks.forEach { b ->
+                                val top = hourHeight * (b.startMin / 60f)
+                                val blockHeight =
+                                    (hourHeight * ((b.endMin - b.startMin) / 60f))
+                                        .coerceAtLeast(10.dp)
+                                Box(
+                                    modifier = Modifier
+                                        .offset(x = colWidth * i, y = top)
+                                        .width(colWidth)
+                                        .height(blockHeight)
+                                        .padding(horizontal = 1.5.dp, vertical = 1.dp)
+                                        .background(
+                                            color = if (b.label != null) {
+                                                if (b.faded) eventBg.copy(alpha = 0.45f)
+                                                else eventBg
+                                            } else busyColor,
+                                            shape = RoundedCornerShape(4.dp),
+                                        ),
+                                ) {
+                                    if (b.label != null) {
+                                        Text(
+                                            text = b.label,
+                                            fontSize = 10.sp,
+                                            lineHeight = 12.sp,
+                                            color = eventFg,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis,
+                                            textDecoration =
+                                                if (b.faded) TextDecoration.LineThrough
+                                                else null,
+                                            modifier = Modifier.padding(
+                                                horizontal = 3.dp, vertical = 1.dp,
+                                            ),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // 当前时刻红线(仅 nowLineInColumn 的列)。
+                        if (nowMinute != null) {
+                            val y = hourHeight * (nowMinute / 60f)
+                            for (i in 0 until n) {
+                                if (!nowLineInColumn(i)) continue
+                                Box(
+                                    modifier = Modifier
+                                        .offset(x = colWidth * i, y = y - 1.dp)
+                                        .width(colWidth)
+                                        .height(2.dp)
+                                        .background(NowLineColor),
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .offset(x = colWidth * i - 2.dp, y = y - 3.dp)
+                                        .width(6.dp)
+                                        .height(6.dp)
+                                        .background(NowLineColor, CircleShape),
+                                )
+                            }
+                        }
+
+                        // 选中时段:横贯所有列(忙闲页)。
+                        if (selection != null) {
+                            val selTop = hourHeight * (selection.startMin / 60f)
+                            val selHeight =
+                                (hourHeight * ((selection.endMin - selection.startMin) / 60f))
+                                    .coerceAtLeast(6.dp)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .offset(y = selTop)
+                                    .height(selHeight)
+                                    .padding(horizontal = 1.dp)
+                                    .background(
+                                        color = if (selectionConflict) {
+                                            Color(0xFFDC2626).copy(alpha = 0.18f)
+                                        } else {
+                                            MaterialTheme.colorScheme.primary
+                                                .copy(alpha = 0.18f)
+                                        },
+                                        shape = RoundedCornerShape(4.dp),
+                                    ),
+                            )
+                        }
+                    }
+                }
             }
         }
     }

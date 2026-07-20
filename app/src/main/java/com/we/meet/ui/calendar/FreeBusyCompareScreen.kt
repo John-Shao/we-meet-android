@@ -1,9 +1,7 @@
 package com.we.meet.ui.calendar
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,14 +12,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.HowToReg
+import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -46,6 +47,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,8 +55,8 @@ import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.data.api.dto.BusyIntervalDto
-import com.we.meet.ui.calendar.views.TimeSelection
 import com.we.meet.ui.calendar.views.TimeBlock
+import com.we.meet.ui.calendar.views.TimeSelection
 import com.we.meet.ui.calendar.views.TimelineScaffold
 import java.time.LocalDate
 import java.time.LocalTime
@@ -66,7 +68,7 @@ import java.util.Locale
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
-/** 忙闲页一列 = 一个人;busy == null 表示该 id 缺席于 freebusy results(跨组织不可见)。 */
+/** 忙闲页一列 = 一个人;freebusy results 缺席该 id = 跨组织不可见。 */
 private data class PersonColumn(
     val userId: String,
     val name: String,
@@ -74,20 +76,18 @@ private data class PersonColumn(
     val isSelf: Boolean,
 )
 
-/** 默认勾选渲染的列数上限(可手动增减,防大群首屏 10+ 列过窄)。 */
-private const val DEFAULT_CHECKED = 10
-
 /** 单次 freebusy 请求的人数上限(attendee_ids 走 query string)。 */
 private const val MAX_IDS = 50
 
+/** 列宽下限(飞书样式:一屏约 4 列,超出整体横滚)。 */
+private val MIN_COL_WIDTH = 76.dp
+
 /**
  * P8 忙闲对比页(对标飞书「查看日历/群成员日历」,单聊/群聊共用):
- * 顶部头像行(群可勾选子集,「我」恒选)→ 纵向时间轴一人一列 busy 灰块;
+ * 头像列头在表格内与该列严格对齐,列宽弹性有下限,列多时列头+网格整体
+ * 横向滚动;右上角「选择成员」进独立选择页(默认全选,「我」恒选)。
  * 点空白 = 30min 吸附起点的 1 小时选段(±30min 微调),底部确认条给出
  * 「所有参与者都有空 / N 人忙碌」,「创建日程」带 时段+勾选成员 预填跳转。
- *
- * 状态屏内自管(对齐 MemberDetailScreen 模式,不引 VM 工厂):身份拉一次,
- * 忙闲按 (日期, 勾选集) 重拉。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,8 +107,9 @@ fun FreeBusyCompareScreen(
     LaunchedEffect(userIds) {
         runCatching {
             coroutineScope {
-                val meDeferred = async { runCatching { app.apiClient.userApi.getMe() }.getOrNull() }
-                val me = meDeferred.await()
+                val me = async {
+                    runCatching { app.apiClient.userApi.getMe() }.getOrNull()
+                }.await()
                 val others = userIds.filter { it.isNotBlank() && it != me?.id }
                     .distinct()
                     .take(MAX_IDS - 1)
@@ -134,19 +135,20 @@ fun FreeBusyCompareScreen(
                 people = listOfNotNull(self) + others
             }
         }
-        checked = people.take(DEFAULT_CHECKED).map { it.userId }.toSet()
+        // 飞书默认全选;列多靠横滚承载。
+        checked = people.map { it.userId }.toSet()
         identityLoading = false
     }
 
     // ── 日期 + 勾选 → 忙闲重拉。busyMap 缺 key = 不可见。 ──
     var day by remember { mutableStateOf(LocalDate.now()) }
     var busyMap by remember { mutableStateOf<Map<String, List<BusyIntervalDto>>?>(null) }
-    var busyError by remember { mutableStateOf(false) }
-    val checkedPeople = remember(people, checked) { people.filter { checked.contains(it.userId) } }
+    val checkedPeople = remember(people, checked) {
+        people.filter { checked.contains(it.userId) }
+    }
     LaunchedEffect(day, checked, people) {
         if (checkedPeople.isEmpty()) return@LaunchedEffect
         busyMap = null
-        busyError = false
         val dayStart = day.atStartOfDay(zone).toInstant()
         val dayEnd = day.plusDays(1).atStartOfDay(zone).toInstant()
         runCatching {
@@ -158,7 +160,6 @@ fun FreeBusyCompareScreen(
         }.onSuccess { res ->
             busyMap = res.results.associate { it.userId to it.busy }
         }.onFailure {
-            busyError = true
             busyMap = emptyMap()
         }
     }
@@ -167,7 +168,6 @@ fun FreeBusyCompareScreen(
     var selection by remember { mutableStateOf<TimeSelection?>(null) }
     LaunchedEffect(day) { selection = null }
 
-    // 选段冲突:仅对「勾选且可见」的列判定;不可见列单独提示。
     fun busyOverlaps(busy: List<BusyIntervalDto>, sel: TimeSelection): Boolean =
         busy.any { b ->
             val s = runCatching {
@@ -198,6 +198,21 @@ fun FreeBusyCompareScreen(
         scrollState.scrollTo(with(density) { (hourHeight * 8).toPx() }.toInt())
     }
 
+    // ── 选择成员页(飞书:右上角入口,独立页,确定后生效)。 ──
+    var pickerOpen by remember { mutableStateOf(false) }
+    if (pickerOpen) {
+        MemberPickerPage(
+            people = people,
+            initial = checked,
+            onConfirm = { picked ->
+                checked = picked
+                pickerOpen = false
+            },
+            onBack = { pickerOpen = false },
+        )
+        return
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -205,6 +220,14 @@ fun FreeBusyCompareScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { pickerOpen = true }) {
+                        Icon(
+                            Icons.Filled.HowToReg,
+                            contentDescription = stringResource(R.string.freebusy_pick_members),
+                        )
                     }
                 },
             )
@@ -215,7 +238,7 @@ fun FreeBusyCompareScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            // 日期条:‹ 今天 › + M月d日 周X
+            // 日期条:‹ 今天 › + M/d 周X
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -257,54 +280,6 @@ fun FreeBusyCompareScreen(
                 }
 
                 else -> {
-                    // 头像行:全员横滚;群聊点头像勾选/取消(「我」恒选)。
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 12.dp, vertical = 6.dp,
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        items(people, key = { it.userId }) { person ->
-                            val isChecked = checked.contains(person.userId)
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.clickable(enabled = !person.isSelf) {
-                                    checked = if (isChecked) {
-                                        checked - person.userId
-                                    } else {
-                                        checked + person.userId
-                                    }
-                                },
-                            ) {
-                                Box(
-                                    modifier = if (isChecked) Modifier.border(
-                                        2.dp,
-                                        MaterialTheme.colorScheme.primary,
-                                        CircleShape,
-                                    ) else Modifier,
-                                ) {
-                                    MemberAvatar(
-                                        name = person.name,
-                                        url = person.avatarUrl,
-                                        cacheKey = "avatar:${person.userId}",
-                                        size = 40.dp,
-                                    )
-                                }
-                                Text(
-                                    text = person.name,
-                                    fontSize = 11.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.width(56.dp),
-                                    color = if (isChecked) {
-                                        MaterialTheme.colorScheme.onSurface
-                                    } else MaterialTheme.colorScheme.outline,
-                                )
-                            }
-                        }
-                    }
-
                     Box(modifier = Modifier.weight(1f)) {
                         TimelineScaffold(
                             columns = checkedPeople.map { p ->
@@ -313,13 +288,15 @@ fun FreeBusyCompareScreen(
                                     val s = runCatching {
                                         java.time.Duration.between(
                                             startOfDay,
-                                            OffsetDateTime.parse(b.start).toInstant().atZone(zone),
+                                            OffsetDateTime.parse(b.start).toInstant()
+                                                .atZone(zone),
                                         ).toMinutes().toInt()
                                     }.getOrNull() ?: return@mapIndexedNotNull null
                                     val e = runCatching {
                                         java.time.Duration.between(
                                             startOfDay,
-                                            OffsetDateTime.parse(b.end).toInstant().atZone(zone),
+                                            OffsetDateTime.parse(b.end).toInstant()
+                                                .atZone(zone),
                                         ).toMinutes().toInt()
                                     }.getOrNull() ?: return@mapIndexedNotNull null
                                     val cs = s.coerceIn(0, 1440)
@@ -345,6 +322,46 @@ fun FreeBusyCompareScreen(
                                     startMin = start.coerceAtMost(1440 - 30),
                                     endMin = (start + 60).coerceAtMost(1440),
                                 )
+                            },
+                            // P8-UX:列头在表格内与列对齐,列多整体横滚(飞书)。
+                            minColumnWidth = MIN_COL_WIDTH,
+                            columnHeader = { i ->
+                                val p = checkedPeople[i]
+                                val invisible = busyMap != null &&
+                                    busyMap?.containsKey(p.userId) != true
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 6.dp),
+                                ) {
+                                    MemberAvatar(
+                                        name = p.name,
+                                        url = p.avatarUrl,
+                                        cacheKey = "avatar:${p.userId}",
+                                        size = 36.dp,
+                                    )
+                                    Text(
+                                        text = p.name,
+                                        fontSize = 11.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        textAlign = TextAlign.Center,
+                                        color = if (invisible) {
+                                            MaterialTheme.colorScheme.outline
+                                        } else MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.padding(horizontal = 2.dp),
+                                    )
+                                    if (invisible) {
+                                        Text(
+                                            text = stringResource(
+                                                R.string.freebusy_unavailable,
+                                            ),
+                                            fontSize = 9.sp,
+                                            color = MaterialTheme.colorScheme.outline,
+                                        )
+                                    }
+                                }
                             },
                         )
                         if (busyMap == null && checkedPeople.isNotEmpty()) {
@@ -387,7 +404,8 @@ fun FreeBusyCompareScreen(
                                     OutlinedButton(
                                         onClick = {
                                             selection = sel.copy(
-                                                endMin = (sel.endMin + 30).coerceAtMost(1440),
+                                                endMin = (sel.endMin + 30)
+                                                    .coerceAtMost(1440),
                                             )
                                         },
                                         contentPadding = androidx.compose.foundation.layout
@@ -403,7 +421,8 @@ fun FreeBusyCompareScreen(
                                     OutlinedButton(
                                         onClick = {
                                             if (sel.endMin - sel.startMin > 30) {
-                                                selection = sel.copy(endMin = sel.endMin - 30)
+                                                selection =
+                                                    sel.copy(endMin = sel.endMin - 30)
                                             }
                                         },
                                         contentPadding = androidx.compose.foundation.layout
@@ -447,7 +466,8 @@ fun FreeBusyCompareScreen(
                                     onCreateEvent(
                                         startSec,
                                         endSec,
-                                        checkedPeople.filter { !it.isSelf }.map { it.userId },
+                                        checkedPeople.filter { !it.isSelf }
+                                            .map { it.userId },
                                     )
                                 },
                                 enabled = selection != null,
@@ -456,6 +476,117 @@ fun FreeBusyCompareScreen(
                                 Text(stringResource(R.string.freebusy_create))
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 选择成员页(飞书样式):搜索 + 圆形勾选列表,底部「已选: N 人 + 确定」。
+ * 「我」恒选不可取消(发起人必参加)。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MemberPickerPage(
+    people: List<PersonColumn>,
+    initial: Set<String>,
+    onConfirm: (Set<String>) -> Unit,
+    onBack: () -> Unit,
+) {
+    var temp by remember(initial) { mutableStateOf(initial) }
+    var query by remember { mutableStateOf("") }
+    val shown = remember(people, query) {
+        if (query.isBlank()) people
+        else people.filter { it.name.contains(query.trim(), ignoreCase = true) }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.freebusy_pick_members)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    }
+                },
+            )
+        },
+        bottomBar = {
+            Surface(shadowElevation = 8.dp) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.freebusy_selected_count, temp.size),
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Button(onClick = { onConfirm(temp) }) {
+                        Text(stringResource(R.string.freebusy_confirm))
+                    }
+                }
+            }
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+        ) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                placeholder = { Text(stringResource(R.string.freebusy_search_members)) },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(shown, key = { it.userId }) { person ->
+                    val isChecked = temp.contains(person.userId)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = !person.isSelf) {
+                                temp = if (isChecked) temp - person.userId
+                                else temp + person.userId
+                            }
+                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                    ) {
+                        Icon(
+                            imageVector = if (isChecked) Icons.Filled.CheckCircle
+                            else Icons.Outlined.Circle,
+                            contentDescription = null,
+                            tint = when {
+                                person.isSelf -> MaterialTheme.colorScheme.primary
+                                    .copy(alpha = 0.45f)
+                                isChecked -> MaterialTheme.colorScheme.primary
+                                else -> MaterialTheme.colorScheme.outlineVariant
+                            },
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Spacer(Modifier.width(14.dp))
+                        MemberAvatar(
+                            name = person.name,
+                            url = person.avatarUrl,
+                            cacheKey = "avatar:${person.userId}",
+                            size = 40.dp,
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = person.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 }
             }

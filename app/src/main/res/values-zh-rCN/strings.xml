@@ -280,6 +280,10 @@
     <string name="freebusy_pick_hint">点击空白时段选择时间</string>
     <string name="freebusy_extend">+30 分钟</string>
     <string name="freebusy_shrink">\u221230 分钟</string>
+    <string name="freebusy_pick_members">选择成员</string>
+    <string name="freebusy_selected_count">已选: %1$d 人</string>
+    <string name="freebusy_confirm">确定</string>
+    <string name="freebusy_search_members">搜索成员</string>
     <string name="calendar_prefill_attendee_failed">部分参与者添加失败</string>
     <string name="calendar_create_title">新建日程</string>
     <string name="calendar_field_title_hint">日程标题</string>
