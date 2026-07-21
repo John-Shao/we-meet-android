@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.filled.Add
@@ -275,7 +276,20 @@ fun ConversationListScreen(
                 )
             }
         } else {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            val listState = rememberLazyListState()
+            // 「日程提醒」入口(listHeader)是 app 层异步注入的:从提醒页返回时
+            // MainTabScreen 重建,header 先为 null,列表把首条会话锚在 index 0,
+            // 待轮询回来 header 才插到 index 0 —— LazyColumn 默认保持原首项位置,
+            // 新 header 落到视口上方(被「推上去」看不到)。若此时用户仍在顶部
+            // (插入前后 index 都 ≤1,对时序无竞态),滚到 0 让 header 可见;用户
+            // 已下滑则不打扰。
+            val hasHeader = listHeader != null
+            LaunchedEffect(hasHeader) {
+                if (hasHeader && listState.firstVisibleItemIndex <= 1) {
+                    listState.scrollToItem(0)
+                }
+            }
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                 // P8:入口是列表第一项,随列表滚动可被推出屏幕(对标飞书)。
                 // key 与会话 cid(UUID)不会撞。
                 if (listHeader != null) {
