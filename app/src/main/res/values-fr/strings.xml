@@ -294,6 +294,13 @@
     <string name="reminder_join">Join meeting</string>
     <string name="reminder_toggle">Remind in list</string>
     <string name="reminder_empty">No events today or tomorrow</string>
+    <!-- P8: calendar settings page -->
+    <string name="calendar_settings_title">Calendar settings</string>
+    <string name="calendar_settings_reminder_entry">Show event reminder in message list</string>
+    <string name="calendar_settings_week_start">First day of week</string>
+    <string name="calendar_settings_default_duration">Default event duration</string>
+    <string name="calendar_settings_default_reminder">Default reminder</string>
+    <string name="calendar_settings_duration_minutes">%1$d min</string>
     <string name="calendar_create_title">Nouvel événement</string>
     <string name="calendar_field_title_hint">Titre de l\'événement</string>
     <string name="calendar_field_start">Début</string>

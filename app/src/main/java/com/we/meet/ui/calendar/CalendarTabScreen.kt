@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,6 +49,8 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.R
+import com.we.meet.WeMeetApp
+import com.we.meet.data.settings.CalendarWeekStart
 import com.we.meet.ui.calendar.views.AgendaView
 import com.we.meet.ui.calendar.views.CalendarViewMode
 import com.we.meet.ui.calendar.views.DayTimelineView
@@ -65,9 +69,17 @@ import java.util.Locale
 fun CalendarTabScreen(
     onEventClick: (eventId: String) -> Unit,
     onCreateEvent: (epochDay: Long) -> Unit,
+    /** P8 日历设置页入口(header 齿轮)。 */
+    onOpenSettings: () -> Unit = {},
 ) {
     val vm: CalendarViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
+
+    // P8 日历设置:每周的第一天(月网格/周视图跟随,默认周一)。
+    val app = LocalContext.current.applicationContext as WeMeetApp
+    val weekStart by app.settingsStore.calendarWeekStart.collectAsStateWithLifecycle()
+    val firstDow =
+        if (weekStart == CalendarWeekStart.SUNDAY) DayOfWeek.SUNDAY else DayOfWeek.MONDAY
 
     // Returning from create/detail routes resumes HOME — refresh picks up
     // new events and RSVP changes without result-passing plumbing.
@@ -101,6 +113,7 @@ fun CalendarTabScreen(
                 },
                 onToday = { vm.goToToday() },
                 onSwitchView = { switcherOpen = true },
+                onOpenSettings = onOpenSettings,
             )
 
             when {
@@ -147,10 +160,12 @@ fun CalendarTabScreen(
                         onEventClick = onEventClick,
                         onDayClick = { vm.selectDate(it) },
                         onSlotTap = { date, _ -> onCreateEvent(date.toEpochDay()) },
+                        firstDayOfWeek = firstDow,
                     )
 
                     CalendarViewMode.MONTH -> MonthViewBody(
                         ui = ui,
+                        firstDow = firstDow,
                         onSelect = { vm.selectDate(it) },
                         onEventClick = onEventClick,
                     )
@@ -184,6 +199,7 @@ fun CalendarTabScreen(
 @Composable
 private fun MonthViewBody(
     ui: CalendarUiState,
+    firstDow: DayOfWeek,
     onSelect: (LocalDate) -> Unit,
     onEventClick: (String) -> Unit,
 ) {
@@ -192,6 +208,7 @@ private fun MonthViewBody(
             month = ui.monthAnchor,
             selected = ui.selectedDate,
             eventsByDay = ui.eventsByDay,
+            firstDow = firstDow,
             onSelect = onSelect,
         )
         when {
@@ -228,6 +245,7 @@ private fun MonthHeader(
     onNext: () -> Unit,
     onToday: () -> Unit,
     onSwitchView: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -248,6 +266,13 @@ private fun MonthHeader(
                 contentDescription = stringResource(R.string.calendar_view_switch),
             )
         }
+        // P8:日历设置(列表提醒开关/周起始/默认时长/默认提醒)。
+        IconButton(onClick = onOpenSettings) {
+            Icon(
+                Icons.Filled.Settings,
+                contentDescription = stringResource(R.string.calendar_settings_title),
+            )
+        }
         TextButton(onClick = onToday) { Text(stringResource(R.string.calendar_today)) }
         IconButton(onClick = onPrev) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null)
@@ -263,17 +288,18 @@ private fun MonthGrid(
     month: YearMonth,
     selected: LocalDate,
     eventsByDay: Map<LocalDate, List<EventUi>>,
+    firstDow: DayOfWeek,
     onSelect: (LocalDate) -> Unit,
 ) {
     val today = LocalDate.now()
-    // Monday-first grid, 6 fixed rows of 7.
+    // 6 fixed rows of 7; first column = firstDow(P8 日历设置,默认周一).
     val firstOfMonth = month.atDay(1)
-    val leadingBlanks = (firstOfMonth.dayOfWeek.value - DayOfWeek.MONDAY.value + 7) % 7
+    val leadingBlanks = (firstOfMonth.dayOfWeek.value - firstDow.value + 7) % 7
     val gridStart = firstOfMonth.minusDays(leadingBlanks.toLong())
 
     Column(modifier = Modifier.padding(horizontal = 8.dp)) {
         Row(modifier = Modifier.fillMaxWidth()) {
-            DayOfWeek.entries.forEach { dow ->
+            (0L..6L).map(firstDow::plus).forEach { dow ->
                 Text(
                     text = dow.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
                     style = MaterialTheme.typography.labelSmall,

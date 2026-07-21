@@ -113,7 +113,10 @@ fun CreateEventScreen(
     val defaultEnd = remember {
         initialEndEpochSecond?.let {
             Instant.ofEpochSecond(it).atZone(zoneNow).toLocalDateTime()
-        } ?: defaultStart.plusHours(1)
+        } ?: defaultStart.plusMinutes(
+            // P8 日历设置:新建默认时长(一次性快照,表单打开后不跟随设置变)。
+            app.settingsStore.calendarDefaultDurationMin.value.toLong(),
+        )
     }
 
     var title by remember { mutableStateOf("") }
@@ -121,7 +124,10 @@ fun CreateEventScreen(
     var allDay by remember { mutableStateOf(false) }
     var start by remember { mutableStateOf(defaultStart) }
     var end by remember { mutableStateOf(defaultEnd) }
-    var reminderMinutes by remember { mutableStateOf<Int?>(10) }
+    // P8 日历设置:默认提醒提前量(-1 = 不提醒 → null);编辑态后续被事件值覆盖。
+    var reminderMinutes by remember {
+        mutableStateOf(app.settingsStore.calendarDefaultReminderMin.value.takeIf { it >= 0 })
+    }
     // P2-M3 重复日程(创建限定;编辑重复规则属三选语义,App 端 M3 不做)。
     var repeat by remember { mutableStateOf("") }
     var repeatUntil by remember { mutableStateOf<LocalDate?>(null) }

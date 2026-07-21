@@ -42,9 +42,14 @@ fun WeekTimelineView(
     onEventClick: (String) -> Unit,
     onDayClick: (LocalDate) -> Unit,
     onSlotTap: (date: LocalDate, minuteOfDay: Int) -> Unit,
+    /** P8 日历设置:每周的第一天(默认周一,保持既有行为)。 */
+    firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
 ) {
     val today = LocalDate.now()
-    val weekStart = anchorDate.with(DayOfWeek.MONDAY)
+    // 从 anchor 往前找最近的 firstDayOfWeek(含自身)作为本周第一列。
+    val weekStart = anchorDate.minusDays(
+        ((anchorDate.dayOfWeek.value - firstDayOfWeek.value + 7) % 7).toLong(),
+    )
     val days = remember(weekStart) { (0..6).map { weekStart.plusDays(it.toLong()) } }
     val columns = remember(days, eventsByDay) {
         days.map { date ->

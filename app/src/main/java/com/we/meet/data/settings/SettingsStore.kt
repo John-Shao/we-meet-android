@@ -53,7 +53,7 @@ class SettingsStore(context: Context) {
     private val _imReminderEntry =
         MutableStateFlow(prefs.getBoolean(KEY_IM_REMINDER_ENTRY, true))
 
-    /** P8「在消息列表提醒日程」(对标飞书,默认开):会话列表置顶日程提醒入口。 */
+    /** P8「在消息列表提醒日程」(对标飞书,默认开):会话列表日程提醒入口。 */
     val imReminderEntry: StateFlow<Boolean> = _imReminderEntry.asStateFlow()
 
     fun setImReminderEntry(enabled: Boolean) {
@@ -61,11 +61,61 @@ class SettingsStore(context: Context) {
         _imReminderEntry.value = enabled
     }
 
+    private val _calendarWeekStart = MutableStateFlow(
+        CalendarWeekStart.fromKey(prefs.getString(KEY_CALENDAR_WEEK_START, null)),
+    )
+
+    /** P8 日历设置:每周的第一天(默认周一,保持既有视图行为)。 */
+    val calendarWeekStart: StateFlow<CalendarWeekStart> = _calendarWeekStart.asStateFlow()
+
+    fun setCalendarWeekStart(value: CalendarWeekStart) {
+        prefs.edit().putString(KEY_CALENDAR_WEEK_START, value.name).apply()
+        _calendarWeekStart.value = value
+    }
+
+    private val _calendarDefaultDurationMin = MutableStateFlow(
+        prefs.getInt(KEY_CALENDAR_DEFAULT_DURATION, 60),
+    )
+
+    /** P8 日历设置:新建日程默认时长(分钟,默认 60,保持既有表单行为)。 */
+    val calendarDefaultDurationMin: StateFlow<Int> = _calendarDefaultDurationMin.asStateFlow()
+
+    fun setCalendarDefaultDurationMin(minutes: Int) {
+        prefs.edit().putInt(KEY_CALENDAR_DEFAULT_DURATION, minutes).apply()
+        _calendarDefaultDurationMin.value = minutes
+    }
+
+    private val _calendarDefaultReminderMin = MutableStateFlow(
+        prefs.getInt(KEY_CALENDAR_DEFAULT_REMINDER, 10),
+    )
+
+    /** P8 日历设置:新建日程默认提醒提前量(分钟,-1 = 不提醒,默认 10)。 */
+    val calendarDefaultReminderMin: StateFlow<Int> = _calendarDefaultReminderMin.asStateFlow()
+
+    fun setCalendarDefaultReminderMin(minutes: Int) {
+        prefs.edit().putInt(KEY_CALENDAR_DEFAULT_REMINDER, minutes).apply()
+        _calendarDefaultReminderMin.value = minutes
+    }
+
     private companion object {
         const val FILE_NAME = "jusi_meet_settings"
         const val KEY_VIDEO_CODEC = "video_codec"
         const val KEY_THEME_MODE = "theme_mode"
         const val KEY_IM_REMINDER_ENTRY = "im_reminder_entry"
+        const val KEY_CALENDAR_WEEK_START = "calendar_week_start"
+        const val KEY_CALENDAR_DEFAULT_DURATION = "calendar_default_duration"
+        const val KEY_CALENDAR_DEFAULT_REMINDER = "calendar_default_reminder"
+    }
+}
+
+/** P8 日历设置:每周的第一天。 */
+enum class CalendarWeekStart {
+    MONDAY,
+    SUNDAY;
+
+    companion object {
+        fun fromKey(key: String?): CalendarWeekStart =
+            entries.firstOrNull { it.name == key } ?: MONDAY
     }
 }
 

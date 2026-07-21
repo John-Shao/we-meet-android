@@ -111,6 +111,8 @@ fun MainTabScreen(
     onCreateEvent: (epochDay: Long) -> Unit,
     /** P8「在消息列表提醒日程」:置顶入口点开日程提醒页。 */
     onOpenReminders: () -> Unit,
+    /** P8 日历设置页(日历 tab 齿轮)。 */
+    onOpenCalendarSettings: () -> Unit,
 ) {
     // Default to the Messages tab.
     var selectedTab by rememberSaveable { mutableIntStateOf(MainTab.Messages.ordinal) }
@@ -260,6 +262,7 @@ fun MainTabScreen(
             CalendarTabScreen(
                 onEventClick = onEventClick,
                 onCreateEvent = onCreateEvent,
+                onOpenSettings = onOpenCalendarSettings,
             )
         },
         TabItem(R.string.tab_meeting, Icons.Filled.Videocam, Icons.Outlined.Videocam) {

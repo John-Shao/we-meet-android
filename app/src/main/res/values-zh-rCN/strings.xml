@@ -294,6 +294,13 @@
     <string name="reminder_join">进入会议</string>
     <string name="reminder_toggle">列表提醒</string>
     <string name="reminder_empty">今明两天暂无日程</string>
+    <!-- P8: calendar settings page -->
+    <string name="calendar_settings_title">日历设置</string>
+    <string name="calendar_settings_reminder_entry">在消息列表提醒日程</string>
+    <string name="calendar_settings_week_start">每周的第一天</string>
+    <string name="calendar_settings_default_duration">日程默认时长</string>
+    <string name="calendar_settings_default_reminder">默认提醒时间</string>
+    <string name="calendar_settings_duration_minutes">%1$d 分钟</string>
     <string name="calendar_create_title">新建日程</string>
     <string name="calendar_field_title_hint">日程标题</string>
     <string name="calendar_field_start">开始</string>

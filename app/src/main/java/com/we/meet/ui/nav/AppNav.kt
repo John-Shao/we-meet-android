@@ -128,6 +128,8 @@ object Routes {
     const val EVENT_DETAIL = "$EVENT_DETAIL_BASE/{eventId}"
     /** P8「在消息列表提醒日程」:日程提醒页(今日/明日安排)。 */
     const val REMINDERS = "reminders"
+    /** P8 日历设置页(列表提醒开关/周起始/默认时长/默认提醒)。 */
+    const val CALENDAR_SETTINGS = "calendar_settings"
     const val CREATE_EVENT =
         "create_event?epochDay={epochDay}&eventId={eventId}&editScope={editScope}" +
             "&startSec={startSec}&endSec={endSec}&attendeeIds={attendeeIds}&srcCid={srcCid}"
@@ -449,6 +451,8 @@ fun AppNav() {
                 onCreateEvent = { epochDay -> navController.navigate(Routes.createEvent(epochDay)) },
                 // P8「在消息列表提醒日程」:置顶入口 → 日程提醒页。
                 onOpenReminders = { navController.navigate(Routes.REMINDERS) },
+                // P8:日历 tab 齿轮 → 日历设置页。
+                onOpenCalendarSettings = { navController.navigate(Routes.CALENDAR_SETTINGS) },
             )
         }
 
@@ -757,6 +761,13 @@ fun AppNav() {
                 onBack = rememberOnceOnly(safePop),
                 onEventClick = { id -> navController.navigate(Routes.eventDetail(id)) },
                 onJoinSlug = { slug -> navController.navigate(Routes.joinPreview(slug)) },
+            )
+        }
+
+        // P8 日历设置页:日历 tab 齿轮点入。
+        composable(Routes.CALENDAR_SETTINGS) {
+            com.we.meet.ui.calendar.CalendarSettingsScreen(
+                onBack = rememberOnceOnly(safePop),
             )
         }
 
