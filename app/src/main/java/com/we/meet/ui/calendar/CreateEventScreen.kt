@@ -72,9 +72,10 @@ private val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
 
 /**
  * Event form (route `create_event?epochDay=&eventId=`). Create mode when
- * [editEventId] is null; otherwise loads the event, prefills scalar fields, and
- * PATCHes on save. Edit mode hides the attendee picker (backend update doesn't
- * re-sync attendees — web parity). Pops back on success.
+ * [editEventId] is null; otherwise loads the event, prefills the fields, and
+ * PATCHes on save. P8:非重复日程的编辑态同样可增删参与者(attendee_ids
+ * 全量同步,web parity);重复日程编辑隐藏参与者区(服务端三选路径剔除该
+ * 字段)。Pops back on success.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -132,6 +133,8 @@ fun CreateEventScreen(
     var repeat by remember { mutableStateOf("") }
     var repeatUntil by remember { mutableStateOf<LocalDate?>(null) }
     var attendees by remember { mutableStateOf<List<PickedMember>>(emptyList()) }
+    // P8:编辑态标记重复日程(加载详情时置位)——重复日程不开放参与者编辑。
+    var editIsRecurring by remember { mutableStateOf(false) }
 
     var showPicker by remember { mutableStateOf(false) }
     var submitting by remember { mutableStateOf(false) }
@@ -183,6 +186,19 @@ fun CreateEventScreen(
                 // All-day end is stored exclusive (next midnight) → show inclusive last day.
                 end = if (e.allDay) endLdt.minusDays(1) else endLdt
                 reminderMinutes = e.reminders.firstOrNull()
+                // P8 编辑增删参与者:预填既有参与者(组织者恒在,不进列表);
+                // 重复日程不放开(服务端三选路径剔除 attendee_ids)。
+                editIsRecurring = e.isRecurring
+                attendees = e.attendees.mapNotNull { a ->
+                    val uid = a.id ?: return@mapNotNull null
+                    if (a.role == "organizer") return@mapNotNull null
+                    PickedMember(
+                        userId = uid,
+                        displayName = a.fullName ?: a.email ?: "?",
+                        email = a.email,
+                        avatarUrl = null,
+                    )
+                }
                 loaded = true
             }
             .onFailure { errorRes = R.string.event_load_error; loaded = true }
@@ -216,6 +232,9 @@ fun CreateEventScreen(
                             endAt = isoUtc(endInstant),
                             allDay = allDay,
                             reminders = reminderMinutes?.let { listOf(it) } ?: emptyList(),
+                            // P8:非重复日程全量同步参与者;重复日程不传(null)。
+                            attendeeIds = if (editIsRecurring) null
+                            else attendees.map { it.userId },
                             editScope = editScope,
                         ),
                     )
@@ -354,8 +373,9 @@ fun CreateEventScreen(
                 HorizontalDivider()
             }
 
-            // Edit mode omits attendees — backend update doesn't re-sync them.
-            if (!isEdit) {
+            // P8 编辑增删参与者:创建态 + 非重复日程编辑态(加载完成后)展示;
+            // 重复日程编辑不展示(服务端三选路径剔除 attendee_ids)。
+            if (!isEdit || (loaded && !editIsRecurring)) {
                 Text(
                     text = stringResource(R.string.calendar_field_attendees),
                     style = MaterialTheme.typography.labelLarge,

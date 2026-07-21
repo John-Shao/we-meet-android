@@ -105,9 +105,11 @@ data class CreateEventRequest(
 )
 
 /**
- * PATCH body for editing an event — scalar fields only. The backend update path
- * doesn't re-sync attendees/Room, so the edit UI omits the attendee picker and
- * this DTO never carries attendee_ids (web parity).
+ * PATCH body for editing an event.
+ *
+ * P8 编辑增删参与者:``attendee_ids`` null = 不动参与者(Moshi 缺省不序列化
+ * null,后端按缺省处理);传列表 = **全量同步**(新面孔补进、不在列表的移除
+ * 并同步移出 Room,组织者恒保留)。重复日程编辑不传(服务端三选路径剔除)。
  */
 @JsonClass(generateAdapter = true)
 data class UpdateEventRequest(
@@ -117,6 +119,7 @@ data class UpdateEventRequest(
     @Json(name = "end_at") val endAt: String,
     @Json(name = "all_day") val allDay: Boolean,
     val reminders: List<Int>,
+    @Json(name = "attendee_ids") val attendeeIds: List<String>? = null,
     /**
      * P2-M2 重复子场次的编辑范围:one|following|all。单次/主事件传 null——
      * 后端 `get('edit_scope') or ''` 会把 null 当缺省(主事件缺省=全部)。
