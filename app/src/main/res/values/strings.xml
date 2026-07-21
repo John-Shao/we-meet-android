@@ -301,7 +301,6 @@
     <string name="reminder_now">Now</string>
     <string name="reminder_in_minutes">in %1$d min</string>
     <string name="reminder_join">Join meeting</string>
-    <string name="reminder_toggle">Remind in list</string>
     <string name="reminder_empty">No events today or tomorrow</string>
     <string name="reminder_load_error">Couldn\'t load reminders</string>
     <!-- P8: calendar settings page -->

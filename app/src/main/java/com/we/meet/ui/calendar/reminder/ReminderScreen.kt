@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,7 +26,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -44,7 +44,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.ui.calendar.EventUi
@@ -56,19 +55,20 @@ import kotlinx.coroutines.delay
 private val ReminderOrange = Color(0xFFFF8800)
 
 /**
- * P8 日程提醒页(对标飞书):TopAppBar「日程提醒」+ 右上「在消息列表提醒
- * 日程」开关;最近/进行中日程横幅卡(进入会议);今日安排/明日安排列表,
- * 点条目进日程详情。数据 resume 刷新 + 60s 轮询,30s tick 刷角标。
+ * P8 日程提醒页(对标飞书):TopAppBar「日程提醒」+ 右上设置齿轮(点入日历
+ * 设置页,含「在消息列表提醒日程」开关);最近/进行中日程横幅卡(进入会议);
+ * 今日安排/明日安排列表,点条目进日程详情。数据 resume 刷新 + 60s 轮询,
+ * 30s tick 刷角标。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReminderScreen(
     onBack: () -> Unit,
+    onOpenSettings: () -> Unit,
     onEventClick: (eventId: String) -> Unit,
     onJoinSlug: (slug: String) -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
-    val enabled by app.settingsStore.imReminderEntry.collectAsStateWithLifecycle()
 
     var window by remember { mutableStateOf<ReminderWindow?>(null) }
     // First-load failure: without this the screen spins forever on an offline
@@ -106,20 +106,21 @@ fun ReminderScreen(
                 title = { Text(stringResource(R.string.reminder_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.cd_back),
+                        )
                     }
                 },
                 actions = {
-                    Text(
-                        text = stringResource(R.string.reminder_toggle),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Switch(
-                        checked = enabled,
-                        onCheckedChange = { app.settingsStore.setImReminderEntry(it) },
-                        modifier = Modifier.padding(start = 4.dp, end = 8.dp),
-                    )
+                    // 对标飞书:右上角设置齿轮,点入日历设置页(含「在消息列表
+                    // 提醒日程」开关),而非把开关直接摆在标题栏。
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(
+                            Icons.Filled.Settings,
+                            contentDescription = stringResource(R.string.calendar_settings_title),
+                        )
+                    }
                 },
             )
         },

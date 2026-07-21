@@ -759,6 +759,7 @@ fun AppNav() {
         composable(Routes.REMINDERS) {
             com.we.meet.ui.calendar.reminder.ReminderScreen(
                 onBack = rememberOnceOnly(safePop),
+                onOpenSettings = { navController.navigate(Routes.CALENDAR_SETTINGS) },
                 onEventClick = { id -> navController.navigate(Routes.eventDetail(id)) },
                 onJoinSlug = { slug -> navController.navigate(Routes.joinPreview(slug)) },
             )

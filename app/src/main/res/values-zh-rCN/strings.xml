@@ -301,7 +301,6 @@
     <string name="reminder_now">现在</string>
     <string name="reminder_in_minutes">%1$d 分钟后</string>
     <string name="reminder_join">进入会议</string>
-    <string name="reminder_toggle">列表提醒</string>
     <string name="reminder_empty">今明两天暂无日程</string>
     <string name="reminder_load_error">提醒加载失败</string>
     <!-- P8: calendar settings page -->
