@@ -244,8 +244,8 @@ fun MainTabScreen(
                 onScanQrCode = onScanQrCode,
                 onCreateMeeting = onCreateMeeting,
                 onJoinMeeting = onJoinMeeting,
-                // P8:当日有未结束日程时的置顶「日程提醒」入口。
-                pinnedHeader = reminderNearest?.let { ev ->
+                // P8:当日有未结束日程时的「日程提醒」入口(列表首项,随列表滚动)。
+                listHeader = reminderNearest?.let { ev ->
                     {
                         ReminderEntryRow(
                             nearest = ev,

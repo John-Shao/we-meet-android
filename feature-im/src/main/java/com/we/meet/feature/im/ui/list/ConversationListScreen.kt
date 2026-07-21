@@ -113,9 +113,10 @@ fun ConversationListScreen(
     onScanQrCode: () -> Unit,
     onCreateMeeting: () -> Unit,
     onJoinMeeting: () -> Unit,
-    /** P8「在消息列表提醒日程」:app 层注入的置顶行(feature-im 不感知日历,
-     * 只是列表最上方的一个槽位);null 不渲染。 */
-    pinnedHeader: (@Composable () -> Unit)? = null,
+    /** P8「在消息列表提醒日程」:app 层注入的列表首项槽位(feature-im 不感知
+     * 日历)。对标飞书:作为会话列表的第一个元素随列表一起滚动,而非固定
+     * 置顶;null 不渲染。 */
+    listHeader: (@Composable () -> Unit)? = null,
 ) {
     val vm: ConversationListViewModel =
         viewModel(factory = remember(deps) { ConversationListViewModel.Factory(deps) })
@@ -263,10 +264,9 @@ fun ConversationListScreen(
             (actionError ?: error)?.let { ErrorBanner(stringResource(it)) }
         }
 
-        // P8:置顶「日程提醒」入口(app 层注入),会话为空时也显示。
-        pinnedHeader?.invoke()
-
         if (rows.isEmpty()) {
+            // 会话为空没有可滚的列表,首项直接渲染在空态提示上方。
+            listHeader?.invoke()
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     text = stringResource(R.string.im_list_empty),
@@ -276,6 +276,11 @@ fun ConversationListScreen(
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
+                // P8:入口是列表第一项,随列表滚动可被推出屏幕(对标飞书)。
+                // key 与会话 cid(UUID)不会撞。
+                if (listHeader != null) {
+                    item(key = "im-list-header") { listHeader() }
+                }
                 items(rows, key = { it.cid }) { row ->
                     ConversationRow(
                         row = row,

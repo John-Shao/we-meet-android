@@ -34,8 +34,9 @@ import java.time.ZonedDateTime
 private val ReminderOrange = Color(0xFFFF8800)
 
 /**
- * P8 会话列表置顶「日程提醒」入口行(由 app 层构造,经 pinnedHeader 槽位
- * 注入 feature-im):橙色日历图标 + 最近日程名 + 倒计时角标 + 时间段副行。
+ * P8 会话列表「日程提醒」入口行(由 app 层构造,经 listHeader 槽位注入
+ * feature-im,作为列表首项随列表滚动):橙色日历图标 + 最近日程名 +
+ * 倒计时角标 + 时间段副行。
  */
 @Composable
 fun ReminderEntryRow(
