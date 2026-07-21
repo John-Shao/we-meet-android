@@ -44,6 +44,8 @@ fun WeekTimelineView(
     onSlotTap: (date: LocalDate, minuteOfDay: Int) -> Unit,
     /** P8 日历设置:每周的第一天(默认周一,保持既有行为)。 */
     firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
+    /** P8「降低已结束日程的亮度」:非空时,结束早于该时刻的块降透明度。 */
+    dimPastNow: java.time.ZonedDateTime? = null,
 ) {
     val today = LocalDate.now()
     // 从 anchor 往前找最近的 firstDayOfWeek(含自身)作为本周第一列。
@@ -51,9 +53,9 @@ fun WeekTimelineView(
         ((anchorDate.dayOfWeek.value - firstDayOfWeek.value + 7) % 7).toLong(),
     )
     val days = remember(weekStart) { (0..6).map { weekStart.plusDays(it.toLong()) } }
-    val columns = remember(days, eventsByDay) {
+    val columns = remember(days, eventsByDay, dimPastNow) {
         days.map { date ->
-            eventsByDay[date].orEmpty().mapNotNull { it.toTimeBlockOrNull(date) }
+            eventsByDay[date].orEmpty().mapNotNull { it.toTimeBlockOrNull(date, dimPastNow) }
         }
     }
 

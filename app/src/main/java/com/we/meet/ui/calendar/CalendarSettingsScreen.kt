@@ -58,6 +58,7 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
     val weekStart by store.calendarWeekStart.collectAsStateWithLifecycle()
     val durationMin by store.calendarDefaultDurationMin.collectAsStateWithLifecycle()
     val reminderMin by store.calendarDefaultReminderMin.collectAsStateWithLifecycle()
+    val dimPast by store.calendarDimPast.collectAsStateWithLifecycle()
 
     val locale = Locale.getDefault()
     val dowLabel: (CalendarWeekStart) -> String = { ws ->
@@ -118,6 +119,14 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
                     reminderLabel(min) to { store.setCalendarDefaultReminderMin(min ?: -1) }
                 },
             )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            SettingRow(label = stringResource(R.string.calendar_settings_dim_past)) {
+                Switch(
+                    checked = dimPast,
+                    onCheckedChange = { store.setCalendarDimPast(it) },
+                )
+            }
         }
     }
 }

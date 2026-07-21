@@ -301,6 +301,7 @@
     <string name="calendar_settings_default_duration">日程默认时长</string>
     <string name="calendar_settings_default_reminder">默认提醒时间</string>
     <string name="calendar_settings_duration_minutes">%1$d 分钟</string>
+    <string name="calendar_settings_dim_past">降低已结束日程的亮度</string>
     <string name="calendar_create_title">新建日程</string>
     <string name="calendar_field_title_hint">日程标题</string>
     <string name="calendar_field_start">开始</string>

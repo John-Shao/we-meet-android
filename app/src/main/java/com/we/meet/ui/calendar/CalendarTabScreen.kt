@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -80,6 +81,9 @@ fun CalendarTabScreen(
     val weekStart by app.settingsStore.calendarWeekStart.collectAsStateWithLifecycle()
     val firstDow =
         if (weekStart == CalendarWeekStart.SUNDAY) DayOfWeek.SUNDAY else DayOfWeek.MONDAY
+    // P8 日历设置:降低已结束日程的亮度(开关关闭 → null,不降)。
+    val dimPast by app.settingsStore.calendarDimPast.collectAsStateWithLifecycle()
+    val dimPastNow = if (dimPast) java.time.ZonedDateTime.now() else null
 
     // Returning from create/detail routes resumes HOME — refresh picks up
     // new events and RSVP changes without result-passing plumbing.
@@ -145,6 +149,7 @@ fun CalendarTabScreen(
                         onEventClick = onEventClick,
                         onLoadPrev = { vm.goToMonth(ui.monthAnchor.minusMonths(1)) },
                         onLoadNext = { vm.goToMonth(ui.monthAnchor.plusMonths(1)) },
+                        dimPastNow = dimPastNow,
                     )
 
                     CalendarViewMode.DAY -> DayTimelineView(
@@ -152,6 +157,7 @@ fun CalendarTabScreen(
                         events = ui.eventsByDay[ui.selectedDate].orEmpty(),
                         onEventClick = onEventClick,
                         onSlotTap = { _ -> onCreateEvent(ui.selectedDate.toEpochDay()) },
+                        dimPastNow = dimPastNow,
                     )
 
                     CalendarViewMode.WEEK -> WeekTimelineView(
@@ -161,11 +167,13 @@ fun CalendarTabScreen(
                         onDayClick = { vm.selectDate(it) },
                         onSlotTap = { date, _ -> onCreateEvent(date.toEpochDay()) },
                         firstDayOfWeek = firstDow,
+                        dimPastNow = dimPastNow,
                     )
 
                     CalendarViewMode.MONTH -> MonthViewBody(
                         ui = ui,
                         firstDow = firstDow,
+                        dimPastNow = dimPastNow,
                         onSelect = { vm.selectDate(it) },
                         onEventClick = onEventClick,
                     )
@@ -200,6 +208,7 @@ fun CalendarTabScreen(
 private fun MonthViewBody(
     ui: CalendarUiState,
     firstDow: DayOfWeek,
+    dimPastNow: java.time.ZonedDateTime?,
     onSelect: (LocalDate) -> Unit,
     onEventClick: (String) -> Unit,
 ) {
@@ -229,7 +238,11 @@ private fun MonthViewBody(
                 ),
             ) {
                 items(ui.selectedDayEvents, key = { it.id }) { event ->
-                    AgendaCard(event = event, onClick = { onEventClick(event.id) })
+                    AgendaCard(
+                        event = event,
+                        onClick = { onEventClick(event.id) },
+                        dimPastNow = dimPastNow,
+                    )
                     Spacer(Modifier.height(8.dp))
                 }
             }
@@ -371,12 +384,19 @@ private fun MonthGrid(
 }
 
 @Composable
-internal fun AgendaCard(event: EventUi, onClick: () -> Unit) {
+internal fun AgendaCard(
+    event: EventUi,
+    onClick: () -> Unit,
+    /** P8「降低已结束日程的亮度」:非空且日程已结束时整卡降透明度。 */
+    dimPastNow: java.time.ZonedDateTime? = null,
+) {
     val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
+    val dimmed = dimPastNow != null && event.end.isBefore(dimPastNow)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
+            .alpha(if (dimmed) 0.5f else 1f)
             .background(
                 MaterialTheme.colorScheme.surfaceVariant,
                 RoundedCornerShape(12.dp),

@@ -97,6 +97,18 @@ class SettingsStore(context: Context) {
         _calendarDefaultReminderMin.value = minutes
     }
 
+    private val _calendarDimPast = MutableStateFlow(
+        prefs.getBoolean(KEY_CALENDAR_DIM_PAST, true),
+    )
+
+    /** P8 日历设置:降低已结束日程的亮度(对标飞书,默认开)。 */
+    val calendarDimPast: StateFlow<Boolean> = _calendarDimPast.asStateFlow()
+
+    fun setCalendarDimPast(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_CALENDAR_DIM_PAST, enabled).apply()
+        _calendarDimPast.value = enabled
+    }
+
     private companion object {
         const val FILE_NAME = "jusi_meet_settings"
         const val KEY_VIDEO_CODEC = "video_codec"
@@ -105,6 +117,7 @@ class SettingsStore(context: Context) {
         const val KEY_CALENDAR_WEEK_START = "calendar_week_start"
         const val KEY_CALENDAR_DEFAULT_DURATION = "calendar_default_duration"
         const val KEY_CALENDAR_DEFAULT_REMINDER = "calendar_default_reminder"
+        const val KEY_CALENDAR_DIM_PAST = "calendar_dim_past"
     }
 }
 

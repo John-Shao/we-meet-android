@@ -301,6 +301,7 @@
     <string name="calendar_settings_default_duration">Default event duration</string>
     <string name="calendar_settings_default_reminder">Default reminder</string>
     <string name="calendar_settings_duration_minutes">%1$d min</string>
+    <string name="calendar_settings_dim_past">Dim past events</string>
     <string name="calendar_create_title">New event</string>
     <string name="calendar_field_title_hint">Event title</string>
     <string name="calendar_field_start">Starts</string>

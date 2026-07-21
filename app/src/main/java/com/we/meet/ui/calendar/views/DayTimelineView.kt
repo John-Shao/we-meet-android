@@ -36,9 +36,11 @@ fun DayTimelineView(
     events: List<EventUi>,
     onEventClick: (String) -> Unit,
     onSlotTap: (minuteOfDay: Int) -> Unit,
+    /** P8「降低已结束日程的亮度」:非空时,结束早于该时刻的块降透明度。 */
+    dimPastNow: java.time.ZonedDateTime? = null,
 ) {
-    val blocks = remember(date, events) {
-        events.mapNotNull { it.toTimeBlockOrNull(date) }
+    val blocks = remember(date, events, dimPastNow) {
+        events.mapNotNull { it.toTimeBlockOrNull(date, dimPastNow) }
     }
     val allDayEvents = remember(date, events) { events.filter { it.allDay } }
     val isToday = date == LocalDate.now()

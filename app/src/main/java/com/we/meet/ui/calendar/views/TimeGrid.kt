@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -59,13 +60,21 @@ data class TimeBlock(
     val key: String,
     /** 取消的日程等:半透明 + 删除线。 */
     val faded: Boolean = false,
+    /** P8「降低已结束日程的亮度」:整块降透明度,不加删除线。 */
+    val dimmed: Boolean = false,
 )
 
 /** 忙闲页选中的时段(横贯所有列的高亮框)。 */
 data class TimeSelection(val startMin: Int, val endMin: Int)
 
-/** 把日程投影成 [date] 当日的时间块;全天/不覆盖当日 → null。 */
-fun EventUi.toTimeBlockOrNull(date: LocalDate): TimeBlock? {
+/**
+ * 把日程投影成 [date] 当日的时间块;全天/不覆盖当日 → null。
+ * [dimPastNow] 非空时,结束时刻早于它的块标记 dimmed(P8 日历设置)。
+ */
+fun EventUi.toTimeBlockOrNull(
+    date: LocalDate,
+    dimPastNow: java.time.ZonedDateTime? = null,
+): TimeBlock? {
     if (allDay) return null
     val startDate = start.toLocalDate()
     val endDate = end.toLocalDate()
@@ -76,7 +85,14 @@ fun EventUi.toTimeBlockOrNull(date: LocalDate): TimeBlock? {
         else -> end.hour * 60 + end.minute
     }
     if (e <= s) return null // 例如恰好在当日 00:00 结束(属于前一日)
-    return TimeBlock(startMin = s, endMin = e, label = title, key = id, faded = cancelled)
+    return TimeBlock(
+        startMin = s,
+        endMin = e,
+        label = title,
+        key = id,
+        faded = cancelled,
+        dimmed = dimPastNow != null && end.isBefore(dimPastNow),
+    )
 }
 
 /** 左侧小时刻度列(00:00–23:00)。 */
@@ -250,6 +266,8 @@ fun TimelineScaffold(
                                         .width(colWidth)
                                         .height(blockHeight)
                                         .padding(horizontal = 1.5.dp, vertical = 1.dp)
+                                        // P8「降低已结束日程的亮度」:整块(底+文字)降透明。
+                                        .alpha(if (b.dimmed) 0.5f else 1f)
                                         .background(
                                             color = if (b.label != null) {
                                                 if (b.faded) eventBg.copy(alpha = 0.45f)

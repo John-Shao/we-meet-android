@@ -57,6 +57,8 @@ fun AgendaView(
     onEventClick: (String) -> Unit,
     onLoadPrev: () -> Unit,
     onLoadNext: () -> Unit,
+    /** P8「降低已结束日程的亮度」:非空且日程已结束时整卡降透明度。 */
+    dimPastNow: java.time.ZonedDateTime? = null,
 ) {
     val today = LocalDate.now()
     val windowStart = monthAnchor.minusMonths(1).atDay(1)
@@ -129,6 +131,7 @@ fun AgendaView(
                         events = row.events,
                         isToday = row.date == today,
                         onEventClick = onEventClick,
+                        dimPastNow = dimPastNow,
                     )
                 }
             }
@@ -154,6 +157,7 @@ private fun AgendaDayBlock(
     events: List<EventUi>,
     isToday: Boolean,
     onEventClick: (String) -> Unit,
+    dimPastNow: java.time.ZonedDateTime?,
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -180,7 +184,11 @@ private fun AgendaDayBlock(
         } else {
             Spacer(Modifier.height(6.dp))
             events.forEach { event ->
-                AgendaCard(event = event, onClick = { onEventClick(event.id) })
+                AgendaCard(
+                    event = event,
+                    onClick = { onEventClick(event.id) },
+                    dimPastNow = dimPastNow,
+                )
                 Spacer(Modifier.height(8.dp))
             }
         }
