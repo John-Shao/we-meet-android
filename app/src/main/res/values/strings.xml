@@ -314,6 +314,11 @@
     <string name="calendar_settings_dim_past">Dim past events</string>
     <string name="calendar_create_title">New event</string>
     <string name="calendar_field_title_hint">Event title</string>
+    <string name="calendar_field_title_required">Title is required</string>
+    <string name="calendar_char_count">%1$d/%2$d</string>
+    <string name="calendar_discard_title">Discard changes?</string>
+    <string name="calendar_discard_message">You have unsaved changes. Discard them?</string>
+    <string name="calendar_discard_ok">Discard</string>
     <string name="calendar_field_start">Starts</string>
     <string name="calendar_field_end">Ends</string>
     <string name="calendar_field_all_day">All day</string>

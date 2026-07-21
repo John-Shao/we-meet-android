@@ -314,6 +314,11 @@
     <string name="calendar_settings_dim_past">降低已结束日程的亮度</string>
     <string name="calendar_create_title">新建日程</string>
     <string name="calendar_field_title_hint">日程标题</string>
+    <string name="calendar_field_title_required">请输入标题</string>
+    <string name="calendar_char_count">%1$d/%2$d</string>
+    <string name="calendar_discard_title">放弃编辑？</string>
+    <string name="calendar_discard_message">你有未保存的内容，确定放弃？</string>
+    <string name="calendar_discard_ok">放弃</string>
     <string name="calendar_field_start">开始</string>
     <string name="calendar_field_end">结束</string>
     <string name="calendar_field_all_day">全天</string>

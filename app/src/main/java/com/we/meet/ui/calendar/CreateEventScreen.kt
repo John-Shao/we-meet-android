@@ -1,5 +1,6 @@
 package com.we.meet.ui.calendar
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -141,6 +142,18 @@ fun CreateEventScreen(
     var errorRes by remember { mutableStateOf<Int?>(null) }
     // Edit mode starts not-ready until the event loads.
     var loaded by remember { mutableStateOf(!isEdit) }
+    var showDiscardConfirm by remember { mutableStateOf(false) }
+
+    // Create mode: treat any user-entered content as unsaved work worth
+    // confirming before a back-out. (Edit mode prefills the form, so a
+    // meaningful "dirty" check would need an initial snapshot — out of scope.)
+    val isDirty = !isEdit && (
+        title.isNotBlank() || description.isNotBlank() ||
+            attendees.isNotEmpty() || repeat.isNotEmpty()
+    )
+    val handleClose: () -> Unit = { if (isDirty) showDiscardConfirm = true else onClose() }
+
+    BackHandler(enabled = isDirty) { showDiscardConfirm = true }
 
     // P8:预填参与者 —— 逐个目录补全(并发),失败的 id 静默丢弃并提示一次。
     val context = LocalContext.current
@@ -278,8 +291,11 @@ fun CreateEventScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onClose) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    IconButton(onClick = handleClose) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.cd_back),
+                        )
                     }
                 },
                 actions = {
@@ -316,6 +332,15 @@ fun CreateEventScreen(
                 onValueChange = { if (it.length <= 80) title = it },
                 placeholder = { Text(stringResource(R.string.calendar_field_title_hint)) },
                 singleLine = true,
+                supportingText = {
+                    // Blank → explain why Save is disabled; otherwise show the
+                    // character budget so the 80-char cap isn't a silent surprise.
+                    if (title.isBlank()) {
+                        Text(stringResource(R.string.calendar_field_title_required))
+                    } else {
+                        Text(stringResource(R.string.calendar_char_count, title.length, 80))
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
@@ -407,6 +432,9 @@ fun CreateEventScreen(
                 onValueChange = { if (it.length <= 500) description = it },
                 placeholder = { Text(stringResource(R.string.calendar_field_description_hint)) },
                 minLines = 3,
+                supportingText = {
+                    Text(stringResource(R.string.calendar_char_count, description.length, 500))
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 12.dp),
@@ -433,6 +461,27 @@ fun CreateEventScreen(
                 showPicker = false
             },
             onDismiss = { showPicker = false },
+        )
+    }
+
+    if (showDiscardConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDiscardConfirm = false },
+            title = { Text(stringResource(R.string.calendar_discard_title)) },
+            text = { Text(stringResource(R.string.calendar_discard_message)) },
+            confirmButton = {
+                TextButton(onClick = { showDiscardConfirm = false; onClose() }) {
+                    Text(
+                        text = stringResource(R.string.calendar_discard_ok),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardConfirm = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
         )
     }
 }
@@ -594,9 +643,10 @@ private fun RepeatDropdown(selected: String, onSelect: (String) -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RepeatUntilRow(until: LocalDate?, onPick: (LocalDate?) -> Unit) {
-    val context = LocalContext.current
+    var showDate by remember { mutableStateOf(false) }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -606,16 +656,7 @@ private fun RepeatUntilRow(until: LocalDate?, onPick: (LocalDate?) -> Unit) {
     ) {
         Text(stringResource(R.string.calendar_repeat_until))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = {
-                val base = until ?: LocalDate.now().plusMonths(1)
-                android.app.DatePickerDialog(
-                    context,
-                    { _, y, m, d -> onPick(LocalDate.of(y, m + 1, d)) },
-                    base.year,
-                    base.monthValue - 1,
-                    base.dayOfMonth,
-                ).show()
-            }) {
+            TextButton(onClick = { showDate = true }) {
                 Text(
                     until?.format(DateTimeFormatter.ISO_LOCAL_DATE)
                         ?: stringResource(R.string.calendar_repeat_until_none)
@@ -626,6 +667,33 @@ private fun RepeatUntilRow(until: LocalDate?, onPick: (LocalDate?) -> Unit) {
                     Text(stringResource(R.string.calendar_repeat_until_clear))
                 }
             }
+        }
+    }
+
+    // M3 date picker (matches DateTimeRow) — the earlier platform dialog was
+    // the only non-M3 picker on this screen.
+    if (showDate) {
+        val base = until ?: LocalDate.now().plusMonths(1)
+        val state = rememberDatePickerState(
+            initialSelectedDateMillis = base.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDate = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedDateMillis?.let { millis ->
+                        onPick(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
+                    }
+                    showDate = false
+                }) { Text(stringResource(android.R.string.ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDate = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        ) {
+            DatePicker(state = state)
         }
     }
 }
