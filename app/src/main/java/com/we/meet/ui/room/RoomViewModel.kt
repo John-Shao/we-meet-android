@@ -311,6 +311,13 @@ class RoomViewModel(
         connect()
     }
 
+    /** Re-attempt the initial connect after it failed (ErrorView 重试). */
+    fun retry() {
+        if (_state.value.phase != RoomUiState.Phase.Error) return
+        _state.update { it.copy(phase = RoomUiState.Phase.Connecting, errorMessage = null) }
+        connect()
+    }
+
     private fun connect() {
         viewModelScope.launch {
             runCatching {
@@ -1439,7 +1446,7 @@ class RoomViewModel(
             val app = application as WeMeetApp
             val selfName = app.tokenStore.nickname?.takeIf { it.isNotBlank() }
                 ?: app.tokenStore.phone
-                ?: "Android User"
+                ?: app.getString(com.we.meet.R.string.default_display_name)
             return RoomViewModel(
                 application, roomId, livekitUrl, livekitToken, roomName, roomSlug,
                 app.roomRepository, app.roomAiRepository, app.historyStore, selfName,

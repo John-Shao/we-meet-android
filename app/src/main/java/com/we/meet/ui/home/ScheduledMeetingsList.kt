@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.we.meet.R
@@ -73,7 +74,11 @@ private fun ScheduledRow(
     onClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    DeletableRow(onClick = onClick, onDelete = onDelete) {
+    DeletableRow(
+        onClick = onClick,
+        onDelete = onDelete,
+        itemName = (room.name?.takeIf { it.isNotBlank() }) ?: room.slug.orEmpty(),
+    ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -109,7 +114,10 @@ private fun ScheduledRow(
                 Text(
                     text = stringResource(
                         R.string.scheduled_time_prefix,
-                        formatScheduledAt(room.scheduled_at),
+                        formatScheduledAt(
+                            LocalContext.current.getString(R.string.fmt_month_day_time),
+                            room.scheduled_at,
+                        ),
                     ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
@@ -124,7 +132,7 @@ private fun ScheduledRow(
     )
 }
 
-private fun formatScheduledAt(iso: String?): String {
+private fun formatScheduledAt(pattern: String, iso: String?): String {
     if (iso.isNullOrBlank()) return "—"
     val normalized = iso
         .replace(Regex("\\.\\d+"), "")
@@ -133,6 +141,6 @@ private fun formatScheduledAt(iso: String?): String {
         timeZone = TimeZone.getTimeZone("UTC")
     }
     val ms = runCatching { parser.parse(normalized)?.time }.getOrNull() ?: return iso
-    val out = SimpleDateFormat("M月d日 HH:mm", Locale.getDefault())
+    val out = SimpleDateFormat(pattern, Locale.getDefault())
     return out.format(Date(ms))
 }

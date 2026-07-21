@@ -33,6 +33,9 @@ data class ApprovalUiState(
     /** Server count of the pending list's first page — the tab badge. */
     val pendingCount: Int = 0,
     val actionError: Boolean = false,
+    /** Instance id with an act/cancel/urge request in flight — disables that
+     *  card's buttons so a slow network can't produce a double submit. */
+    val actingId: String? = null,
     /** One-shot flag: a 催办 just succeeded (drives a transient confirmation). */
     val urged: Boolean = false,
 ) {
@@ -110,35 +113,41 @@ class ApprovalViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun act(id: String, action: String, comment: String) {
+        if (_ui.value.actingId != null) return
+        _ui.update { it.copy(actingId = id) }
         viewModelScope.launch {
             runCatching { api.act(id, ApprovalActRequest(action = action, comment = comment.trim())) }
-                .onSuccess { loadFirst(ApprovalTab.Pending) }
+                .onSuccess { _ui.update { s -> s.copy(actingId = null) }; loadFirst(ApprovalTab.Pending) }
                 .onFailure {
                     Log.w(TAG, "approval act failed", it)
-                    _ui.update { s -> s.copy(actionError = true) }
+                    _ui.update { s -> s.copy(actingId = null, actionError = true) }
                 }
         }
     }
 
     fun cancel(id: String) {
+        if (_ui.value.actingId != null) return
+        _ui.update { it.copy(actingId = id) }
         viewModelScope.launch {
             runCatching { api.cancel(id) }
-                .onSuccess { loadFirst(ApprovalTab.Mine) }
+                .onSuccess { _ui.update { s -> s.copy(actingId = null) }; loadFirst(ApprovalTab.Mine) }
                 .onFailure {
                     Log.w(TAG, "approval cancel failed", it)
-                    _ui.update { s -> s.copy(actionError = true) }
+                    _ui.update { s -> s.copy(actingId = null, actionError = true) }
                 }
         }
     }
 
     /** 催办:re-ping the current approver. No list change; flags a confirmation. */
     fun urge(id: String) {
+        if (_ui.value.actingId != null) return
+        _ui.update { it.copy(actingId = id) }
         viewModelScope.launch {
             runCatching { api.urge(id) }
-                .onSuccess { _ui.update { s -> s.copy(urged = true) } }
+                .onSuccess { _ui.update { s -> s.copy(actingId = null, urged = true) } }
                 .onFailure {
                     Log.w(TAG, "approval urge failed", it)
-                    _ui.update { s -> s.copy(actionError = true) }
+                    _ui.update { s -> s.copy(actingId = null, actionError = true) }
                 }
         }
     }

@@ -41,12 +41,22 @@ fun DocsViewerScreen(url: String, onClose: () -> Unit) {
     val webView =
         remember { createDocsWebView(context, initialUrl = url, darkTheme = darkTheme) }
     var canGoBack by remember { mutableStateOf(false) }
+    var loading by remember { mutableStateOf(true) }
+    var everLoaded by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf(false) }
 
     DisposableEffect(webView) {
         val client = webView.webViewClient as? DocsWebViewClient
         client?.onHistoryChanged = { canGoBack = webView.canGoBack() }
+        client?.onLoadingChanged = { l ->
+            loading = l
+            if (l) error = false else everLoaded = true
+        }
+        client?.onMainFrameError = { error = true; loading = false }
         onDispose {
             client?.onHistoryChanged = null
+            client?.onLoadingChanged = null
+            client?.onMainFrameError = null
             (webView.parent as? ViewGroup)?.removeView(webView)
             webView.destroy()
         }
@@ -59,17 +69,26 @@ fun DocsViewerScreen(url: String, onClose: () -> Unit) {
                 title = { Text(stringResource(R.string.docs_viewer_title)) },
                 navigationIcon = {
                     IconButton(onClick = onClose) {
-                        Icon(Icons.Filled.Close, contentDescription = null)
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.cd_close))
                     }
                 },
             )
         },
     ) { padding ->
-        AndroidView(
-            factory = { webView },
+        androidx.compose.foundation.layout.Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-        )
+        ) {
+            AndroidView(
+                factory = { webView },
+                modifier = Modifier.fillMaxSize(),
+            )
+            DocsLoadStateOverlay(
+                loading = loading && !everLoaded,
+                error = error,
+                onRetry = { error = false; loading = true; webView.reload() },
+            )
+        }
     }
 }

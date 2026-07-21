@@ -1,6 +1,10 @@
 package com.we.meet.ui.qrscan
 
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,7 +59,12 @@ fun QrScanScreen(onDone: (QrScanResult) -> Unit) {
     val vm: QrScanViewModel = viewModel(factory = QrScanViewModel.Factory(app))
     val state by vm.state.collectAsStateWithLifecycle()
 
+    val context = LocalContext.current
     var scannerLaunched by remember { mutableStateOf(false) }
+    // Camera permission denied: ZXing returns contents==null for BOTH a denial
+    // and a user back-press, so we gate on the permission ourselves and show a
+    // distinct denied state instead of silently popping (which looped forever).
+    var permissionDenied by remember { mutableStateOf(false) }
 
     val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
         val text = result.contents
@@ -67,22 +76,40 @@ fun QrScanScreen(onDone: (QrScanResult) -> Unit) {
         }
     }
 
+    fun launchScanner() {
+        scannerLaunched = true
+        scanLauncher.launch(
+            ScanOptions().apply {
+                setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                setPrompt("")            // we don't want the legacy footer text
+                setBeepEnabled(false)
+                setOrientationLocked(true)
+                setBarcodeImageEnabled(false)
+                // Use our portrait subclass; ZXing's default
+                // CaptureActivity is locked to sensorLandscape via its
+                // own manifest entry, which would flip the device.
+                setCaptureActivity(PortraitCaptureActivity::class.java)
+            }
+        )
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            permissionDenied = false
+            launchScanner()
+        } else {
+            permissionDenied = true
+        }
+    }
+
     LaunchedEffect(Unit) {
-        if (!scannerLaunched) {
-            scannerLaunched = true
-            scanLauncher.launch(
-                ScanOptions().apply {
-                    setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                    setPrompt("")            // we don't want the legacy footer text
-                    setBeepEnabled(false)
-                    setOrientationLocked(true)
-                    setBarcodeImageEnabled(false)
-                    // Use our portrait subclass; ZXing's default
-                    // CaptureActivity is locked to sensorLandscape via its
-                    // own manifest entry, which would flip the device.
-                    setCaptureActivity(PortraitCaptureActivity::class.java)
-                }
-            )
+        if (!scannerLaunched && !permissionDenied) {
+            val granted = ContextCompat.checkSelfPermission(
+                context, Manifest.permission.CAMERA,
+            ) == PackageManager.PERMISSION_GRANTED
+            if (granted) launchScanner() else cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
@@ -97,6 +124,13 @@ fun QrScanScreen(onDone: (QrScanResult) -> Unit) {
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+            if (permissionDenied) {
+                PermissionDeniedCard(
+                    onOpenSettings = { openAppSettings(context) },
+                    onBack = { onDone(QrScanResult.Cancelled) },
+                )
+                return@Box
+            }
             when (val s = state) {
                 is QrScanState.Idle, is QrScanState.Scanning -> Loading()
                 is QrScanState.ReadyToConfirm -> ConfirmCard(
@@ -213,6 +247,42 @@ private fun ErrorCard(reason: ErrorReason, onDismiss: () -> Unit) {
             Text(stringResource(R.string.qr_scan_back_button))
         }
     }
+}
+
+@Composable
+private fun PermissionDeniedCard(onOpenSettings: () -> Unit, onBack: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.qr_scan_permission_denied),
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
+        )
+        Button(
+            onClick = onOpenSettings,
+            modifier = Modifier.fillMaxWidth().height(Dimens.ButtonHeight),
+        ) {
+            Text(stringResource(R.string.preview_open_settings))
+        }
+        OutlinedButton(
+            onClick = onBack,
+            modifier = Modifier.fillMaxWidth().height(Dimens.ButtonHeight),
+        ) {
+            Text(stringResource(R.string.qr_scan_back_button))
+        }
+    }
+}
+
+/** Open this app's system settings so the user can grant a denied permission. */
+private fun openAppSettings(context: android.content.Context) {
+    val intent = android.content.Intent(
+        android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        android.net.Uri.fromParts("package", context.packageName, null),
+    ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+    runCatching { context.startActivity(intent) }
 }
 
 /** Terminal result reported to the calling navigation host. */

@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.we.meet.R
@@ -68,7 +69,11 @@ private fun HistoryRow(
     onClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    DeletableRow(onClick = onClick, onDelete = onDelete) {
+    DeletableRow(
+        onClick = onClick,
+        onDelete = onDelete,
+        itemName = entry.name.ifBlank { entry.slug },
+    ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -99,7 +104,9 @@ private fun HistoryRow(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = HistoryTimeFormatter.relativeListTimestamp(entry.firstJoinedAtMs),
+                    text = HistoryTimeFormatter.relativeListTimestamp(
+                        LocalContext.current, entry.firstJoinedAtMs,
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -115,17 +122,23 @@ private fun HistoryRow(
 
 object HistoryTimeFormatter {
     private fun timeFmt() = SimpleDateFormat("HH:mm", Locale.getDefault())
-    private fun monthDayFmt() = SimpleDateFormat("M月d日 HH:mm", Locale.getDefault())
+    private fun monthDayFmt(pattern: String) = SimpleDateFormat(pattern, Locale.getDefault())
     private fun fullDateFmt() = SimpleDateFormat("yyyy/M/d HH:mm", Locale.getDefault())
 
-    /** "今天 HH:mm" if same calendar day, else "M月d日 HH:mm". */
-    fun relativeListTimestamp(epochMs: Long): String =
-        if (isToday(epochMs)) "今天 ${timeFmt().format(Date(epochMs))}"
-        else monthDayFmt().format(Date(epochMs))
+    /** "<today> HH:mm" if same calendar day, else the localized month-day-time.
+     *  Both the today prefix and the month-day pattern are localized, so
+     *  callers pass a [Context]. */
+    fun relativeListTimestamp(context: android.content.Context, epochMs: Long): String =
+        if (isToday(epochMs)) {
+            "${context.getString(R.string.history_today_prefix)} ${timeFmt().format(Date(epochMs))}"
+        } else {
+            monthDayFmt(context.getString(R.string.fmt_month_day_time)).format(Date(epochMs))
+        }
 
     fun time(epochMs: Long): String = timeFmt().format(Date(epochMs))
 
-    fun monthDayTime(epochMs: Long): String = monthDayFmt().format(Date(epochMs))
+    fun monthDayTime(context: android.content.Context, epochMs: Long): String =
+        monthDayFmt(context.getString(R.string.fmt_month_day_time)).format(Date(epochMs))
 
     fun fullDateTime(epochMs: Long): String = fullDateFmt().format(Date(epochMs))
 

@@ -6,11 +6,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,11 +39,41 @@ import com.we.meet.R
 internal fun DeletableRow(
     onClick: () -> Unit,
     onDelete: () -> Unit,
+    /** Row title, shown in the delete-confirm prompt. */
+    itemName: String,
     content: @Composable () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
+    var confirmOpen by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
     val deleteLabel = stringResource(R.string.history_action_delete)
+
+    // deleteMeeting 是服务端删房(发起人删对所有人生效),不可撤销 → 二次确认。
+    if (confirmOpen) {
+        AlertDialog(
+            onDismissRequest = { confirmOpen = false },
+            title = { Text(stringResource(R.string.history_delete_confirm_title)) },
+            text = { Text(stringResource(R.string.history_delete_confirm_text, itemName)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmOpen = false
+                        onDelete()
+                    },
+                ) {
+                    Text(
+                        text = stringResource(R.string.history_delete_confirm_ok),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmOpen = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
 
     Box(modifier = Modifier.fillMaxWidth()) {
         Box(
@@ -75,7 +107,7 @@ internal fun DeletableRow(
                 },
                 onClick = {
                     menuOpen = false
-                    onDelete()
+                    confirmOpen = true
                 },
             )
         }

@@ -186,7 +186,9 @@ fun ParticipantTile(
             } else {
                 Icon(
                     imageVector = if (participant.isMicEnabled) Icons.Default.Mic else Icons.Default.MicOff,
-                    contentDescription = null,
+                    contentDescription = stringResource(
+                        if (participant.isMicEnabled) R.string.cd_mic_on else R.string.cd_mic_off,
+                    ),
                     tint = if (participant.isMicEnabled) Color.White else Color(0xFFFF6B6B),
                     modifier = Modifier.size(16.dp),
                 )
@@ -223,8 +225,8 @@ fun ParticipantTile(
             }
         }
 
-        // Top-right: pin / unpin button. 44dp transparent tap target wraps a
-        // 32dp visible circle so the hit area meets accessibility minimums
+        // Top-right: pin / unpin button. 48dp transparent tap target wraps a
+        // 32dp visible circle so the hit area meets the accessibility minimum
         // while the visual footprint stays small. zIndex(1f) keeps it above
         // the video SurfaceView for hit testing.
         val pinCallback = onPinClick
@@ -234,7 +236,7 @@ fun ParticipantTile(
                     .align(Alignment.TopEnd)
                     .zIndex(1f)
                     .padding(4.dp)
-                    .size(44.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
                     .clickable { pinCallback() }
                     .padding(6.dp)

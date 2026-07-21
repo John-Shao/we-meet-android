@@ -71,6 +71,9 @@ fun ReminderScreen(
     val enabled by app.settingsStore.imReminderEntry.collectAsStateWithLifecycle()
 
     var window by remember { mutableStateOf<ReminderWindow?>(null) }
+    // First-load failure: without this the screen spins forever on an offline
+    // first paint (the poll loop only handled onSuccess).
+    var loadFailed by remember { mutableStateOf(false) }
     var now by remember { mutableStateOf(ZonedDateTime.now(ZoneId.systemDefault())) }
     var refreshKey by remember { mutableStateOf(0) }
 
@@ -81,7 +84,8 @@ fun ReminderScreen(
     LaunchedEffect(refreshKey) {
         while (true) {
             runCatching { loadReminderWindow(app.apiClient.calendarApi) }
-                .onSuccess { window = it }
+                .onSuccess { window = it; loadFailed = false }
+                .onFailure { if (window == null) loadFailed = true }
             delay(60_000)
         }
     }
@@ -93,7 +97,8 @@ fun ReminderScreen(
     }
 
     val nearest = window?.nearest(now)
-    val dayFmt = remember { DateTimeFormatter.ofPattern("M月d日") }
+    val monthDayPattern = stringResource(R.string.fmt_month_day)
+    val dayFmt = remember(monthDayPattern) { DateTimeFormatter.ofPattern(monthDayPattern) }
 
     Scaffold(
         topBar = {
@@ -126,7 +131,24 @@ fun ReminderScreen(
                     .fillMaxSize()
                     .padding(padding),
                 contentAlignment = Alignment.Center,
-            ) { CircularProgressIndicator() }
+            ) {
+                if (loadFailed) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            stringResource(R.string.reminder_load_error),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        Button(
+                            onClick = { loadFailed = false; refreshKey += 1 },
+                            modifier = Modifier.padding(top = 8.dp),
+                        ) {
+                            Text(stringResource(R.string.common_retry))
+                        }
+                    }
+                } else {
+                    CircularProgressIndicator()
+                }
+            }
             return@Scaffold
         }
 

@@ -2,6 +2,8 @@ package com.we.meet.ui.login
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +42,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
@@ -109,15 +112,12 @@ private fun PhoneInputPage(
                     .padding(horizontal = Dimens.ScreenPadding, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // No region picker in scope — show a plain "+86" without the
+                // dropdown caret that used to imply a (non-existent) selector.
                 Text(
                     text = "+86",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = " ▾",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.width(12.dp))
 
@@ -145,11 +145,13 @@ private fun PhoneInputPage(
                 if (state.phone.isNotEmpty()) {
                     IconButton(
                         onClick = { onPhoneChange("") },
-                        modifier = Modifier.size(24.dp),
+                        // 48dp hit target (accessibility minimum) around a 20dp
+                        // glyph — the visible icon stays small.
+                        modifier = Modifier.size(48.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Cancel,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.cd_close),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp),
                         )
@@ -316,13 +318,26 @@ private fun OtpBoxes(
     onOtpChange: (String) -> Unit,
 ) {
     val focusRequester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val interactionSource = remember { MutableInteractionSource() }
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
     }
 
-    // Hidden text field that captures input
-    Box {
+    // Hidden text field that captures input. Tapping the visible boxes must
+    // re-focus it AND re-open the keyboard — otherwise, once the keyboard is
+    // dismissed (system back / swipe-down) there was no way to bring it back
+    // and the user was stuck unable to finish entering the code.
+    Box(
+        modifier = Modifier.clickable(
+            interactionSource = interactionSource,
+            indication = null,
+        ) {
+            focusRequester.requestFocus()
+            keyboard?.show()
+        },
+    ) {
         BasicTextField(
             value = TextFieldValue(otp, selection = TextRange(otp.length)),
             onValueChange = { onOtpChange(it.text.filter(Char::isDigit).take(6)) },

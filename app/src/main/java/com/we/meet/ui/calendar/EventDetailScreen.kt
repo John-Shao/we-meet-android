@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -33,9 +34,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -73,6 +77,7 @@ data class EventDetailUiState(
     val rsvpError: Boolean = false,
     /** Caller is the organizer → may edit/delete. */
     val canManage: Boolean = false,
+    val deleting: Boolean = false,
     val deleteError: Boolean = false,
 )
 
@@ -119,11 +124,17 @@ class EventDetailViewModel(
      * (子场次=仅此次记 exdate;主事件=删整个系列)。
      */
     fun delete(scope: String? = null, onDone: () -> Unit) {
+        if (_ui.value.deleting) return
+        _ui.update { it.copy(deleting = true, deleteError = false) }
         viewModelScope.launch {
             runCatching { api.deleteEvent(eventId, scope) }
                 .onSuccess { onDone() }
-                .onFailure { _ui.update { it.copy(deleteError = true) } }
+                .onFailure { _ui.update { it.copy(deleting = false, deleteError = true) } }
         }
+    }
+
+    fun consumeDeleteError() {
+        _ui.update { it.copy(deleteError = false) }
     }
 
     /** Optimistic RSVP; revert + flag on failure. */
@@ -174,13 +185,23 @@ fun EventDetailScreen(
         onPauseOrDispose {}
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val deleteFailedMsg = stringResource(R.string.event_delete_failed)
+    LaunchedEffect(ui.deleteError) {
+        if (ui.deleteError) {
+            snackbarHostState.showSnackbar(deleteFailedMsg)
+            vm.consumeDeleteError()
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.event_detail_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 actions = {
@@ -188,17 +209,23 @@ fun EventDetailScreen(
                         // 重复「子场次」(recurrence_parent 非空)先弹三选;主事件/
                         // 单次直连(主事件编辑=后端全部,删除=系列确认)。
                         val isOccurrence = ui.event?.recurrenceParent != null
-                        IconButton(onClick = {
-                            if (isOccurrence) editScopeAsk = true else onEdit(eventId, null)
-                        }) {
+                        IconButton(
+                            enabled = !ui.deleting,
+                            onClick = {
+                                if (isOccurrence) editScopeAsk = true else onEdit(eventId, null)
+                            },
+                        ) {
                             Icon(
                                 Icons.Filled.Edit,
                                 contentDescription = stringResource(R.string.event_action_edit),
                             )
                         }
-                        IconButton(onClick = {
-                            if (isOccurrence) deleteScopeAsk = true else confirmDelete = true
-                        }) {
+                        IconButton(
+                            enabled = !ui.deleting,
+                            onClick = {
+                                if (isOccurrence) deleteScopeAsk = true else confirmDelete = true
+                            },
+                        ) {
                             Icon(
                                 Icons.Filled.Delete,
                                 contentDescription = stringResource(R.string.event_action_delete),
@@ -223,7 +250,17 @@ fun EventDetailScreen(
                         Text(stringResource(R.string.common_cancel))
                     }
                 },
-                text = { Text(stringResource(R.string.event_delete_confirm)) },
+                // 主重复系列(recurrence 非空且非子场次)删除会清掉整个系列,
+                // 用专门文案警示;普通单次用通用确认。
+                text = {
+                    val isSeries = ui.event?.recurrence?.isNotBlank() == true
+                    Text(
+                        stringResource(
+                            if (isSeries) R.string.event_delete_series_confirm
+                            else R.string.event_delete_confirm,
+                        ),
+                    )
+                },
             )
         }
         if (editScopeAsk) {
@@ -272,6 +309,18 @@ fun EventDetailScreen(
                     onRsvp = { vm.rsvp(it) },
                     onJoinSlug = onJoinSlug,
                 )
+            }
+            // 删除进行中:半透明遮罩 + 转圈,拦截交互避免二次触发。
+            if (ui.deleting) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.32f))
+                        .clickable(enabled = false) {},
+                ) {
+                    CircularProgressIndicator()
+                }
             }
         }
     }

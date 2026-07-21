@@ -151,15 +151,23 @@ fun PreviewScreen(
             add(Manifest.permission.POST_NOTIFICATIONS)
         }
     }.toTypedArray()
-    var permissionsGranted by remember {
-        mutableStateOf(required.all {
-            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
-        })
-    }
+    fun granted(permission: String) =
+        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+    // Mic gates joining (without it you'd be a silent "ghost"); camera can be
+    // off and you still join. Tracked separately so the join action isn't
+    // blocked merely because the camera was denied.
+    var micGranted by remember { mutableStateOf(granted(Manifest.permission.RECORD_AUDIO)) }
+    var cameraGranted by remember { mutableStateOf(granted(Manifest.permission.CAMERA)) }
+    // Whether we've already prompted — distinguishes "not asked yet" from
+    // "asked and denied", so we only show the denied guidance after a prompt.
+    var permissionAsked by remember { mutableStateOf(false) }
+    val permissionsGranted = micGranted && cameraGranted
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
-    ) { result ->
-        permissionsGranted = required.all { result[it] == true }
+    ) { _ ->
+        permissionAsked = true
+        micGranted = granted(Manifest.permission.RECORD_AUDIO)
+        cameraGranted = granted(Manifest.permission.CAMERA)
     }
 
     LaunchedEffect(Unit) {
@@ -167,6 +175,14 @@ fun PreviewScreen(
             ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
         }
         if (missing) permissionLauncher.launch(requested)
+    }
+
+    // Re-read on resume so granting in system Settings (via "Open settings")
+    // and returning immediately reflects here instead of staying stuck.
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        micGranted = granted(Manifest.permission.RECORD_AUDIO)
+        cameraGranted = granted(Manifest.permission.CAMERA)
+        onPauseOrDispose {}
     }
 
     var micEnabled by remember { mutableStateOf(true) }
@@ -220,7 +236,7 @@ fun PreviewScreen(
                     IconButton(onClick = {
                         if (!closePending) { closePending = true; onClose() }
                     }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cancel))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -301,10 +317,15 @@ fun PreviewScreen(
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center,
             ) {
-                if (cameraEnabled && permissionsGranted) {
-                    CameraPreview()
-                } else {
-                    Text(
+                when {
+                    // Any required permission denied after we prompted: show a
+                    // distinct message + a way out, instead of the ambiguous
+                    // "No video" that also means "camera simply off".
+                    permissionAsked && !permissionsGranted -> PermissionDeniedContent(
+                        onOpenSettings = { openAppSettings(context) },
+                    )
+                    cameraEnabled && cameraGranted -> CameraPreview()
+                    else -> Text(
                         text = stringResource(R.string.room_no_video),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -328,11 +349,16 @@ fun PreviewScreen(
                 // Hidden for 语音通话 — an audio call keeps the camera off and
                 // out of reach; mic + speaker remain.
                 if (!audioOnly) {
+                    // Reflect effective state: with camera permission denied the
+                    // card must not read "on" while the preview shows no video.
+                    val cameraOn = cameraEnabled && cameraGranted
                     ToggleCard(
-                        icon = if (cameraEnabled) Icons.Default.Videocam else Icons.Default.VideocamOff,
+                        icon = if (cameraOn) Icons.Default.Videocam else Icons.Default.VideocamOff,
                         label = stringResource(R.string.preview_camera),
-                        isOn = cameraEnabled,
-                        onClick = { cameraEnabled = !cameraEnabled },
+                        isOn = cameraOn,
+                        onClick = {
+                            if (!cameraGranted) openAppSettings(context) else cameraEnabled = !cameraEnabled
+                        },
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -368,7 +394,9 @@ fun PreviewScreen(
                 PreviewMode.Create -> stringResource(R.string.preview_start_meeting)
                 PreviewMode.Join -> stringResource(R.string.preview_join_meeting)
             }
-            val actionEnabled = when (mode) {
+            // Mic permission is a hard gate for both modes: joining without it
+            // makes you a silent participant with no on-screen explanation.
+            val actionEnabled = micGranted && when (mode) {
                 PreviewMode.Create -> meetingName.isNotBlank() && !state.isLoading
                 PreviewMode.Join -> meetingId.length == 8 && !state.isLoading
             }
@@ -467,7 +495,7 @@ private fun ErrorBanner(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = stringResource(R.string.cancel),
+                            contentDescription = stringResource(R.string.cd_close),
                             tint = MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.size(16.dp),
                         )
@@ -604,6 +632,44 @@ private fun ToggleCard(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+/** Shown in the preview area when a required permission was denied: a clear
+ *  message plus a route into system Settings (re-requesting is a no-op once
+ *  permanently denied). */
+@Composable
+private fun PermissionDeniedContent(onOpenSettings: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.padding(24.dp),
+    ) {
+        Icon(
+            imageVector = Icons.Default.VideocamOff,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(32.dp),
+        )
+        Text(
+            text = stringResource(R.string.room_permission_required),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Button(onClick = onOpenSettings) {
+            Text(stringResource(R.string.preview_open_settings))
+        }
+    }
+}
+
+/** Open this app's system settings page so the user can flip a permission
+ *  that was permanently denied. */
+private fun openAppSettings(context: android.content.Context) {
+    val intent = android.content.Intent(
+        android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        android.net.Uri.fromParts("package", context.packageName, null),
+    ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+    runCatching { context.startActivity(intent) }
 }
 
 @Composable

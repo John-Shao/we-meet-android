@@ -114,8 +114,16 @@ class LoginViewModel(
                     onSuccess()
                 },
                 onFailure = { e ->
+                    // Clear the code on failure so the user can retype: the
+                    // screen auto-verifies on reaching 6 digits, and with the
+                    // old (unchanged) 6 digits still in place that trigger
+                    // would never fire again — leaving no way to retry.
                     _state.update {
-                        it.copy(isVerifying = false, errorMessage = e.toUserMessage(getApplication(), ErrorScope.AUTH_VERIFY_OTP))
+                        it.copy(
+                            isVerifying = false,
+                            otp = "",
+                            errorMessage = e.toUserMessage(getApplication(), ErrorScope.AUTH_VERIFY_OTP),
+                        )
                     }
                 },
             )

@@ -57,7 +57,7 @@ fun WaitingRoomScreen(
     val app = context.applicationContext as WeMeetApp
     val username = app.tokenStore.nickname?.takeIf { it.isNotBlank() }
         ?: app.tokenStore.phone
-        ?: "Android User"
+        ?: stringResource(R.string.default_display_name)
     val vm: WaitingRoomViewModel = viewModel(
         factory = WaitingRoomViewModel.Factory(
             application = context.applicationContext as Application,

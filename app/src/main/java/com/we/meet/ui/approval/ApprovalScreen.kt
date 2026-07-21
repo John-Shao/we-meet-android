@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -74,13 +75,21 @@ fun ApprovalScreen(
         }
     }
 
+    // 审批/撤回/催办失败的一次性错误提示(此前 actionError 从未被消费)。
+    LaunchedEffect(ui.actionError) {
+        if (ui.actionError) {
+            Toast.makeText(context, R.string.approval_action_failed, Toast.LENGTH_SHORT).show()
+            vm.dismissActionError()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.approval_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
             )
@@ -142,6 +151,7 @@ fun ApprovalScreen(
                             InstanceCard(
                                 inst = inst,
                                 tab = ui.tab,
+                                acting = ui.actingId == inst.id,
                                 onAct = { action, comment -> vm.act(inst.id, action, comment) },
                                 onCancel = { vm.cancel(inst.id) },
                                 onUrge = { vm.urge(inst.id) },
@@ -171,6 +181,7 @@ fun ApprovalScreen(
 private fun InstanceCard(
     inst: ApprovalInstanceDto,
     tab: ApprovalTab,
+    acting: Boolean,
     onAct: (action: String, comment: String) -> Unit,
     onCancel: () -> Unit,
     onUrge: () -> Unit,
@@ -248,10 +259,22 @@ private fun InstanceCard(
                 ) {
                     Button(
                         onClick = { onAct("approved", comment) },
+                        enabled = !acting,
                         modifier = Modifier.weight(1f),
-                    ) { Text(stringResource(R.string.approval_act_approve)) }
+                    ) {
+                        if (acting) {
+                            CircularProgressIndicator(
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(18.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        } else {
+                            Text(stringResource(R.string.approval_act_approve))
+                        }
+                    }
                     OutlinedButton(
                         onClick = { onAct("rejected", comment) },
+                        enabled = !acting,
                         modifier = Modifier.weight(1f),
                     ) { Text(stringResource(R.string.approval_act_reject)) }
                 }
@@ -262,10 +285,10 @@ private fun InstanceCard(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.padding(top = 4.dp),
                 ) {
-                    TextButton(onClick = onUrge) {
+                    TextButton(onClick = onUrge, enabled = !acting) {
                         Text(stringResource(R.string.approval_urge))
                     }
-                    TextButton(onClick = { confirm = true }) {
+                    TextButton(onClick = { confirm = true }, enabled = !acting) {
                         Text(stringResource(R.string.approval_act_cancel))
                     }
                 }

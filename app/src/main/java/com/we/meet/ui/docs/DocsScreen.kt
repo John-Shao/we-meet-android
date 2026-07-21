@@ -16,16 +16,27 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.we.meet.BuildConfig
+import com.we.meet.R
 import java.util.Locale
 
 private const val TAG = "WeMeetDocs"
@@ -50,8 +61,22 @@ internal class DocsWebViewClient : WebViewClient() {
     /** Set by [DocsTabScreen] while it is on screen, to drive the back handler. */
     var onHistoryChanged: (() -> Unit)? = null
 
+    /** UI-only hooks (don't affect navigation): drive a loading spinner and a
+     *  main-frame error state so a failed load shows a retry instead of a
+     *  blank page. */
+    var onLoadingChanged: ((Boolean) -> Unit)? = null
+    var onMainFrameError: (() -> Unit)? = null
+
     override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
         onHistoryChanged?.invoke()
+    }
+
+    override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+        onLoadingChanged?.invoke(true)
+    }
+
+    override fun onPageFinished(view: WebView?, url: String?) {
+        onLoadingChanged?.invoke(false)
     }
 
     /**
@@ -104,6 +129,7 @@ internal class DocsWebViewClient : WebViewClient() {
     ) {
         if (request?.isForMainFrame == true) {
             Log.w(TAG, "[load error] ${error?.description} ${request.url}")
+            onMainFrameError?.invoke()
         }
     }
 }
@@ -211,24 +237,67 @@ private fun docsUrl(): String {
 @Composable
 fun DocsTabScreen(webView: WebView) {
     var canGoBack by remember { mutableStateOf(webView.canGoBack()) }
+    var loading by remember { mutableStateOf(true) }
+    var everLoaded by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf(false) }
 
     DisposableEffect(webView) {
         val client = webView.webViewClient as? DocsWebViewClient
         client?.onHistoryChanged = { canGoBack = webView.canGoBack() }
-        onDispose { client?.onHistoryChanged = null }
+        client?.onLoadingChanged = { l ->
+            loading = l
+            if (l) error = false else everLoaded = true
+        }
+        client?.onMainFrameError = { error = true; loading = false }
+        onDispose {
+            client?.onHistoryChanged = null
+            client?.onLoadingChanged = null
+            client?.onMainFrameError = null
+        }
     }
 
     BackHandler(enabled = canGoBack) { webView.goBack() }
 
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = {
-            // Re-entering the tab re-runs the factory with the same instance —
-            // detach from the previous ComposeView parent before re-adding.
-            (webView.parent as? ViewGroup)?.removeView(webView)
-            webView
-        },
-    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = {
+                // Re-entering the tab re-runs the factory with the same instance —
+                // detach from the previous ComposeView parent before re-adding.
+                (webView.parent as? ViewGroup)?.removeView(webView)
+                webView
+            },
+        )
+        DocsLoadStateOverlay(
+            // Only cover the page with a spinner on the FIRST load (the SSO
+            // redirect chain that would otherwise show a blank page); later
+            // in-app navigations let docs render progressively.
+            loading = loading && !everLoaded,
+            error = error,
+            onRetry = { error = false; loading = true; webView.reload() },
+        )
+    }
+}
+
+/** Loading/error overlay shared by the docs tab and the standalone viewer. */
+@Composable
+internal fun DocsLoadStateOverlay(loading: Boolean, error: Boolean, onRetry: () -> Unit) {
+    when {
+        error -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    stringResource(R.string.docs_load_error),
+                    color = MaterialTheme.colorScheme.error,
+                )
+                Button(onClick = onRetry, modifier = Modifier.padding(top = 8.dp)) {
+                    Text(stringResource(R.string.common_retry))
+                }
+            }
+        }
+        loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    }
 }
 
 /** Our own hosts: docs + keycloak + meet backend. */

@@ -61,7 +61,8 @@ class PreviewViewModel(
 
     /** The display name used as participant identity in LiveKit: nickname first, then phone. */
     private val displayUsername: String
-        get() = tokenStore.nickname?.takeIf { it.isNotBlank() } ?: tokenStore.phone ?: "Android User"
+        get() = tokenStore.nickname?.takeIf { it.isNotBlank() } ?: tokenStore.phone
+            ?: getApplication<Application>().getString(R.string.default_display_name)
 
     val defaultMeetingName: String
         get() = "${displayUsername}的会议"

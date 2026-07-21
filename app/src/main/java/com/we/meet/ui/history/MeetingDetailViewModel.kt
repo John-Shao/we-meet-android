@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.ActionItemDto
 import com.we.meet.data.api.dto.RoomDto
@@ -63,7 +64,7 @@ class MeetingDetailViewModel(
     private val displayUsername: String
         get() = tokenStore.nickname?.takeIf { it.isNotBlank() }
             ?: tokenStore.phone
-            ?: "Android User"
+            ?: getApplication<Application>().getString(R.string.default_display_name)
 
     fun load(idOrSlug: String) {
         loadRoom(idOrSlug)

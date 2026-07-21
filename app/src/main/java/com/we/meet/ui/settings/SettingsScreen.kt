@@ -89,7 +89,7 @@ fun SettingsScreen(
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cancel),
+                            contentDescription = stringResource(R.string.cd_back),
                         )
                     }
                 },

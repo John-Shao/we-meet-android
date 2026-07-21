@@ -238,8 +238,12 @@ fun RoomScreen(
             PipLayout(room = viewModel.room, state = state)
         } else {
             when (state.phase) {
-                RoomUiState.Phase.Connecting -> ConnectingView()
-                RoomUiState.Phase.Error -> ErrorView(state.errorMessage) { onLeave(false) }
+                RoomUiState.Phase.Connecting -> ConnectingView(onCancel = { onLeave(false) })
+                RoomUiState.Phase.Error -> ErrorView(
+                    message = state.errorMessage,
+                    onRetry = { viewModel.retry() },
+                    onLeave = { onLeave(false) },
+                )
                 RoomUiState.Phase.Connected,
                 RoomUiState.Phase.Disconnected -> {
                     // 1:1 call → Feishu/WeChat-style minimal in-call UI instead
@@ -1667,7 +1671,9 @@ private fun ParticipantsSheet(
                         }
                         Icon(
                             imageVector = if (p.isMicEnabled) Icons.Default.Mic else Icons.Default.MicOff,
-                            contentDescription = null,
+                            contentDescription = stringResource(
+                                if (p.isMicEnabled) R.string.cd_mic_on else R.string.cd_mic_off,
+                            ),
                             tint = if (p.isMicEnabled) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFFFF6B6B),
                             modifier = Modifier.size(20.dp),
                         )
@@ -2251,6 +2257,17 @@ private fun MoreActionsSheet(
     val showStub: () -> Unit = {
         android.widget.Toast.makeText(context, comingSoon, android.widget.Toast.LENGTH_SHORT).show()
     }
+    // Distinct messages for states that aren't actually "unimplemented": a
+    // subtitle that's still starting up, and a host-only control tapped by a
+    // non-host. Reusing "coming soon" for these misled users.
+    val subtitlesProcessing = stringResource(R.string.room_subtitles_processing)
+    val showSubtitlesProcessing: () -> Unit = {
+        android.widget.Toast.makeText(context, subtitlesProcessing, android.widget.Toast.LENGTH_SHORT).show()
+    }
+    val hostOnly = stringResource(R.string.room_host_only)
+    val showHostOnly: () -> Unit = {
+        android.widget.Toast.makeText(context, hostOnly, android.widget.Toast.LENGTH_SHORT).show()
+    }
 
     // Sheet-specific styling: the default ControlButton colours target the
     // dark in-meeting overlay (white label, semi-transparent white bg). On
@@ -2319,6 +2336,7 @@ private fun MoreActionsSheet(
                     icon = Icons.Default.FiberManualRecord,
                     label = stringResource(R.string.room_more_record),
                     isOn = true,
+                    comingSoon = true,
                     onClick = showStub,
                     labelColor = sheetTint,
                     iconBgColor = sheetBg,
@@ -2332,7 +2350,7 @@ private fun MoreActionsSheet(
                         else R.string.room_more_subtitles_on
                     ),
                     isOn = true,
-                    onClick = if (subtitlesPending) showStub else onSubtitlesClick,
+                    onClick = if (subtitlesPending) showSubtitlesProcessing else onSubtitlesClick,
                     labelColor = subtitlesTint,
                     iconBgColor = subtitlesBg,
                     iconTintColor = subtitlesTint,
@@ -2356,7 +2374,7 @@ private fun MoreActionsSheet(
                     icon = Icons.Default.Settings,
                     label = stringResource(R.string.room_more_settings),
                     isOn = true,
-                    onClick = if (isAdmin) onHostSettingsClick else showStub,
+                    onClick = if (isAdmin) onHostSettingsClick else showHostOnly,
                     labelColor = sheetTint,
                     iconBgColor = sheetBg,
                     iconTintColor = sheetTint,
@@ -2404,6 +2422,7 @@ private fun ScreenShareChooserSheet(
                 icon = Icons.Default.Dashboard,
                 title = stringResource(R.string.room_screen_share_whiteboard),
                 onClick = onShareWhiteboard,
+                comingSoon = true,
             )
             Spacer(Modifier.height(8.dp))
             Button(
@@ -2429,12 +2448,14 @@ private fun ShareOptionRow(
     icon: ImageVector,
     title: String,
     onClick: () -> Unit,
+    comingSoon: Boolean = false,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 16.dp),
+            .padding(vertical = 16.dp)
+            .alpha(if (comingSoon) 0.55f else 1f),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
@@ -2450,6 +2471,17 @@ private fun ShareOptionRow(
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f),
         )
+        if (comingSoon) {
+            Text(
+                text = stringResource(R.string.room_badge_coming_soon),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+            )
+        }
     }
 }
 
@@ -2464,6 +2496,33 @@ private fun LeaveDialog(
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState()
+    var confirmEnd by remember { mutableStateOf(false) }
+
+    // 结束会议对全员破坏性且不可撤销,先二次确认再执行。
+    if (confirmEnd) {
+        AlertDialog(
+            onDismissRequest = { confirmEnd = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmEnd = false
+                        onEndMeeting()
+                    },
+                ) {
+                    Text(
+                        text = stringResource(R.string.room_end_meeting),
+                        color = Color(0xFFFF4444),
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmEnd = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+            text = { Text(stringResource(R.string.room_end_meeting_confirm)) },
+        )
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -2503,7 +2562,7 @@ private fun LeaveDialog(
             if (isAdmin) {
                 HorizontalDivider()
                 TextButton(
-                    onClick = onEndMeeting,
+                    onClick = { confirmEnd = true },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(Dimens.ButtonHeight),
@@ -2639,6 +2698,9 @@ internal fun ControlButton(
     isOn: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Unimplemented stub: dim the button and show a "开发中" badge so it no
+     *  longer looks fully available before the "coming soon" toast fires. */
+    comingSoon: Boolean = false,
     labelColor: Color = Color.White,
     iconBgColor: Color? = null,
     iconTintColor: Color? = null,
@@ -2662,21 +2724,36 @@ internal fun ControlButton(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .clickable(onClick = onClick)
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp)
+            // Dim stub controls so they don't read as fully available.
+            .alpha(if (comingSoon) 0.55f else 1f),
     ) {
-        Box(
-            modifier = Modifier
-                .size(iconButtonSize)
-                .clip(CircleShape)
-                .background(bgColor),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = iconTint,
-                modifier = Modifier.size(iconSize),
-            )
+        Box(contentAlignment = Alignment.TopEnd) {
+            Box(
+                modifier = Modifier
+                    .size(iconButtonSize)
+                    .clip(CircleShape)
+                    .background(bgColor),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = iconTint,
+                    modifier = Modifier.size(iconSize),
+                )
+            }
+            if (comingSoon) {
+                Text(
+                    text = stringResource(R.string.room_badge_coming_soon),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color(0xCC000000))
+                        .padding(horizontal = 4.dp, vertical = 1.dp),
+                )
+            }
         }
         Spacer(Modifier.height(labelSpacing))
         Text(
@@ -2688,7 +2765,7 @@ internal fun ControlButton(
 }
 
 @Composable
-private fun ConnectingView() {
+private fun ConnectingView(onCancel: () -> Unit) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
@@ -2697,12 +2774,17 @@ private fun ConnectingView() {
             CircularProgressIndicator(color = Color.White)
             Spacer(Modifier.height(12.dp))
             Text(stringResource(R.string.room_connecting), color = Color.White)
+            // A stuck connect otherwise strands the user with only system Back.
+            Spacer(Modifier.height(20.dp))
+            TextButton(onClick = onCancel) {
+                Text(stringResource(R.string.cancel), color = Color.White)
+            }
         }
     }
 }
 
 @Composable
-private fun ErrorView(message: String?, onLeave: () -> Unit) {
+private fun ErrorView(message: String?, onRetry: () -> Unit, onLeave: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -2716,11 +2798,18 @@ private fun ErrorView(message: String?, onLeave: () -> Unit) {
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(16.dp))
-            Button(
-                onClick = onLeave,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEE4444)),
-            ) {
-                Text(stringResource(R.string.room_action_hangup), color = Color.White)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                // A failed join is often a transient network blip — offer retry
+                // before forcing the user to leave and rejoin from scratch.
+                Button(onClick = onRetry) {
+                    Text(stringResource(R.string.common_retry))
+                }
+                Button(
+                    onClick = onLeave,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEE4444)),
+                ) {
+                    Text(stringResource(R.string.room_action_hangup), color = Color.White)
+                }
             }
         }
     }

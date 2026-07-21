@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.RoomDto
 import com.we.meet.data.auth.TokenStore
@@ -117,10 +118,16 @@ class HomeViewModel(
     private val _laterCreating = MutableStateFlow(false)
     val laterCreating: StateFlow<Boolean> = _laterCreating.asStateFlow()
 
+    /** One-shot: the last create-later attempt failed (drives a Toast). */
+    private val _laterError = MutableStateFlow(false)
+    val laterError: StateFlow<Boolean> = _laterError.asStateFlow()
+
+    fun consumeLaterError() { _laterError.value = false }
+
     private val displayUsername: String
         get() = tokenStore.nickname?.takeIf { it.isNotBlank() }
             ?: tokenStore.phone
-            ?: "Android User"
+            ?: getApplication<Application>().getString(R.string.default_display_name)
 
     val defaultMeetingName: String
         get() = "${displayUsername}的会议"
@@ -138,6 +145,7 @@ class HomeViewModel(
     fun createLaterMeeting(meetingName: String, scheduledAtIso: String? = null) {
         if (_laterCreating.value) return
         _laterCreating.update { true }
+        _laterError.value = false
         viewModelScope.launch {
             roomRepository.createRoom(displayUsername, meetingName, scheduledAtIso)
                 .onSuccess { room ->
@@ -161,12 +169,18 @@ class HomeViewModel(
                             createdAtMs = parseIsoMillis(room.created_at),
                             scheduledAtIso = room.scheduled_at,
                         )
+                    } else {
+                        // Room created but no LiveKit payload → can't open the
+                        // invite sheet; surface as a failure instead of silently
+                        // doing nothing.
+                        _laterError.value = true
                     }
                     // Pull the latest server list so the brand-new room
                     // shows up in the scheduled / history zones without
                     // waiting for the next LifecycleResumeEffect tick.
                     refreshRemoteRooms()
                 }
+                .onFailure { _laterError.value = true }
             _laterCreating.update { false }
         }
     }

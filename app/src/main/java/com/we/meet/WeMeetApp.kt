@@ -160,7 +160,8 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
     // ---- CallHost (P1 一对一通话) — room ops for feature-im's CallController ----
 
     private val callDisplayName: String
-        get() = tokenStore.nickname?.takeIf { it.isNotBlank() } ?: tokenStore.phone ?: "Android User"
+        get() = tokenStore.nickname?.takeIf { it.isNotBlank() } ?: tokenStore.phone
+            ?: getString(R.string.default_display_name)
 
     override suspend fun createCallRoom(name: String): CallRoom {
         val room = roomRepository.createRoom(callDisplayName, name).getOrThrow()

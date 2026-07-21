@@ -82,6 +82,11 @@ class SubmitApprovalViewModel(
         private set
 
     init {
+        loadTemplates()
+    }
+
+    fun loadTemplates() {
+        _ui.update { it.copy(loading = true, error = false) }
         viewModelScope.launch {
             runCatching { api.listTemplates() }
                 .onSuccess { page ->
@@ -137,7 +142,7 @@ fun SubmitApprovalScreen(
                 title = { Text(stringResource(R.string.approval_form_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 actions = {
@@ -164,6 +169,17 @@ fun SubmitApprovalScreen(
         ) {
             when {
                 ui.loading -> CircularProgressIndicator(Modifier.padding(24.dp))
+                // Load failure ≠ genuinely-empty: show an error + retry instead
+                // of the misleading "no templates available".
+                ui.error && ui.templates.isEmpty() -> Column(Modifier.padding(24.dp)) {
+                    Text(
+                        stringResource(R.string.approval_load_error),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    TextButton(onClick = { vm.loadTemplates() }) {
+                        Text(stringResource(R.string.approval_retry))
+                    }
+                }
                 ui.templates.isEmpty() -> Text(
                     stringResource(R.string.approval_no_templates),
                     color = MaterialTheme.colorScheme.outline,

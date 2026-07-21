@@ -288,10 +288,16 @@ private fun MonthHeader(
         }
         TextButton(onClick = onToday) { Text(stringResource(R.string.calendar_today)) }
         IconButton(onClick = onPrev) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null)
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                contentDescription = stringResource(R.string.cd_prev),
+            )
         }
         IconButton(onClick = onNext) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = stringResource(R.string.cd_next),
+            )
         }
     }
 }

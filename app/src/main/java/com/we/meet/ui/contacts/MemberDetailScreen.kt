@@ -77,6 +77,8 @@ data class MemberDetailUiState(
     /** Full phone after 显示 (P3). Null = still masked; "" = revealed-but-empty. */
     val revealedPhone: String? = null,
     val revealing: Boolean = false,
+    /** 显示 request failed (vs. genuinely empty) — one-shot, drives a Toast. */
+    val revealError: Boolean = false,
 )
 
 class MemberDetailViewModel(
@@ -109,12 +111,18 @@ class MemberDetailViewModel(
     fun revealPhone() {
         val st = _ui.value
         if (st.revealing || st.revealedPhone != null) return
-        _ui.update { it.copy(revealing = true) }
+        _ui.update { it.copy(revealing = true, revealError = false) }
         viewModelScope.launch {
-            val phone = weMeetApp.directoryRepository.revealPhone(userId).getOrNull().orEmpty()
-            _ui.update { it.copy(revealing = false, revealedPhone = phone) }
+            // Distinguish failure from a genuinely empty result: on failure keep
+            // revealedPhone null so the 显示 button stays (and the owner isn't
+            // wrongly presented as having no number), and flag an error toast.
+            weMeetApp.directoryRepository.revealPhone(userId)
+                .onSuccess { phone -> _ui.update { it.copy(revealing = false, revealedPhone = phone) } }
+                .onFailure { _ui.update { it.copy(revealing = false, revealError = true) } }
         }
     }
+
+    fun consumeRevealError() = _ui.update { it.copy(revealError = false) }
 
     fun startChat() {
         if (_ui.value.creatingChat) return
@@ -155,9 +163,19 @@ fun MemberDetailScreen(
         factory = MemberDetailViewModel.factory(app, userId),
     )
     val ui by vm.ui.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     LaunchedEffect(vm) {
         vm.chatReady.collect { cid -> onOpenChat(cid) }
+    }
+
+    LaunchedEffect(ui.revealError) {
+        if (ui.revealError) {
+            android.widget.Toast.makeText(
+                context, R.string.member_reveal_failed, android.widget.Toast.LENGTH_SHORT,
+            ).show()
+            vm.consumeRevealError()
+        }
     }
 
     Scaffold(
@@ -166,7 +184,7 @@ fun MemberDetailScreen(
                 title = { Text(stringResource(R.string.member_detail_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
             )

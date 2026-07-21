@@ -14,9 +14,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.we.meet.R
 
 /**
  * Bottom-anchored realtime subtitle strip — shows up to [MAX_VISIBLE_ROWS]
@@ -54,7 +56,7 @@ fun SubtitleOverlay(
         visible.forEach { row ->
             Row(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = row.speaker.ifBlank { "—" } + "：",
+                    text = stringResource(R.string.subtitle_speaker_prefix, row.speaker.ifBlank { "—" }),
                     color = Color(0xFFB3D6FF),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,

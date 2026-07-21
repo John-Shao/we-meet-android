@@ -143,12 +143,18 @@ fun FreeBusyCompareScreen(
     // ── 日期 + 勾选 → 忙闲重拉。busyMap 缺 key = 不可见。 ──
     var day by remember { mutableStateOf(LocalDate.now()) }
     var busyMap by remember { mutableStateOf<Map<String, List<BusyIntervalDto>>?>(null) }
+    // Distinguish a fetch failure from "everyone's calendar is invisible": the
+    // old code degraded failures to emptyMap(), which read as unavailable and
+    // offered no retry. Keep busyMap null on failure and flag the error.
+    var busyError by remember { mutableStateOf(false) }
+    var busyReloadKey by remember { mutableStateOf(0) }
     val checkedPeople = remember(people, checked) {
         people.filter { checked.contains(it.userId) }
     }
-    LaunchedEffect(day, checked, people) {
+    LaunchedEffect(day, checked, people, busyReloadKey) {
         if (checkedPeople.isEmpty()) return@LaunchedEffect
         busyMap = null
+        busyError = false
         val dayStart = day.atStartOfDay(zone).toInstant()
         val dayEnd = day.plusDays(1).atStartOfDay(zone).toInstant()
         runCatching {
@@ -159,8 +165,9 @@ fun FreeBusyCompareScreen(
             )
         }.onSuccess { res ->
             busyMap = res.results.associate { it.userId to it.busy }
+            busyError = false
         }.onFailure {
-            busyMap = emptyMap()
+            busyError = true
         }
     }
 
@@ -372,7 +379,24 @@ fun FreeBusyCompareScreen(
                                         MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
                                     ),
                                 contentAlignment = Alignment.Center,
-                            ) { CircularProgressIndicator() }
+                            ) {
+                                if (busyError) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            stringResource(R.string.freebusy_load_error),
+                                            color = MaterialTheme.colorScheme.error,
+                                        )
+                                        Button(
+                                            onClick = { busyReloadKey += 1 },
+                                            modifier = Modifier.padding(top = 8.dp),
+                                        ) {
+                                            Text(stringResource(R.string.common_retry))
+                                        }
+                                    }
+                                } else {
+                                    CircularProgressIndicator()
+                                }
+                            }
                         }
                     }
 
@@ -408,30 +432,31 @@ fun FreeBusyCompareScreen(
                                                     .coerceAtMost(1440),
                                             )
                                         },
+                                        enabled = sel.endMin < 1440,
                                         contentPadding = androidx.compose.foundation.layout
-                                            .PaddingValues(horizontal = 8.dp),
-                                        modifier = Modifier.height(28.dp),
+                                            .PaddingValues(horizontal = 12.dp),
+                                        modifier = Modifier.height(48.dp),
                                     ) {
                                         Text(
                                             stringResource(R.string.freebusy_extend),
-                                            fontSize = 11.sp,
+                                            fontSize = 12.sp,
                                         )
                                     }
                                     Spacer(Modifier.width(4.dp))
                                     OutlinedButton(
                                         onClick = {
-                                            if (sel.endMin - sel.startMin > 30) {
-                                                selection =
-                                                    sel.copy(endMin = sel.endMin - 30)
-                                            }
+                                            selection = sel.copy(endMin = sel.endMin - 30)
                                         },
+                                        // Disable at the 30-min floor instead of
+                                        // a silent no-op tap.
+                                        enabled = sel.endMin - sel.startMin > 30,
                                         contentPadding = androidx.compose.foundation.layout
-                                            .PaddingValues(horizontal = 8.dp),
-                                        modifier = Modifier.height(28.dp),
+                                            .PaddingValues(horizontal = 12.dp),
+                                        modifier = Modifier.height(48.dp),
                                     ) {
                                         Text(
                                             stringResource(R.string.freebusy_shrink),
-                                            fontSize = 11.sp,
+                                            fontSize = 12.sp,
                                         )
                                     }
                                 }

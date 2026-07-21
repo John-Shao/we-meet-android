@@ -106,7 +106,7 @@ fun HistoryDetailScreen(
                     IconButton(onClick = handleBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cancel),
+                            contentDescription = stringResource(R.string.cd_back),
                         )
                     }
                 },
@@ -241,6 +241,7 @@ private fun InfoTab(
             val participantNames = speakerNames.ifEmpty { memberNames }
 
             val timeText = buildTimeText(
+                context = LocalContext.current,
                 createdAtIso = room.created_at,
                 closedAtIso = room.closed_at,
                 ongoingLabel = ongoing,
@@ -687,17 +688,18 @@ private fun parseIsoToMillis(iso: String?): Long? {
 }
 
 private fun buildTimeText(
+    context: android.content.Context,
     createdAtIso: String?,
     closedAtIso: String?,
     ongoingLabel: String,
 ): String {
     val startMs = parseIsoToMillis(createdAtIso) ?: return "—"
     val endMs = closedAtIso?.takeIf { it.isNotBlank() }?.let { parseIsoToMillis(it) }
-    val startStr = HistoryTimeFormatter.monthDayTime(startMs)
+    val startStr = HistoryTimeFormatter.monthDayTime(context, startMs)
     return if (endMs == null) {
         "$startStr ($ongoingLabel)"
     } else {
-        val endStr = HistoryTimeFormatter.monthDayTime(endMs)
+        val endStr = HistoryTimeFormatter.monthDayTime(context, endMs)
         "$startStr – $endStr"
     }
 }

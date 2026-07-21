@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,6 +36,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -45,6 +47,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.we.meet.ui.theme.WeMeetTheme
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -70,6 +74,18 @@ fun HomeScreen(
     val history by homeViewModel.history.collectAsStateWithLifecycle()
     val scheduledMeetings by homeViewModel.scheduledMeetings.collectAsStateWithLifecycle()
     val laterCreated by homeViewModel.laterCreated.collectAsStateWithLifecycle()
+    val laterCreating by homeViewModel.laterCreating.collectAsStateWithLifecycle()
+    val laterError by homeViewModel.laterError.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    LaunchedEffect(laterError) {
+        if (laterError) {
+            android.widget.Toast.makeText(
+                context, R.string.home_create_failed, android.widget.Toast.LENGTH_SHORT,
+            ).show()
+            homeViewModel.consumeLaterError()
+        }
+    }
 
     // Refresh the server-side rooms list whenever Home becomes visible
     // again — covers returning from a meeting, the room-end flow, or a
@@ -181,6 +197,17 @@ fun HomeScreen(
                 },
                 onDeleteEntry = homeViewModel::deleteMeeting,
             )
+        }
+    }
+
+    // Create-later runs after the name dialog closes; without this the screen
+    // shows no feedback during the network round-trip (invited to re-tap).
+    if (laterCreating) {
+        Dialog(
+            onDismissRequest = {},
+            properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
+        ) {
+            CircularProgressIndicator()
         }
     }
 
