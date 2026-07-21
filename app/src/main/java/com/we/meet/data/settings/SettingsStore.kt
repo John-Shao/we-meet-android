@@ -50,10 +50,22 @@ class SettingsStore(context: Context) {
     private fun loadThemeMode(): ThemeMode =
         ThemeMode.fromKey(prefs.getString(KEY_THEME_MODE, null))
 
+    private val _imReminderEntry =
+        MutableStateFlow(prefs.getBoolean(KEY_IM_REMINDER_ENTRY, true))
+
+    /** P8「在消息列表提醒日程」(对标飞书,默认开):会话列表置顶日程提醒入口。 */
+    val imReminderEntry: StateFlow<Boolean> = _imReminderEntry.asStateFlow()
+
+    fun setImReminderEntry(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_IM_REMINDER_ENTRY, enabled).apply()
+        _imReminderEntry.value = enabled
+    }
+
     private companion object {
         const val FILE_NAME = "jusi_meet_settings"
         const val KEY_VIDEO_CODEC = "video_codec"
         const val KEY_THEME_MODE = "theme_mode"
+        const val KEY_IM_REMINDER_ENTRY = "im_reminder_entry"
     }
 }
 

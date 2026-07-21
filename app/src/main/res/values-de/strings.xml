@@ -285,6 +285,15 @@
     <string name="freebusy_confirm">OK</string>
     <string name="freebusy_search_members">Search members</string>
     <string name="calendar_prefill_attendee_failed">Some attendees could not be added</string>
+    <!-- P8: reminder entry in message list -->
+    <string name="reminder_title">Event reminders</string>
+    <string name="reminder_today">Today\'s schedule</string>
+    <string name="reminder_tomorrow">Tomorrow\'s schedule</string>
+    <string name="reminder_now">Now</string>
+    <string name="reminder_in_minutes">in %1$d min</string>
+    <string name="reminder_join">Join meeting</string>
+    <string name="reminder_toggle">Remind in list</string>
+    <string name="reminder_empty">No events today or tomorrow</string>
     <string name="calendar_create_title">Neuer Termin</string>
     <string name="calendar_field_title_hint">Termintitel</string>
     <string name="calendar_field_start">Beginn</string>

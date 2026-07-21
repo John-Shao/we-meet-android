@@ -62,6 +62,10 @@ import com.we.meet.WeMeetApp
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.ui.list.ConversationListScreen
 import com.we.meet.ui.calendar.CalendarTabScreen
+import com.we.meet.ui.calendar.reminder.ReminderEntryRow
+import com.we.meet.ui.calendar.reminder.ReminderWindow
+import com.we.meet.ui.calendar.reminder.loadReminderWindow
+import com.we.meet.ui.calendar.reminder.nearest
 import android.view.ViewGroup
 import com.we.meet.ui.contacts.ContactsTabScreen
 import com.we.meet.ui.docs.DocsTabScreen
@@ -105,6 +109,8 @@ fun MainTabScreen(
     onMemberClick: (userId: String) -> Unit,
     onEventClick: (eventId: String) -> Unit,
     onCreateEvent: (epochDay: Long) -> Unit,
+    /** P8「在消息列表提醒日程」:置顶入口点开日程提醒页。 */
+    onOpenReminders: () -> Unit,
 ) {
     // Default to the Messages tab.
     var selectedTab by rememberSaveable { mutableIntStateOf(MainTab.Messages.ordinal) }
@@ -138,6 +144,32 @@ fun MainTabScreen(
     // resurrect a fresh session/socket for the user just logged out.
     val imSession = remember { ImSession.get(app) }
     val imUnread by imSession.totalUnread.collectAsStateWithLifecycle()
+
+    // P8「在消息列表提醒日程」(对标飞书,默认开):今日/明日窗口 60s 轮询,
+    // 30s tick 刷倒计时角标;开关关闭即停拉并隐藏入口。
+    val reminderEnabled by app.settingsStore.imReminderEntry.collectAsStateWithLifecycle()
+    var reminderWindow by remember { mutableStateOf<ReminderWindow?>(null) }
+    var reminderNow by remember { mutableStateOf(java.time.ZonedDateTime.now()) }
+    LaunchedEffect(reminderEnabled) {
+        if (!reminderEnabled) {
+            reminderWindow = null
+            return@LaunchedEffect
+        }
+        while (true) {
+            runCatching { loadReminderWindow(app.apiClient.calendarApi) }
+                .onSuccess { reminderWindow = it }
+            kotlinx.coroutines.delay(60_000)
+        }
+    }
+    LaunchedEffect(reminderEnabled) {
+        if (!reminderEnabled) return@LaunchedEffect
+        while (true) {
+            kotlinx.coroutines.delay(30_000)
+            reminderNow = java.time.ZonedDateTime.now()
+        }
+    }
+    val reminderNearest =
+        if (reminderEnabled) reminderWindow?.nearest(reminderNow) else null
 
     // rememberSaveable can restore an index from a build that had more tabs (我的
     // used to be ordinal 4). Normalize ONCE here and use `safeTab` at every read
@@ -212,6 +244,16 @@ fun MainTabScreen(
                 onScanQrCode = onScanQrCode,
                 onCreateMeeting = onCreateMeeting,
                 onJoinMeeting = onJoinMeeting,
+                // P8:当日有未结束日程时的置顶「日程提醒」入口。
+                pinnedHeader = reminderNearest?.let { ev ->
+                    {
+                        ReminderEntryRow(
+                            nearest = ev,
+                            now = reminderNow,
+                            onClick = onOpenReminders,
+                        )
+                    }
+                },
             )
         },
         TabItem(R.string.tab_calendar, Icons.Filled.CalendarMonth, Icons.Outlined.CalendarMonth) {

@@ -126,6 +126,8 @@ object Routes {
     const val MEMBER_DETAIL = "$MEMBER_DETAIL_BASE/{userId}"
     private const val EVENT_DETAIL_BASE = "event_detail"
     const val EVENT_DETAIL = "$EVENT_DETAIL_BASE/{eventId}"
+    /** P8「在消息列表提醒日程」:日程提醒页(今日/明日安排)。 */
+    const val REMINDERS = "reminders"
     const val CREATE_EVENT =
         "create_event?epochDay={epochDay}&eventId={eventId}&editScope={editScope}" +
             "&startSec={startSec}&endSec={endSec}&attendeeIds={attendeeIds}&srcCid={srcCid}"
@@ -445,6 +447,8 @@ fun AppNav() {
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 onEventClick = { eventId -> navController.navigate(Routes.eventDetail(eventId)) },
                 onCreateEvent = { epochDay -> navController.navigate(Routes.createEvent(epochDay)) },
+                // P8「在消息列表提醒日程」:置顶入口 → 日程提醒页。
+                onOpenReminders = { navController.navigate(Routes.REMINDERS) },
             )
         }
 
@@ -744,6 +748,15 @@ fun AppNav() {
                 userId = userId,
                 onBack = rememberOnceOnly(safePop),
                 onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
+            )
+        }
+
+        // P8 日程提醒页:会话列表置顶入口点入。
+        composable(Routes.REMINDERS) {
+            com.we.meet.ui.calendar.reminder.ReminderScreen(
+                onBack = rememberOnceOnly(safePop),
+                onEventClick = { id -> navController.navigate(Routes.eventDetail(id)) },
+                onJoinSlug = { slug -> navController.navigate(Routes.joinPreview(slug)) },
             )
         }
 

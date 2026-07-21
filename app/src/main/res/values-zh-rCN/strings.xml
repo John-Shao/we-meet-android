@@ -285,6 +285,15 @@
     <string name="freebusy_confirm">确定</string>
     <string name="freebusy_search_members">搜索成员</string>
     <string name="calendar_prefill_attendee_failed">部分参与者添加失败</string>
+    <!-- P8: reminder entry in message list -->
+    <string name="reminder_title">日程提醒</string>
+    <string name="reminder_today">今日安排</string>
+    <string name="reminder_tomorrow">明日安排</string>
+    <string name="reminder_now">现在</string>
+    <string name="reminder_in_minutes">%1$d 分钟后</string>
+    <string name="reminder_join">进入会议</string>
+    <string name="reminder_toggle">列表提醒</string>
+    <string name="reminder_empty">今明两天暂无日程</string>
     <string name="calendar_create_title">新建日程</string>
     <string name="calendar_field_title_hint">日程标题</string>
     <string name="calendar_field_start">开始</string>

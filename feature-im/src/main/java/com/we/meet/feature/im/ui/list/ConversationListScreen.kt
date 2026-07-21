@@ -113,6 +113,9 @@ fun ConversationListScreen(
     onScanQrCode: () -> Unit,
     onCreateMeeting: () -> Unit,
     onJoinMeeting: () -> Unit,
+    /** P8「在消息列表提醒日程」:app 层注入的置顶行(feature-im 不感知日历,
+     * 只是列表最上方的一个槽位);null 不渲染。 */
+    pinnedHeader: (@Composable () -> Unit)? = null,
 ) {
     val vm: ConversationListViewModel =
         viewModel(factory = remember(deps) { ConversationListViewModel.Factory(deps) })
@@ -259,6 +262,9 @@ fun ConversationListScreen(
         if (connection == ConnectionState.CONNECTED) {
             (actionError ?: error)?.let { ErrorBanner(stringResource(it)) }
         }
+
+        // P8:置顶「日程提醒」入口(app 层注入),会话为空时也显示。
+        pinnedHeader?.invoke()
 
         if (rows.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
