@@ -921,6 +921,9 @@ fun AppNav() {
                     }
                 },
                 onOpenAccountSecurity = { navController.navigate(Routes.ACCOUNT_SECURITY) },
+                // P8 设置收敛:模块设置从用户设置进,模块内齿轮是同页快捷入口。
+                onOpenMeetingSettings = { navController.navigate(Routes.MEETING_SETTINGS) },
+                onOpenCalendarSettings = { navController.navigate(Routes.CALENDAR_SETTINGS) },
             )
         }
 

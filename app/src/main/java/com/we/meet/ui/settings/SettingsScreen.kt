@@ -67,6 +67,10 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onSignedOut: () -> Unit,
     onOpenAccountSecurity: () -> Unit,
+    /** P8 设置收敛:模块设置页入口(会议/日历)。模块内的齿轮只是快捷入口,
+     * 指向的仍是这里挂的同一页面。 */
+    onOpenMeetingSettings: () -> Unit,
+    onOpenCalendarSettings: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val settingsStore = app.settingsStore
@@ -105,6 +109,10 @@ fun SettingsScreen(
             )
             LanguageSection()
             NotificationSection()
+            ModuleSettingsSection(
+                onMeetingClick = onOpenMeetingSettings,
+                onCalendarClick = onOpenCalendarSettings,
+            )
             AccountSection(
                 onAccountSecurityClick = onOpenAccountSecurity,
                 onSignOutClick = { showSignOutConfirm = true },
@@ -138,6 +146,61 @@ fun SettingsScreen(
         )
     }
 
+}
+
+// ── Module settings (P8 设置收敛) ────────────────────────────────────────
+
+/**
+ * 模块设置入口(会议设置/日历设置):所有设置集中在用户设置里,模块内的
+ * 齿轮(会议 tab、日历 tab)只是指向同一页面的快捷入口。
+ */
+@Composable
+private fun ModuleSettingsSection(
+    onMeetingClick: () -> Unit,
+    onCalendarClick: () -> Unit,
+) {
+    Spacer(Modifier.height(8.dp))
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.ScreenPadding)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface),
+    ) {
+        Column {
+            ModuleEntryRow(
+                label = stringResource(R.string.meeting_settings_title),
+                onClick = onMeetingClick,
+            )
+            ModuleEntryRow(
+                label = stringResource(R.string.calendar_settings_title),
+                onClick = onCalendarClick,
+            )
+        }
+    }
+    Spacer(Modifier.height(8.dp))
+}
+
+@Composable
+private fun ModuleEntryRow(label: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Spacer(Modifier.weight(1f))
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 // ── Account ─────────────────────────────────────────────────────────────
