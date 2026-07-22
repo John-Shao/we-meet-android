@@ -67,15 +67,29 @@ internal class DocsWebViewClient : WebViewClient() {
     var onLoadingChanged: ((Boolean) -> Unit)? = null
     var onMainFrameError: (() -> Unit)? = null
 
+    /**
+     * 加载态同时记在 client 上,不只发回调:WebView 在 MainTabScreen 挂载时就开始
+     * 预加载,若用户在加载**完成后**才首次点进云文档 tab,onPageFinished 早已错过,
+     * DocsTabScreen 里 `loading` 的初值 true 永远翻不过来——转圈永久盖在已渲染好的
+     * 页面上。组合时以这两个字段为初值即可消除该竞态。
+     */
+    var isLoading: Boolean = true
+        private set
+    var everLoaded: Boolean = false
+        private set
+
     override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
         onHistoryChanged?.invoke()
     }
 
     override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+        isLoading = true
         onLoadingChanged?.invoke(true)
     }
 
     override fun onPageFinished(view: WebView?, url: String?) {
+        isLoading = false
+        everLoaded = true
         onLoadingChanged?.invoke(false)
     }
 
@@ -236,13 +250,16 @@ private fun docsUrl(): String {
  */
 @Composable
 fun DocsTabScreen(webView: WebView) {
+    val docsClient = remember(webView) { webView.webViewClient as? DocsWebViewClient }
     var canGoBack by remember { mutableStateOf(webView.canGoBack()) }
-    var loading by remember { mutableStateOf(true) }
-    var everLoaded by remember { mutableStateOf(false) }
+    // 初值取 client 当前真实状态,而非写死 true/false:首次进 tab 时预加载往往已经
+    // 结束,回调不会再来,写死会让转圈永久盖住页面(见 DocsWebViewClient.isLoading)。
+    var loading by remember { mutableStateOf(docsClient?.isLoading ?: true) }
+    var everLoaded by remember { mutableStateOf(docsClient?.everLoaded ?: false) }
     var error by remember { mutableStateOf(false) }
 
     DisposableEffect(webView) {
-        val client = webView.webViewClient as? DocsWebViewClient
+        val client = docsClient
         client?.onHistoryChanged = { canGoBack = webView.canGoBack() }
         client?.onLoadingChanged = { l ->
             loading = l
