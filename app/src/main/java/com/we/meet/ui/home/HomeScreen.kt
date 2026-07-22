@@ -193,16 +193,10 @@ fun HomeScreen(
             )
             HistoryList(
                 entries = history,
-                // Live rooms (no closed_at yet) get rejoined via the
-                // preview flow; archived rooms route to the detail
-                // page. Matches Web's MeetingDetail entry behaviour.
-                onEntryClick = { entry ->
-                    if (entry.closedAtMs != null) {
-                        onHistoryClick(entry.roomId)
-                    } else {
-                        onJoinSlug(entry.slug.ifBlank { entry.roomId })
-                    }
-                },
+                // P8 实测修正:统一点击进详情页。此前按 closed_at 分流
+                // (进行中→重进会议),但大量房间从未显式结束、closed_at
+                // 恒空,同一列表头尾行为不一致;重进会议在详情页一键可达。
+                onEntryClick = { entry -> onHistoryClick(entry.roomId) },
             )
         }
     }
