@@ -92,9 +92,9 @@ private fun HistoryRow(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    // 服务端合成行(本机从未加入)firstJoinedAtMs=0,直接格式化
-                    // 会显示「1月1日 08:00」(epoch 0)——退回房间创建时间。
-                    text = HistoryTimeFormatter.relativeListTimestamp(
+                    // 历史列表带年份(与 Web 端对齐);服务端合成行(本机从未
+                    // 加入)firstJoinedAtMs=0 退回房间创建时间。
+                    text = HistoryTimeFormatter.fullDateTimeLocalized(
                         LocalContext.current,
                         entry.firstJoinedAtMs.takeIf { it > 0 } ?: entry.createdAtMs,
                     ),

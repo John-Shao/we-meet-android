@@ -175,7 +175,6 @@
 
     <!-- Scheduled meetings (upcoming) -->
     <string name="scheduled_section_title">Scheduled meetings</string>
-    <string name="scheduled_time_prefix">Scheduled for %1$s</string>
 
     <!-- History -->
     <string name="history_section_title">Past meetings</string>

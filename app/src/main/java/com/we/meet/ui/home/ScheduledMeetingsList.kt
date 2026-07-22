@@ -99,14 +99,16 @@ private fun ScheduledRow(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
+                // 无前缀,当天显示「今天 HH:mm」,否则「M月d日 HH:mm」(不带年,
+                // 预约都是近期未来;与 Web 端同口径)。
                 Text(
-                    text = stringResource(
-                        R.string.scheduled_time_prefix,
-                        formatScheduledAt(
-                            LocalContext.current.getString(R.string.fmt_month_day_time),
-                            room.scheduled_at,
-                        ),
-                    ),
+                    text = parseScheduledMs(room.scheduled_at)
+                        ?.let {
+                            HistoryTimeFormatter.relativeListTimestamp(
+                                LocalContext.current, it,
+                            )
+                        }
+                        ?: "—",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -120,15 +122,13 @@ private fun ScheduledRow(
     )
 }
 
-private fun formatScheduledAt(pattern: String, iso: String?): String {
-    if (iso.isNullOrBlank()) return "—"
+private fun parseScheduledMs(iso: String?): Long? {
+    if (iso.isNullOrBlank()) return null
     val normalized = iso
         .replace(Regex("\\.\\d+"), "")
         .let { if (it.endsWith("Z")) it.dropLast(1) + "+0000" else it }
     val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")
     }
-    val ms = runCatching { parser.parse(normalized)?.time }.getOrNull() ?: return iso
-    val out = SimpleDateFormat(pattern, Locale.getDefault())
-    return out.format(Date(ms))
+    return runCatching { parser.parse(normalized)?.time }.getOrNull()
 }

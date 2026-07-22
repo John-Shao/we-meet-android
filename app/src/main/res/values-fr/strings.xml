@@ -167,7 +167,6 @@
 
     <!-- Scheduled meetings (upcoming) -->
     <string name="scheduled_section_title">Réunions planifiées</string>
-    <string name="scheduled_time_prefix">Prévu pour %1$s</string>
 
     <!-- History -->
     <string name="history_section_title">Réunions passées</string>
