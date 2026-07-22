@@ -229,6 +229,14 @@ object Routes {
     private const val HISTORY_BASE = "history_detail"
     const val HISTORY_DETAIL = "$HISTORY_BASE/{roomId}"
 
+    /** P8 预约会议详情页:列表行数据直传(slug/name/预约时刻 ISO),零请求。 */
+    const val SCHEDULED_DETAIL = "scheduled_detail?slug={slug}&name={name}&at={at}"
+
+    fun scheduledDetail(slug: String, name: String, scheduledAtIso: String): String {
+        fun enc(s: String) = URLEncoder.encode(s, StandardCharsets.UTF_8.name())
+        return "scheduled_detail?slug=${enc(slug)}&name=${enc(name)}&at=${enc(scheduledAtIso)}"
+    }
+
     fun room(
         roomId: String, url: String, token: String, name: String, slug: String,
         host: String?, createdAtMs: Long, isAdmin: Boolean, mic: Boolean, cam: Boolean,
@@ -438,6 +446,10 @@ fun AppNav() {
                 onScanQrCode = { navController.navigate(Routes.QR_SCAN) },
                 onHistoryClick = { roomId ->
                     navController.navigate(Routes.historyDetail(roomId))
+                },
+                // P8:预约会议行 → 预约详情页(操作收进详情)。
+                onScheduledClick = { slug, name, at ->
+                    navController.navigate(Routes.scheduledDetail(slug, name, at))
                 },
                 onSettingsClick = { navController.navigate(Routes.SETTINGS) },
                 onOpenMeetingSettings = { navController.navigate(Routes.MEETING_SETTINGS) },
@@ -1100,6 +1112,27 @@ fun AppNav() {
             com.we.meet.ui.history.HistoryDetailScreen(
                 roomId = Routes.decode(args.getString("roomId").orEmpty()),
                 onBack = rememberOnceOnly(safePop),
+                // P8:操作收进详情——进入会议走既有入会预览。
+                onJoinSlug = { slug -> navController.navigate(Routes.joinPreview(slug)) },
+            )
+        }
+
+        // P8 预约会议详情页:预约列表行点入,操作(进会/复制/删除)收于此。
+        composable(
+            route = Routes.SCHEDULED_DETAIL,
+            arguments = listOf(
+                navArgument("slug") { type = NavType.StringType; defaultValue = "" },
+                navArgument("name") { type = NavType.StringType; defaultValue = "" },
+                navArgument("at") { type = NavType.StringType; defaultValue = "" },
+            ),
+        ) { entry ->
+            val args = entry.arguments!!
+            com.we.meet.ui.home.ScheduledDetailScreen(
+                slug = Routes.decode(args.getString("slug").orEmpty()),
+                name = Routes.decode(args.getString("name").orEmpty()),
+                scheduledAtIso = Routes.decode(args.getString("at").orEmpty()),
+                onBack = rememberOnceOnly(safePop),
+                onJoinSlug = { slug -> navController.navigate(Routes.joinPreview(slug)) },
             )
         }
     }

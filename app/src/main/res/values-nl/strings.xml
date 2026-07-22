@@ -302,6 +302,9 @@
     <string name="calendar_settings_default_reminder">Default reminder</string>
     <string name="calendar_settings_duration_minutes">%1$d min</string>
     <string name="calendar_settings_dim_past">Dim past events</string>
+    <!-- P8: meeting detail actions -->
+    <string name="detail_copy">Copy</string>
+    <string name="detail_copied">Copied</string>
     <string name="calendar_create_title">Nieuwe afspraak</string>
     <string name="calendar_field_title_hint">Titel van de afspraak</string>
     <string name="calendar_field_start">Begin</string>

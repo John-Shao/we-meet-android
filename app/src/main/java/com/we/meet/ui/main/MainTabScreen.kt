@@ -99,6 +99,8 @@ fun MainTabScreen(
     onJoinSlug: (slug: String) -> Unit,
     onScanQrCode: () -> Unit,
     onHistoryClick: (roomId: String) -> Unit,
+    /** P8:预约会议行 → 预约详情页。 */
+    onScheduledClick: (slug: String, name: String, scheduledAtIso: String) -> Unit,
     onSettingsClick: () -> Unit,
     onOpenMeetingSettings: () -> Unit,
     onOpenAiHub: () -> Unit,
@@ -271,6 +273,7 @@ fun MainTabScreen(
                 onJoinMeeting = onJoinMeeting,
                 onJoinSlug = onJoinSlug,
                 onHistoryClick = onHistoryClick,
+                onScheduledClick = onScheduledClick,
                 onOpenSettings = onOpenMeetingSettings,
             )
         },

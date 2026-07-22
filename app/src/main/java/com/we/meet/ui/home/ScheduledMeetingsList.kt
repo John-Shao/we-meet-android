@@ -1,6 +1,7 @@
 package com.we.meet.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,17 +37,13 @@ import java.util.TimeZone
  * history list on Home; renders nothing when there's no upcoming meeting
  * so it doesn't push the rest of the page down on cold-start home.
  *
- * Each row shows the room name on the first line and the formatted
- * scheduled time (M月d日 HH:mm) on the second. Tapping the row routes
- * to PreviewScreen via [onEntryClick] (same target as a history row).
- * Long-pressing opens the delete context menu, in the same shape the
- * history list uses; backend semantics are identical.
+ * P8(对标飞书):点行经 [onEntryClick] 打开预约会议详情页,进入会议 /
+ * 复制 / 删除等操作全部收进详情(ScheduledDetailScreen);长按删除已移除。
  */
 @Composable
 fun ScheduledMeetingsList(
     rooms: List<RoomDto>,
-    onEntryClick: (slug: String) -> Unit,
-    onDeleteEntry: (identifier: String) -> Unit,
+    onEntryClick: (room: RoomDto) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (rooms.isEmpty()) return
@@ -58,12 +55,8 @@ fun ScheduledMeetingsList(
             modifier = Modifier.padding(vertical = 12.dp),
         )
         rooms.forEach { room ->
-            val slug = room.slug ?: return@forEach
-            ScheduledRow(
-                room = room,
-                onClick = { onEntryClick(slug) },
-                onDelete = { onDeleteEntry(slug) },
-            )
+            if (room.slug == null) return@forEach
+            ScheduledRow(room = room, onClick = { onEntryClick(room) })
         }
     }
 }
@@ -72,13 +65,8 @@ fun ScheduledMeetingsList(
 private fun ScheduledRow(
     room: RoomDto,
     onClick: () -> Unit,
-    onDelete: () -> Unit,
 ) {
-    DeletableRow(
-        onClick = onClick,
-        onDelete = onDelete,
-        itemName = (room.name?.takeIf { it.isNotBlank() }) ?: room.slug.orEmpty(),
-    ) {
+    Box(modifier = Modifier.clickable(onClick = onClick)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier

@@ -67,6 +67,8 @@ fun HomeScreen(
     onJoinMeeting: () -> Unit,
     onJoinSlug: (slug: String) -> Unit,
     onHistoryClick: (roomId: String) -> Unit,
+    /** P8:预约会议行 → 预约详情页(进会/复制/删除收进详情)。 */
+    onScheduledClick: (slug: String, name: String, scheduledAtIso: String) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
@@ -178,10 +180,16 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp),
         ) {
+            // P8(对标飞书):行点击进详情,操作(进会/复制/删除)收进详情页。
             ScheduledMeetingsList(
                 rooms = scheduledMeetings,
-                onEntryClick = onJoinSlug,
-                onDeleteEntry = homeViewModel::deleteMeeting,
+                onEntryClick = { room ->
+                    onScheduledClick(
+                        room.slug.orEmpty(),
+                        room.name.orEmpty(),
+                        room.scheduled_at.orEmpty(),
+                    )
+                },
             )
             HistoryList(
                 entries = history,
@@ -195,7 +203,6 @@ fun HomeScreen(
                         onJoinSlug(entry.slug.ifBlank { entry.roomId })
                     }
                 },
-                onDeleteEntry = homeViewModel::deleteMeeting,
             )
         }
     }

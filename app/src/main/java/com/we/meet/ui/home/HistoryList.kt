@@ -1,6 +1,7 @@
 package com.we.meet.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,11 +32,14 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+/**
+ * P8(对标飞书):行点击进详情(已结束)/重进会议(进行中),删除等操作
+ * 收进历史详情页;长按删除已移除。
+ */
 @Composable
 fun HistoryList(
     entries: List<HistoryEntry>,
     onEntryClick: (entry: HistoryEntry) -> Unit,
-    onDeleteEntry: (identifier: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (entries.isEmpty()) return
@@ -47,18 +51,7 @@ fun HistoryList(
             modifier = Modifier.padding(vertical = 12.dp),
         )
         entries.forEach { entry ->
-            HistoryRow(
-                entry = entry,
-                onClick = { onEntryClick(entry) },
-                onDelete = {
-                    // Prefer slug for the delete API call when present —
-                    // it's the user-visible meeting code and avoids any
-                    // ambiguity with synthesized entries that may not
-                    // carry a real backend UUID.
-                    val id = entry.slug.takeIf { it.isNotBlank() } ?: entry.roomId
-                    onDeleteEntry(id)
-                },
-            )
+            HistoryRow(entry = entry, onClick = { onEntryClick(entry) })
         }
     }
 }
@@ -67,13 +60,8 @@ fun HistoryList(
 private fun HistoryRow(
     entry: HistoryEntry,
     onClick: () -> Unit,
-    onDelete: () -> Unit,
 ) {
-    DeletableRow(
-        onClick = onClick,
-        onDelete = onDelete,
-        itemName = entry.name.ifBlank { entry.slug },
-    ) {
+    Box(modifier = Modifier.clickable(onClick = onClick)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier

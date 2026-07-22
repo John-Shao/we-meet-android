@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -51,6 +52,7 @@ import com.we.meet.data.api.dto.SummaryDto
 import com.we.meet.data.api.dto.TranscriptDto
 import com.we.meet.data.history.HistoryEntry
 import com.we.meet.ui.home.HistoryTimeFormatter
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -70,6 +72,8 @@ import java.util.TimeZone
 fun HistoryDetailScreen(
     roomId: String,
     onBack: () -> Unit,
+    /** P8 操作收进详情:进入会议(房间仍可重进)。 */
+    onJoinSlug: (slug: String) -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val viewModel: MeetingDetailViewModel =
@@ -78,6 +82,9 @@ fun HistoryDetailScreen(
     val localEntry = remember(historyEntries, roomId) {
         historyEntries.firstOrNull { it.roomId == roomId }
     }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var confirmDelete by remember { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf(false) }
 
     LaunchedEffect(roomId) { viewModel.load(roomId) }
 
@@ -98,6 +105,48 @@ fun HistoryDetailScreen(
         }
     }
 
+    val room = (roomState as? MeetingDetailViewModel.LoadState.Success)?.value
+    val deleteName = room?.name?.takeIf { it.isNotBlank() }
+        ?: localEntry?.name?.takeIf { it.isNotBlank() }
+        ?: room?.slug.orEmpty()
+
+    // P8 操作收进详情(对标飞书/Web):列表长按删除已移除,这里是唯一入口。
+    if (confirmDelete) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text(stringResource(R.string.history_delete_confirm_title)) },
+            text = {
+                Text(stringResource(R.string.history_delete_confirm_text, deleteName))
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    confirmDelete = false
+                    if (!deleting) {
+                        deleting = true
+                        scope.launch {
+                            val id = room?.slug?.takeIf { it.isNotBlank() } ?: roomId
+                            app.roomRepository.deleteRoom(id)
+                            app.historyStore.remove(id)
+                            handleBack()
+                        }
+                    }
+                }) {
+                    Text(
+                        stringResource(R.string.history_action_delete),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = { confirmDelete = false },
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -107,6 +156,14 @@ fun HistoryDetailScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.cd_back),
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { confirmDelete = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.history_action_delete),
                         )
                     }
                 },
@@ -124,6 +181,17 @@ fun HistoryDetailScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 12.dp),
         ) {
+            // P8:进入会议(房间仍在,可重进)——操作收进详情页。
+            room?.slug?.takeIf { it.isNotBlank() }?.let { slug ->
+                Button(
+                    onClick = { onJoinSlug(slug) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.event_join_meeting))
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
             SectionHeader(stringResource(R.string.meeting_detail_tab_info))
             InfoTab(
                 roomState = roomState,
