@@ -129,3 +129,10 @@ data class UpdateEventRequest(
 
 @JsonClass(generateAdapter = true)
 data class RsvpRequest(val status: String)
+
+/**
+ * rsvp 端点只回 `{"status": "..."}`,不是完整 event——按 CalendarEventDto 解析
+ * 会因缺 `id` 抛 JsonDataException,把服务端已成功的回复误判成失败。
+ */
+@JsonClass(generateAdapter = true)
+data class RsvpResponseDto(val status: String = "")

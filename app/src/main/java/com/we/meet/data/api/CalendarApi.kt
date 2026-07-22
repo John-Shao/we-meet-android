@@ -5,6 +5,7 @@ import com.we.meet.data.api.dto.CreateEventRequest
 import com.we.meet.data.api.dto.FreeBusyResponseDto
 import com.we.meet.data.api.dto.PagedCalendarEventsDto
 import com.we.meet.data.api.dto.RsvpRequest
+import com.we.meet.data.api.dto.RsvpResponseDto
 import com.we.meet.data.api.dto.UpdateEventRequest
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -50,8 +51,9 @@ interface CalendarApi {
     @POST("api/v1.0/calendar-events/")
     suspend fun createEvent(@Body body: CreateEventRequest): CalendarEventDto
 
+    /** 后端只回 `{"status": ...}`(calendar.py rsvp action),成功后靠 getEvent 刷新。 */
     @POST("api/v1.0/calendar-events/{id}/rsvp/")
-    suspend fun rsvp(@Path("id") id: String, @Body body: RsvpRequest): CalendarEventDto
+    suspend fun rsvp(@Path("id") id: String, @Body body: RsvpRequest): RsvpResponseDto
 
     /**
      * Update scalar fields (title/description/time/reminders). Backend does NOT
