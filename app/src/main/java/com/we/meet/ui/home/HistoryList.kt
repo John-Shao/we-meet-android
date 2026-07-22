@@ -131,6 +131,10 @@ object HistoryTimeFormatter {
     fun monthDayTime(context: android.content.Context, epochMs: Long): String =
         monthDayFmt(context.getString(R.string.fmt_month_day_time)).format(Date(epochMs))
 
+    /** 带年份的完整本地化时刻(会议详情用,列表仍用短格式)。 */
+    fun fullDateTimeLocalized(context: android.content.Context, epochMs: Long): String =
+        monthDayFmt(context.getString(R.string.fmt_full_date_time)).format(Date(epochMs))
+
     fun fullDateTime(epochMs: Long): String = fullDateFmt().format(Date(epochMs))
 
     fun isToday(epochMs: Long): Boolean {

@@ -422,6 +422,7 @@
     <!-- Date format patterns (valid for both SimpleDateFormat and DateTimeFormatter) -->
     <string name="fmt_month_day">MMM d</string>
     <string name="fmt_month_day_time">MMM d, HH:mm</string>
+    <string name="fmt_full_date_time">MMM d, yyyy HH:mm</string>
     <string name="approval_title">Approvals</string>
     <string name="approval_create">New request</string>
     <string name="approval_tab_pending">To review</string>

@@ -422,6 +422,7 @@
     <!-- 日期格式模板(SimpleDateFormat 与 DateTimeFormatter 均适用) -->
     <string name="fmt_month_day">M月d日</string>
     <string name="fmt_month_day_time">M月d日 HH:mm</string>
+    <string name="fmt_full_date_time">yyyy年M月d日 HH:mm</string>
     <string name="approval_title">审批</string>
     <string name="approval_create">发起申请</string>
     <string name="approval_tab_pending">待我审批</string>

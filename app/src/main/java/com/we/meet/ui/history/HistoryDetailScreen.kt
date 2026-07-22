@@ -763,13 +763,20 @@ private fun buildTimeText(
 ): String {
     val startMs = parseIsoToMillis(createdAtIso) ?: return "—"
     val endMs = closedAtIso?.takeIf { it.isNotBlank() }?.let { parseIsoToMillis(it) }
-    val startStr = HistoryTimeFormatter.monthDayTime(context, startMs)
-    return if (endMs == null) {
-        "$startStr ($ongoingLabel)"
-    } else {
-        val endStr = HistoryTimeFormatter.monthDayTime(context, endMs)
-        "$startStr – $endStr"
+    // 详情页带年份;同天结束只显示时刻(飞书口径:7月18日 19:08 – 19:13)。
+    val startStr = HistoryTimeFormatter.fullDateTimeLocalized(context, startMs)
+    return when {
+        endMs == null -> "$startStr ($ongoingLabel)"
+        sameDay(startMs, endMs) -> "$startStr – ${HistoryTimeFormatter.time(endMs)}"
+        else -> "$startStr – ${HistoryTimeFormatter.fullDateTimeLocalized(context, endMs)}"
     }
+}
+
+private fun sameDay(aMs: Long, bMs: Long): Boolean {
+    val a = java.util.Calendar.getInstance().apply { timeInMillis = aMs }
+    val b = java.util.Calendar.getInstance().apply { timeInMillis = bMs }
+    return a.get(java.util.Calendar.YEAR) == b.get(java.util.Calendar.YEAR) &&
+        a.get(java.util.Calendar.DAY_OF_YEAR) == b.get(java.util.Calendar.DAY_OF_YEAR)
 }
 
 private fun formatTime(iso: String): String {
