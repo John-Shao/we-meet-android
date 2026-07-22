@@ -178,7 +178,7 @@
     <string name="scheduled_time_prefix">Scheduled for %1$s</string>
 
     <!-- History -->
-    <string name="history_section_title">History</string>
+    <string name="history_section_title">Past meetings</string>
     <string name="history_today_prefix">Today</string>
     <string name="history_empty">No history yet</string>
     <string name="history_row_more">More</string>

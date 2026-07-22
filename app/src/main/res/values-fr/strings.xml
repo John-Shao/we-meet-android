@@ -170,7 +170,7 @@
     <string name="scheduled_time_prefix">Prévu pour %1$s</string>
 
     <!-- History -->
-    <string name="history_section_title">Historique</string>
+    <string name="history_section_title">Réunions passées</string>
     <string name="history_empty">Aucun historique</string>
     <string name="history_row_more">Plus</string>
     <string name="history_action_delete">Supprimer</string>

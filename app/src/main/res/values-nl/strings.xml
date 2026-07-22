@@ -170,7 +170,7 @@
     <string name="scheduled_time_prefix">Gepland voor %1$s</string>
 
     <!-- History -->
-    <string name="history_section_title">Geschiedenis</string>
+    <string name="history_section_title">Eerdere vergaderingen</string>
     <string name="history_empty">Nog geen geschiedenis</string>
     <string name="history_row_more">Meer</string>
     <string name="history_action_delete">Verwijderen</string>
