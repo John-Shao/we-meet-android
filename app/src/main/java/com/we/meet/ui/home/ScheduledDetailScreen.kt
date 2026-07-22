@@ -155,14 +155,12 @@ fun ScheduledDetailScreen(
             )
             Spacer(Modifier.height(16.dp))
 
+            // 时钟图标已表意,不再带「预约时间:」前缀(与会议号/链接行一致)。
             DetailRow(icon = Icons.Filled.Schedule) {
                 Text(
-                    text = stringResource(
-                        R.string.scheduled_time_prefix,
-                        formatScheduledIso(
-                            context.getString(R.string.fmt_month_day_time),
-                            scheduledAtIso,
-                        ),
+                    text = formatScheduledIso(
+                        context.getString(R.string.fmt_month_day_time),
+                        scheduledAtIso,
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                 )
