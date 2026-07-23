@@ -109,6 +109,19 @@ class SettingsStore(context: Context) {
         _calendarDimPast.value = enabled
     }
 
+    private val _calendarShowWeekend = MutableStateFlow(
+        prefs.getBoolean(KEY_CALENDAR_SHOW_WEEKEND, false),
+    )
+
+    /** P8 日历设置:周视图是否显示周末(默认关 → 只看周一~周五工作周,
+     *  对标 Google/飞书「显示周末」;仅作用于周视图列,不影响其它视图)。 */
+    val calendarShowWeekend: StateFlow<Boolean> = _calendarShowWeekend.asStateFlow()
+
+    fun setCalendarShowWeekend(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_CALENDAR_SHOW_WEEKEND, enabled).apply()
+        _calendarShowWeekend.value = enabled
+    }
+
     private companion object {
         const val FILE_NAME = "jusi_meet_settings"
         const val KEY_VIDEO_CODEC = "video_codec"
@@ -118,6 +131,7 @@ class SettingsStore(context: Context) {
         const val KEY_CALENDAR_DEFAULT_DURATION = "calendar_default_duration"
         const val KEY_CALENDAR_DEFAULT_REMINDER = "calendar_default_reminder"
         const val KEY_CALENDAR_DIM_PAST = "calendar_dim_past"
+        const val KEY_CALENDAR_SHOW_WEEKEND = "calendar_show_weekend"
     }
 }
 

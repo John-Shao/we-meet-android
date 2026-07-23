@@ -55,6 +55,7 @@ import com.we.meet.ui.calendar.views.AgendaView
 import com.we.meet.ui.calendar.views.CalendarViewMode
 import com.we.meet.ui.calendar.views.DayTimelineView
 import com.we.meet.ui.calendar.views.WeekTimelineView
+import com.we.meet.ui.calendar.views.weekColumnDays
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -81,6 +82,8 @@ fun CalendarTabScreen(
     // P8 日历设置:降低已结束日程的亮度(开关关闭 → null,不降)。
     val dimPast by app.settingsStore.calendarDimPast.collectAsStateWithLifecycle()
     val dimPastNow = if (dimPast) java.time.ZonedDateTime.now() else null
+    // P8 日历设置:周视图是否显示周末(默认关 → 只看工作周)。
+    val showWeekend by app.settingsStore.calendarShowWeekend.collectAsStateWithLifecycle()
 
     // Returning from create/detail routes resumes HOME — refresh picks up
     // new events and RSVP changes without result-passing plumbing.
@@ -96,6 +99,7 @@ fun CalendarTabScreen(
             CalendarHeader(
                 ui = ui,
                 firstDow = firstDow,
+                showWeekend = showWeekend,
                 onSelectMode = { vm.setViewMode(it) },
                 onPrev = {
                     when (ui.viewMode) {
@@ -164,6 +168,7 @@ fun CalendarTabScreen(
                         onDayClick = { vm.selectDate(it) },
                         onSlotTap = { date, _ -> onCreateEvent(date.toEpochDay()) },
                         firstDayOfWeek = firstDow,
+                        showWeekend = showWeekend,
                         dimPastNow = dimPastNow,
                     )
 
@@ -246,6 +251,7 @@ private fun MonthViewBody(
 private fun CalendarHeader(
     ui: CalendarUiState,
     firstDow: DayOfWeek,
+    showWeekend: Boolean,
     onSelectMode: (CalendarViewMode) -> Unit,
     onPrev: () -> Unit,
     onNext: () -> Unit,
@@ -298,7 +304,7 @@ private fun CalendarHeader(
             }
             Spacer(Modifier.width(4.dp))
             Text(
-                text = headerTitle(ui, firstDow),
+                text = headerTitle(ui, firstDow, showWeekend),
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -372,7 +378,7 @@ private val ISO_DAY: DateTimeFormatter = DateTimeFormatter.ofPattern("dd")
 
 /** 按视图格式化标题(日/周/月/日程一律 yyyy-MM-dd 数字格式)。 */
 @Composable
-private fun headerTitle(ui: CalendarUiState, firstDow: DayOfWeek): String {
+private fun headerTitle(ui: CalendarUiState, firstDow: DayOfWeek, showWeekend: Boolean): String {
     val locale = Locale.getDefault()
     return when (ui.viewMode) {
         CalendarViewMode.DAY ->
@@ -380,10 +386,9 @@ private fun headerTitle(ui: CalendarUiState, firstDow: DayOfWeek): String {
                 ui.selectedDate.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
 
         CalendarViewMode.WEEK -> {
-            val start = ui.selectedDate.minusDays(
-                ((ui.selectedDate.dayOfWeek.value - firstDow.value + 7) % 7).toLong(),
-            )
-            weekRangeTitle(start, start.plusDays(6))
+            // 与周视图列同源:关周末时区间收口到周五,和实际列一致。
+            val cols = weekColumnDays(ui.selectedDate, firstDow, showWeekend)
+            weekRangeTitle(cols.first(), cols.last())
         }
 
         CalendarViewMode.MONTH -> ui.monthAnchor.format(ISO_MONTH)

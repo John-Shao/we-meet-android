@@ -59,6 +59,7 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
     val durationMin by store.calendarDefaultDurationMin.collectAsStateWithLifecycle()
     val reminderMin by store.calendarDefaultReminderMin.collectAsStateWithLifecycle()
     val dimPast by store.calendarDimPast.collectAsStateWithLifecycle()
+    val showWeekend by store.calendarShowWeekend.collectAsStateWithLifecycle()
 
     val locale = Locale.getDefault()
     val dowLabel: (CalendarWeekStart) -> String = { ws ->
@@ -100,6 +101,14 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
                     dowLabel(ws) to { store.setCalendarWeekStart(ws) }
                 },
             )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            SettingRow(label = stringResource(R.string.calendar_settings_show_weekend)) {
+                Switch(
+                    checked = showWeekend,
+                    onCheckedChange = { store.setCalendarShowWeekend(it) },
+                )
+            }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
             SettingDropdownRow(

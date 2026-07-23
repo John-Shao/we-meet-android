@@ -31,9 +31,29 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /**
+ * 周视图要显示的列(单一数据源:周视图列 + 头部区间标题共用)。从 anchor 往前
+ * 找最近的 [firstDayOfWeek] 作本周首日铺满 7 天;[showWeekend] 关闭时滤掉周六
+ * 周日,恒剩周一~周五(与首日无关,对齐 Google 工作周)。
+ */
+fun weekColumnDays(
+    anchorDate: LocalDate,
+    firstDayOfWeek: DayOfWeek,
+    showWeekend: Boolean,
+): List<LocalDate> {
+    val weekStart = anchorDate.minusDays(
+        ((anchorDate.dayOfWeek.value - firstDayOfWeek.value + 7) % 7).toLong(),
+    )
+    val week = (0..6).map { weekStart.plusDays(it.toLong()) }
+    return if (showWeekend) week
+    else week.filter {
+        it.dayOfWeek != DayOfWeek.SATURDAY && it.dayOfWeek != DayOfWeek.SUNDAY
+    }
+}
+
+/**
  * P8 周视图(飞书「三日」按团队约定改为 7 列周):顶部星期条(今日高亮圆点,
- * 点某天切到该日)+ 7 列时间轴,红线只画在今天列。翻周走 header 的 ‹ ›
- * (±7 天),不引入 Pager(见 P8 设计:降低状态同步面)。
+ * 点某天切到该日)+ 时间轴,红线只画在今天列。翻周走 header 的 ‹ ›(±7 天),
+ * 不引入 Pager(见 P8 设计:降低状态同步面)。周末开关关闭时收敛为 5 列工作周。
  */
 @Composable
 fun WeekTimelineView(
@@ -44,15 +64,15 @@ fun WeekTimelineView(
     onSlotTap: (date: LocalDate, minuteOfDay: Int) -> Unit,
     /** P8 日历设置:每周的第一天(默认周一,保持既有行为)。 */
     firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
+    /** P8 日历设置:显示周末(默认 true;关闭 → 只列周一~周五 5 列)。 */
+    showWeekend: Boolean = true,
     /** P8「降低已结束日程的亮度」:非空时,结束早于该时刻的块降透明度。 */
     dimPastNow: java.time.ZonedDateTime? = null,
 ) {
     val today = LocalDate.now()
-    // 从 anchor 往前找最近的 firstDayOfWeek(含自身)作为本周第一列。
-    val weekStart = anchorDate.minusDays(
-        ((anchorDate.dayOfWeek.value - firstDayOfWeek.value + 7) % 7).toLong(),
-    )
-    val days = remember(weekStart) { (0..6).map { weekStart.plusDays(it.toLong()) } }
+    val days = remember(anchorDate, firstDayOfWeek, showWeekend) {
+        weekColumnDays(anchorDate, firstDayOfWeek, showWeekend)
+    }
     val columns = remember(days, eventsByDay, dimPastNow) {
         days.map { date ->
             eventsByDay[date].orEmpty().mapNotNull { it.toTimeBlockOrNull(date, dimPastNow) }
@@ -62,7 +82,7 @@ fun WeekTimelineView(
     val hourHeight = 56.dp
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
-    LaunchedEffect(weekStart) {
+    LaunchedEffect(days.first()) {
         scrollState.scrollTo(with(density) { (hourHeight * 8).toPx() }.toInt())
     }
 
