@@ -24,7 +24,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
@@ -556,14 +555,6 @@ internal fun AgendaCard(
                     maxLines = 1,
                 )
             }
-        }
-        if (event.roomSlug != null) {
-            Icon(
-                Icons.Filled.Videocam,
-                contentDescription = stringResource(R.string.event_join_meeting),
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp),
-            )
         }
     }
 }
