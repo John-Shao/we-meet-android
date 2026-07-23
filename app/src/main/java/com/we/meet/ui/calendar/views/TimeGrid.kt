@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -39,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.we.meet.ui.calendar.EventUi
 import java.time.LocalDate
+import java.util.Locale
 
 /**
  * P8 纵向时间轴的共用积木:日视图(1 列)/周视图(7 列)/忙闲对比页(一人一列)
@@ -56,6 +58,8 @@ data class TimeBlock(
     val endMin: Int,
     /** 块内标题;忙闲块传 null(纯色块,不泄露标题)。 */
     val label: String? = null,
+    /** 「HH:mm – HH:mm」时间行(对齐 Web:长块第二行,短块并入标题行)。 */
+    val timeLabel: String? = null,
     /** eventId / "busy-i" —— onBlockTap 回传。 */
     val key: String,
     /** 取消的日程等:半透明 + 删除线。 */
@@ -63,6 +67,11 @@ data class TimeBlock(
     /** P8「降低已结束日程的亮度」:整块降透明度,不加删除线。 */
     val dimmed: Boolean = false,
 )
+
+/** 短块阈值(分钟):≤45 分钟块高只够一行,时间并入标题行(对齐 Web)。 */
+internal const val SHORT_BLOCK_MIN = 45
+
+private fun fmtMin(min: Int): String = "%02d:%02d".format(min / 60, min % 60)
 
 /** 忙闲页选中的时段(横贯所有列的高亮框)。 */
 data class TimeSelection(val startMin: Int, val endMin: Int)
@@ -89,6 +98,7 @@ fun EventUi.toTimeBlockOrNull(
         startMin = s,
         endMin = e,
         label = title,
+        timeLabel = "${fmtMin(s)} – ${fmtMin(e)}",
         key = id,
         faded = cancelled,
         dimmed = dimPastNow != null && end.isBefore(dimPastNow),
@@ -145,6 +155,9 @@ fun TimelineScaffold(
     val busyColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f)
     val eventBg = MaterialTheme.colorScheme.primaryContainer
     val eventFg = MaterialTheme.colorScheme.onPrimaryContainer
+    val accentColor = MaterialTheme.colorScheme.primary
+    // 短块「标题,时间」分隔符:中文全角逗号(对齐 Web),其他语言半角。
+    val titleTimeSep = if (Locale.getDefault().language == "zh") "，" else ", "
     val density = LocalDensity.current
     // 列头与网格共享一个横向 ScrollState → 严格同步滚动(飞书样式)。
     val hScroll = rememberScrollState()
@@ -260,6 +273,8 @@ fun TimelineScaffold(
                                 val blockHeight =
                                     (hourHeight * ((b.endMin - b.startMin) / 60f))
                                         .coerceAtLeast(10.dp)
+                                // 对齐 Web/飞书:左侧主色竖条 + 浅色底;短块(≤45min)
+                                // 时间并入标题行,长块标题行+时间行。
                                 Box(
                                     modifier = Modifier
                                         .offset(x = colWidth * i, y = top)
@@ -268,29 +283,54 @@ fun TimelineScaffold(
                                         .padding(horizontal = 1.5.dp, vertical = 1.dp)
                                         // P8「降低已结束日程的亮度」:整块(底+文字)降透明。
                                         .alpha(if (b.dimmed) 0.5f else 1f)
+                                        .clip(RoundedCornerShape(4.dp))
                                         .background(
                                             color = if (b.label != null) {
                                                 if (b.faded) eventBg.copy(alpha = 0.45f)
                                                 else eventBg
                                             } else busyColor,
-                                            shape = RoundedCornerShape(4.dp),
                                         ),
                                 ) {
                                     if (b.label != null) {
-                                        Text(
-                                            text = b.label,
-                                            fontSize = 10.sp,
-                                            lineHeight = 12.sp,
-                                            color = eventFg,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis,
-                                            textDecoration =
-                                                if (b.faded) TextDecoration.LineThrough
-                                                else null,
-                                            modifier = Modifier.padding(
-                                                horizontal = 3.dp, vertical = 1.dp,
-                                            ),
-                                        )
+                                        Row {
+                                            Box(
+                                                modifier = Modifier
+                                                    .width(3.dp)
+                                                    .fillMaxHeight()
+                                                    .background(accentColor),
+                                            )
+                                            val short =
+                                                b.endMin - b.startMin <= SHORT_BLOCK_MIN
+                                            Column(
+                                                modifier = Modifier.padding(
+                                                    horizontal = 3.dp, vertical = 1.dp,
+                                                ),
+                                            ) {
+                                                Text(
+                                                    text = if (short && b.timeLabel != null) {
+                                                        "${b.label}$titleTimeSep${b.timeLabel}"
+                                                    } else b.label,
+                                                    fontSize = 10.sp,
+                                                    lineHeight = 12.sp,
+                                                    color = eventFg,
+                                                    maxLines = if (short) 1 else 2,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    textDecoration =
+                                                        if (b.faded) TextDecoration.LineThrough
+                                                        else null,
+                                                )
+                                                if (!short && b.timeLabel != null) {
+                                                    Text(
+                                                        text = b.timeLabel,
+                                                        fontSize = 9.sp,
+                                                        lineHeight = 11.sp,
+                                                        color = eventFg.copy(alpha = 0.8f),
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }

@@ -20,7 +20,8 @@ import kotlinx.coroutines.launch
 data class CalendarUiState(
     val monthAnchor: YearMonth = YearMonth.now(),
     val selectedDate: LocalDate = LocalDate.now(),
-    /** P8:日程(默认)/日/周/月 四视图;数据窗口不随视图变(恒 ±1 月)。 */
+    /** P8:日程(默认)/日/周/月 四视图;日程视图窗口 = 锚点起一年(对齐
+     * Web),其余视图恒焦点月 ±1 月。 */
     val viewMode: CalendarViewMode = CalendarViewMode.AGENDA,
     val eventsByDay: Map<LocalDate, List<EventUi>> = emptyMap(),
     val loading: Boolean = false,
@@ -47,7 +48,7 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
     fun refresh() {
         viewModelScope.launch {
             _ui.update { it.copy(loading = it.eventsByDay.isEmpty(), error = false) }
-            runCatching { fetchWindow(_ui.value.monthAnchor) }
+            runCatching { fetchWindow(_ui.value) }
                 .onSuccess { events ->
                     val parsed = events.mapNotNull { it.toParsed() }
                     _ui.update {
@@ -62,14 +63,21 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setViewMode(mode: CalendarViewMode) {
+        val old = _ui.value.viewMode
         _ui.update { it.copy(viewMode = mode) }
+        // 日程视图窗口(一年)与其余视图(±1 月)不同,进出时重取。
+        if ((mode == CalendarViewMode.AGENDA) != (old == CalendarViewMode.AGENDA)) refresh()
     }
 
     fun selectDate(date: LocalDate) {
         val month = YearMonth.from(date)
-        val changed = month != _ui.value.monthAnchor
+        val monthChanged = month != _ui.value.monthAnchor
+        val dateChanged = date != _ui.value.selectedDate
         _ui.update { it.copy(selectedDate = date, monthAnchor = month) }
-        if (changed) refresh()
+        // 日程视图窗口锚定在 selectedDate,改日期即改窗口。
+        val windowMoved =
+            if (_ui.value.viewMode == CalendarViewMode.AGENDA) dateChanged else monthChanged
+        if (windowMoved) refresh()
     }
 
     fun goToMonth(month: YearMonth) {
@@ -85,19 +93,23 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
         refresh()
     }
 
-    /** Fetch only the events overlapping the visible window (focus month ±1),
-     *  server-side (?start&end). Replaces the old full-list pull + 500 cap. */
-    private suspend fun fetchWindow(month: YearMonth): List<CalendarEventDto> {
+    /** Fetch only the events overlapping the visible window, server-side
+     *  (?start&end):日程视图 = 锚点日期起一年(对齐 Web),其余 = 焦点月 ±1。 */
+    private suspend fun fetchWindow(state: CalendarUiState): List<CalendarEventDto> {
         val zone = ZoneId.systemDefault()
-        val startIso = DateTimeFormatter.ISO_INSTANT.format(
-            month.minusMonths(1).atDay(1).atStartOfDay(zone).toInstant()
-        )
-        val endIso = DateTimeFormatter.ISO_INSTANT.format(
-            month.plusMonths(2).atDay(1).atStartOfDay(zone).toInstant() // exclusive upper bound
-        )
+        val agenda = state.viewMode == CalendarViewMode.AGENDA
+        val start =
+            if (agenda) state.selectedDate.atStartOfDay(zone)
+            else state.monthAnchor.minusMonths(1).atDay(1).atStartOfDay(zone)
+        val end =
+            if (agenda) state.selectedDate.plusYears(1).atStartOfDay(zone)
+            else state.monthAnchor.plusMonths(2).atDay(1).atStartOfDay(zone)
+        val startIso = DateTimeFormatter.ISO_INSTANT.format(start.toInstant())
+        val endIso = DateTimeFormatter.ISO_INSTANT.format(end.toInstant())
         val all = mutableListOf<CalendarEventDto>()
         var page = 1
-        while (page <= MAX_PAGES) {
+        val maxPages = if (agenda) MAX_PAGES_AGENDA else MAX_PAGES
+        while (page <= maxPages) {
             val res = calendarApi.listEvents(page = page, start = startIso, end = endIso)
             all += res.results
             if (res.next == null) break
@@ -109,5 +121,7 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
     private companion object {
         const val TAG = "CalendarVM"
         const val MAX_PAGES = 5
+        /** 一年窗口的翻页上限放宽一档。 */
+        const val MAX_PAGES_AGENDA = 10
     }
 }

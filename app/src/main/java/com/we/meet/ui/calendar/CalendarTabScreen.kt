@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -37,15 +38,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -55,9 +54,7 @@ import com.we.meet.data.settings.CalendarWeekStart
 import com.we.meet.ui.calendar.views.AgendaView
 import com.we.meet.ui.calendar.views.CalendarViewMode
 import com.we.meet.ui.calendar.views.DayTimelineView
-import com.we.meet.ui.calendar.views.ViewSwitcherSheet
 import com.we.meet.ui.calendar.views.WeekTimelineView
-import com.we.meet.ui.calendar.views.icon
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -92,31 +89,33 @@ fun CalendarTabScreen(
         onPauseOrDispose { }
     }
 
-    // P8:视图切换滑窗开关。
-    var switcherOpen by remember { mutableStateOf(false) }
-
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // ‹ › 语义随视图:日=±1 天,周=±7 天,日程/月=±1 月。
-            MonthHeader(
-                month = ui.monthAnchor,
-                viewMode = ui.viewMode,
+            // 对齐 Web:顶部分段切换器(日/周/月/日程)+ ‹ 今天 › + 按视图标题;
+            // ‹ › 语义随视图:日/日程=±1 天,周=±7 天,月=±1 月。
+            CalendarHeader(
+                ui = ui,
+                firstDow = firstDow,
+                onSelectMode = { vm.setViewMode(it) },
                 onPrev = {
                     when (ui.viewMode) {
-                        CalendarViewMode.DAY -> vm.selectDate(ui.selectedDate.minusDays(1))
+                        CalendarViewMode.DAY,
+                        CalendarViewMode.AGENDA,
+                        -> vm.selectDate(ui.selectedDate.minusDays(1))
                         CalendarViewMode.WEEK -> vm.selectDate(ui.selectedDate.minusDays(7))
                         else -> vm.goToMonth(ui.monthAnchor.minusMonths(1))
                     }
                 },
                 onNext = {
                     when (ui.viewMode) {
-                        CalendarViewMode.DAY -> vm.selectDate(ui.selectedDate.plusDays(1))
+                        CalendarViewMode.DAY,
+                        CalendarViewMode.AGENDA,
+                        -> vm.selectDate(ui.selectedDate.plusDays(1))
                         CalendarViewMode.WEEK -> vm.selectDate(ui.selectedDate.plusDays(7))
                         else -> vm.goToMonth(ui.monthAnchor.plusMonths(1))
                     }
                 },
                 onToday = { vm.goToToday() },
-                onSwitchView = { switcherOpen = true },
                 onOpenSettings = onOpenSettings,
             )
 
@@ -144,11 +143,9 @@ fun CalendarTabScreen(
 
                 else -> when (ui.viewMode) {
                     CalendarViewMode.AGENDA -> AgendaView(
-                        monthAnchor = ui.monthAnchor,
+                        anchorDate = ui.selectedDate,
                         eventsByDay = ui.eventsByDay,
                         onEventClick = onEventClick,
-                        onLoadPrev = { vm.goToMonth(ui.monthAnchor.minusMonths(1)) },
-                        onLoadNext = { vm.goToMonth(ui.monthAnchor.plusMonths(1)) },
                         dimPastNow = dimPastNow,
                     )
 
@@ -188,17 +185,6 @@ fun CalendarTabScreen(
                 .padding(20.dp),
         ) {
             Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.calendar_create_title))
-        }
-
-        if (switcherOpen) {
-            ViewSwitcherSheet(
-                current = ui.viewMode,
-                onSelect = {
-                    vm.setViewMode(it)
-                    switcherOpen = false
-                },
-                onDismiss = { switcherOpen = false },
-            )
         }
     }
 }
@@ -250,56 +236,181 @@ private fun MonthViewBody(
     }
 }
 
+/**
+ * 对齐 Web 日历的头部:
+ * 第一行 = 日/周/月/日程 分段切换器(等宽,替代原底部滑窗)+ 设置齿轮;
+ * 第二行 = ‹ 今天 › + 按视图格式化的标题(不加粗;日视图看今天时带蓝色
+ * 「今天」后缀;日程视图 = 锚点起一年的闭区间)。
+ */
 @Composable
-private fun MonthHeader(
-    month: YearMonth,
-    viewMode: CalendarViewMode,
+private fun CalendarHeader(
+    ui: CalendarUiState,
+    firstDow: DayOfWeek,
+    onSelectMode: (CalendarViewMode) -> Unit,
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onToday: () -> Unit,
-    onSwitchView: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, end = 8.dp, top = 12.dp),
-    ) {
-        Text(
-            text = month.format(DateTimeFormatter.ofPattern("yyyy/MM")),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.weight(1f),
-        )
-        // P8:视图切换入口(图标 = 当前视图)。
-        IconButton(onClick = onSwitchView) {
-            Icon(
-                viewMode.icon(),
-                contentDescription = stringResource(R.string.calendar_view_switch),
-            )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 12.dp, end = 4.dp, top = 8.dp),
+        ) {
+            ViewModeSwitcher(current = ui.viewMode, onSelect = onSelectMode)
+            Spacer(Modifier.weight(1f))
+            // P8:日历设置(列表提醒开关/周起始/默认时长/默认提醒)。
+            IconButton(onClick = onOpenSettings) {
+                Icon(
+                    Icons.Filled.Settings,
+                    contentDescription = stringResource(R.string.calendar_settings_title),
+                )
+            }
         }
-        // P8:日历设置(列表提醒开关/周起始/默认时长/默认提醒)。
-        IconButton(onClick = onOpenSettings) {
-            Icon(
-                Icons.Filled.Settings,
-                contentDescription = stringResource(R.string.calendar_settings_title),
-            )
+        val (prevCd, nextCd) = when (ui.viewMode) {
+            CalendarViewMode.DAY, CalendarViewMode.AGENDA ->
+                R.string.calendar_prev_day to R.string.calendar_next_day
+            CalendarViewMode.WEEK ->
+                R.string.calendar_prev_week to R.string.calendar_next_week
+            CalendarViewMode.MONTH ->
+                R.string.calendar_prev_month to R.string.calendar_next_month
         }
-        TextButton(onClick = onToday) { Text(stringResource(R.string.calendar_today)) }
-        IconButton(onClick = onPrev) {
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                contentDescription = stringResource(R.string.cd_prev),
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+        ) {
+            IconButton(onClick = onPrev) {
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                    contentDescription = stringResource(prevCd),
+                )
+            }
+            TextButton(onClick = onToday) { Text(stringResource(R.string.calendar_today)) }
+            IconButton(onClick = onNext) {
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = stringResource(nextCd),
+                )
+            }
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = headerTitle(ui, firstDow),
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-        }
-        IconButton(onClick = onNext) {
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = stringResource(R.string.cd_next),
-            )
+            if (ui.viewMode == CalendarViewMode.DAY && ui.selectedDate == LocalDate.now()) {
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = stringResource(R.string.calendar_today),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
         }
     }
+}
+
+/** 日/周/月/日程 等宽分段切换器(Web CalendarViewSwitcher 同款)。 */
+@Composable
+private fun ViewModeSwitcher(
+    current: CalendarViewMode,
+    onSelect: (CalendarViewMode) -> Unit,
+) {
+    // 顺序对齐 Web VIEW_ORDER:日、周、月、日程。
+    val order = listOf(
+        CalendarViewMode.DAY,
+        CalendarViewMode.WEEK,
+        CalendarViewMode.MONTH,
+        CalendarViewMode.AGENDA,
+    )
+    Row(
+        modifier = Modifier
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant,
+                RoundedCornerShape(8.dp),
+            )
+            .padding(2.dp),
+    ) {
+        order.forEach { mode ->
+            val selected = mode == current
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(
+                        if (selected) MaterialTheme.colorScheme.surface
+                        else Color.Transparent,
+                    )
+                    .clickable { onSelect(mode) }
+                    .widthIn(min = 52.dp)
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+            ) {
+                Text(
+                    text = stringResource(mode.labelRes),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (selected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                )
+            }
+        }
+    }
+}
+
+/** 按视图格式化标题(格式串在 strings 里按语言给,中文 =「2026年7月23日」系)。 */
+@Composable
+private fun headerTitle(ui: CalendarUiState, firstDow: DayOfWeek): String {
+    val locale = Locale.getDefault()
+    val fullFmt = DateTimeFormatter.ofPattern(
+        stringResource(R.string.calendar_fmt_date_full), locale,
+    )
+    return when (ui.viewMode) {
+        CalendarViewMode.DAY ->
+            ui.selectedDate.format(fullFmt) + " " +
+                ui.selectedDate.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
+
+        CalendarViewMode.WEEK -> {
+            val start = ui.selectedDate.minusDays(
+                ((ui.selectedDate.dayOfWeek.value - firstDow.value + 7) % 7).toLong(),
+            )
+            rangeTitle(start, start.plusDays(6), fullFmt)
+        }
+
+        CalendarViewMode.MONTH -> ui.monthAnchor.format(
+            DateTimeFormatter.ofPattern(
+                stringResource(R.string.calendar_fmt_month_title), locale,
+            ),
+        )
+
+        CalendarViewMode.AGENDA -> rangeTitle(
+            ui.selectedDate,
+            ui.selectedDate.plusYears(1).minusDays(1),
+            fullFmt,
+        )
+    }
+}
+
+/** 区间标题:同月省到「d日」、同年省到「M月d日」,跨年全量(对齐 Web)。 */
+@Composable
+private fun rangeTitle(
+    start: LocalDate,
+    end: LocalDate,
+    fullFmt: DateTimeFormatter,
+): String {
+    val locale = Locale.getDefault()
+    val endPatternRes = when {
+        start.year == end.year && start.month == end.month -> R.string.calendar_fmt_date_d
+        start.year == end.year -> R.string.calendar_fmt_date_md
+        else -> R.string.calendar_fmt_date_full
+    }
+    val endFmt = DateTimeFormatter.ofPattern(stringResource(endPatternRes), locale)
+    return "${start.format(fullFmt)} - ${end.format(endFmt)}"
 }
 
 @Composable
