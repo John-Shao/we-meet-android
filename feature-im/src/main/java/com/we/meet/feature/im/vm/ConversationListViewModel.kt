@@ -121,6 +121,22 @@ class ConversationListViewModel internal constructor(
         }
     }
 
+    /**
+     * 删除会话 = 软隐藏(保留群身份、历史,收到新消息自动重现)。群聊走新 hide 端点;
+     * 私聊沿用既有 DELETE 软隐藏路径(与今日行为一致,不依赖新端点)。不发退群公告。
+     */
+    fun hideConversation(row: ConversationRowUi) {
+        viewModelScope.launch {
+            val result =
+                if (row.isGroup) session.conversations.hide(row.cid)
+                else session.conversations.deleteOrLeave(row.cid)
+            result.onFailure {
+                Log.w(TAG, "hide failed cid=${row.cid}", it)
+                _actionError.value = it.userMessageRes()
+            }
+        }
+    }
+
     fun dismissActionError() {
         _actionError.value = null
     }

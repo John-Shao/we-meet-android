@@ -112,6 +112,15 @@ internal class ConversationRepository(
         runCatching { client.leaveConversation(cid, transferTo) }
             .onSuccess { mutate { list -> list.filterNot { it.cid == cid } } }
 
+    /**
+     * Soft-hide ("删除会话") without leaving — for a group the caller stays a member
+     * and history is untouched; the row resurfaces on the next message. On success
+     * the row disappears locally right away, same as [deleteOrLeave].
+     */
+    suspend fun hide(cid: String): Result<Unit> =
+        runCatching { client.hideConversation(cid) }
+            .onSuccess { mutate { list -> list.filterNot { it.cid == cid } } }
+
     /** Zero a conversation's local unread (after the chat screen marked it read). */
     fun markReadLocally(cid: String, seq: Long) {
         mutate { list ->

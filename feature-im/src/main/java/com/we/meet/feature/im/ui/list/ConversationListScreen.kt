@@ -127,7 +127,9 @@ fun ConversationListScreen(
     val actionError by vm.actionError.collectAsStateWithLifecycle()
 
     var menuFor by remember { mutableStateOf<ConversationRowUi?>(null) }
-    var confirmDelete by remember { mutableStateOf<ConversationRowUi?>(null) }
+    // 「删除会话」= 软隐藏(私聊 + 群聊,保留群身份);「退出群聊」= 退群(仅群聊)。
+    var confirmHide by remember { mutableStateOf<ConversationRowUi?>(null) }
+    var confirmLeave by remember { mutableStateOf<ConversationRowUi?>(null) }
 
     // 进入/回到消息页时:
     //  1. 无条件重拉会话列表 —— 对齐 Web(react-query focus-refetch)。WS 实时帧
@@ -323,51 +325,67 @@ fun ConversationListScreen(
                 ) {
                     vm.toggleMute(row); menuFor = null
                 }
+                // 删除会话:软隐藏,私聊 + 群聊都保留(群聊仍在群里),对齐微信「删除聊天」。
                 SheetAction(
-                    text = stringResource(
-                        when {
-                            !row.isGroup -> R.string.im_menu_delete
-                            else -> R.string.im_menu_leave
-                        }
-                    ),
+                    text = stringResource(R.string.im_menu_delete),
                     destructive = true,
                 ) {
-                    confirmDelete = row; menuFor = null
+                    confirmHide = row; menuFor = null
+                }
+                // 退出群聊:仅群聊,真正退群(与「删除会话」并存)。
+                if (row.isGroup) {
+                    SheetAction(
+                        text = stringResource(R.string.im_menu_leave),
+                        destructive = true,
+                    ) {
+                        confirmLeave = row; menuFor = null
+                    }
                 }
             }
         }
     }
 
-    confirmDelete?.let { row ->
+    // 删除会话(软隐藏):私聊 + 群聊通用。文案已说明「仅对你隐藏,新消息会重现」。
+    confirmHide?.let { row ->
         AlertDialog(
-            onDismissRequest = { confirmDelete = null },
-            title = {
-                Text(
-                    stringResource(
-                        if (row.isGroup) R.string.im_confirm_leave_title
-                        else R.string.im_confirm_delete_title
-                    )
-                )
+            onDismissRequest = { confirmHide = null },
+            title = { Text(stringResource(R.string.im_confirm_delete_title)) },
+            text = { Text(stringResource(R.string.im_confirm_delete_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.hideConversation(row)
+                    confirmHide = null
+                }) { Text(stringResource(R.string.im_action_confirm)) }
             },
+            dismissButton = {
+                TextButton(onClick = { confirmHide = null }) {
+                    Text(stringResource(R.string.im_action_cancel))
+                }
+            },
+        )
+    }
+
+    // 退出群聊(退群):仅群聊;群主退群时提示自动转让/解散。
+    confirmLeave?.let { row ->
+        AlertDialog(
+            onDismissRequest = { confirmLeave = null },
+            title = { Text(stringResource(R.string.im_confirm_leave_title)) },
             text = {
                 Text(
                     stringResource(
-                        when {
-                            !row.isGroup -> R.string.im_confirm_delete_message
-                            row.isOwner -> R.string.im_confirm_leave_owner_message
-                            else -> R.string.im_confirm_leave_message
-                        }
+                        if (row.isOwner) R.string.im_confirm_leave_owner_message
+                        else R.string.im_confirm_leave_message
                     )
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     vm.deleteOrLeave(row)
-                    confirmDelete = null
+                    confirmLeave = null
                 }) { Text(stringResource(R.string.im_action_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = null }) {
+                TextButton(onClick = { confirmLeave = null }) {
                     Text(stringResource(R.string.im_action_cancel))
                 }
             },
