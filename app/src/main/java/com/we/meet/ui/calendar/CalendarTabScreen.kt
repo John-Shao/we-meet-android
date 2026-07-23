@@ -388,10 +388,11 @@ private fun headerTitle(ui: CalendarUiState, firstDow: DayOfWeek): String {
             ),
         )
 
-        CalendarViewMode.AGENDA -> rangeTitle(
-            ui.selectedDate,
-            ui.selectedDate.plusYears(1).minusDays(1),
-            fullFmt,
+        // 日程视图:终点恒为锚点+1年,展示区间冗余且窄屏易换行,收敛成
+        // 「2026-07-23 起一年」(与列表日期分组头同格式)。
+        CalendarViewMode.AGENDA -> stringResource(
+            R.string.calendar_agenda_anchor_year,
+            ui.selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
         )
     }
 }

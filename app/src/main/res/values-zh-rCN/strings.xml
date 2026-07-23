@@ -284,6 +284,7 @@
     <string name="calendar_next_week">下周</string>
     <string name="calendar_prev_month">上个月</string>
     <string name="calendar_next_month">下个月</string>
+    <string name="calendar_agenda_anchor_year">%1$s 起一年</string>
     <string name="calendar_agenda_empty_today">暂无日程安排</string>
     <string name="calendar_agenda_load_prev">加载上一月</string>
     <string name="calendar_agenda_load_next">加载下一月</string>

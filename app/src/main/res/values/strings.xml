@@ -273,7 +273,7 @@
     <string name="calendar_view_week">Week</string>
     <string name="calendar_view_month">Month</string>
     <string name="calendar_week_range">Week %1$d, %2$s - %3$s</string>
-    <!-- 对齐 Web 日历:按视图的标题日期格式与翻页箭头语义 -->
+    <!-- Web-aligned calendar header: per-view title date formats & nav semantics -->
     <string name="calendar_fmt_date_full">MMM d, yyyy</string>
     <string name="calendar_fmt_date_md">MMM d</string>
     <string name="calendar_fmt_date_d">d</string>
@@ -284,6 +284,7 @@
     <string name="calendar_next_week">Next week</string>
     <string name="calendar_prev_month">Previous month</string>
     <string name="calendar_next_month">Next month</string>
+    <string name="calendar_agenda_anchor_year">%1$s · 1 year</string>
     <string name="calendar_agenda_empty_today">No events</string>
     <string name="calendar_agenda_load_prev">Load previous month</string>
     <string name="calendar_agenda_load_next">Load next month</string>
