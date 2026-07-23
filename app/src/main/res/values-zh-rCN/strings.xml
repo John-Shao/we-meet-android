@@ -273,11 +273,7 @@
     <string name="calendar_view_week">周</string>
     <string name="calendar_view_month">月</string>
     <string name="calendar_week_range">第%1$d周,%2$s - %3$s</string>
-    <!-- 对齐 Web 日历:按视图的标题日期格式与翻页箭头语义 -->
-    <string name="calendar_fmt_date_full">yyyy年M月d日</string>
-    <string name="calendar_fmt_date_md">M月d日</string>
-    <string name="calendar_fmt_date_d">d日</string>
-    <string name="calendar_fmt_month_title">yyyy年M月</string>
+    <!-- 对齐 Web 日历:翻页箭头语义(日期一律走代码里的数字化 ISO 格式) -->
     <string name="calendar_prev_day">前一天</string>
     <string name="calendar_next_day">后一天</string>
     <string name="calendar_prev_week">上周</string>

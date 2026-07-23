@@ -273,11 +273,7 @@
     <string name="calendar_view_week">Week</string>
     <string name="calendar_view_month">Month</string>
     <string name="calendar_week_range">Week %1$d, %2$s - %3$s</string>
-    <!-- Web-aligned calendar header: per-view title date formats & nav semantics -->
-    <string name="calendar_fmt_date_full">MMM d, yyyy</string>
-    <string name="calendar_fmt_date_md">MMM d</string>
-    <string name="calendar_fmt_date_d">d</string>
-    <string name="calendar_fmt_month_title">MMMM yyyy</string>
+    <!-- Web-aligned calendar header: nav semantics (dates use numeric ISO in code) -->
     <string name="calendar_prev_day">Previous day</string>
     <string name="calendar_next_day">Next day</string>
     <string name="calendar_prev_week">Previous week</string>

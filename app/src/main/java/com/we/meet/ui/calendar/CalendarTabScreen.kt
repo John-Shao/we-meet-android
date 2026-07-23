@@ -363,55 +363,48 @@ private fun ViewModeSwitcher(
     }
 }
 
-/** 按视图格式化标题(格式串在 strings 里按语言给,中文 =「2026年7月23日」系)。 */
+// 日期一律走数字化 ISO(yyyy-MM-dd 系),跨语言一致、窄屏不易换行;星期名
+// 仍按 locale 本地化(getDisplayName)。
+private val ISO_DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+private val ISO_MONTH: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
+private val ISO_MONTH_DAY: DateTimeFormatter = DateTimeFormatter.ofPattern("MM-dd")
+private val ISO_DAY: DateTimeFormatter = DateTimeFormatter.ofPattern("dd")
+
+/** 按视图格式化标题(日/周/月/日程一律 yyyy-MM-dd 数字格式)。 */
 @Composable
 private fun headerTitle(ui: CalendarUiState, firstDow: DayOfWeek): String {
     val locale = Locale.getDefault()
-    val fullFmt = DateTimeFormatter.ofPattern(
-        stringResource(R.string.calendar_fmt_date_full), locale,
-    )
     return when (ui.viewMode) {
         CalendarViewMode.DAY ->
-            ui.selectedDate.format(fullFmt) + " " +
+            ui.selectedDate.format(ISO_DATE) + " " +
                 ui.selectedDate.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
 
         CalendarViewMode.WEEK -> {
             val start = ui.selectedDate.minusDays(
                 ((ui.selectedDate.dayOfWeek.value - firstDow.value + 7) % 7).toLong(),
             )
-            rangeTitle(start, start.plusDays(6), fullFmt)
+            weekRangeTitle(start, start.plusDays(6))
         }
 
-        CalendarViewMode.MONTH -> ui.monthAnchor.format(
-            DateTimeFormatter.ofPattern(
-                stringResource(R.string.calendar_fmt_month_title), locale,
-            ),
-        )
+        CalendarViewMode.MONTH -> ui.monthAnchor.format(ISO_MONTH)
 
         // 日程视图:终点恒为锚点+1年,展示区间冗余且窄屏易换行,收敛成
         // 「2026-07-23 起一年」(与列表日期分组头同格式)。
         CalendarViewMode.AGENDA -> stringResource(
             R.string.calendar_agenda_anchor_year,
-            ui.selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
+            ui.selectedDate.format(ISO_DATE),
         )
     }
 }
 
-/** 区间标题:同月省到「d日」、同年省到「M月d日」,跨年全量(对齐 Web)。 */
-@Composable
-private fun rangeTitle(
-    start: LocalDate,
-    end: LocalDate,
-    fullFmt: DateTimeFormatter,
-): String {
-    val locale = Locale.getDefault()
-    val endPatternRes = when {
-        start.year == end.year && start.month == end.month -> R.string.calendar_fmt_date_d
-        start.year == end.year -> R.string.calendar_fmt_date_md
-        else -> R.string.calendar_fmt_date_full
+/** 周区间标题:起点全量 yyyy-MM-dd,终点同月省到 dd、同年省到 MM-dd,跨年全量。 */
+private fun weekRangeTitle(start: LocalDate, end: LocalDate): String {
+    val endFmt = when {
+        start.year == end.year && start.month == end.month -> ISO_DAY
+        start.year == end.year -> ISO_MONTH_DAY
+        else -> ISO_DATE
     }
-    val endFmt = DateTimeFormatter.ofPattern(stringResource(endPatternRes), locale)
-    return "${start.format(fullFmt)} - ${end.format(endFmt)}"
+    return "${start.format(ISO_DATE)} - ${end.format(endFmt)}"
 }
 
 @Composable
