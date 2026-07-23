@@ -24,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -151,6 +152,11 @@ fun TimelineScaffold(
     /** 窄列(周视图 7 列)块内只显标题,不显时间 —— 时刻由纵向位置 + 左侧刻度
      *  传达(对齐飞书/Google 周视图);日视图单宽列仍标题 + 时间。 */
     compactBlocks: Boolean = false,
+    /** 非空时一屏恰好铺 [visibleColumnCount] 列,列更多则(连同列头)整体横滚
+     *  —— 周视图显示周末时 7 天但一屏 5 列,滑动看余下两天。 */
+    visibleColumnCount: Int? = null,
+    /** 非空时初次布局横滚到让该列可见(周视图默认「今天」可见)。 */
+    revealColumnIndex: Int? = null,
 ) {
     val n = columns.size.coerceAtLeast(1)
     val gridLine = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
@@ -168,12 +174,26 @@ fun TimelineScaffold(
     BoxWithConstraints(modifier = modifier) {
         val available = maxWidth - HOUR_RAIL_WIDTH
         val equalSplit = available / n
-        val colWidth: Dp =
-            if (minColumnWidth != null && equalSplit < minColumnWidth) minColumnWidth
-            else equalSplit
+        val colWidth: Dp = when {
+            // 定量可见列数优先:列多于一屏时按 available/可见列数定宽 → 横滚。
+            visibleColumnCount != null && visibleColumnCount < n ->
+                available / visibleColumnCount
+            minColumnWidth != null && equalSplit < minColumnWidth -> minColumnWidth
+            else -> equalSplit
+        }
         val contentWidth = colWidth * n
         val hourHeightPx = with(density) { hourHeight.toPx() }
         val colWidthPx = with(density) { colWidth.toPx() }
+
+        // 初次布局(及列宽变化时)横滚到让 revealColumnIndex 列落在可见区内:
+        // 若它在前 vc 列内则回到最左,否则滚到把它作为最右可见列。
+        if (revealColumnIndex != null) {
+            LaunchedEffect(revealColumnIndex, n, colWidthPx, visibleColumnCount) {
+                val vc = visibleColumnCount ?: n
+                val target = (revealColumnIndex - (vc - 1)).coerceAtLeast(0) * colWidthPx
+                hScroll.scrollTo(target.toInt())
+            }
+        }
 
         Column(modifier = Modifier.fillMaxSize()) {
             if (columnHeader != null) {

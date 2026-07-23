@@ -4,12 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -85,64 +83,82 @@ fun WeekTimelineView(
     LaunchedEffect(days.first()) {
         scrollState.scrollTo(with(density) { (hourHeight * 8).toPx() }.toInt())
     }
+    // 显示周末时 7 天但一屏只铺 5 列,横滚到让今天(不在本周则锚点)可见。
+    val revealIndex = remember(days) {
+        days.indexOf(today).takeIf { it >= 0 }
+            ?: days.indexOf(anchorDate).coerceAtLeast(0)
+    }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // 星期条:与时间轴同布局(刻度列宽的占位 + 7 等分)。
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Box(Modifier.width(HOUR_RAIL_WIDTH))
-            days.forEach { date ->
-                val isToday = date == today
-                val isAnchor = date == anchorDate
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onDayClick(date) }
-                        .padding(vertical = 4.dp),
-                ) {
-                    Text(
-                        text = date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
-                        fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                    )
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(26.dp)
-                            .background(
-                                color = when {
-                                    isToday -> MaterialTheme.colorScheme.primary
-                                    isAnchor -> MaterialTheme.colorScheme.primaryContainer
-                                    else -> androidx.compose.ui.graphics.Color.Transparent
-                                },
-                                shape = CircleShape,
-                            ),
-                    ) {
-                        Text(
-                            text = date.dayOfMonth.toString(),
-                            fontSize = 12.sp,
-                            color = when {
-                                isToday -> MaterialTheme.colorScheme.onPrimary
-                                else -> MaterialTheme.colorScheme.onSurface
-                            },
-                        )
-                    }
-                }
-            }
-        }
-        TimelineScaffold(
-            columns = columns,
-            hourHeight = hourHeight,
-            scrollState = scrollState,
-            nowMinute = if (days.contains(today)) {
-                LocalTime.now().let { it.hour * 60 + it.minute }
-            } else null,
-            nowLineInColumn = { i -> days[i] == today },
-            onBlockTap = { _, key -> onEventClick(key) },
-            onSlotTap = { col, minute -> onSlotTap(days[col], minute) },
-            // 7 列过窄,块内只显标题(时刻由位置 + 左侧刻度读取,点块看详情)。
-            compactBlocks = true,
+    TimelineScaffold(
+        modifier = Modifier.fillMaxSize(),
+        columns = columns,
+        hourHeight = hourHeight,
+        scrollState = scrollState,
+        nowMinute = if (days.contains(today)) {
+            LocalTime.now().let { it.hour * 60 + it.minute }
+        } else null,
+        nowLineInColumn = { i -> days[i] == today },
+        onBlockTap = { _, key -> onEventClick(key) },
+        onSlotTap = { col, minute -> onSlotTap(days[col], minute) },
+        // 7 列过窄,块内只显标题(时刻由位置 + 左侧刻度读取,点块看详情)。
+        compactBlocks = true,
+        // 一屏 5 列:关周末时 = 全部 5 列(不滚);开周末时 7 列滚动看余下两天。
+        visibleColumnCount = 5,
+        revealColumnIndex = revealIndex,
+        // 星期条随网格横滚锁定同步(飞书样式):放进 scaffold 的列头槽。
+        columnHeader = { i ->
+            WeekDayHeader(
+                date = days[i],
+                isToday = days[i] == today,
+                isAnchor = days[i] == anchorDate,
+                onClick = { onDayClick(days[i]) },
+            )
+        },
+    )
+}
+
+/** 星期条单元格:星期(NARROW)+ 日期圆点(今日主色实心 / 锚点浅色底)。 */
+@Composable
+private fun WeekDayHeader(
+    date: LocalDate,
+    isToday: Boolean,
+    isAnchor: Boolean,
+    onClick: () -> Unit,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+    ) {
+        Text(
+            text = date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
+            fontSize = 10.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
         )
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(26.dp)
+                .background(
+                    color = when {
+                        isToday -> MaterialTheme.colorScheme.primary
+                        isAnchor -> MaterialTheme.colorScheme.primaryContainer
+                        else -> androidx.compose.ui.graphics.Color.Transparent
+                    },
+                    shape = CircleShape,
+                ),
+        ) {
+            Text(
+                text = date.dayOfMonth.toString(),
+                fontSize = 12.sp,
+                color = when {
+                    isToday -> MaterialTheme.colorScheme.onPrimary
+                    else -> MaterialTheme.colorScheme.onSurface
+                },
+            )
+        }
     }
 }
