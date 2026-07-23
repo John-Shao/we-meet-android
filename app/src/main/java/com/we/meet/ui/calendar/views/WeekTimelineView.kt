@@ -121,6 +121,8 @@ fun WeekTimelineView(
             nowLineInColumn = { i -> days[i] == today },
             onBlockTap = { _, key -> onEventClick(key) },
             onSlotTap = { col, minute -> onSlotTap(days[col], minute) },
+            // 7 列过窄,块内只显标题(时刻由位置 + 左侧刻度读取,点块看详情)。
+            compactBlocks = true,
         )
     }
 }

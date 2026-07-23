@@ -148,6 +148,9 @@ fun TimelineScaffold(
     onBlockTap: ((colIndex: Int, key: String) -> Unit)? = null,
     minColumnWidth: Dp? = null,
     columnHeader: (@Composable (colIndex: Int) -> Unit)? = null,
+    /** 窄列(周视图 7 列)块内只显标题,不显时间 —— 时刻由纵向位置 + 左侧刻度
+     *  传达(对齐飞书/Google 周视图);日视图单宽列仍标题 + 时间。 */
+    compactBlocks: Boolean = false,
 ) {
     val n = columns.size.coerceAtLeast(1)
     val gridLine = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
@@ -301,13 +304,16 @@ fun TimelineScaffold(
                                             )
                                             val short =
                                                 b.endMin - b.startMin <= SHORT_BLOCK_MIN
+                                            // 窄列(compactBlocks)不显时间;短块仅一行,
+                                            // 长块标题可占两行,把腾出的行留给标题。
+                                            val showTime = !compactBlocks && b.timeLabel != null
                                             Column(
                                                 modifier = Modifier.padding(
                                                     horizontal = 3.dp, vertical = 1.dp,
                                                 ),
                                             ) {
                                                 Text(
-                                                    text = if (short && b.timeLabel != null) {
+                                                    text = if (short && showTime) {
                                                         "${b.label}$titleTimeSep${b.timeLabel}"
                                                     } else b.label,
                                                     fontSize = 10.sp,
@@ -319,9 +325,9 @@ fun TimelineScaffold(
                                                         if (b.faded) TextDecoration.LineThrough
                                                         else null,
                                                 )
-                                                if (!short && b.timeLabel != null) {
+                                                if (!short && showTime) {
                                                     Text(
-                                                        text = b.timeLabel,
+                                                        text = b.timeLabel!!,
                                                         fontSize = 9.sp,
                                                         lineHeight = 11.sp,
                                                         color = eventFg.copy(alpha = 0.8f),
