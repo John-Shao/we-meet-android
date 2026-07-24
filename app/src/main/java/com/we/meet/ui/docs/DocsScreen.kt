@@ -298,8 +298,14 @@ private fun docsUrl(): String {
     // /users/me/ comes back 401, so the tab just sits on a spinner. Hitting
     // /authenticate/ trades the Keycloak session cookie (seeded by our in-WebView
     // login, shared via the process-wide CookieManager) for an authenticated docs
-    // session with zero user interaction, then bounces to `returnTo`.
+    // session with zero user interaction, then bounces to the landing page.
     // Verified on device: /users/me/ 401 → 200, doc list renders.
+    //
+    // 注:docs authenticate 实际认的参数是 `next`(非此处 `returnTo`),所以此 URL
+    // 的 ?embed=1&lang= 会被忽略、一律落 `/`(列表)。tab 要的正好是列表,embed/
+    // theme 另靠 UA 兜底,功能正常,故此处**刻意保持 returnTo 不动**。Android 的
+    // doc-card「查看文档」走 DocsViewerScreen 直载文档 URL(不经此端点),不受影响。
+    // 若将来 Android 要经 authenticate 深链到某篇文档,再改成 next(见 Web DocsFrame)。
     return "$base/api/v1.0/authenticate/?returnTo=${Uri.encode(target)}"
 }
 
