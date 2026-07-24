@@ -524,6 +524,8 @@ fun AppNav() {
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 // P8 日程卡片 → 日程详情页(EVENT_DETAIL 已有)。
                 onOpenEvent = { eventId -> navController.navigate(Routes.eventDetail(eventId)) },
+                // 分享云文档卡片 → 复用搜索命中的文档查看器(DOCS_VIEWER 已有)。
+                onOpenDoc = { url -> navController.navigate(Routes.docsViewer(url)) },
                 onStartMeeting = { meetingName -> navController.navigate(Routes.createPreview(meetingName)) },
                 // 1:1 通话 no longer flows through here — ChatScreen drives
                 // CallController directly and the top-level collector below

@@ -4,16 +4,20 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
+import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import org.json.JSONObject
 import androidx.activity.compose.BackHandler
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Box
@@ -66,6 +70,12 @@ internal class DocsWebViewClient : WebViewClient() {
      *  blank page. */
     var onLoadingChanged: ((Boolean) -> Unit)? = null
     var onMainFrameError: (() -> Unit)? = null
+
+    /**
+     * 分享云文档到聊天(入口 B):docs 里点「分享到聊天」→ [DocsHostBridge] 收到
+     * postEvent → 这里转发。Set by [DocsTabScreen] while it is on screen.
+     */
+    var onShareDoc: ((docId: String, title: String, url: String) -> Unit)? = null
 
     /**
      * 加载态同时记在 client 上,不只发回调:WebView 在 MainTabScreen 挂载时就开始
@@ -148,6 +158,32 @@ internal class DocsWebViewClient : WebViewClient() {
     }
 }
 
+/**
+ * 分享云文档到聊天(入口 B)的双向桥接:docs 前端(useIsEmbedded.sendToHost)在
+ * 检测到 `window.WeMeetHost` 时调 `postEvent(JSON)`,取代 iframe 场景下的
+ * `window.parent.postMessage`(这里是顶层 WebView,没有 parent frame)。
+ *
+ * 目前是这个 WebView 里第一个、也是唯一一个原生↔网页双向桥接(之前只有主题切换
+ * 那种原生→网页单向注入)。JS interface 回调落在 WebView 的私有线程,必须先跳回
+ * 主线程再碰 [client] 的回调(它最终会驱动 Compose state)。
+ */
+private class DocsHostBridge(private val client: DocsWebViewClient) {
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    @JavascriptInterface
+    fun postEvent(json: String) {
+        runCatching {
+            val o = JSONObject(json)
+            if (o.optString("type") != "wemeet-share-doc") return
+            val docId = o.optString("docId")
+            val title = o.optString("title")
+            val url = o.optString("url")
+            if (docId.isBlank() || url.isBlank()) return
+            mainHandler.post { client.onShareDoc?.invoke(docId, title, url) }
+        }.onFailure { Log.w(TAG, "[bridge] malformed postEvent payload", it) }
+    }
+}
+
 @SuppressLint("SetJavaScriptEnabled")
 fun createDocsWebView(
     context: Context,
@@ -202,7 +238,11 @@ fun createDocsWebView(
         // composed — so a late client meant docs' own redirects escaped the
         // WebView: silently dropped without a gesture (blank page), or popping
         // Chrome once a tab tap supplied one.
-        webViewClient = DocsWebViewClient()
+        val client = DocsWebViewClient()
+        webViewClient = client
+        // 分享云文档到聊天(入口 B):见 DocsHostBridge 顶部注释。命名需与
+        // we-meet-docs useIsEmbedded.sendToHost() 里检测的 `window.WeMeetHost` 一致。
+        addJavascriptInterface(DocsHostBridge(client), "WeMeetHost")
         // 搜索统一 M2:文档命中查看器复用同一构造,直载目标文档深链
         // (KC session cookie 由 CookieManager 全局共享,登录态自动带上)。
         loadUrl(initialUrl ?: docsUrl())

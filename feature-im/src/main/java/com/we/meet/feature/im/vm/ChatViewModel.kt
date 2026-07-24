@@ -17,6 +17,7 @@ import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.userMessageRes
 import com.we.meet.feature.im.data.ChatUploadException
+import com.we.meet.feature.im.data.DocHit
 import com.we.meet.feature.im.data.GroupTile
 import com.we.meet.feature.im.data.ImUserInfo
 import com.we.meet.feature.im.model.MessageContent
@@ -507,6 +508,27 @@ class ChatViewModel internal constructor(
 
     fun dismissUploadError() {
         _ui.update { it.copy(uploadError = null) }
+    }
+
+    /** 分享云文档到聊天(入口 A)选择器数据源:"我的文档",空 query 即最近文档。 */
+    suspend fun myDocuments(query: String? = null): List<DocHit> = session.myDocuments(query)
+
+    /** 选择器多选后逐个发 content_type="doc-card"(飞书式,单条失败不影响其余)。 */
+    fun sendDocs(docs: List<DocHit>) {
+        viewModelScope.launch {
+            ensureConnected()
+            docs.forEach { doc ->
+                runCatching {
+                    val body = JSONObject()
+                        .put("v", 1)
+                        .put("doc_id", doc.id)
+                        .put("title", doc.title)
+                        .put("url", doc.url)
+                        .toString()
+                    session.client.sendText(cid, body, contentType = "doc-card")
+                }.onFailure { Log.w(TAG, "sendDoc failed for ${doc.id}", it) }
+            }
+        }
     }
 
     /** Upload a recorded clip then send content_type="voice", body `{key,duration}`. */

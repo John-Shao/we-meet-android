@@ -249,4 +249,13 @@
     <string name="im_event_card_time_changed">Rescheduled</string>
     <string name="im_event_card_attendees_changed">Attendees changed</string>
     <string name="im_event_card_cancelled">Cancelled</string>
+    <string name="im_plus_doc">Document</string>
+    <string name="im_preview_doc">[Document]</string>
+    <string name="im_doc_card_view">Document bekijken</string>
+    <string name="im_doc_picker_title">Document sturen</string>
+    <string name="im_doc_picker_search">Documenten zoeken</string>
+    <string name="im_doc_picker_selected">Geselecteerd: %1$d</string>
+    <string name="im_doc_picker_send">Verzenden (%1$d)</string>
+    <string name="im_doc_picker_empty">Geen documenten om te delen</string>
+    <string name="im_doc_picker_error">Documenten laden mislukt</string>
 </resources>

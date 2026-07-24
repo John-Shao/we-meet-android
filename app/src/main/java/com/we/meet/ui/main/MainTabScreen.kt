@@ -60,6 +60,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.feature.im.ImSession
+import com.we.meet.feature.im.ui.chat.ForwardCreateGroupFlow
+import com.we.meet.feature.im.ui.chat.ForwardPicker
 import com.we.meet.feature.im.ui.list.ConversationListScreen
 import com.we.meet.ui.calendar.CalendarTabScreen
 import com.we.meet.ui.calendar.reminder.ReminderEntryRow
@@ -72,8 +74,10 @@ import com.we.meet.ui.docs.DocsTabScreen
 import com.we.meet.ui.docs.createDocsWebView
 import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.ui.home.HomeScreen
+import com.we.meet.ui.docs.DocsWebViewClient
 import com.we.meet.ui.profile.ProfileScreen
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 /**
  * Bottom tabs, in bar order. Feishu-style: 消息 · 日历 · 会议 · 通讯录.
@@ -83,6 +87,9 @@ import kotlinx.coroutines.launch
  * That means 消息 is the ONLY route to the profile page.
  */
 enum class MainTab { Messages, Calendar, Meeting, Contacts, Docs }
+
+/** 分享云文档到聊天(入口 B)待处理请求:docs WebView 发来的一条「分享到聊天」。 */
+private data class ShareDocRequest(val docId: String, val title: String, val url: String)
 
 private data class TabItem(
     val labelRes: Int,
@@ -131,6 +138,18 @@ fun MainTabScreen(
             (docsWebView.parent as? ViewGroup)?.removeView(docsWebView)
             docsWebView.destroy()
         }
+    }
+
+    // 分享云文档到聊天(入口 B):docs WebView 内点「分享到聊天」→ DocsHostBridge
+    // 收到 postEvent → DocsWebViewClient.onShareDoc → 这里弹会话选择器。
+    var shareDocRequest by remember { mutableStateOf<ShareDocRequest?>(null) }
+    var shareDocCreateGroup by remember { mutableStateOf(false) }
+    DisposableEffect(docsWebView) {
+        val client = docsWebView.webViewClient as? DocsWebViewClient
+        client?.onShareDoc = { docId, title, url ->
+            shareDocRequest = ShareDocRequest(docId, title, url)
+        }
+        onDispose { client?.onShareDoc = null }
     }
     // 运行时切换深浅:UA 是创建时固化的,靠注入 postMessage 让常驻 docs 立即跟随
     // (docs ConfigProvider 内嵌时监听 wemeet-theme 消息)。首帧主题已由 UA 覆盖。
@@ -333,6 +352,37 @@ fun MainTabScreen(
             Box(modifier = Modifier.padding(padding)) {
                 tabs[safeTab].content()
             }
+        }
+    }
+
+    // 分享云文档到聊天(入口 B):选会话 → 逐个发 doc-card(ImSession.sendMessageAsync,
+    // 和 P8 event-card 回发同一条 fire-and-forget 通路)。
+    shareDocRequest?.let { req ->
+        val docCardBody = JSONObject()
+            .put("v", 1)
+            .put("doc_id", req.docId)
+            .put("title", req.title)
+            .put("url", req.url)
+            .toString()
+        ForwardPicker(
+            targets = imSession.allForwardTargets(),
+            onForward = { cids ->
+                cids.forEach { imSession.sendMessageAsync(it, docCardBody, "doc-card") }
+                shareDocRequest = null
+            },
+            onCreateGroupForward = { shareDocCreateGroup = true },
+            onDismiss = { shareDocRequest = null },
+        )
+        if (shareDocCreateGroup) {
+            ForwardCreateGroupFlow(
+                deps = app,
+                onCreated = { newCid ->
+                    imSession.sendMessageAsync(newCid, docCardBody, "doc-card")
+                    shareDocCreateGroup = false
+                    shareDocRequest = null
+                },
+                onCancel = { shareDocCreateGroup = false },
+            )
         }
     }
 }

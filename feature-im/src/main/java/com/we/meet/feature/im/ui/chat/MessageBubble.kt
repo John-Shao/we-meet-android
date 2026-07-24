@@ -101,6 +101,8 @@ fun MessageBubble(
     groupCallEnded: Boolean = false,
     /** P8 日程卡片: tap 查看详情 → 打开日程详情页(app 层接 EVENT_DETAIL 路由)。 */
     onOpenEvent: ((eventId: String) -> Unit)? = null,
+    /** 分享云文档卡片: tap「查看文档」→ 打开该文档(app 层接文档查看器)。 */
+    onOpenDoc: ((url: String) -> Unit)? = null,
 ) {
     val content = remember(message.mid) {
         MessageContentParser.parse(message.contentType, message.body)
@@ -227,6 +229,9 @@ fun MessageBubble(
                 is MessageContent.EventCard -> EventCardBubble(
                     content, isOwn, onLongPress,
                 ) { onOpenEvent?.invoke(content.eventId) }
+                is MessageContent.DocCard -> DocCardBubble(
+                    content, onLongPress,
+                ) { onOpenDoc?.invoke(content.url) }
                 is MessageContent.Unsupported -> UnsupportedBubble(isOwn)
                 // Control/system rows never reach here (filtered / early-returned).
                 is MessageContent.Recall, is MessageContent.Reaction,

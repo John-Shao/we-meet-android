@@ -90,6 +90,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Keyboard
@@ -143,6 +144,8 @@ fun ChatScreen(
     locateSeq: Long? = null,
     /** P8 日程卡片:点「查看详情」→ 日程详情页(app 层接 EVENT_DETAIL 路由)。 */
     onOpenEvent: ((eventId: String) -> Unit)? = null,
+    /** 分享云文档卡片:点「查看文档」→ 打开该文档(app 层接文档查看器)。 */
+    onOpenDoc: ((url: String) -> Unit)? = null,
 ) {
     val vm: ChatViewModel =
         viewModel(
@@ -172,6 +175,8 @@ fun ChatScreen(
     var selectedMids by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showCallSheet by remember { mutableStateOf(false) }
+    // 分享云文档到聊天(入口 A):「+」面板「云文档」→ 选择器。
+    var showDocPicker by remember { mutableStateOf(false) }
     fun exitSelect() { selectMode = false; selectedMids = emptySet() }
     androidx.activity.compose.BackHandler(enabled = selectMode) { exitSelect() }
 
@@ -485,6 +490,7 @@ fun ChatScreen(
                                         { actionTarget = message }
                                     } else null,
                                     onOpenEvent = onOpenEvent,
+                                    onOpenDoc = onOpenDoc,
                                     onJoinGroupCall = { slug -> calls.joinGroupCall(slug) },
                                     groupCallEnded = if (message.contentType == "group-call") {
                                         val s = runCatching {
@@ -572,6 +578,7 @@ fun ChatScreen(
                     )
                 },
                 onPickFile = { pickFile.launch(arrayOf("*/*")) },
+                onPickDoc = { showDocPicker = true },
                 onCamera = { launchCamera() },
                 onVoiceRecorded = { file, durationMs -> vm.sendVoice(file, durationMs) },
                 isGroup = ui.isGroup,
@@ -637,6 +644,18 @@ fun ChatScreen(
                 onCancel = { forwardCreateGroup = false },
             )
         }
+    }
+
+    // 分享云文档到聊天(入口 A):「+」面板「云文档」→ 选择器,多选后逐个发卡片。
+    if (showDocPicker) {
+        DocPickerDialog(
+            fetchDocs = { q -> vm.myDocuments(q.ifBlank { null }) },
+            onSend = { docs ->
+                vm.sendDocs(docs)
+                showDocPicker = false
+            },
+            onDismiss = { showDocPicker = false },
+        )
     }
 
     // Delete confirmation dialog.
@@ -865,6 +884,8 @@ private fun MessageInputBar(
     onSend: (String) -> Unit,
     onPickImage: () -> Unit,
     onPickFile: () -> Unit,
+    /** 分享云文档到聊天(入口 A):「+」面板「云文档」。 */
+    onPickDoc: () -> Unit,
     onCamera: () -> Unit,
     onVoiceRecorded: (java.io.File, Long) -> Unit,
     /** 私聊=false → 「+」面板显示 语音通话+视频通话;群聊=true → 仅显示 快速会议。 */
@@ -1109,6 +1130,7 @@ private fun MessageInputBar(
                     onImage = { panel = InputPanel.None; onPickImage() },
                     onCamera = { panel = InputPanel.None; onCamera() },
                     onFile = { panel = InputPanel.None; onPickFile() },
+                    onDoc = { panel = InputPanel.None; onPickDoc() },
                     isGroup = isGroup,
                     onVoiceCall = { panel = InputPanel.None; onVoiceCall() },
                     onMeeting = { panel = InputPanel.None; onQuickMeeting() },
@@ -1198,6 +1220,7 @@ private fun PlusPanel(
     onImage: () -> Unit,
     onCamera: () -> Unit,
     onFile: () -> Unit,
+    onDoc: () -> Unit,
     isGroup: Boolean,
     onVoiceCall: () -> Unit,
     onMeeting: () -> Unit,
@@ -1211,6 +1234,7 @@ private fun PlusPanel(
         add(PlusItem(Icons.Filled.PhotoLibrary, R.string.im_plus_album, onImage))
         add(PlusItem(Icons.Filled.PhotoCamera, R.string.im_plus_camera, onCamera))
         add(PlusItem(Icons.AutoMirrored.Filled.InsertDriveFile, R.string.im_plus_file, onFile))
+        add(PlusItem(Icons.Filled.Description, R.string.im_plus_doc, onDoc))
         if (isGroup) {
             // 群聊(≥3 人):语音通话(P4.1 成员多选响铃)+「快速会议」。
             add(PlusItem(Icons.Filled.Call, R.string.im_group_voice_call, onVoiceCall))

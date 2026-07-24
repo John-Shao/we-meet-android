@@ -262,4 +262,13 @@
     <string name="im_event_card_time_changed">已改期</string>
     <string name="im_event_card_attendees_changed">参会人变更</string>
     <string name="im_event_card_cancelled">已取消</string>
+    <string name="im_plus_doc">云文档</string>
+    <string name="im_preview_doc">[云文档]</string>
+    <string name="im_doc_card_view">查看文档</string>
+    <string name="im_doc_picker_title">发送云文档</string>
+    <string name="im_doc_picker_search">搜索文档</string>
+    <string name="im_doc_picker_selected">已选 %1$d 项</string>
+    <string name="im_doc_picker_send">发送 (%1$d)</string>
+    <string name="im_doc_picker_empty">暂无可分享的文档</string>
+    <string name="im_doc_picker_error">获取文档列表失败</string>
 </resources>

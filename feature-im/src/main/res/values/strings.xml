@@ -266,4 +266,14 @@
     <string name="im_event_card_time_changed">Rescheduled</string>
     <string name="im_event_card_attendees_changed">Attendees changed</string>
     <string name="im_event_card_cancelled">Cancelled</string>
+    <!-- Share a cloud document to chat -->
+    <string name="im_plus_doc">Document</string>
+    <string name="im_preview_doc">[Document]</string>
+    <string name="im_doc_card_view">View document</string>
+    <string name="im_doc_picker_title">Send document</string>
+    <string name="im_doc_picker_search">Search documents</string>
+    <string name="im_doc_picker_selected">Selected: %1$d</string>
+    <string name="im_doc_picker_send">Send (%1$d)</string>
+    <string name="im_doc_picker_empty">No documents to share</string>
+    <string name="im_doc_picker_error">Failed to load documents</string>
 </resources>

@@ -90,6 +90,17 @@ sealed interface MessageContent {
         val kind: String = "created",
     ) : MessageContent
 
+    /**
+     * 分享云文档到聊天 — content_type `doc-card`,body = 协议 v1 JSON
+     * `{v,doc_id,title,url,shared_by?}`。与 EventCard 不同,这是分享时刻的
+     * 静态快照,不追更——没有 kind 多态。
+     */
+    data class DocCard(
+        val docId: String,
+        val title: String,
+        val url: String,
+    ) : MessageContent
+
     /** Anything this client version doesn't render natively yet. */
     data class Unsupported(val contentType: String, val body: String) : MessageContent
 }
@@ -171,6 +182,14 @@ object MessageContentParser {
                 attendeeCount = it.optInt("attendee_count", 0),
                 organizerName = it.optString("organizer_name"),
                 kind = it.optString("kind", "created"),
+            )
+        }
+        "doc-card" -> parseJson(contentType, body) {
+            MessageContent.DocCard(
+                docId = it.optString("doc_id"),
+                // title 缺失视为坏卡 → getString 抛异常落 Unsupported 兜底。
+                title = it.getString("title"),
+                url = it.optString("url"),
             )
         }
         else -> MessageContent.Unsupported(contentType, body)

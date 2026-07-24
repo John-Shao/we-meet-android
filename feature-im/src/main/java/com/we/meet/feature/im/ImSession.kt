@@ -10,6 +10,8 @@ import com.we.meet.feature.im.call.CallHost
 import com.we.meet.feature.im.data.ChatUploadRepository
 import com.we.meet.feature.im.data.ConversationRepository
 import com.we.meet.feature.im.data.DeletedMessageStore
+import com.we.meet.feature.im.data.DocHit
+import com.we.meet.feature.im.data.DocsApi
 import com.we.meet.feature.im.data.ImApi
 import com.we.meet.feature.im.data.ImBridgeRepository
 import com.we.meet.feature.im.data.MediaResolver
@@ -49,6 +51,14 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
 
     private val api: ImApi = ImNetwork.retrofit(deps).create(ImApi::class.java)
     internal val bridge = ImBridgeRepository(api)
+
+    // 分享云文档到聊天(入口 A):独立小接口,不塞进 ImBridgeRepository——
+    // 那是专门包 core/api/im.py 的门面,这条端点属于 core/api/search.py。
+    private val docsApi: DocsApi = ImNetwork.retrofit(deps).create(DocsApi::class.java)
+
+    /** "我的文档"列表(选择器初始态/搜索),`query` 为空即最近文档。 */
+    internal suspend fun myDocuments(query: String? = null): List<DocHit> =
+        docsApi.myDocuments(query).results
 
     private val _selfUid = MutableStateFlow<String?>(null)
     val selfUid: StateFlow<String?> = _selfUid.asStateFlow()
@@ -93,6 +103,41 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
                 .onFailure {
                     android.util.Log.w("ImSession", "sendMessageAsync($contentType) failed", it)
                 }
+        }
+    }
+
+    /**
+     * 分享云文档到聊天(入口 B):Docs tab 内触发,不在某个具体会话里 ——
+     * 没有 ChatViewModel.forwardTargets() 那样"排除当前会话"的概念,全量返回。
+     * 逻辑与 forwardTargets() 同源(那边继续用自己的版本,重写有回归风险);
+     * 这里是给 IM 连接树/某个 ChatViewModel 之外的调用者(MainTabScreen)用的。
+     */
+    fun allForwardTargets(): List<com.we.meet.feature.im.vm.ChatViewModel.ForwardTarget> {
+        val self = _selfUid.value
+        return conversations.conversations.value.map { c ->
+            val isGroup = c.type == "group"
+            val peerUid = if (!isGroup) c.members.firstOrNull { it != self } else null
+            val peer = peerUid?.let { userDirectory.get(it) }
+            val title = if (isGroup) {
+                c.name.ifBlank { ((c.meta as? Map<*, *>)?.get("name") as? String).orEmpty() }
+            } else {
+                peer?.displayName.orEmpty()
+            }
+            com.we.meet.feature.im.vm.ChatViewModel.ForwardTarget(
+                cid = c.cid,
+                title = title,
+                isGroup = isGroup,
+                avatarUrl = if (!isGroup) peer?.avatarUrl?.takeIf { it.isNotBlank() } else null,
+                avatarKey = peerUid ?: c.cid,
+                memberTiles = if (isGroup) c.members.take(9).map { uid ->
+                    val info = userDirectory.get(uid)
+                    com.we.meet.feature.im.data.GroupTile(
+                        uid = uid,
+                        name = info?.displayName ?: uid.take(2),
+                        avatarUrl = info?.avatarUrl?.takeIf { it.isNotBlank() },
+                    )
+                } else emptyList(),
+            )
         }
     }
 
