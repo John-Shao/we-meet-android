@@ -368,6 +368,8 @@ fun MainTabScreen(
             targets = imSession.allForwardTargets(),
             onForward = { cids ->
                 cids.forEach { imSession.sendMessageAsync(it, docCardBody, "doc-card") }
+                // 分享即精准授权:给选中会话成员授只读(best-effort)。
+                imSession.grantDocAccessAsync(req.docId, cids)
                 shareDocRequest = null
             },
             onCreateGroupForward = { shareDocCreateGroup = true },
@@ -378,6 +380,7 @@ fun MainTabScreen(
                 deps = app,
                 onCreated = { newCid ->
                     imSession.sendMessageAsync(newCid, docCardBody, "doc-card")
+                    imSession.grantDocAccessAsync(req.docId, listOf(newCid))
                     shareDocCreateGroup = false
                     shareDocRequest = null
                 },

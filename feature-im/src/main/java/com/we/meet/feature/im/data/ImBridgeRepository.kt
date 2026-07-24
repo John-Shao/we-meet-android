@@ -77,6 +77,11 @@ internal class ImBridgeRepository(private val api: ImApi) {
         api.deleteMessages(mapOf("cid" to cid, "mids" to mids.toList()))
     }
 
+    /** 分享云文档到聊天:给会话成员授文档只读(best-effort)。 */
+    suspend fun grantDocAccess(docId: String, cids: Collection<String>) {
+        api.grantDocAccess(mapOf("doc_id" to docId, "cids" to cids.toList()))
+    }
+
     /** P1-M3 消息全文检索(q≥2 才有意义;beforeMid 翻更旧一页)。 */
     suspend fun searchMessages(
         q: String,

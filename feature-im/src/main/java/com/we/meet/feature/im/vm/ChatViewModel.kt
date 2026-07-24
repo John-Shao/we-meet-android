@@ -526,6 +526,8 @@ class ChatViewModel internal constructor(
                         .put("url", doc.url)
                         .toString()
                     session.client.sendText(cid, body, contentType = "doc-card")
+                    // 分享即精准授权:让本会话成员点开卡片能直接看(best-effort)。
+                    session.grantDocAccessAsync(doc.id, listOf(cid))
                 }.onFailure { Log.w(TAG, "sendDoc failed for ${doc.id}", it) }
             }
         }

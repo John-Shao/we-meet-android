@@ -107,6 +107,21 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
     }
 
     /**
+     * 分享云文档到聊天:请后端给目标会话成员对文档授只读(best-effort,
+     * fire-and-forget)。失败仅记日志——授权是 courtesy,失败退化为收件人撞
+     * 权限墙,不阻断已发出的卡片(与 [sendMessageAsync] 同一 courtesy 语义)。
+     */
+    fun grantDocAccessAsync(docId: String, cids: Collection<String>) {
+        if (docId.isBlank() || cids.isEmpty()) return
+        scope.launch {
+            runCatching { bridge.grantDocAccess(docId, cids) }
+                .onFailure {
+                    android.util.Log.w("ImSession", "grantDocAccessAsync failed", it)
+                }
+        }
+    }
+
+    /**
      * 分享云文档到聊天(入口 B):Docs tab 内触发,不在某个具体会话里 ——
      * 没有 ChatViewModel.forwardTargets() 那样"排除当前会话"的概念,全量返回。
      * 逻辑与 forwardTargets() 同源(那边继续用自己的版本,重写有回归风险);
