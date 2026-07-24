@@ -81,7 +81,7 @@ fun CalendarTabScreen(
     // P8 日历设置:降低已结束日程的亮度(开关关闭 → null,不降)。
     val dimPast by app.settingsStore.calendarDimPast.collectAsStateWithLifecycle()
     val dimPastNow = if (dimPast) java.time.ZonedDateTime.now() else null
-    // P8 日历设置:周视图是否显示周末(默认开 → 显示整周,关则只看工作周)。
+    // P8 日历设置:周视图是否显示周末(App 默认关 → 聚焦工作周;Web 默认开)。
     val showWeekend by app.settingsStore.calendarShowWeekend.collectAsStateWithLifecycle()
 
     // Returning from create/detail routes resumes HOME — refresh picks up
