@@ -110,11 +110,11 @@ class SettingsStore(context: Context) {
     }
 
     private val _calendarShowWeekend = MutableStateFlow(
-        prefs.getBoolean(KEY_CALENDAR_SHOW_WEEKEND, false),
+        prefs.getBoolean(KEY_CALENDAR_SHOW_WEEKEND, true),
     )
 
-    /** P8 日历设置:周视图是否显示周末(默认关 → 只看周一~周五工作周,
-     *  对标 Google/飞书「显示周末」;仅作用于周视图列,不影响其它视图)。 */
+    /** P8 日历设置:周视图是否显示周末(默认开 → 显示整周;关则只看周一~周五
+     *  工作周,对标 Google/飞书「显示周末」;仅作用于周视图列,不影响其它视图)。 */
     val calendarShowWeekend: StateFlow<Boolean> = _calendarShowWeekend.asStateFlow()
 
     fun setCalendarShowWeekend(enabled: Boolean) {
