@@ -208,7 +208,13 @@ fun ForwardPicker(
             val name = t.title.ifBlank { stringResource(R.string.im_untitled_chat) }
             AlertDialog(
                 onDismissRequest = { confirmTarget = null },
-                title = { Text(stringResource(R.string.im_forward_confirm, name)) },
+                // 短确认句无需 M3 默认 headlineSmall(24sp)那么大,压到 titleMedium。
+                title = {
+                    Text(
+                        stringResource(R.string.im_forward_confirm, name),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                },
                 confirmButton = {
                     TextButton(onClick = {
                         confirmTarget = null
