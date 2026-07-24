@@ -158,6 +158,10 @@ internal class DocsWebViewClient : WebViewClient() {
     }
 }
 
+/** docs 站点自身的 host,用于桥的调用方页面校验(见 [DocsHostBridge])。 */
+private val DOCS_HOST: String? =
+    Uri.parse(BuildConfig.WE_MEET_DOCS_URL).host?.lowercase(Locale.ROOT)
+
 /**
  * 分享云文档到聊天(入口 B)的双向桥接:docs 前端(useIsEmbedded.sendToHost)在
  * 检测到 `window.WeMeetHost` 时调 `postEvent(JSON)`,取代 iframe 场景下的
@@ -166,8 +170,17 @@ internal class DocsWebViewClient : WebViewClient() {
  * 目前是这个 WebView 里第一个、也是唯一一个原生↔网页双向桥接(之前只有主题切换
  * 那种原生→网页单向注入)。JS interface 回调落在 WebView 的私有线程,必须先跳回
  * 主线程再碰 [client] 的回调(它最终会驱动 Compose state)。
+ *
+ * `addJavascriptInterface` 会把 `WeMeetHost` 暴露给这个 WebView 里加载的**所有**
+ * 页面(docs / keycloak / meet 均留在 WebView 内),而合法调用方只有 docs。跳回
+ * 主线程后先核对当前页面 host 是否 docs 自身([DOCS_HOST]):挡住非 docs 内部页
+ * (如被 XSS 的 keycloak/meet 页)伪造分享、弹带假标题/链接的转发框做钓鱼。与 Web
+ * 侧接收端 `DocsFrame.tsx` 的 `e.origin === docsOrigin` 校验对称。
  */
-private class DocsHostBridge(private val client: DocsWebViewClient) {
+private class DocsHostBridge(
+    private val webView: WebView,
+    private val client: DocsWebViewClient,
+) {
     private val mainHandler = Handler(Looper.getMainLooper())
 
     @JavascriptInterface
@@ -179,7 +192,15 @@ private class DocsHostBridge(private val client: DocsWebViewClient) {
             val title = o.optString("title")
             val url = o.optString("url")
             if (docId.isBlank() || url.isBlank()) return
-            mainHandler.post { client.onShareDoc?.invoke(docId, title, url) }
+            // webView.url 必须在主线程读(WebView 非线程安全);顺带在主线程做 host 校验。
+            mainHandler.post {
+                val host = Uri.parse(webView.url).host?.lowercase(Locale.ROOT)
+                if (host == null || host != DOCS_HOST) {
+                    Log.w(TAG, "[bridge] postEvent from non-docs page dropped: $host")
+                    return@post
+                }
+                client.onShareDoc?.invoke(docId, title, url)
+            }
         }.onFailure { Log.w(TAG, "[bridge] malformed postEvent payload", it) }
     }
 }
@@ -242,7 +263,7 @@ fun createDocsWebView(
         webViewClient = client
         // 分享云文档到聊天(入口 B):见 DocsHostBridge 顶部注释。命名需与
         // we-meet-docs useIsEmbedded.sendToHost() 里检测的 `window.WeMeetHost` 一致。
-        addJavascriptInterface(DocsHostBridge(client), "WeMeetHost")
+        addJavascriptInterface(DocsHostBridge(this, client), "WeMeetHost")
         // 搜索统一 M2:文档命中查看器复用同一构造,直载目标文档深链
         // (KC session cookie 由 CookieManager 全局共享,登录态自动带上)。
         loadUrl(initialUrl ?: docsUrl())
