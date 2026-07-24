@@ -90,6 +90,7 @@ enum class MainTab { Messages, Calendar, Meeting, Contacts, Docs }
 
 /** 分享云文档到聊天(入口 B)待处理请求:docs WebView 发来的一条「分享到聊天」。 */
 private data class ShareDocRequest(val docId: String, val title: String, val url: String)
+private data class ShareMeetingRequest(val slug: String, val name: String, val scheduledAt: String)
 
 private data class TabItem(
     val labelRes: Int,
@@ -144,6 +145,8 @@ fun MainTabScreen(
     // 收到 postEvent → DocsWebViewClient.onShareDoc → 这里弹会话选择器。
     var shareDocRequest by remember { mutableStateOf<ShareDocRequest?>(null) }
     var shareDocCreateGroup by remember { mutableStateOf(false) }
+    var shareMeetingRequest by remember { mutableStateOf<ShareMeetingRequest?>(null) }
+    var shareMeetingCreateGroup by remember { mutableStateOf(false) }
     DisposableEffect(docsWebView) {
         val client = docsWebView.webViewClient as? DocsWebViewClient
         client?.onShareDoc = { docId, title, url ->
@@ -293,6 +296,9 @@ fun MainTabScreen(
                 onJoinSlug = onJoinSlug,
                 onHistoryClick = onHistoryClick,
                 onScheduledClick = onScheduledClick,
+                onShareScheduledMeeting = { slug, name, scheduledAt ->
+                    shareMeetingRequest = ShareMeetingRequest(slug, name, scheduledAt)
+                },
                 onOpenSettings = onOpenMeetingSettings,
             )
         },
@@ -393,6 +399,35 @@ fun MainTabScreen(
                     shareDocRequest = null
                 },
                 onCancel = { shareDocCreateGroup = false },
+            )
+        }
+    }
+
+    shareMeetingRequest?.let { req ->
+        val text = buildString {
+            append(req.name.ifBlank { "会议" })
+            append("\nhttps://meet.we-meet.online/")
+            append(req.slug)
+            if (req.scheduledAt.isNotBlank()) append("\n预约时间：${req.scheduledAt}")
+        }
+        ForwardPicker(
+            targets = imSession.allForwardTargets(),
+            onForward = { cids ->
+                scope.launch { cids.forEach { imSession.sendMessage(it, text, "text") } }
+                shareMeetingRequest = null
+            },
+            onCreateGroupForward = { shareMeetingCreateGroup = true },
+            onDismiss = { shareMeetingRequest = null },
+        )
+        if (shareMeetingCreateGroup) {
+            ForwardCreateGroupFlow(
+                deps = app,
+                onCreated = { cid ->
+                    scope.launch { imSession.sendMessage(cid, text, "text") }
+                    shareMeetingCreateGroup = false
+                    shareMeetingRequest = null
+                },
+                onCancel = { shareMeetingCreateGroup = false },
             )
         }
     }

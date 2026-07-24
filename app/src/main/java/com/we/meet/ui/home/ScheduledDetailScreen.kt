@@ -2,6 +2,7 @@ package com.we.meet.ui.home
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,8 +15,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
@@ -23,6 +27,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -48,6 +55,9 @@ import androidx.compose.ui.unit.dp
 import com.we.meet.BuildConfig
 import com.we.meet.R
 import com.we.meet.WeMeetApp
+import com.we.meet.feature.im.ImSession
+import com.we.meet.feature.im.ui.chat.ForwardCreateGroupFlow
+import com.we.meet.feature.im.ui.chat.ForwardPicker
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -75,8 +85,15 @@ fun ScheduledDetailScreen(
 
     var confirmDelete by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
+    var showMore by remember { mutableStateOf(false) }
+    var showShare by remember { mutableStateOf(false) }
+    var showShareGroup by remember { mutableStateOf(false) }
+    var showEdit by remember { mutableStateOf(false) }
+    var meetingName by remember(name) { mutableStateOf(name) }
+    var editedName by remember(name) { mutableStateOf(name) }
+    val imSession = remember { ImSession.get(app) }
 
-    val title = name.ifBlank { formatSlugDigits(slug) }
+    val title = meetingName.ifBlank { formatSlugDigits(slug) }
     val link = BuildConfig.WE_MEET_BASE_URL.trimEnd('/') + "/" + slug
     val copiedText = stringResource(R.string.detail_copied)
     fun copy(text: String) {
@@ -116,6 +133,27 @@ fun ScheduledDetailScreen(
             },
         )
     }
+    if (showEdit) {
+        AlertDialog(
+            onDismissRequest = { showEdit = false },
+            title = { Text("编辑会议") },
+            text = { OutlinedTextField(value = editedName, onValueChange = { editedName = it }, label = { Text("会议名称") }) },
+            confirmButton = { TextButton(onClick = {
+                val newName = editedName.trim()
+                if (newName.isNotBlank()) {
+                    scope.launch {
+                        app.roomRepository.renameRoom(slug, newName)
+                            .onSuccess { meetingName = newName }
+                            .onFailure {
+                                Toast.makeText(context, "保存失败，请稍后重试", Toast.LENGTH_SHORT).show()
+                            }
+                    }
+                    showEdit = false
+                }
+            }) { Text("保存") } },
+            dismissButton = { TextButton(onClick = { showEdit = false }) { Text("取消") } },
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -130,11 +168,16 @@ fun ScheduledDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { confirmDelete = true }) {
-                        Icon(
-                            Icons.Filled.Delete,
-                            contentDescription = stringResource(R.string.history_action_delete),
-                        )
+                    IconButton(onClick = { showShare = true }) { Icon(Icons.Filled.Share, contentDescription = "分享到聊天") }
+                    IconButton(onClick = { editedName = meetingName; showEdit = true }) { Icon(Icons.Filled.Edit, contentDescription = "编辑会议") }
+                    Box {
+                        IconButton(onClick = { showMore = true }) { Icon(Icons.Filled.MoreVert, contentDescription = "更多") }
+                        DropdownMenu(expanded = showMore, onDismissRequest = { showMore = false }) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.history_action_delete), color = MaterialTheme.colorScheme.error) },
+                                onClick = { showMore = false; confirmDelete = true },
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -199,6 +242,24 @@ fun ScheduledDetailScreen(
                 Text(stringResource(R.string.event_join_meeting))
             }
         }
+    }
+
+    if (showShare) {
+        val body = buildString {
+            append(title); append("\n"); append(link)
+            if (scheduledAtIso.isNotBlank()) append("\n预约时间：").append(scheduledAtIso)
+        }
+        ForwardPicker(
+            targets = imSession.allForwardTargets(),
+            onForward = { cids -> scope.launch { cids.forEach { imSession.sendMessage(it, body, "text") } }; showShare = false },
+            onCreateGroupForward = { showShareGroup = true },
+            onDismiss = { showShare = false },
+        )
+        if (showShareGroup) ForwardCreateGroupFlow(
+            deps = app,
+            onCreated = { cid -> scope.launch { imSession.sendMessage(cid, body, "text") }; showShareGroup = false; showShare = false },
+            onCancel = { showShareGroup = false },
+        )
     }
 }
 

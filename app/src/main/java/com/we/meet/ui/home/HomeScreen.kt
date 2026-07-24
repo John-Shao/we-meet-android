@@ -69,6 +69,7 @@ fun HomeScreen(
     onHistoryClick: (roomId: String) -> Unit,
     /** P8:预约会议行 → 预约详情页(进会/复制/删除收进详情)。 */
     onScheduledClick: (slug: String, name: String, scheduledAtIso: String) -> Unit,
+    onShareScheduledMeeting: (slug: String, name: String, scheduledAtIso: String) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
@@ -232,6 +233,9 @@ fun HomeScreen(
                 val slug = created.slug
                 homeViewModel.dismissLaterCreated()
                 onJoinSlug(slug)
+            },
+            onShareToChat = {
+                onShareScheduledMeeting(created.slug, created.displayName, created.scheduledAtIso.orEmpty())
             },
             onDismiss = { homeViewModel.dismissLaterCreated() },
         )

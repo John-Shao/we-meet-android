@@ -86,6 +86,8 @@ fun InviteSheet(
      * meeting — the host is already in.
      */
     onEnterRoom: (() -> Unit)? = null,
+    /** Scheduled-meeting flow supplies this to share directly into IM chats. */
+    onShareToChat: (() -> Unit)? = null,
 ) {
     // Force full expansion on open. The default partial-expanded state
     // hid the 复制/分享 action row below the fold on phones — users had to
@@ -239,7 +241,7 @@ fun InviteSheet(
                     Text(stringResource(R.string.invite_copy_link))
                 }
                 TextButton(
-                    onClick = { startSystemShare(context, inviteText) },
+                    onClick = { onShareToChat?.invoke() ?: startSystemShare(context, inviteText) },
                 ) {
                     Icon(
                         imageVector = Icons.Default.Share,
@@ -247,7 +249,10 @@ fun InviteSheet(
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(Modifier.size(6.dp))
-                    Text(stringResource(R.string.invite_share))
+                    Text(
+                        if (onShareToChat != null) "分享到聊天"
+                        else stringResource(R.string.invite_share),
+                    )
                 }
             }
 
