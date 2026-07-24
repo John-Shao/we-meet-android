@@ -355,8 +355,8 @@ fun MainTabScreen(
         }
     }
 
-    // 分享云文档到聊天(入口 B):选会话 → 逐个发 doc-card(ImSession.sendMessageAsync,
-    // 和 P8 event-card 回发同一条 fire-and-forget 通路)。
+    // 分享云文档到聊天(入口 B):每个目标先确认 doc-card 已发出，再授予
+    // 对应会话成员只读权限。发送失败绝不能留下无聊天记录的授权。
     shareDocRequest?.let { req ->
         val docCardBody = JSONObject()
             .put("v", 1)
@@ -367,9 +367,14 @@ fun MainTabScreen(
         ForwardPicker(
             targets = imSession.allForwardTargets(),
             onForward = { cids ->
-                cids.forEach { imSession.sendMessageAsync(it, docCardBody, "doc-card") }
-                // 分享即精准授权:给选中会话成员授只读(best-effort)。
-                imSession.grantDocAccessAsync(req.docId, cids)
+                scope.launch {
+                    val delivered = cids.filter {
+                        imSession.sendMessage(it, docCardBody, "doc-card").isSuccess
+                    }
+                    // Only recipients of a successfully persisted card may
+                    // receive access; authorization itself remains best-effort.
+                    imSession.grantDocAccessAsync(req.docId, delivered)
+                }
                 shareDocRequest = null
             },
             onCreateGroupForward = { shareDocCreateGroup = true },
@@ -379,8 +384,11 @@ fun MainTabScreen(
             ForwardCreateGroupFlow(
                 deps = app,
                 onCreated = { newCid ->
-                    imSession.sendMessageAsync(newCid, docCardBody, "doc-card")
-                    imSession.grantDocAccessAsync(req.docId, listOf(newCid))
+                    scope.launch {
+                        if (imSession.sendMessage(newCid, docCardBody, "doc-card").isSuccess) {
+                            imSession.grantDocAccessAsync(req.docId, listOf(newCid))
+                        }
+                    }
                     shareDocCreateGroup = false
                     shareDocRequest = null
                 },

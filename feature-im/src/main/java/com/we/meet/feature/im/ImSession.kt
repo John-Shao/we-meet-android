@@ -99,12 +99,17 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
      */
     fun sendMessageAsync(cid: String, body: String, contentType: String) {
         scope.launch {
-            runCatching { client.sendText(cid, body, contentType = contentType) }
+            sendMessage(cid, body, contentType)
                 .onFailure {
                     android.util.Log.w("ImSession", "sendMessageAsync($contentType) failed", it)
                 }
         }
     }
+
+    /** Send one IM message and expose its outcome to flows that have a
+     * security-sensitive follow-up (for example, document access grants). */
+    suspend fun sendMessage(cid: String, body: String, contentType: String): Result<Unit> =
+        runCatching { client.sendText(cid, body, contentType = contentType) }
 
     /**
      * 分享云文档到聊天:请后端给目标会话成员对文档授只读(best-effort,
