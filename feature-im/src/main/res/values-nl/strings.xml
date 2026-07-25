@@ -252,6 +252,10 @@
     <string name="im_plus_doc">Document</string>
     <string name="im_preview_doc">[Document]</string>
     <string name="im_doc_card_view">Document bekijken</string>
+    <string name="im_preview_meeting">[Vergadering]</string>
+    <string name="im_meeting_card_ongoing">Bezig</string>
+    <string name="im_meeting_card_no">Vergader-ID %1$s</string>
+    <string name="im_meeting_card_join">Deelnemen aan vergadering</string>
     <string name="im_doc_picker_title">Document sturen</string>
     <string name="im_doc_picker_search">Documenten zoeken</string>
     <string name="im_doc_picker_selected">Geselecteerd: %1$d</string>

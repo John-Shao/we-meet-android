@@ -146,6 +146,8 @@ fun ChatScreen(
     onOpenEvent: ((eventId: String) -> Unit)? = null,
     /** 分享云文档卡片:点「查看文档」→ 打开该文档(app 层接文档查看器)。 */
     onOpenDoc: ((url: String) -> Unit)? = null,
+    /** 分享会议卡片:点「加入会议」→ 按 slug 走入会预览(app 层接 joinPreview)。 */
+    onJoinMeeting: ((slug: String) -> Unit)? = null,
 ) {
     val vm: ChatViewModel =
         viewModel(
@@ -491,6 +493,7 @@ fun ChatScreen(
                                     } else null,
                                     onOpenEvent = onOpenEvent,
                                     onOpenDoc = onOpenDoc,
+                                    onJoinMeeting = onJoinMeeting,
                                     onJoinGroupCall = { slug -> calls.joinGroupCall(slug) },
                                     groupCallEnded = if (message.contentType == "group-call") {
                                         val s = runCatching {

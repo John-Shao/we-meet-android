@@ -526,6 +526,8 @@ fun AppNav() {
                 onOpenEvent = { eventId -> navController.navigate(Routes.eventDetail(eventId)) },
                 // 分享云文档卡片 → 复用搜索命中的文档查看器(DOCS_VIEWER 已有)。
                 onOpenDoc = { url -> navController.navigate(Routes.docsViewer(url)) },
+                // 分享会议卡片 → 按 slug 走入会预览(与会议详情「加入会议」同一路径)。
+                onJoinMeeting = { slug -> navController.navigate(Routes.joinPreview(slug)) },
                 onStartMeeting = { meetingName -> navController.navigate(Routes.createPreview(meetingName)) },
                 // 1:1 通话 no longer flows through here — ChatScreen drives
                 // CallController directly and the top-level collector below

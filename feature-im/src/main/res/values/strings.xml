@@ -270,6 +270,10 @@
     <string name="im_plus_doc">Document</string>
     <string name="im_preview_doc">[Document]</string>
     <string name="im_doc_card_view">View document</string>
+    <string name="im_preview_meeting">[Meeting]</string>
+    <string name="im_meeting_card_ongoing">In progress</string>
+    <string name="im_meeting_card_no">Meeting ID %1$s</string>
+    <string name="im_meeting_card_join">Join meeting</string>
     <string name="im_doc_picker_title">Send document</string>
     <string name="im_doc_picker_search">Search documents</string>
     <string name="im_doc_picker_selected">Selected: %1$d</string>

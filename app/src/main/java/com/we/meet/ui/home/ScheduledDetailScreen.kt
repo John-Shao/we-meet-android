@@ -245,19 +245,24 @@ fun ScheduledDetailScreen(
     }
 
     if (showShare) {
-        val body = buildString {
-            append(title); append("\n"); append(link)
-            if (scheduledAtIso.isNotBlank()) append("\n预约时间：").append(scheduledAtIso)
-        }
+        // 富卡片:发 content_type='meeting-card'(与 Web meetingCard.ts / 收端
+        // MeetingCardBubble 同协议),取代旧的纯文本+生 ISO,双端渲染成可加入卡片。
+        val body = org.json.JSONObject().apply {
+            put("v", 1)
+            put("slug", slug)
+            put("title", title)
+            put("status", if (scheduledAtIso.isNotBlank()) "scheduled" else "ongoing")
+            if (scheduledAtIso.isNotBlank()) put("scheduled_at", scheduledAtIso)
+        }.toString()
         ForwardPicker(
             targets = imSession.allForwardTargets(),
-            onForward = { cids -> scope.launch { cids.forEach { imSession.sendMessage(it, body, "text") } }; showShare = false },
+            onForward = { cids -> scope.launch { cids.forEach { imSession.sendMessage(it, body, "meeting-card") } }; showShare = false },
             onCreateGroupForward = { showShareGroup = true },
             onDismiss = { showShare = false },
         )
         if (showShareGroup) ForwardCreateGroupFlow(
             deps = app,
-            onCreated = { cid -> scope.launch { imSession.sendMessage(cid, body, "text") }; showShareGroup = false; showShare = false },
+            onCreated = { cid -> scope.launch { imSession.sendMessage(cid, body, "meeting-card") }; showShareGroup = false; showShare = false },
             onCancel = { showShareGroup = false },
         )
     }

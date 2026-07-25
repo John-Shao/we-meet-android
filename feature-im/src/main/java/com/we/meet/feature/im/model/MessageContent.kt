@@ -101,6 +101,20 @@ sealed interface MessageContent {
         val url: String,
     ) : MessageContent
 
+    /**
+     * 分享会议到聊天 — content_type `meeting-card`,body = 协议 v1 JSON
+     * `{v,room_id?,slug,title,status,scheduled_at?}`(与 Web meetingCard.ts 统一;
+     * room_id 由 Web 侧携带,App 分享只有 slug 故可缺省)。静态快照,点卡片按
+     * slug 走入会预览。status = scheduled | ongoing;scheduled_at 为 ISO-8601 UTC。
+     */
+    data class MeetingCard(
+        val slug: String,
+        val title: String,
+        val status: String = "ongoing",
+        val scheduledAtIso: String = "",
+        val roomId: String = "",
+    ) : MessageContent
+
     /** Anything this client version doesn't render natively yet. */
     data class Unsupported(val contentType: String, val body: String) : MessageContent
 }
@@ -190,6 +204,16 @@ object MessageContentParser {
                 // title 缺失视为坏卡 → getString 抛异常落 Unsupported 兜底。
                 title = it.getString("title"),
                 url = it.optString("url"),
+            )
+        }
+        "meeting-card" -> parseJson(contentType, body) {
+            MessageContent.MeetingCard(
+                // slug 是入会关键,缺失=坏卡 → getString 抛异常落 Unsupported 兜底。
+                slug = it.getString("slug"),
+                title = it.optString("title"),
+                status = if (it.optString("status") == "scheduled") "scheduled" else "ongoing",
+                scheduledAtIso = it.optString("scheduled_at"),
+                roomId = it.optString("room_id"),
             )
         }
         else -> MessageContent.Unsupported(contentType, body)

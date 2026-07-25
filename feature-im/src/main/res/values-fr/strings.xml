@@ -252,6 +252,10 @@
     <string name="im_plus_doc">Document</string>
     <string name="im_preview_doc">[Document]</string>
     <string name="im_doc_card_view">Voir le document</string>
+    <string name="im_preview_meeting">[Réunion]</string>
+    <string name="im_meeting_card_ongoing">En cours</string>
+    <string name="im_meeting_card_no">N° de réunion %1$s</string>
+    <string name="im_meeting_card_join">Rejoindre la réunion</string>
     <string name="im_doc_picker_title">Envoyer un document</string>
     <string name="im_doc_picker_search">Rechercher des documents</string>
     <string name="im_doc_picker_selected">Sélectionné : %1$d</string>

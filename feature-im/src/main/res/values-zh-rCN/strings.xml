@@ -265,6 +265,10 @@
     <string name="im_plus_doc">云文档</string>
     <string name="im_preview_doc">[云文档]</string>
     <string name="im_doc_card_view">查看文档</string>
+    <string name="im_preview_meeting">[会议]</string>
+    <string name="im_meeting_card_ongoing">进行中</string>
+    <string name="im_meeting_card_no">会议号 %1$s</string>
+    <string name="im_meeting_card_join">加入会议</string>
     <string name="im_doc_picker_title">发送云文档</string>
     <string name="im_doc_picker_search">搜索文档</string>
     <string name="im_doc_picker_selected">已选 %1$d 项</string>

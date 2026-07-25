@@ -103,6 +103,8 @@ fun MessageBubble(
     onOpenEvent: ((eventId: String) -> Unit)? = null,
     /** 分享云文档卡片: tap「查看文档」→ 打开该文档(app 层接文档查看器)。 */
     onOpenDoc: ((url: String) -> Unit)? = null,
+    /** 分享会议卡片: tap「加入会议」→ 按 slug 走入会预览(app 层接 joinPreview)。 */
+    onJoinMeeting: ((slug: String) -> Unit)? = null,
 ) {
     val content = remember(message.mid) {
         MessageContentParser.parse(message.contentType, message.body)
@@ -232,6 +234,9 @@ fun MessageBubble(
                 is MessageContent.DocCard -> DocCardBubble(
                     content, onLongPress,
                 ) { onOpenDoc?.invoke(content.url) }
+                is MessageContent.MeetingCard -> MeetingCardBubble(
+                    content, onLongPress,
+                ) { onJoinMeeting?.invoke(content.slug) }
                 is MessageContent.Unsupported -> UnsupportedBubble(isOwn)
                 // Control/system rows never reach here (filtered / early-returned).
                 is MessageContent.Recall, is MessageContent.Reaction,
