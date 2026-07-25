@@ -141,6 +141,9 @@ fun CreateEventScreen(
     var editIsRecurring by remember { mutableStateOf(false) }
 
     var showPicker by remember { mutableStateOf(false) }
+    // 视频会议(对标飞书:可移除的一项,而非日程的固有属性)。创建默认开;
+    // 编辑态按事件当前有没有房间预填。
+    var withVideo by remember { mutableStateOf(true) }
     // P9 实体会议室(与 LiveKit 房间无关)。`roomConflict` 是客户端预判,服务端
     // 409 才是权威 —— 网络失败时刻意不置位,免得误禁用保存。
     var meetingRoom by remember { mutableStateOf<MeetingRoomBriefDto?>(null) }
@@ -210,6 +213,7 @@ fun CreateEventScreen(
                 // P8 编辑增删参与者:预填既有参与者(组织者恒在,不进列表);
                 // 重复日程不放开(服务端三选路径剔除 attendee_ids)。
                 editIsRecurring = e.isRecurring
+                withVideo = e.room != null
                 meetingRoom = e.meetingRoom
                 attendees = e.attendees.mapNotNull { a ->
                     val uid = a.id ?: return@mapNotNull null
@@ -285,6 +289,9 @@ fun CreateEventScreen(
                             // P9:全天不允许带房间;"" = 释放(不能用 null,
                             // Moshi 会把它丢掉,后端就当没提过这个字段)。
                             meetingRoomId = if (allDay) "" else meetingRoom?.id.orEmpty(),
+                            // 重复日程的系列级编辑不传(服务端会剔除),与
+                            // attendeeIds 同档降级。
+                            withVideoMeeting = if (editIsRecurring) null else withVideo,
                         ),
                     )
                 } else {
@@ -302,6 +309,7 @@ fun CreateEventScreen(
                             sourceConversationId = sourceConversationId,
                             // P9:全天日程 M1 不支持订会议室(服务端也会 400)。
                             meetingRoomId = if (allDay) null else meetingRoom?.id,
+                            withVideoMeeting = withVideo,
                         )
                     )
                 }
@@ -468,6 +476,39 @@ fun CreateEventScreen(
                     TextButton(onClick = { showPicker = true }) {
                         Text(stringResource(R.string.calendar_add_attendees))
                     }
+                }
+                HorizontalDivider()
+            }
+
+            // 视频会议 —— 对标飞书,是一项「可以移除」的东西而不是日程的固有
+            // 属性。放在会议室之前:两者都是「在哪开」,线上先于线下。
+            // 重复日程的系列级编辑不放开(服务端会剔除),与参与者同档。
+            if (!editIsRecurring) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.calendar_video_meeting),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        Text(
+                            text = stringResource(
+                                if (withVideo) {
+                                    R.string.calendar_video_meeting_on
+                                } else {
+                                    R.string.calendar_video_meeting_off
+                                },
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = withVideo, onCheckedChange = { withVideo = it })
                 }
                 HorizontalDivider()
             }

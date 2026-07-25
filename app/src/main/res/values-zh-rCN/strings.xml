@@ -547,4 +547,8 @@
     <string name="meeting_room_empty_available">该时段暂无可用会议室</string>
     <string name="meeting_room_load_error">会议室加载失败</string>
     <string name="meeting_room_retry">重试</string>
+    <!-- 视频会议可选(对标飞书「移除视频会议」) -->
+    <string name="calendar_video_meeting">视频会议</string>
+    <string name="calendar_video_meeting_on">将随日程创建一场视频会议,参与者可一键入会</string>
+    <string name="calendar_video_meeting_off">不创建视频会议,这只是一条日程</string>
 </resources>

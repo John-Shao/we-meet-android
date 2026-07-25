@@ -476,4 +476,8 @@
     <string name="meeting_room_empty_available">Für diesen Zeitraum ist kein Raum frei</string>
     <string name="meeting_room_load_error">Räume konnten nicht geladen werden</string>
     <string name="meeting_room_retry">Erneut versuchen</string>
+    <!-- 视频会议可选(对标飞书「移除视频会议」) -->
+    <string name="calendar_video_meeting">Videokonferenz</string>
+    <string name="calendar_video_meeting_on">Zu diesem Termin wird eine Videokonferenz erstellt</string>
+    <string name="calendar_video_meeting_off">Keine Videokonferenz — nur ein Kalendereintrag</string>
 </resources>

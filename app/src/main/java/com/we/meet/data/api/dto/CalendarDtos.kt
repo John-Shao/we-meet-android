@@ -114,6 +114,11 @@ data class CreateEventRequest(
      * 对 `""` 和 `null` 都按「释放」处理。全天日程不允许带(服务端 400)。
      */
     @Json(name = "meeting_room_id") val meetingRoomId: String? = null,
+    /**
+     * 是否随日程开一场视频会议(对标飞书「移除视频会议」)。null = 不传,
+     * 服务端按缺省 = 开处理(与改动前一致)。
+     */
+    @Json(name = "with_video_meeting") val withVideoMeeting: Boolean? = null,
 )
 
 /**
@@ -142,6 +147,12 @@ data class UpdateEventRequest(
      * 「清空」—— Moshi 会把它丢掉,后端就当没提过这个字段。
      */
     @Json(name = "meeting_room_id") val meetingRoomId: String? = null,
+    /**
+     * 增删视频会议。**null = 不动**(Moshi 不序列化 null,服务端按字段缺省
+     * 处理)—— 与创建时的「缺省 = 开」不同,否则任何一次标量编辑都会给本来
+     * 没有会议的日程凭空补一个房间。重复日程的系列级编辑不传。
+     */
+    @Json(name = "with_video_meeting") val withVideoMeeting: Boolean? = null,
 )
 
 @JsonClass(generateAdapter = true)
