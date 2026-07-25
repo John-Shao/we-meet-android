@@ -480,4 +480,8 @@
     <string name="calendar_video_meeting">Videovergadering</string>
     <string name="calendar_video_meeting_on">Er wordt een videovergadering bij deze afspraak aangemaakt</string>
     <string name="calendar_video_meeting_off">Geen videovergadering — alleen een agenda-item</string>
+    <!-- M1.5 会议室时间轴 -->
+    <string name="meeting_room_view_timeline">Tijdlijn tonen</string>
+    <string name="meeting_room_view_list">Lijst tonen</string>
+    <string name="meeting_room_timeline_hint">Tik op de kolom van een ruimte om die te kiezen — de tijd blijft zoals hierboven</string>
 </resources>

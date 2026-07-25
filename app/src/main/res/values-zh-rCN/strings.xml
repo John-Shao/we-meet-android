@@ -551,4 +551,8 @@
     <string name="calendar_video_meeting">视频会议</string>
     <string name="calendar_video_meeting_on">将随日程创建一场视频会议,参与者可一键入会</string>
     <string name="calendar_video_meeting_off">不创建视频会议,这只是一条日程</string>
+    <!-- M1.5 会议室时间轴 -->
+    <string name="meeting_room_view_timeline">查看时间轴</string>
+    <string name="meeting_room_view_list">查看列表</string>
+    <string name="meeting_room_timeline_hint">点击会议室所在列即可选中,时段以上方表单为准</string>
 </resources>

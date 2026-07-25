@@ -102,3 +102,42 @@ data class MeetingRoomAvailabilityDto(
     val end: String = "",
     val results: List<MeetingRoomDto> = emptyList(),
 )
+
+@JsonClass(generateAdapter = true)
+data class RoomBookingOrganizerDto(
+    val id: String = "",
+    @Json(name = "full_name") val fullName: String? = null,
+)
+
+/** One occupied stretch on a room's timeline. */
+@JsonClass(generateAdapter = true)
+data class RoomBookingDto(
+    val id: String = "",
+    @Json(name = "event_id") val eventId: String? = null,
+    val start: String = "",
+    val end: String = "",
+    val status: String = "confirmed",
+    val source: String = "event",
+    /** null 表示对端是 private 日程且调用者不在其中 —— 渲染成无标题色块。 */
+    val title: String? = null,
+    @Json(name = "is_private") val isPrivate: Boolean = false,
+    @Json(name = "is_mine") val isMine: Boolean = false,
+    val organizer: RoomBookingOrganizerDto? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class MeetingRoomTimelineEntryDto(
+    val id: String = "",
+    val name: String = "",
+    val capacity: Int = 0,
+    @Json(name = "path_label") val pathLabel: String? = null,
+    val bookings: List<RoomBookingDto> = emptyList(),
+)
+
+@JsonClass(generateAdapter = true)
+data class MeetingRoomTimelineDto(
+    val start: String = "",
+    val end: String = "",
+    val timezone: String? = null,
+    val results: List<MeetingRoomTimelineEntryDto> = emptyList(),
+)

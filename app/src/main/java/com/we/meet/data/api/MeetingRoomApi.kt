@@ -3,6 +3,7 @@ package com.we.meet.data.api
 import com.we.meet.data.api.dto.MeetingRoomAvailabilityDto
 import com.we.meet.data.api.dto.MeetingRoomFacilityDto
 import com.we.meet.data.api.dto.MeetingRoomNodeDto
+import com.we.meet.data.api.dto.MeetingRoomTimelineDto
 import com.we.meet.data.api.dto.PagedMeetingRoomsDto
 import retrofit2.http.GET
 import retrofit2.http.Query
@@ -55,4 +56,22 @@ interface MeetingRoomApi {
         @Query("q") q: String? = null,
         @Query("only_available") onlyAvailable: Boolean? = null,
     ): MeetingRoomAvailabilityDto
+
+    /**
+     * Occupancy per room for a window — the timeline view's data.
+     *
+     * Unlike [availability] this names the organizer: staring at a floor's
+     * schedule is how you find who to ask about that 2pm block. Titles of
+     * private events come back null. Windows longer than 7 days are rejected.
+     */
+    @GET("api/v1.0/meeting-rooms/timeline/")
+    suspend fun timeline(
+        /** ISO 8601 (UTC). */
+        @Query("start") start: String,
+        @Query("end") end: String,
+        @Query("node") node: String? = null,
+        @Query("capacity_min") capacityMin: Int? = null,
+        @Query("facilities") facilities: String? = null,
+        @Query("q") q: String? = null,
+    ): MeetingRoomTimelineDto
 }

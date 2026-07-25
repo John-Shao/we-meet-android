@@ -480,4 +480,8 @@
     <string name="calendar_video_meeting">Videokonferenz</string>
     <string name="calendar_video_meeting_on">Zu diesem Termin wird eine Videokonferenz erstellt</string>
     <string name="calendar_video_meeting_off">Keine Videokonferenz — nur ein Kalendereintrag</string>
+    <!-- M1.5 会议室时间轴 -->
+    <string name="meeting_room_view_timeline">Zeitleiste anzeigen</string>
+    <string name="meeting_room_view_list">Liste anzeigen</string>
+    <string name="meeting_room_timeline_hint">Auf die Spalte eines Raums tippen, um ihn zu wählen — die Zeit bleibt wie oben gesetzt</string>
 </resources>

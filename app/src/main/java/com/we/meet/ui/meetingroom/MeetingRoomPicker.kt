@@ -13,10 +13,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarViewDay
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -46,14 +51,21 @@ import com.we.meet.data.api.dto.MeetingRoomBriefDto
 import com.we.meet.data.api.dto.MeetingRoomDto
 import com.we.meet.data.api.dto.MeetingRoomFacilityDto
 import com.we.meet.data.api.dto.MeetingRoomNodeDto
+import com.we.meet.data.api.dto.MeetingRoomTimelineEntryDto
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.time.ZoneId
+import java.time.ZonedDateTime
 
 private enum class RoomTab { Available, All }
+
+/** 列表 = 挑一间;时间轴 = 看整层楼的排期再挑。同一个 sheet 内切换 —— 
+ *  另开路由会让 CreateEventScreen 的 remember 状态整份丢掉(本仓库没有
+ *  savedStateHandle 回传那一套),嵌套 ModalBottomSheet 又会打架。 */
+private enum class RoomView { List, Timeline }
 
 /** Capacity buckets offered in the filter row ("≥ N 人"). */
 private val CAPACITY_STEPS = listOf(2, 4, 6, 10, 20, 50)
@@ -112,6 +124,21 @@ fun MeetingRoomPicker(
     var error by remember { mutableStateOf(false) }
     var reloadTick by remember { mutableIntStateOf(0) }
 
+    // M1.5 时间轴:与列表共用同一批筛选条件,只是换个呈现形态。
+    var view by remember { mutableStateOf(RoomView.List) }
+    var timelineRooms by remember {
+        mutableStateOf<List<MeetingRoomTimelineEntryDto>>(emptyList())
+    }
+    var timelineLoading by remember { mutableStateOf(false) }
+    val timelineScroll = rememberScrollState()
+    // 时间轴那一天 = 所选时段起点所在的本地日。
+    val dayStart = remember(startIso) {
+        runCatching {
+            Instant.parse(startIso).atZone(ZoneId.systemDefault())
+                .toLocalDate().atStartOfDay(ZoneId.systemDefault())
+        }.getOrElse { ZonedDateTime.now(ZoneId.systemDefault()).toLocalDate().atStartOfDay(ZoneId.systemDefault()) }
+    }
+
     LaunchedEffect(reloadTick) {
         runCatching { apiClient.meetingRoomApi.listNodes() }
             .onSuccess { nodes = it }
@@ -162,6 +189,25 @@ fun MeetingRoomPicker(
             }
     }
 
+    // 只在切到时间轴时才拉 —— 一天全部会议室的占用比列表重得多,没看就不拉。
+    LaunchedEffect(view, reloadTick, nodeId, capacityMin, facilityIds, query) {
+        if (view != RoomView.Timeline) return@LaunchedEffect
+        timelineLoading = true
+        runCatching {
+            apiClient.meetingRoomApi.timeline(
+                start = isoUtc(dayStart.toInstant()),
+                end = isoUtc(dayStart.plusDays(1).toInstant()),
+                node = nodeId,
+                capacityMin = capacityMin,
+                facilities = facilityIds.takeIf { it.isNotEmpty() }?.joinToString(","),
+                q = query.takeIf { it.isNotBlank() },
+            )
+        }
+            .onSuccess { timelineRooms = it.results }
+            .onFailure { error = true }
+        timelineLoading = false
+    }
+
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier = Modifier
@@ -169,7 +215,11 @@ fun MeetingRoomPicker(
                 .fillMaxHeight(0.85f)
                 .padding(horizontal = 16.dp),
         ) {
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.weight(1f)) {
                 RoomTab.entries.forEachIndexed { index, entry ->
                     SegmentedButton(
                         selected = tab == entry,
@@ -186,6 +236,27 @@ fun MeetingRoomPicker(
                             ),
                         )
                     }
+                }
+            }
+                IconButton(
+                    onClick = {
+                        view = if (view == RoomView.List) RoomView.Timeline else RoomView.List
+                    },
+                ) {
+                    Icon(
+                        imageVector = if (view == RoomView.List) {
+                            Icons.Filled.CalendarViewDay
+                        } else {
+                            Icons.AutoMirrored.Filled.List
+                        },
+                        contentDescription = stringResource(
+                            if (view == RoomView.List) {
+                                R.string.meeting_room_view_timeline
+                            } else {
+                                R.string.meeting_room_view_list
+                            },
+                        ),
+                    )
                 }
             }
 
@@ -214,6 +285,31 @@ fun MeetingRoomPicker(
 
             Box(modifier = Modifier.weight(1f)) {
                 when {
+                    view == RoomView.Timeline && timelineLoading ->
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+
+                    view == RoomView.Timeline -> MeetingRoomTimeline(
+                        rooms = timelineRooms,
+                        dayStart = dayStart,
+                        slotStartIso = startIso,
+                        slotEndIso = endIso,
+                        freeIds = freeIds,
+                        scrollState = timelineScroll,
+                        onPickRoom = { room ->
+                            onConfirm(
+                                MeetingRoomBriefDto(
+                                    id = room.id,
+                                    name = room.name,
+                                    capacity = room.capacity,
+                                    pathLabel = room.pathLabel,
+                                )
+                            )
+                        },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+
                     loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
@@ -377,3 +473,6 @@ private fun MeetingRoomRow(
         }
     }
 }
+
+private fun isoUtc(instant: Instant): String =
+    DateTimeFormatter.ISO_INSTANT.format(instant)
