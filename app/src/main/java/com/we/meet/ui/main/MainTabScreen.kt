@@ -107,6 +107,8 @@ fun MainTabScreen(
     onHistoryClick: (roomId: String) -> Unit,
     /** P8:预约会议行 → 预约详情页。 */
     onScheduledClick: (slug: String, name: String, scheduledAtIso: String) -> Unit,
+    /** 预约会议关联了日程 → 走统一的日程详情(一场会一个详情页)。 */
+    onScheduledEventClick: (eventId: String) -> Unit,
     onSettingsClick: () -> Unit,
     onOpenMeetingSettings: () -> Unit,
     onOpenAiHub: () -> Unit,
@@ -291,6 +293,7 @@ fun MainTabScreen(
                 onJoinMeeting = onJoinMeeting,
                 onHistoryClick = onHistoryClick,
                 onScheduledClick = onScheduledClick,
+                onScheduledEventClick = onScheduledEventClick,
                 // 预约会议 = 创建日程:复用日历的创建日程入口,默认落在今天。
                 onScheduleMeeting = { onCreateEvent(java.time.LocalDate.now().toEpochDay()) },
                 onOpenSettings = onOpenMeetingSettings,

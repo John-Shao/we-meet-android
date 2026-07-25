@@ -450,6 +450,10 @@ fun AppNav() {
                 onScheduledClick = { slug, name, at ->
                     navController.navigate(Routes.scheduledDetail(slug, name, at))
                 },
+                // 有关联日程 → 统一走日程详情(一场会一个详情页)。
+                onScheduledEventClick = { eventId ->
+                    navController.navigate(Routes.eventDetail(eventId))
+                },
                 onSettingsClick = { navController.navigate(Routes.SETTINGS) },
                 onOpenMeetingSettings = { navController.navigate(Routes.MEETING_SETTINGS) },
                 onOpenAiHub = { navController.navigate(Routes.AI_HUB) },

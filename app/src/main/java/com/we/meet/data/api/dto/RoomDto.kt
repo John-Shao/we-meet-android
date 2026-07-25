@@ -20,6 +20,12 @@ data class RoomDto(
     val is_administrable: Boolean?,
     /** 严格房主:删除房间只认这个(admin 删会 403),收敛删除入口须用它。 */
     val is_owner: Boolean? = null,
+    /**
+     * 关联日程 id;无日程(快速会议/存量裸预约)= null。
+     * 「预约会议 = 创建日程」后同一场会既在会议列表又在日历,据此把详情
+     * 统一收敛到日程详情,避免一场会两个详情页。
+     */
+    val event_id: String? = null,
     val livekit: LiveKitDto?,
     /** ISO 8601, e.g. "2026-04-22T14:58:12.345Z". Used by history as 创建时间. */
     val created_at: String? = null,

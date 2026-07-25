@@ -50,6 +50,8 @@ fun HomeScreen(
     onHistoryClick: (roomId: String) -> Unit,
     /** P8:预约会议行 → 预约详情页(进会/复制/删除收进详情)。 */
     onScheduledClick: (slug: String, name: String, scheduledAtIso: String) -> Unit,
+    /** 预约会议关联了日程 → 走统一的日程详情(一场会一个详情页)。 */
+    onScheduledEventClick: (eventId: String) -> Unit,
     /** 预约会议 = 创建日程(对标飞书):打开日历的创建日程界面。 */
     onScheduleMeeting: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -153,11 +155,18 @@ fun HomeScreen(
             ScheduledMeetingsList(
                 rooms = scheduledMeetings,
                 onEntryClick = { room ->
-                    onScheduledClick(
-                        room.slug.orEmpty(),
-                        room.name.orEmpty(),
-                        room.scheduled_at.orEmpty(),
-                    )
+                    // 一场会一个详情页:有日程的走统一的日程详情(带参与人/
+                    // RSVP/纪要);无日程的(快速会议、存量裸预约)才进会议详情。
+                    val eventId = room.event_id
+                    if (!eventId.isNullOrBlank()) {
+                        onScheduledEventClick(eventId)
+                    } else {
+                        onScheduledClick(
+                            room.slug.orEmpty(),
+                            room.name.orEmpty(),
+                            room.scheduled_at.orEmpty(),
+                        )
+                    }
                 },
             )
             HistoryList(
