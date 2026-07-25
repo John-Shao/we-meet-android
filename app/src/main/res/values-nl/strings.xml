@@ -20,14 +20,6 @@
     <string name="home_create_meeting">Directe vergadering</string>
     <string name="home_join_meeting">Deelnemen aan vergadering</string>
     <string name="home_create_later_meeting">Vergadering plannen</string>
-    <string name="home_create_later_name_label">Naam vergadering</string>
-    <string name="home_create_later_confirm">Aanmaken</string>
-    <string name="home_create_later_cancel">Annuleren</string>
-    <string name="home_create_later_no_time">Kies een tijd</string>
-    <string name="home_create_later_pick_time">Tijd kiezen</string>
-    <string name="home_create_later_edit_time">Bewerken</string>
-    <string name="home_create_later_clear_time">Wissen</string>
-    <string name="home_create_later_next">Volgende</string>
     <string name="home_join">Deelnemen</string>
     <string name="home_logout">Afmelden</string>
     <string name="home_signed_in_as">Aangemeld als %1$s</string>

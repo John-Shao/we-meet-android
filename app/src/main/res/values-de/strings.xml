@@ -20,14 +20,6 @@
     <string name="home_create_meeting">Sofortmeeting</string>
     <string name="home_join_meeting">Meeting beitreten</string>
     <string name="home_create_later_meeting">Meeting planen</string>
-    <string name="home_create_later_name_label">Meeting-Name</string>
-    <string name="home_create_later_confirm">Erstellen</string>
-    <string name="home_create_later_cancel">Abbrechen</string>
-    <string name="home_create_later_no_time">Bitte Zeit wählen</string>
-    <string name="home_create_later_pick_time">Zeit wählen</string>
-    <string name="home_create_later_edit_time">Bearbeiten</string>
-    <string name="home_create_later_clear_time">Löschen</string>
-    <string name="home_create_later_next">Weiter</string>
     <string name="home_join">Beitreten</string>
     <string name="home_logout">Abmelden</string>
     <string name="home_signed_in_as">Angemeldet als %1$s</string>

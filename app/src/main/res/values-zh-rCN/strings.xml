@@ -20,15 +20,6 @@
     <string name="home_create_meeting">快速会议</string>
     <string name="home_join_meeting">加入会议</string>
     <string name="home_create_later_meeting">预约会议</string>
-    <string name="home_create_later_name_label">会议名称</string>
-    <string name="home_create_later_confirm">创建</string>
-    <string name="home_create_failed">创建会议失败，请重试。</string>
-    <string name="home_create_later_cancel">取消</string>
-    <string name="home_create_later_no_time">请选择预约时间</string>
-    <string name="home_create_later_pick_time">选择时间</string>
-    <string name="home_create_later_edit_time">修改</string>
-    <string name="home_create_later_clear_time">清除时间</string>
-    <string name="home_create_later_next">下一步</string>
     <string name="home_join">加入</string>
     <string name="home_logout">退出登录</string>
     <string name="home_signed_in_as">已登录：%1$s</string>

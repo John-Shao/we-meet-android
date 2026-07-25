@@ -20,14 +20,6 @@
     <string name="home_create_meeting">Réunion instantanée</string>
     <string name="home_join_meeting">Rejoindre une réunion</string>
     <string name="home_create_later_meeting">Planifier une réunion</string>
-    <string name="home_create_later_name_label">Nom de la réunion</string>
-    <string name="home_create_later_confirm">Créer</string>
-    <string name="home_create_later_cancel">Annuler</string>
-    <string name="home_create_later_no_time">Veuillez choisir une heure</string>
-    <string name="home_create_later_pick_time">Choisir l\'heure</string>
-    <string name="home_create_later_edit_time">Modifier</string>
-    <string name="home_create_later_clear_time">Effacer</string>
-    <string name="home_create_later_next">Suivant</string>
     <string name="home_join">Rejoindre</string>
     <string name="home_logout">Se déconnecter</string>
     <string name="home_signed_in_as">Connecté en tant que %1$s</string>
