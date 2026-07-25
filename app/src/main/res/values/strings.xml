@@ -400,6 +400,8 @@
     <string name="event_action_edit">Edit</string>
     <string name="event_action_delete">Delete</string>
     <string name="event_action_share">Share</string>
+    <string name="event_meeting_no">Meeting ID</string>
+    <string name="event_meeting_link">Link</string>
     <string name="event_action_more">More</string>
     <string name="event_delete_confirm">Delete this event?</string>
     <string name="event_delete_series_confirm">This is a recurring event. Deleting it removes the entire series (all occurrences). Continue?</string>

@@ -1,6 +1,7 @@
 package com.we.meet.ui.calendar
 
 import android.app.Application
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -41,6 +44,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,10 +55,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -63,6 +70,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.we.meet.BuildConfig
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.CalendarEventDto
@@ -70,6 +78,8 @@ import com.we.meet.data.api.dto.RsvpRequest
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.ui.chat.ForwardCreateGroupFlow
 import com.we.meet.feature.im.ui.chat.ForwardPicker
+// 复用会议详情页的会议号分组格式,避免两处实现漂移。
+import com.we.meet.ui.home.formatSlugDigits
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -481,6 +491,10 @@ private fun EventBody(
         }
 
         if (parsed?.roomSlug != null && parsed.cancelled.not()) {
+            // 会议信息(对标飞书:日程详情内嵌会议区块)—— 会议号/链接是「把会
+            // 发给别人」的高频动作,原先只有一个入会按钮拿不到。
+            Spacer(Modifier.height(16.dp))
+            MeetingInfoBlock(slug = parsed.roomSlug)
             Spacer(Modifier.height(16.dp))
             Button(
                 onClick = { onJoinSlug(parsed.roomSlug) },
@@ -566,6 +580,71 @@ private fun EventBody(
             }
         }
         Spacer(Modifier.height(32.dp))
+    }
+}
+
+/**
+ * 会议信息区块(对标飞书:日程详情内嵌会议信息)——会议号 + 链接,各带复制。
+ *
+ * 复用会议详情页的 [formatSlugDigits] 与 detail_copy 文案,保证两处会议号
+ * 分组格式一致。电话拨入需要 pin_code,日程接口目前不返回(且详情刚放宽为
+ * 「凭 id 只读」,暴露 PIN 要单独评估),故本区块暂不含拨入。
+ */
+@Composable
+private fun MeetingInfoBlock(slug: String) {
+    val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
+    val copiedMsg = stringResource(R.string.detail_copied)
+    val link = BuildConfig.WE_MEET_BASE_URL.trimEnd('/') + "/" + slug
+    val copy: (String) -> Unit = { text ->
+        clipboard.setText(AnnotatedString(text))
+        Toast.makeText(context, copiedMsg, Toast.LENGTH_SHORT).show()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                RoundedCornerShape(12.dp),
+            )
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(R.string.event_meeting_no),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = formatSlugDigits(slug),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = { copy(slug) }) {
+                Text(stringResource(R.string.detail_copy))
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(R.string.event_meeting_link),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = link,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = { copy(link) }) {
+                Text(stringResource(R.string.detail_copy))
+            }
+        }
     }
 }
 
