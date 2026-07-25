@@ -94,10 +94,22 @@ fun ErrorBanner(message: String) {
 /**
  * Localized one-line preview for a conversation row — the same parser that
  * drives bubble rendering, so new content types stay consistent in both.
+ *
+ * ⚠️ 结构化卡片的标签**先按 contentType 判定,不解析 body**:会话列表的预览
+ * body 由服务端截断(jusi `previewMaxRunes=200`),超长卡片 JSON 会残缺,
+ * `parseJson` 抛异常兜底成 Unsupported → 列表显示「暂不支持的消息」。实测
+ * event-card 约 225 字(多出 event_id UUID + 起止时间)必被截断,meeting-card
+ * 约 111 字侥幸幸存。这些卡片的预览是固定文案、本就不需要 body,故直接短路
+ * (与 Web previewOf 的纯 content_type 分支同口径)。
  */
 @Composable
 fun previewText(contentType: String?, body: String?): String {
     if (body == null) return ""
+    when (contentType) {
+        "event-card" -> return stringResource(R.string.im_preview_event)
+        "doc-card" -> return stringResource(R.string.im_preview_doc)
+        "meeting-card" -> return stringResource(R.string.im_preview_meeting)
+    }
     return when (val content = MessageContentParser.parse(contentType ?: "text", body)) {
         is MessageContent.Text -> content.body
         is MessageContent.Image -> stringResource(R.string.im_preview_image)
