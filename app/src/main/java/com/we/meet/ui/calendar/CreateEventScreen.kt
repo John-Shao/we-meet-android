@@ -56,7 +56,9 @@ import com.we.meet.core.directory.ui.ContactPicker
 import com.we.meet.core.directory.ui.ContactPickerMode
 import com.we.meet.core.directory.ui.PickedMember
 import com.we.meet.data.api.dto.CreateEventRequest
+import com.we.meet.data.api.dto.MeetingRoomBriefDto
 import com.we.meet.data.api.dto.UpdateEventRequest
+import com.we.meet.ui.meetingroom.MeetingRoomPicker
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -67,6 +69,7 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 private val dateFmt = DateTimeFormatter.ofPattern("yyyy/MM/dd")
 private val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
@@ -138,6 +141,11 @@ fun CreateEventScreen(
     var editIsRecurring by remember { mutableStateOf(false) }
 
     var showPicker by remember { mutableStateOf(false) }
+    // P9 实体会议室(与 LiveKit 房间无关)。`roomConflict` 是客户端预判,服务端
+    // 409 才是权威 —— 网络失败时刻意不置位,免得误禁用保存。
+    var meetingRoom by remember { mutableStateOf<MeetingRoomBriefDto?>(null) }
+    var showRoomPicker by remember { mutableStateOf(false) }
+    var roomConflict by remember { mutableStateOf(false) }
     var submitting by remember { mutableStateOf(false) }
     var errorRes by remember { mutableStateOf<Int?>(null) }
     // Edit mode starts not-ready until the event loads.
@@ -149,7 +157,7 @@ fun CreateEventScreen(
     // meaningful "dirty" check would need an initial snapshot — out of scope.)
     val isDirty = !isEdit && (
         title.isNotBlank() || description.isNotBlank() ||
-            attendees.isNotEmpty() || repeat.isNotEmpty()
+            attendees.isNotEmpty() || repeat.isNotEmpty() || meetingRoom != null
     )
     val handleClose: () -> Unit = { if (isDirty) showDiscardConfirm = true else onClose() }
 
@@ -202,6 +210,7 @@ fun CreateEventScreen(
                 // P8 编辑增删参与者:预填既有参与者(组织者恒在,不进列表);
                 // 重复日程不放开(服务端三选路径剔除 attendee_ids)。
                 editIsRecurring = e.isRecurring
+                meetingRoom = e.meetingRoom
                 attendees = e.attendees.mapNotNull { a ->
                     val uid = a.id ?: return@mapNotNull null
                     if (a.role == "organizer") return@mapNotNull null
@@ -215,6 +224,30 @@ fun CreateEventScreen(
                 loaded = true
             }
             .onFailure { errorRes = R.string.event_load_error; loaded = true }
+    }
+
+    // P9:时段/房间一变就重查可用性。网络失败按「不冲突」处理 —— 与其误禁用
+    // 保存按钮,不如让服务端用 409 给出准确答复。
+    androidx.compose.runtime.LaunchedEffect(start, end, allDay, meetingRoom?.id) {
+        val room = meetingRoom
+        if (room == null || allDay) {
+            roomConflict = false
+            return@LaunchedEffect
+        }
+        val zone = ZoneId.systemDefault()
+        val startInstant = start.atZone(zone).toInstant()
+        val endInstant = end.atZone(zone).toInstant()
+        if (!endInstant.isAfter(startInstant)) {
+            roomConflict = false
+            return@LaunchedEffect
+        }
+        roomConflict = runCatching {
+            app.apiClient.meetingRoomApi.availability(
+                start = isoUtc(startInstant),
+                end = isoUtc(endInstant),
+                excludeEventId = editEventId,
+            ).results.none { it.id == room.id && it.isAvailable }
+        }.getOrDefault(false)
     }
 
     fun submit() {
@@ -249,6 +282,9 @@ fun CreateEventScreen(
                             attendeeIds = if (editIsRecurring) null
                             else attendees.map { it.userId },
                             editScope = editScope,
+                            // P9:全天不允许带房间;"" = 释放(不能用 null,
+                            // Moshi 会把它丢掉,后端就当没提过这个字段)。
+                            meetingRoomId = if (allDay) "" else meetingRoom?.id.orEmpty(),
                         ),
                     )
                 } else {
@@ -264,6 +300,8 @@ fun CreateEventScreen(
                             timezone = zone.id,
                             recurrence = composeRRule(repeat, repeatUntil),
                             sourceConversationId = sourceConversationId,
+                            // P9:全天日程 M1 不支持订会议室(服务端也会 400)。
+                            meetingRoomId = if (allDay) null else meetingRoom?.id,
                         )
                     )
                 }
@@ -273,9 +311,16 @@ fun CreateEventScreen(
                     if (!isEdit) onCreated?.invoke(dto)
                     onClose()
                 }
-                .onFailure {
+                .onFailure { e ->
                     submitting = false
-                    errorRes = if (isEdit) R.string.event_update_failed else R.string.calendar_create_failed
+                    errorRes = when {
+                        // P9:409 = 会议室刚被他人订走。区分出来才能给出可行动的
+                        // 提示(换一间),泛化成「保存失败」用户无从下手。
+                        isMeetingRoomConflict(e) -> R.string.meeting_room_conflict_error
+                        isEdit -> R.string.event_update_failed
+                        else -> R.string.calendar_create_failed
+                    }
+                    if (isMeetingRoomConflict(e)) roomConflict = true
                 }
         }
     }
@@ -427,6 +472,73 @@ fun CreateEventScreen(
                 HorizontalDivider()
             }
 
+            // P9 会议室 —— 放在参与者之后:容量筛选按已选人数起算,可用性依赖
+            // 上方选好的时段,冲突提示也就正好挨着保存按钮。
+            Text(
+                text = stringResource(R.string.meeting_room_field_label),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+            if (allDay) {
+                // M1 不支持全天订会议室(服务端同样 400):「按谁的时区的
+                // 00:00–24:00」这个问题还没定,先明说而不是让它悄悄失败。
+                Text(
+                    text = stringResource(R.string.meeting_room_all_day_unsupported),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 4.dp),
+                )
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        meetingRoom?.let { room ->
+                            InputChip(
+                                selected = true,
+                                onClick = { meetingRoom = null },
+                                label = {
+                                    Text(
+                                        listOfNotNull(
+                                            room.name,
+                                            room.pathLabel?.takeIf { it.isNotBlank() },
+                                        ).joinToString(" · "),
+                                    )
+                                },
+                            )
+                            if (roomConflict) {
+                                Text(
+                                    text = stringResource(
+                                        R.string.meeting_room_conflict_inline,
+                                        room.name,
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        } ?: Text(
+                            text = stringResource(R.string.meeting_room_none),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    TextButton(onClick = { showRoomPicker = true }) {
+                        Text(
+                            stringResource(
+                                if (meetingRoom == null) {
+                                    R.string.meeting_room_add
+                                } else {
+                                    R.string.meeting_room_change
+                                },
+                            ),
+                        )
+                    }
+                }
+            }
+            HorizontalDivider()
+
             OutlinedTextField(
                 value = description,
                 onValueChange = { if (it.length <= 500) description = it },
@@ -461,6 +573,23 @@ fun CreateEventScreen(
                 showPicker = false
             },
             onDismiss = { showPicker = false },
+        )
+    }
+
+    if (showRoomPicker) {
+        val zone = ZoneId.systemDefault()
+        MeetingRoomPicker(
+            apiClient = app.apiClient,
+            startIso = isoUtc(start.atZone(zone).toInstant()),
+            endIso = isoUtc(end.atZone(zone).toInstant()),
+            excludeEventId = editEventId,
+            // 组织者自己也占一个位子。
+            seedCapacity = attendees.size + 1,
+            onConfirm = { room ->
+                meetingRoom = room
+                showRoomPicker = false
+            },
+            onDismiss = { showRoomPicker = false },
         )
     }
 
@@ -749,3 +878,11 @@ private fun ReminderDropdown(selectedMinutes: Int?, onSelect: (Int?) -> Unit) {
 
 private fun isoUtc(instant: Instant): String =
     DateTimeFormatter.ISO_INSTANT.format(instant)
+
+/**
+ * P9:409 = 该会议室在这个时段已被占用(core/api/calendar.py 的
+ * `meeting_room_unavailable`)。日程接口没有别的 409 语义,所以状态码本身
+ * 就够判定,不必解析响应体。
+ */
+private fun isMeetingRoomConflict(e: Throwable): Boolean =
+    e is HttpException && e.code() == 409

@@ -65,6 +65,12 @@ data class CalendarEventDto(
     /** Room id (join target) + slug; null when the event has no room. */
     val room: String? = null,
     @Json(name = "room_slug") val roomSlug: String? = null,
+    /**
+     * P9 实体会议室 —— 与上面的 LiveKit `room` 毫无关系。null = 未预订。
+     * `bookingStatus == "conflict"` 表示该场次没抢到房间(重复日程滚动物化
+     * 时可能发生):会议照开,只是没订上会议室。
+     */
+    @Json(name = "meeting_room") val meetingRoom: MeetingRoomBriefDto? = null,
     val attendees: List<EventAttendeeDto> = emptyList(),
     @Json(name = "my_rsvp") val myRsvp: String? = null,
     @Json(name = "created_at") val createdAt: String = "",
@@ -102,6 +108,12 @@ data class CreateEventRequest(
     val recurrence: String = "",
     /** P8:来源 IM 会话 cid(仅忙闲页链路传);变更/取消时后端向其推卡片。 */
     @Json(name = "source_conversation_id") val sourceConversationId: String? = null,
+    /**
+     * P9 会议室 id。`""` = 不预订。**必须用空串而不是 null** —— Moshi 不
+     * 序列化 null,发 null 等同于「字段缺省 = 不动」,清不掉已有预订;后端
+     * 对 `""` 和 `null` 都按「释放」处理。全天日程不允许带(服务端 400)。
+     */
+    @Json(name = "meeting_room_id") val meetingRoomId: String? = null,
 )
 
 /**
@@ -125,6 +137,11 @@ data class UpdateEventRequest(
      * 后端 `get('edit_scope') or ''` 会把 null 当缺省(主事件缺省=全部)。
      */
     @Json(name = "edit_scope") val editScope: String? = null,
+    /**
+     * P9 会议室:`""` = 释放已有预订,uuid = 预订/换房。同样不能用 null 表达
+     * 「清空」—— Moshi 会把它丢掉,后端就当没提过这个字段。
+     */
+    @Json(name = "meeting_room_id") val meetingRoomId: String? = null,
 )
 
 @JsonClass(generateAdapter = true)

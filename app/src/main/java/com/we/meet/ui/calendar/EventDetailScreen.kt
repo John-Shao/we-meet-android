@@ -524,6 +524,33 @@ private fun EventBody(
             )
         }
 
+        // P9 实体会议室 —— 属于「地点」这类信息,和时间/组织者/提醒放在一起,
+        // 不并进下面的入会区块(那是 LiveKit 视频房间)。取消的日程照常展示:
+        // 用户仍需要知道原本订的是哪一间。
+        event.meetingRoom?.let { room ->
+            val detail = buildString {
+                append(room.name)
+                room.pathLabel?.takeIf { it.isNotBlank() }?.let { append(" · ").append(it) }
+                if (room.capacity > 0) {
+                    append(" · ")
+                    append(stringResource(R.string.meeting_room_capacity_people, room.capacity))
+                }
+            }
+            Text(
+                text = "🏢 ${stringResource(R.string.meeting_room_detail_label)}: $detail",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            if (room.bookingStatus == "conflict") {
+                Text(
+                    text = stringResource(R.string.meeting_room_booking_conflict),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+
         if (parsed?.roomSlug != null && parsed.cancelled.not()) {
             // 会议信息(对标飞书:日程详情内嵌会议区块)—— 会议号/链接是「把会
             // 发给别人」的高频动作,原先只有一个入会按钮拿不到。

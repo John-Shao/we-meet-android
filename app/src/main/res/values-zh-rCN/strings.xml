@@ -524,4 +524,27 @@
     <string name="room_invite_state_failed">呼叫失败</string>
     <string name="room_meeting_code_label">会议号:%1$s</string>
     <string name="room_invite_more_share">更多分享方式</string>
+
+    <!-- P9 会议室(实体会议室;LiveKit 视频房间用 room_* 前缀,勿混) -->
+    <string name="meeting_room_field_label">会议室</string>
+    <string name="meeting_room_add">添加会议室</string>
+    <string name="meeting_room_change">更换</string>
+    <string name="meeting_room_none">未预订会议室</string>
+    <string name="meeting_room_all_day_unsupported">全天日程暂不支持预订会议室</string>
+    <string name="meeting_room_detail_label">会议室</string>
+    <string name="meeting_room_capacity_people">%1$d 人</string>
+    <string name="meeting_room_booking_conflict">该场次会议室未预订成功</string>
+    <string name="meeting_room_conflict_inline">「%1$s」在新时段已被占用</string>
+    <string name="meeting_room_conflict_error">该会议室刚被他人订走,请重新选择</string>
+    <string name="meeting_room_picker_tab_available">可用会议室</string>
+    <string name="meeting_room_picker_tab_all">所有会议室</string>
+    <string name="meeting_room_picker_search_hint">搜索会议室或层级</string>
+    <string name="meeting_room_filter_level_all">全部层级</string>
+    <string name="meeting_room_filter_capacity_at_least">≥ %1$d 人</string>
+    <string name="meeting_room_unavailable">该时段已被占用</string>
+    <string name="meeting_room_unavailable_range">%1$s–%2$s 已被占用</string>
+    <string name="meeting_room_empty">没有符合条件的会议室</string>
+    <string name="meeting_room_empty_available">该时段暂无可用会议室</string>
+    <string name="meeting_room_load_error">会议室加载失败</string>
+    <string name="meeting_room_retry">重试</string>
 </resources>

@@ -92,6 +92,8 @@ class ApiClient(tokenStore: TokenStore) {
     val qrLoginApi: QrLoginApi = retrofit.create(QrLoginApi::class.java)
     val imBridgeApi: ImBridgeApi = retrofit.create(ImBridgeApi::class.java)
     val calendarApi: CalendarApi = retrofit.create(CalendarApi::class.java)
+    /** P9 实体会议室 —— 与上面 roomApi(LiveKit 视频房间)无关。 */
+    val meetingRoomApi: MeetingRoomApi = retrofit.create(MeetingRoomApi::class.java)
     val approvalApi: ApprovalApi = retrofit.create(ApprovalApi::class.java)
     val pushApi: PushApi = retrofit.create(PushApi::class.java)
     val searchApi: SearchApi = retrofit.create(SearchApi::class.java)

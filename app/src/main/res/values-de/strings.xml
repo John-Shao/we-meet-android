@@ -453,4 +453,27 @@
     <string name="meeting_detail_chapters_empty">Noch keine Kapitel — sie entstehen mit der Zusammenfassung.</string>
     <string name="meeting_detail_summary_edited">Bearbeitet</string>
     <string name="docs_viewer_title">Dokument</string>
+
+    <!-- P9 会议室(实体会议室;LiveKit 视频房间用 room_* 前缀,勿混) -->
+    <string name="meeting_room_field_label">Besprechungsraum</string>
+    <string name="meeting_room_add">Raum hinzufügen</string>
+    <string name="meeting_room_change">Ändern</string>
+    <string name="meeting_room_none">Kein Raum gebucht</string>
+    <string name="meeting_room_all_day_unsupported">Ganztägige Termine können noch keinen Raum buchen</string>
+    <string name="meeting_room_detail_label">Besprechungsraum</string>
+    <string name="meeting_room_capacity_people">%1$d Personen</string>
+    <string name="meeting_room_booking_conflict">Der Raum konnte für diesen Termin nicht gebucht werden</string>
+    <string name="meeting_room_conflict_inline">%1$s ist zur neuen Zeit bereits belegt</string>
+    <string name="meeting_room_conflict_error">Der Raum wurde gerade vergeben. Bitte einen anderen wählen.</string>
+    <string name="meeting_room_picker_tab_available">Verfügbar</string>
+    <string name="meeting_room_picker_tab_all">Alle Räume</string>
+    <string name="meeting_room_picker_search_hint">Räume oder Ebenen suchen</string>
+    <string name="meeting_room_filter_level_all">Alle Ebenen</string>
+    <string name="meeting_room_filter_capacity_at_least">≥ %1$d</string>
+    <string name="meeting_room_unavailable">In diesem Zeitraum belegt</string>
+    <string name="meeting_room_unavailable_range">%1$s–%2$s bereits belegt</string>
+    <string name="meeting_room_empty">Keine Räume passen zu diesen Filtern</string>
+    <string name="meeting_room_empty_available">Für diesen Zeitraum ist kein Raum frei</string>
+    <string name="meeting_room_load_error">Räume konnten nicht geladen werden</string>
+    <string name="meeting_room_retry">Erneut versuchen</string>
 </resources>
