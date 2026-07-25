@@ -20,10 +20,14 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.QuestionMark
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -63,6 +67,9 @@ import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.CalendarEventDto
 import com.we.meet.data.api.dto.RsvpRequest
+import com.we.meet.feature.im.ImSession
+import com.we.meet.feature.im.ui.chat.ForwardCreateGroupFlow
+import com.we.meet.feature.im.ui.chat.ForwardPicker
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -178,6 +185,11 @@ fun EventDetailScreen(
     // 删除=仅此次/此次及以后)。主事件走直连(编辑=全部,删除=系列确认)。
     var editScopeAsk by remember { mutableStateOf(false) }
     var deleteScopeAsk by remember { mutableStateOf(false) }
+    // 分享日程到聊天(对标飞书:顶栏分享,删除收进「更多」)。
+    var showShare by remember { mutableStateOf(false) }
+    var showShareGroup by remember { mutableStateOf(false) }
+    var showMore by remember { mutableStateOf(false) }
+    val imSession = remember { ImSession.get(app) }
 
     // Re-fetch on resume so an edit made on the edit screen shows on return.
     androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
@@ -205,6 +217,15 @@ fun EventDetailScreen(
                     }
                 },
                 actions = {
+                    // 分享不限组织者:任何能看到该日程的人都能转发卡片(对标飞书)。
+                    if (ui.event != null) {
+                        IconButton(onClick = { showShare = true }) {
+                            Icon(
+                                Icons.Filled.Share,
+                                contentDescription = stringResource(R.string.event_action_share),
+                            )
+                        }
+                    }
                     if (ui.canManage) {
                         // 重复「子场次」(recurrence_parent 非空)先弹三选;主事件/
                         // 单次直连(主事件编辑=后端全部,删除=系列确认)。
@@ -220,22 +241,84 @@ fun EventDetailScreen(
                                 contentDescription = stringResource(R.string.event_action_edit),
                             )
                         }
-                        IconButton(
-                            enabled = !ui.deleting,
-                            onClick = {
-                                if (isOccurrence) deleteScopeAsk = true else confirmDelete = true
-                            },
-                        ) {
-                            Icon(
-                                Icons.Filled.Delete,
-                                contentDescription = stringResource(R.string.event_action_delete),
-                            )
+                        // 删除收进「更多」(对标飞书),避免高危操作与常用操作并排。
+                        Box {
+                            IconButton(
+                                enabled = !ui.deleting,
+                                onClick = { showMore = true },
+                            ) {
+                                Icon(
+                                    Icons.Filled.MoreVert,
+                                    contentDescription = stringResource(R.string.event_action_more),
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showMore,
+                                onDismissRequest = { showMore = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            stringResource(R.string.event_action_delete),
+                                            color = MaterialTheme.colorScheme.error,
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Filled.Delete,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error,
+                                        )
+                                    },
+                                    onClick = {
+                                        showMore = false
+                                        if (isOccurrence) deleteScopeAsk = true else confirmDelete = true
+                                    },
+                                )
+                            }
                         }
                     }
                 },
             )
         },
     ) { padding ->
+        // 分享日程到聊天:发 content_type='event-card'(协议 v1,与 Web
+        // buildEventCardBody / AppNav 创建回发卡片一致),收端渲染成可点卡片。
+        ui.event?.let { ev ->
+            if (showShare) {
+                val cardBody = org.json.JSONObject().apply {
+                    put("v", 1)
+                    put("kind", "created")
+                    put("event_id", ev.id)
+                    put("title", ev.title)
+                    put("start", ev.startAt)
+                    put("end", ev.endAt)
+                    put("all_day", ev.allDay)
+                    put("attendee_count", ev.attendees.size)
+                    put("organizer_name", ev.organizer?.fullName ?: "")
+                }.toString()
+                ForwardPicker(
+                    targets = imSession.allForwardTargets(),
+                    onForward = { cids ->
+                        cids.forEach { imSession.sendMessageAsync(it, cardBody, "event-card") }
+                        showShare = false
+                    },
+                    onCreateGroupForward = { showShareGroup = true },
+                    onDismiss = { showShare = false },
+                )
+                if (showShareGroup) {
+                    ForwardCreateGroupFlow(
+                        deps = app,
+                        onCreated = { newCid ->
+                            imSession.sendMessageAsync(newCid, cardBody, "event-card")
+                            showShareGroup = false
+                            showShare = false
+                        },
+                        onCancel = { showShareGroup = false },
+                    )
+                }
+            }
+        }
         if (confirmDelete) {
             androidx.compose.material3.AlertDialog(
                 onDismissRequest = { confirmDelete = false },

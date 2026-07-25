@@ -378,6 +378,8 @@
     <string name="event_update_failed">Opslaan mislukt</string>
     <string name="event_action_edit">Bewerken</string>
     <string name="event_action_delete">Verwijderen</string>
+    <string name="event_action_share">Delen</string>
+    <string name="event_action_more">Meer</string>
     <string name="event_delete_confirm">Deze afspraak verwijderen?</string>
     <string name="event_edit_scope_title">Terugkerende afspraak bewerken</string>
     <string name="event_delete_scope_title">Terugkerende afspraak verwijderen</string>

@@ -378,6 +378,8 @@
     <string name="event_update_failed">"Échec de l'enregistrement"</string>
     <string name="event_action_edit">Modifier</string>
     <string name="event_action_delete">Supprimer</string>
+    <string name="event_action_share">Partager</string>
+    <string name="event_action_more">Plus</string>
     <string name="event_delete_confirm">Supprimer cet événement ?</string>
     <string name="event_edit_scope_title">Modifier l\'événement récurrent</string>
     <string name="event_delete_scope_title">Supprimer l\'événement récurrent</string>
