@@ -106,6 +106,8 @@ fun HistoryDetailScreen(
     }
 
     val room = (roomState as? MeetingDetailViewModel.LoadState.Success)?.value
+    // 房间详情未加载出来前不显示删除(宁可少给,不给出会 403 的入口)。
+    val isRoomOwner = room?.is_owner == true
     val deleteName = room?.name?.takeIf { it.isNotBlank() }
         ?: localEntry?.name?.takeIf { it.isNotBlank() }
         ?: room?.slug.orEmpty()
@@ -160,11 +162,16 @@ fun HistoryDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { confirmDelete = true }) {
-                        Icon(
-                            imageVector = Icons.Filled.Delete,
-                            contentDescription = stringResource(R.string.history_action_delete),
-                        )
+                    // 删除仅房主可见:历史列表含「我只是参会」的会议,参会者
+                    // 对别人的会没有删除权(后端 DELETE → is_owner),不收敛
+                    // 的话点下去只会吃 403。
+                    if (isRoomOwner) {
+                        IconButton(onClick = { confirmDelete = true }) {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = stringResource(R.string.history_action_delete),
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
