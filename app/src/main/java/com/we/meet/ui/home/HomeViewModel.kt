@@ -12,7 +12,6 @@ import com.we.meet.data.auth.TokenStore
 import com.we.meet.data.history.HistoryEntry
 import com.we.meet.data.history.HistoryStore
 import com.we.meet.data.repository.RoomRepository
-import com.we.meet.ui.preview.RoomTarget
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -106,88 +105,6 @@ class HomeViewModel(
      */
     private fun RoomDto.isAiSession(): Boolean =
         name?.startsWith(AI_SESSION_NAME_PREFIX) == true
-
-    /**
-     * The room just created via "create later" — non-null while the
-     * invite sheet is open. Cleared when the user dismisses or enters
-     * the meeting.
-     */
-    private val _laterCreated = MutableStateFlow<RoomTarget?>(null)
-    val laterCreated: StateFlow<RoomTarget?> = _laterCreated.asStateFlow()
-
-    private val _laterCreating = MutableStateFlow(false)
-    val laterCreating: StateFlow<Boolean> = _laterCreating.asStateFlow()
-
-    /** One-shot: the last create-later attempt failed (drives a Toast). */
-    private val _laterError = MutableStateFlow(false)
-    val laterError: StateFlow<Boolean> = _laterError.asStateFlow()
-
-    fun consumeLaterError() { _laterError.value = false }
-
-    private val displayUsername: String
-        get() = tokenStore.nickname?.takeIf { it.isNotBlank() }
-            ?: tokenStore.phone
-            ?: getApplication<Application>().getString(R.string.default_display_name)
-
-    val defaultMeetingName: String
-        get() = "${displayUsername}的会议"
-
-    /**
-     * Create a room without joining it. Surfaces the invite info via
-     * [laterCreated] so HomeScreen can pop the invite sheet for the
-     * host to copy/share before deciding when (if ever) to enter.
-     *
-     * [scheduledAtIso] optional — non-null when the host picked a
-     * specific start time in the dialog. Persisted server-side as
-     * Room.scheduled_at and shown on the invite sheet so the host's
-     * paste includes "scheduled for X" alongside the room link.
-     */
-    fun createLaterMeeting(meetingName: String, scheduledAtIso: String? = null) {
-        if (_laterCreating.value) return
-        _laterCreating.update { true }
-        _laterError.value = false
-        viewModelScope.launch {
-            roomRepository.createRoom(displayUsername, meetingName, scheduledAtIso)
-                .onSuccess { room ->
-                    com.we.meet.analytics.Analytics.capture(
-                        com.we.meet.analytics.Analytics.EVENT_CREATE_MEETING,
-                        mapOf(
-                            "kind" to "scheduled",
-                            "scheduled" to (scheduledAtIso != null),
-                        ),
-                    )
-                    val lk = room.livekit
-                    if (lk != null) {
-                        _laterCreated.value = RoomTarget(
-                            roomId = room.id,
-                            livekitUrl = lk.url,
-                            livekitToken = lk.token,
-                            displayName = room.name ?: room.slug ?: room.id,
-                            slug = room.slug ?: room.id,
-                            isAdmin = room.is_administrable == true,
-                            host = displayUsername,
-                            createdAtMs = parseIsoMillis(room.created_at),
-                            scheduledAtIso = room.scheduled_at,
-                        )
-                    } else {
-                        // Room created but no LiveKit payload → can't open the
-                        // invite sheet; surface as a failure instead of silently
-                        // doing nothing.
-                        _laterError.value = true
-                    }
-                    // Pull the latest server list so the brand-new room
-                    // shows up in the scheduled / history zones without
-                    // waiting for the next LifecycleResumeEffect tick.
-                    refreshRemoteRooms()
-                }
-                .onFailure { _laterError.value = true }
-            _laterCreating.update { false }
-        }
-    }
-
-    fun dismissLaterCreated() {
-        _laterCreated.value = null
-    }
 
     /**
      * Remove a meeting from the user's view. When the user is the room

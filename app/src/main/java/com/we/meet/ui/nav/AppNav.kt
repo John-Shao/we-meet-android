@@ -442,7 +442,6 @@ fun AppNav() {
             MainTabScreen(
                 onCreateMeeting = { navController.navigate(Routes.createPreview()) },
                 onJoinMeeting = { navController.navigate(Routes.joinPreview()) },
-                onJoinSlug = { slug -> navController.navigate(Routes.joinPreview(slug)) },
                 onScanQrCode = { navController.navigate(Routes.QR_SCAN) },
                 onHistoryClick = { roomId ->
                     navController.navigate(Routes.historyDetail(roomId))
