@@ -381,6 +381,9 @@
     <string name="event_action_share">Teilen</string>
     <string name="event_meeting_no">Meeting-ID</string>
     <string name="event_meeting_link">Link</string>
+    <string name="event_summary">Protokoll</string>
+    <string name="event_summary_pending">wird erstellt…</string>
+    <string name="event_summary_view">Protokoll ansehen</string>
     <string name="event_action_more">Mehr</string>
     <string name="event_delete_confirm">Diesen Termin löschen?</string>
     <string name="event_edit_scope_title">Wiederkehrenden Termin bearbeiten</string>

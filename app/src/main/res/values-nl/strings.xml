@@ -381,6 +381,9 @@
     <string name="event_action_share">Delen</string>
     <string name="event_meeting_no">Vergader-ID</string>
     <string name="event_meeting_link">Link</string>
+    <string name="event_summary">Notulen</string>
+    <string name="event_summary_pending">wordt gegenereerd…</string>
+    <string name="event_summary_view">Notulen bekijken</string>
     <string name="event_action_more">Meer</string>
     <string name="event_delete_confirm">Deze afspraak verwijderen?</string>
     <string name="event_edit_scope_title">Terugkerende afspraak bewerken</string>

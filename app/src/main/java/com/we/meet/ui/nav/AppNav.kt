@@ -797,6 +797,10 @@ fun AppNav() {
                 onBack = rememberOnceOnly(safePop),
                 onJoinSlug = { slug -> navController.navigate(Routes.joinPreview(slug)) },
                 onEdit = { id, scope -> navController.navigate(Routes.editEvent(id, scope)) },
+                // 会后纪要入口 → 会议详情页(完整纪要/待办/转录在那里渲染)。
+                onOpenSummary = { roomId ->
+                    navController.navigate(Routes.historyDetail(roomId))
+                },
             )
         }
 

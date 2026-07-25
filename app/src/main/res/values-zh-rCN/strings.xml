@@ -402,6 +402,9 @@
     <string name="event_action_share">分享</string>
     <string name="event_meeting_no">会议号</string>
     <string name="event_meeting_link">链接</string>
+    <string name="event_summary">会议纪要</string>
+    <string name="event_summary_pending">生成中…</string>
+    <string name="event_summary_view">查看纪要</string>
     <string name="event_action_more">更多</string>
     <string name="event_delete_confirm">确定删除该日程？</string>
     <string name="event_delete_series_confirm">这是重复日程，删除将移除整个系列（所有场次），确定继续？</string>

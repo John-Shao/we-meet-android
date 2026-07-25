@@ -19,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -75,12 +76,15 @@ import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.CalendarEventDto
 import com.we.meet.data.api.dto.RsvpRequest
+import com.we.meet.data.api.dto.SummaryDto
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.ui.chat.ForwardCreateGroupFlow
 import com.we.meet.feature.im.ui.chat.ForwardPicker
 // 复用会议详情页的会议号分组格式,避免两处实现漂移。
 import com.we.meet.ui.home.formatSlugDigits
 import java.time.format.DateTimeFormatter
+import java.time.Instant
+import java.time.OffsetDateTime
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -96,6 +100,12 @@ data class EventDetailUiState(
     val canManage: Boolean = false,
     val deleting: Boolean = false,
     val deleteError: Boolean = false,
+    /**
+     * 会后纪要(阶段 2:日程详情覆盖「会前预约 → 会后纪要」全生命周期)。
+     * 仅「已结束 + 有房间」时才拉,未来日程不平白打一次 404;拿不到就是 null,
+     * 界面不显示纪要区块,不制造空入口。
+     */
+    val summary: SummaryDto? = null,
 )
 
 class EventDetailViewModel(
@@ -105,6 +115,7 @@ class EventDetailViewModel(
 
     private val api = (app as WeMeetApp).apiClient.calendarApi
     private val userApi = (app as WeMeetApp).apiClient.userApi
+    private val roomApi = (app as WeMeetApp).apiClient.roomApi
 
     private val _ui = MutableStateFlow(EventDetailUiState())
     val ui: StateFlow<EventDetailUiState> = _ui.asStateFlow()
@@ -130,8 +141,25 @@ class EventDetailViewModel(
                             canManage = selfUserId != null && e.organizer?.id == selfUserId,
                         )
                     }
+                    loadSummaryIfEnded(e)
                 }
                 .onFailure { _ui.update { it.copy(loading = false, error = true) } }
+        }
+    }
+
+    /**
+     * 会后纪要:仅「已结束 + 有房间」才拉。404(尚未生成/从未开会)是常态,
+     * 静默留 null —— 界面据此不显示纪要区块,不给用户一个点进去空空如也的入口。
+     */
+    private fun loadSummaryIfEnded(event: CalendarEventDto) {
+        val roomId = event.room ?: return
+        val ended = runCatching {
+            OffsetDateTime.parse(event.endAt).toInstant().isBefore(Instant.now())
+        }.getOrDefault(false)
+        if (!ended) return
+        viewModelScope.launch {
+            runCatching { roomApi.getSummary(roomId) }
+                .onSuccess { s -> _ui.update { it.copy(summary = s) } }
         }
     }
 
@@ -182,6 +210,8 @@ fun EventDetailScreen(
     onJoinSlug: (slug: String) -> Unit,
     /** [scope] = one/following/all(重复子场次)或 null(单次/主事件)。 */
     onEdit: (eventId: String, scope: String?) -> Unit,
+    /** 会后纪要入口 → 会议详情页(完整纪要/待办/转录在那里渲染)。 */
+    onOpenSummary: (roomId: String) -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val vm: EventDetailViewModel = viewModel(
@@ -401,6 +431,8 @@ fun EventDetailScreen(
                     rsvpError = ui.rsvpError,
                     onRsvp = { vm.rsvp(it) },
                     onJoinSlug = onJoinSlug,
+                    ui = ui,
+                    onOpenSummary = onOpenSummary,
                 )
             }
             // 删除进行中:半透明遮罩 + 转圈,拦截交互避免二次触发。
@@ -426,6 +458,8 @@ private fun EventBody(
     rsvpError: Boolean,
     onRsvp: (String) -> Unit,
     onJoinSlug: (String) -> Unit,
+    ui: EventDetailUiState,
+    onOpenSummary: (roomId: String) -> Unit,
 ) {
     val parsedFull = event.toParsed()
     val parsed = parsedFull?.ui
@@ -495,6 +529,16 @@ private fun EventBody(
             // 发给别人」的高频动作,原先只有一个入会按钮拿不到。
             Spacer(Modifier.height(16.dp))
             MeetingInfoBlock(slug = parsed.roomSlug)
+            // 会后纪要:紧跟会议信息,构成「会前(会议号/链接)→ 会后(纪要)」。
+            // 这里只给摘要 + 入口,完整纪要/待办/转录仍由会议详情页渲染。
+            val summary = ui.summary
+            if (summary != null && summary.status != "failed" && event.room != null) {
+                Spacer(Modifier.height(12.dp))
+                SummaryEntryBlock(
+                    summary = summary,
+                    onOpen = { onOpenSummary(event.room) },
+                )
+            }
             Spacer(Modifier.height(16.dp))
             Button(
                 onClick = { onJoinSlug(parsed.roomSlug) },
@@ -645,6 +689,70 @@ private fun MeetingInfoBlock(slug: String) {
                 Text(stringResource(R.string.detail_copy))
             }
         }
+    }
+}
+
+/**
+ * 会后纪要入口:摘要两行预览 + 「查看纪要」。完整纪要/待办/转录仍在会议详情页,
+ * 这里不重复实现,也不把重内容堆进日程详情。
+ */
+@Composable
+private fun SummaryEntryBlock(summary: SummaryDto, onOpen: () -> Unit) {
+    // 展示优先用人工编辑版,回落 AI 原文;去掉 markdown 记号只留可读预览。
+    val preview = (summary.effective_content?.takeIf { it.isNotBlank() }
+        ?: summary.content)
+        .replace(Regex("[#*`>\\-\\n]+"), " ")
+        .trim()
+        .take(90)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onOpen)
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                RoundedCornerShape(12.dp),
+            )
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.AutoMirrored.Filled.Notes,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = stringResource(R.string.event_summary),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+            )
+            if (summary.status == "pending") {
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = stringResource(R.string.event_summary_pending),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (preview.isNotBlank()) {
+            Text(
+                text = "$preview…",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+        Text(
+            text = stringResource(R.string.event_summary_view),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 6.dp),
+        )
     }
 }
 

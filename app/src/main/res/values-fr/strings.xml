@@ -381,6 +381,9 @@
     <string name="event_action_share">Partager</string>
     <string name="event_meeting_no">N° de réunion</string>
     <string name="event_meeting_link">Lien</string>
+    <string name="event_summary">Compte rendu</string>
+    <string name="event_summary_pending">génération…</string>
+    <string name="event_summary_view">Voir le compte rendu</string>
     <string name="event_action_more">Plus</string>
     <string name="event_delete_confirm">Supprimer cet événement ?</string>
     <string name="event_edit_scope_title">Modifier l\'événement récurrent</string>
