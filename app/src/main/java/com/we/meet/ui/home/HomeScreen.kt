@@ -70,6 +70,8 @@ fun HomeScreen(
     /** P8:预约会议行 → 预约详情页(进会/复制/删除收进详情)。 */
     onScheduledClick: (slug: String, name: String, scheduledAtIso: String) -> Unit,
     onShareScheduledMeeting: (slug: String, name: String, scheduledAtIso: String) -> Unit,
+    /** 预约会议 = 创建日程(对标飞书):打开日历的创建日程界面。 */
+    onScheduleMeeting: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
@@ -157,7 +159,8 @@ fun HomeScreen(
                 label = stringResource(R.string.home_create_later_meeting),
                 backgroundColor = MaterialTheme.colorScheme.primaryContainer,
                 iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
-                onClick = { showLaterNameDialog = true },
+                // 预约会议 = 创建日程:打开日历的创建日程界面(替代旧的轻量弹窗)。
+                onClick = onScheduleMeeting,
                 modifier = Modifier.weight(1f),
             )
         }

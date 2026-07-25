@@ -299,6 +299,8 @@ fun MainTabScreen(
                 onShareScheduledMeeting = { slug, name, scheduledAt ->
                     shareMeetingRequest = ShareMeetingRequest(slug, name, scheduledAt)
                 },
+                // 预约会议 = 创建日程:复用日历的创建日程入口,默认落在今天。
+                onScheduleMeeting = { onCreateEvent(java.time.LocalDate.now().toEpochDay()) },
                 onOpenSettings = onOpenMeetingSettings,
             )
         },
