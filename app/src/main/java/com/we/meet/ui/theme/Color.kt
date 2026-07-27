@@ -29,3 +29,13 @@ val DarkOnSurface = Color(0xFFE2E2E5)
 /** Thin tinted band used to separate zones on the Home page (飞书-style). */
 val LightSurfaceBand = Color(0xFFF2F4F3)
 val DarkSurfaceBand = Color(0xFF0A0A0A)
+
+/**
+ * 日历表态色(接受走 colorScheme.primary,故这里只有另两档):
+ * 待定/未反馈 = 琥珀(「还没定」),拒绝 = 灰(退到背景里但仍占位)。
+ * 日/周视图的竖条、月/日程卡片的左色条共用同一组,四个视图一套语言。
+ */
+val LightRsvpTentative = Color(0xFFF59E0B)
+val DarkRsvpTentative = Color(0xFFFBBF24)
+val LightRsvpDeclined = Color(0xFF9CA3AF)
+val DarkRsvpDeclined = Color(0xFF8A9099)

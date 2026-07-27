@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -507,53 +509,76 @@ internal fun AgendaCard(
 ) {
     val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
     val dimmed = dimPastNow != null && event.end.isBefore(dimPastNow)
+    // 表态色条(接受=主色 / 待定·未反馈=琥珀 / 拒绝=灰):卡片没有日/周视图的
+    // 竖条可用斜纹,改用颜色区分;拒绝再加删除线,与时间轴口径一致。
+    val visual = rsvpVisualOf(event.myRsvp)
+    val declined = visual == RsvpVisual.DECLINED
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .alpha(if (dimmed) 0.5f else 1f)
-            .background(
-                MaterialTheme.colorScheme.surfaceVariant,
-                RoundedCornerShape(12.dp),
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            // 色条要贴左缘且随卡片圆角裁切 → 先 clip 再铺底;IntrinsicSize.Min
+            // 给色条的 fillMaxHeight 一个确定高度(Row 本身高度不定)。
+            .height(IntrinsicSize.Min)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable(onClick = onClick),
     ) {
-        Column(modifier = Modifier.width(52.dp)) {
-            if (event.allDay) {
-                Text(
-                    text = stringResource(R.string.calendar_all_day),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            } else {
-                Text(text = event.start.format(timeFmt), style = MaterialTheme.typography.labelLarge)
-                Text(
-                    text = event.end.format(timeFmt),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                )
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .fillMaxHeight()
+                .background(rsvpAccentColor(visual)),
+        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+        ) {
+            Column(modifier = Modifier.width(52.dp)) {
+                if (event.allDay) {
+                    Text(
+                        text = stringResource(R.string.calendar_all_day),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    Text(
+                        text = event.start.format(timeFmt),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    Text(
+                        text = event.end.format(timeFmt),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
             }
-        }
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = event.title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textDecoration = if (event.cancelled) {
-                    androidx.compose.ui.text.style.TextDecoration.LineThrough
-                } else null,
-            )
-            event.organizerName?.takeIf { it.isNotBlank() }?.let { organizer ->
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = organizer,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = event.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = if (declined) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textDecoration = if (event.cancelled || declined) {
+                        androidx.compose.ui.text.style.TextDecoration.LineThrough
+                    } else null,
                 )
+                event.organizerName?.takeIf { it.isNotBlank() }?.let { organizer ->
+                    Text(
+                        text = organizer,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }

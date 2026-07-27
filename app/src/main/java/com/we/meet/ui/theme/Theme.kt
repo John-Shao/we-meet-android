@@ -44,14 +44,22 @@ private val DarkColors = darkColorScheme(
 data class WeMeetExtras(
     /** Thin tinted band used to separate zones on the Home page. */
     val surfaceBand: Color,
+    /** 日历表态:待定/未反馈(琥珀)。接受档直接用 colorScheme.primary。 */
+    val rsvpTentative: Color,
+    /** 日历表态:已拒绝(灰)。 */
+    val rsvpDeclined: Color,
 )
 
 private val LightExtras = WeMeetExtras(
     surfaceBand = LightSurfaceBand,
+    rsvpTentative = LightRsvpTentative,
+    rsvpDeclined = LightRsvpDeclined,
 )
 
 private val DarkExtras = WeMeetExtras(
     surfaceBand = DarkSurfaceBand,
+    rsvpTentative = DarkRsvpTentative,
+    rsvpDeclined = DarkRsvpDeclined,
 )
 
 private val LocalWeMeetExtras = staticCompositionLocalOf { LightExtras }

@@ -25,12 +25,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
@@ -40,6 +43,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.we.meet.ui.calendar.EventUi
+import com.we.meet.ui.calendar.RsvpVisual
+import com.we.meet.ui.calendar.rsvpAccentColor
+import com.we.meet.ui.calendar.rsvpVisualOf
 import java.time.LocalDate
 import java.util.Locale
 
@@ -67,6 +73,8 @@ data class TimeBlock(
     val faded: Boolean = false,
     /** P8「降低已结束日程的亮度」:整块降透明度,不加删除线。 */
     val dimmed: Boolean = false,
+    /** 我的表态(`my_rsvp`);忙闲块传 null。见 [rsvpVisualOf]。 */
+    val rsvp: String? = null,
 )
 
 /** 短块阈值(分钟):≤45 分钟块高只够一行,时间并入标题行(对齐 Web)。 */
@@ -103,6 +111,7 @@ fun EventUi.toTimeBlockOrNull(
         key = id,
         faded = cancelled,
         dimmed = dimPastNow != null && end.isBefore(dimPastNow),
+        rsvp = myRsvp,
     )
 }
 
@@ -165,6 +174,22 @@ fun TimelineScaffold(
     val eventBg = MaterialTheme.colorScheme.primaryContainer
     val eventFg = MaterialTheme.colorScheme.onPrimaryContainer
     val accentColor = MaterialTheme.colorScheme.primary
+    // 表态视觉:拒绝档的底/字,待定档的斜纹竖条(45° 2px 条宽,对齐 Web)。
+    val declinedFg = rsvpAccentColor(RsvpVisual.DECLINED)
+    val declinedBg = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    val tentativeColor = rsvpAccentColor(RsvpVisual.TENTATIVE)
+    val stripePx = with(LocalDensity.current) { 3.dp.toPx() }
+    val stripeBrush = remember(tentativeColor, stripePx) {
+        Brush.linearGradient(
+            0f to tentativeColor,
+            0.5f to tentativeColor,
+            0.5f to tentativeColor.copy(alpha = 0.3f),
+            1f to tentativeColor.copy(alpha = 0.3f),
+            start = Offset.Zero,
+            end = Offset(stripePx, stripePx),
+            tileMode = TileMode.Repeated,
+        )
+    }
     // 短块「标题,时间」分隔符:中文全角逗号(对齐 Web),其他语言半角。
     val titleTimeSep = if (Locale.getDefault().language == "zh") "，" else ", "
     val density = LocalDensity.current
@@ -298,6 +323,10 @@ fun TimelineScaffold(
                                         .coerceAtLeast(10.dp)
                                 // 对齐 Web/飞书:左侧主色竖条 + 浅色底;短块(≤45min)
                                 // 时间并入标题行,长块标题行+时间行。
+                                // 表态(对齐 Web):接受=实心竖条;待定/未反馈=斜纹条;
+                                // 拒绝=灰条 + 灰底 + 标题删除线。
+                                val visual = rsvpVisualOf(b.rsvp)
+                                val declined = visual == RsvpVisual.DECLINED
                                 Box(
                                     modifier = Modifier
                                         .offset(x = colWidth * i, y = top)
@@ -308,10 +337,12 @@ fun TimelineScaffold(
                                         .alpha(if (b.dimmed) 0.5f else 1f)
                                         .clip(RoundedCornerShape(4.dp))
                                         .background(
-                                            color = if (b.label != null) {
-                                                if (b.faded) eventBg.copy(alpha = 0.45f)
-                                                else eventBg
-                                            } else busyColor,
+                                            color = when {
+                                                b.label == null -> busyColor
+                                                declined -> declinedBg
+                                                b.faded -> eventBg.copy(alpha = 0.45f)
+                                                else -> eventBg
+                                            },
                                         ),
                                 ) {
                                     if (b.label != null) {
@@ -320,7 +351,16 @@ fun TimelineScaffold(
                                                 modifier = Modifier
                                                     .width(3.dp)
                                                     .fillMaxHeight()
-                                                    .background(accentColor),
+                                                    .then(
+                                                        if (visual == RsvpVisual.TENTATIVE) {
+                                                            Modifier.background(stripeBrush)
+                                                        } else {
+                                                            Modifier.background(
+                                                                if (declined) declinedFg
+                                                                else accentColor,
+                                                            )
+                                                        },
+                                                    ),
                                             )
                                             val short =
                                                 b.endMin - b.startMin <= SHORT_BLOCK_MIN
@@ -332,27 +372,32 @@ fun TimelineScaffold(
                                                     horizontal = 3.dp, vertical = 1.dp,
                                                 ),
                                             ) {
+                                                val fg = if (declined) declinedFg else eventFg
+                                                // 拒绝与取消同样划掉:两者都是「这场我不去」。
+                                                val strike =
+                                                    if (b.faded || declined) {
+                                                        TextDecoration.LineThrough
+                                                    } else null
                                                 Text(
                                                     text = if (short && showTime) {
                                                         "${b.label}$titleTimeSep${b.timeLabel}"
                                                     } else b.label,
                                                     fontSize = 10.sp,
                                                     lineHeight = 12.sp,
-                                                    color = eventFg,
+                                                    color = fg,
                                                     maxLines = if (short) 1 else 2,
                                                     overflow = TextOverflow.Ellipsis,
-                                                    textDecoration =
-                                                        if (b.faded) TextDecoration.LineThrough
-                                                        else null,
+                                                    textDecoration = strike,
                                                 )
                                                 if (!short && showTime) {
                                                     Text(
                                                         text = b.timeLabel!!,
                                                         fontSize = 9.sp,
                                                         lineHeight = 11.sp,
-                                                        color = eventFg.copy(alpha = 0.8f),
+                                                        color = fg.copy(alpha = 0.8f),
                                                         maxLines = 1,
                                                         overflow = TextOverflow.Ellipsis,
+                                                        textDecoration = strike,
                                                     )
                                                 }
                                             }
