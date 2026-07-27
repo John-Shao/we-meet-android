@@ -118,12 +118,21 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
      */
     fun grantDocAccessAsync(docId: String, cids: Collection<String>) {
         if (docId.isBlank() || cids.isEmpty()) return
-        scope.launch {
-            runCatching { bridge.grantDocAccess(docId, cids) }
-                .onFailure {
-                    android.util.Log.w("ImSession", "grantDocAccessAsync failed", it)
-                }
-        }
+        scope.launch { grantDocAccess(docId, cids) }
+    }
+
+    /**
+     * 同上,但把结果交回调用方 —— Docs tab 里分享完要据此决定是否通知 WebView
+     * 刷新成员列表(授权没成功就没什么可刷的)。courtesy 语义不变:失败只记日志,
+     * 返回 false,绝不抛。
+     */
+    suspend fun grantDocAccess(docId: String, cids: Collection<String>): Boolean {
+        if (docId.isBlank() || cids.isEmpty()) return false
+        return runCatching { bridge.grantDocAccess(docId, cids) }
+            .onFailure {
+                android.util.Log.w("ImSession", "grantDocAccess failed", it)
+            }
+            .isSuccess
     }
 
     /**

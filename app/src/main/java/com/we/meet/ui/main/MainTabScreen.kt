@@ -376,7 +376,9 @@ fun MainTabScreen(
                     }
                     // Only recipients of a successfully persisted card may
                     // receive access; authorization itself remains best-effort.
-                    imSession.grantDocAccessAsync(req.docId, delivered)
+                    if (imSession.grantDocAccess(req.docId, delivered)) {
+                        notifyDocsAccessUpdated(docsWebView, req.docId)
+                    }
                 }
                 shareDocRequest = null
             },
@@ -388,8 +390,10 @@ fun MainTabScreen(
                 deps = app,
                 onCreated = { newCid ->
                     scope.launch {
-                        if (imSession.sendMessage(newCid, docCardBody, "doc-card").isSuccess) {
-                            imSession.grantDocAccessAsync(req.docId, listOf(newCid))
+                        if (imSession.sendMessage(newCid, docCardBody, "doc-card").isSuccess &&
+                            imSession.grantDocAccess(req.docId, listOf(newCid))
+                        ) {
+                            notifyDocsAccessUpdated(docsWebView, req.docId)
                         }
                     }
                     shareDocCreateGroup = false
@@ -400,6 +404,24 @@ fun MainTabScreen(
         }
     }
 
+}
+
+/**
+ * 「分享到聊天」的授权发生在 docs **之外**(原生直连 meet 后端),WebView 里
+ * 那个分享弹窗的成员列表缓存无从知晓,回到弹窗仍是分享前的「与 N 位用户分享」。
+ * 授权成功后注入一条 postMessage,docs 侧 useDocAccessRefreshBridge 收到即失效
+ * 相关查询重新拉取 —— 与 web iframe 走同一条消息通道、同一个 type。
+ *
+ * 注:必须在主线程调用(WebView 的硬性要求);调用点都在 rememberCoroutineScope
+ * 的 Main 上下文里,挂起点恢复后仍在主线程。payload 用 JSONObject 拼,避免把
+ * docId 直接插进 JS 源码。
+ */
+private fun notifyDocsAccessUpdated(webView: android.webkit.WebView, docId: String) {
+    val payload = JSONObject()
+        .put("type", "wemeet-doc-access-updated")
+        .put("docId", docId)
+        .toString()
+    webView.evaluateJavascript("window.postMessage($payload,'*')", null)
 }
 
 @Composable
