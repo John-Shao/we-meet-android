@@ -255,6 +255,7 @@ fun ScheduledDetailScreen(
             if (scheduledAtIso.isNotBlank()) put("scheduled_at", scheduledAtIso)
         }.toString()
         ForwardPicker(
+            deps = app,
             targets = imSession.allForwardTargets(),
             onForward = { cids -> scope.launch { cids.forEach { imSession.sendMessage(it, body, "meeting-card") } }; showShare = false },
             onCreateGroupForward = { showShareGroup = true },

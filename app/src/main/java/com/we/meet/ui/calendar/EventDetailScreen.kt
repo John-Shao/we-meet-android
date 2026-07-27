@@ -338,6 +338,7 @@ fun EventDetailScreen(
                     put("organizer_name", ev.organizer?.fullName ?: "")
                 }.toString()
                 ForwardPicker(
+                    deps = app,
                     targets = imSession.allForwardTargets(),
                     onForward = { cids ->
                         cids.forEach { imSession.sendMessageAsync(it, cardBody, "event-card") }

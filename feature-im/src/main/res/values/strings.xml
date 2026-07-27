@@ -197,6 +197,9 @@
     <string name="im_forward_recent">Recent chats</string>
     <string name="im_forward_send">Send</string>
     <string name="im_forward_confirm">Send to “%1$s”?</string>
+    <string name="im_forward_search_hint">Search conversations or contacts</string>
+    <string name="im_forward_section_directory">Directory</string>
+    <string name="im_forward_resolve_failed">Failed to start the conversation, please retry</string>
     <string name="im_selected_count">%1$d selected</string>
     <string name="im_action_delete">Delete</string>
     <string name="im_delete_confirm_title">Delete messages?</string>

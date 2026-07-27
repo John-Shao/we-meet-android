@@ -368,6 +368,7 @@ fun MainTabScreen(
             .put("url", req.url)
             .toString()
         ForwardPicker(
+            deps = app,
             targets = imSession.allForwardTargets(),
             onForward = { cids ->
                 scope.launch {

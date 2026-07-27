@@ -291,6 +291,9 @@ class ChatViewModel internal constructor(
         val avatarKey: String,
         /** Pre-resolved tiles for the 9-grid group avatar (groups only). */
         val memberTiles: List<GroupTile>,
+        /** 单聊对端的 we-meet user id —— 用来和通讯录搜索结果去重(已有会话的人
+         * 不该在「通讯录」分组里再出现一次)。未解析到时为 null,不参与去重。 */
+        val peerUserId: String? = null,
     )
 
     /** Forward destinations: every other conversation, titled + avatared for display. */
@@ -321,6 +324,7 @@ class ChatViewModel internal constructor(
                             avatarUrl = info?.avatarUrl?.takeIf { it.isNotBlank() },
                         )
                     } else emptyList(),
+                    peerUserId = if (!isGroup) peer?.id?.takeIf { it.isNotBlank() } else null,
                 )
             }
     }

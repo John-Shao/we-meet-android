@@ -166,6 +166,7 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
                         avatarUrl = info?.avatarUrl?.takeIf { it.isNotBlank() },
                     )
                 } else emptyList(),
+                peerUserId = if (!isGroup) peer?.id?.takeIf { it.isNotBlank() } else null,
             )
         }
     }

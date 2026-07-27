@@ -626,6 +626,7 @@ fun ChatScreen(
         // drawer). Gating the picker out on forwardCreateGroup — as before —
         // unmounted it and revealed the chat behind the sheet instead.
         ForwardPicker(
+            deps = deps,
             targets = vm.forwardTargets(),
             onForward = { cids ->
                 cids.forEach { job(it) }
