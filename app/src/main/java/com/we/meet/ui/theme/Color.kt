@@ -31,11 +31,26 @@ val LightSurfaceBand = Color(0xFFF2F4F3)
 val DarkSurfaceBand = Color(0xFF0A0A0A)
 
 /**
- * 日历表态色(接受走 colorScheme.primary,故这里只有另两档):
- * 待定/未反馈 = 琥珀(「还没定」),拒绝 = 灰(退到背景里但仍占位)。
- * 日/周视图的竖条、月/日程卡片的左色条共用同一组,四个视图一套语言。
+ * 日历表态色:四态四色、一律实线 —— 接受=蓝、未反馈=紫、待定=琥珀、拒绝=灰。
+ * 每档一对「强调色(竖条/色条)+ 文字色」,块底由强调色低透明推导。
+ *
+ * 色值与 Web 的 calendarGridOverrides.css 一一对应(接受档也用 #3370FF 而非
+ * 品牌 primary,两端才真的同色),改色请两端同步。
  */
+val LightRsvpAccepted = Color(0xFF3370FF)
+val LightRsvpAcceptedText = Color(0xFF1E4DB3)
+val LightRsvpNeeds = Color(0xFF8B5CF6)
+val LightRsvpNeedsText = Color(0xFF5B21B6)
 val LightRsvpTentative = Color(0xFFF59E0B)
-val DarkRsvpTentative = Color(0xFFFBBF24)
+val LightRsvpTentativeText = Color(0xFF92400E)
 val LightRsvpDeclined = Color(0xFF9CA3AF)
+val LightRsvpDeclinedText = Color(0xFF6B7280)
+
+val DarkRsvpAccepted = Color(0xFF5C8DFF)
+val DarkRsvpAcceptedText = Color(0xFFA3B8EC)
+val DarkRsvpNeeds = Color(0xFFA78BFA)
+val DarkRsvpNeedsText = Color(0xFFC4B5FD)
+val DarkRsvpTentative = Color(0xFFFBBF24)
+val DarkRsvpTentativeText = Color(0xFFFCD34D)
 val DarkRsvpDeclined = Color(0xFF8A9099)
+val DarkRsvpDeclinedText = Color(0xFF9CA3AF)

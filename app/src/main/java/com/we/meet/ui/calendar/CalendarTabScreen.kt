@@ -509,8 +509,8 @@ internal fun AgendaCard(
 ) {
     val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
     val dimmed = dimPastNow != null && event.end.isBefore(dimPastNow)
-    // 表态色条(接受=主色 / 待定·未反馈=琥珀 / 拒绝=灰):卡片没有日/周视图的
-    // 竖条可用斜纹,改用颜色区分;拒绝再加删除线,与时间轴口径一致。
+    // 表态四态四色(接受=蓝 / 未反馈=紫 / 待定=琥珀 / 拒绝=灰),与日/周视图
+    // 的竖条同一组色值;拒绝再加删除线,口径一致。
     val visual = rsvpVisualOf(event.myRsvp)
     val declined = visual == RsvpVisual.DECLINED
     Row(
@@ -563,7 +563,7 @@ internal fun AgendaCard(
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                     color = if (declined) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                        rsvpTextColor(RsvpVisual.DECLINED)
                     } else MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

@@ -25,15 +25,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
@@ -45,6 +42,8 @@ import androidx.compose.ui.unit.sp
 import com.we.meet.ui.calendar.EventUi
 import com.we.meet.ui.calendar.RsvpVisual
 import com.we.meet.ui.calendar.rsvpAccentColor
+import com.we.meet.ui.calendar.rsvpBlockBackground
+import com.we.meet.ui.calendar.rsvpTextColor
 import com.we.meet.ui.calendar.rsvpVisualOf
 import java.time.LocalDate
 import java.util.Locale
@@ -171,25 +170,11 @@ fun TimelineScaffold(
     val gridLine = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
     val offWorkShade = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.03f)
     val busyColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f)
-    val eventBg = MaterialTheme.colorScheme.primaryContainer
-    val eventFg = MaterialTheme.colorScheme.onPrimaryContainer
-    val accentColor = MaterialTheme.colorScheme.primary
-    // 表态视觉:拒绝档的底/字,待定档的斜纹竖条(45° 2px 条宽,对齐 Web)。
-    val declinedFg = rsvpAccentColor(RsvpVisual.DECLINED)
-    val declinedBg = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-    val tentativeColor = rsvpAccentColor(RsvpVisual.TENTATIVE)
-    val stripePx = with(LocalDensity.current) { 3.dp.toPx() }
-    val stripeBrush = remember(tentativeColor, stripePx) {
-        Brush.linearGradient(
-            0f to tentativeColor,
-            0.5f to tentativeColor,
-            0.5f to tentativeColor.copy(alpha = 0.3f),
-            1f to tentativeColor.copy(alpha = 0.3f),
-            start = Offset.Zero,
-            end = Offset(stripePx, stripePx),
-            tileMode = TileMode.Repeated,
-        )
-    }
+    // 表态四态四色(见 RsvpVisuals):竖条 = 强调色、块底 = 同色低透明、
+    // 文字 = 同色深档;忙闲块(label == null)不参与,仍用中性 busyColor。
+    val accentOf = RsvpVisual.entries.associateWith { rsvpAccentColor(it) }
+    val textOf = RsvpVisual.entries.associateWith { rsvpTextColor(it) }
+    val bgOf = RsvpVisual.entries.associateWith { rsvpBlockBackground(it) }
     // 短块「标题,时间」分隔符:中文全角逗号(对齐 Web),其他语言半角。
     val titleTimeSep = if (Locale.getDefault().language == "zh") "，" else ", "
     val density = LocalDensity.current
@@ -321,12 +306,12 @@ fun TimelineScaffold(
                                 val blockHeight =
                                     (hourHeight * ((b.endMin - b.startMin) / 60f))
                                         .coerceAtLeast(10.dp)
-                                // 对齐 Web/飞书:左侧主色竖条 + 浅色底;短块(≤45min)
-                                // 时间并入标题行,长块标题行+时间行。
-                                // 表态(对齐 Web):接受=实心竖条;待定/未反馈=斜纹条;
-                                // 拒绝=灰条 + 灰底 + 标题删除线。
+                                // 对齐 Web/飞书:左侧实心竖条 + 同色系浅底;短块
+                                // (≤45min)时间并入标题行,长块标题行+时间行。
+                                // 竖条/底/字的颜色按表态四档取(拒绝档额外删除线)。
                                 val visual = rsvpVisualOf(b.rsvp)
                                 val declined = visual == RsvpVisual.DECLINED
+                                val blockBg = bgOf.getValue(visual)
                                 Box(
                                     modifier = Modifier
                                         .offset(x = colWidth * i, y = top)
@@ -339,9 +324,8 @@ fun TimelineScaffold(
                                         .background(
                                             color = when {
                                                 b.label == null -> busyColor
-                                                declined -> declinedBg
-                                                b.faded -> eventBg.copy(alpha = 0.45f)
-                                                else -> eventBg
+                                                b.faded -> blockBg.copy(alpha = 0.45f)
+                                                else -> blockBg
                                             },
                                         ),
                                 ) {
@@ -351,16 +335,7 @@ fun TimelineScaffold(
                                                 modifier = Modifier
                                                     .width(3.dp)
                                                     .fillMaxHeight()
-                                                    .then(
-                                                        if (visual == RsvpVisual.TENTATIVE) {
-                                                            Modifier.background(stripeBrush)
-                                                        } else {
-                                                            Modifier.background(
-                                                                if (declined) declinedFg
-                                                                else accentColor,
-                                                            )
-                                                        },
-                                                    ),
+                                                    .background(accentOf.getValue(visual)),
                                             )
                                             val short =
                                                 b.endMin - b.startMin <= SHORT_BLOCK_MIN
@@ -372,7 +347,7 @@ fun TimelineScaffold(
                                                     horizontal = 3.dp, vertical = 1.dp,
                                                 ),
                                             ) {
-                                                val fg = if (declined) declinedFg else eventFg
+                                                val fg = textOf.getValue(visual)
                                                 // 拒绝与取消同样划掉:两者都是「这场我不去」。
                                                 val strike =
                                                     if (b.faded || declined) {

@@ -44,22 +44,51 @@ private val DarkColors = darkColorScheme(
 data class WeMeetExtras(
     /** Thin tinted band used to separate zones on the Home page. */
     val surfaceBand: Color,
-    /** 日历表态:待定/未反馈(琥珀)。接受档直接用 colorScheme.primary。 */
-    val rsvpTentative: Color,
-    /** 日历表态:已拒绝(灰)。 */
-    val rsvpDeclined: Color,
+    /** 日历表态四态四色(见 [RsvpColors])。 */
+    val rsvp: RsvpColors,
+)
+
+/**
+ * 日历「我的表态」配色:一档一对「强调色 + 文字色」。色值与 Web 的
+ * calendarGridOverrides.css 一一对应,改色两端同步。
+ */
+data class RsvpColors(
+    val accepted: Color,
+    val acceptedText: Color,
+    val needsAction: Color,
+    val needsActionText: Color,
+    val tentative: Color,
+    val tentativeText: Color,
+    val declined: Color,
+    val declinedText: Color,
 )
 
 private val LightExtras = WeMeetExtras(
     surfaceBand = LightSurfaceBand,
-    rsvpTentative = LightRsvpTentative,
-    rsvpDeclined = LightRsvpDeclined,
+    rsvp = RsvpColors(
+        accepted = LightRsvpAccepted,
+        acceptedText = LightRsvpAcceptedText,
+        needsAction = LightRsvpNeeds,
+        needsActionText = LightRsvpNeedsText,
+        tentative = LightRsvpTentative,
+        tentativeText = LightRsvpTentativeText,
+        declined = LightRsvpDeclined,
+        declinedText = LightRsvpDeclinedText,
+    ),
 )
 
 private val DarkExtras = WeMeetExtras(
     surfaceBand = DarkSurfaceBand,
-    rsvpTentative = DarkRsvpTentative,
-    rsvpDeclined = DarkRsvpDeclined,
+    rsvp = RsvpColors(
+        accepted = DarkRsvpAccepted,
+        acceptedText = DarkRsvpAcceptedText,
+        needsAction = DarkRsvpNeeds,
+        needsActionText = DarkRsvpNeedsText,
+        tentative = DarkRsvpTentative,
+        tentativeText = DarkRsvpTentativeText,
+        declined = DarkRsvpDeclined,
+        declinedText = DarkRsvpDeclinedText,
+    ),
 )
 
 private val LocalWeMeetExtras = staticCompositionLocalOf { LightExtras }
