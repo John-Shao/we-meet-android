@@ -484,4 +484,11 @@
     <string name="meeting_room_view_timeline">Afficher la frise</string>
     <string name="meeting_room_view_list">Afficher la liste</string>
     <string name="meeting_room_timeline_hint">Touchez la colonne d’une salle pour la choisir — l’horaire reste celui du formulaire</string>
+    <string name="calendar_field_attendees_count">Participants (%1$d sélectionnés)</string>
+    <string name="calendar_attendee_add">Ajouter</string>
+    <string name="calendar_attendee_remove">Retirer %1$s</string>
+    <string name="freebusy_busy">Occupé</string>
+    <string name="freebusy_free">Libre</string>
+    <string name="freebusy_self_busy">Vous avez un autre événement à ce moment</string>
+    <string name="meeting_room_remove">Retirer la salle</string>
 </resources>

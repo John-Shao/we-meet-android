@@ -46,6 +46,8 @@ interface CalendarApi {
         /** ISO 8601 (UTC)。 */
         @Query("start") start: String,
         @Query("end") end: String,
+        /** 编辑态传当前日程 id:把它自己从忙闲里剔除,原参与者不被这场误报。 */
+        @Query("exclude_event_id") excludeEventId: String? = null,
     ): FreeBusyResponseDto
 
     @POST("api/v1.0/calendar-events/")

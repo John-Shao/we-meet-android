@@ -1,6 +1,7 @@
 package com.we.meet.ui.calendar
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,10 +11,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,10 +50,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.we.meet.R
+import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.WeMeetApp
 import com.we.meet.core.directory.ui.ContactPicker
@@ -140,6 +147,12 @@ fun CreateEventScreen(
     // P8:编辑态标记重复日程(加载详情时置位)——重复日程不开放参与者编辑。
     var editIsRecurring by remember { mutableStateOf(false) }
 
+    // 忙闲(与 Web 同口径):只要「在所选时段是否有冲突」这一个布尔,不画时间条。
+    // 全天日程没有具体时段,不查也不显示。
+    var busyIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var selfBusy by remember { mutableStateOf(false) }
+    // 自己的 id 只为「我这个点也有事」这一条提示;拉一次即可。
+    var selfId by remember { mutableStateOf<String?>(null) }
     var showPicker by remember { mutableStateOf(false) }
     // 视频会议(对标飞书:可移除的一项,而非日程的固有属性)。创建默认开;
     // 编辑态按事件当前有没有房间预填。
@@ -230,6 +243,47 @@ fun CreateEventScreen(
             .onFailure { errorRes = R.string.event_load_error; loaded = true }
     }
 
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        selfId = runCatching { app.apiClient.userApi.getMe() }.getOrNull()?.id
+    }
+
+    val showFreeBusy = !allDay
+    androidx.compose.runtime.LaunchedEffect(start, end, allDay, attendees, selfId) {
+        if (allDay || attendees.isEmpty()) {
+            busyIds = emptySet()
+            selfBusy = false
+            return@LaunchedEffect
+        }
+        val zone = ZoneId.systemDefault()
+        val slotStart = start.atZone(zone).toInstant()
+        val slotEnd = end.atZone(zone).toInstant()
+        // 窗口取所选开始时刻当天,与 Web 一致(端点限制 ≤31 天)。
+        val dayStart = start.toLocalDate().atStartOfDay(zone).toInstant()
+        val dayEnd = start.toLocalDate().plusDays(1).atStartOfDay(zone).toInstant()
+        val ids = (attendees.map { it.userId } + listOfNotNull(selfId)).distinct()
+        runCatching {
+            app.apiClient.calendarApi.freeBusy(
+                attendeeIds = ids.joinToString(","),
+                start = DateTimeFormatter.ISO_INSTANT.format(dayStart),
+                end = DateTimeFormatter.ISO_INSTANT.format(dayEnd),
+                excludeEventId = editEventId,
+            )
+        }.onSuccess { res ->
+            val conflicting = res.results.filter { entry ->
+                entry.busy.any { b ->
+                    val bs = runCatching { Instant.parse(b.start) }.getOrNull()
+                    val be = runCatching { Instant.parse(b.end) }.getOrNull()
+                    bs != null && be != null && bs < slotEnd && be > slotStart
+                }
+            }.map { it.userId }.toSet()
+            busyIds = conflicting
+            selfBusy = selfId != null && conflicting.contains(selfId)
+        }.onFailure {
+            // 忙闲拿不到不该挡住建日程:静默降级成「都不显示忙」。
+            busyIds = emptySet()
+            selfBusy = false
+        }
+    }
     // P9:时段/房间一变就重查可用性。网络失败按「不冲突」处理 —— 与其误禁用
     // 保存按钮,不如让服务端用 409 给出准确答复。
     androidx.compose.runtime.LaunchedEffect(start, end, allDay, meetingRoom?.id) {
@@ -454,28 +508,92 @@ fun CreateEventScreen(
             // P8 编辑增删参与者:创建态 + 非重复日程编辑态(加载完成后)展示;
             // 重复日程编辑不展示(服务端三选路径剔除 attendee_ids)。
             if (!isEdit || (loaded && !editIsRecurring)) {
-                Text(
-                    text = stringResource(R.string.calendar_field_attendees),
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.padding(top = 12.dp),
-                )
+                // 标题/计数/「添加」同一行,下面一人一行(与 Web 对齐):
+                // 头像 + 名字 + 忙/闲 + 行尾 ×。
                 Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                        .padding(top = 12.dp),
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        attendees.forEach { picked ->
-                            InputChip(
-                                selected = true,
-                                onClick = { attendees = attendees - picked },
-                                label = { Text(picked.displayName) },
+                    Text(
+                        text = stringResource(
+                            R.string.calendar_field_attendees_count,
+                            attendees.size,
+                        ),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { showPicker = true }) {
+                        Text(stringResource(R.string.calendar_attendee_add))
+                    }
+                }
+                attendees.forEach { picked ->
+                    val isBusy = busyIds.contains(picked.userId)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (isBusy) MaterialTheme.colorScheme.errorContainer
+                                else MaterialTheme.colorScheme.surfaceVariant,
+                            )
+                            .padding(start = 8.dp, top = 4.dp, bottom = 4.dp),
+                    ) {
+                        MemberAvatar(
+                            name = picked.displayName,
+                            url = picked.avatarUrl,
+                            cacheKey = "avatar:${picked.userId}",
+                            size = 24.dp,
+                        )
+                        Text(
+                            text = picked.displayName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (isBusy) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp),
+                        )
+                        if (showFreeBusy) {
+                            Text(
+                                text = stringResource(
+                                    if (isBusy) R.string.freebusy_busy
+                                    else R.string.freebusy_free,
+                                ),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (isBusy) MaterialTheme.colorScheme.error
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        IconButton(
+                            onClick = { attendees = attendees - picked },
+                            modifier = Modifier.size(32.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = stringResource(
+                                    R.string.calendar_attendee_remove,
+                                    picked.displayName,
+                                ),
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
-                    TextButton(onClick = { showPicker = true }) {
-                        Text(stringResource(R.string.calendar_add_attendees))
-                    }
+                }
+                // 发起人自己不在参与人列表里,但「我这个点也有事」同样该提醒。
+                if (showFreeBusy && selfBusy) {
+                    Text(
+                        text = stringResource(R.string.freebusy_self_busy),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
                 }
                 HorizontalDivider()
             }
@@ -537,6 +655,8 @@ fun CreateEventScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         meetingRoom?.let { room ->
+                            // 尾部 × 显式表达「移除预订」——原先点 chip 本身移除,
+                            // 没有可见入口,与 Web 的 × 也对不上。
                             InputChip(
                                 selected = true,
                                 onClick = { meetingRoom = null },
@@ -546,6 +666,15 @@ fun CreateEventScreen(
                                             room.name,
                                             room.pathLabel?.takeIf { it.isNotBlank() },
                                         ).joinToString(" · "),
+                                    )
+                                },
+                                trailingIcon = {
+                                    Icon(
+                                        Icons.Filled.Close,
+                                        contentDescription = stringResource(
+                                            R.string.meeting_room_remove,
+                                        ),
+                                        modifier = Modifier.size(16.dp),
                                     )
                                 },
                             )

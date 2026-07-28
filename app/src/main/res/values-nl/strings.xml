@@ -484,4 +484,11 @@
     <string name="meeting_room_view_timeline">Tijdlijn tonen</string>
     <string name="meeting_room_view_list">Lijst tonen</string>
     <string name="meeting_room_timeline_hint">Tik op de kolom van een ruimte om die te kiezen — de tijd blijft zoals hierboven</string>
+    <string name="calendar_field_attendees_count">Deelnemers (%1$d geselecteerd)</string>
+    <string name="calendar_attendee_add">Toevoegen</string>
+    <string name="calendar_attendee_remove">%1$s verwijderen</string>
+    <string name="freebusy_busy">Bezet</string>
+    <string name="freebusy_free">Vrij</string>
+    <string name="freebusy_self_busy">Je hebt op dit moment een andere afspraak</string>
+    <string name="meeting_room_remove">Ruimte verwijderen</string>
 </resources>
