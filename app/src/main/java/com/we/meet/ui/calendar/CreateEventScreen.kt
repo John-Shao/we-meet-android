@@ -508,7 +508,7 @@ fun CreateEventScreen(
             // P8 编辑增删参与者:创建态 + 非重复日程编辑态(加载完成后)展示;
             // 重复日程编辑不展示(服务端三选路径剔除 attendee_ids)。
             if (!isEdit || (loaded && !editIsRecurring)) {
-                // 标题/计数/「添加」同一行,下面一人一行(与 Web 对齐):
+                // 标题/计数/「添加参与者」同一行,下面一人一行(与 Web 对齐):
                 // 头像 + 名字 + 忙/闲 + 行尾 ×。
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -525,7 +525,7 @@ fun CreateEventScreen(
                         modifier = Modifier.weight(1f),
                     )
                     TextButton(onClick = { showPicker = true }) {
-                        Text(stringResource(R.string.calendar_attendee_add))
+                        Text(stringResource(R.string.calendar_add_attendees))
                     }
                 }
                 attendees.forEach { picked ->

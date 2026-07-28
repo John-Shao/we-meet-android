@@ -330,7 +330,7 @@
     <string name="calendar_reminder_hour">提前 1 小时</string>
     <string name="calendar_reminder_day">提前 1 天</string>
     <string name="calendar_field_attendees">参与人</string>
-    <string name="calendar_add_attendees">添加参与人</string>
+    <string name="calendar_add_attendees">添加参与者</string>
     <string name="calendar_field_description_hint">描述（选填）</string>
     <string name="calendar_action_create">创建</string>
     <string name="calendar_error_end_before_start">结束时间必须晚于开始时间</string>
@@ -555,8 +555,7 @@
     <string name="meeting_room_view_timeline">查看时间轴</string>
     <string name="meeting_room_view_list">查看列表</string>
     <string name="meeting_room_timeline_hint">点击会议室所在列即可选中,时段以上方表单为准</string>
-    <string name="calendar_field_attendees_count">参与人 (已选 %1$d 人)</string>
-    <string name="calendar_attendee_add">添加</string>
+    <string name="calendar_field_attendees_count">参与者 (已选 %1$d 人)</string>
     <string name="calendar_attendee_remove">移除 %1$s</string>
     <string name="freebusy_busy">忙</string>
     <string name="freebusy_free">闲</string>

@@ -556,7 +556,6 @@
     <string name="meeting_room_view_list">Show list</string>
     <string name="meeting_room_timeline_hint">Tap a room column to pick it — the time stays as set above</string>
     <string name="calendar_field_attendees_count">Attendees (%1$d selected)</string>
-    <string name="calendar_attendee_add">Add</string>
     <string name="calendar_attendee_remove">Remove %1$s</string>
     <string name="freebusy_busy">Busy</string>
     <string name="freebusy_free">Free</string>
