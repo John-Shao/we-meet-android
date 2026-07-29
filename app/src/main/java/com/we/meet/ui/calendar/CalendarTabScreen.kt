@@ -161,7 +161,9 @@ fun CalendarTabScreen(
                     }
                 },
                 onToday = { vm.goToToday() },
-                onOpenSettings = onOpenSettings,
+                // 头部齿轮 = 日历表外的点击 → 顺手清掉预选块(切视图/切日期
+                // 由上面的 LaunchedEffect 清)。
+                onOpenSettings = { draft = null; onOpenSettings() },
             )
 
             when {
@@ -197,10 +199,11 @@ fun CalendarTabScreen(
                     CalendarViewMode.DAY -> DayTimelineView(
                         date = ui.selectedDate,
                         events = ui.eventsByDay[ui.selectedDate].orEmpty(),
-                        onEventClick = onEventClick,
-                        // 点空白 = 落/挪预选块(不再直接进表单)。
+                        onEventClick = { id -> draft = null; onEventClick(id) },
+                        // 点空白:已有预选块 → 先清掉(点框外即取消);没有 → 落新块。
                         onSlotTap = { minute ->
-                            draft = draftSlotAt(ui.selectedDate, minute, defaultDurationMin)
+                            draft = if (draft != null) null
+                            else draftSlotAt(ui.selectedDate, minute, defaultDurationMin)
                         },
                         dimPastNow = dimPastNow,
                         draft = draft,
@@ -214,10 +217,12 @@ fun CalendarTabScreen(
                     CalendarViewMode.WEEK -> WeekTimelineView(
                         anchorDate = ui.selectedDate,
                         eventsByDay = ui.eventsByDay,
-                        onEventClick = onEventClick,
+                        onEventClick = { id -> draft = null; onEventClick(id) },
                         onDayClick = { vm.selectDate(it) },
+                        // 同日视图:点框外的空白先清框,再点才落新框。
                         onSlotTap = { date, minute ->
-                            draft = draftSlotAt(date, minute, defaultDurationMin)
+                            draft = if (draft != null) null
+                            else draftSlotAt(date, minute, defaultDurationMin)
                         },
                         firstDayOfWeek = firstDow,
                         showWeekend = showWeekend,
@@ -242,7 +247,8 @@ fun CalendarTabScreen(
         }
 
         FloatingActionButton(
-            onClick = { onCreateEvent(ui.selectedDate.toEpochDay()) },
+            // FAB 也在日历表外:点它直接进表单,预选块作废。
+            onClick = { draft = null; onCreateEvent(ui.selectedDate.toEpochDay()) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(20.dp),
