@@ -102,10 +102,21 @@ fun CalendarTabScreen(
     // 对齐飞书:日/周视图点空白先落「预选时段」,拖上下手柄改起止,**再点一次**
     // 这个块才进创建表单 —— 误触不会直接弹表单。切视图/切日期即作废。
     var draft by remember { mutableStateOf<DraftSlot?>(null) }
-    LaunchedEffect(ui.viewMode, ui.selectedDate) { draft = null }
-    val draftLabel = stringResource(R.string.calendar_draft_add)
-    val confirmDraft: (DraftSlot) -> Unit = { slot ->
+    // 已建日程的选中态(长按进入):出上下抓手,可整块拖移 / 拖抓手改时长。
+    // 点日程仍是一次点击进详情 —— 高频路径不加成本。
+    var selectedEventId by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(ui.viewMode, ui.selectedDate) {
         draft = null
+        selectedEventId = null
+    }
+    val draftLabel = stringResource(R.string.calendar_draft_add)
+    // 「点当前操作对象以外的地方就收手」——预选框与选中态共用这一条。
+    val clearPicks: () -> Unit = {
+        draft = null
+        selectedEventId = null
+    }
+    val confirmDraft: (DraftSlot) -> Unit = { slot ->
+        clearPicks()
         val zone = java.time.ZoneId.systemDefault()
         val dayStart = slot.date.atStartOfDay(zone)
         val onAt = onCreateEventAt
@@ -161,9 +172,9 @@ fun CalendarTabScreen(
                     }
                 },
                 onToday = { vm.goToToday() },
-                // 头部齿轮 = 日历表外的点击 → 顺手清掉预选块(切视图/切日期
-                // 由上面的 LaunchedEffect 清)。
-                onOpenSettings = { draft = null; onOpenSettings() },
+                // 头部齿轮 = 日历表外的点击 → 顺手收手(切视图/切日期由上面的
+                // LaunchedEffect 清)。
+                onOpenSettings = { clearPicks(); onOpenSettings() },
             )
 
             when {
@@ -199,11 +210,13 @@ fun CalendarTabScreen(
                     CalendarViewMode.DAY -> DayTimelineView(
                         date = ui.selectedDate,
                         events = ui.eventsByDay[ui.selectedDate].orEmpty(),
-                        onEventClick = { id -> draft = null; onEventClick(id) },
-                        // 点空白:已有预选块 → 先清掉(点框外即取消);没有 → 落新块。
+                        onEventClick = { id -> clearPicks(); onEventClick(id) },
+                        // 点空白:有预选块/选中态 → 先收手(点其外即取消);
+                        // 都没有 → 落新预选块。
                         onSlotTap = { minute ->
-                            draft = if (draft != null) null
-                            else draftSlotAt(ui.selectedDate, minute, defaultDurationMin)
+                            if (draft != null || selectedEventId != null) clearPicks()
+                            else draft =
+                                draftSlotAt(ui.selectedDate, minute, defaultDurationMin)
                         },
                         dimPastNow = dimPastNow,
                         draft = draft,
@@ -212,17 +225,20 @@ fun CalendarTabScreen(
                         onDraftConfirm = confirmDraft,
                         selfUserId = ui.selfUserId,
                         onEventMove = { id, d, s, e -> vm.moveEvent(id, d, s, e) },
+                        selectedEventId = selectedEventId,
+                        // 长按选中一条日程时,顺手撤掉预选框(同时只留一个操作对象)。
+                        onEventSelect = { id -> draft = null; selectedEventId = id },
                     )
 
                     CalendarViewMode.WEEK -> WeekTimelineView(
                         anchorDate = ui.selectedDate,
                         eventsByDay = ui.eventsByDay,
-                        onEventClick = { id -> draft = null; onEventClick(id) },
+                        onEventClick = { id -> clearPicks(); onEventClick(id) },
                         onDayClick = { vm.selectDate(it) },
-                        // 同日视图:点框外的空白先清框,再点才落新框。
+                        // 同日视图:点当前操作对象以外的空白先收手,再点才落新框。
                         onSlotTap = { date, minute ->
-                            draft = if (draft != null) null
-                            else draftSlotAt(date, minute, defaultDurationMin)
+                            if (draft != null || selectedEventId != null) clearPicks()
+                            else draft = draftSlotAt(date, minute, defaultDurationMin)
                         },
                         firstDayOfWeek = firstDow,
                         showWeekend = showWeekend,
@@ -233,6 +249,8 @@ fun CalendarTabScreen(
                         onDraftConfirm = confirmDraft,
                         selfUserId = ui.selfUserId,
                         onEventMove = { id, d, s, e -> vm.moveEvent(id, d, s, e) },
+                        selectedEventId = selectedEventId,
+                        onEventSelect = { id -> draft = null; selectedEventId = id },
                     )
 
                     CalendarViewMode.MONTH -> MonthViewBody(
@@ -247,8 +265,8 @@ fun CalendarTabScreen(
         }
 
         FloatingActionButton(
-            // FAB 也在日历表外:点它直接进表单,预选块作废。
-            onClick = { draft = null; onCreateEvent(ui.selectedDate.toEpochDay()) },
+            // FAB 也在日历表外:点它直接进表单,预选块/选中态作废。
+            onClick = { clearPicks(); onCreateEvent(ui.selectedDate.toEpochDay()) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(20.dp),

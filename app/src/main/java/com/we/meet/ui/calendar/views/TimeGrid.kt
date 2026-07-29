@@ -277,12 +277,23 @@ fun TimelineScaffold(
     /** 再次点击预选块 → 确认(调用方据此进创建表单)。 */
     onDraftConfirm: ((DraftSelection) -> Unit)? = null,
     /**
-     * 日程块长按拖动改期:松手时回调落点(仅 [TimeBlock.movable] 的块参与)。
-     * 时长保持不变,跨列 = 改日期(周视图)。
+     * 日程块改期落点(松手时回调,仅 [TimeBlock.movable] 的块参与):整块移位
+     * 保时长、拖抓手只改一头,跨列 = 改日期(周视图)。两条路径同一个回调 ——
+     * 语义都是「这块的新起止」。
      */
     onBlockMove: (
         (colIndex: Int, key: String, startMin: Int, endMin: Int) -> Unit
     )? = null,
+    /**
+     * 当前处于选中态的日程块 key(长按选中):画主色描边 + 上下圆抓手,可直接
+     * 整块拖移、可拖抓手改时长。为空 = 无选中。
+     */
+    selectedBlockKey: String? = null,
+    /**
+     * 长按可改期的日程块 → 进入选中态。手指不抬继续滑动就直接进整块拖动
+     * (保留老的「长按拖动」一气呵成),抬手则停在选中态等下一步操作。
+     */
+    onBlockSelect: ((key: String) -> Unit)? = null,
 ) {
     val n = columns.size.coerceAtLeast(1)
     val gridLine = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
@@ -305,6 +316,8 @@ fun TimelineScaffold(
     val confirmNow = rememberUpdatedState(onDraftConfirm)
     val columnsNow = rememberUpdatedState(columns)
     val moveNow = rememberUpdatedState(onBlockMove)
+    val selectedNow = rememberUpdatedState(selectedBlockKey)
+    val selectNow = rememberUpdatedState(onBlockSelect)
     val handleTouchPx = with(density) { DRAFT_HANDLE_TOUCH.toPx() }
     // 日程块长按拖动中的落点预览(原位留虚影);null = 没在拖。
     var movePreview by remember { mutableStateOf<MovePreview?>(null) }
@@ -355,10 +368,17 @@ fun TimelineScaffold(
                     .weight(1f)
                     .verticalScroll(scrollState),
             ) {
-                HourRail(
-                    hourHeight,
-                    highlightMinutes = draft?.let { listOf(it.startMin, it.endMin) }.orEmpty(),
-                )
+                // 左侧刻度高亮:预选框 > 拖动中的落点 > 选中态日程块的起止
+                // —— 都是「用户此刻正在摆弄的时段」,读时刻靠它。
+                val railHighlights = draft?.let { listOf(it.startMin, it.endMin) }
+                    ?: movePreview?.let { listOf(it.startMin, it.endMin) }
+                    ?: selectedBlockKey?.let { key ->
+                        columns.firstNotNullOfOrNull { list ->
+                            list.firstOrNull { it.key == key && it.movable }
+                        }?.let { listOf(it.startMin, it.endMin) }
+                    }
+                    ?: emptyList()
+                HourRail(hourHeight, highlightMinutes = railHighlights)
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -368,9 +388,10 @@ fun TimelineScaffold(
                         modifier = Modifier
                             .width(contentWidth)
                             .height(hourHeight * 24)
-                            // 拖拽三条路径,统一在这里命中派发(见 awaitDragTarget):
+                            // 拖拽四条路径,统一在这里命中派发:
                             // ① 预选块的上下手柄 = 改起止;② 预选块本体 = 整块移位;
-                            // ③ 可改期的日程块 = 长按后整块移位。
+                            // ③ 选中态日程块的上下抓手 = 改时长;④ 日程块本体 =
+                            //    已选中则直接拖、未选中则长按先进选中态(不抬手可续拖)。
                             // 一旦接管就在 Initial 阶段吃掉事件,外层 verticalScroll /
                             // horizontalScroll 收不到,拖动不会退化成滚动;没接管则原样
                             // 放行(照常滚动 / 交给下面的点击处理)。
@@ -442,8 +463,73 @@ fun TimelineScaffold(
                                     val onDraftBody = d != null && adjust != null &&
                                         downCol == d.colIndex &&
                                         downMin >= d.startMin && downMin < d.endMin
-                                    // ③ 可改期的日程块:长按才接管,免得滚动时误拖。
                                     val moveCb = moveNow.value
+
+                                    // ③ 选中态日程块的上下抓手:改时长(只动一头,时长
+                                    // 最短一格)。抓手骑在边界线上,按坐标距离命中 ——
+                                    // 落点可能在块外一点,不能用 minute 落在块内来判。
+                                    val selKey = selectedNow.value
+                                    if (!onDraftBody && selKey != null && moveCb != null) {
+                                        var selCol = -1
+                                        var selBlock: TimeBlock? = null
+                                        columnsNow.value.forEachIndexed { ci, list ->
+                                            list.firstOrNull { it.key == selKey }?.let {
+                                                selCol = ci
+                                                selBlock = it
+                                            }
+                                        }
+                                        val sb = selBlock
+                                        if (sb != null && sb.movable) {
+                                            val baseX = colWidthPx * selCol
+                                            val topAt = Offset(
+                                                baseX + colWidthPx - insetPx,
+                                                sb.startMin / 60f * hourHeightPx,
+                                            )
+                                            val botAt = Offset(
+                                                baseX + insetPx,
+                                                sb.endMin / 60f * hourHeightPx,
+                                            )
+                                            val dTop = (down.position - topAt).getDistance()
+                                            val dBot = (down.position - botAt).getDistance()
+                                            if (dTop <= handleTouchPx || dBot <= handleTouchPx) {
+                                                val movingStart = dTop <= dBot
+                                                down.consume()
+                                                var start = sb.startMin
+                                                var end = sb.endMin
+                                                while (true) {
+                                                    val ev = awaitPointerEvent(
+                                                        PointerEventPass.Initial,
+                                                    )
+                                                    val ch = ev.changes
+                                                        .firstOrNull { it.id == down.id } ?: break
+                                                    ch.consume()
+                                                    if (!ch.pressed) break
+                                                    val m = snapMinuteAt(
+                                                        ch.position.y, hourHeightPx,
+                                                    )
+                                                    if (movingStart) {
+                                                        start = m.coerceIn(
+                                                            0, end - DRAFT_MIN_DURATION,
+                                                        )
+                                                    } else {
+                                                        end = m.coerceIn(
+                                                            start + DRAFT_MIN_DURATION, 24 * 60,
+                                                        )
+                                                    }
+                                                    movePreview =
+                                                        MovePreview(selKey, selCol, start, end)
+                                                }
+                                                movePreview = null
+                                                if (start != sb.startMin || end != sb.endMin) {
+                                                    moveCb(selCol, selKey, start, end)
+                                                }
+                                                return@awaitEachGesture
+                                            }
+                                        }
+                                    }
+
+                                    // ④ 日程块本体:已选中 → 直接拖(用户已表态,独占手势);
+                                    // 未选中 → 长按先进选中态,免得滚动时误拖。
                                     val block = if (onDraftBody || moveCb == null) null
                                     else columnsNow.value.getOrNull(downCol)
                                         ?.firstOrNull {
@@ -452,19 +538,29 @@ fun TimelineScaffold(
                                         }
                                     if (!onDraftBody && block == null) return@awaitEachGesture
 
-                                    val takeOver = if (onDraftBody) {
-                                        awaitSlopExceeded(down.id, down.position, slopPx)
-                                    } else {
-                                        awaitLongPress(
+                                    val takeOver = when {
+                                        onDraftBody ->
+                                            awaitSlopExceeded(down.id, down.position, slopPx)
+                                        block!!.key == selKey ->
+                                            awaitSlopExceeded(down.id, down.position, slopPx)
+                                        !awaitLongPress(
                                             down.id, down.position, slopPx, longPressMs,
-                                        )
+                                        ) -> false
+                                        else -> {
+                                            // 长按成立:先给选中态 + 震一下;手指不抬继续
+                                            // 滑就直接进拖动(老的「长按拖动」一气呵成),
+                                            // 抬手则停在选中态。抬手事件要消费掉,否则会
+                                            // 被下面的 tap 当成点击弹详情。
+                                            haptics.performHapticFeedback(
+                                                HapticFeedbackType.LongPress,
+                                            )
+                                            selectNow.value?.invoke(block.key)
+                                            awaitDragAfterSelect(
+                                                down.id, down.position, slopPx,
+                                            )
+                                        }
                                     }
                                     if (!takeOver) return@awaitEachGesture
-                                    if (block != null) {
-                                        haptics.performHapticFeedback(
-                                            HapticFeedbackType.LongPress,
-                                        )
-                                    }
 
                                     // 整块移位:保时长,起点跟手(按 15 分钟吸附),
                                     // 横向跨列 = 改日期(周视图)。
@@ -607,6 +703,8 @@ fun TimelineScaffold(
                                 val blockBg = bgOf.getValue(visual)
                                 // 正在被拖走的块:原位留一层虚影,落点画预览。
                                 val ghost = movePreview?.key == b.key
+                                // 长按选中态:主色描边提示「这块现在可拖」。
+                                val picked = b.key == selectedBlockKey && b.movable
                                 Box(
                                     modifier = Modifier
                                         .offset(x = colWidth * i, y = top)
@@ -628,6 +726,15 @@ fun TimelineScaffold(
                                                 b.faded -> blockBg.copy(alpha = 0.45f)
                                                 else -> blockBg
                                             },
+                                        )
+                                        .then(
+                                            if (picked) {
+                                                Modifier.border(
+                                                    1.5.dp,
+                                                    MaterialTheme.colorScheme.primary,
+                                                    RoundedCornerShape(4.dp),
+                                                )
+                                            } else Modifier,
                                         ),
                                 ) {
                                     if (b.label != null) {
@@ -680,6 +787,34 @@ fun TimelineScaffold(
                                         }
                                     }
                                 }
+                            }
+                        }
+
+                        // 选中态日程块的上下圆抓手(与预选框同款,骑在边界线上):
+                        // 拖它改时长。拖动中改由下面的落点预览接管,先撤掉。
+                        if (selectedBlockKey != null && movePreview == null) {
+                            columns.forEachIndexed { i, blocks ->
+                                blocks
+                                    .firstOrNull { it.key == selectedBlockKey && it.movable }
+                                    ?.let { sb ->
+                                        val inset = minOf(DRAFT_HANDLE_INSET, colWidth / 3)
+                                        val baseX = colWidth * i
+                                        DraftHandle(
+                                            modifier = Modifier.offset(
+                                                x = baseX + colWidth - inset -
+                                                    DRAFT_HANDLE_SIZE / 2,
+                                                y = hourHeight * (sb.startMin / 60f) -
+                                                    DRAFT_HANDLE_SIZE / 2,
+                                            ),
+                                        )
+                                        DraftHandle(
+                                            modifier = Modifier.offset(
+                                                x = baseX + inset - DRAFT_HANDLE_SIZE / 2,
+                                                y = hourHeight * (sb.endMin / 60f) -
+                                                    DRAFT_HANDLE_SIZE / 2,
+                                            ),
+                                        )
+                                    }
                             }
                         }
 
@@ -837,6 +972,25 @@ private suspend fun AwaitPointerEventScope.awaitSlopExceeded(
             ch.consume()
             return true
         }
+    }
+}
+
+/**
+ * 长按选中之后:同一手势里继续等 —— 移动超 slop → true(接着整块拖),抬手
+ * → false(停在选中态)。期间事件一律消费,否则抬手会被 tap 检测当成点击
+ * 直接弹详情。
+ */
+private suspend fun AwaitPointerEventScope.awaitDragAfterSelect(
+    pointerId: PointerId,
+    origin: Offset,
+    slopPx: Float,
+): Boolean {
+    while (true) {
+        val ev = awaitPointerEvent(PointerEventPass.Initial)
+        val ch = ev.changes.firstOrNull { it.id == pointerId } ?: return false
+        ch.consume()
+        if (!ch.pressed) return false
+        if ((ch.position - origin).getDistance() > slopPx) return true
     }
 }
 

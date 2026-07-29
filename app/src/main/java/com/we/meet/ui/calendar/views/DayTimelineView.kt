@@ -45,8 +45,11 @@ fun DayTimelineView(
     onDraftConfirm: ((DraftSlot) -> Unit)? = null,
     /** 我的 uuid:我组织的非重复日程可长按拖动改期(null = 全都不可拖)。 */
     selfUserId: String? = null,
-    /** 长按拖动改期落点(日视图不跨列,日期恒为 [date])。 */
+    /** 改期落点(整块移位 / 拖抓手改时长;日视图不跨列,日期恒为 [date])。 */
     onEventMove: ((eventId: String, date: LocalDate, startMin: Int, endMin: Int) -> Unit)? = null,
+    /** 长按选中的日程 id:出上下抓手,可直接拖移 / 改时长。 */
+    selectedEventId: String? = null,
+    onEventSelect: ((eventId: String) -> Unit)? = null,
 ) {
     val blocks = remember(date, events, dimPastNow, selfUserId) {
         events.mapNotNull { it.toTimeBlockOrNull(date, dimPastNow, selfUserId) }
@@ -115,6 +118,8 @@ fun DayTimelineView(
             onBlockMove = onEventMove?.let { cb ->
                 { _: Int, key: String, s: Int, e: Int -> cb(key, date, s, e) }
             },
+            selectedBlockKey = selectedEventId,
+            onBlockSelect = onEventSelect,
         )
     }
 }

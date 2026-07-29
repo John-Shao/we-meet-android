@@ -73,8 +73,11 @@ fun WeekTimelineView(
     onDraftConfirm: ((DraftSlot) -> Unit)? = null,
     /** 我的 uuid:我组织的非重复日程可长按拖动改期(null = 全都不可拖)。 */
     selfUserId: String? = null,
-    /** 长按拖动改期落点;横向跨列 = 改到那一天。 */
+    /** 改期落点(整块移位 / 拖抓手改时长);横向跨列 = 改到那一天。 */
     onEventMove: ((eventId: String, date: LocalDate, startMin: Int, endMin: Int) -> Unit)? = null,
+    /** 长按选中的日程 id:出上下抓手,可直接拖移 / 改时长。 */
+    selectedEventId: String? = null,
+    onEventSelect: ((eventId: String) -> Unit)? = null,
 ) {
     val today = LocalDate.now()
     val days = remember(anchorDate, firstDayOfWeek, showWeekend) {
@@ -129,6 +132,8 @@ fun WeekTimelineView(
         onBlockMove = onEventMove?.let { cb ->
             { col: Int, key: String, s: Int, e: Int -> cb(key, days[col], s, e) }
         },
+        selectedBlockKey = selectedEventId,
+        onBlockSelect = onEventSelect,
         // 7 列过窄,块内只显标题(时刻由位置 + 左侧刻度读取,点块看详情)。
         compactBlocks = true,
         // 一屏 5 列:关周末时 = 全部 5 列(不滚);开周末时 7 列滚动看余下两天。
