@@ -35,7 +35,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -55,7 +59,9 @@ import com.we.meet.data.settings.CalendarWeekStart
 import com.we.meet.ui.calendar.views.AgendaView
 import com.we.meet.ui.calendar.views.CalendarViewMode
 import com.we.meet.ui.calendar.views.DayTimelineView
+import com.we.meet.ui.calendar.views.DraftSlot
 import com.we.meet.ui.calendar.views.WeekTimelineView
+import com.we.meet.ui.calendar.views.draftSlotAt
 import com.we.meet.ui.calendar.views.weekColumnDays
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -69,6 +75,8 @@ import java.util.Locale
 fun CalendarTabScreen(
     onEventClick: (eventId: String) -> Unit,
     onCreateEvent: (epochDay: Long) -> Unit,
+    /** 预选时段确认后按精确起止(epoch 秒)进创建表单;缺省退化成按天创建。 */
+    onCreateEventAt: ((startEpochSecond: Long, endEpochSecond: Long) -> Unit)? = null,
     /** P8 日历设置页入口(header 齿轮)。 */
     onOpenSettings: () -> Unit = {},
 ) {
@@ -85,6 +93,29 @@ fun CalendarTabScreen(
     val dimPastNow = if (dimPast) java.time.ZonedDateTime.now() else null
     // P8 日历设置:周视图是否显示周末(App 默认关 → 聚焦工作周;Web 默认开)。
     val showWeekend by app.settingsStore.calendarShowWeekend.collectAsStateWithLifecycle()
+    // 新建日程默认时长:点空白落预选块时的初始长度(与表单默认一致)。
+    val defaultDurationMin by app.settingsStore.calendarDefaultDurationMin
+        .collectAsStateWithLifecycle()
+
+    // 对齐飞书:日/周视图点空白先落「预选时段」,拖上下手柄改起止,**再点一次**
+    // 这个块才进创建表单 —— 误触不会直接弹表单。切视图/切日期即作废。
+    var draft by remember { mutableStateOf<DraftSlot?>(null) }
+    LaunchedEffect(ui.viewMode, ui.selectedDate) { draft = null }
+    val draftLabel = stringResource(R.string.calendar_draft_add)
+    val confirmDraft: (DraftSlot) -> Unit = { slot ->
+        draft = null
+        val zone = java.time.ZoneId.systemDefault()
+        val dayStart = slot.date.atStartOfDay(zone)
+        val onAt = onCreateEventAt
+        if (onAt != null) {
+            onAt(
+                dayStart.plusMinutes(slot.startMin.toLong()).toEpochSecond(),
+                dayStart.plusMinutes(slot.endMin.toLong()).toEpochSecond(),
+            )
+        } else {
+            onCreateEvent(slot.date.toEpochDay())
+        }
+    }
 
     // Returning from create/detail routes resumes HOME — refresh picks up
     // new events and RSVP changes without result-passing plumbing.
@@ -158,8 +189,15 @@ fun CalendarTabScreen(
                         date = ui.selectedDate,
                         events = ui.eventsByDay[ui.selectedDate].orEmpty(),
                         onEventClick = onEventClick,
-                        onSlotTap = { _ -> onCreateEvent(ui.selectedDate.toEpochDay()) },
+                        // 点空白 = 落/挪预选块(不再直接进表单)。
+                        onSlotTap = { minute ->
+                            draft = draftSlotAt(ui.selectedDate, minute, defaultDurationMin)
+                        },
                         dimPastNow = dimPastNow,
+                        draft = draft,
+                        draftLabel = draftLabel,
+                        onDraftAdjust = { draft = it },
+                        onDraftConfirm = confirmDraft,
                     )
 
                     CalendarViewMode.WEEK -> WeekTimelineView(
@@ -167,10 +205,16 @@ fun CalendarTabScreen(
                         eventsByDay = ui.eventsByDay,
                         onEventClick = onEventClick,
                         onDayClick = { vm.selectDate(it) },
-                        onSlotTap = { date, _ -> onCreateEvent(date.toEpochDay()) },
+                        onSlotTap = { date, minute ->
+                            draft = draftSlotAt(date, minute, defaultDurationMin)
+                        },
                         firstDayOfWeek = firstDow,
                         showWeekend = showWeekend,
                         dimPastNow = dimPastNow,
+                        draft = draft,
+                        draftLabel = draftLabel,
+                        onDraftAdjust = { draft = it },
+                        onDraftConfirm = confirmDraft,
                     )
 
                     CalendarViewMode.MONTH -> MonthViewBody(

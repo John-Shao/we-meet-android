@@ -464,6 +464,12 @@ fun AppNav() {
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 onEventClick = { eventId -> navController.navigate(Routes.eventDetail(eventId)) },
                 onCreateEvent = { epochDay -> navController.navigate(Routes.createEvent(epochDay)) },
+                // 日历预选时段确认 → 复用忙闲页那条精确起止预填(无预选参与者)。
+                onCreateEventAt = { startSec, endSec ->
+                    navController.navigate(
+                        Routes.createEventPrefilled(startSec, endSec, emptyList()),
+                    )
+                },
                 // P8「在消息列表提醒日程」:置顶入口 → 日程提醒页。
                 onOpenReminders = { navController.navigate(Routes.REMINDERS) },
                 // P8:日历 tab 齿轮 → 日历设置页。

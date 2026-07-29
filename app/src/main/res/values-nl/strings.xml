@@ -294,6 +294,7 @@
     <string name="calendar_settings_duration_minutes">%1$d min</string>
     <string name="calendar_settings_dim_past">Dim past events</string>
     <string name="calendar_settings_show_weekend">Show weekends</string>
+    <string name="calendar_draft_add">Nieuwe afspraak</string>
     <!-- P8: meeting detail actions -->
     <string name="detail_copy">Copy</string>
     <string name="detail_copied">Copied</string>

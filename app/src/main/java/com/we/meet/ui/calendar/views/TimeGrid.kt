@@ -3,6 +3,9 @@ package com.we.meet.ui.calendar.views
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
@@ -16,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -25,14 +29,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,6 +55,7 @@ import com.we.meet.ui.calendar.rsvpTextColor
 import com.we.meet.ui.calendar.rsvpVisualOf
 import java.time.LocalDate
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
  * P8 纵向时间轴的共用积木:日视图(1 列)/周视图(7 列)/忙闲对比页(一人一列)
@@ -85,6 +94,46 @@ private fun fmtMin(min: Int): String = "%02d:%02d".format(min / 60, min % 60)
 data class TimeSelection(val startMin: Int, val endMin: Int)
 
 /**
+ * 日/周视图的「预选时段」草稿(对齐飞书):点空白先落一个预选块,拖上下边界
+ * 手柄改起止,**再次点这个块**才进创建日程表单。[colIndex] = 所在列(日视图恒 0)。
+ */
+data class DraftSelection(val colIndex: Int, val startMin: Int, val endMin: Int)
+
+/**
+ * 屏级的预选时段(带日期):日视图/周视图共用同一份状态,列索引在各视图内部
+ * 换算。起止为当日分钟制 [0,1440]。
+ */
+data class DraftSlot(val date: LocalDate, val startMin: Int, val endMin: Int)
+
+/** 预选块拖拽的吸附粒度(分钟) —— 与飞书一致取 15。 */
+const val DRAFT_SNAP_MIN = 15
+
+/** 预选块的最短时长(分钟):拖到重合时留一格,块仍可见可点。 */
+private const val DRAFT_MIN_DURATION = DRAFT_SNAP_MIN
+
+/** 手柄触摸半径 / 距列边的水平内缩(手柄画在边界线上,上右下左各一个)。 */
+private val DRAFT_HANDLE_TOUCH = 26.dp
+private val DRAFT_HANDLE_INSET = 18.dp
+private val DRAFT_HANDLE_SIZE = 13.dp
+
+/** 把像素 y 折算成吸附到 [DRAFT_SNAP_MIN] 的分钟数(钳进当日)。 */
+private fun snapMinuteAt(y: Float, hourHeightPx: Float): Int {
+    val raw = y / hourHeightPx * 60f
+    return ((raw / DRAFT_SNAP_MIN).roundToInt() * DRAFT_SNAP_MIN).coerceIn(0, 24 * 60)
+}
+
+/**
+ * 在 [date] 的 [minuteOfDay] 处落一个 [durationMin] 长的预选块:起点向下吸附到
+ * 30 分钟格,越过当日末尾则整体前移(保时长)。日/周视图点空白时共用。
+ */
+fun draftSlotAt(date: LocalDate, minuteOfDay: Int, durationMin: Int): DraftSlot {
+    val dur = durationMin.coerceIn(DRAFT_MIN_DURATION, 24 * 60)
+    val snapped = (minuteOfDay / 30) * 30
+    val start = snapped.coerceIn(0, 24 * 60 - dur)
+    return DraftSlot(date, start, start + dur)
+}
+
+/**
  * 把日程投影成 [date] 当日的时间块;全天/不覆盖当日 → null。
  * [dimPastNow] 非空时,结束时刻早于它的块标记 dimmed(P8 日历设置)。
  */
@@ -114,19 +163,46 @@ fun EventUi.toTimeBlockOrNull(
     )
 }
 
-/** 左侧小时刻度列(00:00–23:00)。 */
+/**
+ * 左侧小时刻度列(00:00–23:00)。[highlightMinutes] 非空时在对应位置叠一层主色
+ * 时刻(预选块的起止),带底色遮住重叠的整点刻度 —— 对齐飞书。
+ */
 @Composable
-fun HourRail(hourHeight: Dp, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.width(HOUR_RAIL_WIDTH)) {
-        repeat(24) { h ->
+fun HourRail(
+    hourHeight: Dp,
+    modifier: Modifier = Modifier,
+    highlightMinutes: List<Int> = emptyList(),
+) {
+    Box(modifier = modifier.width(HOUR_RAIL_WIDTH)) {
+        Column {
+            repeat(24) { h ->
+                Text(
+                    text = "%02d:00".format(h),
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.outline,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(hourHeight)
+                        .padding(end = 4.dp),
+                )
+            }
+        }
+        highlightMinutes.forEach { min ->
             Text(
-                text = "%02d:00".format(h),
+                text = fmtMin(min),
                 fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.outline,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.End,
                 modifier = Modifier
+                    // 24:00 贴着刻度列末尾,回收一行高度免得被滚动容器裁掉。
+                    .offset(
+                        y = (hourHeight * (min / 60f))
+                            .coerceAtMost(hourHeight * 24 - 13.dp),
+                    )
                     .fillMaxWidth()
-                    .height(hourHeight)
+                    .background(MaterialTheme.colorScheme.surface)
                     .padding(end = 4.dp),
             )
         }
@@ -165,6 +241,14 @@ fun TimelineScaffold(
     visibleColumnCount: Int? = null,
     /** 非空时初次布局横滚到让该列可见(周视图默认「今天」可见)。 */
     revealColumnIndex: Int? = null,
+    /** 预选时段草稿(点空白后出现);为空 = 无草稿。见 [DraftSelection]。 */
+    draft: DraftSelection? = null,
+    /** 预选块里显示的文案(通常「添加日程」);null 时不画草稿。 */
+    draftLabel: String? = null,
+    /** 拖动上/下手柄时持续回调新草稿(已吸附到 [DRAFT_SNAP_MIN])。 */
+    onDraftAdjust: ((DraftSelection) -> Unit)? = null,
+    /** 再次点击预选块 → 确认(调用方据此进创建表单)。 */
+    onDraftConfirm: ((DraftSelection) -> Unit)? = null,
 ) {
     val n = columns.size.coerceAtLeast(1)
     val gridLine = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
@@ -180,6 +264,12 @@ fun TimelineScaffold(
     val density = LocalDensity.current
     // 列头与网格共享一个横向 ScrollState → 严格同步滚动(飞书样式)。
     val hScroll = rememberScrollState()
+    // 草稿相关的最新值用 rememberUpdatedState 兜住:pointerInput 的 key 不能带
+    // draft —— 拖动中每帧都会更新它,重启 key 会把正在进行的手势掐断。
+    val draftNow = rememberUpdatedState(draft)
+    val adjustNow = rememberUpdatedState(onDraftAdjust)
+    val confirmNow = rememberUpdatedState(onDraftConfirm)
+    val handleTouchPx = with(density) { DRAFT_HANDLE_TOUCH.toPx() }
 
     BoxWithConstraints(modifier = modifier) {
         val available = maxWidth - HOUR_RAIL_WIDTH
@@ -226,7 +316,10 @@ fun TimelineScaffold(
                     .weight(1f)
                     .verticalScroll(scrollState),
             ) {
-                HourRail(hourHeight)
+                HourRail(
+                    hourHeight,
+                    highlightMinutes = draft?.let { listOf(it.startMin, it.endMin) }.orEmpty(),
+                )
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -235,7 +328,57 @@ fun TimelineScaffold(
                     Box(
                         modifier = Modifier
                             .width(contentWidth)
-                            .height(hourHeight * 24),
+                            .height(hourHeight * 24)
+                            // 预选块的上下手柄拖拽:命中手柄就在 Initial 阶段吃掉
+                            // down —— 外层 verticalScroll 收不到,拖动不会变滚动;
+                            // 没命中则原样放行(照常滚动 / 交给下面的点击处理)。
+                            .pointerInput(hourHeightPx, colWidthPx, handleTouchPx) {
+                                val insetPx = DRAFT_HANDLE_INSET.toPx()
+                                awaitEachGesture {
+                                    val down = awaitFirstDown(
+                                        requireUnconsumed = false,
+                                        pass = PointerEventPass.Initial,
+                                    )
+                                    val d = draftNow.value ?: return@awaitEachGesture
+                                    val adjust = adjustNow.value ?: return@awaitEachGesture
+                                    val baseX = colWidthPx * d.colIndex
+                                    val topAt = Offset(
+                                        baseX + colWidthPx - insetPx,
+                                        d.startMin / 60f * hourHeightPx,
+                                    )
+                                    val botAt = Offset(
+                                        baseX + insetPx,
+                                        d.endMin / 60f * hourHeightPx,
+                                    )
+                                    val dTop = (down.position - topAt).getDistance()
+                                    val dBot = (down.position - botAt).getDistance()
+                                    if (dTop > handleTouchPx && dBot > handleTouchPx) {
+                                        return@awaitEachGesture
+                                    }
+                                    // 短块时两手柄挨得近,取更近的那个。
+                                    val movingStart = dTop <= dBot
+                                    down.consume()
+                                    var start = d.startMin
+                                    var end = d.endMin
+                                    while (true) {
+                                        val ev = awaitPointerEvent(PointerEventPass.Initial)
+                                        val ch = ev.changes.firstOrNull { it.id == down.id }
+                                            ?: break
+                                        ch.consume()
+                                        if (!ch.pressed) break
+                                        val m = snapMinuteAt(ch.position.y, hourHeightPx)
+                                        if (movingStart) {
+                                            start = m.coerceIn(0, end - DRAFT_MIN_DURATION)
+                                        } else {
+                                            end = m.coerceIn(
+                                                start + DRAFT_MIN_DURATION,
+                                                24 * 60,
+                                            )
+                                        }
+                                        adjust(d.copy(startMin = start, endMin = end))
+                                    }
+                                }
+                            },
                     ) {
                         Canvas(
                             modifier = Modifier
@@ -247,6 +390,17 @@ fun TimelineScaffold(
                                         val minute = ((off.y / hourHeightPx) * 60)
                                             .toInt()
                                             .coerceIn(0, 24 * 60 - 1)
+                                        // 预选块画在最上层,点它 = 确认建日程(优先于
+                                        // 底下压着的日程块)。
+                                        val d = draftNow.value
+                                        val confirm = confirmNow.value
+                                        if (d != null && confirm != null &&
+                                            col == d.colIndex &&
+                                            minute >= d.startMin && minute < d.endMin
+                                        ) {
+                                            confirm(d)
+                                            return@detectTapGestures
+                                        }
                                         val hit = columns[col].firstOrNull {
                                             minute >= it.startMin && minute < it.endMin
                                         }
@@ -382,6 +536,55 @@ fun TimelineScaffold(
                             }
                         }
 
+                        // 预选时段(飞书样式):浅蓝底 + 主色描边 + 「添加日程」,
+                        // 右上/左下各一个圆手柄骑在边界线上(拖它改起止)。
+                        if (draft != null && draftLabel != null) {
+                            val dTop = hourHeight * (draft.startMin / 60f)
+                            val dHeight =
+                                (hourHeight * ((draft.endMin - draft.startMin) / 60f))
+                                    .coerceAtLeast(DRAFT_HANDLE_SIZE)
+                            val inset = minOf(DRAFT_HANDLE_INSET, colWidth / 3)
+                            val baseX = colWidth * draft.colIndex
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .offset(x = baseX, y = dTop)
+                                    .width(colWidth)
+                                    .height(dHeight)
+                                    .padding(horizontal = 1.5.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                    )
+                                    .border(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.primary,
+                                        RoundedCornerShape(6.dp),
+                                    ),
+                            ) {
+                                Text(
+                                    text = draftLabel,
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.padding(horizontal = 2.dp),
+                                )
+                            }
+                            DraftHandle(
+                                modifier = Modifier.offset(
+                                    x = baseX + colWidth - inset - DRAFT_HANDLE_SIZE / 2,
+                                    y = dTop - DRAFT_HANDLE_SIZE / 2,
+                                ),
+                            )
+                            DraftHandle(
+                                modifier = Modifier.offset(
+                                    x = baseX + inset - DRAFT_HANDLE_SIZE / 2,
+                                    y = dTop + dHeight - DRAFT_HANDLE_SIZE / 2,
+                                ),
+                            )
+                        }
+
                         // 当前时刻红线(仅 nowLineInColumn 的列)。
                         if (nowMinute != null) {
                             val y = hourHeight * (nowMinute / 60f)
@@ -435,3 +638,15 @@ fun TimelineScaffold(
 }
 
 internal val NowLineColor = Color(0xFFEF4444)
+
+/** 预选块的边界手柄:白心 + 主色圈(纯视觉,手势在网格 Box 上按坐标命中)。 */
+@Composable
+private fun DraftHandle(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(DRAFT_HANDLE_SIZE)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surface)
+            .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
+    )
+}

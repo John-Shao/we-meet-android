@@ -119,6 +119,8 @@ fun MainTabScreen(
     onMemberClick: (userId: String) -> Unit,
     onEventClick: (eventId: String) -> Unit,
     onCreateEvent: (epochDay: Long) -> Unit,
+    /** 日历预选时段确认后按精确起止(epoch 秒)进创建表单。 */
+    onCreateEventAt: (startEpochSecond: Long, endEpochSecond: Long) -> Unit,
     /** P8「在消息列表提醒日程」:置顶入口点开日程提醒页。 */
     onOpenReminders: () -> Unit,
     /** P8 日历设置页(日历 tab 齿轮)。 */
@@ -284,6 +286,7 @@ fun MainTabScreen(
             CalendarTabScreen(
                 onEventClick = onEventClick,
                 onCreateEvent = onCreateEvent,
+                onCreateEventAt = onCreateEventAt,
                 onOpenSettings = onOpenCalendarSettings,
             )
         },

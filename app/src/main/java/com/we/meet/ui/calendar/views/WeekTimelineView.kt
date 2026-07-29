@@ -66,6 +66,11 @@ fun WeekTimelineView(
     showWeekend: Boolean = true,
     /** P8「降低已结束日程的亮度」:非空时,结束早于该时刻的块降透明度。 */
     dimPastNow: java.time.ZonedDateTime? = null,
+    /** 当前预选时段(只在它所属日期落在本周列里时才画)。 */
+    draft: DraftSlot? = null,
+    draftLabel: String? = null,
+    onDraftAdjust: ((DraftSlot) -> Unit)? = null,
+    onDraftConfirm: ((DraftSlot) -> Unit)? = null,
 ) {
     val today = LocalDate.now()
     val days = remember(anchorDate, firstDayOfWeek, showWeekend) {
@@ -100,6 +105,22 @@ fun WeekTimelineView(
         nowLineInColumn = { i -> days[i] == today },
         onBlockTap = { _, key -> onEventClick(key) },
         onSlotTap = { col, minute -> onSlotTap(days[col], minute) },
+        // 草稿的日期 ↔ 列索引换算(不在本周的列里就不画)。
+        draft = draft?.let { d ->
+            days.indexOf(d.date).takeIf { it >= 0 }
+                ?.let { DraftSelection(it, d.startMin, d.endMin) }
+        },
+        draftLabel = draftLabel,
+        onDraftAdjust = onDraftAdjust?.let { cb ->
+            { sel: DraftSelection ->
+                cb(DraftSlot(days[sel.colIndex], sel.startMin, sel.endMin))
+            }
+        },
+        onDraftConfirm = onDraftConfirm?.let { cb ->
+            { sel: DraftSelection ->
+                cb(DraftSlot(days[sel.colIndex], sel.startMin, sel.endMin))
+            }
+        },
         // 7 列过窄,块内只显标题(时刻由位置 + 左侧刻度读取,点块看详情)。
         compactBlocks = true,
         // 一屏 5 列:关周末时 = 全部 5 列(不滚);开周末时 7 列滚动看余下两天。

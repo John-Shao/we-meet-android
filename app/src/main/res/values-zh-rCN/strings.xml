@@ -310,6 +310,8 @@
     <string name="calendar_settings_duration_minutes">%1$d 分钟</string>
     <string name="calendar_settings_dim_past">降低已结束日程的亮度</string>
     <string name="calendar_settings_show_weekend">显示周末</string>
+    <!-- 日/周视图:点空白落预选时段,再点一次才建日程 -->
+    <string name="calendar_draft_add">添加日程</string>
     <!-- P8: meeting detail actions -->
     <string name="detail_copy">复制</string>
     <string name="detail_copied">已复制</string>

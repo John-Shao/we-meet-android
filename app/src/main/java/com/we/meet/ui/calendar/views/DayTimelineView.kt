@@ -27,8 +27,8 @@ import java.time.LocalDate
 import java.time.LocalTime
 
 /**
- * P8 日视图:全天条(chips)+ 单列时间轴。点日程块进详情,点空白按该时刻
- * 建日程(30min 吸附由调用方处理)。
+ * P8 日视图:全天条(chips)+ 单列时间轴。点日程块进详情,点空白先落一个
+ * 「预选时段」([draft],飞书交互:拖上下手柄改起止,再点一次才进创建表单)。
  */
 @Composable
 fun DayTimelineView(
@@ -38,6 +38,11 @@ fun DayTimelineView(
     onSlotTap: (minuteOfDay: Int) -> Unit,
     /** P8「降低已结束日程的亮度」:非空时,结束早于该时刻的块降透明度。 */
     dimPastNow: java.time.ZonedDateTime? = null,
+    /** 当前预选时段(仅当它就是 [date] 当天时才画)。 */
+    draft: DraftSlot? = null,
+    draftLabel: String? = null,
+    onDraftAdjust: ((DraftSlot) -> Unit)? = null,
+    onDraftConfirm: ((DraftSlot) -> Unit)? = null,
 ) {
     val blocks = remember(date, events, dimPastNow) {
         events.mapNotNull { it.toTimeBlockOrNull(date, dimPastNow) }
@@ -93,6 +98,16 @@ fun DayTimelineView(
             nowMinute = if (isToday) LocalTime.now().let { it.hour * 60 + it.minute } else null,
             onBlockTap = { _, key -> onEventClick(key) },
             onSlotTap = { _, minute -> onSlotTap(minute) },
+            // 日视图只有一列:同日的草稿投到 col 0,回调再补回日期。
+            draft = draft?.takeIf { it.date == date }
+                ?.let { DraftSelection(0, it.startMin, it.endMin) },
+            draftLabel = draftLabel,
+            onDraftAdjust = onDraftAdjust?.let { cb ->
+                { sel: DraftSelection -> cb(DraftSlot(date, sel.startMin, sel.endMin)) }
+            },
+            onDraftConfirm = onDraftConfirm?.let { cb ->
+                { sel: DraftSelection -> cb(DraftSlot(date, sel.startMin, sel.endMin)) }
+            },
         )
     }
 }
