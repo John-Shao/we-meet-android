@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.R
 import com.we.meet.WeMeetApp
+import com.we.meet.data.settings.CALENDAR_WEEK_VISIBLE_DAYS_RANGE
 import com.we.meet.data.settings.CalendarWeekStart
 import java.time.DayOfWeek
 import java.time.format.TextStyle
@@ -60,6 +61,7 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
     val reminderMin by store.calendarDefaultReminderMin.collectAsStateWithLifecycle()
     val dimPast by store.calendarDimPast.collectAsStateWithLifecycle()
     val showWeekend by store.calendarShowWeekend.collectAsStateWithLifecycle()
+    val weekVisibleDays by store.calendarWeekVisibleDays.collectAsStateWithLifecycle()
 
     val locale = Locale.getDefault()
     val dowLabel: (CalendarWeekStart) -> String = { ws ->
@@ -109,6 +111,21 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
                     onCheckedChange = { store.setCalendarShowWeekend(it) },
                 )
             }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            // 与上一条是两件事:上面决定周视图「有几列」(5 / 7),这条决定
+            // 「一屏铺几列」——列数比它少时铺满不滚。
+            SettingDropdownRow(
+                label = stringResource(R.string.calendar_settings_week_visible_days),
+                current = stringResource(
+                    R.string.calendar_settings_week_days_value, weekVisibleDays,
+                ),
+                options = CALENDAR_WEEK_VISIBLE_DAYS_RANGE.map { days ->
+                    val label =
+                        stringResource(R.string.calendar_settings_week_days_value, days)
+                    label to { store.setCalendarWeekVisibleDays(days) }
+                },
+            )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
             SettingDropdownRow(

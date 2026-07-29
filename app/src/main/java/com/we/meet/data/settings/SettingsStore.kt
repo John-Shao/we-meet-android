@@ -14,6 +14,12 @@ import kotlinx.coroutines.flow.asStateFlow
  * the whole app via [StateFlow], so screens that observe the setting (e.g.
  * Settings, RoomViewModel) stay in sync without polling SharedPreferences.
  */
+/** 周视图「一屏显示几天」的可选范围(设置页选项与存储钳制共用同一处)。 */
+val CALENDAR_WEEK_VISIBLE_DAYS_RANGE = 3..7
+
+/** 默认 3 天(对齐飞书「三日」视图):窄屏上列宽约 105dp,块内标题读得清。 */
+const val CALENDAR_WEEK_VISIBLE_DAYS_DEFAULT = 3
+
 class SettingsStore(context: Context) {
 
     private val prefs = context.applicationContext
@@ -123,6 +129,26 @@ class SettingsStore(context: Context) {
         _calendarShowWeekend.value = enabled
     }
 
+    private val _calendarWeekVisibleDays = MutableStateFlow(
+        prefs.getInt(KEY_CALENDAR_WEEK_VISIBLE_DAYS, CALENDAR_WEEK_VISIBLE_DAYS_DEFAULT)
+            .coerceIn(CALENDAR_WEEK_VISIBLE_DAYS_RANGE),
+    )
+
+    /**
+     * 周视图一屏铺几天(3~7,默认 3 = 飞书「三日」)。屏幕窄 / 想看清标题就
+     * 调小,想一眼看全一周就调到 7;比一屏列数多的天数横滑看。仅作用于周视图。
+     *
+     * 与 [calendarShowWeekend] 是两件事:那个决定「有几列」(5 或 7),这个决定
+     * 「一屏铺几列」——列数比它少时铺满不滚。
+     */
+    val calendarWeekVisibleDays: StateFlow<Int> = _calendarWeekVisibleDays.asStateFlow()
+
+    fun setCalendarWeekVisibleDays(days: Int) {
+        val safe = days.coerceIn(CALENDAR_WEEK_VISIBLE_DAYS_RANGE)
+        prefs.edit().putInt(KEY_CALENDAR_WEEK_VISIBLE_DAYS, safe).apply()
+        _calendarWeekVisibleDays.value = safe
+    }
+
     private companion object {
         const val FILE_NAME = "jusi_meet_settings"
         const val KEY_VIDEO_CODEC = "video_codec"
@@ -133,6 +159,7 @@ class SettingsStore(context: Context) {
         const val KEY_CALENDAR_DEFAULT_REMINDER = "calendar_default_reminder"
         const val KEY_CALENDAR_DIM_PAST = "calendar_dim_past"
         const val KEY_CALENDAR_SHOW_WEEKEND = "calendar_show_weekend"
+        const val KEY_CALENDAR_WEEK_VISIBLE_DAYS = "calendar_week_visible_days"
     }
 }
 

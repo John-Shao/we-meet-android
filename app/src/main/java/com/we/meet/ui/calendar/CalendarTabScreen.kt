@@ -95,6 +95,9 @@ fun CalendarTabScreen(
     val dimPastNow = if (dimPast) java.time.ZonedDateTime.now() else null
     // P8 日历设置:周视图是否显示周末(App 默认关 → 聚焦工作周;Web 默认开)。
     val showWeekend by app.settingsStore.calendarShowWeekend.collectAsStateWithLifecycle()
+    // 日历设置:周视图一屏铺几天(默认 4;比列数多则铺满不滚)。
+    val weekVisibleDays by app.settingsStore.calendarWeekVisibleDays
+        .collectAsStateWithLifecycle()
     // 新建日程默认时长:点空白落预选块时的初始长度(与表单默认一致)。
     val defaultDurationMin by app.settingsStore.calendarDefaultDurationMin
         .collectAsStateWithLifecycle()
@@ -250,6 +253,7 @@ fun CalendarTabScreen(
                         },
                         firstDayOfWeek = firstDow,
                         showWeekend = showWeekend,
+                        visibleDays = weekVisibleDays,
                         dimPastNow = dimPastNow,
                         draft = draft,
                         draftLabel = draftLabel,

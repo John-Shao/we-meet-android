@@ -310,6 +310,9 @@
     <string name="calendar_settings_duration_minutes">%1$d 分钟</string>
     <string name="calendar_settings_dim_past">降低已结束日程的亮度</string>
     <string name="calendar_settings_show_weekend">显示周末</string>
+    <!-- 周视图一屏铺几天(3~7,默认 3);列数比它少时铺满不滚 -->
+    <string name="calendar_settings_week_visible_days">周视图一屏显示</string>
+    <string name="calendar_settings_week_days_value">%1$d 天</string>
     <!-- 日/周视图:点空白落预选时段,再点一次才建日程 -->
     <string name="calendar_draft_add">添加日程</string>
     <!-- 长按拖动日程改期失败时提示 -->

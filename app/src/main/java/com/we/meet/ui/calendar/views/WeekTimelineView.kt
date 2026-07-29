@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.we.meet.data.settings.CALENDAR_WEEK_VISIBLE_DAYS_DEFAULT
 import com.we.meet.ui.calendar.EventUi
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -48,14 +49,11 @@ fun weekColumnDays(
     }
 }
 
-/** 周视图一屏铺几天(小屏适配:再多列宽就不够显标题了,余下的横滑看)。 */
-private const val VISIBLE_DAYS = 4
-
 /**
  * P8 周视图(飞书「三日」按团队约定改为 7 列周):顶部星期条(今日高亮圆点,
  * 点某天切到该日)+ 时间轴,红线只画在今天列。翻周走 header 的 ‹ ›(±7 天),
  * 不引入 Pager(见 P8 设计:降低状态同步面)。周末开关关闭时收敛为 5 列工作周。
- * 一屏只铺 [VISIBLE_DAYS] 天,其余横滑(列头与网格同步滚)。
+ * 一屏只铺 [visibleDays] 天(日历设置项),其余横滑(列头与网格同步滚)。
  */
 @Composable
 fun WeekTimelineView(
@@ -68,6 +66,8 @@ fun WeekTimelineView(
     firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
     /** P8 日历设置:显示周末(默认 true;关闭 → 只列周一~周五 5 列)。 */
     showWeekend: Boolean = true,
+    /** 日历设置:一屏铺几天(3~7);列数比它少时铺满不滚。 */
+    visibleDays: Int = CALENDAR_WEEK_VISIBLE_DAYS_DEFAULT,
     /** P8「降低已结束日程的亮度」:非空时,结束早于该时刻的块降透明度。 */
     dimPastNow: java.time.ZonedDateTime? = null,
     /** 当前预选时段(只在它所属日期落在本周列里时才画)。 */
@@ -143,9 +143,9 @@ fun WeekTimelineView(
         onRailTap = onRailTap,
         // 列窄,块内只显标题(时刻由位置 + 左侧刻度读取,点块看详情)。
         compactBlocks = true,
-        // 一屏 4 天(小屏适配:5 列时每列约 63dp,标题基本读不出来)——关周末
-        // 时横滑看第 5 天,开周末时横滑看余下 3 天;拖块跨列改日期不受影响。
-        visibleColumnCount = VISIBLE_DAYS,
+        // 一屏铺几天走日历设置(默认 3,对齐飞书「三日」)。比它多的天数横滑
+        // 看;拖块跨列改日期不受影响。
+        visibleColumnCount = visibleDays,
         revealColumnIndex = revealIndex,
         // 星期条随网格横滚锁定同步(飞书样式):放进 scaffold 的列头槽。
         columnHeader = { i ->

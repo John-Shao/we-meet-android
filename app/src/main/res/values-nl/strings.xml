@@ -294,6 +294,8 @@
     <string name="calendar_settings_duration_minutes">%1$d min</string>
     <string name="calendar_settings_dim_past">Dim past events</string>
     <string name="calendar_settings_show_weekend">Show weekends</string>
+    <string name="calendar_settings_week_visible_days">Dagen per scherm (weekweergave)</string>
+    <string name="calendar_settings_week_days_value">%1$d dagen</string>
     <string name="calendar_draft_add">Nieuwe afspraak</string>
     <string name="calendar_move_failed">Kan deze afspraak niet verplaatsen</string>
     <string name="calendar_move_room_conflict">Vergaderruimte is dan bezet — verplaatsing teruggedraaid</string>
