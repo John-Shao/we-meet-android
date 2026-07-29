@@ -32,6 +32,8 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -124,6 +126,13 @@ fun CalendarTabScreen(
         onPauseOrDispose { }
     }
 
+    // 拖动改期失败(无权限 / 会议室被占 / 网络):VM 已回滚,这里只提示。
+    val snackbarHostState = remember { SnackbarHostState() }
+    val moveFailedText = stringResource(R.string.calendar_move_failed)
+    LaunchedEffect(Unit) {
+        vm.moveFailed.collect { snackbarHostState.showSnackbar(moveFailedText) }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             // 对齐 Web:顶部分段切换器(日/周/月/日程)+ ‹ 今天 › + 按视图标题;
@@ -198,6 +207,8 @@ fun CalendarTabScreen(
                         draftLabel = draftLabel,
                         onDraftAdjust = { draft = it },
                         onDraftConfirm = confirmDraft,
+                        selfUserId = ui.selfUserId,
+                        onEventMove = { id, d, s, e -> vm.moveEvent(id, d, s, e) },
                     )
 
                     CalendarViewMode.WEEK -> WeekTimelineView(
@@ -215,6 +226,8 @@ fun CalendarTabScreen(
                         draftLabel = draftLabel,
                         onDraftAdjust = { draft = it },
                         onDraftConfirm = confirmDraft,
+                        selfUserId = ui.selfUserId,
+                        onEventMove = { id, d, s, e -> vm.moveEvent(id, d, s, e) },
                     )
 
                     CalendarViewMode.MONTH -> MonthViewBody(
@@ -236,6 +249,13 @@ fun CalendarTabScreen(
         ) {
             Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.calendar_create_title))
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 12.dp),
+        )
     }
 }
 

@@ -312,6 +312,8 @@
     <string name="calendar_settings_show_weekend">Show weekends</string>
     <!-- Day/week timeline: tap an empty slot to pre-select a range, tap it again to create -->
     <string name="calendar_draft_add">New event</string>
+    <!-- Long-press-drag an event to reschedule it; shown when the PATCH fails -->
+    <string name="calendar_move_failed">Couldn\'t reschedule this event</string>
     <!-- P8: meeting detail actions -->
     <string name="detail_copy">Copy</string>
     <string name="detail_copied">Copied</string>

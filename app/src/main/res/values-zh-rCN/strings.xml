@@ -312,6 +312,8 @@
     <string name="calendar_settings_show_weekend">显示周末</string>
     <!-- 日/周视图:点空白落预选时段,再点一次才建日程 -->
     <string name="calendar_draft_add">添加日程</string>
+    <!-- 长按拖动日程改期失败时提示 -->
+    <string name="calendar_move_failed">改期失败，已还原</string>
     <!-- P8: meeting detail actions -->
     <string name="detail_copy">复制</string>
     <string name="detail_copied">已复制</string>

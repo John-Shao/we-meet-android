@@ -6,13 +6,17 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.CalendarEventDto
+import com.we.meet.data.api.dto.RescheduleEventRequest
 import com.we.meet.ui.calendar.views.CalendarViewMode
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -26,6 +30,8 @@ data class CalendarUiState(
     val eventsByDay: Map<LocalDate, List<EventUi>> = emptyMap(),
     val loading: Boolean = false,
     val error: Boolean = false,
+    /** 我的 uuid(拉一次):日/周视图据此判定哪些块可长按拖动改期。 */
+    val selfUserId: String? = null,
 ) {
     val selectedDayEvents: List<EventUi> get() = eventsByDay[selectedDate].orEmpty()
 }
@@ -36,13 +42,66 @@ data class CalendarUiState(
  */
 class CalendarViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val calendarApi = (app as WeMeetApp).apiClient.calendarApi
+    private val apiClient = (app as WeMeetApp).apiClient
+    private val calendarApi = apiClient.calendarApi
 
     private val _ui = MutableStateFlow(CalendarUiState(loading = true))
     val ui: StateFlow<CalendarUiState> = _ui.asStateFlow()
 
+    /** 拖动改期失败(权限/会议室冲突/网络)—— 屏幕订阅后弹 Snackbar。 */
+    private val _moveFailed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val moveFailed: SharedFlow<Unit> = _moveFailed.asSharedFlow()
+
     init {
         refresh()
+        viewModelScope.launch {
+            val me = runCatching { apiClient.userApi.getMe() }.getOrNull()?.id
+            if (me != null) _ui.update { it.copy(selfUserId = me) }
+        }
+    }
+
+    /**
+     * 长按拖动改期:先乐观改本地(手感跟手),再 PATCH 起止;失败回滚并抛
+     * [moveFailed]。只有 UI 判定 movable 的块(我组织的、非重复、单日内)
+     * 会走到这里,后端还会再校验一次组织者身份。
+     */
+    fun moveEvent(eventId: String, date: LocalDate, startMin: Int, endMin: Int) {
+        val zone = ZoneId.systemDefault()
+        val newStart = date.atStartOfDay(zone).plusMinutes(startMin.toLong())
+        val newEnd = date.atStartOfDay(zone).plusMinutes(endMin.toLong())
+        val before = _ui.value.eventsByDay
+        val moved = before.values.flatten().firstOrNull { it.id == eventId } ?: return
+        if (moved.start == newStart && moved.end == newEnd) return
+
+        // 乐观:只把这一条从旧桶摘掉、按新时刻放进新桶(其余桶原样保留 ——
+        // 整表重建会用设备时区重算全天日程的覆盖日,可能整体错一天)。
+        val optimistic = moved.copy(start = newStart, end = newEnd)
+        val next = before.mapValues { (_, list) -> list.filter { it.id != eventId } }
+            .toMutableMap()
+        optimistic.coveredDates(zone).forEach { day ->
+            next[day] = (next[day].orEmpty() + optimistic)
+                .sortedWith(compareByDescending<EventUi> { it.allDay }.thenBy { it.start })
+        }
+        _ui.update { it.copy(eventsByDay = next) }
+
+        viewModelScope.launch {
+            runCatching {
+                calendarApi.rescheduleEvent(
+                    eventId,
+                    RescheduleEventRequest(
+                        startAt = DateTimeFormatter.ISO_INSTANT.format(newStart.toInstant()),
+                        endAt = DateTimeFormatter.ISO_INSTANT.format(newEnd.toInstant()),
+                    ),
+                )
+            }.onSuccess {
+                // 后端可能顺带改了别的(会议室重订/系列约束),以服务端为准。
+                refresh()
+            }.onFailure { e ->
+                Log.w(TAG, "reschedule failed", e)
+                _ui.update { it.copy(eventsByDay = before) }
+                _moveFailed.tryEmit(Unit)
+            }
+        }
     }
 
     fun refresh() {

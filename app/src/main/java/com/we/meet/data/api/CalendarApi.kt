@@ -4,6 +4,7 @@ import com.we.meet.data.api.dto.CalendarEventDto
 import com.we.meet.data.api.dto.CreateEventRequest
 import com.we.meet.data.api.dto.FreeBusyResponseDto
 import com.we.meet.data.api.dto.PagedCalendarEventsDto
+import com.we.meet.data.api.dto.RescheduleEventRequest
 import com.we.meet.data.api.dto.RsvpRequest
 import com.we.meet.data.api.dto.RsvpResponseDto
 import com.we.meet.data.api.dto.UpdateEventRequest
@@ -63,6 +64,17 @@ interface CalendarApi {
      */
     @PATCH("api/v1.0/calendar-events/{id}/")
     suspend fun updateEvent(@Path("id") id: String, @Body body: UpdateEventRequest): CalendarEventDto
+
+    /**
+     * 日/周视图长按拖动改期:只 PATCH 起止(其余字段缺省 = 不动)。后端照常
+     * 同步 Room.scheduled_at、重订会议室(冲突 409)、并向来源会话推
+     * time_changed 卡片。仅组织者可调,重复日程走编辑页三选,不走这里。
+     */
+    @PATCH("api/v1.0/calendar-events/{id}/")
+    suspend fun rescheduleEvent(
+        @Path("id") id: String,
+        @Body body: RescheduleEventRequest,
+    ): CalendarEventDto
 
     /**
      * Delete an event. [scope] = "following"(仅重复子场次)截断该场次及之后;

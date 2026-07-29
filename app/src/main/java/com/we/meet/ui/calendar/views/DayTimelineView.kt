@@ -43,9 +43,13 @@ fun DayTimelineView(
     draftLabel: String? = null,
     onDraftAdjust: ((DraftSlot) -> Unit)? = null,
     onDraftConfirm: ((DraftSlot) -> Unit)? = null,
+    /** 我的 uuid:我组织的非重复日程可长按拖动改期(null = 全都不可拖)。 */
+    selfUserId: String? = null,
+    /** 长按拖动改期落点(日视图不跨列,日期恒为 [date])。 */
+    onEventMove: ((eventId: String, date: LocalDate, startMin: Int, endMin: Int) -> Unit)? = null,
 ) {
-    val blocks = remember(date, events, dimPastNow) {
-        events.mapNotNull { it.toTimeBlockOrNull(date, dimPastNow) }
+    val blocks = remember(date, events, dimPastNow, selfUserId) {
+        events.mapNotNull { it.toTimeBlockOrNull(date, dimPastNow, selfUserId) }
     }
     val allDayEvents = remember(date, events) { events.filter { it.allDay } }
     val isToday = date == LocalDate.now()
@@ -107,6 +111,9 @@ fun DayTimelineView(
             },
             onDraftConfirm = onDraftConfirm?.let { cb ->
                 { sel: DraftSelection -> cb(DraftSlot(date, sel.startMin, sel.endMin)) }
+            },
+            onBlockMove = onEventMove?.let { cb ->
+                { _: Int, key: String, s: Int, e: Int -> cb(key, date, s, e) }
             },
         )
     }

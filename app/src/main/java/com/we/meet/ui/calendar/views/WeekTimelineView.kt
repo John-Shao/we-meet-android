@@ -71,14 +71,19 @@ fun WeekTimelineView(
     draftLabel: String? = null,
     onDraftAdjust: ((DraftSlot) -> Unit)? = null,
     onDraftConfirm: ((DraftSlot) -> Unit)? = null,
+    /** 我的 uuid:我组织的非重复日程可长按拖动改期(null = 全都不可拖)。 */
+    selfUserId: String? = null,
+    /** 长按拖动改期落点;横向跨列 = 改到那一天。 */
+    onEventMove: ((eventId: String, date: LocalDate, startMin: Int, endMin: Int) -> Unit)? = null,
 ) {
     val today = LocalDate.now()
     val days = remember(anchorDate, firstDayOfWeek, showWeekend) {
         weekColumnDays(anchorDate, firstDayOfWeek, showWeekend)
     }
-    val columns = remember(days, eventsByDay, dimPastNow) {
+    val columns = remember(days, eventsByDay, dimPastNow, selfUserId) {
         days.map { date ->
-            eventsByDay[date].orEmpty().mapNotNull { it.toTimeBlockOrNull(date, dimPastNow) }
+            eventsByDay[date].orEmpty()
+                .mapNotNull { it.toTimeBlockOrNull(date, dimPastNow, selfUserId) }
         }
     }
 
@@ -120,6 +125,9 @@ fun WeekTimelineView(
             { sel: DraftSelection ->
                 cb(DraftSlot(days[sel.colIndex], sel.startMin, sel.endMin))
             }
+        },
+        onBlockMove = onEventMove?.let { cb ->
+            { col: Int, key: String, s: Int, e: Int -> cb(key, days[col], s, e) }
         },
         // 7 列过窄,块内只显标题(时刻由位置 + 左侧刻度读取,点块看详情)。
         compactBlocks = true,

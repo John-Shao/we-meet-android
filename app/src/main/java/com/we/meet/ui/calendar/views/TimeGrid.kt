@@ -29,7 +29,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -37,9 +41,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -83,6 +91,11 @@ data class TimeBlock(
     val dimmed: Boolean = false,
     /** 我的表态(`my_rsvp`);忙闲块传 null。见 [rsvpVisualOf]。 */
     val rsvp: String? = null,
+    /**
+     * 允许长按拖动改期(整块移位)。仅「我组织的、非重复、当日内起止」的日程
+     * 为 true —— 重复日程涉及三选语义,忙闲/他人日程无权改。
+     */
+    val movable: Boolean = false,
 )
 
 /** 短块阈值(分钟):≤45 分钟块高只够一行,时间并入标题行(对齐 Web)。 */
@@ -116,6 +129,14 @@ private val DRAFT_HANDLE_TOUCH = 26.dp
 private val DRAFT_HANDLE_INSET = 18.dp
 private val DRAFT_HANDLE_SIZE = 13.dp
 
+/** 拖动中的整块移位预览(日程块长按拖动时的落点;预选块直接改 draft)。 */
+private data class MovePreview(
+    val key: String,
+    val colIndex: Int,
+    val startMin: Int,
+    val endMin: Int,
+)
+
 /** 把像素 y 折算成吸附到 [DRAFT_SNAP_MIN] 的分钟数(钳进当日)。 */
 private fun snapMinuteAt(y: Float, hourHeightPx: Float): Int {
     val raw = y / hourHeightPx * 60f
@@ -136,10 +157,12 @@ fun draftSlotAt(date: LocalDate, minuteOfDay: Int, durationMin: Int): DraftSlot 
 /**
  * 把日程投影成 [date] 当日的时间块;全天/不覆盖当日 → null。
  * [dimPastNow] 非空时,结束时刻早于它的块标记 dimmed(P8 日历设置)。
+ * [selfUserId] 非空且我就是组织者时,单日内的非重复日程可长按拖动改期。
  */
 fun EventUi.toTimeBlockOrNull(
     date: LocalDate,
     dimPastNow: java.time.ZonedDateTime? = null,
+    selfUserId: String? = null,
 ): TimeBlock? {
     if (allDay) return null
     val startDate = start.toLocalDate()
@@ -160,6 +183,10 @@ fun EventUi.toTimeBlockOrNull(
         faded = cancelled,
         dimmed = dimPastNow != null && end.isBefore(dimPastNow),
         rsvp = myRsvp,
+        // 跨天的块被裁过(s/e 不是真实起止),拖动会把另一半算错 → 不开放。
+        movable = selfUserId != null && organizerId == selfUserId &&
+            !recurring && !cancelled &&
+            startDate == date && endDate == date,
     )
 }
 
@@ -249,6 +276,13 @@ fun TimelineScaffold(
     onDraftAdjust: ((DraftSelection) -> Unit)? = null,
     /** 再次点击预选块 → 确认(调用方据此进创建表单)。 */
     onDraftConfirm: ((DraftSelection) -> Unit)? = null,
+    /**
+     * 日程块长按拖动改期:松手时回调落点(仅 [TimeBlock.movable] 的块参与)。
+     * 时长保持不变,跨列 = 改日期(周视图)。
+     */
+    onBlockMove: (
+        (colIndex: Int, key: String, startMin: Int, endMin: Int) -> Unit
+    )? = null,
 ) {
     val n = columns.size.coerceAtLeast(1)
     val gridLine = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
@@ -269,7 +303,12 @@ fun TimelineScaffold(
     val draftNow = rememberUpdatedState(draft)
     val adjustNow = rememberUpdatedState(onDraftAdjust)
     val confirmNow = rememberUpdatedState(onDraftConfirm)
+    val columnsNow = rememberUpdatedState(columns)
+    val moveNow = rememberUpdatedState(onBlockMove)
     val handleTouchPx = with(density) { DRAFT_HANDLE_TOUCH.toPx() }
+    // 日程块长按拖动中的落点预览(原位留虚影);null = 没在拖。
+    var movePreview by remember { mutableStateOf<MovePreview?>(null) }
+    val haptics = LocalHapticFeedback.current
 
     BoxWithConstraints(modifier = modifier) {
         val available = maxWidth - HOUR_RAIL_WIDTH
@@ -329,53 +368,153 @@ fun TimelineScaffold(
                         modifier = Modifier
                             .width(contentWidth)
                             .height(hourHeight * 24)
-                            // 预选块的上下手柄拖拽:命中手柄就在 Initial 阶段吃掉
-                            // down —— 外层 verticalScroll 收不到,拖动不会变滚动;
-                            // 没命中则原样放行(照常滚动 / 交给下面的点击处理)。
-                            .pointerInput(hourHeightPx, colWidthPx, handleTouchPx) {
+                            // 拖拽三条路径,统一在这里命中派发(见 awaitDragTarget):
+                            // ① 预选块的上下手柄 = 改起止;② 预选块本体 = 整块移位;
+                            // ③ 可改期的日程块 = 长按后整块移位。
+                            // 一旦接管就在 Initial 阶段吃掉事件,外层 verticalScroll /
+                            // horizontalScroll 收不到,拖动不会退化成滚动;没接管则原样
+                            // 放行(照常滚动 / 交给下面的点击处理)。
+                            .pointerInput(hourHeightPx, colWidthPx, handleTouchPx, n) {
                                 val insetPx = DRAFT_HANDLE_INSET.toPx()
+                                val slopPx = viewConfiguration.touchSlop
+                                val longPressMs = viewConfiguration.longPressTimeoutMillis
+                                fun colAt(x: Float) =
+                                    (x / colWidthPx).toInt().coerceIn(0, n - 1)
+
                                 awaitEachGesture {
                                     val down = awaitFirstDown(
                                         requireUnconsumed = false,
                                         pass = PointerEventPass.Initial,
                                     )
-                                    val d = draftNow.value ?: return@awaitEachGesture
-                                    val adjust = adjustNow.value ?: return@awaitEachGesture
-                                    val baseX = colWidthPx * d.colIndex
-                                    val topAt = Offset(
-                                        baseX + colWidthPx - insetPx,
-                                        d.startMin / 60f * hourHeightPx,
-                                    )
-                                    val botAt = Offset(
-                                        baseX + insetPx,
-                                        d.endMin / 60f * hourHeightPx,
-                                    )
-                                    val dTop = (down.position - topAt).getDistance()
-                                    val dBot = (down.position - botAt).getDistance()
-                                    if (dTop > handleTouchPx && dBot > handleTouchPx) {
-                                        return@awaitEachGesture
+                                    val d = draftNow.value
+                                    val adjust = adjustNow.value
+                                    val downCol = colAt(down.position.x)
+                                    val downMin = ((down.position.y / hourHeightPx) * 60)
+                                        .toInt()
+                                        .coerceIn(0, 24 * 60 - 1)
+
+                                    // ① 手柄:落点离哪个手柄近就拖哪头,立即接管。
+                                    if (d != null && adjust != null) {
+                                        val baseX = colWidthPx * d.colIndex
+                                        val topAt = Offset(
+                                            baseX + colWidthPx - insetPx,
+                                            d.startMin / 60f * hourHeightPx,
+                                        )
+                                        val botAt = Offset(
+                                            baseX + insetPx,
+                                            d.endMin / 60f * hourHeightPx,
+                                        )
+                                        val dTop = (down.position - topAt).getDistance()
+                                        val dBot = (down.position - botAt).getDistance()
+                                        if (dTop <= handleTouchPx || dBot <= handleTouchPx) {
+                                            // 短块时两手柄挨得近,取更近的那个。
+                                            val movingStart = dTop <= dBot
+                                            down.consume()
+                                            var start = d.startMin
+                                            var end = d.endMin
+                                            while (true) {
+                                                val ev =
+                                                    awaitPointerEvent(PointerEventPass.Initial)
+                                                val ch =
+                                                    ev.changes.firstOrNull { it.id == down.id }
+                                                        ?: break
+                                                ch.consume()
+                                                if (!ch.pressed) break
+                                                val m =
+                                                    snapMinuteAt(ch.position.y, hourHeightPx)
+                                                if (movingStart) {
+                                                    start =
+                                                        m.coerceIn(0, end - DRAFT_MIN_DURATION)
+                                                } else {
+                                                    end = m.coerceIn(
+                                                        start + DRAFT_MIN_DURATION,
+                                                        24 * 60,
+                                                    )
+                                                }
+                                                adjust(d.copy(startMin = start, endMin = end))
+                                            }
+                                            return@awaitEachGesture
+                                        }
                                     }
-                                    // 短块时两手柄挨得近,取更近的那个。
-                                    val movingStart = dTop <= dBot
-                                    down.consume()
-                                    var start = d.startMin
-                                    var end = d.endMin
+
+                                    // ② 预选块本体:超过触摸 slop 才接管(不到 slop 松手
+                                    // = 点击确认,交给下面的 tap 处理)。
+                                    val onDraftBody = d != null && adjust != null &&
+                                        downCol == d.colIndex &&
+                                        downMin >= d.startMin && downMin < d.endMin
+                                    // ③ 可改期的日程块:长按才接管,免得滚动时误拖。
+                                    val moveCb = moveNow.value
+                                    val block = if (onDraftBody || moveCb == null) null
+                                    else columnsNow.value.getOrNull(downCol)
+                                        ?.firstOrNull {
+                                            it.movable &&
+                                                downMin >= it.startMin && downMin < it.endMin
+                                        }
+                                    if (!onDraftBody && block == null) return@awaitEachGesture
+
+                                    val takeOver = if (onDraftBody) {
+                                        awaitSlopExceeded(down.id, down.position, slopPx)
+                                    } else {
+                                        awaitLongPress(
+                                            down.id, down.position, slopPx, longPressMs,
+                                        )
+                                    }
+                                    if (!takeOver) return@awaitEachGesture
+                                    if (block != null) {
+                                        haptics.performHapticFeedback(
+                                            HapticFeedbackType.LongPress,
+                                        )
+                                    }
+
+                                    // 整块移位:保时长,起点跟手(按 15 分钟吸附),
+                                    // 横向跨列 = 改日期(周视图)。
+                                    val origStart =
+                                        if (onDraftBody) d!!.startMin else block!!.startMin
+                                    val origEnd =
+                                        if (onDraftBody) d!!.endMin else block!!.endMin
+                                    val duration = origEnd - origStart
+                                    val grabMin = downMin - origStart
+                                    var lastCol = if (onDraftBody) d!!.colIndex else downCol
+                                    var lastStart = origStart
                                     while (true) {
                                         val ev = awaitPointerEvent(PointerEventPass.Initial)
                                         val ch = ev.changes.firstOrNull { it.id == down.id }
                                             ?: break
                                         ch.consume()
                                         if (!ch.pressed) break
-                                        val m = snapMinuteAt(ch.position.y, hourHeightPx)
-                                        if (movingStart) {
-                                            start = m.coerceIn(0, end - DRAFT_MIN_DURATION)
+                                        val head = (ch.position.y / hourHeightPx * 60f) -
+                                            grabMin
+                                        lastStart = ((head / DRAFT_SNAP_MIN).roundToInt() *
+                                            DRAFT_SNAP_MIN).coerceIn(0, 24 * 60 - duration)
+                                        lastCol = colAt(ch.position.x)
+                                        if (onDraftBody) {
+                                            adjust!!(
+                                                DraftSelection(
+                                                    lastCol,
+                                                    lastStart,
+                                                    lastStart + duration,
+                                                ),
+                                            )
                                         } else {
-                                            end = m.coerceIn(
-                                                start + DRAFT_MIN_DURATION,
-                                                24 * 60,
+                                            movePreview = MovePreview(
+                                                block!!.key,
+                                                lastCol,
+                                                lastStart,
+                                                lastStart + duration,
                                             )
                                         }
-                                        adjust(d.copy(startMin = start, endMin = end))
+                                    }
+                                    if (block != null) {
+                                        movePreview = null
+                                        // 原地放下不打扰服务端。
+                                        if (lastStart != origStart || lastCol != downCol) {
+                                            moveCb!!(
+                                                lastCol,
+                                                block.key,
+                                                lastStart,
+                                                lastStart + duration,
+                                            )
+                                        }
                                     }
                                 }
                             },
@@ -466,6 +605,8 @@ fun TimelineScaffold(
                                 val visual = rsvpVisualOf(b.rsvp)
                                 val declined = visual == RsvpVisual.DECLINED
                                 val blockBg = bgOf.getValue(visual)
+                                // 正在被拖走的块:原位留一层虚影,落点画预览。
+                                val ghost = movePreview?.key == b.key
                                 Box(
                                     modifier = Modifier
                                         .offset(x = colWidth * i, y = top)
@@ -473,7 +614,13 @@ fun TimelineScaffold(
                                         .height(blockHeight)
                                         .padding(horizontal = 1.5.dp, vertical = 1.dp)
                                         // P8「降低已结束日程的亮度」:整块(底+文字)降透明。
-                                        .alpha(if (b.dimmed) 0.5f else 1f)
+                                        .alpha(
+                                            when {
+                                                ghost -> 0.3f
+                                                b.dimmed -> 0.5f
+                                                else -> 1f
+                                            },
+                                        )
                                         .clip(RoundedCornerShape(4.dp))
                                         .background(
                                             color = when {
@@ -533,6 +680,40 @@ fun TimelineScaffold(
                                         }
                                     }
                                 }
+                            }
+                        }
+
+                        // 日程块拖动中的落点预览:主色描边 + 新时段,松手才落库。
+                        movePreview?.let { mv ->
+                            val mvTop = hourHeight * (mv.startMin / 60f)
+                            val mvHeight =
+                                (hourHeight * ((mv.endMin - mv.startMin) / 60f))
+                                    .coerceAtLeast(14.dp)
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .offset(x = colWidth * mv.colIndex, y = mvTop)
+                                    .width(colWidth)
+                                    .height(mvHeight)
+                                    .padding(horizontal = 1.5.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                                    )
+                                    .border(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.primary,
+                                        RoundedCornerShape(4.dp),
+                                    ),
+                            ) {
+                                Text(
+                                    text = "${fmtMin(mv.startMin)} – ${fmtMin(mv.endMin)}",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
                             }
                         }
 
@@ -638,6 +819,48 @@ fun TimelineScaffold(
 }
 
 internal val NowLineColor = Color(0xFFEF4444)
+
+/**
+ * 等指针移出触摸 slop 才算「要拖了」:期间松手 → false(按点击处理,事件不
+ * 消费,留给 Canvas 的 tap 检测)。返回 true 时首个越界事件已被消费。
+ */
+private suspend fun AwaitPointerEventScope.awaitSlopExceeded(
+    pointerId: PointerId,
+    origin: Offset,
+    slopPx: Float,
+): Boolean {
+    while (true) {
+        val ev = awaitPointerEvent(PointerEventPass.Initial)
+        val ch = ev.changes.firstOrNull { it.id == pointerId } ?: return false
+        if (!ch.pressed) return false
+        if ((ch.position - origin).getDistance() > slopPx) {
+            ch.consume()
+            return true
+        }
+    }
+}
+
+/**
+ * 等长按成立(超时 = 成立):中途松手 = 点击(false),中途划出 slop = 用户
+ * 想滚动(false,不消费,滚动照常接管)。日程块改期用它兜误触。
+ */
+private suspend fun AwaitPointerEventScope.awaitLongPress(
+    pointerId: PointerId,
+    origin: Offset,
+    slopPx: Float,
+    timeoutMs: Long,
+): Boolean = withTimeoutOrNull(timeoutMs) {
+    while (true) {
+        val ev = awaitPointerEvent(PointerEventPass.Initial)
+        val ch = ev.changes.firstOrNull { it.id == pointerId }
+            ?: return@withTimeoutOrNull false
+        if (!ch.pressed) return@withTimeoutOrNull false
+        if ((ch.position - origin).getDistance() > slopPx) {
+            return@withTimeoutOrNull false
+        }
+    }
+    @Suppress("UNREACHABLE_CODE") false
+} ?: true
 
 /** 预选块的边界手柄:白心 + 主色圈(纯视觉,手势在网格 Box 上按坐标命中)。 */
 @Composable

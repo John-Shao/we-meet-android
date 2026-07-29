@@ -155,6 +155,17 @@ data class UpdateEventRequest(
     @Json(name = "with_video_meeting") val withVideoMeeting: Boolean? = null,
 )
 
+/**
+ * 拖动改期专用的极简 PATCH body:只带起止,别的字段一概不提 —— 后端
+ * partial_update 缺省即不动(标题/描述/提醒/参与者/会议室都保持原样),
+ * 也就不用先 GET 一遍详情再回填。仅用于「我组织的非重复日程」。
+ */
+@JsonClass(generateAdapter = true)
+data class RescheduleEventRequest(
+    @Json(name = "start_at") val startAt: String,
+    @Json(name = "end_at") val endAt: String,
+)
+
 @JsonClass(generateAdapter = true)
 data class RsvpRequest(val status: String)
 
