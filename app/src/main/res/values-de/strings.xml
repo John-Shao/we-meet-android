@@ -296,6 +296,7 @@
     <string name="calendar_settings_show_weekend">Show weekends</string>
     <string name="calendar_draft_add">Neuer Termin</string>
     <string name="calendar_move_failed">Termin konnte nicht verschoben werden</string>
+    <string name="calendar_move_room_conflict">Besprechungsraum ist dann belegt — Verschieben zurückgenommen</string>
     <!-- P8: meeting detail actions -->
     <string name="detail_copy">Copy</string>
     <string name="detail_copied">Copied</string>

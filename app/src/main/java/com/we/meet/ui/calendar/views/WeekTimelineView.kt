@@ -78,6 +78,8 @@ fun WeekTimelineView(
     /** 长按选中的日程 id:出上下抓手,可直接拖移 / 改时长。 */
     selectedEventId: String? = null,
     onEventSelect: ((eventId: String) -> Unit)? = null,
+    /** 点左侧时刻刻度列 = 点在操作对象以外 → 收手。 */
+    onRailTap: (() -> Unit)? = null,
 ) {
     val today = LocalDate.now()
     val days = remember(anchorDate, firstDayOfWeek, showWeekend) {
@@ -134,6 +136,7 @@ fun WeekTimelineView(
         },
         selectedBlockKey = selectedEventId,
         onBlockSelect = onEventSelect,
+        onRailTap = onRailTap,
         // 7 列过窄,块内只显标题(时刻由位置 + 左侧刻度读取,点块看详情)。
         compactBlocks = true,
         // 一屏 5 列:关周末时 = 全部 5 列(不滚);开周末时 7 列滚动看余下两天。

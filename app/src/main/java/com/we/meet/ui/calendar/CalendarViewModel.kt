@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 data class CalendarUiState(
     val monthAnchor: YearMonth = YearMonth.now(),
@@ -37,6 +38,13 @@ data class CalendarUiState(
 }
 
 /**
+ * 拖动改期失败的原因。[ROOM_CONFLICT] = 该日程订着的会议室在新时段被占
+ * (core/api/calendar.py 的 `meeting_room_unavailable`,409);日程接口没有
+ * 别的 409 语义,状态码本身就够判定,不必解析响应体。
+ */
+enum class MoveFailure { ROOM_CONFLICT, OTHER }
+
+/**
  * 日历 tab VM. The API has no date-range filter, so we page the caller's full
  * event list (capped) and bucket client-side; month navigation is local.
  */
@@ -48,9 +56,9 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
     private val _ui = MutableStateFlow(CalendarUiState(loading = true))
     val ui: StateFlow<CalendarUiState> = _ui.asStateFlow()
 
-    /** 拖动改期失败(权限/会议室冲突/网络)—— 屏幕订阅后弹 Snackbar。 */
-    private val _moveFailed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    val moveFailed: SharedFlow<Unit> = _moveFailed.asSharedFlow()
+    /** 拖动改期失败 —— 屏幕订阅后按原因弹对应 Snackbar。 */
+    private val _moveFailed = MutableSharedFlow<MoveFailure>(extraBufferCapacity = 1)
+    val moveFailed: SharedFlow<MoveFailure> = _moveFailed.asSharedFlow()
 
     init {
         refresh()
@@ -99,7 +107,10 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
             }.onFailure { e ->
                 Log.w(TAG, "reschedule failed", e)
                 _ui.update { it.copy(eventsByDay = before) }
-                _moveFailed.tryEmit(Unit)
+                _moveFailed.tryEmit(
+                    if (e is HttpException && e.code() == 409) MoveFailure.ROOM_CONFLICT
+                    else MoveFailure.OTHER,
+                )
             }
         }
     }

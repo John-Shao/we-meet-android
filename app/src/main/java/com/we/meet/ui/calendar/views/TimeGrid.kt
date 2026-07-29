@@ -294,6 +294,11 @@ fun TimelineScaffold(
      * (保留老的「长按拖动」一气呵成),抬手则停在选中态等下一步操作。
      */
     onBlockSelect: ((key: String) -> Unit)? = null,
+    /**
+     * 点左侧时刻刻度列 —— 那儿既不落预选框也不选日程,和点网格外一样算
+     * 「点在当前操作对象以外」,调用方据此收手。
+     */
+    onRailTap: (() -> Unit)? = null,
 ) {
     val n = columns.size.coerceAtLeast(1)
     val gridLine = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
@@ -318,6 +323,7 @@ fun TimelineScaffold(
     val moveNow = rememberUpdatedState(onBlockMove)
     val selectedNow = rememberUpdatedState(selectedBlockKey)
     val selectNow = rememberUpdatedState(onBlockSelect)
+    val railTapNow = rememberUpdatedState(onRailTap)
     val handleTouchPx = with(density) { DRAFT_HANDLE_TOUCH.toPx() }
     // 日程块长按拖动中的落点预览(原位留虚影);null = 没在拖。
     var movePreview by remember { mutableStateOf<MovePreview?>(null) }
@@ -378,7 +384,15 @@ fun TimelineScaffold(
                         }?.let { listOf(it.startMin, it.endMin) }
                     }
                     ?: emptyList()
-                HourRail(hourHeight, highlightMinutes = railHighlights)
+                HourRail(
+                    hourHeight,
+                    modifier = if (onRailTap != null) {
+                        Modifier.pointerInput(Unit) {
+                            detectTapGestures { railTapNow.value?.invoke() }
+                        }
+                    } else Modifier,
+                    highlightMinutes = railHighlights,
+                )
                 Box(
                     modifier = Modifier
                         .weight(1f)

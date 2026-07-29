@@ -137,11 +137,18 @@ fun CalendarTabScreen(
         onPauseOrDispose { }
     }
 
-    // 拖动改期失败(无权限 / 会议室被占 / 网络):VM 已回滚,这里只提示。
+    // 拖动改期失败:VM 已回滚,这里只提示。会议室在新时段被占(409)是最常见
+    // 的一种,单独给文案 —— 通用「改期失败」看不出是撞了会议室。
     val snackbarHostState = remember { SnackbarHostState() }
     val moveFailedText = stringResource(R.string.calendar_move_failed)
+    val roomConflictText = stringResource(R.string.calendar_move_room_conflict)
     LaunchedEffect(Unit) {
-        vm.moveFailed.collect { snackbarHostState.showSnackbar(moveFailedText) }
+        vm.moveFailed.collect { reason ->
+            snackbarHostState.showSnackbar(
+                if (reason == MoveFailure.ROOM_CONFLICT) roomConflictText
+                else moveFailedText,
+            )
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -225,6 +232,7 @@ fun CalendarTabScreen(
                         onDraftConfirm = confirmDraft,
                         selfUserId = ui.selfUserId,
                         onEventMove = { id, d, s, e -> vm.moveEvent(id, d, s, e) },
+                        onRailTap = clearPicks,
                         selectedEventId = selectedEventId,
                         // 长按选中一条日程时,顺手撤掉预选框(同时只留一个操作对象)。
                         onEventSelect = { id -> draft = null; selectedEventId = id },
@@ -249,6 +257,7 @@ fun CalendarTabScreen(
                         onDraftConfirm = confirmDraft,
                         selfUserId = ui.selfUserId,
                         onEventMove = { id, d, s, e -> vm.moveEvent(id, d, s, e) },
+                        onRailTap = clearPicks,
                         selectedEventId = selectedEventId,
                         onEventSelect = { id -> draft = null; selectedEventId = id },
                     )

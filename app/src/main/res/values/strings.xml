@@ -314,6 +314,8 @@
     <string name="calendar_draft_add">New event</string>
     <!-- Long-press-drag an event to reschedule it; shown when the PATCH fails -->
     <string name="calendar_move_failed">Couldn\'t reschedule this event</string>
+    <!-- Reschedule hit a meeting-room clash (409) — more specific than the generic failure -->
+    <string name="calendar_move_room_conflict">Meeting room is taken then — reschedule reverted</string>
     <!-- P8: meeting detail actions -->
     <string name="detail_copy">Copy</string>
     <string name="detail_copied">Copied</string>

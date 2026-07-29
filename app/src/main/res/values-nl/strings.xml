@@ -296,6 +296,7 @@
     <string name="calendar_settings_show_weekend">Show weekends</string>
     <string name="calendar_draft_add">Nieuwe afspraak</string>
     <string name="calendar_move_failed">Kan deze afspraak niet verplaatsen</string>
+    <string name="calendar_move_room_conflict">Vergaderruimte is dan bezet — verplaatsing teruggedraaid</string>
     <!-- P8: meeting detail actions -->
     <string name="detail_copy">Copy</string>
     <string name="detail_copied">Copied</string>

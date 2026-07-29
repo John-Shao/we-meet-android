@@ -50,6 +50,8 @@ fun DayTimelineView(
     /** 长按选中的日程 id:出上下抓手,可直接拖移 / 改时长。 */
     selectedEventId: String? = null,
     onEventSelect: ((eventId: String) -> Unit)? = null,
+    /** 点左侧时刻刻度列 = 点在操作对象以外 → 收手。 */
+    onRailTap: (() -> Unit)? = null,
 ) {
     val blocks = remember(date, events, dimPastNow, selfUserId) {
         events.mapNotNull { it.toTimeBlockOrNull(date, dimPastNow, selfUserId) }
@@ -120,6 +122,7 @@ fun DayTimelineView(
             },
             selectedBlockKey = selectedEventId,
             onBlockSelect = onEventSelect,
+            onRailTap = onRailTap,
         )
     }
 }

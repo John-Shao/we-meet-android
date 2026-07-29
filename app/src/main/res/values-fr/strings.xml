@@ -296,6 +296,7 @@
     <string name="calendar_settings_show_weekend">Show weekends</string>
     <string name="calendar_draft_add">Nouvel événement</string>
     <string name="calendar_move_failed">Impossible de déplacer cet événement</string>
+    <string name="calendar_move_room_conflict">Salle déjà réservée sur ce créneau — déplacement annulé</string>
     <!-- P8: meeting detail actions -->
     <string name="detail_copy">Copy</string>
     <string name="detail_copied">Copied</string>
