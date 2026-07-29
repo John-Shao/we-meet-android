@@ -4,9 +4,11 @@ import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.net.Uri
 import android.view.View
+import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.Image
@@ -42,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.we.meet.BuildConfig
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.auth.KeycloakOidc
@@ -119,6 +122,15 @@ fun WebLoginScreen(onLoggedIn: () -> Unit) {
                 },
                 factory = { ctx ->
                     WebView(ctx).apply {
+                        // Without explicit MATCH_PARENT params Blink never gets
+                        // a viewport height for CSS: `100vh` computes to 0 and
+                        // EVERY `(max-height: N)` media query matches, while JS
+                        // innerHeight reports the right value — so a page can
+                        // look fine in Chrome and silently mislay itself here.
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                        )
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
                         // The page is a fixed native-scale layout — let the
@@ -128,6 +140,14 @@ fun WebLoginScreen(onLoggedIn: () -> Unit) {
                         // Elastic over-scroll exposes the window behind the
                         // page: a dead give-away that this is a browser.
                         overScrollMode = View.OVER_SCROLL_NEVER
+                        // Keycloak serves theme assets with max-age=30d and no
+                        // validator, under a URL keyed by the *Keycloak* version
+                        // — rebuilding the image never busts it. On debug builds
+                        // that means theme edits are invisible until the app's
+                        // data is cleared, so always go to the network there.
+                        if (BuildConfig.DEBUG) {
+                            settings.cacheMode = WebSettings.LOAD_NO_CACHE
+                        }
                         setBackgroundColor(pageBgArgb)
                         CookieManager.getInstance().setAcceptCookie(true)
                         webViewClient = object : WebViewClient() {
