@@ -17,11 +17,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -115,7 +120,12 @@ fun WebLoginScreen(onLoggedIn: () -> Unit) {
             AndroidView(
                 modifier = Modifier
                     .fillMaxSize()
-                    .systemBarsPadding(),
+                    // systemBars ∪ ime: the activity is edge-to-edge, so the
+                    // keyboard arrives as an inset and never resizes the window
+                    // — without the ime half the WebView keeps its full height
+                    // and anything the page pins to the bottom (the agreement
+                    // footer) stays hidden behind the keyboard.
+                    .windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.ime)),
                 update = { view ->
                     view.setBackgroundColor(pageBgArgb)
                     injectTheme(view)
