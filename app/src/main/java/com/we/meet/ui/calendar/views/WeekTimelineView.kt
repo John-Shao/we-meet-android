@@ -48,10 +48,14 @@ fun weekColumnDays(
     }
 }
 
+/** 周视图一屏铺几天(小屏适配:再多列宽就不够显标题了,余下的横滑看)。 */
+private const val VISIBLE_DAYS = 4
+
 /**
  * P8 周视图(飞书「三日」按团队约定改为 7 列周):顶部星期条(今日高亮圆点,
  * 点某天切到该日)+ 时间轴,红线只画在今天列。翻周走 header 的 ‹ ›(±7 天),
  * 不引入 Pager(见 P8 设计:降低状态同步面)。周末开关关闭时收敛为 5 列工作周。
+ * 一屏只铺 [VISIBLE_DAYS] 天,其余横滑(列头与网格同步滚)。
  */
 @Composable
 fun WeekTimelineView(
@@ -98,7 +102,7 @@ fun WeekTimelineView(
     LaunchedEffect(days.first()) {
         scrollState.scrollTo(with(density) { (hourHeight * 8).toPx() }.toInt())
     }
-    // 显示周末时 7 天但一屏只铺 5 列,横滚到让今天(不在本周则锚点)可见。
+    // 一屏只铺 VISIBLE_DAYS 天,横滚到让今天(不在本周则锚点)可见。
     val revealIndex = remember(days) {
         days.indexOf(today).takeIf { it >= 0 }
             ?: days.indexOf(anchorDate).coerceAtLeast(0)
@@ -137,10 +141,11 @@ fun WeekTimelineView(
         selectedBlockKey = selectedEventId,
         onBlockSelect = onEventSelect,
         onRailTap = onRailTap,
-        // 7 列过窄,块内只显标题(时刻由位置 + 左侧刻度读取,点块看详情)。
+        // 列窄,块内只显标题(时刻由位置 + 左侧刻度读取,点块看详情)。
         compactBlocks = true,
-        // 一屏 5 列:关周末时 = 全部 5 列(不滚);开周末时 7 列滚动看余下两天。
-        visibleColumnCount = 5,
+        // 一屏 4 天(小屏适配:5 列时每列约 63dp,标题基本读不出来)——关周末
+        // 时横滑看第 5 天,开周末时横滑看余下 3 天;拖块跨列改日期不受影响。
+        visibleColumnCount = VISIBLE_DAYS,
         revealColumnIndex = revealIndex,
         // 星期条随网格横滚锁定同步(飞书样式):放进 scaffold 的列头槽。
         columnHeader = { i ->
