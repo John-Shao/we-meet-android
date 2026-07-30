@@ -279,14 +279,13 @@
     <string name="freebusy_title">查看日历</string>
     <string name="freebusy_group_title">群成员日历</string>
     <string name="freebusy_all_free">所有参与者都有空</string>
-    <string name="freebusy_conflict">%1$d 人该时段忙碌</string>
+    <string name="freebusy_conflict_names">%1$d 人该时段忙碌：%2$s</string>
+    <string name="freebusy_suggest_title">推荐时段</string>
     <string name="freebusy_unavailable">日历不可见</string>
     <string name="freebusy_unresolved_hint">另有 %1$d 位成员无法获取忙闲</string>
     <string name="freebusy_create">创建日程</string>
     <string name="freebusy_load_error">忙闲加载失败</string>
-    <string name="freebusy_pick_hint">点击空白时段选择时间</string>
-    <string name="freebusy_extend">+30 分钟</string>
-    <string name="freebusy_shrink">\u221230 分钟</string>
+    <string name="freebusy_pick_hint">点空白选时段，拖圆点调整</string>
     <string name="freebusy_pick_members">选择成员</string>
     <string name="freebusy_selected_count">已选: %1$d 人</string>
     <string name="freebusy_confirm">确定</string>

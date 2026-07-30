@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.we.meet.ui.calendar.EventUi
@@ -256,6 +257,11 @@ fun TimelineScaffold(
     disabledColumn: (Int) -> Boolean = { false },
     selection: TimeSelection? = null,
     selectionConflict: Boolean = false,
+    /**
+     * 忙闲页选段可拖:拖上下圆抓手改起止、拖框本体整体移位(保时长)。抓手
+     * 恒贴视口左右缘 —— 选段横贯所有列,人多横滚时贴内容边缘会滚出视野。
+     */
+    onSelectionAdjust: ((TimeSelection) -> Unit)? = null,
     onSlotTap: ((colIndex: Int, minuteOfDay: Int) -> Unit)? = null,
     onBlockTap: ((colIndex: Int, key: String) -> Unit)? = null,
     minColumnWidth: Dp? = null,
@@ -323,6 +329,8 @@ fun TimelineScaffold(
     val moveNow = rememberUpdatedState(onBlockMove)
     val selectedNow = rememberUpdatedState(selectedBlockKey)
     val selectNow = rememberUpdatedState(onBlockSelect)
+    val selectionNow = rememberUpdatedState(selection)
+    val selAdjustNow = rememberUpdatedState(onSelectionAdjust)
     val railTapNow = rememberUpdatedState(onRailTap)
     val handleTouchPx = with(density) { DRAFT_HANDLE_TOUCH.toPx() }
     // 日程块长按拖动中的落点预览(原位留虚影);null = 没在拖。
@@ -342,6 +350,8 @@ fun TimelineScaffold(
         val contentWidth = colWidth * n
         val hourHeightPx = with(density) { hourHeight.toPx() }
         val colWidthPx = with(density) { colWidth.toPx() }
+        // 网格视口宽(不含左侧刻度列):忙闲页选段的抓手贴它的左右缘定位。
+        val availablePx = with(density) { available.toPx() }
 
         // 初次布局(及列宽变化时)横滚到让 revealColumnIndex 列落在可见区内:
         // 若它在前 vc 列内则回到最左,否则滚到把它作为最右可见列。
@@ -378,6 +388,7 @@ fun TimelineScaffold(
                 // —— 都是「用户此刻正在摆弄的时段」,读时刻靠它。
                 val railHighlights = draft?.let { listOf(it.startMin, it.endMin) }
                     ?: movePreview?.let { listOf(it.startMin, it.endMin) }
+                    ?: selection?.let { listOf(it.startMin, it.endMin) }
                     ?: selectedBlockKey?.let { key ->
                         columns.firstNotNullOfOrNull { list ->
                             list.firstOrNull { it.key == key && it.movable }
@@ -409,7 +420,7 @@ fun TimelineScaffold(
                             // 一旦接管就在 Initial 阶段吃掉事件,外层 verticalScroll /
                             // horizontalScroll 收不到,拖动不会退化成滚动;没接管则原样
                             // 放行(照常滚动 / 交给下面的点击处理)。
-                            .pointerInput(hourHeightPx, colWidthPx, handleTouchPx, n) {
+                            .pointerInput(hourHeightPx, colWidthPx, handleTouchPx, n, availablePx) {
                                 val insetPx = DRAFT_HANDLE_INSET.toPx()
                                 val slopPx = viewConfiguration.touchSlop
                                 val longPressMs = viewConfiguration.longPressTimeoutMillis
@@ -443,30 +454,69 @@ fun TimelineScaffold(
                                         val dBot = (down.position - botAt).getDistance()
                                         if (dTop <= handleTouchPx || dBot <= handleTouchPx) {
                                             // 短块时两手柄挨得近,取更近的那个。
-                                            val movingStart = dTop <= dBot
                                             down.consume()
-                                            var start = d.startMin
-                                            var end = d.endMin
+                                            dragEdge(
+                                                down.id,
+                                                hourHeightPx,
+                                                d.startMin,
+                                                d.endMin,
+                                                movingStart = dTop <= dBot,
+                                            ) { s, e ->
+                                                adjust(d.copy(startMin = s, endMin = e))
+                                            }
+                                            return@awaitEachGesture
+                                        }
+                                    }
+
+                                    // ①' 忙闲页选段(横贯所有列):抓手改起止 / 框内
+                                    // 过 slop 整块移位。抓手按视口边缘定位,与渲染一致。
+                                    val sel = selectionNow.value
+                                    val selAdjust = selAdjustNow.value
+                                    if (sel != null && selAdjust != null) {
+                                        val viewportLeft = hScroll.value.toFloat()
+                                        val selTopY = sel.startMin / 60f * hourHeightPx
+                                        val selBotY = sel.endMin / 60f * hourHeightPx
+                                        val topAt = Offset(
+                                            viewportLeft + availablePx - insetPx, selTopY,
+                                        )
+                                        val botAt = Offset(viewportLeft + insetPx, selBotY)
+                                        val dTop = (down.position - topAt).getDistance()
+                                        val dBot = (down.position - botAt).getDistance()
+                                        if (dTop <= handleTouchPx || dBot <= handleTouchPx) {
+                                            down.consume()
+                                            dragEdge(
+                                                down.id,
+                                                hourHeightPx,
+                                                sel.startMin,
+                                                sel.endMin,
+                                                movingStart = dTop <= dBot,
+                                            ) { s, e -> selAdjust(TimeSelection(s, e)) }
+                                            return@awaitEachGesture
+                                        }
+                                        if (downMin >= sel.startMin && downMin < sel.endMin) {
+                                            // 框内:过 slop 才算移位(不到 slop 松手 = 点击,
+                                            // 交给 onSlotTap 按老语义重选)。
+                                            if (!awaitSlopExceeded(
+                                                    down.id, down.position, slopPx,
+                                                )
+                                            ) {
+                                                return@awaitEachGesture
+                                            }
+                                            val duration = sel.endMin - sel.startMin
+                                            val grab = downMin - sel.startMin
                                             while (true) {
                                                 val ev =
                                                     awaitPointerEvent(PointerEventPass.Initial)
-                                                val ch =
-                                                    ev.changes.firstOrNull { it.id == down.id }
-                                                        ?: break
+                                                val ch = ev.changes
+                                                    .firstOrNull { it.id == down.id } ?: break
                                                 ch.consume()
                                                 if (!ch.pressed) break
-                                                val m =
-                                                    snapMinuteAt(ch.position.y, hourHeightPx)
-                                                if (movingStart) {
-                                                    start =
-                                                        m.coerceIn(0, end - DRAFT_MIN_DURATION)
-                                                } else {
-                                                    end = m.coerceIn(
-                                                        start + DRAFT_MIN_DURATION,
-                                                        24 * 60,
-                                                    )
-                                                }
-                                                adjust(d.copy(startMin = start, endMin = end))
+                                                val head =
+                                                    (ch.position.y / hourHeightPx * 60f) - grab
+                                                val s = ((head / DRAFT_SNAP_MIN).roundToInt() *
+                                                    DRAFT_SNAP_MIN)
+                                                    .coerceIn(0, 24 * 60 - duration)
+                                                selAdjust(TimeSelection(s, s + duration))
                                             }
                                             return@awaitEachGesture
                                         }
@@ -506,32 +556,16 @@ fun TimelineScaffold(
                                             val dTop = (down.position - topAt).getDistance()
                                             val dBot = (down.position - botAt).getDistance()
                                             if (dTop <= handleTouchPx || dBot <= handleTouchPx) {
-                                                val movingStart = dTop <= dBot
                                                 down.consume()
-                                                var start = sb.startMin
-                                                var end = sb.endMin
-                                                while (true) {
-                                                    val ev = awaitPointerEvent(
-                                                        PointerEventPass.Initial,
-                                                    )
-                                                    val ch = ev.changes
-                                                        .firstOrNull { it.id == down.id } ?: break
-                                                    ch.consume()
-                                                    if (!ch.pressed) break
-                                                    val m = snapMinuteAt(
-                                                        ch.position.y, hourHeightPx,
-                                                    )
-                                                    if (movingStart) {
-                                                        start = m.coerceIn(
-                                                            0, end - DRAFT_MIN_DURATION,
-                                                        )
-                                                    } else {
-                                                        end = m.coerceIn(
-                                                            start + DRAFT_MIN_DURATION, 24 * 60,
-                                                        )
-                                                    }
+                                                val (start, end) = dragEdge(
+                                                    down.id,
+                                                    hourHeightPx,
+                                                    sb.startMin,
+                                                    sb.endMin,
+                                                    movingStart = dTop <= dBot,
+                                                ) { s, e ->
                                                     movePreview =
-                                                        MovePreview(selKey, selCol, start, end)
+                                                        MovePreview(selKey, selCol, s, e)
                                                 }
                                                 movePreview = null
                                                 if (start != sb.startMin || end != sb.endMin) {
@@ -937,12 +971,15 @@ fun TimelineScaffold(
                             }
                         }
 
-                        // 选中时段:横贯所有列(忙闲页)。
+                        // 选中时段:横贯所有列(忙闲页)。冲突时整框转红(底 + 边框)。
                         if (selection != null) {
                             val selTop = hourHeight * (selection.startMin / 60f)
                             val selHeight =
                                 (hourHeight * ((selection.endMin - selection.startMin) / 60f))
                                     .coerceAtLeast(6.dp)
+                            val selAccent = if (selectionConflict) {
+                                SelectionConflictColor
+                            } else MaterialTheme.colorScheme.primary
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -950,15 +987,46 @@ fun TimelineScaffold(
                                     .height(selHeight)
                                     .padding(horizontal = 1.dp)
                                     .background(
-                                        color = if (selectionConflict) {
-                                            Color(0xFFDC2626).copy(alpha = 0.18f)
-                                        } else {
-                                            MaterialTheme.colorScheme.primary
-                                                .copy(alpha = 0.18f)
-                                        },
+                                        color = selAccent.copy(alpha = 0.18f),
                                         shape = RoundedCornerShape(4.dp),
+                                    )
+                                    .then(
+                                        if (onSelectionAdjust != null) {
+                                            Modifier.border(
+                                                1.dp, selAccent, RoundedCornerShape(4.dp),
+                                            )
+                                        } else Modifier,
                                     ),
                             )
+                            // 上下抓手(与预选框同款):贴视口右上 / 左下,横滚也在视野内
+                            // —— 选段横贯所有列,贴内容边缘的话人多时会滚出屏幕。
+                            if (onSelectionAdjust != null) {
+                                val handlePx = with(density) { DRAFT_HANDLE_SIZE.toPx() }
+                                val insetPx = with(density) { DRAFT_HANDLE_INSET.toPx() }
+                                val topPx = selection.startMin / 60f * hourHeightPx
+                                val botPx = selection.endMin / 60f * hourHeightPx
+                                DraftHandle(
+                                    accent = selAccent,
+                                    // offset {} 在布局阶段读 hScroll,滚动时不触发重组。
+                                    modifier = Modifier.offset {
+                                        IntOffset(
+                                            (hScroll.value + availablePx - insetPx -
+                                                handlePx / 2).roundToInt(),
+                                            (topPx - handlePx / 2).roundToInt(),
+                                        )
+                                    },
+                                )
+                                DraftHandle(
+                                    accent = selAccent,
+                                    modifier = Modifier.offset {
+                                        IntOffset(
+                                            (hScroll.value + insetPx - handlePx / 2)
+                                                .roundToInt(),
+                                            (botPx - handlePx / 2).roundToInt(),
+                                        )
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -968,6 +1036,9 @@ fun TimelineScaffold(
 }
 
 internal val NowLineColor = Color(0xFFEF4444)
+
+/** 忙闲页选段撞上他人日程时的红(与 Web 的冲突色同档)。 */
+private val SelectionConflictColor = Color(0xFFDC2626)
 
 /**
  * 等指针移出触摸 slop 才算「要拖了」:期间松手 → false(按点击处理,事件不
@@ -987,6 +1058,34 @@ private suspend fun AwaitPointerEventScope.awaitSlopExceeded(
             return true
         }
     }
+}
+
+/**
+ * 拖上下抓手改起止的公共循环(预选框 / 选中态日程块 / 忙闲页选段三处共用):
+ * [movingStart] 决定动哪一头,吸附到 [DRAFT_SNAP_MIN] 并保最短一格;每帧把
+ * 新起止交给 [emit],松手返回最终值。调用方负责先 consume 掉 down。
+ */
+private suspend fun AwaitPointerEventScope.dragEdge(
+    pointerId: PointerId,
+    hourHeightPx: Float,
+    startMin: Int,
+    endMin: Int,
+    movingStart: Boolean,
+    emit: (Int, Int) -> Unit,
+): Pair<Int, Int> {
+    var s = startMin
+    var e = endMin
+    while (true) {
+        val ev = awaitPointerEvent(PointerEventPass.Initial)
+        val ch = ev.changes.firstOrNull { it.id == pointerId } ?: break
+        ch.consume()
+        if (!ch.pressed) break
+        val m = snapMinuteAt(ch.position.y, hourHeightPx)
+        if (movingStart) s = m.coerceIn(0, e - DRAFT_MIN_DURATION)
+        else e = m.coerceIn(s + DRAFT_MIN_DURATION, 24 * 60)
+        emit(s, e)
+    }
+    return s to e
 }
 
 /**
@@ -1030,14 +1129,20 @@ private suspend fun AwaitPointerEventScope.awaitLongPress(
     @Suppress("UNREACHABLE_CODE") false
 } ?: true
 
-/** 预选块的边界手柄:白心 + 主色圈(纯视觉,手势在网格 Box 上按坐标命中)。 */
+/**
+ * 预选块 / 选段的边界抓手:白心 + 主色圈(纯视觉,手势在网格 Box 上按坐标
+ * 命中)。[accent] 缺省主色;忙闲页选段冲突时传红色,与框同色。
+ */
 @Composable
-private fun DraftHandle(modifier: Modifier = Modifier) {
+private fun DraftHandle(
+    modifier: Modifier = Modifier,
+    accent: Color = MaterialTheme.colorScheme.primary,
+) {
     Box(
         modifier = modifier
             .size(DRAFT_HANDLE_SIZE)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.surface)
-            .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
+            .border(2.dp, accent, CircleShape),
     )
 }

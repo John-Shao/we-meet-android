@@ -279,14 +279,13 @@
     <string name="freebusy_title">View calendar</string>
     <string name="freebusy_group_title">Members\' calendars</string>
     <string name="freebusy_all_free">Everyone is available</string>
-    <string name="freebusy_conflict">%1$d busy at this time</string>
+    <string name="freebusy_conflict_names">%1$d busy at this time: %2$s</string>
+    <string name="freebusy_suggest_title">Suggested times</string>
     <string name="freebusy_unavailable">Calendar not visible</string>
     <string name="freebusy_unresolved_hint">%1$d member(s) have no busy/free info</string>
     <string name="freebusy_create">Create event</string>
     <string name="freebusy_load_error">Failed to load busy/free</string>
-    <string name="freebusy_pick_hint">Tap an empty slot to pick a time</string>
-    <string name="freebusy_extend">+30 min</string>
-    <string name="freebusy_shrink">\u221230 min</string>
+    <string name="freebusy_pick_hint">Tap an empty slot to pick a time, drag the dots to adjust</string>
     <string name="freebusy_pick_members">Select members</string>
     <string name="freebusy_selected_count">Selected: %1$d</string>
     <string name="freebusy_confirm">OK</string>

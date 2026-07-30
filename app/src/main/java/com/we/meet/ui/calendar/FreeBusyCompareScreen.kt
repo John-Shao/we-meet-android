@@ -1,7 +1,9 @@
 package com.we.meet.ui.calendar
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,9 +30,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -51,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.core.directory.ui.MemberAvatar
@@ -81,6 +84,9 @@ private const val MAX_IDS = 50
 
 /** 列宽下限(飞书样式:一屏约 4 列,超出整体横滚)。 */
 private val MIN_COL_WIDTH = 76.dp
+
+/** 撞上所选时段的人:头像角标红点(与选段冲突色同档)。 */
+private val ConflictDotColor = androidx.compose.ui.graphics.Color(0xFFDC2626)
 
 /**
  * P8 忙闲对比页(对标飞书「查看日历/群成员日历」,单聊/群聊共用):
@@ -171,32 +177,55 @@ fun FreeBusyCompareScreen(
         }
     }
 
-    // ── 时段选择(30min 吸附起点,默认 1h)。 ──
-    var selection by remember { mutableStateOf<TimeSelection?>(null) }
-    LaunchedEffect(day) { selection = null }
-
-    fun busyOverlaps(busy: List<BusyIntervalDto>, sel: TimeSelection): Boolean =
-        busy.any { b ->
-            val s = runCatching {
-                java.time.Duration.between(
-                    day.atStartOfDay(zone),
-                    OffsetDateTime.parse(b.start).toInstant().atZone(zone),
-                ).toMinutes().toInt()
-            }.getOrNull() ?: return@any false
-            val e = runCatching {
-                java.time.Duration.between(
-                    day.atStartOfDay(zone),
-                    OffsetDateTime.parse(b.end).toInstant().atZone(zone),
-                ).toMinutes().toInt()
-            }.getOrNull() ?: return@any false
-            s < sel.endMin && e > sel.startMin
+    // ── 忙碌区间统一解析成当日分钟制:时间轴渲染 / 冲突判定 / 推荐时段共用
+    // 这一份,不再各自解析一遍 ISO 串(口径也就必然一致)。 ──
+    val busyByPerson: Map<String, List<BusyRange>> = remember(busyMap, day, zone) {
+        val startOfDay = day.atStartOfDay(zone)
+        fun minuteOf(iso: String): Int? = runCatching {
+            java.time.Duration.between(
+                startOfDay,
+                OffsetDateTime.parse(iso).toInstant().atZone(zone),
+            ).toMinutes().toInt()
+        }.getOrNull()
+        busyMap.orEmpty().mapValues { (_, list) ->
+            list.mapNotNull { b ->
+                val s = minuteOf(b.start)?.coerceIn(0, 1440) ?: return@mapNotNull null
+                val e = minuteOf(b.end)?.coerceIn(0, 1440) ?: return@mapNotNull null
+                if (e <= s) null else BusyRange(s, e)
+            }
         }
+    }
 
     val visibleChecked = checkedPeople.filter { busyMap?.containsKey(it.userId) == true }
     val invisibleCount = if (busyMap == null) 0 else checkedPeople.size - visibleChecked.size
-    val conflictCount = selection?.let { sel ->
-        visibleChecked.count { busyOverlaps(busyMap?.get(it.userId).orEmpty(), sel) }
-    } ?: 0
+    val peopleBusy = remember(visibleChecked, busyByPerson) {
+        visibleChecked.map { PersonBusyMinutes(it.userId, busyByPerson[it.userId].orEmpty()) }
+    }
+
+    // ── 时段选择:点空白 = 30min 吸附起点 + 日历设置里的「日程默认时长」;
+    // 之后拖上下圆抓手改起止 / 拖框本体整体移位(与日历模块同一套手势)。 ──
+    val defaultDurationMin by app.settingsStore.calendarDefaultDurationMin
+        .collectAsStateWithLifecycle()
+    var selection by remember { mutableStateOf<TimeSelection?>(null) }
+    LaunchedEffect(day) { selection = null }
+
+    // 冲突不再只报数字:点出是谁忙(对齐 Web「N 人该时段忙碌:张三、李四」)。
+    val conflictIds = selection
+        ?.let { busyPeopleInRange(peopleBusy, it.startMin, it.endMin) }
+        .orEmpty()
+    val conflictNames = checkedPeople.filter { conflictIds.contains(it.userId) }.map { it.name }
+
+    // ── 推荐时段(全员空闲;口径与 Web freeSlots.ts 同一份算法)。 ──
+    val suggestions = remember(peopleBusy, defaultDurationMin, day) {
+        if (peopleBusy.size < 2) emptyList()
+        else suggestCommonSlots(
+            people = peopleBusy,
+            durationMin = defaultDurationMin,
+            nowMinuteOfDay = if (day == LocalDate.now()) {
+                LocalTime.now().let { it.hour * 60 + it.minute }
+            } else null,
+        )
+    }
 
     val hourHeight = 56.dp
     val scrollState = rememberScrollState()
@@ -290,26 +319,12 @@ fun FreeBusyCompareScreen(
                     Box(modifier = Modifier.weight(1f)) {
                         TimelineScaffold(
                             columns = checkedPeople.map { p ->
-                                busyMap?.get(p.userId).orEmpty().mapIndexedNotNull { i, b ->
-                                    val startOfDay = day.atStartOfDay(zone)
-                                    val s = runCatching {
-                                        java.time.Duration.between(
-                                            startOfDay,
-                                            OffsetDateTime.parse(b.start).toInstant()
-                                                .atZone(zone),
-                                        ).toMinutes().toInt()
-                                    }.getOrNull() ?: return@mapIndexedNotNull null
-                                    val e = runCatching {
-                                        java.time.Duration.between(
-                                            startOfDay,
-                                            OffsetDateTime.parse(b.end).toInstant()
-                                                .atZone(zone),
-                                        ).toMinutes().toInt()
-                                    }.getOrNull() ?: return@mapIndexedNotNull null
-                                    val cs = s.coerceIn(0, 1440)
-                                    val ce = e.coerceIn(0, 1440)
-                                    if (ce <= cs) null
-                                    else TimeBlock(startMin = cs, endMin = ce, key = "busy-$i")
+                                busyByPerson[p.userId].orEmpty().mapIndexed { i, b ->
+                                    TimeBlock(
+                                        startMin = b.startMin,
+                                        endMin = b.endMin,
+                                        key = "busy-${p.userId}-$i",
+                                    )
                                 }
                             },
                             hourHeight = hourHeight,
@@ -322,13 +337,15 @@ fun FreeBusyCompareScreen(
                                     busyMap?.containsKey(checkedPeople[i].userId) != true
                             },
                             selection = selection,
-                            selectionConflict = conflictCount > 0,
+                            selectionConflict = conflictIds.isNotEmpty(),
+                            // 拖抓手改起止 / 拖框整体移位(TimeGrid 里与预选框同一套)。
+                            onSelectionAdjust = { selection = it },
                             onSlotTap = { _, minute ->
-                                val start = (minute / 30) * 30
-                                selection = TimeSelection(
-                                    startMin = start.coerceAtMost(1440 - 30),
-                                    endMin = (start + 60).coerceAtMost(1440),
-                                )
+                                // 起点向下吸附到 30min 格,越过当日末尾整体前移(保时长)。
+                                val start = ((minute / 30) * 30)
+                                    .coerceIn(0, 1440 - defaultDurationMin)
+                                selection =
+                                    TimeSelection(start, start + defaultDurationMin)
                             },
                             // P8-UX:列头在表格内与列对齐,列多整体横滚(飞书)。
                             minColumnWidth = MIN_COL_WIDTH,
@@ -342,12 +359,34 @@ fun FreeBusyCompareScreen(
                                         .fillMaxWidth()
                                         .padding(vertical = 6.dp),
                                 ) {
-                                    MemberAvatar(
-                                        name = p.name,
-                                        url = p.avatarUrl,
-                                        cacheKey = "avatar:${p.userId}",
-                                        size = 36.dp,
-                                    )
+                                    // 撞上所选时段的人:头像右上角红点 —— 底部只报
+                                    // 名字的话,列多时还得自己扫哪一列压住了。
+                                    Box {
+                                        MemberAvatar(
+                                            name = p.name,
+                                            url = p.avatarUrl,
+                                            cacheKey = "avatar:${p.userId}",
+                                            size = 36.dp,
+                                        )
+                                        if (conflictIds.contains(p.userId)) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .align(Alignment.TopEnd)
+                                                    .size(11.dp)
+                                                    .background(
+                                                        ConflictDotColor,
+                                                        androidx.compose.foundation.shape
+                                                            .CircleShape,
+                                                    )
+                                                    .border(
+                                                        1.5.dp,
+                                                        MaterialTheme.colorScheme.surface,
+                                                        androidx.compose.foundation.shape
+                                                            .CircleShape,
+                                                    ),
+                                            )
+                                        }
+                                    }
                                     Text(
                                         text = p.name,
                                         fontSize = 11.sp,
@@ -407,6 +446,40 @@ fun FreeBusyCompareScreen(
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 10.dp),
                         ) {
+                            // 推荐时段(全员空闲):点一下即套用,免得自己扫空档。
+                            if (suggestions.isNotEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.freebusy_suggest_title),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState())
+                                        .padding(vertical = 2.dp),
+                                ) {
+                                    suggestions.forEach { s ->
+                                        SuggestionChip(
+                                            onClick = {
+                                                selection =
+                                                    TimeSelection(s.startMin, s.endMin)
+                                            },
+                                            label = {
+                                                Text(
+                                                    text = "%02d:%02d - %02d:%02d".format(
+                                                        s.startMin / 60, s.startMin % 60,
+                                                        s.endMin / 60, s.endMin % 60,
+                                                    ),
+                                                    fontSize = 12.sp,
+                                                )
+                                            },
+                                            modifier = Modifier.padding(end = 6.dp),
+                                        )
+                                    }
+                                }
+                                Spacer(Modifier.height(4.dp))
+                            }
                             val sel = selection
                             if (sel == null) {
                                 Text(
@@ -415,54 +488,19 @@ fun FreeBusyCompareScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             } else {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = "%02d:%02d - %02d:%02d".format(
-                                            sel.startMin / 60, sel.startMin % 60,
-                                            sel.endMin / 60, sel.endMin % 60,
-                                        ),
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                    OutlinedButton(
-                                        onClick = {
-                                            selection = sel.copy(
-                                                endMin = (sel.endMin + 30)
-                                                    .coerceAtMost(1440),
-                                            )
-                                        },
-                                        enabled = sel.endMin < 1440,
-                                        contentPadding = androidx.compose.foundation.layout
-                                            .PaddingValues(horizontal = 12.dp),
-                                        modifier = Modifier.height(48.dp),
-                                    ) {
-                                        Text(
-                                            stringResource(R.string.freebusy_extend),
-                                            fontSize = 12.sp,
-                                        )
-                                    }
-                                    Spacer(Modifier.width(4.dp))
-                                    OutlinedButton(
-                                        onClick = {
-                                            selection = sel.copy(endMin = sel.endMin - 30)
-                                        },
-                                        // Disable at the 30-min floor instead of
-                                        // a silent no-op tap.
-                                        enabled = sel.endMin - sel.startMin > 30,
-                                        contentPadding = androidx.compose.foundation.layout
-                                            .PaddingValues(horizontal = 12.dp),
-                                        modifier = Modifier.height(48.dp),
-                                    ) {
-                                        Text(
-                                            stringResource(R.string.freebusy_shrink),
-                                            fontSize = 12.sp,
-                                        )
-                                    }
-                                }
+                                Text(
+                                    text = "%02d:%02d - %02d:%02d".format(
+                                        sel.startMin / 60, sel.startMin % 60,
+                                        sel.endMin / 60, sel.endMin % 60,
+                                    ),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                )
                                 val verdict = when {
-                                    conflictCount > 0 -> stringResource(
-                                        R.string.freebusy_conflict, conflictCount,
+                                    conflictNames.isNotEmpty() -> stringResource(
+                                        R.string.freebusy_conflict_names,
+                                        conflictNames.size,
+                                        conflictNames.take(3).joinToString("、"),
                                     )
                                     else -> stringResource(R.string.freebusy_all_free)
                                 }
@@ -474,7 +512,7 @@ fun FreeBusyCompareScreen(
                                 Text(
                                     text = verdict + hint,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = if (conflictCount > 0) {
+                                    color = if (conflictNames.isNotEmpty()) {
                                         MaterialTheme.colorScheme.error
                                     } else MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.padding(top = 2.dp),
