@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.jusi.lightim.ConnectionState
 import com.jusi.lightim.ConversationSummary
+import com.we.meet.core.directory.data.StarredContacts
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.data.GroupTile
@@ -47,6 +48,8 @@ data class ConversationRowUi(
     val isOwner: Boolean,
     /** An unread message @-mentioned me → red "@" marker. */
     val mentioned: Boolean = false,
+    /** 私聊对端是星标联系人 → 名字后一颗 ⭐(群聊恒 false,星标是对人的)。 */
+    val starred: Boolean = false,
 )
 
 /**
@@ -72,7 +75,10 @@ class ConversationListViewModel internal constructor(
             session.userDirectory.version,
             session.selfUid,
             session.mentionedCids,
-        ) { conversations, _, selfUid, mentioned ->
+            // 星标是 we-meet user id 的集合(共享单例),而会话只有 IM uid ——
+            // 靠 userDirectory 已解析出的 `id` 搭桥,不额外发请求。
+            StarredContacts.ids,
+        ) { conversations, _, selfUid, mentioned, starredUserIds ->
             // 触发 resolve 但不阻塞首帧:列表立即用字母兜底头像渲染,真实头像随
             // userDirectory.version 下次 bump 补上(微信/飞书式)。之前在这里挂起
             // resolve(阻塞)会让冷启动/弱网时整列表空白直到返回——比短暂字母帧更差。
@@ -87,7 +93,9 @@ class ConversationListViewModel internal constructor(
                 }
             }
             session.userDirectory.requestResolve(wanted)
-            conversations.map { it.toRow(selfUid).copy(mentioned = it.cid in mentioned) }
+            conversations.map {
+                it.toRow(selfUid, starredUserIds).copy(mentioned = it.cid in mentioned)
+            }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun refresh() {
@@ -141,7 +149,10 @@ class ConversationListViewModel internal constructor(
         _actionError.value = null
     }
 
-    private fun ConversationSummary.toRow(selfUid: String?): ConversationRowUi {
+    private fun ConversationSummary.toRow(
+        selfUid: String?,
+        starredUserIds: Set<String>,
+    ): ConversationRowUi {
         val isGroup = type == "group"
         val peerUid = if (!isGroup) members.firstOrNull { it != selfUid } else null
         val peer = peerUid?.let { session.userDirectory.get(it) }
@@ -176,6 +187,8 @@ class ConversationListViewModel internal constructor(
             muted = muted,
             muteAtAll = muteAtAll,
             isOwner = isGroup && ownerUid != null && ownerUid == selfUid,
+            // 对端还没解析出来时先按未星标渲染,resolve 回来 version bump 会补上。
+            starred = !isGroup && peer?.id?.let { it in starredUserIds } == true,
         )
     }
 

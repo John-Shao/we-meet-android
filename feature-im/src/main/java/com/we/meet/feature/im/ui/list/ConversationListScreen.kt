@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VideoCall
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -437,6 +438,17 @@ private fun ConversationRow(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
                     )
+                    // 星标联系人:名字后一颗实心星(对标飞书),在置顶图钉之前。
+                    if (row.starred) {
+                        Icon(
+                            Icons.Filled.Star,
+                            contentDescription = stringResource(R.string.im_starred_marker),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .padding(start = 4.dp)
+                                .size(14.dp),
+                        )
+                    }
                     if (row.pinned) {
                         Icon(
                             Icons.Filled.PushPin,

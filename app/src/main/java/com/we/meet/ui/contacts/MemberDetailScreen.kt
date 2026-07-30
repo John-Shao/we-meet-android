@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -58,6 +59,7 @@ import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.util.dialNumber
 import com.we.meet.core.directory.data.MemberDto
+import com.we.meet.core.directory.data.StarredContacts
 import com.we.meet.core.directory.ui.MemberAvatar
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -156,6 +158,8 @@ fun MemberDetailScreen(
     userId: String,
     onBack: () -> Unit,
     onOpenChat: (cid: String) -> Unit,
+    /** 「设置星标联系人的消息通知方式」→ 用户设置里的那页(设置集中在用户设置)。 */
+    onOpenStarredNotifications: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val vm: MemberDetailViewModel = viewModel(
@@ -164,9 +168,18 @@ fun MemberDetailScreen(
     )
     val ui by vm.ui.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    // 星标状态读共享集合而非 member.isStarred 快照:在别处改了也会立刻反映。
+    val starredIds by StarredContacts.ids.collectAsStateWithLifecycle()
 
     LaunchedEffect(vm) {
         vm.chatReady.collect { cid -> onOpenChat(cid) }
+    }
+
+    // 卡片刚拉回来的 is_starred 是服务端最新值(共享集合可能还没同步到别端的改动),
+    // 拿它校准一次,免得开关显示成过期状态。
+    LaunchedEffect(ui.member?.id, ui.member?.isStarred) {
+        val member = ui.member ?: return@LaunchedEffect
+        StarredContacts.reconcile(member.id, member.isStarred)
     }
 
     LaunchedEffect(ui.revealError) {
@@ -210,6 +223,17 @@ fun MemberDetailScreen(
                     revealedPhone = ui.revealedPhone,
                     revealing = ui.revealing,
                     onRevealPhone = { vm.revealPhone() },
+                    starred = userId in starredIds,
+                    onToggleStarred = { next ->
+                        StarredContacts.setStarred(userId, next) {
+                            android.widget.Toast.makeText(
+                                context,
+                                R.string.starred_update_failed,
+                                android.widget.Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                    },
+                    onOpenStarredNotifications = onOpenStarredNotifications,
                 )
             }
         }
@@ -225,6 +249,9 @@ private fun MemberDetailBody(
     revealedPhone: String?,
     revealing: Boolean,
     onRevealPhone: () -> Unit,
+    starred: Boolean,
+    onToggleStarred: (Boolean) -> Unit,
+    onOpenStarredNotifications: () -> Unit,
 ) {
     // Only a real photo is worth enlarging — the initials fallback isn't, so the
     // tap-to-zoom affordance is gated on the member actually having an avatar.
@@ -267,6 +294,14 @@ private fun MemberDetailBody(
             revealing = revealing,
             onReveal = onRevealPhone,
         )
+
+        if (!member.isSelf) {
+            StarredRow(
+                starred = starred,
+                onToggle = onToggleStarred,
+                onOpenNotifications = onOpenStarredNotifications,
+            )
+        }
 
         Spacer(Modifier.height(32.dp))
         if (!member.isSelf) {
@@ -341,6 +376,50 @@ private fun AvatarViewerDialog(
                     .padding(24.dp),
             )
         }
+    }
+}
+
+/**
+ * 「设为星标联系人」+ 开关,附一行「设置星标联系人的消息通知方式 前往设置」。
+ *
+ * 直接摊在详情页里(不像飞书那样再进一层「设置」子页):we-meet 没有那页的
+ * 备注与描述 / 分享 / 举报,单为一个开关多跳一层不值。
+ */
+@Composable
+private fun StarredRow(
+    starred: Boolean,
+    onToggle: (Boolean) -> Unit,
+    onOpenNotifications: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.starred_toggle),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Switch(checked = starred, onCheckedChange = onToggle)
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.starred_notify_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onOpenNotifications) {
+                Text(stringResource(R.string.starred_notify_goto))
+            }
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 

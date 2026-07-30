@@ -573,4 +573,16 @@
     <string name="freebusy_free">Free</string>
     <string name="freebusy_self_busy">You have another event at this time</string>
     <string name="meeting_room_remove">Remove room</string>
+    <string name="starred_title">Starred contacts</string>
+    <string name="starred_add">Add</string>
+    <string name="starred_remove">Unstar</string>
+    <string name="starred_empty">No starred contacts yet</string>
+    <string name="starred_toggle">Star this contact</string>
+    <string name="starred_notify_hint">Notification style for starred contacts</string>
+    <string name="starred_notify_goto">Open settings</string>
+    <string name="starred_update_failed">Could not update the star</string>
+    <string name="starred_notify_title">Starred-contact notifications</string>
+    <string name="starred_notify_view_list">View starred contacts</string>
+    <string name="starred_notify_bypass_quiet">Notify me even when notifications are silenced</string>
+    <string name="starred_notify_bypass_quiet_hint">When on, messages from starred contacts still arrive during your quiet hours. Everyone else stays silenced.</string>
 </resources>

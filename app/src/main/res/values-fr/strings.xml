@@ -498,4 +498,16 @@
     <string name="freebusy_free">Libre</string>
     <string name="freebusy_self_busy">Vous avez un autre événement à ce moment</string>
     <string name="meeting_room_remove">Retirer la salle</string>
+    <string name="starred_title">Contacts favoris</string>
+    <string name="starred_add">Ajouter</string>
+    <string name="starred_remove">Retirer des favoris</string>
+    <string name="starred_empty">Aucun contact favori</string>
+    <string name="starred_toggle">Mettre en favori</string>
+    <string name="starred_notify_hint">Notifications des contacts favoris</string>
+    <string name="starred_notify_goto">Ouvrir les paramètres</string>
+    <string name="starred_update_failed">Échec de la mise à jour du favori</string>
+    <string name="starred_notify_title">Notifications des contacts favoris</string>
+    <string name="starred_notify_view_list">Voir les contacts favoris</string>
+    <string name="starred_notify_bypass_quiet">Me notifier même en mode silencieux</string>
+    <string name="starred_notify_bypass_quiet_hint">Activé, les messages de vos contacts favoris arrivent même pendant vos heures calmes. Les autres restent silencieux.</string>
 </resources>

@@ -278,4 +278,5 @@
     <string name="im_doc_picker_send">发送 (%1$d)</string>
     <string name="im_doc_picker_empty">暂无可分享的文档</string>
     <string name="im_doc_picker_error">获取文档列表失败</string>
+    <string name="im_starred_marker">星标联系人</string>
 </resources>

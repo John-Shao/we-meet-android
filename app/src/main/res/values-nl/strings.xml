@@ -498,4 +498,16 @@
     <string name="freebusy_free">Vrij</string>
     <string name="freebusy_self_busy">Je hebt op dit moment een andere afspraak</string>
     <string name="meeting_room_remove">Ruimte verwijderen</string>
+    <string name="starred_title">Favoriete contacten</string>
+    <string name="starred_add">Toevoegen</string>
+    <string name="starred_remove">Uit favorieten</string>
+    <string name="starred_empty">Nog geen favoriete contacten</string>
+    <string name="starred_toggle">Als favoriet instellen</string>
+    <string name="starred_notify_hint">Meldingen voor favoriete contacten</string>
+    <string name="starred_notify_goto">Instellingen openen</string>
+    <string name="starred_update_failed">Favoriet bijwerken mislukt</string>
+    <string name="starred_notify_title">Meldingen favoriete contacten</string>
+    <string name="starred_notify_view_list">Favoriete contacten bekijken</string>
+    <string name="starred_notify_bypass_quiet">Ook melden als meldingen gedempt zijn</string>
+    <string name="starred_notify_bypass_quiet_hint">Aan: berichten van favoriete contacten komen ook binnen tijdens je stille uren. De rest blijft gedempt.</string>
 </resources>

@@ -498,4 +498,16 @@
     <string name="freebusy_free">Frei</string>
     <string name="freebusy_self_busy">Sie haben zu dieser Zeit einen anderen Termin</string>
     <string name="meeting_room_remove">Raum entfernen</string>
+    <string name="starred_title">Markierte Kontakte</string>
+    <string name="starred_add">Hinzufügen</string>
+    <string name="starred_remove">Markierung entfernen</string>
+    <string name="starred_empty">Noch keine markierten Kontakte</string>
+    <string name="starred_toggle">Kontakt markieren</string>
+    <string name="starred_notify_hint">Benachrichtigungen für markierte Kontakte</string>
+    <string name="starred_notify_goto">Einstellungen öffnen</string>
+    <string name="starred_update_failed">Markierung konnte nicht geändert werden</string>
+    <string name="starred_notify_title">Benachrichtigungen markierter Kontakte</string>
+    <string name="starred_notify_view_list">Markierte Kontakte ansehen</string>
+    <string name="starred_notify_bypass_quiet">Auch bei stummen Benachrichtigungen benachrichtigen</string>
+    <string name="starred_notify_bypass_quiet_hint">Wenn aktiv, kommen Nachrichten markierter Kontakte auch in deinen Ruhezeiten an. Alle anderen bleiben stumm.</string>
 </resources>

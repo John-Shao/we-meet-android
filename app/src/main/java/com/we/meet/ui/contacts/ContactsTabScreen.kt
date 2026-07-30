@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -47,7 +48,10 @@ import com.we.meet.core.directory.ui.MemberAvatar
  * tab-local (the bottom bar stays visible); member detail is an app route.
  */
 @Composable
-fun ContactsTabScreen(onMemberClick: (userId: String) -> Unit) {
+fun ContactsTabScreen(
+    onMemberClick: (userId: String) -> Unit,
+    onOpenStarred: () -> Unit,
+) {
     val vm: ContactsViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
 
@@ -101,6 +105,17 @@ fun ContactsTabScreen(onMemberClick: (userId: String) -> Unit) {
             }
 
             else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+                // 星标联系人:只在组织根层级露出(钻进部门/搜索时是另一个上下文),
+                // 对标飞书通讯录里与部门并列的那个独立分组。
+                if (!ui.searching && ui.deptStack.isEmpty()) {
+                    item {
+                        StarredEntryRow(onClick = onOpenStarred)
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                            modifier = Modifier.padding(start = 56.dp),
+                        )
+                    }
+                }
                 if (!ui.searching) {
                     items(ui.childDepartments, key = { "d-${it.id}" }) { dept ->
                         DepartmentRow(dept = dept, onClick = { vm.openDepartment(dept) })
@@ -193,6 +208,37 @@ private fun Breadcrumbs(
                 modifier = Modifier.clickable(enabled = !isLast) { onCrumbClick(index) },
             )
         }
+    }
+}
+
+/** 「⭐ 星标联系人 ›」—— 部门列表之上的固定入口(仅根层级)。 */
+@Composable
+private fun StarredEntryRow(onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = Dimens.ScreenPadding, vertical = 12.dp),
+    ) {
+        Icon(
+            Icons.Filled.Star,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp),
+        )
+        Text(
+            text = stringResource(R.string.starred_title),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp),
+        )
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.outline,
+        )
     }
 }
 

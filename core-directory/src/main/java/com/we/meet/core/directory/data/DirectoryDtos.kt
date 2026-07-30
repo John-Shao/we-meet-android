@@ -58,6 +58,8 @@ data class MemberDto(
     @Json(name = "org_role") val orgRole: String? = null,
     val department: DeptRefDto? = null,
     @Json(name = "is_self") val isSelf: Boolean = false,
+    /** 调用方是否把这个人设成了星标联系人(每张卡片都带,免二次请求)。 */
+    @Json(name = "is_starred") val isStarred: Boolean = false,
 ) {
     val displayName: String
         get() = fullName?.takeIf { it.isNotBlank() }

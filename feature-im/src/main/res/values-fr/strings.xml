@@ -262,4 +262,5 @@
     <string name="im_doc_picker_send">Envoyer (%1$d)</string>
     <string name="im_doc_picker_empty">Aucun document à partager</string>
     <string name="im_doc_picker_error">Échec du chargement des documents</string>
+    <string name="im_starred_marker">Contact favori</string>
 </resources>

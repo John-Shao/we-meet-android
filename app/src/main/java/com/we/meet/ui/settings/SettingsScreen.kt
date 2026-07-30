@@ -57,6 +57,7 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.WeMeetApp
 import com.we.meet.R
+import com.we.meet.core.directory.data.StarredContacts
 import com.we.meet.feature.im.ImSession
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.data.settings.ThemeMode
@@ -71,6 +72,8 @@ fun SettingsScreen(
      * 指向的仍是这里挂的同一页面。 */
     onOpenMeetingSettings: () -> Unit,
     onOpenCalendarSettings: () -> Unit,
+    /** 「星标联系人消息通知」页(通知一节下面的那行入口)。 */
+    onOpenStarredNotifications: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val settingsStore = app.settingsStore
@@ -108,7 +111,9 @@ fun SettingsScreen(
                 onSelect = settingsStore::setThemeMode,
             )
             LanguageSection()
-            NotificationSection()
+            NotificationSection(
+                onStarredNotificationsClick = onOpenStarredNotifications,
+            )
             ModuleSettingsSection(
                 onMeetingClick = onOpenMeetingSettings,
                 onCalendarClick = onOpenCalendarSettings,
@@ -133,6 +138,8 @@ fun SettingsScreen(
                     // Drop the IM socket + caches so the next login doesn't
                     // inherit this user's session.
                     ImSession.shutdown()
+                    // 星标名单同理:换账号后不该还挂着上一个人的星标。
+                    StarredContacts.clear()
                     onSignedOut()
                 }) {
                     Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.error)
@@ -277,7 +284,7 @@ private fun AccountSection(
  * 读失败仍放开 UI(保存时再报错),避免弱网下设置页卡死。
  */
 @Composable
-private fun NotificationSection() {
+private fun NotificationSection(onStarredNotificationsClick: () -> Unit) {
     val context = LocalContext.current
     val app = context.applicationContext as WeMeetApp
     val scope = rememberCoroutineScope()
@@ -382,6 +389,21 @@ private fun NotificationSection() {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(horizontal = 24.dp),
     )
+
+    // 星标联系人的通知方式:与免打扰时段同属「通知」,挂在它下面一行入口。
+    Spacer(Modifier.height(8.dp))
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.ScreenPadding)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface),
+    ) {
+        ModuleEntryRow(
+            label = stringResource(R.string.starred_notify_title),
+            onClick = onStarredNotificationsClick,
+        )
+    }
     Spacer(Modifier.height(16.dp))
 }
 

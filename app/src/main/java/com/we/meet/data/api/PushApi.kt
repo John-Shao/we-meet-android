@@ -52,12 +52,19 @@ data class PushPreferencesDto(
     val quiet_enabled: Boolean = false,
     val quiet_start: String = "22:00",
     val quiet_end: String = "08:00",
+    /** 星标联系人的消息穿透静默时段(默认开;见后端 StarredContact)。 */
+    val starred_bypass_quiet: Boolean = true,
     val timezone: String? = null,
 )
 
+/**
+ * 局部更新体 —— 字段全可空,Moshi 省略 null,所以调用方只传自己改的那项。
+ * (服务端 `PushPreferenceView.put` 也是「在 body 里出现才改」的语义。)
+ */
 @JsonClass(generateAdapter = true)
 data class PushPreferencesUpdate(
-    val quiet_enabled: Boolean,
-    val quiet_start: String,
-    val quiet_end: String,
+    val quiet_enabled: Boolean? = null,
+    val quiet_start: String? = null,
+    val quiet_end: String? = null,
+    val starred_bypass_quiet: Boolean? = null,
 )

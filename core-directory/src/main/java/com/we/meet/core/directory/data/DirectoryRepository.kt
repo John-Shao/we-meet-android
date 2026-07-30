@@ -46,6 +46,21 @@ class DirectoryRepository(private val api: DirectoryApi) {
     suspend fun revealPhone(userId: String): Result<String> =
         runCatching { api.revealPhone(userId).phone.orEmpty() }
 
+    /**
+     * 我的星标联系人(裸数组,已按姓名排序)。离开组织的人不会出现 —— 后端按对方
+     * 在本组织的 Membership 投影。观察状态请走 [StarredContacts]。
+     */
+    suspend fun listStarred(): Result<List<MemberDto>> =
+        runCatching { api.listStarred() }
+
+    /** 打/取消星标。两个方向都幂等,所以 UI 可以先切开关再落库。 */
+    suspend fun setStarred(userId: String, starred: Boolean): Result<Unit> =
+        runCatching {
+            if (starred) api.star(mapOf("user_id" to userId))
+            else api.unstar(userId)
+            Unit
+        }
+
     private fun PagedMembersDto.toPage(page: Int) = MemberPage(
         members = results,
         hasMore = next != null,

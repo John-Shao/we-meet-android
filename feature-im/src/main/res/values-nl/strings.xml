@@ -262,4 +262,5 @@
     <string name="im_doc_picker_send">Verzenden (%1$d)</string>
     <string name="im_doc_picker_empty">Geen documenten om te delen</string>
     <string name="im_doc_picker_error">Documenten laden mislukt</string>
+    <string name="im_starred_marker">Favoriet contact</string>
 </resources>

@@ -117,6 +117,8 @@ fun MainTabScreen(
     onNewChat: () -> Unit,
     onOpenSearch: () -> Unit,
     onMemberClick: (userId: String) -> Unit,
+    /** 通讯录顶部的「星标联系人」入口。 */
+    onOpenStarredContacts: () -> Unit,
     onEventClick: (eventId: String) -> Unit,
     onCreateEvent: (epochDay: Long) -> Unit,
     /** 日历预选时段确认后按精确起止(epoch 秒)进创建表单。 */
@@ -303,7 +305,10 @@ fun MainTabScreen(
             )
         },
         TabItem(R.string.tab_contacts, Icons.Filled.Contacts, Icons.Outlined.Contacts) {
-            ContactsTabScreen(onMemberClick = onMemberClick)
+            ContactsTabScreen(
+                onMemberClick = onMemberClick,
+                onOpenStarred = onOpenStarredContacts,
+            )
         },
         TabItem(R.string.tab_docs, Icons.Filled.Description, Icons.Outlined.Description) {
             DocsTabScreen(docsWebView)

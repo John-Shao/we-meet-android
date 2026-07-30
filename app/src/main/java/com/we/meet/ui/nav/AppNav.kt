@@ -56,6 +56,7 @@ import com.we.meet.ui.calendar.CreateEventScreen
 import com.we.meet.ui.calendar.EventDetailScreen
 import com.we.meet.ui.calendar.FreeBusyCompareScreen
 import com.we.meet.ui.contacts.MemberDetailScreen
+import com.we.meet.ui.contacts.StarredContactsScreen
 import com.we.meet.ui.login.LoginScreen
 import com.we.meet.ui.login.WebLoginScreen
 import com.we.meet.ui.main.MainTabScreen
@@ -67,6 +68,7 @@ import com.we.meet.ui.room.RoomScreen
 import com.we.meet.ui.settings.AccountSecurityScreen
 import com.we.meet.ui.settings.MeetingSettingsScreen
 import com.we.meet.ui.settings.SettingsScreen
+import com.we.meet.ui.settings.StarredNotificationsScreen
 import com.we.meet.ui.waiting.WaitingRoomScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -120,6 +122,11 @@ object Routes {
     const val IM_DIRECT_SETTINGS = "$IM_DIRECT_SETTINGS_BASE/{cid}"
     /** P1 一对一通话 — full-screen call UI (outgoing/incoming/connecting). */
     const val IM_CALL = "im_call"
+
+    /** 星标联系人列表页(通讯录入口 / 星标通知页的「查看星标联系人」都进这里)。 */
+    const val STARRED_CONTACTS = "starred_contacts"
+    /** 「星标联系人消息通知」—— 挂在用户设置的通知一节下(设置集中在用户设置)。 */
+    const val STARRED_NOTIFICATIONS = "starred_notifications"
 
     // Contacts / Calendar detail routes.
     private const val MEMBER_DETAIL_BASE = "member_detail"
@@ -462,6 +469,7 @@ fun AppNav() {
                 onNewChat = { navController.navigate(Routes.imNewChat()) },
                 onOpenSearch = { navController.navigate(Routes.IM_SEARCH) },
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
+                onOpenStarredContacts = { navController.navigate(Routes.STARRED_CONTACTS) },
                 onEventClick = { eventId -> navController.navigate(Routes.eventDetail(eventId)) },
                 onCreateEvent = { epochDay -> navController.navigate(Routes.createEvent(epochDay)) },
                 // 日历预选时段确认 → 复用忙闲页那条精确起止预填(无预选参与者)。
@@ -777,6 +785,9 @@ fun AppNav() {
                 userId = userId,
                 onBack = rememberOnceOnly(safePop),
                 onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
+                onOpenStarredNotifications = {
+                    navController.navigate(Routes.STARRED_NOTIFICATIONS)
+                },
             )
         }
 
@@ -954,12 +965,33 @@ fun AppNav() {
                 // P8 设置收敛:模块设置从用户设置进,模块内齿轮是同页快捷入口。
                 onOpenMeetingSettings = { navController.navigate(Routes.MEETING_SETTINGS) },
                 onOpenCalendarSettings = { navController.navigate(Routes.CALENDAR_SETTINGS) },
+                onOpenStarredNotifications = {
+                    navController.navigate(Routes.STARRED_NOTIFICATIONS)
+                },
             )
         }
 
         composable(Routes.MEETING_SETTINGS) {
             MeetingSettingsScreen(
                 onBack = rememberOnceOnly(safePop),
+            )
+        }
+
+        composable(Routes.STARRED_NOTIFICATIONS) {
+            StarredNotificationsScreen(
+                onBack = rememberOnceOnly(safePop),
+                onOpenStarredContacts = {
+                    navController.navigate(Routes.STARRED_CONTACTS)
+                },
+            )
+        }
+
+        composable(Routes.STARRED_CONTACTS) {
+            StarredContactsScreen(
+                onBack = rememberOnceOnly(safePop),
+                onMemberClick = { userId ->
+                    navController.navigate(Routes.memberDetail(userId))
+                },
             )
         }
 

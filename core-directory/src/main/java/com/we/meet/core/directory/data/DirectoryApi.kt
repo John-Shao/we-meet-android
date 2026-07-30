@@ -1,5 +1,7 @@
 package com.we.meet.core.directory.data
 
+import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -38,4 +40,19 @@ interface DirectoryApi {
      */
     @POST("api/v1.0/directory/members/{userId}/reveal-phone/")
     suspend fun revealPhone(@Path("userId") userId: String): RevealPhoneDto
+
+    // ── 星标联系人 ──────────────────────────────────────────────────────────
+    // ⚠️ Like listDepartments this returns a BARE ARRAY (a personal star list is
+    // short, so the backend skips the page envelope).
+
+    @GET("api/v1.0/directory/starred/")
+    suspend fun listStarred(): List<MemberDto>
+
+    /** Star someone. Idempotent server-side — 201 first time, 200 after. */
+    @POST("api/v1.0/directory/starred/")
+    suspend fun star(@Body body: Map<String, String>): MemberDto
+
+    /** Unstar. Idempotent — 204 whether or not a star existed. */
+    @DELETE("api/v1.0/directory/starred/{userId}/")
+    suspend fun unstar(@Path("userId") userId: String)
 }
