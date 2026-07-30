@@ -158,8 +158,6 @@ fun MemberDetailScreen(
     userId: String,
     onBack: () -> Unit,
     onOpenChat: (cid: String) -> Unit,
-    /** 「设置星标联系人的消息通知方式」→ 用户设置里的那页(设置集中在用户设置)。 */
-    onOpenStarredNotifications: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val vm: MemberDetailViewModel = viewModel(
@@ -233,7 +231,6 @@ fun MemberDetailScreen(
                             ).show()
                         }
                     },
-                    onOpenStarredNotifications = onOpenStarredNotifications,
                 )
             }
         }
@@ -251,7 +248,6 @@ private fun MemberDetailBody(
     onRevealPhone: () -> Unit,
     starred: Boolean,
     onToggleStarred: (Boolean) -> Unit,
-    onOpenStarredNotifications: () -> Unit,
 ) {
     // Only a real photo is worth enlarging — the initials fallback isn't, so the
     // tap-to-zoom affordance is gated on the member actually having an avatar.
@@ -296,11 +292,7 @@ private fun MemberDetailBody(
         )
 
         if (!member.isSelf) {
-            StarredRow(
-                starred = starred,
-                onToggle = onToggleStarred,
-                onOpenNotifications = onOpenStarredNotifications,
-            )
+            StarredRow(starred = starred, onToggle = onToggleStarred)
         }
 
         Spacer(Modifier.height(32.dp))
@@ -380,16 +372,16 @@ private fun AvatarViewerDialog(
 }
 
 /**
- * 「设为星标联系人」+ 开关,附一行「设置星标联系人的消息通知方式 前往设置」。
+ * 「设为星标联系人」+ 开关,下面一句说明星标到底有什么用。
  *
  * 直接摊在详情页里(不像飞书那样再进一层「设置」子页):we-meet 没有那页的
- * 备注与描述 / 分享 / 举报,单为一个开关多跳一层不值。
+ * 备注与描述 / 分享 / 举报,单为一个开关多跳一层不值。说明也不做成跳转 ——
+ * 通知设置在「设置 › 通知」里,从联系人详情横跳过去反而绕。
  */
 @Composable
 private fun StarredRow(
     starred: Boolean,
     onToggle: (Boolean) -> Unit,
-    onOpenNotifications: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -405,20 +397,14 @@ private fun StarredRow(
             )
             Switch(checked = starred, onCheckedChange = onToggle)
         }
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(R.string.starred_notify_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(onClick = onOpenNotifications) {
-                Text(stringResource(R.string.starred_notify_goto))
-            }
-        }
+        Text(
+            text = stringResource(R.string.starred_toggle_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 10.dp),
+        )
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
