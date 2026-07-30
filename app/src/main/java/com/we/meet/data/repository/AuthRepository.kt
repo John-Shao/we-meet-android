@@ -53,6 +53,8 @@ class AuthRepository(
         // Push: now that a Bearer exists, register the Getui cid (no-op when
         // the cid callback hasn't fired yet — that path retries by itself).
         com.we.meet.push.PushTokenUploader.uploadIfPossible()
+        // 同理上报设备时区(免打扰时段按它解释);账号维度,故登录后必报一次。
+        com.we.meet.push.DeviceTimezoneReporter.reportIfNeeded()
         // Best-effort: pre-fetch the user's nickname so displayUsername uses it
         // right away instead of falling back to the phone number. Failure here
         // must not block login — the phone number fallback still works.
@@ -77,6 +79,7 @@ class AuthRepository(
             claims.phone?.let { tokenStore.phone = it }
             claims.nickname?.let { tokenStore.nickname = it }
             PushTokenUploader.uploadIfPossible()
+            com.we.meet.push.DeviceTimezoneReporter.reportIfNeeded()
             runCatching { fetchNickname() }
         }
         Unit
@@ -127,6 +130,9 @@ class AuthRepository(
         // Best-effort push-token unregister; fired before the token clear
         // (races it — a lost race is harmless, see unregisterQuietly's doc).
         PushTokenUploader.unregisterQuietly()
+        // 时区是账号维度的:清掉「已上报」标记,下个登录本机的账号自己报一次,
+        // 不要继承上一个账号的结论。
+        com.we.meet.push.DeviceTimezoneReporter.forgetReported()
         if (tokenStore.isWebFlow()) {
             // Kill the KC server-side session (fire-and-forget) and wipe the
             // WebView cookies — otherwise the next login page would silently

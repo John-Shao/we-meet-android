@@ -28,6 +28,19 @@ data class UpdateIntroRequest(
     val intro: String,
 )
 
+/**
+ * Body for PATCH `/api/v1.0/users/{id}/` when reporting this device's timezone.
+ *
+ * `User.timezone` defaults to the backend's TIME_ZONE (UTC) and is what the
+ * server uses to interpret 免打扰时段 wall-clock times. Only the web client used
+ * to report it, so an App-only user stayed on UTC and their quiet hours landed
+ * ~8h off. See [com.we.meet.push.DeviceTimezoneReporter].
+ */
+@JsonClass(generateAdapter = true)
+data class UpdateTimezoneRequest(
+    val timezone: String,
+)
+
 /** Body for PATCH `/api/v1.0/users/me/nickname/`. */
 @JsonClass(generateAdapter = true)
 data class UpdateNicknameRequest(

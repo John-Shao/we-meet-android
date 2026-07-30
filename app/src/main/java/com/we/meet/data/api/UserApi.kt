@@ -3,6 +3,7 @@ package com.we.meet.data.api
 import com.we.meet.data.api.dto.ConfirmProfileImageRequest
 import com.we.meet.data.api.dto.UpdateIntroRequest
 import com.we.meet.data.api.dto.UpdateNicknameRequest
+import com.we.meet.data.api.dto.UpdateTimezoneRequest
 import com.we.meet.data.api.dto.UploadUrlRequest
 import com.we.meet.data.api.dto.UploadUrlResponse
 import com.we.meet.data.api.dto.UserDto
@@ -30,6 +31,18 @@ interface UserApi {
     suspend fun updateIntro(
         @Path("id") userId: String,
         @Body body: UpdateIntroRequest,
+    ): UserDto
+
+    /**
+     * Report this device's IANA timezone (e.g. `Asia/Shanghai`). The server
+     * interprets 免打扰时段 in this zone, so an unreported zone means quiet hours
+     * fire at the wrong wall-clock time. Mirrors what the web client does with
+     * the browser zone.
+     */
+    @PATCH("api/v1.0/users/{id}/")
+    suspend fun updateTimezone(
+        @Path("id") userId: String,
+        @Body body: UpdateTimezoneRequest,
     ): UserDto
 
     /** Request a presigned PUT URL for an avatar / cover image upload. */

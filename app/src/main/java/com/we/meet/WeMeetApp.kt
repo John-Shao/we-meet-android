@@ -135,6 +135,7 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
     @Suppress("DEPRECATION")
     private fun initGetuiPush() {
         PushTokenUploader.init(this)
+        com.we.meet.push.DeviceTimezoneReporter.init(this)
         try {
             com.igexin.sdk.PushManager.getInstance().initialize(this)
             com.igexin.sdk.PushManager.getInstance()
@@ -146,6 +147,9 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
         // logged in, this re-registers immediately (covers app-update /
         // token-cleared-server-side cases). No-ops otherwise.
         PushTokenUploader.uploadIfPossible()
+        // 免打扰时段按 User.timezone 的墙上钟判断,所以设备时区必须上报,否则
+        // 服务端拿 UTC 默认值解释,静默时段整体错位(见 DeviceTimezoneReporter)。
+        com.we.meet.push.DeviceTimezoneReporter.reportIfNeeded()
     }
 
     // AssistantDeps / ImDeps — lets :feature-assistant and :feature-im reuse the

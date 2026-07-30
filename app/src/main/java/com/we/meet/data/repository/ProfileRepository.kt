@@ -7,10 +7,12 @@ import com.we.meet.data.api.UserApi
 import com.we.meet.data.api.dto.ConfirmProfileImageRequest
 import com.we.meet.data.api.dto.UpdateIntroRequest
 import com.we.meet.data.api.dto.UpdateNicknameRequest
+import com.we.meet.data.api.dto.UpdateTimezoneRequest
 import com.we.meet.data.api.dto.UploadUrlRequest
 import com.we.meet.data.api.dto.UserDto
 import com.we.meet.data.auth.AuthInterceptor
 import com.we.meet.data.auth.TokenStore
+import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -62,6 +64,42 @@ class ProfileRepository(
             user
         }
     }
+
+    /**
+     * Report this device's timezone when it differs from what the server holds.
+     *
+     * `User.timezone` is how the backend interprets 免打扰时段 wall-clock times
+     * (`core.services.push_send.quiet_user_ids`). It defaults to the backend's
+     * TIME_ZONE (UTC) and historically only the **web** client ever wrote it —
+     * so an App-only user stayed on UTC and a 22:00–08:00 quiet window actually
+     * silenced 06:00–16:00 local time. This is the App side of that gap.
+     *
+     * Pass [serverTimezone] when the caller already knows it (the notification
+     * screen gets it back from `push/preferences/`) to skip the extra
+     * `users/me/` round-trip; pass null to look it up here.
+     *
+     * Returns the newly-reported zone, or null when nothing needed changing.
+     */
+    suspend fun syncDeviceTimezone(serverTimezone: String? = null): Result<String?> =
+        runCatching {
+            val device = ZoneId.systemDefault().id
+            withContext(Dispatchers.IO) {
+                val userId: String
+                val current: String
+                if (serverTimezone != null) {
+                    userId = requireUserId()
+                    current = serverTimezone
+                } else {
+                    val me = userApi.getMe()
+                    persistProfile(me)
+                    userId = me.id
+                    current = me.timezone.orEmpty()
+                }
+                if (current == device) return@withContext null
+                persistProfile(userApi.updateTimezone(userId, UpdateTimezoneRequest(device)))
+                device
+            }
+        }
 
     /**
      * Update the display nickname (Keycloak firstName, surfaced as

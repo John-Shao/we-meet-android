@@ -79,6 +79,11 @@ fun NotificationSettingsScreen(onBack: () -> Unit) {
                 end = p.quiet_end
                 starredBypass = p.starred_bypass_quiet
                 tz = p.timezone.orEmpty()
+                // 时段是按这个时区的墙上钟判断的,所以就在设置它的页面上对一次
+                // 账 —— 这里的 timezone 是服务端权威值且已经拿到手,校准不额外
+                // 花请求,还能自愈「浏览器登录把它覆盖成别的时区」的情况。
+                app.profileRepository.syncDeviceTimezone(p.timezone.orEmpty())
+                    .onSuccess { reported -> if (reported != null) tz = reported }
             }
         loaded = true
     }
