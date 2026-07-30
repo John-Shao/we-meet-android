@@ -85,6 +85,9 @@ private const val MAX_IDS = 50
 /** 列宽下限(飞书样式:一屏约 4 列,超出整体横滚)。 */
 private val MIN_COL_WIDTH = 76.dp
 
+/** 底部冲突提示里最多列几个名字(超出补「等」;列头红点仍标出每一个人)。 */
+private const val CONFLICT_NAMES_SHOWN = 3
+
 /** 撞上所选时段的人:头像角标红点(与选段冲突色同档)。 */
 private val ConflictDotColor = androidx.compose.ui.graphics.Color(0xFFDC2626)
 
@@ -496,13 +499,24 @@ fun FreeBusyCompareScreen(
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                 )
+                                // 名字列不下就截断,但**必须带「等」** —— 只截名字
+                                // 不改文案的话,「6 人忙碌:三个名字」看着像漏了人。
                                 val verdict = when {
-                                    conflictNames.isNotEmpty() -> stringResource(
+                                    conflictNames.isEmpty() ->
+                                        stringResource(R.string.freebusy_all_free)
+
+                                    conflictNames.size > CONFLICT_NAMES_SHOWN -> stringResource(
+                                        R.string.freebusy_conflict_names_more,
+                                        conflictNames.size,
+                                        conflictNames.take(CONFLICT_NAMES_SHOWN)
+                                            .joinToString("、"),
+                                    )
+
+                                    else -> stringResource(
                                         R.string.freebusy_conflict_names,
                                         conflictNames.size,
-                                        conflictNames.take(3).joinToString("、"),
+                                        conflictNames.joinToString("、"),
                                     )
-                                    else -> stringResource(R.string.freebusy_all_free)
                                 }
                                 val hint = if (invisibleCount > 0) {
                                     " · " + stringResource(

@@ -264,6 +264,7 @@
     <string name="freebusy_group_title">Members\' calendars</string>
     <string name="freebusy_all_free">Everyone is available</string>
     <string name="freebusy_conflict_names">%1$d bezet op dit tijdstip: %2$s</string>
+    <string name="freebusy_conflict_names_more">%1$d bezet op dit tijdstip: %2$s e.a.</string>
     <string name="freebusy_suggest_title">Voorgestelde tijden</string>
     <string name="freebusy_unavailable">Calendar not visible</string>
     <string name="freebusy_unresolved_hint">%1$d member(s) have no busy/free info</string>
