@@ -504,8 +504,7 @@
     <string name="starred_empty">Nog geen favoriete contacten</string>
     <string name="starred_toggle">Als favoriet instellen</string>
     <string name="starred_update_failed">Favoriet bijwerken mislukt</string>
-    <string name="starred_notify_bypass_quiet">Ook melden als meldingen gedempt zijn</string>
-    <string name="starred_notify_bypass_quiet_hint">Aan: berichten van favoriete contacten komen ook binnen tijdens je stille uren. De rest blijft gedempt.</string>
+    <string name="starred_notify_bypass_quiet">Favoriete contacten toch melden</string>
     <string name="notification_settings_title">Meldingen</string>
     <string name="starred_toggle_hint">Berichten van favoriete contacten melden ook tijdens je stille uren.</string>
     <string name="starred_notify_bypass_quiet_disabled_hint">Zonder stille uren melden alle berichten — deze optie doet pas iets als stille uren aan staan.</string>

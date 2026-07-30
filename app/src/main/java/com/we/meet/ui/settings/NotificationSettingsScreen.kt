@@ -231,16 +231,17 @@ fun NotificationSettingsScreen(onBack: () -> Unit) {
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = stringResource(
-                    if (enabled) R.string.starred_notify_bypass_quiet_hint
-                    else R.string.starred_notify_bypass_quiet_disabled_hint
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 24.dp),
-            )
+            // 开关文案自陈其事,开启态不再另配说明。只有置灰时才补一句「为什么
+            // 不能点」—— 那不是解释功能,是解释状态。
+            if (!enabled) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.starred_notify_bypass_quiet_disabled_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                )
+            }
             Spacer(Modifier.height(24.dp))
         }
     }
