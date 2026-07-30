@@ -32,6 +32,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +61,7 @@ import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.data.api.dto.BusyIntervalDto
+import com.we.meet.data.api.dto.CalendarEventDto
 import com.we.meet.ui.calendar.views.TimeBlock
 import com.we.meet.ui.calendar.views.TimeSelection
 import com.we.meet.ui.calendar.views.TimelineScaffold
@@ -70,6 +74,7 @@ import java.time.format.TextStyle
 import java.util.Locale
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 /** 忙闲页一列 = 一个人;freebusy results 缺席该 id = 跨组织不可见。 */
 private data class PersonColumn(
@@ -87,6 +92,11 @@ private val MIN_COL_WIDTH = 76.dp
 
 /** 底部冲突提示里最多列几个名字(超出补「等」;列头红点仍标出每一个人)。 */
 private const val CONFLICT_NAMES_SHOWN = 3
+
+// 回复状态取值(后端 EventAttendee.rsvp);declined 不会出现在忙闲里 ——
+// freebusy 查询本身就 exclude 掉了拒绝的日程。
+private const val RSVP_ACCEPTED = "accepted"
+private const val RSVP_NEEDS_ACTION = "needs_action"
 
 /** 撞上所选时段的人:头像角标红点(与选段冲突色同档)。 */
 private val ConflictDotColor = androidx.compose.ui.graphics.Color(0xFFDC2626)
@@ -180,6 +190,53 @@ fun FreeBusyCompareScreen(
         }
     }
 
+    // ── 我当日的日程(我组织的 + 我参加的)。freebusy 只给区间不给标题(刻意
+    // 不泄露他人日程内容),但**我自己有权看到的这些**可以贴回去:自己列显示
+    // 标题,他人列显示「他对我这场会的回复状态」——后者本来就能在日程详情里
+    // 看到,不是新增泄露。拉失败就退回纯灰块,不影响忙闲主流程。 ──
+    var myEvents by remember { mutableStateOf<List<CalendarEventDto>>(emptyList()) }
+    LaunchedEffect(day, busyReloadKey) {
+        val dayStart = day.atStartOfDay(zone).toInstant()
+        val dayEnd = day.plusDays(1).atStartOfDay(zone).toInstant()
+        myEvents = runCatching {
+            app.apiClient.calendarApi.listEvents(
+                start = DateTimeFormatter.ISO_INSTANT.format(dayStart),
+                end = DateTimeFormatter.ISO_INSTANT.format(dayEnd),
+            ).results
+        }.getOrDefault(emptyList())
+    }
+
+    // 起止(当日分钟制)→ 我的日程。**要求起止完全一致**才算同一场:后端的
+    // busy 只合并重叠区间、首尾相接保留边界,所以不重叠时对得上;真重叠了就
+    // 对不上 → 退回灰块,宁可不显示也不猜错。
+    val myEventByRange: Map<Pair<Int, Int>, CalendarEventDto> =
+        remember(myEvents, day, zone) {
+            val startOfDay = day.atStartOfDay(zone)
+            fun minuteOf(iso: String): Int? = runCatching {
+                java.time.Duration.between(
+                    startOfDay,
+                    OffsetDateTime.parse(iso).toInstant().atZone(zone),
+                ).toMinutes().toInt()
+            }.getOrNull()
+            buildMap {
+                myEvents.forEach { e ->
+                    val s = minuteOf(e.startAt)?.coerceIn(0, 1440) ?: return@forEach
+                    val en = minuteOf(e.endAt)?.coerceIn(0, 1440) ?: return@forEach
+                    if (en > s) put(s to en, e)
+                }
+            }
+        }
+
+    /**
+     * 这个人在这段忙碌里的回复状态 —— 仅当该区间正好是「我有权看到的一场会」
+     * 且他确实在参与者(或组织者)里时才有值;否则 null = 只画灰块。
+     */
+    fun rsvpOf(event: CalendarEventDto, userId: String, isSelf: Boolean): String? = when {
+        isSelf -> event.myRsvp ?: RSVP_ACCEPTED
+        else -> event.attendees.firstOrNull { it.id == userId }?.rsvp
+            ?: RSVP_ACCEPTED.takeIf { event.organizer?.id == userId }
+    }
+
     // ── 忙碌区间统一解析成当日分钟制:时间轴渲染 / 冲突判定 / 推荐时段共用
     // 这一份,不再各自解析一遍 ISO 串(口径也就必然一致)。 ──
     val busyByPerson: Map<String, List<BusyRange>> = remember(busyMap, day, zone) {
@@ -209,6 +266,8 @@ fun FreeBusyCompareScreen(
     // 之后拖上下圆抓手改起止 / 拖框本体整体移位(与日历模块同一套手势)。 ──
     val defaultDurationMin by app.settingsStore.calendarDefaultDurationMin
         .collectAsStateWithLifecycle()
+    val pendingLabel = stringResource(R.string.freebusy_rsvp_pending)
+    val untitledLabel = stringResource(R.string.calendar_untitled)
     var selection by remember { mutableStateOf<TimeSelection?>(null) }
     LaunchedEffect(day) { selection = null }
 
@@ -230,8 +289,52 @@ fun FreeBusyCompareScreen(
         )
     }
 
+    // ── 时间轴的列(一人一列)。对得上「我的一场会」的区间贴标题 + 该人的回复
+    // 状态;对不上(他自己的别的日程)只给纯灰块 + 时段。 ──
+    val busyColumns: List<List<TimeBlock>> = remember(
+        checkedPeople, busyByPerson, myEventByRange, pendingLabel, untitledLabel,
+    ) {
+        checkedPeople.map { p ->
+            busyByPerson[p.userId].orEmpty().mapIndexed { i, b ->
+                val ev = myEventByRange[b.startMin to b.endMin]
+                val rsvp = ev?.let { rsvpOf(it, p.userId, p.isSelf) }
+                val pending = rsvp == RSVP_NEEDS_ACTION
+                TimeBlock(
+                    startMin = b.startMin,
+                    endMin = b.endMin,
+                    // 未回复的块写「未回复」而不是标题(对齐飞书):这类冲突是
+                    // 软的,状态比标题更该被一眼看到。
+                    label = when {
+                        rsvp == null -> null
+                        pending -> pendingLabel
+                        else -> ev?.title?.takeIf { it.isNotBlank() } ?: untitledLabel
+                    },
+                    timeLabel = "%02d:%02d – %02d:%02d".format(
+                        b.startMin / 60, b.startMin % 60, b.endMin / 60, b.endMin % 60,
+                    ),
+                    key = "busy-${p.userId}-$i",
+                    rsvp = rsvp,
+                    hatched = pending,
+                )
+            }
+        }
+    }
+    // 点块提示用:短块写不下时段文字,点一下弹「标题 · 时段」/「时段」。
+    val blockTimeLabels: Map<String, String> = remember(busyColumns) {
+        buildMap {
+            busyColumns.forEach { col ->
+                col.forEach { b ->
+                    val time = b.timeLabel.orEmpty()
+                    put(b.key, b.label?.let { "$it · $time" } ?: time)
+                }
+            }
+        }
+    }
+
     val hourHeight = 56.dp
     val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     val density = LocalDensity.current
     LaunchedEffect(Unit) {
         scrollState.scrollTo(with(density) { (hourHeight * 8).toPx() }.toInt())
@@ -271,6 +374,7 @@ fun FreeBusyCompareScreen(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -321,15 +425,7 @@ fun FreeBusyCompareScreen(
                 else -> {
                     Box(modifier = Modifier.weight(1f)) {
                         TimelineScaffold(
-                            columns = checkedPeople.map { p ->
-                                busyByPerson[p.userId].orEmpty().mapIndexed { i, b ->
-                                    TimeBlock(
-                                        startMin = b.startMin,
-                                        endMin = b.endMin,
-                                        key = "busy-${p.userId}-$i",
-                                    )
-                                }
-                            },
+                            columns = busyColumns,
                             hourHeight = hourHeight,
                             scrollState = scrollState,
                             nowMinute = if (day == LocalDate.now()) {
@@ -341,6 +437,15 @@ fun FreeBusyCompareScreen(
                             },
                             selection = selection,
                             selectionConflict = conflictIds.isNotEmpty(),
+                            // 短块写不下时段文字 → 点一下用 Snackbar 补(块内已
+                            // 显示的也照样弹,行为统一好预期)。
+                            onBlockTap = { _, key ->
+                                blockTimeLabels[key]?.let { label ->
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(label)
+                                    }
+                                }
+                            },
                             // 拖抓手改起止 / 拖框整体移位(TimeGrid 里与预选框同一套)。
                             onSelectionAdjust = { selection = it },
                             onSlotTap = { _, minute ->

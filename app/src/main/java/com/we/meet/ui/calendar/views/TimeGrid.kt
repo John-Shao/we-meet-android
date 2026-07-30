@@ -38,9 +38,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -97,10 +101,19 @@ data class TimeBlock(
      * 为 true —— 重复日程涉及三选语义,忙闲/他人日程无权改。
      */
     val movable: Boolean = false,
+    /**
+     * 斜纹 + 虚线框(飞书同款「还没定下来」的观感)。忙闲页给「对方尚未回复
+     * 我这场会」的块用 —— 这类冲突是软的,与已接受的实心块要能一眼分开。
+     * 日/周视图不传:那里未回复走的是四色里的紫,不改既有观感。
+     */
+    val hatched: Boolean = false,
 )
 
 /** 短块阈值(分钟):≤45 分钟块高只够一行,时间并入标题行(对齐 Web)。 */
 internal const val SHORT_BLOCK_MIN = 45
+
+/** 无标题的忙闲块:≥这么长才写得下时段文字(更短的靠点击提示)。 */
+private const val BUSY_TIME_LABEL_MIN = 30
 
 private fun fmtMin(min: Int): String = "%02d:%02d".format(min / 60, min % 60)
 
@@ -771,9 +784,18 @@ fun TimelineScaffold(
                                         .background(
                                             color = when {
                                                 b.label == null -> busyColor
+                                                b.hatched -> blockBg.copy(alpha = 0.35f)
                                                 b.faded -> blockBg.copy(alpha = 0.45f)
                                                 else -> blockBg
                                             },
+                                        )
+                                        // 未回复:斜纹 + 虚线框(飞书同款「还没定」)。
+                                        .then(
+                                            if (b.hatched) {
+                                                Modifier.hatchedOutline(
+                                                    accentOf.getValue(visual),
+                                                )
+                                            } else Modifier,
                                         )
                                         .then(
                                             if (picked) {
@@ -833,6 +855,23 @@ fun TimelineScaffold(
                                                 }
                                             }
                                         }
+                                    } else if (b.timeLabel != null &&
+                                        b.endMin - b.startMin >= BUSY_TIME_LABEL_MIN
+                                    ) {
+                                        // 无标题的忙闲块(他人日程,只给区间不给内容):
+                                        // 块高够就把时段写上 —— 全空白读不出这是几点
+                                        // 到几点,尤其块被裁过或列很窄时。
+                                        Text(
+                                            text = b.timeLabel,
+                                            fontSize = 9.sp,
+                                            lineHeight = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.padding(
+                                                horizontal = 4.dp, vertical = 2.dp,
+                                            ),
+                                        )
                                     }
                                 }
                             }
@@ -1039,6 +1078,37 @@ internal val NowLineColor = Color(0xFFEF4444)
 
 /** 忙闲页选段撞上他人日程时的红(与 Web 的冲突色同档)。 */
 private val SelectionConflictColor = Color(0xFFDC2626)
+
+/**
+ * 45° 斜纹 + 虚线圆角框:忙闲页「对方尚未回复」的块用(见 [TimeBlock.hatched])。
+ * 画在底色之上、文字之下,所以走 drawBehind 而不是 background。
+ */
+private fun Modifier.hatchedOutline(accent: Color): Modifier = drawBehind {
+    val gap = 7.dp.toPx()
+    val hatch = accent.copy(alpha = 0.35f)
+    // 从左上角外一个身位起画,保证左右两端都铺满(斜线跨度 = 块高)。
+    var x = -size.height
+    while (x < size.width) {
+        drawLine(
+            color = hatch,
+            start = Offset(x, size.height),
+            end = Offset(x + size.height, 0f),
+            strokeWidth = 1.2.dp.toPx(),
+        )
+        x += gap
+    }
+    val stroke = 1.dp.toPx()
+    drawRoundRect(
+        color = accent.copy(alpha = 0.8f),
+        topLeft = Offset(stroke / 2, stroke / 2),
+        size = Size(size.width - stroke, size.height - stroke),
+        cornerRadius = CornerRadius(4.dp.toPx()),
+        style = Stroke(
+            width = stroke,
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 4f)),
+        ),
+    )
+}
 
 /**
  * 等指针移出触摸 slop 才算「要拖了」:期间松手 → false(按点击处理,事件不

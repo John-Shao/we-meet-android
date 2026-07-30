@@ -266,6 +266,8 @@
     <string name="freebusy_conflict_names">%1$d zu dieser Zeit beschäftigt: %2$s</string>
     <string name="freebusy_conflict_names_more">%1$d zu dieser Zeit beschäftigt: %2$s u. a.</string>
     <string name="freebusy_suggest_title">Vorgeschlagene Zeiten</string>
+    <string name="freebusy_rsvp_pending">Nicht geantwortet</string>
+    <string name="calendar_untitled">(Ohne Titel)</string>
     <string name="freebusy_unavailable">Calendar not visible</string>
     <string name="freebusy_unresolved_hint">%1$d member(s) have no busy/free info</string>
     <string name="freebusy_create">Create event</string>
