@@ -988,9 +988,11 @@ fun TimelineScaffold(
                             )
                         }
 
-                        // 当前时刻红线(仅 nowLineInColumn 的列)。
+                        // 当前时刻红线(仅 nowLineInColumn 的列)。圆点只画在最左那
+                        // 一列 —— 忙闲页每列都是「今天」,每列一个点会串成一串珠子。
                         if (nowMinute != null) {
                             val y = hourHeight * (nowMinute / 60f)
+                            val firstLineCol = (0 until n).firstOrNull { nowLineInColumn(it) }
                             for (i in 0 until n) {
                                 if (!nowLineInColumn(i)) continue
                                 Box(
@@ -1000,13 +1002,15 @@ fun TimelineScaffold(
                                         .height(2.dp)
                                         .background(NowLineColor),
                                 )
-                                Box(
-                                    modifier = Modifier
-                                        .offset(x = colWidth * i - 2.dp, y = y - 3.dp)
-                                        .width(6.dp)
-                                        .height(6.dp)
-                                        .background(NowLineColor, CircleShape),
-                                )
+                                if (i == firstLineCol) {
+                                    Box(
+                                        modifier = Modifier
+                                            .offset(x = colWidth * i - 2.dp, y = y - 3.dp)
+                                            .width(6.dp)
+                                            .height(6.dp)
+                                            .background(NowLineColor, CircleShape),
+                                    )
+                                }
                             }
                         }
 

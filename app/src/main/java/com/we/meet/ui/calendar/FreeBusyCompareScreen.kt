@@ -299,15 +299,17 @@ fun FreeBusyCompareScreen(
                 val ev = myEventByRange[b.startMin to b.endMin]
                 val rsvp = ev?.let { rsvpOf(it, p.userId, p.isSelf) }
                 val pending = rsvp == RSVP_NEEDS_ACTION
+                val title = ev?.title?.takeIf { it.isNotBlank() } ?: untitledLabel
                 TimeBlock(
                     startMin = b.startMin,
                     endMin = b.endMin,
-                    // 未回复的块写「未回复」而不是标题(对齐飞书):这类冲突是
-                    // 软的,状态比标题更该被一眼看到。
+                    // **他人**未回复的块写「未回复」而不是标题(对齐飞书):我关心
+                    // 的是「这个冲突是软的」,状态比标题更该被一眼看到。自己列照
+                    // 常写标题 —— 自己的会当然认得,未回复由斜纹表达就够。
                     label = when {
                         rsvp == null -> null
-                        pending -> pendingLabel
-                        else -> ev?.title?.takeIf { it.isNotBlank() } ?: untitledLabel
+                        pending && !p.isSelf -> pendingLabel
+                        else -> title
                     },
                     timeLabel = "%02d:%02d – %02d:%02d".format(
                         b.startMin / 60, b.startMin % 60, b.endMin / 60, b.endMin % 60,
@@ -455,6 +457,10 @@ fun FreeBusyCompareScreen(
                                 selection =
                                     TimeSelection(start, start + defaultDurationMin)
                             },
+                            // 列窄(76dp 起):有标题/状态的块只显那一行,时刻由纵向
+                            // 位置 + 左侧刻度读 —— 再塞一行时间就挤成两行了。无标题
+                            // 的灰块不受此限(时段是它唯一的信息)。
+                            compactBlocks = true,
                             // P8-UX:列头在表格内与列对齐,列多整体横滚(飞书)。
                             minColumnWidth = MIN_COL_WIDTH,
                             columnHeader = { i ->
