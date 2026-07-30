@@ -579,8 +579,8 @@
     <string name="starred_empty">No starred contacts yet</string>
     <string name="starred_toggle">Star this contact</string>
     <string name="starred_update_failed">Could not update the star</string>
-    <string name="starred_notify_bypass_quiet">Still notify me about starred contacts</string>
     <string name="notification_settings_title">Notifications</string>
-    <string name="starred_toggle_hint">Messages from starred contacts still notify you during quiet hours.</string>
-    <string name="starred_notify_bypass_quiet_disabled_hint">With quiet hours off, all messages notify you — this only matters once quiet hours are on.</string>
+    <string name="starred_toggle_hint">Filing only: listed under starred contacts and marked in the chat list. Does not change notifications.</string>
+    <string name="special_alert_toggle">Special alerts for their messages</string>
+    <string name="special_alert_toggle_hint">Their messages notify you even during quiet hours, and are marked in the chat list.</string>
 </resources>

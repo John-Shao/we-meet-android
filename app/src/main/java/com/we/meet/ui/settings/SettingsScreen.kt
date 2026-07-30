@@ -52,7 +52,7 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.WeMeetApp
 import com.we.meet.R
-import com.we.meet.core.directory.data.StarredContacts
+import com.we.meet.core.directory.data.ContactPrefs
 import com.we.meet.feature.im.ImSession
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.data.settings.ThemeMode
@@ -132,7 +132,7 @@ fun SettingsScreen(
                     // inherit this user's session.
                     ImSession.shutdown()
                     // 星标名单同理:换账号后不该还挂着上一个人的星标。
-                    StarredContacts.clear()
+                    ContactPrefs.clear()
                     onSignedOut()
                 }) {
                     Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.error)

@@ -42,7 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.core.directory.data.MemberDto
-import com.we.meet.core.directory.data.StarredContacts
+import com.we.meet.core.directory.data.ContactPrefs
 import com.we.meet.core.directory.ui.ContactPicker
 import com.we.meet.core.directory.ui.ContactPickerMode
 import com.we.meet.core.directory.ui.MemberAvatar
@@ -53,7 +53,7 @@ import kotlinx.coroutines.launch
  * 星标联系人列表页(对标飞书通讯录 › 星标联系人)。
  *
  * 「添加」复用共享的 [ContactPicker](Multi 模式,已星标的人排掉),行尾可直接
- * 取消星标。名单本身跟着 [StarredContacts] 走 —— 在别处(成员详情)改了星标,
+ * 取消星标。名单本身跟着 [ContactPrefs] 走 —— 在别处(成员详情)改了星标,
  * 回到这页不会看到过期状态。
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,13 +66,13 @@ fun StarredContactsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val starredIds by StarredContacts.ids.collectAsStateWithLifecycle()
+    val starredIds by ContactPrefs.starredIds.collectAsStateWithLifecycle()
     var members by remember { mutableStateOf<List<MemberDto>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf(false) }
     var picking by remember { mutableStateOf(false) }
 
-    // 卡片信息(名字/头像/部门)每次进页面重拉:StarredContacts 只存 id,存卡片
+    // 卡片信息(名字/头像/部门)每次进页面重拉:ContactPrefs 只存 id,存卡片
     // 只会变陈旧。starredIds 变化(本页取消、或详情页打了星标)后一并重拉。
     LaunchedEffect(starredIds) {
         loading = members.isEmpty()
@@ -128,7 +128,7 @@ fun StarredContactsScreen(
                             member = member,
                             onClick = { onMemberClick(member.id) },
                             onUnstar = {
-                                StarredContacts.setStarred(member.id, false) {
+                                ContactPrefs.setStarred(member.id, false) {
                                     Toast.makeText(
                                         context,
                                         R.string.starred_update_failed,
@@ -159,9 +159,12 @@ fun StarredContactsScreen(
                 picking = false
                 if (picked.isEmpty()) return@ContactPicker
                 scope.launch {
-                    // 名单短,逐个落库;星标接口幂等,重复提交不会脏数据。
+                    // 名单短,逐个落库;接口幂等,重复提交不会脏数据。只发
+                    // is_starred,不碰对方的「特别提醒」。
                     val failed = picked.count { p ->
-                        app.directoryRepository.setStarred(p.userId, true).isFailure
+                        app.directoryRepository
+                            .setContactPref(p.userId, isStarred = true)
+                            .isFailure
                     }
                     if (failed > 0) {
                         Toast.makeText(
@@ -169,7 +172,7 @@ fun StarredContactsScreen(
                         ).show()
                     }
                     // 服务端为准刷新共享集合 → 触发本页重拉 + 会话列表 ⭐ 同步。
-                    StarredContacts.refresh()
+                    ContactPrefs.refresh()
                 }
             },
             onDismiss = { picking = false },

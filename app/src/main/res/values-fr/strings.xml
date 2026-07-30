@@ -504,8 +504,8 @@
     <string name="starred_empty">Aucun contact favori</string>
     <string name="starred_toggle">Mettre en favori</string>
     <string name="starred_update_failed">Échec de la mise à jour du favori</string>
-    <string name="starred_notify_bypass_quiet">Me notifier quand même des contacts favoris</string>
     <string name="notification_settings_title">Notifications</string>
-    <string name="starred_toggle_hint">Les messages des contacts favoris vous notifient même pendant les heures calmes.</string>
-    <string name="starred_notify_bypass_quiet_disabled_hint">Sans heures calmes, tous les messages vous notifient — cette option agit uniquement quand les heures calmes sont activées.</string>
+    <string name="starred_toggle_hint">Classement uniquement : apparaît dans les contacts favoris et la liste des discussions. Ne change pas les notifications.</string>
+    <string name="special_alert_toggle">Alertes spéciales pour ses messages</string>
+    <string name="special_alert_toggle_hint">Ses messages vous notifient même pendant les heures calmes et sont signalés dans la liste des discussions.</string>
 </resources>

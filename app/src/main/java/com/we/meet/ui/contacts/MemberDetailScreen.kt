@@ -59,7 +59,7 @@ import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.util.dialNumber
 import com.we.meet.core.directory.data.MemberDto
-import com.we.meet.core.directory.data.StarredContacts
+import com.we.meet.core.directory.data.ContactPrefs
 import com.we.meet.core.directory.ui.MemberAvatar
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -166,18 +166,19 @@ fun MemberDetailScreen(
     )
     val ui by vm.ui.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    // 星标状态读共享集合而非 member.isStarred 快照:在别处改了也会立刻反映。
-    val starredIds by StarredContacts.ids.collectAsStateWithLifecycle()
+    // 两个 flag 都读共享集合而非卡片快照:在别处改了也会立刻反映。
+    val starredIds by ContactPrefs.starredIds.collectAsStateWithLifecycle()
+    val alertIds by ContactPrefs.specialAlertIds.collectAsStateWithLifecycle()
 
     LaunchedEffect(vm) {
         vm.chatReady.collect { cid -> onOpenChat(cid) }
     }
 
-    // 卡片刚拉回来的 is_starred 是服务端最新值(共享集合可能还没同步到别端的改动),
+    // 卡片刚拉回来的两个 flag 是服务端最新值(共享集合可能还没同步到别端的改动),
     // 拿它校准一次,免得开关显示成过期状态。
-    LaunchedEffect(ui.member?.id, ui.member?.isStarred) {
+    LaunchedEffect(ui.member?.id, ui.member?.isStarred, ui.member?.specialAlert) {
         val member = ui.member ?: return@LaunchedEffect
-        StarredContacts.reconcile(member.id, member.isStarred)
+        ContactPrefs.reconcile(member.id, member.isStarred, member.specialAlert)
     }
 
     LaunchedEffect(ui.revealError) {
@@ -223,7 +224,17 @@ fun MemberDetailScreen(
                     onRevealPhone = { vm.revealPhone() },
                     starred = userId in starredIds,
                     onToggleStarred = { next ->
-                        StarredContacts.setStarred(userId, next) {
+                        ContactPrefs.setStarred(userId, next) {
+                            android.widget.Toast.makeText(
+                                context,
+                                R.string.starred_update_failed,
+                                android.widget.Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                    },
+                    specialAlert = userId in alertIds,
+                    onToggleSpecialAlert = { next ->
+                        ContactPrefs.setSpecialAlert(userId, next) {
                             android.widget.Toast.makeText(
                                 context,
                                 R.string.starred_update_failed,
@@ -248,6 +259,8 @@ private fun MemberDetailBody(
     onRevealPhone: () -> Unit,
     starred: Boolean,
     onToggleStarred: (Boolean) -> Unit,
+    specialAlert: Boolean,
+    onToggleSpecialAlert: (Boolean) -> Unit,
 ) {
     // Only a real photo is worth enlarging — the initials fallback isn't, so the
     // tap-to-zoom affordance is gated on the member actually having an avatar.
@@ -292,7 +305,12 @@ private fun MemberDetailBody(
         )
 
         if (!member.isSelf) {
-            StarredRow(starred = starred, onToggle = onToggleStarred)
+            ContactPrefRows(
+                starred = starred,
+                onToggleStarred = onToggleStarred,
+                specialAlert = specialAlert,
+                onToggleSpecialAlert = onToggleSpecialAlert,
+            )
         }
 
         Spacer(Modifier.height(32.dp))
@@ -372,16 +390,47 @@ private fun AvatarViewerDialog(
 }
 
 /**
- * 「设为星标联系人」+ 开关,下面一句说明星标到底有什么用。
+ * 「设为星标联系人」+「他的消息特别提醒」两个**互不影响**的开关(对标企业微信)。
+ *
+ * 星标只管归类,拨它不会改变通知行为;要「这个人的消息别漏」得单独开特别提醒。
+ * 飞书把两者并成一个,再拿一页 override 开关去解耦,我们不走那条路 —— 所以这里
+ * 是两行,而不是一行加一句「其实还会影响通知」的小字。
  *
  * 直接摊在详情页里(不像飞书那样再进一层「设置」子页):we-meet 没有那页的
- * 备注与描述 / 分享 / 举报,单为一个开关多跳一层不值。说明也不做成跳转 ——
- * 通知设置在「设置 › 通知」里,从联系人详情横跳过去反而绕。
+ * 备注与描述 / 分享 / 举报,单为两个开关多跳一层不值。
  */
 @Composable
-private fun StarredRow(
+private fun ContactPrefRows(
     starred: Boolean,
-    onToggle: (Boolean) -> Unit,
+    onToggleStarred: (Boolean) -> Unit,
+    specialAlert: Boolean,
+    onToggleSpecialAlert: (Boolean) -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SwitchRow(
+            label = stringResource(R.string.starred_toggle),
+            hint = stringResource(R.string.starred_toggle_hint),
+            checked = starred,
+            onCheckedChange = onToggleStarred,
+        )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        SwitchRow(
+            label = stringResource(R.string.special_alert_toggle),
+            hint = stringResource(R.string.special_alert_toggle_hint),
+            checked = specialAlert,
+            onCheckedChange = onToggleSpecialAlert,
+        )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    }
+}
+
+/** 一行开关 + 下面一句说明(说明解释这个开关到底会发生什么)。 */
+@Composable
+private fun SwitchRow(
+    label: String,
+    hint: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -391,21 +440,17 @@ private fun StarredRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = stringResource(R.string.starred_toggle),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Switch(checked = starred, onCheckedChange = onToggle)
+            Text(text = label, style = MaterialTheme.typography.bodyMedium)
+            Switch(checked = checked, onCheckedChange = onCheckedChange)
         }
         Text(
-            text = stringResource(R.string.starred_toggle_hint),
+            text = hint,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 10.dp),
         )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 

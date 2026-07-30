@@ -504,8 +504,8 @@
     <string name="starred_empty">Noch keine markierten Kontakte</string>
     <string name="starred_toggle">Kontakt markieren</string>
     <string name="starred_update_failed">Markierung konnte nicht geändert werden</string>
-    <string name="starred_notify_bypass_quiet">Markierte Kontakte trotzdem melden</string>
     <string name="notification_settings_title">Benachrichtigungen</string>
-    <string name="starred_toggle_hint">Nachrichten markierter Kontakte erreichen dich auch in den Ruhezeiten.</string>
-    <string name="starred_notify_bypass_quiet_disabled_hint">Ohne Ruhezeiten benachrichtigen dich alle Nachrichten — diese Option greift erst, wenn Ruhezeiten aktiv sind.</string>
+    <string name="starred_toggle_hint">Nur zur Ablage: erscheint unter markierten Kontakten und in der Chatliste. Ändert keine Benachrichtigungen.</string>
+    <string name="special_alert_toggle">Sonderhinweis für seine Nachrichten</string>
+    <string name="special_alert_toggle_hint">Seine Nachrichten benachrichtigen dich auch in den Ruhezeiten und werden in der Chatliste markiert.</string>
 </resources>

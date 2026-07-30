@@ -53,7 +53,6 @@ data class PushPreferencesDto(
     val quiet_start: String = "22:00",
     val quiet_end: String = "08:00",
     /** 星标联系人的消息穿透静默时段(默认开;见后端 StarredContact)。 */
-    val starred_bypass_quiet: Boolean = true,
     val timezone: String? = null,
 )
 
@@ -66,5 +65,4 @@ data class PushPreferencesUpdate(
     val quiet_enabled: Boolean? = null,
     val quiet_start: String? = null,
     val quiet_end: String? = null,
-    val starred_bypass_quiet: Boolean? = null,
 )

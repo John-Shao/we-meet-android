@@ -6,7 +6,7 @@ import coil.ImageLoaderFactory
 import coil.disk.DiskCache
 import com.we.meet.core.directory.DirectoryDeps
 import com.we.meet.core.directory.data.DirectoryRepository
-import com.we.meet.core.directory.data.StarredContacts
+import com.we.meet.core.directory.data.ContactPrefs
 import com.we.meet.core.directory.net.DirectoryNetwork
 import com.we.meet.feature.assistant.AssistantDeps
 import com.we.meet.feature.im.ImDeps
@@ -111,8 +111,8 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
         historyStore = HistoryStore(this)
         settingsStore = SettingsStore(this)
         directoryRepository = DirectoryRepository(DirectoryNetwork.directoryApi(this))
-        // 星标联系人:进程级单例,通讯录与会话列表共享同一份状态(见 StarredContacts)。
-        StarredContacts.init(directoryRepository)
+        // 逐联系人偏好(星标 / 特别提醒):进程级单例,通讯录与会话列表共享(见 ContactPrefs)。
+        ContactPrefs.init(directoryRepository)
         ScreenShareOverlay.init(this)
         // PostHog: no-op when WE_MEET_POSTHOG_KEY is blank (default).
         com.we.meet.analytics.Analytics.init(this)

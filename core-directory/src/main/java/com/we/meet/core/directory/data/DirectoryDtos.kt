@@ -58,14 +58,30 @@ data class MemberDto(
     @Json(name = "org_role") val orgRole: String? = null,
     val department: DeptRefDto? = null,
     @Json(name = "is_self") val isSelf: Boolean = false,
-    /** 调用方是否把这个人设成了星标联系人(每张卡片都带,免二次请求)。 */
+    /**
+     * 调用方是否把这个人设成了星标联系人(每张卡片都带,免二次请求)。
+     * **只表归类** —— 不影响通知,通知看 [specialAlert]。
+     */
     @Json(name = "is_starred") val isStarred: Boolean = false,
+    /**
+     * 调用方是否对这个人开了「他的消息特别提醒」(消息穿透免打扰时段)。
+     * 与 [isStarred] **相互独立**:可以只开一个。
+     */
+    @Json(name = "special_alert") val specialAlert: Boolean = false,
 ) {
     val displayName: String
         get() = fullName?.takeIf { it.isNotBlank() }
             ?: shortName?.takeIf { it.isNotBlank() }
             ?: email.orEmpty()
 }
+
+/** One row of GET directory/contact-prefs/ — flags only, no card fields. */
+@JsonClass(generateAdapter = true)
+data class ContactPrefDto(
+    @Json(name = "user_id") val userId: String,
+    @Json(name = "is_starred") val isStarred: Boolean = false,
+    @Json(name = "special_alert") val specialAlert: Boolean = false,
+)
 
 /** Response of POST directory/members/{userId}/reveal-phone/ — full number ("" if unset). */
 @JsonClass(generateAdapter = true)

@@ -1,9 +1,9 @@
 package com.we.meet.core.directory.data
 
 import retrofit2.http.Body
-import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -41,18 +41,30 @@ interface DirectoryApi {
     @POST("api/v1.0/directory/members/{userId}/reveal-phone/")
     suspend fun revealPhone(@Path("userId") userId: String): RevealPhoneDto
 
-    // ── 星标联系人 ──────────────────────────────────────────────────────────
-    // ⚠️ Like listDepartments this returns a BARE ARRAY (a personal star list is
-    // short, so the backend skips the page envelope).
+    // ── 逐联系人的两个独立 flag(星标 / 他的消息特别提醒)────────────────────
+    // ⚠️ Like listDepartments these return BARE ARRAYS (personal lists are short,
+    // so the backend skips the page envelope).
 
+    /** 星标联系人页用的可渲染卡片(按目录顺序,已投影本组织 Membership)。 */
     @GET("api/v1.0/directory/starred/")
     suspend fun listStarred(): List<MemberDto>
 
-    /** Star someone. Idempotent server-side — 201 first time, 200 after. */
-    @POST("api/v1.0/directory/starred/")
-    suspend fun star(@Body body: Map<String, String>): MemberDto
+    /**
+     * 两个 flag 的紧凑清单,喂 [ContactPrefs] 的本地集合。
+     *
+     * 与 [listStarred] 分开是有意的:会话列表要给「从没拉过卡片」的对端打标记,
+     * 只需要 id + 布尔;而星标页需要能直接渲染的卡片。
+     */
+    @GET("api/v1.0/directory/contact-prefs/")
+    suspend fun listContactPrefs(): List<ContactPrefDto>
 
-    /** Unstar. Idempotent — 204 whether or not a star existed. */
-    @DELETE("api/v1.0/directory/starred/{userId}/")
-    suspend fun unstar(@Path("userId") userId: String)
+    /**
+     * 设置任一 flag。body 里**省略的键服务端不动**,所以拨一个开关不会顺手清掉
+     * 另一个。Idempotent;返回的卡片带回两个 flag 的权威值。
+     */
+    @PUT("api/v1.0/directory/contact-prefs/{userId}/")
+    suspend fun setContactPref(
+        @Path("userId") userId: String,
+        @Body body: Map<String, Boolean>,
+    ): MemberDto
 }

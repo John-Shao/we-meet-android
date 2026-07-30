@@ -48,17 +48,30 @@ class DirectoryRepository(private val api: DirectoryApi) {
 
     /**
      * 我的星标联系人(裸数组,已按姓名排序)。离开组织的人不会出现 —— 后端按对方
-     * 在本组织的 Membership 投影。观察状态请走 [StarredContacts]。
+     * 在本组织的 Membership 投影。观察状态请走 [ContactPrefs]。
      */
     suspend fun listStarred(): Result<List<MemberDto>> =
         runCatching { api.listStarred() }
 
-    /** 打/取消星标。两个方向都幂等,所以 UI 可以先切开关再落库。 */
-    suspend fun setStarred(userId: String, starred: Boolean): Result<Unit> =
+    /** 两个 flag 的紧凑清单,用来给 [ContactPrefs] 的本地集合打底。 */
+    suspend fun listContactPrefs(): Result<List<ContactPrefDto>> =
+        runCatching { api.listContactPrefs() }
+
+    /**
+     * 设置**一个** flag,另一个不传 → 服务端不动它。幂等,所以 UI 可以先切开关
+     * 再落库。返回的卡片带回两个 flag 的权威值。
+     */
+    suspend fun setContactPref(
+        userId: String,
+        isStarred: Boolean? = null,
+        specialAlert: Boolean? = null,
+    ): Result<MemberDto> =
         runCatching {
-            if (starred) api.star(mapOf("user_id" to userId))
-            else api.unstar(userId)
-            Unit
+            val body = buildMap {
+                isStarred?.let { put("is_starred", it) }
+                specialAlert?.let { put("special_alert", it) }
+            }
+            api.setContactPref(userId, body)
         }
 
     private fun PagedMembersDto.toPage(page: Int) = MemberPage(

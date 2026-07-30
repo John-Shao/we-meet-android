@@ -49,11 +49,13 @@ import kotlinx.coroutines.launch
  * 「设置 › 通知」—— 消息通知相关的设置都收在这一页(对标微信/企业微信:通知是
  * 设置总页的一行入口,不是散落在总页上的一节)。
  *
- * 目前两项,都存 we-meet 后端的 `push/preferences/`:
- * - **免打扰时段**(P0-M3):开关 + 起止时间(24h 墙上钟,按账号时区解释)。
- *   服务端在离线推送发送前过滤,只静默消息通知,来电不受影响。
- * - **星标联系人仍然通知我**:星标联系人的消息穿透上面那个时段(默认开)。
- *   免打扰时段没开时它无事可做 → 置灰并换一句说明,而不是留个点了没反应的开关。
+ * 目前只有**免打扰时段**(P0-M3):开关 + 起止时间(24h 墙上钟,按账号时区解释)。
+ * 存 we-meet 后端的 `push/preferences/`,服务端在离线推送发送前过滤,只静默消息
+ * 通知,来电不受影响。
+ *
+ * ⚠️ 这里**不放**「某人的消息仍然通知我」这类穿透开关。穿透是逐联系人的
+ * (`ContactPreference.special_alert`,开关在那个人的详情页上叫「他的消息特别
+ * 提醒」);在这里再兜一个全局闸就等于把飞书那套 override 结构搬回来。
  *
  * 读失败仍放开 UI(保存时再报错),避免弱网下设置页卡死。
  */
@@ -68,7 +70,6 @@ fun NotificationSettingsScreen(onBack: () -> Unit) {
     var enabled by remember { mutableStateOf(false) }
     var start by remember { mutableStateOf("22:00") }
     var end by remember { mutableStateOf("08:00") }
-    var starredBypass by remember { mutableStateOf(true) }
     var tz by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
@@ -77,7 +78,6 @@ fun NotificationSettingsScreen(onBack: () -> Unit) {
                 enabled = p.quiet_enabled
                 start = p.quiet_start
                 end = p.quiet_end
-                starredBypass = p.starred_bypass_quiet
                 tz = p.timezone.orEmpty()
                 // 时段是按这个时区的墙上钟判断的,所以就在设置它的页面上对一次
                 // 账 —— 这里的 timezone 是服务端权威值且已经拿到手,校准不额外
@@ -206,47 +206,6 @@ fun NotificationSettingsScreen(onBack: () -> Unit) {
                 modifier = Modifier.padding(horizontal = 24.dp),
             )
 
-            Spacer(Modifier.height(20.dp))
-            SettingsCard {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = Dimens.ScreenPadding, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(R.string.starred_notify_bypass_quiet),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = if (enabled) MaterialTheme.colorScheme.onSurface
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Switch(
-                        checked = starredBypass,
-                        // 免打扰时段关着时这个开关无事可做 —— 置灰,别让人点个没反应的东西。
-                        enabled = loaded && enabled,
-                        onCheckedChange = { next ->
-                            val previous = starredBypass
-                            starredBypass = next
-                            save(PushPreferencesUpdate(starred_bypass_quiet = next)) {
-                                starredBypass = previous
-                            }
-                        },
-                    )
-                }
-            }
-
-            // 开关文案自陈其事,开启态不再另配说明。只有置灰时才补一句「为什么
-            // 不能点」—— 那不是解释功能,是解释状态。
-            if (!enabled) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.starred_notify_bypass_quiet_disabled_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 24.dp),
-                )
-            }
             Spacer(Modifier.height(24.dp))
         }
     }
