@@ -98,6 +98,12 @@ private const val CONFLICT_NAMES_SHOWN = 3
 private const val RSVP_ACCEPTED = "accepted"
 private const val RSVP_NEEDS_ACTION = "needs_action"
 
+/**
+ * 拒绝档。freebusy 里不会出现(后端按 rsvp≠declined 过滤),忙闲页的「已拒绝」
+ * 块是从我自己的日程 + attendees 表态反推出来的,纯展示不占忙闲。
+ */
+private const val RSVP_DECLINED = "declined"
+
 /** 撞上所选时段的人:头像角标红点(与选段冲突色同档)。 */
 private val ConflictDotColor = androidx.compose.ui.graphics.Color(0xFFDC2626)
 
@@ -267,6 +273,7 @@ fun FreeBusyCompareScreen(
     val defaultDurationMin by app.settingsStore.calendarDefaultDurationMin
         .collectAsStateWithLifecycle()
     val pendingLabel = stringResource(R.string.freebusy_rsvp_pending)
+    val declinedLabel = stringResource(R.string.freebusy_rsvp_declined)
     val untitledLabel = stringResource(R.string.calendar_untitled)
     var selection by remember { mutableStateOf<TimeSelection?>(null) }
     LaunchedEffect(day) { selection = null }
@@ -292,10 +299,56 @@ fun FreeBusyCompareScreen(
     // ── 时间轴的列(一人一列)。对得上「我的一场会」的区间贴标题 + 该人的回复
     // 状态;对不上(他自己的别的日程)只给纯灰块 + 时段。 ──
     val busyColumns: List<List<TimeBlock>> = remember(
-        checkedPeople, busyByPerson, myEventByRange, pendingLabel, untitledLabel,
+        checkedPeople, busyByPerson, myEventByRange, myEvents,
+        pendingLabel, untitledLabel, declinedLabel,
     ) {
+        val startOfDay = day.atStartOfDay(zone)
+        fun minuteOf(iso: String): Int? = runCatching {
+            java.time.Duration.between(
+                startOfDay,
+                OffsetDateTime.parse(iso).toInstant().atZone(zone),
+            ).toMinutes().toInt()
+        }.getOrNull()
+
+        /**
+         * 「他拒了我这场会」的块。拒绝的日程**不在 freebusy 里**(后端按
+         * rsvp≠declined 过滤 —— 拒了就不占他的时间,这是对的),所以这批块只能
+         * 从我自己的日程反推。不加的话「已拒绝」和「新入群、压根没被邀请」在
+         * 组织者眼里都是一片空白,分不开 —— 而组织者恰恰最关心逐人回复。
+         * 纯展示:不进 peopleBusy,不参与冲突判定,也不阻塞推荐时段。
+         */
+        fun declinedBlocks(p: PersonColumn): List<TimeBlock> = myEvents.mapNotNull { e ->
+            // 全天日程会铺满整列、把这一列的忙闲全遮住;已取消的会「谁拒了」也没
+            // 意义 —— 两者都不画。
+            if (e.allDay || e.status.equals("cancelled", ignoreCase = true)) {
+                return@mapNotNull null
+            }
+            val declined = if (p.isSelf) {
+                e.myRsvp == RSVP_DECLINED
+            } else {
+                e.attendees.firstOrNull { it.id == p.userId }?.rsvp == RSVP_DECLINED
+            }
+            if (!declined) return@mapNotNull null
+            val s = minuteOf(e.startAt)?.coerceIn(0, 1440) ?: return@mapNotNull null
+            val en = minuteOf(e.endAt)?.coerceIn(0, 1440) ?: return@mapNotNull null
+            if (en <= s) return@mapNotNull null
+            TimeBlock(
+                startMin = s,
+                endMin = en,
+                // 他人列写状态(组织者要的就是「这人拒了」);自己列写标题 ——
+                // 自己拒过的会,认得标题比看到「已拒绝」有用。
+                label = if (p.isSelf) {
+                    e.title.takeIf { it.isNotBlank() } ?: untitledLabel
+                } else declinedLabel,
+                timeLabel = "%02d:%02d – %02d:%02d".format(s / 60, s % 60, en / 60, en % 60),
+                key = "declined-${e.id}-${p.userId}",
+                rsvp = RSVP_DECLINED,
+            )
+        }
+
         checkedPeople.map { p ->
-            busyByPerson[p.userId].orEmpty().mapIndexed { i, b ->
+            // 拒绝块先入列 → 真忙碌的块叠在它上面(万一那个点他另有安排)。
+            declinedBlocks(p) + busyByPerson[p.userId].orEmpty().mapIndexed { i, b ->
                 val ev = myEventByRange[b.startMin to b.endMin]
                 val rsvp = ev?.let { rsvpOf(it, p.userId, p.isSelf) }
                 val pending = rsvp == RSVP_NEEDS_ACTION

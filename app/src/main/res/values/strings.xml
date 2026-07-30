@@ -283,6 +283,7 @@
     <string name="freebusy_conflict_names_more">%1$d busy at this time: %2$s and others</string>
     <string name="freebusy_suggest_title">Suggested times</string>
     <string name="freebusy_rsvp_pending">Not replied</string>
+    <string name="freebusy_rsvp_declined">Declined</string>
     <string name="calendar_untitled">(No title)</string>
     <string name="freebusy_unavailable">Calendar not visible</string>
     <string name="freebusy_unresolved_hint">%1$d member(s) have no busy/free info</string>

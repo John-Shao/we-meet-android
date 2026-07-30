@@ -283,6 +283,7 @@
     <string name="freebusy_conflict_names_more">%1$d 人该时段忙碌：%2$s 等</string>
     <string name="freebusy_suggest_title">推荐时段</string>
     <string name="freebusy_rsvp_pending">未回复</string>
+    <string name="freebusy_rsvp_declined">已拒绝</string>
     <string name="calendar_untitled">(无标题)</string>
     <string name="freebusy_unavailable">日历不可见</string>
     <string name="freebusy_unresolved_hint">另有 %1$d 位成员无法获取忙闲</string>

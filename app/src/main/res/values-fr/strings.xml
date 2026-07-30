@@ -267,6 +267,7 @@
     <string name="freebusy_conflict_names_more">%1$d occupé(s) à ce créneau : %2$s et autres</string>
     <string name="freebusy_suggest_title">Créneaux suggérés</string>
     <string name="freebusy_rsvp_pending">Sans réponse</string>
+    <string name="freebusy_rsvp_declined">Refusé</string>
     <string name="calendar_untitled">(Sans titre)</string>
     <string name="freebusy_unavailable">Calendar not visible</string>
     <string name="freebusy_unresolved_hint">%1$d member(s) have no busy/free info</string>
