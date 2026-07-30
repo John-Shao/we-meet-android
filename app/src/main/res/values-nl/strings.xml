@@ -507,5 +507,10 @@
     <string name="notification_settings_title">Meldingen</string>
     <string name="starred_toggle_hint">Alleen voor indeling: verschijnt bij favoriete contacten en in de chatlijst. Wijzigt geen meldingen.</string>
     <string name="special_alert_toggle">Speciale melding voor zijn berichten</string>
-    <string name="special_alert_toggle_hint">Zijn berichten melden ook tijdens stille uren en worden gemarkeerd in de chatlijst.</string>
+    <string name="special_alert_toggle_hint">Zijn berichten melden ook tijdens stille uren.</string>
+    <string name="special_alert_title">Speciale meldingen</string>
+    <string name="special_alert_add">Toevoegen</string>
+    <string name="special_alert_remove">Uitzetten</string>
+    <string name="special_alert_empty">Nog niemand. Zet speciale meldingen aan bij een contact zodat zijn berichten je ook tijdens stille uren bereiken.</string>
+    <string name="special_alert_entry_hint">Deze contacten bereiken je ook tijdens stille uren. De schakelaar per persoon staat op zijn profiel.</string>
 </resources>

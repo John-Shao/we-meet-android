@@ -582,5 +582,10 @@
     <string name="notification_settings_title">通知</string>
     <string name="starred_toggle_hint">仅用于归类：出现在星标联系人里，会话列表加 ⭐。不改变通知。</string>
     <string name="special_alert_toggle">他的消息特别提醒</string>
-    <string name="special_alert_toggle_hint">开启后，该联系人发来消息时即使在免打扰时段也会通知你，并在会话列表特别提醒。</string>
+    <string name="special_alert_toggle_hint">开启后，该联系人发来消息时即使在免打扰时段也会通知你。</string>
+    <string name="special_alert_title">消息特别提醒</string>
+    <string name="special_alert_add">添加</string>
+    <string name="special_alert_remove">关闭</string>
+    <string name="special_alert_empty">还没有人。在联系人页开启「他的消息特别提醒」，他的消息在免打扰时段也能送到你。</string>
+    <string name="special_alert_entry_hint">名单里的人在免打扰时段也会通知你。逐个人的开关在各自的联系人页上。</string>
 </resources>

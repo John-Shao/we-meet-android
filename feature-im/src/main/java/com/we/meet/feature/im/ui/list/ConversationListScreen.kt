@@ -40,7 +40,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.NotificationsOff
-import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
@@ -444,18 +443,6 @@ private fun ConversationRow(
                         Icon(
                             Icons.Filled.Star,
                             contentDescription = stringResource(R.string.im_starred_marker),
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .padding(start = 4.dp)
-                                .size(14.dp),
-                        )
-                    }
-                    // 「他的消息特别提醒」:一个小铃铛。与 ⭐ 各自独立出现 ——
-                    // 两个开关本就独立,只开一个时只该看到一个标记。
-                    if (row.specialAlert) {
-                        Icon(
-                            Icons.Filled.NotificationsActive,
-                            contentDescription = stringResource(R.string.im_special_alert_marker),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .padding(start = 4.dp)

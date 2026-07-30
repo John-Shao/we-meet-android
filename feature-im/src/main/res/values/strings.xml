@@ -284,5 +284,4 @@
     <string name="im_doc_picker_empty">No documents to share</string>
     <string name="im_doc_picker_error">Failed to load documents</string>
     <string name="im_starred_marker">Starred contact</string>
-    <string name="im_special_alert_marker">Special alerts on</string>
 </resources>

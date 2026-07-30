@@ -582,5 +582,10 @@
     <string name="notification_settings_title">Notifications</string>
     <string name="starred_toggle_hint">Filing only: listed under starred contacts and marked in the chat list. Does not change notifications.</string>
     <string name="special_alert_toggle">Special alerts for their messages</string>
-    <string name="special_alert_toggle_hint">Their messages notify you even during quiet hours, and are marked in the chat list.</string>
+    <string name="special_alert_toggle_hint">Their messages notify you even during quiet hours.</string>
+    <string name="special_alert_title">Special message alerts</string>
+    <string name="special_alert_add">Add</string>
+    <string name="special_alert_remove">Turn off</string>
+    <string name="special_alert_empty">No one yet. Turn on special alerts on a contact to have their messages reach you during quiet hours.</string>
+    <string name="special_alert_entry_hint">These contacts reach you even during quiet hours. The per-person switch is on their profile.</string>
 </resources>

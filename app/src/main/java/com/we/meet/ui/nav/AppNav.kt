@@ -68,6 +68,7 @@ import com.we.meet.ui.room.RoomScreen
 import com.we.meet.ui.settings.AccountSecurityScreen
 import com.we.meet.ui.settings.MeetingSettingsScreen
 import com.we.meet.ui.settings.NotificationSettingsScreen
+import com.we.meet.ui.settings.SpecialAlertContactsScreen
 import com.we.meet.ui.settings.SettingsScreen
 import com.we.meet.ui.waiting.WaitingRoomScreen
 import kotlinx.coroutines.delay
@@ -125,8 +126,10 @@ object Routes {
 
     /** 星标联系人列表页(通讯录顶部入口进)。 */
     const val STARRED_CONTACTS = "starred_contacts"
-    /** 「设置 › 通知」—— 消息通知相关设置(免打扰时段、星标穿透)都在这一页。 */
+    /** 「设置 › 通知」—— 消息通知相关设置(免打扰时段、特别提醒名单入口)。 */
     const val NOTIFICATION_SETTINGS = "notification_settings"
+    /** 「设置 › 通知 › 消息特别提醒」名单页(我给谁开了穿透)。 */
+    const val SPECIAL_ALERT_CONTACTS = "special_alert_contacts"
 
     // Contacts / Calendar detail routes.
     private const val MEMBER_DETAIL_BASE = "member_detail"
@@ -977,6 +980,18 @@ fun AppNav() {
         composable(Routes.NOTIFICATION_SETTINGS) {
             NotificationSettingsScreen(
                 onBack = rememberOnceOnly(safePop),
+                onOpenSpecialAlerts = {
+                    navController.navigate(Routes.SPECIAL_ALERT_CONTACTS)
+                },
+            )
+        }
+
+        composable(Routes.SPECIAL_ALERT_CONTACTS) {
+            SpecialAlertContactsScreen(
+                onBack = rememberOnceOnly(safePop),
+                onMemberClick = { userId ->
+                    navController.navigate(Routes.memberDetail(userId))
+                },
             )
         }
 

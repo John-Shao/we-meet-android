@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,15 +54,19 @@ import kotlinx.coroutines.launch
  * 存 we-meet 后端的 `push/preferences/`,服务端在离线推送发送前过滤,只静默消息
  * 通知,来电不受影响。
  *
- * ⚠️ 这里**不放**「某人的消息仍然通知我」这类穿透开关。穿透是逐联系人的
- * (`ContactPreference.special_alert`,开关在那个人的详情页上叫「他的消息特别
- * 提醒」);在这里再兜一个全局闸就等于把飞书那套 override 结构搬回来。
+ * 另有一行「消息特别提醒」入口:那是**名单**(我给谁开了穿透),不是全局开关 ——
+ * 穿透逐联系人决定(`ContactPreference.special_alert`),开关在各自的详情页上。
+ * 这里再兜一个全局闸就等于把飞书那套 override 结构搬回来,别加。
  *
  * 读失败仍放开 UI(保存时再报错),避免弱网下设置页卡死。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotificationSettingsScreen(onBack: () -> Unit) {
+fun NotificationSettingsScreen(
+    onBack: () -> Unit,
+    /** 「消息特别提醒」名单页(设置 › 通知 › 消息特别提醒)。 */
+    onOpenSpecialAlerts: () -> Unit,
+) {
     val context = LocalContext.current
     val app = context.applicationContext as WeMeetApp
     val scope = rememberCoroutineScope()
@@ -206,6 +211,36 @@ fun NotificationSettingsScreen(onBack: () -> Unit) {
                 modifier = Modifier.padding(horizontal = 24.dp),
             )
 
+            Spacer(Modifier.height(20.dp))
+            // 「消息特别提醒」名单入口:逐个人的开关在各自详情页上,这里是回顾/
+            // 批量整理的地方(与星标的「详情页开关 + 名单页」同构)。
+            SettingsCard {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onOpenSpecialAlerts)
+                        .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.special_alert_title),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.outline,
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.special_alert_entry_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp),
+            )
             Spacer(Modifier.height(24.dp))
         }
     }

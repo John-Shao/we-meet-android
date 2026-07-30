@@ -49,6 +49,10 @@ interface DirectoryApi {
     @GET("api/v1.0/directory/starred/")
     suspend fun listStarred(): List<MemberDto>
 
+    /** 同上,但投影的是「他的消息特别提醒」名单(设置 › 通知 那页用)。 */
+    @GET("api/v1.0/directory/special-alert/")
+    suspend fun listSpecialAlert(): List<MemberDto>
+
     /**
      * 两个 flag 的紧凑清单,喂 [ContactPrefs] 的本地集合。
      *

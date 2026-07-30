@@ -279,5 +279,4 @@
     <string name="im_doc_picker_empty">暂无可分享的文档</string>
     <string name="im_doc_picker_error">获取文档列表失败</string>
     <string name="im_starred_marker">星标联系人</string>
-    <string name="im_special_alert_marker">已开启特别提醒</string>
 </resources>

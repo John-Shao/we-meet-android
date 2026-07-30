@@ -53,6 +53,10 @@ class DirectoryRepository(private val api: DirectoryApi) {
     suspend fun listStarred(): Result<List<MemberDto>> =
         runCatching { api.listStarred() }
 
+    /** 开了「他的消息特别提醒」的联系人卡片(设置 › 通知 › 消息特别提醒 那页)。 */
+    suspend fun listSpecialAlert(): Result<List<MemberDto>> =
+        runCatching { api.listSpecialAlert() }
+
     /** 两个 flag 的紧凑清单,用来给 [ContactPrefs] 的本地集合打底。 */
     suspend fun listContactPrefs(): Result<List<ContactPrefDto>> =
         runCatching { api.listContactPrefs() }

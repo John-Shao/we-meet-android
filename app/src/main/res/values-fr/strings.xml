@@ -507,5 +507,10 @@
     <string name="notification_settings_title">Notifications</string>
     <string name="starred_toggle_hint">Classement uniquement : apparaît dans les contacts favoris et la liste des discussions. Ne change pas les notifications.</string>
     <string name="special_alert_toggle">Alertes spéciales pour ses messages</string>
-    <string name="special_alert_toggle_hint">Ses messages vous notifient même pendant les heures calmes et sont signalés dans la liste des discussions.</string>
+    <string name="special_alert_toggle_hint">Ses messages vous notifient même pendant les heures calmes.</string>
+    <string name="special_alert_title">Alertes spéciales</string>
+    <string name="special_alert_add">Ajouter</string>
+    <string name="special_alert_remove">Désactiver</string>
+    <string name="special_alert_empty">Personne pour le moment. Activez les alertes spéciales sur un contact pour que ses messages vous parviennent aussi pendant les heures calmes.</string>
+    <string name="special_alert_entry_hint">Ces contacts vous joignent même pendant les heures calmes. Le réglage par personne se trouve sur sa fiche.</string>
 </resources>
