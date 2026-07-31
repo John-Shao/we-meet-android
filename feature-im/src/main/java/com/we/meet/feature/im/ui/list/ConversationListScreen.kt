@@ -39,6 +39,7 @@ import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.QrCodeScanner
@@ -443,6 +444,18 @@ private fun ConversationRow(
                         Icon(
                             Icons.Filled.Star,
                             contentDescription = stringResource(R.string.im_starred_marker),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .padding(start = 4.dp)
+                                .size(14.dp),
+                        )
+                    }
+                    // 「他的消息特别提醒」:一个小铃铛。会话开了免打扰时 row.specialAlert
+                    // 恒 false,所以它绝不会和右侧的 🔕 并排自相矛盾。
+                    if (row.specialAlert) {
+                        Icon(
+                            Icons.Filled.NotificationsActive,
+                            contentDescription = stringResource(R.string.im_special_alert_marker),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .padding(start = 4.dp)

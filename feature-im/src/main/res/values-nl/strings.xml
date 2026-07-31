@@ -263,4 +263,5 @@
     <string name="im_doc_picker_empty">Geen documenten om te delen</string>
     <string name="im_doc_picker_error">Documenten laden mislukt</string>
     <string name="im_starred_marker">Favoriet contact</string>
+    <string name="im_special_alert_marker">Speciale melding aan</string>
 </resources>

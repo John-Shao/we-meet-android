@@ -11,6 +11,7 @@ import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.data.GroupTile
 import com.we.meet.feature.im.userMessageRes
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -50,6 +51,14 @@ data class ConversationRowUi(
     val mentioned: Boolean = false,
     /** 私聊对端是星标联系人 → 名字后一颗 ⭐(群聊恒 false,星标是对人的)。 */
     val starred: Boolean = false,
+    /**
+     * 私聊对端开了「他的消息特别提醒」→ 名字后一个铃铛(群聊恒 false)。
+     *
+     * ⚠️ 会话自己开了免打扰([muted])时**恒 false**:那种情况下 jusi 在发 webhook
+     * 前就把你剔掉了,穿透根本不会发生,显示「会通知你」等于撒谎。铃铛在那一行的
+     * 缺席正好如实表达「你的特别提醒在这个会话上被免打扰盖过了」。
+     */
+    val specialAlert: Boolean = false,
 )
 
 /**
@@ -69,21 +78,27 @@ class ConversationListViewModel internal constructor(
     private val _actionError = MutableStateFlow<Int?>(null)
     val actionError: StateFlow<Int?> = _actionError.asStateFlow()
 
+    /**
+     * 星标 / 特别提醒两个 id 集合打包成一个流。
+     *
+     * 为什么不直接塞进下面的 combine:超过 5 个流就只有 vararg 重载可选,lambda 退化
+     * 成 `Array<Any?>`,每个元素都得 UNCHECKED_CAST —— 打包一层就能保住具名参数。
+     */
+    private val contactMarks: Flow<Pair<Set<String>, Set<String>>> =
+        combine(ContactPrefs.starredIds, ContactPrefs.specialAlertIds) { starred, alert ->
+            starred to alert
+        }
+
     val rows: StateFlow<List<ConversationRowUi>> =
         combine(
             session.conversations.conversations,
             session.userDirectory.version,
             session.selfUid,
             session.mentionedCids,
-            // 星标是 we-meet user id 的集合(共享单例),而会话只有 IM uid ——
-            // 靠 userDirectory 已解析出的 `id` 搭桥,不额外发请求。
-            //
-            // ⚠️ 这里**不看** ContactPrefs.specialAlertIds:「他的消息特别提醒」
-            // 刻意不在会话列表出标记 —— 它只影响推送,而会话可能自己开着免打扰,
-            // 两个反向图标并排会让人不知道哪个生效(实测发现)。名单在
-            // 设置 › 通知 › 消息特别提醒 里看。
-            ContactPrefs.starredIds,
-        ) { conversations, _, selfUid, mentioned, starredUserIds ->
+            // 两个 flag 都是 we-meet user id 的集合(共享单例),而会话只有 IM uid
+            // —— 靠 userDirectory 已解析出的 `id` 搭桥,不额外发请求。
+            contactMarks,
+        ) { conversations, _, selfUid, mentioned, marks ->
             // 触发 resolve 但不阻塞首帧:列表立即用字母兜底头像渲染,真实头像随
             // userDirectory.version 下次 bump 补上(微信/飞书式)。之前在这里挂起
             // resolve(阻塞)会让冷启动/弱网时整列表空白直到返回——比短暂字母帧更差。
@@ -99,7 +114,8 @@ class ConversationListViewModel internal constructor(
             }
             session.userDirectory.requestResolve(wanted)
             conversations.map {
-                it.toRow(selfUid, starredUserIds).copy(mentioned = it.cid in mentioned)
+                it.toRow(selfUid, marks.first, marks.second)
+                    .copy(mentioned = it.cid in mentioned)
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -157,6 +173,7 @@ class ConversationListViewModel internal constructor(
     private fun ConversationSummary.toRow(
         selfUid: String?,
         starredUserIds: Set<String>,
+        alertUserIds: Set<String>,
     ): ConversationRowUi {
         val isGroup = type == "group"
         val peerUid = if (!isGroup) members.firstOrNull { it != selfUid } else null
@@ -192,8 +209,12 @@ class ConversationListViewModel internal constructor(
             muted = muted,
             muteAtAll = muteAtAll,
             isOwner = isGroup && ownerUid != null && ownerUid == selfUid,
-            // 对端还没解析出来时先按未星标渲染,resolve 回来 version bump 会补上。
+            // 对端还没解析出来时先按无标记渲染,resolve 回来 version bump 会补上。
             starred = !isGroup && peer?.id?.let { it in starredUserIds } == true,
+            // `!muted` 见 ConversationRowUi.specialAlert 的注释:静默的会话上这个
+            // 标记必须缺席,否则就是承诺一件不会发生的事。
+            specialAlert = !isGroup && !muted &&
+                peer?.id?.let { it in alertUserIds } == true,
         )
     }
 
