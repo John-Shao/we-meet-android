@@ -36,7 +36,27 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    testOptions {
+        unitTests.all {
+            // 卡片契约测试读的是 **we-meet 后端仓库里**那批金标准 fixture ——
+            // 同一批文件后端 pytest 和 Web vitest 也在读。不拷贝一份进本仓:
+            // 拷贝会各自漂,而漂了正是这个测试要拦的东西。
+            //
+            // 默认按双仓并列 checkout 解析(d:/…/we-meet 与 d:/…/we-meet-android)。
+            // 布局不同就传 -PimCardFixtures=<绝对路径>。目录不存在时测试**直接失败**
+            // 而不是跳过 —— 静默跳过等于把契约测试变成一个永远绿的空壳。
+            it.systemProperty("imCardFixtures", imCardFixtureDir)
+        }
+    }
 }
+
+/** 后端金标准 fixture 目录;可用 -PimCardFixtures=<dir> 覆盖。 */
+val imCardFixtureDir: String =
+    (findProperty("imCardFixtures") as String?)
+        ?: rootProject
+            .file("../we-meet/src/backend/core/tests/fixtures/im_cards")
+            .absolutePath
 
 dependencies {
     // Kotlin
@@ -76,4 +96,10 @@ dependencies {
 
     // Chat avatars + image message thumbnails.
     implementation(libs.coil.compose)
+
+    // JVM 单测。org.json 必须显式引:MessageContentParser 用的是 android.jar 里
+    // 的 org.json,而那份在单测 classpath 上全是 `throw RuntimeException("Stub!")`,
+    // 不盖掉的话每个解析断言都会炸在 stub 上而不是在被测逻辑上。
+    testImplementation(libs.junit)
+    testImplementation(libs.org.json)
 }

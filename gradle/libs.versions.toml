@@ -34,6 +34,12 @@ livekitCompose = "2.2.1"
 # Image loading
 coil = "2.7.0"
 
+# Testing (JVM unit tests). org.json 是**故意**引进来的:MessageContentParser 用
+# android.jar 里的 org.json,而那份在 JVM 单测里全是 `throw RuntimeException("Stub!")`。
+# 把真实现放进 testImplementation 正好把 stub 盖掉,比上 Robolectric 便宜一个量级。
+junit = "4.13.2"
+orgJson = "20240303"
+
 [libraries]
 # Kotlin / Coroutines
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
@@ -80,6 +86,10 @@ livekit-android-compose-components = { module = "io.livekit:livekit-android-comp
 
 # Image loading
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+
+# Testing
+junit = { module = "junit:junit", version.ref = "junit" }
+org-json = { module = "org.json:json", version.ref = "orgJson" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

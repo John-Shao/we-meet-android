@@ -53,10 +53,17 @@ internal fun EventCardBubble(
         "cancelled" -> stringResource(R.string.im_event_card_cancelled)
         else -> null
     }
+    val allDayLabel = stringResource(R.string.im_event_card_all_day)
     val timeText = formatEventWhen(
-        content.startIso, content.endIso, content.allDay,
-        stringResource(R.string.im_event_card_all_day),
+        content.startIso, content.endIso, content.allDay, allDayLabel,
     )
+    // 改期卡把**改期前**的时间窗划掉显示在新时间上方(与 Web 一致)。原先 App
+    // 只有一个「时间已变更」徽章 —— 看得出变了,看不出从什么变成什么。
+    val oldTimeText = if (content.kind == "time_changed") {
+        formatEventWhen(
+            content.oldStartIso, content.oldEndIso, content.allDay, allDayLabel,
+        )
+    } else null
 
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -122,12 +129,21 @@ internal fun EventCardBubble(
                         )
                     }
                 }
+                if (oldTimeText != null) {
+                    Text(
+                        text = oldTimeText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                        textDecoration = TextDecoration.LineThrough,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
                 if (timeText != null) {
                     Text(
                         text = timeText,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp),
+                        modifier = Modifier.padding(top = if (oldTimeText != null) 0.dp else 4.dp),
                     )
                 }
                 if (content.attendeeCount > 0 || content.organizerName.isNotBlank()) {

@@ -88,6 +88,17 @@ sealed interface MessageContent {
         val organizerName: String = "",
         /** created | time_changed | attendees_changed | cancelled */
         val kind: String = "created",
+        /**
+         * kind=time_changed 时的**改期前**时间窗。后端一直在发这两个键,App 端
+         * 原本连解析都没有 —— Web 会把旧窗划掉显示「原 8/10 10:00–11:00」,App
+         * 只有一个「时间已变更」徽章,看不出改成什么样了。金标准 fixture 契约测
+         * 试抓到的第二处漂移(第一处是 Web 漏拷 removed_count)。
+         */
+        val oldStartIso: String = "",
+        val oldEndIso: String = "",
+        /** kind=attendees_changed 时的增减人数(缺省 0 = 后端没发这一项)。 */
+        val addedCount: Int = 0,
+        val removedCount: Int = 0,
     ) : MessageContent
 
     /**
@@ -196,6 +207,10 @@ object MessageContentParser {
                 attendeeCount = it.optInt("attendee_count", 0),
                 organizerName = it.optString("organizer_name"),
                 kind = it.optString("kind", "created"),
+                oldStartIso = it.optString("old_start"),
+                oldEndIso = it.optString("old_end"),
+                addedCount = it.optInt("added_count", 0),
+                removedCount = it.optInt("removed_count", 0),
             )
         }
         "doc-card" -> parseJson(contentType, body) {
