@@ -291,18 +291,34 @@ fun ChatScreen(
         R.string.im_group_call_room_name,
         ui.title.ifBlank { stringResource(R.string.im_untitled_chat) },
     )
+    // P10 离职后缀。在这里取一次而不是每个气泡各取一次 —— 消息列表是 LazyColumn,
+    // 每行都调 stringResource 白白多一次资源查找。
+    val departedSuffix = stringResource(R.string.im_departed_suffix)
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = if (selectMode) {
-                            stringResource(R.string.im_selected_count, selectedMids.size)
-                        } else ui.title.ifBlank { stringResource(R.string.im_untitled_chat) },
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    Column {
+                        Text(
+                            text = if (selectMode) {
+                                stringResource(R.string.im_selected_count, selectedMids.size)
+                            } else ui.title.ifBlank { stringResource(R.string.im_untitled_chat) },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        // 私聊对端已离职:提示单独一行,不拼进标题 —— 标题会流进
+                        // peerName / roomName(通话与会议室命名),那些地方不该带后缀。
+                        if (ui.peerLeft && !selectMode) {
+                            Text(
+                                text = stringResource(R.string.im_departed_hint),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = { if (selectMode) exitSelect() else onBack() }) {
@@ -460,7 +476,14 @@ fun ChatScreen(
                                     message = message,
                                     isOwn = isOwn,
                                     isGroup = ui.isGroup,
-                                    senderName = vm.senderName(message.senderUid),
+                                    // P10:离职标记只在这个纯渲染位置合成。vm.senderName
+                                    // 本身保持干净 —— 它还喂 @提及候选和引用/合并转发的
+                                    // sender 字段,后两者会被写进消息体发到服务端。
+                                    senderName = vm.senderName(message.senderUid)?.let { n ->
+                                        if (vm.isDeparted(message.senderUid)) {
+                                            n + departedSuffix
+                                        } else n
+                                    },
                                     senderAvatarUrl = sender?.avatarUrl?.takeIf { it.isNotBlank() },
                                     receiptLabel = receipt,
                                     onReceiptClick = if (receipt != null && ui.isGroup) {

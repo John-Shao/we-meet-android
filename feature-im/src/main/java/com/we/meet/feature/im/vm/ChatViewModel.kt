@@ -52,6 +52,11 @@ data class ChatUiState(
     val title: String = "",
     /** Direct chats only: the peer's uid (P1 通话 needs a call target); null for groups. */
     val peerUid: String? = null,
+    /**
+     * P10:私聊对端已从组织离职。单独一个 flag 而不是把「(已离职)」拼进 [title]
+     * —— title 会顺着 peerName / roomName 流进通话与会议室命名,那些地方不该带后缀。
+     */
+    val peerLeft: Boolean = false,
     /** Renderable rows only — control messages (recall/reaction) are filtered out. */
     val messages: List<Message> = emptyList(),
     /** mids replaced by a recall tombstone. */
@@ -239,9 +244,16 @@ class ChatViewModel internal constructor(
                 val self = session.selfUid.value
                 val peerUid = session.conversations.conversations.value
                     .firstOrNull { it.cid == cid }?.members?.firstOrNull { it != self } ?: return@collect
-                val name = session.userDirectory.get(peerUid)?.displayName
-                if (!name.isNullOrBlank() && name != s.title) {
-                    _ui.update { it.copy(title = name) }
+                val peer = session.userDirectory.get(peerUid)
+                val name = peer?.displayName
+                val left = peer?.left ?: false
+                if ((!name.isNullOrBlank() && name != s.title) || left != s.peerLeft) {
+                    _ui.update {
+                        it.copy(
+                            title = if (name.isNullOrBlank()) it.title else name,
+                            peerLeft = left,
+                        )
+                    }
                 }
             }
         }
@@ -725,6 +737,17 @@ class ChatViewModel internal constructor(
     fun senderName(uid: String): String? =
         _ui.value.nicknames[uid]?.takeIf { it.isNotBlank() }
             ?: session.userDirectory.get(uid)?.displayName?.takeIf { it.isNotBlank() }
+
+    /**
+     * P10:该 uid 在本组织已离职,气泡上的发送人名要标出来。
+     *
+     * 刻意不做成「[senderName] 直接返回带后缀的名字」—— 那个名字同时喂给 @提及
+     * 候选(`mentionCandidates`)和引用/合并转发的 `sender` 字段,后两者会被**写进
+     * 消息体发到服务端**,一旦带上后缀就永久冻在历史里,人复职了也改不回来。
+     * 所以标记与名字分开走,只在纯渲染处合成。
+     */
+    fun isDeparted(uid: String): Boolean =
+        session.userDirectory.get(uid)?.left == true
 
     /** Resolve a chat-media object key to a presigned URL (suspend, cached). */
     suspend fun resolveMediaUrl(objectKey: String): String? =

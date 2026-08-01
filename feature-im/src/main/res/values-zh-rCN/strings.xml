@@ -138,6 +138,9 @@
     <string name="im_group_remove_member">移出群聊</string>
     <string name="im_group_remove_confirm">将 %1$s 移出群聊？</string>
     <string name="im_group_owner_badge">群主</string>
+    <string name="im_departed_suffix">(已离职)</string>
+    <string name="im_departed_chip">已离职</string>
+    <string name="im_departed_hint">该成员已离职</string>
     <string name="im_group_transfer_owner">转让群主</string>
     <string name="im_group_transfer_confirm">将群主转让给 %1$s？</string>
     <string name="im_group_clear_history">清空聊天记录</string>

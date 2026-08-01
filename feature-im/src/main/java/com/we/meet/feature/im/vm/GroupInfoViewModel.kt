@@ -26,6 +26,11 @@ data class GroupMemberUi(
     val avatarUrl: String?,
     val isOwner: Boolean,
     val isSelf: Boolean,
+    /**
+     * P10:该成员已从组织离职。群成员关系归 jusi、组织关系归 we-meet,两者本就
+     * 不同步 —— 人离职了群里不会自动少一个人,名单上标出来群主才知道该清谁。
+     */
+    val isDeparted: Boolean = false,
 )
 
 data class GroupInfoUiState(
@@ -225,6 +230,7 @@ class GroupInfoViewModel internal constructor(
                 avatarUrl = info?.avatarUrl?.takeIf { it.isNotBlank() },
                 isOwner = uid == ownerUid,
                 isSelf = uid == self,
+                isDeparted = info?.left == true,
             )
         }
         _ui.update {

@@ -305,6 +305,17 @@ fun GroupInfoScreen(
                                 .weight(1f)
                                 .padding(start = 12.dp),
                         )
+                        // 离职标记与群主徽章各自独立 —— 群主本人也可能已离职,
+                        // 挂在 else 分支上正好会漏掉最该提醒的那种情况。中性灰:
+                        // 离职是常态事实,不是错误态。
+                        if (member.isDeparted) {
+                            Text(
+                                text = stringResource(R.string.im_departed_chip),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(end = 8.dp),
+                            )
+                        }
                         if (member.isOwner) {
                             Text(
                                 text = stringResource(R.string.im_group_owner_badge),

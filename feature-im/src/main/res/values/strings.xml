@@ -142,6 +142,13 @@
     <string name="im_group_remove_member">Remove member</string>
     <string name="im_group_remove_confirm">Remove %1$s from the group?</string>
     <string name="im_group_owner_badge">Owner</string>
+    <!-- P10 离职标记。en 文案刻意不用撇号(has left / didn't 之类):Android
+         strings.xml 里的裸单引号会让 aapt 报「unicode 转义无效」,报错完全指错方向。 -->
+    <!-- 外层双引号是必须的:Android 会把 string 资源的首尾空白吃掉,不加引号
+         这里的前导空格就没了,渲染成「张三(left)」。 -->
+    <string name="im_departed_suffix">" (left)"</string>
+    <string name="im_departed_chip">Left</string>
+    <string name="im_departed_hint">This person has left the organization</string>
     <string name="im_group_transfer_owner">Transfer ownership</string>
     <string name="im_group_transfer_confirm">Transfer group ownership to %1$s?</string>
     <string name="im_group_clear_history">Clear chat history</string>
