@@ -574,6 +574,7 @@
     <string name="freebusy_self_busy">你在该时段有其他日程</string>
     <string name="meeting_room_remove">移除会议室</string>
     <string name="starred_title">星标联系人</string>
+    <string name="contacts_my_groups">我的群组</string>
     <string name="starred_add">添加</string>
     <string name="starred_remove">取消星标</string>
     <string name="starred_empty">还没有星标联系人</string>

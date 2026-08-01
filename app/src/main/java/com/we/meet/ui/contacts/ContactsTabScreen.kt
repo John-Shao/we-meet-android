@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -51,6 +52,7 @@ import com.we.meet.core.directory.ui.MemberAvatar
 fun ContactsTabScreen(
     onMemberClick: (userId: String) -> Unit,
     onOpenStarred: () -> Unit,
+    onOpenMyGroups: () -> Unit,
 ) {
     val vm: ContactsViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
@@ -110,6 +112,7 @@ fun ContactsTabScreen(
                 if (!ui.searching && ui.deptStack.isEmpty()) {
                     item {
                         StarredEntryRow(onClick = onOpenStarred)
+                        MyGroupsEntryRow(onClick = onOpenMyGroups)
                         HorizontalDivider(
                             color = MaterialTheme.colorScheme.outlineVariant,
                             modifier = Modifier.padding(start = 56.dp),
@@ -229,6 +232,37 @@ private fun StarredEntryRow(onClick: () -> Unit) {
         )
         Text(
             text = stringResource(R.string.starred_title),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp),
+        )
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.outline,
+        )
+    }
+}
+
+/** 「👥 我的群组 ›」—— 紧挨星标联系人的第二个固定入口(仅根层级)。 */
+@Composable
+private fun MyGroupsEntryRow(onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = Dimens.ScreenPadding, vertical = 12.dp),
+    ) {
+        Icon(
+            Icons.Filled.Groups,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp),
+        )
+        Text(
+            text = stringResource(R.string.contacts_my_groups),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier
                 .weight(1f)

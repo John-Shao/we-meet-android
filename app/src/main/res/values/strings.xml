@@ -574,6 +574,7 @@
     <string name="freebusy_self_busy">You have another event at this time</string>
     <string name="meeting_room_remove">Remove room</string>
     <string name="starred_title">Starred contacts</string>
+    <string name="contacts_my_groups">My groups</string>
     <string name="starred_add">Add</string>
     <string name="starred_remove">Unstar</string>
     <string name="starred_empty">No starred contacts yet</string>

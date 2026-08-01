@@ -139,6 +139,14 @@
     <string name="im_group_rename">Rename</string>
     <string name="im_group_members_count">Members (%1$d)</string>
     <string name="im_group_add_members">Add members</string>
+    <string name="im_group_search_members">Search members</string>
+    <string name="im_group_no_member_match">No matching members</string>
+    <!-- 「我的群组」——通讯录里的群清单。 -->
+    <string name="im_my_groups_title">My groups (%1$d)</string>
+    <string name="im_my_groups_search">Search group names</string>
+    <string name="im_my_groups_member_count">%1$d members</string>
+    <string name="im_my_groups_empty">You have not joined any group yet</string>
+    <string name="im_my_groups_no_match">No matching groups</string>
     <string name="im_group_remove_member">Remove member</string>
     <string name="im_group_remove_confirm">Remove %1$s from the group?</string>
     <string name="im_group_owner_badge">Owner</string>

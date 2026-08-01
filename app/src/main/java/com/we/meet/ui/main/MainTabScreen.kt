@@ -119,6 +119,8 @@ fun MainTabScreen(
     onMemberClick: (userId: String) -> Unit,
     /** 通讯录顶部的「星标联系人」入口。 */
     onOpenStarredContacts: () -> Unit,
+    /** 通讯录顶部的「我的群组」入口(零后端,复用会话列表数据)。 */
+    onOpenMyGroups: () -> Unit,
     onEventClick: (eventId: String) -> Unit,
     onCreateEvent: (epochDay: Long) -> Unit,
     /** 日历预选时段确认后按精确起止(epoch 秒)进创建表单。 */
@@ -308,6 +310,7 @@ fun MainTabScreen(
             ContactsTabScreen(
                 onMemberClick = onMemberClick,
                 onOpenStarred = onOpenStarredContacts,
+                onOpenMyGroups = onOpenMyGroups,
             )
         },
         TabItem(R.string.tab_docs, Icons.Filled.Description, Icons.Outlined.Description) {

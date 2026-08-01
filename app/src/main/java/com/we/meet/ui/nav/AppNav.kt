@@ -49,6 +49,7 @@ import com.we.meet.util.dialNumber
 import com.we.meet.feature.im.ui.chat.ChatScreen
 import com.we.meet.feature.im.ui.chat.DirectChatSettingsScreen
 import com.we.meet.feature.im.ui.group.GroupInfoScreen
+import com.we.meet.feature.im.ui.group.MyGroupsScreen
 import com.we.meet.feature.im.ui.newchat.AddMembersScreen
 import com.we.meet.feature.im.ui.newchat.NewChatScreen
 import com.we.meet.feature.im.ui.search.MessageSearchScreen
@@ -126,6 +127,8 @@ object Routes {
 
     /** 星标联系人列表页(通讯录顶部入口进)。 */
     const val STARRED_CONTACTS = "starred_contacts"
+    /** 「我的群组」列表页(通讯录顶部入口进);零后端,复用会话列表数据。 */
+    const val MY_GROUPS = "my_groups"
     /** 「设置 › 通知」—— 消息通知相关设置(免打扰时段、特别提醒名单入口)。 */
     const val NOTIFICATION_SETTINGS = "notification_settings"
     /** 「设置 › 通知 › 消息特别提醒」名单页(我给谁开了穿透)。 */
@@ -473,6 +476,7 @@ fun AppNav() {
                 onOpenSearch = { navController.navigate(Routes.IM_SEARCH) },
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 onOpenStarredContacts = { navController.navigate(Routes.STARRED_CONTACTS) },
+                onOpenMyGroups = { navController.navigate(Routes.MY_GROUPS) },
                 onEventClick = { eventId -> navController.navigate(Routes.eventDetail(eventId)) },
                 onCreateEvent = { epochDay -> navController.navigate(Routes.createEvent(epochDay)) },
                 // 日历预选时段确认 → 复用忙闲页那条精确起止预填(无预选参与者)。
@@ -1001,6 +1005,14 @@ fun AppNav() {
                 onMemberClick = { userId ->
                     navController.navigate(Routes.memberDetail(userId))
                 },
+            )
+        }
+
+        composable(Routes.MY_GROUPS) {
+            MyGroupsScreen(
+                deps = app,
+                onBack = rememberOnceOnly(safePop),
+                onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
             )
         }
 

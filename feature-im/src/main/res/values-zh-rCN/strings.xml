@@ -135,6 +135,13 @@
     <string name="im_group_rename">修改</string>
     <string name="im_group_members_count">群成员 (%1$d)</string>
     <string name="im_group_add_members">添加成员</string>
+    <string name="im_group_search_members">搜索群成员</string>
+    <string name="im_group_no_member_match">没有匹配的成员</string>
+    <string name="im_my_groups_title">我的群组 (%1$d)</string>
+    <string name="im_my_groups_search">搜索群名称</string>
+    <string name="im_my_groups_member_count">%1$d 名成员</string>
+    <string name="im_my_groups_empty">你还没有加入任何群聊</string>
+    <string name="im_my_groups_no_match">没有匹配的群聊</string>
     <string name="im_group_remove_member">移出群聊</string>
     <string name="im_group_remove_confirm">将 %1$s 移出群聊？</string>
     <string name="im_group_owner_badge">群主</string>

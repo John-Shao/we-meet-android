@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -77,6 +78,16 @@ fun GroupInfoScreen(
     var showTransferPicker by remember { mutableStateOf(false) }
     var confirmLeave by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
+
+    // 群成员搜索。搜的是**名单上显示的那个名字**(群昵称优先、目录名兜底,
+    // displayName 已是这个口径)—— 搜不到自己刚看见的名字比没有搜索还费解。
+    var memberQuery by remember { mutableStateOf("") }
+    val searchable = ui.members.size > MEMBER_SEARCH_THRESHOLD
+    val visibleMembers = remember(ui.members, memberQuery, searchable) {
+        val q = memberQuery.trim()
+        if (q.isBlank() || !searchable) ui.members
+        else ui.members.filter { it.displayName.contains(q, ignoreCase = true) }
+    }
 
     LaunchedEffect(vm) {
         vm.events.collect { event ->
@@ -283,9 +294,30 @@ fun GroupInfoScreen(
                             Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.im_group_add_members))
                         }
                     }
+                    // 小群不出搜索框:三个人的名单上顶一个输入框纯属噪音。
+                    if (searchable) {
+                        OutlinedTextField(
+                            value = memberQuery,
+                            onValueChange = { memberQuery = it },
+                            singleLine = true,
+                            placeholder = { Text(stringResource(R.string.im_group_search_members)) },
+                            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 4.dp),
+                        )
+                    }
+                    if (visibleMembers.isEmpty() && ui.members.isNotEmpty()) {
+                        Text(
+                            text = stringResource(R.string.im_group_no_member_match),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                        )
+                    }
                 }
 
-                items(ui.members, key = { it.uid }) { member ->
+                items(visibleMembers, key = { it.uid }) { member ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
@@ -591,3 +623,7 @@ private fun SwitchRow(label: String, checked: Boolean, onToggle: () -> Unit) {
         Switch(checked = checked, onCheckedChange = { onToggle() })
     }
 }
+
+/** 成员数超过这个值才出搜索框 —— 少于一屏的名单上顶个输入框纯属噪音。与 Web
+ *  GroupInfoPanel 的 MEMBER_SEARCH_THRESHOLD 取同一个值,免得两端一个有一个没有。 */
+private const val MEMBER_SEARCH_THRESHOLD = 10
