@@ -119,7 +119,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.BuildConfig
@@ -128,6 +127,7 @@ import com.we.meet.MainActivity
 import com.we.meet.WeMeetApp
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.audio.AudioOutput
 import com.we.meet.audio.AudioOutputController
 import com.we.meet.audio.AudioOutputStore
@@ -148,14 +148,14 @@ import io.livekit.android.compose.ui.VideoTrackView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private val RoomToolbarIconButtonSize = 40.dp
-private val RoomToolbarIconSize = 24.dp
+private val RoomToolbarIconButtonSize = Dimens.Room.ToolbarIconButton
+private val RoomToolbarIconSize = Dimens.IconMedium
 // Bottom toolbar: container matches the icon exactly so the only gap
 // between icon and label is BottomToolbarLabelSpacing. A larger container
 // (e.g. the top toolbar's 40dp) adds invisible padding that pushes the
 // label too far below.
-private val BottomToolbarIconButtonSize = 24.dp
-private val BottomToolbarLabelSpacing = 2.dp
+private val BottomToolbarIconButtonSize = Dimens.IconMedium
+private val BottomToolbarLabelSpacing = Dimens.SpaceXxs
 
 @Composable
 fun RoomScreen(
@@ -722,9 +722,9 @@ private fun MeetInviteChipsRow(
     }
 
     Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
         modifier = modifier
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = Dimens.SpaceL)
             .horizontalScroll(rememberScrollState()),
     ) {
         chips.forEach { (label, stateKey, _) ->
@@ -734,9 +734,9 @@ private fun MeetInviteChipsRow(
                 modifier = Modifier
                     .background(
                         Color.Black.copy(alpha = 0.6f),
-                        RoundedCornerShape(999.dp),
+                        CircleShape,
                     )
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                    .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
             ) {
                 Text(
                     text = label,
@@ -744,11 +744,11 @@ private fun MeetInviteChipsRow(
                     style = MaterialTheme.typography.labelSmall,
                     maxLines = 1,
                 )
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(Dimens.SpaceXs))
                 Text(
                     text = stateLabel(stateKey),
                     color = if (active) {
-                        Color(0xFF93C5FD)
+                        WeMeetTheme.extras.room.overlayAccentText
                     } else {
                         Color.White.copy(alpha = 0.65f)
                     },
@@ -933,13 +933,15 @@ private fun RoomContent(
     val navBottom = insets.navigationBars.asPaddingValues().calculateBottomPadding()
     // Top toolbar content: vertical padding 8*2 + IconButton 40 = 56dp
     // Bottom toolbar content: row pad 4*2 + col pad 4*2 + icon box 24 + spacer 2 + label ~16 = ~58dp
-    val gap = 8.dp
+    val gap = Dimens.SpaceS
     val topInset by animateDpAsState(
-        targetValue = if (toolbarsVisible) statusTop + 56.dp + gap else 0.dp,
+        targetValue =
+            if (toolbarsVisible) statusTop + Dimens.Room.TopToolbarHeight + gap else Dimens.SpaceNone,
         label = "topInset",
     )
     val bottomInset by animateDpAsState(
-        targetValue = if (toolbarsVisible) navBottom + 58.dp + gap else 0.dp,
+        targetValue =
+            if (toolbarsVisible) navBottom + Dimens.Room.BottomToolbarHeight + gap else Dimens.SpaceNone,
         label = "bottomInset",
     )
 
@@ -973,7 +975,7 @@ private fun RoomContent(
                 chips = meetInviteChips,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = topInset + 8.dp),
+                    .padding(top = topInset + Dimens.SpaceS),
             )
         }
 
@@ -1016,7 +1018,7 @@ private fun RoomContent(
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 96.dp),
+                    .padding(bottom = Dimens.Room.SubtitleBottomInset),
             ) {
                 SubtitleOverlay(segments = subtitleSegments)
             }
@@ -1289,7 +1291,7 @@ private fun TopToolbar(
                 )
             )
             .statusBarsPadding()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
     ) {
         // Left cluster: minimize + switch camera
         Row(
@@ -1327,10 +1329,10 @@ private fun TopToolbar(
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
-                .padding(horizontal = 110.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .padding(horizontal = Dimens.Room.TitleSideInset)
+                .clip(RoundedCornerShape(Dimens.CornerS))
                 .clickable(onClick = onShowInvite)
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
@@ -1371,7 +1373,7 @@ private fun TopToolbar(
                 Icon(
                     imageVector = Icons.Default.CallEnd,
                     contentDescription = stringResource(R.string.room_end),
-                    tint = Color(0xFFFF4444),
+                    tint = WeMeetTheme.extras.room.dangerOnOverlay,
                     modifier = Modifier.size(RoomToolbarIconSize),
                 )
             }
@@ -1401,7 +1403,7 @@ private fun BottomToolbar(
                 )
             )
             .navigationBarsPadding()
-            .padding(vertical = 4.dp),
+            .padding(vertical = Dimens.SpaceXs),
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -1569,18 +1571,18 @@ private fun ParticipantsSheet(
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(Dimens.SpaceS))
                 Button(onClick = { onInviteMembers(query.trim()) }) {
                     Icon(
                         imageVector = Icons.Default.PersonAdd,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(Dimens.IconSmall),
                     )
-                    Spacer(Modifier.width(4.dp))
+                    Spacer(Modifier.width(Dimens.SpaceXs))
                     Text(stringResource(R.string.room_invite_action))
                 }
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Dimens.SpaceS))
             TabRow(selectedTabIndex = tab) {
                 Tab(
                     selected = tab == 0,
@@ -1608,7 +1610,7 @@ private fun ParticipantsSheet(
                         text = stringResource(R.string.room_suggested_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 24.dp),
+                        modifier = Modifier.padding(vertical = Dimens.SpaceXl),
                     )
                 } else {
                     LazyColumn {
@@ -1632,20 +1634,20 @@ private fun ParticipantsSheet(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 12.dp),
+                            .padding(vertical = Dimens.SpaceM),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = null,
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(Dimens.AvatarS)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .padding(6.dp),
+                                .padding(Dimens.SpaceXs),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Spacer(Modifier.width(12.dp))
+                        Spacer(Modifier.width(Dimens.SpaceM))
                         Text(
                             text = p.name + if (p.isLocal) stringResource(R.string.room_participant_me) else "",
                             style = MaterialTheme.typography.bodyLarge,
@@ -1658,30 +1660,31 @@ private fun ParticipantsSheet(
                         if (p.isLocal) {
                             IconButton(
                                 onClick = onRenameSelfClick,
-                                modifier = Modifier.size(32.dp),
+                                modifier = Modifier.size(Dimens.IconButtonCompact),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
                                     contentDescription = stringResource(R.string.room_rename_self),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(18.dp),
+                                    modifier = Modifier.size(Dimens.IconSmall),
                                 )
                             }
-                            Spacer(Modifier.width(4.dp))
+                            Spacer(Modifier.width(Dimens.SpaceXs))
                         }
                         Icon(
                             imageVector = if (p.isMicEnabled) Icons.Default.Mic else Icons.Default.MicOff,
                             contentDescription = stringResource(
                                 if (p.isMicEnabled) R.string.cd_mic_on else R.string.cd_mic_off,
                             ),
-                            tint = if (p.isMicEnabled) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFFFF6B6B),
-                            modifier = Modifier.size(20.dp),
+                            tint = if (p.isMicEnabled) MaterialTheme.colorScheme.onSurfaceVariant
+                            else WeMeetTheme.extras.status.danger,
+                            modifier = Modifier.size(Dimens.IconSmall),
                         )
                         // Owner-only host actions menu. We skip screen-share
                         // synthetic rows — the sharer's camera row is the
                         // real participant and already owns these controls.
                         if (isAdmin && !p.isLocal && !p.isScreenShare) {
-                            Spacer(Modifier.width(4.dp))
+                            Spacer(Modifier.width(Dimens.SpaceXs))
                             ParticipantHostMenu(
                                 isMicEnabled = p.isMicEnabled,
                                 onMute = { onMuteClick(p.identity) },
@@ -1693,7 +1696,7 @@ private fun ParticipantsSheet(
                     }
                 }
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(Dimens.SpaceXl))
         }
     }
 }
@@ -1720,7 +1723,7 @@ private fun SuggestedParticipantRow(
         modifier = Modifier
             .fillMaxWidth()
             .alpha(if (remoteRinging && !mineActive) 0.55f else 1f)
-            .padding(vertical = 10.dp),
+            .padding(vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         MemberAvatar(
@@ -1731,7 +1734,7 @@ private fun SuggestedParticipantRow(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 12.dp),
+                .padding(start = Dimens.SpaceM),
         ) {
             Text(
                 person.displayName,
@@ -1768,13 +1771,13 @@ private fun SuggestedParticipantRow(
                 )
                 IconButton(
                     onClick = { onCancel(invite.callId) },
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(Dimens.IconButtonCompact),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = stringResource(R.string.room_call_cancel),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(Dimens.IconSmall),
                     )
                 }
             }
@@ -1801,12 +1804,12 @@ private fun SuggestedParticipantRow(
                         ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(end = 6.dp),
+                        modifier = Modifier.padding(end = Dimens.SpaceXs),
                     )
                 }
                 OutlinedButton(
                     onClick = onCall,
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    contentPadding = PaddingValues(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs),
                 ) {
                     Text(
                         stringResource(
@@ -1836,7 +1839,7 @@ private fun UnifiedInviteFooter(roomSlug: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = Dimens.SpaceXs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -1882,13 +1885,13 @@ private fun ParticipantHostMenu(
     Box {
         IconButton(
             onClick = { menuOpen = true },
-            modifier = Modifier.size(32.dp),
+            modifier = Modifier.size(Dimens.IconButtonCompact),
         ) {
             Icon(
                 imageVector = Icons.Default.MoreVert,
                 contentDescription = stringResource(R.string.room_host_actions),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(Dimens.IconSmall),
             )
         }
         DropdownMenu(
@@ -1907,7 +1910,7 @@ private fun ParticipantHostMenu(
                 text = {
                     Text(
                         text = stringResource(R.string.room_host_remove),
-                        color = Color(0xFFFF4444),
+                        color = WeMeetTheme.extras.status.danger,
                     )
                 },
                 onClick = {
@@ -1932,7 +1935,9 @@ private fun KickConfirmDialog(
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF4444)),
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = WeMeetTheme.extras.status.danger,
+                ),
             ) { Text(stringResource(R.string.room_host_remove)) }
         },
         dismissButton = {
@@ -1988,29 +1993,30 @@ private fun LobbyBanner(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFFFFB300))
+            .padding(horizontal = Dimens.SpaceM)
+            .clip(RoundedCornerShape(Dimens.CornerS))
+            .background(WeMeetTheme.extras.room.warningFill)
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val onFill = WeMeetTheme.extras.room.onWarningFill
         Icon(
             imageVector = Icons.Default.Person,
             contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(18.dp),
+            tint = onFill,
+            modifier = Modifier.size(Dimens.IconSmall),
         )
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(Dimens.SpaceS))
         Text(
             text = stringResource(R.string.room_lobby_banner, count),
-            color = Color.White,
+            color = onFill,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(1f),
         )
         Text(
             text = stringResource(R.string.room_lobby_banner_action),
-            color = Color.White,
+            color = onFill,
             style = MaterialTheme.typography.labelMedium,
         )
     }
@@ -2027,22 +2033,23 @@ private fun RecordingBanner() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFFFF4444))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs)
+            .clip(RoundedCornerShape(Dimens.CornerS))
+            .background(WeMeetTheme.extras.room.dangerFill)
+            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val onFill = WeMeetTheme.extras.room.onDangerFill
         Icon(
             imageVector = Icons.Default.FiberManualRecord,
             contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(14.dp),
+            tint = onFill,
+            modifier = Modifier.size(Dimens.IconTiny),
         )
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(Dimens.SpaceS))
         Text(
             text = stringResource(R.string.room_recording_banner),
-            color = Color.White,
+            color = onFill,
             style = MaterialTheme.typography.bodyMedium,
         )
     }
@@ -2066,7 +2073,7 @@ private fun WaitingListSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp),
+                    .padding(bottom = Dimens.SpaceM),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -2086,20 +2093,20 @@ private fun WaitingListSheet(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 12.dp),
+                            .padding(vertical = Dimens.SpaceM),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = null,
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(Dimens.AvatarS)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .padding(6.dp),
+                                .padding(Dimens.SpaceXs),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Spacer(Modifier.width(12.dp))
+                        Spacer(Modifier.width(Dimens.SpaceM))
                         Text(
                             text = p.username,
                             style = MaterialTheme.typography.bodyLarge,
@@ -2113,7 +2120,7 @@ private fun WaitingListSheet(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        Spacer(Modifier.width(4.dp))
+                        Spacer(Modifier.width(Dimens.SpaceXs))
                         TextButton(
                             onClick = { onAdmit(p.id) },
                         ) {
@@ -2123,7 +2130,7 @@ private fun WaitingListSheet(
                     HorizontalDivider()
                 }
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(Dimens.SpaceXl))
         }
     }
 }
@@ -2150,20 +2157,20 @@ private fun HostSettingsSheet(
             Text(
                 text = stringResource(R.string.room_host_settings_title),
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 4.dp),
+                modifier = Modifier.padding(bottom = Dimens.SpaceXs),
             )
             Text(
                 text = stringResource(R.string.room_host_settings_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 16.dp),
+                modifier = Modifier.padding(bottom = Dimens.SpaceL),
             )
             HorizontalDivider()
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Dimens.SpaceS))
             Text(
                 text = stringResource(R.string.room_host_access_section),
                 style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(vertical = 8.dp),
+                modifier = Modifier.padding(vertical = Dimens.SpaceS),
             )
             AccessLevelOption(
                 value = ACCESS_LEVEL_PUBLIC,
@@ -2186,7 +2193,7 @@ private fun HostSettingsSheet(
                 description = stringResource(R.string.room_host_access_restricted_desc),
                 onSelect = onSelectAccessLevel,
             )
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(Dimens.SpaceXl))
         }
     }
 }
@@ -2204,14 +2211,14 @@ private fun AccessLevelOption(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onSelect(value) }
-            .padding(vertical = 8.dp),
+            .padding(vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.Top,
     ) {
         RadioButton(
             selected = selected,
             onClick = { onSelect(value) },
         )
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(Dimens.SpaceS))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
@@ -2275,20 +2282,20 @@ private fun MoreActionsSheet(
     // surface-aware colours here.
     val sheetBg = MaterialTheme.colorScheme.surfaceVariant
     val sheetTint = MaterialTheme.colorScheme.onSurface
-    val shareTint = if (localScreenSharing) Color(0xFFFF4444) else sheetTint
+    val shareTint = if (localScreenSharing) WeMeetTheme.extras.status.danger else sheetTint
 
     // Raised-hand visual: orange tint while raised, neutral while lowered.
     // Matches the desktop client's "primaryDark" selected state in spirit
     // without bringing in another colour role.
-    val handTint = if (handRaised) Color(0xFFFFB300) else sheetTint
-    val handBg = if (handRaised) Color(0xFFFFE6B3) else sheetBg
+    val handTint = if (handRaised) WeMeetTheme.extras.status.warning else sheetTint
+    val handBg = if (handRaised) WeMeetTheme.extras.status.warningContainer else sheetBg
 
     // Subtitles — repurposes the old "interpret" slot. Anyone in the room
     // can flip them on; first-on POSTs start-subtitle (LiveKit-token auth,
     // see RoomRepository.startSubtitle). Once started the agent stays
     // attached for the meeting; subsequent taps only show/hide the overlay.
-    val subtitlesTint = if (subtitlesOverlayOn) Color(0xFF3C8DFF) else sheetTint
-    val subtitlesBg = if (subtitlesOverlayOn) Color(0xFFD9E8FF) else sheetBg
+    val subtitlesTint = if (subtitlesOverlayOn) WeMeetTheme.extras.status.accentActive else sheetTint
+    val subtitlesBg = if (subtitlesOverlayOn) WeMeetTheme.extras.status.accentActiveContainer else sheetBg
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         // 5-per-row grid. Each cell is `weight(1f)` so columns line up
@@ -2297,8 +2304,8 @@ private fun MoreActionsSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = Dimens.ScreenPadding, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXl),
         ) {
             Row(modifier = Modifier.fillMaxWidth()) {
                 ControlButton(
@@ -2386,7 +2393,7 @@ private fun MoreActionsSheet(
                 Spacer(Modifier.weight(4f))
             }
         }
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(Dimens.SpaceXl))
     }
 }
 
@@ -2424,13 +2431,13 @@ private fun ScreenShareChooserSheet(
                 onClick = onShareWhiteboard,
                 comingSoon = true,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Dimens.SpaceS))
             Button(
                 onClick = onDismiss,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                    .height(Dimens.MinTouchTarget),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimens.CornerM),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface,
@@ -2438,7 +2445,7 @@ private fun ScreenShareChooserSheet(
             ) {
                 Text(stringResource(R.string.cancel))
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(Dimens.SpaceXl))
         }
     }
 }
@@ -2454,7 +2461,7 @@ private fun ShareOptionRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 16.dp)
+            .padding(vertical = Dimens.SpaceL)
             .alpha(if (comingSoon) 0.55f else 1f),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -2462,9 +2469,9 @@ private fun ShareOptionRow(
             imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(Dimens.IconMedium),
         )
-        Spacer(Modifier.width(16.dp))
+        Spacer(Modifier.width(Dimens.SpaceL))
         Text(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
@@ -2477,9 +2484,9 @@ private fun ShareOptionRow(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(RoundedCornerShape(Dimens.CornerS))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                    .padding(horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXxs),
             )
         }
     }
@@ -2511,7 +2518,7 @@ private fun LeaveDialog(
                 ) {
                     Text(
                         text = stringResource(R.string.room_end_meeting),
-                        color = Color(0xFFFF4444),
+                        color = WeMeetTheme.extras.status.danger,
                     )
                 }
             },
@@ -2540,7 +2547,7 @@ private fun LeaveDialog(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 16.dp),
+                    modifier = Modifier.padding(bottom = Dimens.SpaceL),
                 )
                 HorizontalDivider()
             }
@@ -2566,7 +2573,9 @@ private fun LeaveDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(Dimens.ButtonHeight),
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF4444)),
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = WeMeetTheme.extras.status.danger,
+                    ),
                 ) {
                     Text(
                         text = stringResource(R.string.room_end_meeting),
@@ -2575,15 +2584,15 @@ private fun LeaveDialog(
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Dimens.SpaceS))
 
             // Cancel
             Button(
                 onClick = onDismiss,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                    .height(Dimens.MinTouchTarget),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimens.CornerM),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface,
@@ -2591,7 +2600,7 @@ private fun LeaveDialog(
             ) {
                 Text(stringResource(R.string.cancel))
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(Dimens.SpaceXl))
         }
     }
 }
@@ -2632,13 +2641,13 @@ private fun AudioOutputSheet(
                 isSelected = current == AudioOutput.Mute,
                 onClick = { onSelect(AudioOutput.Mute) },
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Dimens.SpaceS))
             Button(
                 onClick = onDismiss,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                    .height(Dimens.MinTouchTarget),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimens.CornerM),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface,
@@ -2646,7 +2655,7 @@ private fun AudioOutputSheet(
             ) {
                 Text(stringResource(R.string.cancel))
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(Dimens.SpaceXl))
         }
     }
 }
@@ -2662,28 +2671,30 @@ private fun AudioOutputOption(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 16.dp),
+            .padding(vertical = Dimens.SpaceL),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = if (isSelected) Color(0xFF3366FF) else MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(24.dp),
+            tint = if (isSelected) WeMeetTheme.extras.status.accentActive
+            else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.size(Dimens.IconMedium),
         )
-        Spacer(Modifier.width(16.dp))
+        Spacer(Modifier.width(Dimens.SpaceL))
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
-            color = if (isSelected) Color(0xFF3366FF) else MaterialTheme.colorScheme.onSurface,
+            color = if (isSelected) WeMeetTheme.extras.status.accentActive
+            else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f),
         )
         if (isSelected) {
             Icon(
                 imageVector = Icons.Default.Check,
                 contentDescription = null,
-                tint = Color(0xFF3366FF),
-                modifier = Modifier.size(24.dp),
+                tint = WeMeetTheme.extras.status.accentActive,
+                modifier = Modifier.size(Dimens.IconMedium),
             )
         }
     }
@@ -2706,13 +2717,13 @@ internal fun ControlButton(
     iconTintColor: Color? = null,
     iconSize: Dp = RoomToolbarIconSize,
     iconButtonSize: Dp = RoomToolbarIconButtonSize,
-    labelSpacing: Dp = 6.dp,
+    labelSpacing: Dp = Dimens.SpaceXs,
 ) {
     // Default: transparent icon bg -> flat icon + label. Sheet callers pass
     // an explicit [iconBgColor] when they want the circular icon container.
     val bgColor = iconBgColor ?: Color.Transparent
     val iconTint = iconTintColor
-        ?: if (isOn) Color.White else Color(0xFFFF6B6B)
+        ?: if (isOn) Color.White else WeMeetTheme.extras.room.dangerOnOverlay
 
     // Whole column is the click target — tap on the icon, the label, or
     // the space between all route to [onClick]. The caller-supplied
@@ -2724,7 +2735,7 @@ internal fun ControlButton(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .clickable(onClick = onClick)
-            .padding(vertical = 4.dp)
+            .padding(vertical = Dimens.SpaceXs)
             // Dim stub controls so they don't read as fully available.
             .alpha(if (comingSoon) 0.55f else 1f),
     ) {
@@ -2749,9 +2760,9 @@ internal fun ControlButton(
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xCC000000))
-                        .padding(horizontal = 4.dp, vertical = 1.dp),
+                        .clip(RoundedCornerShape(Dimens.CornerS))
+                        .background(WeMeetTheme.extras.room.overlayScrim)
+                        .padding(horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXxs),
                 )
             }
         }
@@ -2772,10 +2783,10 @@ private fun ConnectingView(onCancel: () -> Unit) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator(color = Color.White)
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Dimens.SpaceM))
             Text(stringResource(R.string.room_connecting), color = Color.White)
             // A stuck connect otherwise strands the user with only system Back.
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(Dimens.SpaceXl))
             TextButton(onClick = onCancel) {
                 Text(stringResource(R.string.cancel), color = Color.White)
             }
@@ -2788,17 +2799,17 @@ private fun ErrorView(message: String?, onRetry: () -> Unit, onLeave: () -> Unit
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(Dimens.SpaceXl),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 message ?: stringResource(R.string.error_unknown),
-                color = Color(0xFFFF6B6B),
+                color = WeMeetTheme.extras.room.dangerOnOverlay,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Spacer(Modifier.height(Dimens.SpaceL))
+            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                 // A failed join is often a transient network blip — offer retry
                 // before forcing the user to leave and rejoin from scratch.
                 Button(onClick = onRetry) {
@@ -2806,9 +2817,15 @@ private fun ErrorView(message: String?, onRetry: () -> Unit, onLeave: () -> Unit
                 }
                 Button(
                     onClick = onLeave,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEE4444)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = WeMeetTheme.extras.room.dangerFill,
+                        contentColor = WeMeetTheme.extras.room.onDangerFill,
+                    ),
                 ) {
-                    Text(stringResource(R.string.room_action_hangup), color = Color.White)
+                    Text(
+                        stringResource(R.string.room_action_hangup),
+                        color = WeMeetTheme.extras.room.onDangerFill,
+                    )
                 }
             }
         }

@@ -152,6 +152,7 @@
     <string name="invite_qr_desc">加入会议的二维码</string>
     <string name="invite_copy_link">复制</string>
     <string name="invite_share">分享</string>
+    <string name="invite_share_to_chat">分享到聊天</string>
     <string name="invite_copied">已复制到剪贴板</string>
     <string name="invite_share_chooser_title">分享会议</string>
     <string name="invite_clipboard_format">邀请你加入 We Meet 会议：\n%1$s\n（会议号：%2$s）</string>

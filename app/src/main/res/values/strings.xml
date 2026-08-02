@@ -152,6 +152,7 @@
     <string name="invite_qr_desc">QR code for joining the meeting</string>
     <string name="invite_copy_link">Copy</string>
     <string name="invite_share">Share</string>
+    <string name="invite_share_to_chat">Share to chat</string>
     <string name="invite_copied">Invite copied to clipboard</string>
     <string name="invite_share_chooser_title">Share meeting</string>
     <string name="invite_clipboard_format">Join my meeting on We Meet:\n%1$s\n(Meeting ID: %2$s)</string>

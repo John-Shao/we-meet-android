@@ -52,6 +52,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.data.chat.ChatMessageUi
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -105,7 +106,7 @@ private fun Header() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(40.dp),
+            .height(Dimens.SheetHeaderHeight),
     ) {
         Text(
             text = stringResource(R.string.room_messages_title),
@@ -144,9 +145,9 @@ private fun MessageList(
         modifier = modifier,
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             horizontal = Dimens.ScreenPadding,
-            vertical = 12.dp,
+            vertical = Dimens.SpaceM,
         ),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
     ) {
         items(items = messages, key = { it.id }) { MessageRow(it) }
     }
@@ -157,7 +158,7 @@ private fun MessageRow(message: ChatMessageUi) {
     val maxBubbleWidth = LocalConfiguration.current.screenWidthDp.dp * 0.72f
     Row(verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()) {
         Avatar(name = message.senderName, identity = message.senderIdentity)
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(Dimens.SpaceS))
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -166,27 +167,27 @@ private fun MessageRow(message: ChatMessageUi) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (message.isHost) {
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(Dimens.SpaceXs))
                     HostTag()
                 }
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(Dimens.SpaceS))
                 Text(
                     text = formatTime(message.timestampMs),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 )
             }
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(Dimens.SpaceXs))
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(Dimens.CornerS),
                 modifier = Modifier.widthIn(max = maxBubbleWidth),
             ) {
                 Text(
                     text = message.text,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
                 )
             }
         }
@@ -198,12 +199,10 @@ private fun Avatar(name: String, identity: String) {
     val initials = avatarInitials(name.ifBlank { identity })
     Box(
         modifier = Modifier
-            .size(36.dp)
+            .size(Dimens.AvatarS)
             .clip(CircleShape)
             .background(
-                Brush.linearGradient(
-                    colors = listOf(Color(0xFF4C7CF3), Color(0xFF3FC6B1)),
-                ),
+                Brush.linearGradient(colors = WeMeetTheme.extras.room.avatarGradient),
             ),
         contentAlignment = Alignment.Center,
     ) {
@@ -219,13 +218,13 @@ private fun Avatar(name: String, identity: String) {
 private fun HostTag() {
     Surface(
         color = MaterialTheme.colorScheme.secondary,
-        shape = RoundedCornerShape(3.dp),
+        shape = RoundedCornerShape(Dimens.CornerXs),
     ) {
         Text(
             text = stringResource(R.string.room_message_host_tag),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSecondary,
-            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+            modifier = Modifier.padding(horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXxs),
         )
     }
 }
@@ -251,7 +250,7 @@ private fun InputBar(onSend: (String) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TextField(

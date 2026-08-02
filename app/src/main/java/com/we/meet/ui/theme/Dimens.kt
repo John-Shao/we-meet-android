@@ -15,6 +15,8 @@ object Dimens {
 
     // ---- Spacing (8dp grid; xs/xxs are the sanctioned sub-grid exceptions
     // for tight icon–text gaps) ----
+    /** 显式的「无间距」。动画目标值收起到 0 时用它,别写裸 `0.dp`。 */
+    val SpaceNone = 0.dp
     val SpaceXxs = 2.dp
     val SpaceXs = 4.dp
     val SpaceS = 8.dp
@@ -36,8 +38,83 @@ object Dimens {
     /** Google/Material minimum interactive target for accessibility. */
     val MinTouchTarget = 48.dp
 
+    /** 底部弹层顶部标题栏的高度(消息、AI 等各 sheet 共用)。 */
+    val SheetHeaderHeight = 40.dp
+
+    /**
+     * 密集列表行里被压小的图标按钮。
+     *
+     * ⚠️ 32dp **低于** [MinTouchTarget],不满足 WCAG 2.2 AA。收在这里是为了
+     * 让这笔欠账只有一处、可一次改掉,不是为它背书。修的方向是热区回到 48dp
+     * 而视觉图标保持小(`IconButton(Modifier.size(MinTouchTarget))` + 小 Icon),
+     * 会让参会人列表行变高,属于布局改动,应单独评估。
+     *
+     * 新代码不要用它。
+     */
+    val IconButtonCompact = 32.dp
+
     // ---- Icons ----
+    /** 徽标/角标内的小图标(画面块上的麦克风、举手)。 */
+    val IconTiny = 16.dp
     val IconSmall = 18.dp
     val IconMedium = 24.dp
     val IconLarge = 28.dp
+
+    // ---- 圆角 ----
+    /** 极小的标签底(如消息里的「主持人」角标)。 */
+    val CornerXs = 4.dp
+    /** 小卡片、徽标底、聊天气泡。 */
+    val CornerS = 8.dp
+    /** 卡片、面板、画面块。会中界面的默认圆角。 */
+    val CornerM = 12.dp
+    /** 大面板、底部弹层。 */
+    val CornerL = 16.dp
+
+    // ---- 描边 ----
+    /** 需要强调的描边(如「正在说话」的画面块外框)。普通分隔线用 1dp。 */
+    val BorderEmphasis = 2.dp
+
+    // ---- 头像 ----
+    val AvatarS = 36.dp
+
+    /**
+     * 会中界面的布局常量。
+     *
+     * 这些值**不是** 8dp 栅格的倍数,也不该是 —— 它们是被具体内容和手感定死
+     * 的尺寸(画中画的 3:4、工具栏高度、二维码边长)。收进来是为了「改一处
+     * 生效」,不是为了对齐栅格。
+     */
+    object Room {
+        /** 顶部/底部工具栏的图标按钮边长。 */
+        val ToolbarIconButton = 40.dp
+        /** 顶栏高度,参与工具栏收起动画的位移计算。 */
+        val TopToolbarHeight = 56.dp
+        /** 底栏高度,同上。比顶栏高 2dp 是为了容纳按钮下方的文字标签。 */
+        val BottomToolbarHeight = 58.dp
+        /** 无摄像头时圆形头像的边长范围(按画面块短边的 30% 取,再夹到这个区间)。 */
+        val AvatarMin = 48.dp
+        val AvatarMax = 120.dp
+        /**
+         * 焦点模式下缩略图轮播里的小画面块,3:4 竖版。
+         *
+         * 竖屏时轮播在底部(高 [CarouselTileHeight]、每块宽 [CarouselTileWidth]),
+         * 横屏时在右侧(宽高对调),所以两个值两种朝向共用。
+         */
+        val CarouselTileWidth = 120.dp
+        val CarouselTileHeight = 160.dp
+        /** 画廊分页的页码圆点,当前页略大。 */
+        val PageDotActive = 8.dp
+        val PageDotInactive = 6.dp
+        /** 字幕条距底的避让量,让它落在底部工具栏之上。 */
+        val SubtitleBottomInset = 96.dp
+        /**
+         * 顶栏居中标题两侧的留白。
+         *
+         * 取这么大是为了给两侧的图标按钮让位 —— 标题过长时先被这个留白挤到
+         * 省略号,而不是压到按钮底下。
+         */
+        val TitleSideInset = 110.dp
+        /** 邀请弹层里的二维码边长。 */
+        val QrSize = 200.dp
+    }
 }

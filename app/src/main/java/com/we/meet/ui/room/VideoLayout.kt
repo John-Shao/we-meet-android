@@ -24,7 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.dp
+import com.we.meet.ui.theme.Dimens
 import io.livekit.android.room.Room
 
 /** Pick bucket-based per-page tile count + (cols, rows) based on orientation. */
@@ -79,7 +79,7 @@ fun GalleryLayout(
         LocalConfiguration.current.screenHeightDp
     val count = participants.size
     val layout = galleryPageLayout(isPortrait, count)
-    val gap = 4.dp
+    val gap = Dimens.SpaceXs
 
     // Single-page bespoke layouts for small counts.
     if (isPortrait && count == 3) {
@@ -163,7 +163,7 @@ fun GalleryLayout(
                 currentPage = pagerState.currentPage,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 8.dp),
+                    .padding(bottom = Dimens.SpaceS),
             )
         }
     }
@@ -232,16 +232,16 @@ private fun PageIndicator(
 ) {
     Row(
         modifier = modifier
-            .clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(Dimens.CornerS))
             .background(Color.Black.copy(alpha = 0.35f))
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+            .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         for (i in 0 until pageCount) {
             Box(
                 modifier = Modifier
-                    .size(if (i == currentPage) 8.dp else 6.dp)
+                    .size(if (i == currentPage) Dimens.Room.PageDotActive else Dimens.Room.PageDotInactive)
                     .clip(CircleShape)
                     .background(
                         if (i == currentPage) Color.White
@@ -291,9 +291,9 @@ fun FocusLayout(
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(160.dp)
-                        .padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        .height(Dimens.Room.CarouselTileHeight)
+                        .padding(top = Dimens.SpaceXs),
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
                 ) {
                     items(others, key = { it.identity }) { p ->
                         ParticipantTile(
@@ -301,7 +301,7 @@ fun FocusLayout(
                             participant = p,
                             modifier = Modifier
                                 .fillMaxHeight()
-                                .width(120.dp),
+                                .width(Dimens.Room.CarouselTileWidth),
                             showPinButton = showPinButtons,
                             isPinned = false,
                             onPinClick = { onPin(p.identity) },
@@ -328,9 +328,9 @@ fun FocusLayout(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .width(120.dp)
-                        .padding(start = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                        .width(Dimens.Room.CarouselTileWidth)
+                        .padding(start = Dimens.SpaceXs),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
                 ) {
                     items(others, key = { it.identity }) { p ->
                         ParticipantTile(
@@ -338,7 +338,7 @@ fun FocusLayout(
                             participant = p,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(160.dp),
+                                .height(Dimens.Room.CarouselTileHeight),
                             showPinButton = showPinButtons,
                             isPinned = false,
                             onPinClick = { onPin(p.identity) },

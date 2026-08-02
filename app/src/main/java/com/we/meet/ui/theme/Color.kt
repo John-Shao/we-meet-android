@@ -108,3 +108,22 @@ val RoomSpeakingRing = Color(0xFF00C853)
 val RoomOverlayScrim = Color(0xCC000000)
 val RoomSubtitleText = Color(0xFFB3D6FF)
 val RoomAvatarFallback = Color(0xFF3366FF)
+/** 深色浮层上的危险前景色(挂断图标、静音标记)。浅色主题的 danger 太深,压不亮。 */
+val RoomDangerOnOverlay = Color(0xFFFF6B6B)
+/** 深色浮层上的强调文字(工具条上的「已开启」一类状态词)。 */
+val RoomOverlayAccentText = Color(0xFF93C5FD)
+/**
+ * 实底横幅/按钮的底色与其上的前景色。
+ *
+ * 两组都按 WCAG AA 校过 —— 原先是白字压 #FFB300(约 2.1:1)和白字压 #FF4444
+ * (约 3.4:1),都不过 4.5:1 的正文门槛:
+ * - 琥珀保留色相,前景换成深棕(约 7.9:1),视觉识别度不变;
+ * - 红压深到 Red 700,白字变成约 4.6:1。
+ */
+val RoomWarningFill = Color(0xFFFFB300)
+val RoomOnWarningFill = Color(0xFF3D2A00)
+val RoomDangerFill = Color(0xFFD32F2F)
+val RoomOnDangerFill = Color(0xFFFFFFFF)
+// 会中消息里首字母头像的渐变底(蓝→青)。纯装饰,不承载语义。
+val RoomAvatarGradientStart = Color(0xFF4C7CF3)
+val RoomAvatarGradientEnd = Color(0xFF3FC6B1)

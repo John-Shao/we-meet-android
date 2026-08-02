@@ -84,16 +84,39 @@ data class StatusColors(
  * 会中界面专用色。深浅色两套取值相同 —— 会中永远深色,见 Color.kt 的说明。
  */
 data class RoomColors(
-    /** 无视频流时的画面块底色。 */
+    /**
+     * 画面块底色(有无视频流都用它)。
+     *
+     * 固定为腾讯会议那种深灰,而**不是** `colorScheme.surfaceVariant` ——
+     * 后者在浅色主题下接近白色,压在视频通话背后很怪,也会让无摄像头时
+     * 那个白色 Person 图标糊成一片。
+     */
     val tileBackground: Color,
-    /** 正在说话的画面块描边。 */
+    /** 正在说话的画面块描边(绿)。 */
     val speakingRing: Color,
     /** 压在视频上的控件底:半透明黑,保证白字可读。 */
     val overlayScrim: Color,
     /** 实时字幕文字色。 */
     val subtitleText: Color,
-    /** 无头像时的首字母底色。 */
+    /** 画面块上无摄像头时的圆形头像底色。 */
     val avatarFallback: Color,
+    /** 会中消息里首字母头像的渐变底(蓝→青),纯装饰。 */
+    val avatarGradient: List<Color>,
+    /**
+     * 深色浮层上的危险前景色。
+     *
+     * 和 [StatusColors.danger] 的区别在于「底是什么」:会中工具条永远是深色的,
+     * 而浅色主题的 danger 是深红,压在深底上根本看不清。凡是画在视频浮层上的
+     * 危险色用这个,画在 sheet/dialog 等跟随主题的面上用 [StatusColors.danger]。
+     */
+    val dangerOnOverlay: Color,
+    /** 深色浮层上的强调文字。 */
+    val overlayAccentText: Color,
+    /** 实底横幅/按钮:等候区(琥珀)与录制中/挂断(红),各配前景色。 */
+    val warningFill: Color,
+    val onWarningFill: Color,
+    val dangerFill: Color,
+    val onDangerFill: Color,
 )
 
 private val SharedRoomColors = RoomColors(
@@ -102,6 +125,13 @@ private val SharedRoomColors = RoomColors(
     overlayScrim = RoomOverlayScrim,
     subtitleText = RoomSubtitleText,
     avatarFallback = RoomAvatarFallback,
+    avatarGradient = listOf(RoomAvatarGradientStart, RoomAvatarGradientEnd),
+    dangerOnOverlay = RoomDangerOnOverlay,
+    overlayAccentText = RoomOverlayAccentText,
+    warningFill = RoomWarningFill,
+    onWarningFill = RoomOnWarningFill,
+    dangerFill = RoomDangerFill,
+    onDangerFill = RoomOnDangerFill,
 )
 
 /**

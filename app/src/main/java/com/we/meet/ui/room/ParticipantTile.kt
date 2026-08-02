@@ -31,23 +31,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.zIndex
-import androidx.compose.ui.unit.dp
 import com.we.meet.R
+import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 import io.livekit.android.compose.ui.ScaleType
 import io.livekit.android.compose.ui.VideoTrackView
 import io.livekit.android.room.Room
-
-/** Active-speaker border color (green). */
-private val SpeakingColor = Color(0xFF00C853)
-
-/**
- * Tile background for both the video-on and camera-off states. Fixed to
- * the Tencent-Meeting-style dark gray rather than theming via
- * [MaterialTheme.colorScheme.surfaceVariant] — the theme-derived value is
- * near-white in light mode, which looks wrong behind a video call (and
- * makes the avatar placeholder's white Person icon glare out).
- */
-private val TileBackground = Color(0xFF2C3033)
 
 /**
  * Renders one participant's video tile.  When the participant has no
@@ -76,15 +65,19 @@ fun ParticipantTile(
      * passing this for any other tile is a no-op.
      */
     onStopScreenShare: (() -> Unit)? = null,
-    shape: Shape = RoundedCornerShape(12.dp),
+    shape: Shape = RoundedCornerShape(Dimens.CornerM),
 ) {
+    val roomColors = WeMeetTheme.extras.room
     Box(
         modifier = modifier
             .clip(shape)
-            .background(TileBackground)
+            .background(roomColors.tileBackground)
             .then(
-                if (participant.isSpeaking) Modifier.border(2.dp, SpeakingColor, shape)
-                else Modifier
+                if (participant.isSpeaking) {
+                    Modifier.border(Dimens.BorderEmphasis, roomColors.speakingRing, shape)
+                } else {
+                    Modifier
+                }
             ),
     ) {
         val track = participant.videoTrack
@@ -115,7 +108,7 @@ fun ParticipantTile(
             // the same wherever the user looks for it.
             val stopCallback = onStopScreenShare
             if (stopCallback != null) {
-                val stopTint = Color(0xFFFF4444)
+                val stopTint = WeMeetTheme.extras.status.danger
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
@@ -142,12 +135,12 @@ fun ParticipantTile(
                 contentAlignment = Alignment.Center,
             ) {
                 val side = (minOf(maxWidth, maxHeight) * 0.30f)
-                    .coerceIn(48.dp, 120.dp)
+                    .coerceIn(Dimens.Room.AvatarMin, Dimens.Room.AvatarMax)
                 Box(
                     modifier = Modifier
                         .size(side)
                         .clip(CircleShape)
-                        .background(Color(0xFF3366FF)),
+                        .background(roomColors.avatarFallback),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
@@ -170,18 +163,18 @@ fun ParticipantTile(
         if (!suppressOverlay) Row(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(8.dp)
-                .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(Dimens.SpaceS)
+                .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(Dimens.CornerS))
+                .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
         ) {
             if (participant.isScreenShare) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ScreenShare,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(Dimens.IconTiny),
                 )
             } else {
                 Icon(
@@ -189,8 +182,8 @@ fun ParticipantTile(
                     contentDescription = stringResource(
                         if (participant.isMicEnabled) R.string.cd_mic_on else R.string.cd_mic_off,
                     ),
-                    tint = if (participant.isMicEnabled) Color.White else Color(0xFFFF6B6B),
-                    modifier = Modifier.size(16.dp),
+                    tint = if (participant.isMicEnabled) Color.White else WeMeetTheme.extras.status.danger,
+                    modifier = Modifier.size(Dimens.IconTiny),
                 )
             }
             Text(
@@ -210,17 +203,17 @@ fun ParticipantTile(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .zIndex(1f)
-                    .padding(6.dp)
-                    .size(28.dp)
+                    .padding(Dimens.SpaceXs)
+                    .size(Dimens.IconLarge)
                     .clip(CircleShape)
-                    .background(Color(0xFFFFB300)),
+                    .background(WeMeetTheme.extras.status.warning),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Default.PanTool,
                     contentDescription = stringResource(R.string.room_tile_hand_raised),
                     tint = Color.White,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(Dimens.IconTiny),
                 )
             }
         }
@@ -235,11 +228,11 @@ fun ParticipantTile(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .zIndex(1f)
-                    .padding(4.dp)
-                    .size(48.dp)
+                    .padding(Dimens.SpaceXs)
+                    .size(Dimens.MinTouchTarget)
                     .clip(CircleShape)
                     .clickable { pinCallback() }
-                    .padding(6.dp)
+                    .padding(Dimens.SpaceXs)
                     .clip(CircleShape)
                     .background(Color.Black.copy(alpha = 0.45f)),
                 contentAlignment = Alignment.Center,
@@ -250,8 +243,8 @@ fun ParticipantTile(
                         if (isPinned) R.string.room_unpin_participant
                         else R.string.room_pin_participant
                     ),
-                    tint = if (isPinned) SpeakingColor else Color.White,
-                    modifier = Modifier.size(18.dp),
+                    tint = if (isPinned) roomColors.speakingRing else Color.White,
+                    modifier = Modifier.size(Dimens.IconSmall),
                 )
             }
         }

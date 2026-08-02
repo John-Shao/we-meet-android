@@ -39,12 +39,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
 import com.journeyapps.barcodescanner.BarcodeEncoder
 import com.we.meet.BuildConfig
 import com.we.meet.R
+import com.we.meet.ui.theme.Dimens
 
 private const val QR_SIZE_PX = 600
 
@@ -126,14 +126,14 @@ fun InviteSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = Dimens.SpaceXl),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = stringResource(R.string.invite_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 16.dp),
+                modifier = Modifier.padding(bottom = Dimens.SpaceL),
             )
 
             // QR
@@ -142,23 +142,23 @@ fun InviteSheet(
                     bitmap = qrBitmap.asImageBitmap(),
                     contentDescription = stringResource(R.string.invite_qr_desc),
                     modifier = Modifier
-                        .size(200.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .size(Dimens.Room.QrSize)
+                        .clip(RoundedCornerShape(Dimens.CornerS))
                         .background(Color.White)
-                        .padding(8.dp),
+                        .padding(Dimens.SpaceS),
                 )
             } else {
                 // Defensive fallback — MultiFormatWriter shouldn't fail for an
                 // 8-digit URL, but a blank box beats a crash on the share path.
                 Box(
                     modifier = Modifier
-                        .size(200.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .size(Dimens.Room.QrSize)
+                        .clip(RoundedCornerShape(Dimens.CornerS))
                         .background(Color.LightGray),
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(Dimens.SpaceL))
 
             // 会议号
             Text(
@@ -169,7 +169,7 @@ fun InviteSheet(
 
             // Meeting name (smaller, secondary)
             if (roomName.isNotBlank()) {
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(Dimens.SpaceXs))
                 Text(
                     text = roomName,
                     style = MaterialTheme.typography.bodyMedium,
@@ -180,7 +180,7 @@ fun InviteSheet(
 
             // Scheduled-start (only when host picked a time)
             if (scheduledDisplay != null) {
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(Dimens.SpaceXs))
                 Text(
                     text = stringResource(R.string.invite_scheduled_label, scheduledDisplay),
                     style = MaterialTheme.typography.bodyMedium,
@@ -190,7 +190,7 @@ fun InviteSheet(
             }
 
             // URL (small, monospace-ish — Material 3 doesn't expose a code style)
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Dimens.SpaceS))
             Text(
                 text = joinUrl,
                 style = MaterialTheme.typography.bodySmall,
@@ -198,7 +198,7 @@ fun InviteSheet(
                 textAlign = TextAlign.Center,
             )
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(Dimens.SpaceXl))
             HorizontalDivider()
 
             // "Create later" entry-point only: primary CTA above the
@@ -210,7 +210,7 @@ fun InviteSheet(
                     onClick = onEnterRoom,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 12.dp),
+                        .padding(top = Dimens.SpaceM),
                 ) {
                     Text(stringResource(R.string.invite_enter_room))
                 }
@@ -219,7 +219,7 @@ fun InviteSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = Dimens.SpaceS),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
                 TextButton(
@@ -235,9 +235,9 @@ fun InviteSheet(
                     Icon(
                         imageVector = Icons.Default.ContentCopy,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(Dimens.IconSmall),
                     )
-                    Spacer(Modifier.size(6.dp))
+                    Spacer(Modifier.size(Dimens.SpaceXs))
                     Text(stringResource(R.string.invite_copy_link))
                 }
                 TextButton(
@@ -246,17 +246,19 @@ fun InviteSheet(
                     Icon(
                         imageVector = Icons.Default.Share,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(Dimens.IconSmall),
                     )
-                    Spacer(Modifier.size(6.dp))
+                    Spacer(Modifier.size(Dimens.SpaceXs))
                     Text(
-                        if (onShareToChat != null) "分享到聊天"
-                        else stringResource(R.string.invite_share),
+                        stringResource(
+                            if (onShareToChat != null) R.string.invite_share_to_chat
+                            else R.string.invite_share,
+                        ),
                     )
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(Dimens.SpaceL))
         }
     }
 }

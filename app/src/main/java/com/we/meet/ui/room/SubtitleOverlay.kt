@@ -16,9 +16,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.we.meet.R
+import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 
 /**
  * Bottom-anchored realtime subtitle strip — shows up to [MAX_VISIBLE_ROWS]
@@ -47,25 +47,24 @@ fun SubtitleOverlay(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xCC000000))
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+            .padding(horizontal = Dimens.ScreenPadding)
+            .clip(RoundedCornerShape(Dimens.CornerM))
+            .background(WeMeetTheme.extras.room.overlayScrim)
+            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
     ) {
         visible.forEach { row ->
             Row(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = stringResource(R.string.subtitle_speaker_prefix, row.speaker.ifBlank { "—" }),
-                    color = Color(0xFFB3D6FF),
-                    fontSize = 13.sp,
+                    color = WeMeetTheme.extras.room.subtitleText,
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     text = row.text,
                     color = Color.White,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontSize = 14.sp,
                 )
             }
         }

@@ -43,7 +43,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 import kotlinx.coroutines.launch
@@ -98,7 +97,7 @@ fun RoomAiSheet(
                 .padding(horizontal = Dimens.ScreenPadding),
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = Dimens.SpaceS),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -119,15 +118,15 @@ fun RoomAiSheet(
                     .fillMaxWidth()
                     .weight(1f)
                     .verticalScroll(scrollState)
-                    .padding(vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                    .padding(vertical = Dimens.SpaceM),
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
             ) {
                 if (messages.isEmpty()) {
                     Text(
                         text = stringResource(R.string.room_ai_empty_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceXl),
                         textAlign = TextAlign.Center,
                     )
                 } else {
@@ -149,7 +148,7 @@ fun RoomAiSheet(
 
             HorizontalDivider()
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 OutlinedTextField(
@@ -164,7 +163,7 @@ fun RoomAiSheet(
                         imeAction = ImeAction.Send,
                     ),
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(Dimens.SpaceS))
                 IconButton(
                     onClick = {
                         val q = draft.trim()
@@ -205,9 +204,9 @@ private fun AiBubble(msg: RoomAiMessage) {
     ) {
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(Dimens.CornerS))
                 .background(bg)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
         ) {
             val displayed = msg.text.ifBlank {
                 if (!msg.done && !isUser) "…" else ""
@@ -223,7 +222,7 @@ private fun AiBubble(msg: RoomAiMessage) {
                         text = msg.error,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(top = 4.dp),
+                        modifier = Modifier.padding(top = Dimens.SpaceXs),
                     )
                 }
             }

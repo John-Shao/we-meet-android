@@ -3,7 +3,6 @@
 cjk-literal|app/src/main/java/com/we/meet/data/repository/AuthRepository.kt|1
 cjk-literal|app/src/main/java/com/we/meet/ui/home/ScheduledDetailScreen.kt|8
 cjk-literal|app/src/main/java/com/we/meet/ui/preview/PreviewViewModel.kt|1
-cjk-literal|app/src/main/java/com/we/meet/ui/room/InviteSheet.kt|1
 cjk-literal|app/src/main/java/com/we/meet/ui/settings/SettingsScreen.kt|1
 cjk-literal|feature-assistant/src/main/java/com/we/meet/feature/assistant/aicall/ui/AiSettingsSheet.kt|7
 cjk-literal|feature-assistant/src/main/java/com/we/meet/feature/assistant/aicall/ui/AssistantCallScreen.kt|18
@@ -17,10 +16,6 @@ raw-color|app/src/main/java/com/we/meet/ui/calendar/FreeBusyCompareScreen.kt|1
 raw-color|app/src/main/java/com/we/meet/ui/calendar/reminder/ReminderEntryRow.kt|1
 raw-color|app/src/main/java/com/we/meet/ui/calendar/reminder/ReminderScreen.kt|1
 raw-color|app/src/main/java/com/we/meet/ui/calendar/views/TimeGrid.kt|2
-raw-color|app/src/main/java/com/we/meet/ui/room/MessagesPanel.kt|2
-raw-color|app/src/main/java/com/we/meet/ui/room/ParticipantTile.kt|6
-raw-color|app/src/main/java/com/we/meet/ui/room/RoomScreen.kt|21
-raw-color|app/src/main/java/com/we/meet/ui/room/SubtitleOverlay.kt|2
 raw-color|core-directory/src/main/java/com/we/meet/core/directory/ui/MemberAvatar.kt|6
 raw-color|feature-assistant/src/main/java/com/we/meet/feature/assistant/aicall/ui/components/AnimatedSphere.kt|7
 raw-color|feature-assistant/src/main/java/com/we/meet/feature/assistant/aicall/ui/components/BottomControls.kt|7
@@ -64,13 +59,6 @@ raw-dimen|app/src/main/java/com/we/meet/ui/preview/PreviewScreen.kt|37
 raw-dimen|app/src/main/java/com/we/meet/ui/profile/AvatarCropDialog.kt|1
 raw-dimen|app/src/main/java/com/we/meet/ui/profile/ProfileScreen.kt|23
 raw-dimen|app/src/main/java/com/we/meet/ui/qrscan/QrScanScreen.kt|8
-raw-dimen|app/src/main/java/com/we/meet/ui/room/InviteSheet.kt|19
-raw-dimen|app/src/main/java/com/we/meet/ui/room/MessagesPanel.kt|16
-raw-dimen|app/src/main/java/com/we/meet/ui/room/ParticipantTile.kt|18
-raw-dimen|app/src/main/java/com/we/meet/ui/room/RoomAiSheet.kt|10
-raw-dimen|app/src/main/java/com/we/meet/ui/room/RoomScreen.kt|112
-raw-dimen|app/src/main/java/com/we/meet/ui/room/SubtitleOverlay.kt|5
-raw-dimen|app/src/main/java/com/we/meet/ui/room/VideoLayout.kt|16
 raw-dimen|app/src/main/java/com/we/meet/ui/settings/AccountSecurityScreen.kt|12
 raw-dimen|app/src/main/java/com/we/meet/ui/settings/MeetingSettingsScreen.kt|8
 raw-dimen|app/src/main/java/com/we/meet/ui/settings/NotificationSettingsScreen.kt|12
@@ -111,7 +99,6 @@ raw-font-size|app/src/main/java/com/we/meet/ui/calendar/reminder/ReminderScreen.
 raw-font-size|app/src/main/java/com/we/meet/ui/calendar/views/TimeGrid.kt|10
 raw-font-size|app/src/main/java/com/we/meet/ui/calendar/views/WeekTimelineView.kt|2
 raw-font-size|app/src/main/java/com/we/meet/ui/main/MainTabScreen.kt|2
-raw-font-size|app/src/main/java/com/we/meet/ui/room/SubtitleOverlay.kt|2
 raw-font-size|feature-assistant/src/main/java/com/we/meet/feature/assistant/aicall/ui/AiSettingsSheet.kt|1
 raw-font-size|feature-assistant/src/main/java/com/we/meet/feature/assistant/aicall/ui/AssistantCallScreen.kt|3
 raw-font-size|feature-im/src/main/java/com/we/meet/feature/im/ui/chat/MessageActionSheet.kt|1
