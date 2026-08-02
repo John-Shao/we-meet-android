@@ -48,7 +48,10 @@ object WeMeetTextStyles {
      */
     val LabelTiny: TextStyle = TextStyle(
         fontSize = 10.sp,
-        lineHeight = 14.sp,
+        // 行高取 12 而不是「正常」的 14:这一档的使用方全是密集场景(日历网格
+        // 里的日程块、时刻刻度、画面块角标),多 2sp 行距就可能让两行标题在
+        // 15 分钟的短块里被裁掉。单行场景取紧一点也无害。
+        lineHeight = 12.sp,
         fontWeight = FontWeight.Medium,
         letterSpacing = 0.5.sp,
     )
