@@ -428,6 +428,7 @@
     <string name="event_delete_failed">Failed to delete</string>
     <string name="common_cancel">Cancel</string>
     <string name="common_retry">Retry</string>
+    <string name="common_load_error">Couldn\'t load. Check your connection and try again.</string>
     <!-- Accessibility (TalkBack) content descriptions -->
     <string name="cd_back">Back</string>
     <string name="cd_close">Close</string>

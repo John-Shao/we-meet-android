@@ -46,6 +46,62 @@ data class WeMeetExtras(
     val surfaceBand: Color,
     /** 日历表态四态四色(见 [RsvpColors])。 */
     val rsvp: RsvpColors,
+    /** 危险/警告/成功/激活四档状态色(见 [StatusColors])。 */
+    val status: StatusColors,
+    /** 会中界面专用色(见 [RoomColors])。 */
+    val room: RoomColors,
+)
+
+/**
+ * 状态色四档,每档「主色 + 浅底 + 浅底上文字」。
+ *
+ * 用哪档:
+ * - [danger] 破坏性、不可逆:挂断、结束会议、移出成员、删除
+ * - [warning] 需要注意但不阻断:举手、录制中、网络差
+ * - [success] 正向确认:正在说话、已连接、已保存
+ * - [accentActive] 工具处于开启态:字幕开、共享中(非品牌主色,专表「激活」)
+ *
+ * 别拿 [danger] 当「红色」用 —— 它表示的是「这一步会造成损失」,不是配色。
+ */
+data class StatusColors(
+    val danger: Color,
+    /** 压在 [danger] 实底上的文字/图标色。已按 WCAG AA 校过对比度。 */
+    val onDanger: Color,
+    val dangerContainer: Color,
+    val onDangerContainer: Color,
+    val warning: Color,
+    val warningContainer: Color,
+    val onWarningContainer: Color,
+    val success: Color,
+    val successContainer: Color,
+    val onSuccessContainer: Color,
+    val accentActive: Color,
+    val accentActiveContainer: Color,
+    val onAccentActiveContainer: Color,
+)
+
+/**
+ * 会中界面专用色。深浅色两套取值相同 —— 会中永远深色,见 Color.kt 的说明。
+ */
+data class RoomColors(
+    /** 无视频流时的画面块底色。 */
+    val tileBackground: Color,
+    /** 正在说话的画面块描边。 */
+    val speakingRing: Color,
+    /** 压在视频上的控件底:半透明黑,保证白字可读。 */
+    val overlayScrim: Color,
+    /** 实时字幕文字色。 */
+    val subtitleText: Color,
+    /** 无头像时的首字母底色。 */
+    val avatarFallback: Color,
+)
+
+private val SharedRoomColors = RoomColors(
+    tileBackground = RoomTileBackground,
+    speakingRing = RoomSpeakingRing,
+    overlayScrim = RoomOverlayScrim,
+    subtitleText = RoomSubtitleText,
+    avatarFallback = RoomAvatarFallback,
 )
 
 /**
@@ -75,6 +131,22 @@ private val LightExtras = WeMeetExtras(
         declined = LightRsvpDeclined,
         declinedText = LightRsvpDeclinedText,
     ),
+    status = StatusColors(
+        danger = LightDanger,
+        onDanger = LightOnDanger,
+        dangerContainer = LightDangerContainer,
+        onDangerContainer = LightOnDangerContainer,
+        warning = LightWarning,
+        warningContainer = LightWarningContainer,
+        onWarningContainer = LightOnWarningContainer,
+        success = LightSuccess,
+        successContainer = LightSuccessContainer,
+        onSuccessContainer = LightOnSuccessContainer,
+        accentActive = LightAccentActive,
+        accentActiveContainer = LightAccentActiveContainer,
+        onAccentActiveContainer = LightOnAccentActiveContainer,
+    ),
+    room = SharedRoomColors,
 )
 
 private val DarkExtras = WeMeetExtras(
@@ -89,6 +161,22 @@ private val DarkExtras = WeMeetExtras(
         declined = DarkRsvpDeclined,
         declinedText = DarkRsvpDeclinedText,
     ),
+    status = StatusColors(
+        danger = DarkDanger,
+        onDanger = DarkOnDanger,
+        dangerContainer = DarkDangerContainer,
+        onDangerContainer = DarkOnDangerContainer,
+        warning = DarkWarning,
+        warningContainer = DarkWarningContainer,
+        onWarningContainer = DarkOnWarningContainer,
+        success = DarkSuccess,
+        successContainer = DarkSuccessContainer,
+        onSuccessContainer = DarkOnSuccessContainer,
+        accentActive = DarkAccentActive,
+        accentActiveContainer = DarkAccentActiveContainer,
+        onAccentActiveContainer = DarkOnAccentActiveContainer,
+    ),
+    room = SharedRoomColors,
 )
 
 private val LocalWeMeetExtras = staticCompositionLocalOf { LightExtras }
