@@ -24,14 +24,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.we.meet.R
 import com.we.meet.ui.calendar.EventUi
+import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 import java.time.ZonedDateTime
 
-/** 飞书同款橙(日程提醒专属,不随主题)。 */
-private val ReminderOrange = Color(0xFFFF8800)
+/** 副行缩进:行内边距 12 + 图标 44 + 图标与文字间距 12,让副行与标题左缘对齐。 */
+private val ReminderTextIndent = Dimens.SpaceM + Dimens.ListLeadingIcon + Dimens.SpaceM
 
 /**
  * P8 会话列表「日程提醒」入口行(由 app 层构造,经 listHeader 槽位注入
@@ -45,19 +45,20 @@ fun ReminderEntryRow(
     onClick: () -> Unit,
 ) {
     val badge = reminderBadge(nearest, now)
+    val reminderColor = WeMeetTheme.extras.calendar.reminder
     Column {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
         ) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(44.dp)
-                    .background(ReminderOrange, RoundedCornerShape(10.dp)),
+                    .size(Dimens.ListLeadingIcon)
+                    .background(reminderColor, RoundedCornerShape(Dimens.CornerS)),
             ) {
                 Icon(
                     Icons.Filled.EditCalendar,
@@ -65,7 +66,7 @@ fun ReminderEntryRow(
                     tint = Color.White,
                 )
             }
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(Dimens.SpaceM))
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -79,7 +80,7 @@ fun ReminderEntryRow(
                         modifier = Modifier.weight(1f, fill = false),
                     )
                     if (badge != null) {
-                        Spacer(Modifier.width(6.dp))
+                        Spacer(Modifier.width(Dimens.SpaceXs))
                         Text(
                             text = when (badge) {
                                 is ReminderBadge.Now ->
@@ -88,14 +89,14 @@ fun ReminderEntryRow(
                                     R.string.reminder_in_minutes, badge.minutes,
                                 )
                             },
-                            fontSize = 11.sp,
-                            color = ReminderOrange,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = reminderColor,
                             modifier = Modifier
                                 .background(
-                                    ReminderOrange.copy(alpha = 0.14f),
-                                    RoundedCornerShape(4.dp),
+                                    reminderColor.copy(alpha = 0.14f),
+                                    RoundedCornerShape(Dimens.CornerXs),
                                 )
-                                .padding(horizontal = 5.dp, vertical = 1.dp),
+                                .padding(horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXxs),
                         )
                     }
                 }
@@ -111,7 +112,7 @@ fun ReminderEntryRow(
         }
         HorizontalDivider(
             color = MaterialTheme.colorScheme.outlineVariant,
-            modifier = Modifier.padding(start = 68.dp),
+            modifier = Modifier.padding(start = ReminderTextIndent),
         )
     }
 }

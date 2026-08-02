@@ -16,7 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,23 +35,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.we.meet.R
+import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.WeMeetApp
 import com.we.meet.ui.calendar.EventUi
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.delay
-
-private val ReminderOrange = Color(0xFFFF8800)
 
 /**
  * P8 日程提醒页(对标飞书):TopAppBar「日程提醒」+ 右上设置齿轮(点入日历
@@ -97,21 +94,15 @@ fun ReminderScreen(
     }
 
     val nearest = window?.nearest(now)
+    val reminderColor = WeMeetTheme.extras.calendar.reminder
     val monthDayPattern = stringResource(R.string.fmt_month_day)
     val dayFmt = remember(monthDayPattern) { DateTimeFormatter.ofPattern(monthDayPattern) }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.reminder_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back),
-                        )
-                    }
-                },
+            WeMeetTopBar(
+                title = stringResource(R.string.reminder_title),
+                onBack = onBack,
                 actions = {
                     // 对标飞书:右上角设置齿轮,点入日历设置页(含「在消息列表
                     // 提醒日程」开关),而非把开关直接摆在标题栏。
@@ -141,7 +132,7 @@ fun ReminderScreen(
                         )
                         Button(
                             onClick = { loadFailed = false; refreshKey += 1 },
-                            modifier = Modifier.padding(top = 8.dp),
+                            modifier = Modifier.padding(top = Dimens.SpaceS),
                         ) {
                             Text(stringResource(R.string.common_retry))
                         }
@@ -158,18 +149,18 @@ fun ReminderScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
         ) {
             if (nearest != null) {
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    tonalElevation = 1.dp,
+                    shape = RoundedCornerShape(Dimens.CornerM),
+                    tonalElevation = Dimens.ElevationSubtle,
                     border = androidx.compose.foundation.BorderStroke(
-                        1.dp, MaterialTheme.colorScheme.outlineVariant,
+                        Dimens.BorderThin, MaterialTheme.colorScheme.outlineVariant,
                     ),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
+                    Column(modifier = Modifier.padding(Dimens.SpaceM)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = nearest.title,
@@ -181,7 +172,7 @@ fun ReminderScreen(
                             )
                             val badge = reminderBadge(nearest, now)
                             if (badge != null) {
-                                Spacer(Modifier.width(8.dp))
+                                Spacer(Modifier.width(Dimens.SpaceS))
                                 Text(
                                     text = when (badge) {
                                         is ReminderBadge.Now ->
@@ -191,14 +182,14 @@ fun ReminderScreen(
                                             badge.minutes,
                                         )
                                     },
-                                    fontSize = 11.sp,
-                                    color = ReminderOrange,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = reminderColor,
                                     modifier = Modifier
                                         .background(
-                                            ReminderOrange.copy(alpha = 0.14f),
-                                            RoundedCornerShape(4.dp),
+                                            reminderColor.copy(alpha = 0.14f),
+                                            RoundedCornerShape(Dimens.CornerXs),
                                         )
-                                        .padding(horizontal = 5.dp, vertical = 1.dp),
+                                        .padding(horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXxs),
                                 )
                             }
                         }
@@ -208,24 +199,24 @@ fun ReminderScreen(
                                     ?: stringResource(R.string.calendar_all_day)),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp),
+                            modifier = Modifier.padding(top = Dimens.SpaceXs),
                         )
                         if (nearest.roomSlug != null) {
-                            Spacer(Modifier.height(10.dp))
+                            Spacer(Modifier.height(Dimens.SpaceS))
                             Button(onClick = { onJoinSlug(nearest.roomSlug!!) }) {
                                 Text(stringResource(R.string.reminder_join))
                             }
                         }
                     }
                 }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Dimens.SpaceL))
             }
 
             if (w.today.isEmpty() && w.tomorrow.isEmpty()) {
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 40.dp),
+                        .padding(vertical = Dimens.SpaceXxl),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -243,14 +234,14 @@ fun ReminderScreen(
                 )
             }
             if (w.tomorrow.isNotEmpty()) {
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(Dimens.SpaceM))
                 ReminderSection(
                     label = stringResource(R.string.reminder_tomorrow),
                     events = w.tomorrow,
                     onEventClick = onEventClick,
                 )
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(Dimens.SpaceXl))
         }
     }
 }
@@ -267,29 +258,29 @@ private fun ReminderSection(
             text = label,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(vertical = 6.dp),
+            modifier = Modifier.padding(vertical = Dimens.SpaceXs),
         )
         events.forEach { e ->
-            Row(modifier = Modifier.padding(vertical = 4.dp)) {
+            Row(modifier = Modifier.padding(vertical = Dimens.SpaceXs)) {
                 Text(
                     text = if (e.allDay) stringResource(R.string.calendar_all_day)
                     else e.start.format(timeFmt),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
-                        .width(48.dp)
-                        .padding(top = 10.dp),
+                        .width(Dimens.MinTouchTarget)
+                        .padding(top = Dimens.SpaceS),
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(Dimens.SpaceS))
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .background(
                             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
-                            RoundedCornerShape(8.dp),
+                            RoundedCornerShape(Dimens.CornerS),
                         )
                         .clickable { onEventClick(e.id) }
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
                 ) {
                     Text(
                         text = e.title,

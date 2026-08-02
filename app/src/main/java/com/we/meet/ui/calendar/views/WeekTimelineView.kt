@@ -19,8 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTextStyles
 import com.we.meet.data.settings.CALENDAR_WEEK_VISIBLE_DAYS_DEFAULT
 import com.we.meet.ui.calendar.EventUi
 import java.time.DayOfWeek
@@ -96,7 +96,7 @@ fun WeekTimelineView(
         }
     }
 
-    val hourHeight = 56.dp
+    val hourHeight = Dimens.Calendar.HourHeight
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
     LaunchedEffect(days.first()) {
@@ -172,18 +172,18 @@ private fun WeekDayHeader(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 4.dp),
+            .padding(vertical = Dimens.SpaceXs),
     ) {
         Text(
             text = date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
-            fontSize = 10.sp,
+            style = WeMeetTextStyles.LabelTiny,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(26.dp)
+                .size(Dimens.Calendar.WeekDotSize)
                 .background(
                     color = when {
                         isToday -> MaterialTheme.colorScheme.primary
@@ -195,7 +195,7 @@ private fun WeekDayHeader(
         ) {
             Text(
                 text = date.dayOfMonth.toString(),
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.bodySmall,
                 color = when {
                     isToday -> MaterialTheme.colorScheme.onPrimary
                     else -> MaterialTheme.colorScheme.onSurface

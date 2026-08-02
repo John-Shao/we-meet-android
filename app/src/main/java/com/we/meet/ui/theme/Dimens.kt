@@ -71,11 +71,26 @@ object Dimens {
     val CornerL = 16.dp
 
     // ---- 描边 ----
-    /** 需要强调的描边(如「正在说话」的画面块外框)。普通分隔线用 1dp。 */
+    /** 普通描边/分隔线。 */
+    val BorderThin = 1.dp
+    /** 需要强调的描边(如「正在说话」的画面块外框)。 */
     val BorderEmphasis = 2.dp
 
+    // ---- 高程 ----
+    /** 卡片与背景之间最轻微的一档色调抬升。 */
+    val ElevationSubtle = 1.dp
+    /** 吸顶/吸底条压在滚动内容之上的投影。 */
+    val ElevationSticky = 8.dp
+
     // ---- 头像 ----
+    /** 内联在文字流里的极小头像(已选参会人的小胶囊)。 */
+    val AvatarXs = 24.dp
     val AvatarS = 36.dp
+    /** 列表行主位头像。 */
+    val AvatarM = 40.dp
+
+    /** 列表行左侧的图标容器(圆角方块,内含一个居中图标)。 */
+    val ListLeadingIcon = 44.dp
 
     /**
      * 会中界面的布局常量。
@@ -116,5 +131,70 @@ object Dimens {
         val TitleSideInset = 110.dp
         /** 邀请弹层里的二维码边长。 */
         val QrSize = 200.dp
+    }
+
+    /**
+     * 日历时间网格的几何常量。
+     *
+     * 和 [Room] 同理:这些值由内容和手感定死,不是 8dp 栅格的倍数,也不该硬凑。
+     * 收进来是为了「改一处生效」。
+     */
+    object Calendar {
+        /**
+         * 一小时对应的网格高度。
+         *
+         * 日视图、周视图、忙闲对比、TimeGrid 默认参数原先各写一遍 56.dp ——
+         * 改一处漏三处就会错位。所有网格必须取同一个值。
+         */
+        val HourHeight = 56.dp
+        /** 左侧小时刻度栏宽度。日/周视图共用,改了两边一起动。 */
+        val HourRailWidth = 44.dp
+        /** 忙闲对比里每人一列的最小宽度,再窄名字就挤没了。 */
+        val MinColumnWidth = 76.dp
+
+        /** 新建日程草稿块上下的拖拽手柄:热区、内缩、可见尺寸。 */
+        val DraftHandleTouch = 26.dp
+        val DraftHandleInset = 18.dp
+        val DraftHandleSize = 13.dp
+
+        /** 「当前时间」虚线的线宽与虚线间隔;横线本身的粗细与左端圆点。 */
+        val NowLineStroke = 1.2.dp
+        val NowLineDashGap = 7.dp
+        val NowLineThickness = 2.dp
+        val NowLineDotSize = 6.dp
+
+        /**
+         * 日程块的最小高度 —— 时长再短也得留得下这么高,否则 15 分钟的日程
+         * 会缩成一条看不见的线。三种块各有下限:普通日程、拖拽预览、新建选区。
+         */
+        val BlockMinHeight = 10.dp
+        val MovePreviewMinHeight = 14.dp
+        val SelectionMinHeight = 6.dp
+        /** 日程块左侧那条表示表态的实心竖条。 */
+        val BlockAccentBarWidth = 3.dp
+
+        /**
+         * 日程小块的水平内缩。
+         *
+         * 1.5dp 看着离谱,但网格里相邻两列小块之间只有这么点缝 —— 再大就把
+         * 15 分钟的短块挤成一条线了。
+         */
+        val ChipInset = 1.5.dp
+
+        /** 月视图里日期数字的圆形选中底。 */
+        val DateCellSize = 34.dp
+        /** 月视图日期下方「这天有日程」的小圆点。 */
+        val EventDotSize = 4.dp
+        /** 议程行左侧那条表示表态的竖色条。 */
+        val RsvpAccentBarWidth = 4.dp
+        /** 议程行左侧时间列的宽度,要放得下「全天」和「23:59」。 */
+        val TimeLabelWidth = 52.dp
+        /** 忙闲对比里压在头像右上角的冲突红点,及其与头像隔开的描边环。 */
+        val ConflictDotSize = 11.dp
+        val ConflictDotRing = 1.5.dp
+        /** 周视图里「某天有日程」的圆点。 */
+        val WeekDotSize = 26.dp
+        /** 议程/网格底部留白,免得浮动按钮盖住最后一条。 */
+        val FabClearance = 88.dp
     }
 }

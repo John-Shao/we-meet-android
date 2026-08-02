@@ -54,6 +54,22 @@ object WeMeetTextStyles {
     )
 
     /**
+     * 9sp,比 [LabelTiny] 还小一档。
+     *
+     * ⚠️ **不要在新代码里用。** 规范 §1.2 写明可读下限是 11sp,这一档是给
+     * 日历时间网格的历史欠账兜底的 —— 那里的日程小块高度由时长决定,15 分钟
+     * 的块放不下更大的字,直接调大会溢出裁切。
+     *
+     * 收在这里是为了让这笔账只有一处、可一次算清,不是为它背书。真正的修法
+     * 是让小块在放不下时改为只显示色条不显示文字,而不是把字继续缩小。
+     */
+    val LabelMicro: TextStyle = TextStyle(
+        fontSize = 9.sp,
+        lineHeight = 11.sp,
+        fontWeight = FontWeight.Medium,
+    )
+
+    /**
      * 等宽数字风格的会议号/验证码展示。字距放宽,让 8 位数字好读、好抄。
      */
     val CodeDisplay: TextStyle = TextStyle(

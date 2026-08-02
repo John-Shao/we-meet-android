@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CheckCircle
@@ -38,7 +37,6 @@ import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,9 +52,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTextStyles
+import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.core.directory.ui.MemberAvatar
@@ -88,7 +88,7 @@ private data class PersonColumn(
 private const val MAX_IDS = 50
 
 /** 列宽下限(飞书样式:一屏约 4 列,超出整体横滚)。 */
-private val MIN_COL_WIDTH = 76.dp
+private val MIN_COL_WIDTH = Dimens.Calendar.MinColumnWidth
 
 /** 底部冲突提示里最多列几个名字(超出补「等」;列头红点仍标出每一个人)。 */
 private const val CONFLICT_NAMES_SHOWN = 3
@@ -105,7 +105,6 @@ private const val RSVP_NEEDS_ACTION = "needs_action"
 private const val RSVP_DECLINED = "declined"
 
 /** 撞上所选时段的人:头像角标红点(与选段冲突色同档)。 */
-private val ConflictDotColor = androidx.compose.ui.graphics.Color(0xFFDC2626)
 
 /**
  * P8 忙闲对比页(对标飞书「查看日历/群成员日历」,单聊/群聊共用):
@@ -386,7 +385,8 @@ fun FreeBusyCompareScreen(
         }
     }
 
-    val hourHeight = 56.dp
+    val hourHeight = Dimens.Calendar.HourHeight
+    val conflictColor = WeMeetTheme.extras.calendar.conflict
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -412,13 +412,9 @@ fun FreeBusyCompareScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
+            WeMeetTopBar(
+                title = title,
+                onBack = onBack,
                 actions = {
                     IconButton(onClick = { pickerOpen = true }) {
                         Icon(
@@ -441,7 +437,7 @@ fun FreeBusyCompareScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
+                    .padding(horizontal = Dimens.SpaceS),
             ) {
                 IconButton(onClick = { day = day.minusDays(1) }) {
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null)
@@ -452,7 +448,7 @@ fun FreeBusyCompareScreen(
                 IconButton(onClick = { day = day.plusDays(1) }) {
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                 }
-                Spacer(Modifier.width(4.dp))
+                Spacer(Modifier.width(Dimens.SpaceXs))
                 Text(
                     text = "${day.monthValue}/${day.dayOfMonth} " +
                         day.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
@@ -524,7 +520,7 @@ fun FreeBusyCompareScreen(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 6.dp),
+                                        .padding(vertical = Dimens.SpaceXs),
                                 ) {
                                     // 撞上所选时段的人:头像右上角红点 —— 底部只报
                                     // 名字的话,列多时还得自己扫哪一列压住了。
@@ -533,20 +529,20 @@ fun FreeBusyCompareScreen(
                                             name = p.name,
                                             url = p.avatarUrl,
                                             cacheKey = "avatar:${p.userId}",
-                                            size = 36.dp,
+                                            size = Dimens.AvatarS,
                                         )
                                         if (conflictIds.contains(p.userId)) {
                                             Box(
                                                 modifier = Modifier
                                                     .align(Alignment.TopEnd)
-                                                    .size(11.dp)
+                                                    .size(Dimens.Calendar.ConflictDotSize)
                                                     .background(
-                                                        ConflictDotColor,
+                                                        conflictColor,
                                                         androidx.compose.foundation.shape
                                                             .CircleShape,
                                                     )
                                                     .border(
-                                                        1.5.dp,
+                                                        Dimens.Calendar.ConflictDotRing,
                                                         MaterialTheme.colorScheme.surface,
                                                         androidx.compose.foundation.shape
                                                             .CircleShape,
@@ -556,21 +552,21 @@ fun FreeBusyCompareScreen(
                                     }
                                     Text(
                                         text = p.name,
-                                        fontSize = 11.sp,
+                                        style = MaterialTheme.typography.labelSmall,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         textAlign = TextAlign.Center,
                                         color = if (invisible) {
                                             MaterialTheme.colorScheme.outline
                                         } else MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.padding(horizontal = 2.dp),
+                                        modifier = Modifier.padding(horizontal = Dimens.SpaceXxs),
                                     )
                                     if (invisible) {
                                         Text(
                                             text = stringResource(
                                                 R.string.freebusy_unavailable,
                                             ),
-                                            fontSize = 9.sp,
+                                            style = WeMeetTextStyles.LabelMicro,
                                             color = MaterialTheme.colorScheme.outline,
                                         )
                                     }
@@ -594,7 +590,7 @@ fun FreeBusyCompareScreen(
                                         )
                                         Button(
                                             onClick = { busyReloadKey += 1 },
-                                            modifier = Modifier.padding(top = 8.dp),
+                                            modifier = Modifier.padding(top = Dimens.SpaceS),
                                         ) {
                                             Text(stringResource(R.string.common_retry))
                                         }
@@ -607,11 +603,11 @@ fun FreeBusyCompareScreen(
                     }
 
                     // 底部确认条。
-                    Surface(shadowElevation = 8.dp) {
+                    Surface(shadowElevation = Dimens.ElevationSticky) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
                         ) {
                             // 推荐时段(全员空闲):点一下即套用,免得自己扫空档。
                             if (suggestions.isNotEmpty()) {
@@ -624,7 +620,7 @@ fun FreeBusyCompareScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .horizontalScroll(rememberScrollState())
-                                        .padding(vertical = 2.dp),
+                                        .padding(vertical = Dimens.SpaceXxs),
                                 ) {
                                     suggestions.forEach { s ->
                                         SuggestionChip(
@@ -638,14 +634,14 @@ fun FreeBusyCompareScreen(
                                                         s.startMin / 60, s.startMin % 60,
                                                         s.endMin / 60, s.endMin % 60,
                                                     ),
-                                                    fontSize = 12.sp,
+                                                    style = MaterialTheme.typography.bodySmall,
                                                 )
                                             },
-                                            modifier = Modifier.padding(end = 6.dp),
+                                            modifier = Modifier.padding(end = Dimens.SpaceXs),
                                         )
                                     }
                                 }
-                                Spacer(Modifier.height(4.dp))
+                                Spacer(Modifier.height(Dimens.SpaceXs))
                             }
                             val sel = selection
                             if (sel == null) {
@@ -693,10 +689,10 @@ fun FreeBusyCompareScreen(
                                     color = if (conflictNames.isNotEmpty()) {
                                         MaterialTheme.colorScheme.error
                                     } else MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(top = 2.dp),
+                                    modifier = Modifier.padding(top = Dimens.SpaceXxs),
                                 )
                             }
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(Dimens.SpaceS))
                             Button(
                                 onClick = {
                                     val s = selection ?: return@Button
@@ -745,22 +741,18 @@ private fun MemberPickerPage(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.freebusy_pick_members)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
+            WeMeetTopBar(
+                title = stringResource(R.string.freebusy_pick_members),
+                onBack = onBack,
             )
         },
         bottomBar = {
-            Surface(shadowElevation = 8.dp) {
+            Surface(shadowElevation = Dimens.ElevationSticky) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                        .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
                 ) {
                     Text(
                         text = stringResource(R.string.freebusy_selected_count, temp.size),
@@ -787,7 +779,7 @@ private fun MemberPickerPage(
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             )
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(shown, key = { it.userId }) { person ->
@@ -800,7 +792,7 @@ private fun MemberPickerPage(
                                 temp = if (isChecked) temp - person.userId
                                 else temp + person.userId
                             }
-                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
                     ) {
                         Icon(
                             imageVector = if (isChecked) Icons.Filled.CheckCircle
@@ -812,16 +804,16 @@ private fun MemberPickerPage(
                                 isChecked -> MaterialTheme.colorScheme.primary
                                 else -> MaterialTheme.colorScheme.outlineVariant
                             },
-                            modifier = Modifier.size(22.dp),
+                            modifier = Modifier.size(Dimens.IconSmall),
                         )
-                        Spacer(Modifier.width(14.dp))
+                        Spacer(Modifier.width(Dimens.SpaceM))
                         MemberAvatar(
                             name = person.name,
                             url = person.avatarUrl,
                             cacheKey = "avatar:${person.userId}",
-                            size = 40.dp,
+                            size = Dimens.AvatarM,
                         )
-                        Spacer(Modifier.width(12.dp))
+                        Spacer(Modifier.width(Dimens.SpaceM))
                         Text(
                             text = person.name,
                             style = MaterialTheme.typography.bodyLarge,

@@ -22,7 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.ui.calendar.AgendaCard
 import com.we.meet.ui.calendar.EventUi
@@ -82,7 +82,7 @@ fun AgendaView(
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 88.dp),
+        contentPadding = PaddingValues(bottom = Dimens.Calendar.FabClearance),
     ) {
         days.forEach { date ->
             item(key = "h$date") {
@@ -93,13 +93,13 @@ fun AgendaView(
                 )
             }
             items(eventsByDay[date].orEmpty(), key = { "$date-${it.id}" }) { event ->
-                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Column(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)) {
                     AgendaCard(
                         event = event,
                         onClick = { onEventClick(event.id) },
                         dimPastNow = dimPastNow,
                     )
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(Dimens.SpaceS))
                 }
             }
         }
@@ -120,7 +120,12 @@ private fun AgendaDateHeader(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 6.dp),
+            .padding(
+                start = Dimens.ScreenPadding,
+                end = Dimens.ScreenPadding,
+                top = Dimens.SpaceS,
+                bottom = Dimens.SpaceXs,
+            ),
     ) {
         Text(
             text = date.format(dateFmt),
@@ -128,7 +133,7 @@ private fun AgendaDateHeader(
             fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium,
             color = color,
         )
-        Spacer(Modifier.width(6.dp))
+        Spacer(Modifier.width(Dimens.SpaceXs))
         Text(
             text = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
             style = MaterialTheme.typography.labelMedium,

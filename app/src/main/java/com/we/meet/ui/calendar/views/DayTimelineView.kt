@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.ui.calendar.EventUi
 import java.time.LocalDate
@@ -59,7 +59,7 @@ fun DayTimelineView(
     val allDayEvents = remember(date, events) { events.filter { it.allDay } }
     val isToday = date == LocalDate.now()
 
-    val hourHeight = 56.dp
+    val hourHeight = Dimens.Calendar.HourHeight
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
     // 首帧滚到 08:00(今天则当前时刻上方一点)。
@@ -75,7 +75,12 @@ fun DayTimelineView(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = HOUR_RAIL_WIDTH, end = 8.dp, top = 4.dp, bottom = 4.dp),
+                    .padding(
+                        start = HOUR_RAIL_WIDTH,
+                        end = Dimens.SpaceS,
+                        top = Dimens.SpaceXs,
+                        bottom = Dimens.SpaceXs,
+                    ),
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     allDayEvents.forEach { event ->
@@ -87,19 +92,19 @@ fun DayTimelineView(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 1.dp)
+                                .padding(vertical = Dimens.Calendar.ChipInset)
                                 .background(
                                     MaterialTheme.colorScheme.primaryContainer,
-                                    RoundedCornerShape(4.dp),
+                                    RoundedCornerShape(Dimens.CornerXs),
                                 )
                                 .clickable { onEventClick(event.id) }
-                                .padding(horizontal = 8.dp, vertical = 3.dp),
+                                .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXxs),
                         )
                     }
                 }
             }
         }
-        Spacer(Modifier.width(0.dp))
+        Spacer(Modifier.width(Dimens.SpaceNone))
         TimelineScaffold(
             columns = listOf(blocks),
             hourHeight = hourHeight,

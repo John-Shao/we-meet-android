@@ -46,6 +46,23 @@ val LightRsvpTentativeText = Color(0xFF92400E)
 val LightRsvpDeclined = Color(0xFF9CA3AF)
 val LightRsvpDeclinedText = Color(0xFF6B7280)
 
+/**
+ * 日历网格专用色(表态色见上面的 Rsvp 一组)。
+ *
+ * 这三档原先散在 5 处字面量里,其中 `DC2626`(冲突)和 `FF8800`(提醒橙)各自
+ * 在两个文件里重复定义过 —— 正是 token 要消灭的情况。
+ *
+ * 都不复用 [LightDanger]:`conflict` 表示的是「这两个日程撞了」,是一种信息
+ * 标注,不是「点下去会造成损失」,语义不同不该共用一个 token。
+ */
+val LightCalendarNowLine = Color(0xFFEF4444)
+val LightCalendarConflict = Color(0xFFDC2626)
+val LightCalendarReminder = Color(0xFFFF8800)
+
+val DarkCalendarNowLine = Color(0xFFFF7A7A)
+val DarkCalendarConflict = Color(0xFFF87171)
+val DarkCalendarReminder = Color(0xFFFFA640)
+
 val DarkRsvpAccepted = Color(0xFF5C8DFF)
 val DarkRsvpAcceptedText = Color(0xFFA3B8EC)
 val DarkRsvpNeeds = Color(0xFFA78BFA)

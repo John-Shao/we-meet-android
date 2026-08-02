@@ -51,10 +51,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.settings.CalendarWeekStart
@@ -199,12 +199,12 @@ fun CalendarTabScreen(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Spacer(Modifier.height(32.dp))
+                    Spacer(Modifier.height(Dimens.SpaceXxl))
                     Text(
                         stringResource(R.string.calendar_load_error),
                         color = MaterialTheme.colorScheme.error,
                     )
-                    Button(onClick = { vm.refresh() }, modifier = Modifier.padding(top = 8.dp)) {
+                    Button(onClick = { vm.refresh() }, modifier = Modifier.padding(top = Dimens.SpaceS)) {
                         Text(stringResource(R.string.calendar_retry))
                     }
                 }
@@ -282,7 +282,7 @@ fun CalendarTabScreen(
             onClick = { clearPicks(); onCreateEvent(ui.selectedDate.toEpochDay()) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(20.dp),
+                .padding(Dimens.SpaceXl),
         ) {
             Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.calendar_create_title))
         }
@@ -291,7 +291,7 @@ fun CalendarTabScreen(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 12.dp),
+                .padding(bottom = Dimens.SpaceM),
         )
     }
 }
@@ -327,7 +327,10 @@ private fun MonthViewBody(
             else -> LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp,
+                    start = Dimens.ScreenPadding,
+                    end = Dimens.ScreenPadding,
+                    top = Dimens.SpaceS,
+                    bottom = Dimens.Calendar.FabClearance,
                 ),
             ) {
                 items(ui.selectedDayEvents, key = { it.id }) { event ->
@@ -336,7 +339,7 @@ private fun MonthViewBody(
                         onClick = { onEventClick(event.id) },
                         dimPastNow = dimPastNow,
                     )
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(Dimens.SpaceS))
                 }
             }
         }
@@ -365,7 +368,7 @@ private fun CalendarHeader(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 12.dp, end = 4.dp, top = 8.dp),
+                .padding(start = Dimens.SpaceM, end = Dimens.SpaceXs, top = Dimens.SpaceS),
         ) {
             ViewModeSwitcher(current = ui.viewMode, onSelect = onSelectMode)
             Spacer(Modifier.weight(1f))
@@ -389,7 +392,7 @@ private fun CalendarHeader(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 4.dp),
+                .padding(horizontal = Dimens.SpaceXs),
         ) {
             IconButton(onClick = onPrev) {
                 Icon(
@@ -404,7 +407,7 @@ private fun CalendarHeader(
                     contentDescription = stringResource(nextCd),
                 )
             }
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(Dimens.SpaceXs))
             Text(
                 text = headerTitle(ui, firstDow, showWeekend),
                 style = MaterialTheme.typography.titleMedium,
@@ -412,7 +415,7 @@ private fun CalendarHeader(
                 overflow = TextOverflow.Ellipsis,
             )
             if (ui.viewMode == CalendarViewMode.DAY && ui.selectedDate == LocalDate.now()) {
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(Dimens.SpaceXs))
                 Text(
                     text = stringResource(R.string.calendar_today),
                     style = MaterialTheme.typography.titleMedium,
@@ -441,23 +444,23 @@ private fun ViewModeSwitcher(
         modifier = Modifier
             .background(
                 MaterialTheme.colorScheme.surfaceVariant,
-                RoundedCornerShape(8.dp),
+                RoundedCornerShape(Dimens.CornerS),
             )
-            .padding(2.dp),
+            .padding(Dimens.SpaceXxs),
     ) {
         order.forEach { mode ->
             val selected = mode == current
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(RoundedCornerShape(Dimens.CornerS))
                     .background(
                         if (selected) MaterialTheme.colorScheme.surface
                         else Color.Transparent,
                     )
                     .clickable { onSelect(mode) }
-                    .widthIn(min = 52.dp)
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                    .widthIn(min = Dimens.Calendar.TimeLabelWidth)
+                    .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
             ) {
                 Text(
                     text = stringResource(mode.labelRes),
@@ -528,7 +531,7 @@ private fun MonthGrid(
     val leadingBlanks = (firstOfMonth.dayOfWeek.value - firstDow.value + 7) % 7
     val gridStart = firstOfMonth.minusDays(leadingBlanks.toLong())
 
-    Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+    Column(modifier = Modifier.padding(horizontal = Dimens.SpaceS)) {
         Row(modifier = Modifier.fillMaxWidth()) {
             (0L..6L).map(firstDow::plus).forEach { dow ->
                 Text(
@@ -554,13 +557,13 @@ private fun MonthGrid(
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(1.1f)
-                            .padding(2.dp)
+                            .padding(Dimens.SpaceXxs)
                             .clickable { onSelect(date) },
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                .size(34.dp)
+                                .size(Dimens.Calendar.DateCellSize)
                                 .background(
                                     color = when {
                                         isSelected -> MaterialTheme.colorScheme.primary
@@ -585,8 +588,8 @@ private fun MonthGrid(
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.BottomCenter)
-                                    .padding(bottom = 1.dp)
-                                    .size(4.dp)
+                                    .padding(bottom = Dimens.BorderThin)
+                                    .size(Dimens.Calendar.EventDotSize)
                                     .background(
                                         color = if (isSelected) MaterialTheme.colorScheme.primary
                                         else MaterialTheme.colorScheme.tertiary,
@@ -622,13 +625,13 @@ internal fun AgendaCard(
             // 色条要贴左缘且随卡片圆角裁切 → 先 clip 再铺底;IntrinsicSize.Min
             // 给色条的 fillMaxHeight 一个确定高度(Row 本身高度不定)。
             .height(IntrinsicSize.Min)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Dimens.CornerM))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable(onClick = onClick),
     ) {
         Box(
             modifier = Modifier
-                .width(4.dp)
+                .width(Dimens.Calendar.RsvpAccentBarWidth)
                 .fillMaxHeight()
                 .background(rsvpAccentColor(visual)),
         )
@@ -636,9 +639,9 @@ internal fun AgendaCard(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .weight(1f)
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceM),
         ) {
-            Column(modifier = Modifier.width(52.dp)) {
+            Column(modifier = Modifier.width(Dimens.Calendar.TimeLabelWidth)) {
                 if (event.allDay) {
                     Text(
                         text = stringResource(R.string.calendar_all_day),
@@ -657,7 +660,7 @@ internal fun AgendaCard(
                     )
                 }
             }
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(Dimens.SpaceM))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = event.title,

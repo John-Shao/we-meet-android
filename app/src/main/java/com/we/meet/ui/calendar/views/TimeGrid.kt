@@ -58,14 +58,15 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.we.meet.ui.calendar.EventUi
 import com.we.meet.ui.calendar.RsvpVisual
 import com.we.meet.ui.calendar.rsvpAccentColor
 import com.we.meet.ui.calendar.rsvpBlockBackground
 import com.we.meet.ui.calendar.rsvpTextColor
 import com.we.meet.ui.calendar.rsvpVisualOf
+import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTextStyles
+import com.we.meet.ui.theme.WeMeetTheme
 import java.time.LocalDate
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -139,9 +140,9 @@ const val DRAFT_SNAP_MIN = 15
 private const val DRAFT_MIN_DURATION = DRAFT_SNAP_MIN
 
 /** 手柄触摸半径 / 距列边的水平内缩(手柄画在边界线上,上右下左各一个)。 */
-private val DRAFT_HANDLE_TOUCH = 26.dp
-private val DRAFT_HANDLE_INSET = 18.dp
-private val DRAFT_HANDLE_SIZE = 13.dp
+private val DRAFT_HANDLE_TOUCH = Dimens.Calendar.DraftHandleTouch
+private val DRAFT_HANDLE_INSET = Dimens.Calendar.DraftHandleInset
+private val DRAFT_HANDLE_SIZE = Dimens.Calendar.DraftHandleSize
 
 /** 拖动中的整块移位预览(日程块长按拖动时的落点;预选块直接改 draft)。 */
 private data class MovePreview(
@@ -219,20 +220,20 @@ fun HourRail(
             repeat(24) { h ->
                 Text(
                     text = "%02d:00".format(h),
-                    fontSize = 10.sp,
+                    style = WeMeetTextStyles.LabelTiny,
                     color = MaterialTheme.colorScheme.outline,
                     textAlign = TextAlign.End,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(hourHeight)
-                        .padding(end = 4.dp),
+                        .padding(end = Dimens.SpaceXs),
                 )
             }
         }
         highlightMinutes.forEach { min ->
             Text(
                 text = fmtMin(min),
-                fontSize = 10.sp,
+                style = WeMeetTextStyles.LabelTiny,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.End,
@@ -240,17 +241,17 @@ fun HourRail(
                     // 24:00 贴着刻度列末尾,回收一行高度免得被滚动容器裁掉。
                     .offset(
                         y = (hourHeight * (min / 60f))
-                            .coerceAtMost(hourHeight * 24 - 13.dp),
+                            .coerceAtMost(hourHeight * 24 - DRAFT_HANDLE_SIZE),
                     )
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
-                    .padding(end = 4.dp),
+                    .padding(end = Dimens.SpaceXs),
             )
         }
     }
 }
 
-val HOUR_RAIL_WIDTH = 44.dp
+val HOUR_RAIL_WIDTH = Dimens.Calendar.HourRailWidth
 
 /**
  * 时间轴主体:[columns] 列 + 24h 格线 + 工作时间外淡阴影 + 当前时刻红线 +
@@ -263,7 +264,7 @@ val HOUR_RAIL_WIDTH = 44.dp
 fun TimelineScaffold(
     columns: List<List<TimeBlock>>,
     modifier: Modifier = Modifier,
-    hourHeight: Dp = 56.dp,
+    hourHeight: Dp = Dimens.Calendar.HourHeight,
     scrollState: ScrollState = rememberScrollState(),
     nowMinute: Int? = null,
     nowLineInColumn: (Int) -> Boolean = { true },
@@ -320,6 +321,8 @@ fun TimelineScaffold(
     onRailTap: (() -> Unit)? = null,
 ) {
     val n = columns.size.coerceAtLeast(1)
+    val nowLineColor = WeMeetTheme.extras.calendar.nowLine
+    val selectionConflictColor = WeMeetTheme.extras.calendar.conflict
     val gridLine = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
     val offWorkShade = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.03f)
     val busyColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f)
@@ -755,7 +758,7 @@ fun TimelineScaffold(
                                 val top = hourHeight * (b.startMin / 60f)
                                 val blockHeight =
                                     (hourHeight * ((b.endMin - b.startMin) / 60f))
-                                        .coerceAtLeast(10.dp)
+                                        .coerceAtLeast(Dimens.Calendar.BlockMinHeight)
                                 // 对齐 Web/飞书:左侧实心竖条 + 同色系浅底;短块
                                 // (≤45min)时间并入标题行,长块标题行+时间行。
                                 // 竖条/底/字的颜色按表态四档取(拒绝档额外删除线)。
@@ -771,7 +774,7 @@ fun TimelineScaffold(
                                         .offset(x = colWidth * i, y = top)
                                         .width(colWidth)
                                         .height(blockHeight)
-                                        .padding(horizontal = 1.5.dp, vertical = 1.dp)
+                                        .padding(horizontal = Dimens.Calendar.ChipInset, vertical = Dimens.BorderThin)
                                         // P8「降低已结束日程的亮度」:整块(底+文字)降透明。
                                         .alpha(
                                             when {
@@ -780,7 +783,7 @@ fun TimelineScaffold(
                                                 else -> 1f
                                             },
                                         )
-                                        .clip(RoundedCornerShape(4.dp))
+                                        .clip(RoundedCornerShape(Dimens.CornerXs))
                                         .background(
                                             color = when {
                                                 b.label == null -> busyColor
@@ -800,9 +803,9 @@ fun TimelineScaffold(
                                         .then(
                                             if (picked) {
                                                 Modifier.border(
-                                                    1.5.dp,
+                                                    Dimens.Calendar.ChipInset,
                                                     MaterialTheme.colorScheme.primary,
-                                                    RoundedCornerShape(4.dp),
+                                                    RoundedCornerShape(Dimens.CornerXs),
                                                 )
                                             } else Modifier,
                                         ),
@@ -811,7 +814,7 @@ fun TimelineScaffold(
                                         Row {
                                             Box(
                                                 modifier = Modifier
-                                                    .width(3.dp)
+                                                    .width(Dimens.Calendar.BlockAccentBarWidth)
                                                     .fillMaxHeight()
                                                     .background(accentOf.getValue(visual)),
                                             )
@@ -822,7 +825,7 @@ fun TimelineScaffold(
                                             val showTime = !compactBlocks && b.timeLabel != null
                                             Column(
                                                 modifier = Modifier.padding(
-                                                    horizontal = 3.dp, vertical = 1.dp,
+                                                    horizontal = Dimens.SpaceXxs, vertical = Dimens.BorderThin,
                                                 ),
                                             ) {
                                                 val fg = textOf.getValue(visual)
@@ -835,8 +838,7 @@ fun TimelineScaffold(
                                                     text = if (short && showTime) {
                                                         "${b.label}$titleTimeSep${b.timeLabel}"
                                                     } else b.label,
-                                                    fontSize = 10.sp,
-                                                    lineHeight = 12.sp,
+                                                    style = WeMeetTextStyles.LabelTiny,
                                                     color = fg,
                                                     maxLines = if (short) 1 else 2,
                                                     overflow = TextOverflow.Ellipsis,
@@ -845,8 +847,7 @@ fun TimelineScaffold(
                                                 if (!short && showTime) {
                                                     Text(
                                                         text = b.timeLabel!!,
-                                                        fontSize = 9.sp,
-                                                        lineHeight = 11.sp,
+                                                        style = WeMeetTextStyles.LabelMicro,
                                                         color = fg.copy(alpha = 0.8f),
                                                         maxLines = 1,
                                                         overflow = TextOverflow.Ellipsis,
@@ -863,13 +864,12 @@ fun TimelineScaffold(
                                         // 到几点,尤其块被裁过或列很窄时。
                                         Text(
                                             text = b.timeLabel,
-                                            fontSize = 9.sp,
-                                            lineHeight = 11.sp,
+                                            style = WeMeetTextStyles.LabelMicro,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                             modifier = Modifier.padding(
-                                                horizontal = 4.dp, vertical = 2.dp,
+                                                horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXxs,
                                             ),
                                         )
                                     }
@@ -910,27 +910,27 @@ fun TimelineScaffold(
                             val mvTop = hourHeight * (mv.startMin / 60f)
                             val mvHeight =
                                 (hourHeight * ((mv.endMin - mv.startMin) / 60f))
-                                    .coerceAtLeast(14.dp)
+                                    .coerceAtLeast(Dimens.Calendar.MovePreviewMinHeight)
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
                                     .offset(x = colWidth * mv.colIndex, y = mvTop)
                                     .width(colWidth)
                                     .height(mvHeight)
-                                    .padding(horizontal = 1.5.dp)
-                                    .clip(RoundedCornerShape(4.dp))
+                                    .padding(horizontal = Dimens.Calendar.ChipInset)
+                                    .clip(RoundedCornerShape(Dimens.CornerXs))
                                     .background(
                                         MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
                                     )
                                     .border(
-                                        1.dp,
+                                        Dimens.BorderThin,
                                         MaterialTheme.colorScheme.primary,
-                                        RoundedCornerShape(4.dp),
+                                        RoundedCornerShape(Dimens.CornerXs),
                                     ),
                             ) {
                                 Text(
                                     text = "${fmtMin(mv.startMin)} – ${fmtMin(mv.endMin)}",
-                                    fontSize = 10.sp,
+                                    style = WeMeetTextStyles.LabelTiny,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.primary,
                                     maxLines = 1,
@@ -954,24 +954,24 @@ fun TimelineScaffold(
                                     .offset(x = baseX, y = dTop)
                                     .width(colWidth)
                                     .height(dHeight)
-                                    .padding(horizontal = 1.5.dp)
-                                    .clip(RoundedCornerShape(6.dp))
+                                    .padding(horizontal = Dimens.Calendar.ChipInset)
+                                    .clip(RoundedCornerShape(Dimens.CornerS))
                                     .background(
                                         MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                                     )
                                     .border(
-                                        1.dp,
+                                        Dimens.BorderThin,
                                         MaterialTheme.colorScheme.primary,
-                                        RoundedCornerShape(6.dp),
+                                        RoundedCornerShape(Dimens.CornerS),
                                     ),
                             ) {
                                 Text(
                                     text = draftLabel,
-                                    fontSize = 11.sp,
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.padding(horizontal = 2.dp),
+                                    modifier = Modifier.padding(horizontal = Dimens.SpaceXxs),
                                 )
                             }
                             DraftHandle(
@@ -997,18 +997,18 @@ fun TimelineScaffold(
                                 if (!nowLineInColumn(i)) continue
                                 Box(
                                     modifier = Modifier
-                                        .offset(x = colWidth * i, y = y - 1.dp)
+                                        .offset(x = colWidth * i, y = y - Dimens.BorderThin)
                                         .width(colWidth)
-                                        .height(2.dp)
-                                        .background(NowLineColor),
+                                        .height(Dimens.Calendar.NowLineThickness)
+                                        .background(nowLineColor),
                                 )
                                 if (i == firstLineCol) {
                                     Box(
                                         modifier = Modifier
-                                            .offset(x = colWidth * i - 2.dp, y = y - 3.dp)
-                                            .width(6.dp)
-                                            .height(6.dp)
-                                            .background(NowLineColor, CircleShape),
+                                            .offset(x = colWidth * i - Dimens.SpaceXxs, y = y - Dimens.SpaceXxs)
+                                            .width(Dimens.Calendar.NowLineDotSize)
+                                            .height(Dimens.Calendar.NowLineDotSize)
+                                            .background(nowLineColor, CircleShape),
                                     )
                                 }
                             }
@@ -1019,24 +1019,24 @@ fun TimelineScaffold(
                             val selTop = hourHeight * (selection.startMin / 60f)
                             val selHeight =
                                 (hourHeight * ((selection.endMin - selection.startMin) / 60f))
-                                    .coerceAtLeast(6.dp)
+                                    .coerceAtLeast(Dimens.Calendar.SelectionMinHeight)
                             val selAccent = if (selectionConflict) {
-                                SelectionConflictColor
+                                selectionConflictColor
                             } else MaterialTheme.colorScheme.primary
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .offset(y = selTop)
                                     .height(selHeight)
-                                    .padding(horizontal = 1.dp)
+                                    .padding(horizontal = Dimens.BorderThin)
                                     .background(
                                         color = selAccent.copy(alpha = 0.18f),
-                                        shape = RoundedCornerShape(4.dp),
+                                        shape = RoundedCornerShape(Dimens.CornerXs),
                                     )
                                     .then(
                                         if (onSelectionAdjust != null) {
                                             Modifier.border(
-                                                1.dp, selAccent, RoundedCornerShape(4.dp),
+                                                Dimens.BorderThin, selAccent, RoundedCornerShape(Dimens.CornerXs),
                                             )
                                         } else Modifier,
                                     ),
@@ -1078,17 +1078,15 @@ fun TimelineScaffold(
     }
 }
 
-internal val NowLineColor = Color(0xFFEF4444)
 
 /** 忙闲页选段撞上他人日程时的红(与 Web 的冲突色同档)。 */
-private val SelectionConflictColor = Color(0xFFDC2626)
 
 /**
  * 45° 斜纹 + 虚线圆角框:忙闲页「对方尚未回复」的块用(见 [TimeBlock.hatched])。
  * 画在底色之上、文字之下,所以走 drawBehind 而不是 background。
  */
 private fun Modifier.hatchedOutline(accent: Color): Modifier = drawBehind {
-    val gap = 7.dp.toPx()
+    val gap = Dimens.Calendar.NowLineDashGap.toPx()
     val hatch = accent.copy(alpha = 0.35f)
     // 从左上角外一个身位起画,保证左右两端都铺满(斜线跨度 = 块高)。
     var x = -size.height
@@ -1097,16 +1095,16 @@ private fun Modifier.hatchedOutline(accent: Color): Modifier = drawBehind {
             color = hatch,
             start = Offset(x, size.height),
             end = Offset(x + size.height, 0f),
-            strokeWidth = 1.2.dp.toPx(),
+            strokeWidth = Dimens.Calendar.NowLineStroke.toPx(),
         )
         x += gap
     }
-    val stroke = 1.dp.toPx()
+    val stroke = Dimens.BorderThin.toPx()
     drawRoundRect(
         color = accent.copy(alpha = 0.8f),
         topLeft = Offset(stroke / 2, stroke / 2),
         size = Size(size.width - stroke, size.height - stroke),
-        cornerRadius = CornerRadius(4.dp.toPx()),
+        cornerRadius = CornerRadius(Dimens.CornerXs.toPx()),
         style = Stroke(
             width = stroke,
             pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 4f)),
@@ -1217,6 +1215,6 @@ private fun DraftHandle(
             .size(DRAFT_HANDLE_SIZE)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.surface)
-            .border(2.dp, accent, CircleShape),
+            .border(Dimens.BorderEmphasis, accent, CircleShape),
     )
 }

@@ -46,6 +46,8 @@ data class WeMeetExtras(
     val surfaceBand: Color,
     /** 日历表态四态四色(见 [RsvpColors])。 */
     val rsvp: RsvpColors,
+    /** 日历网格的其余专用色(见 [CalendarColors])。表态色在 [rsvp]。 */
+    val calendar: CalendarColors,
     /** 危险/警告/成功/激活四档状态色(见 [StatusColors])。 */
     val status: StatusColors,
     /** 会中界面专用色(见 [RoomColors])。 */
@@ -138,6 +140,21 @@ private val SharedRoomColors = RoomColors(
  * 日历「我的表态」配色:一档一对「强调色 + 文字色」。色值与 Web 的
  * calendarGridOverrides.css 一一对应,改色两端同步。
  */
+/**
+ * 日历网格专用色。
+ *
+ * [conflict] 不复用 [StatusColors.danger] —— 它表示「这两个日程撞了」,是信息
+ * 标注,不是「点下去会造成损失」。语义不同,不共用 token。
+ */
+data class CalendarColors(
+    /** 「当前时间」横线。 */
+    val nowLine: Color,
+    /** 时间冲突标记(忙闲对比的红点、网格里的冲突选区)。 */
+    val conflict: Color,
+    /** 提醒条目的强调橙。 */
+    val reminder: Color,
+)
+
 data class RsvpColors(
     val accepted: Color,
     val acceptedText: Color,
@@ -160,6 +177,11 @@ private val LightExtras = WeMeetExtras(
         tentativeText = LightRsvpTentativeText,
         declined = LightRsvpDeclined,
         declinedText = LightRsvpDeclinedText,
+    ),
+    calendar = CalendarColors(
+        nowLine = LightCalendarNowLine,
+        conflict = LightCalendarConflict,
+        reminder = LightCalendarReminder,
     ),
     status = StatusColors(
         danger = LightDanger,
@@ -190,6 +212,11 @@ private val DarkExtras = WeMeetExtras(
         tentativeText = DarkRsvpTentativeText,
         declined = DarkRsvpDeclined,
         declinedText = DarkRsvpDeclinedText,
+    ),
+    calendar = CalendarColors(
+        nowLine = DarkCalendarNowLine,
+        conflict = DarkCalendarConflict,
+        reminder = DarkCalendarReminder,
     ),
     status = StatusColors(
         danger = DarkDanger,

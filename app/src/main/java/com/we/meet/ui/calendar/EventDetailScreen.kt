@@ -18,7 +18,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -46,7 +45,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -63,7 +61,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,6 +68,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.BuildConfig
 import com.we.meet.R
 import com.we.meet.WeMeetApp
@@ -249,13 +248,9 @@ fun EventDetailScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.event_detail_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
-                    }
-                },
+            WeMeetTopBar(
+                title = stringResource(R.string.event_detail_title),
+                onBack = onBack,
                 actions = {
                     // 分享不限组织者:任何能看到该日程的人都能转发卡片(对标飞书)。
                     if (ui.event != null) {
@@ -471,9 +466,9 @@ private fun EventBody(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = Dimens.SpaceXl),
     ) {
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(Dimens.IconTiny))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = event.title,
@@ -490,7 +485,7 @@ private fun EventBody(
                 )
             }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Dimens.SpaceS))
         if (parsed != null) {
             Text(
                 text = if (parsed.allDay) {
@@ -511,7 +506,7 @@ private fun EventBody(
                 text = "${stringResource(R.string.event_organizer)}: $organizer",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
+                modifier = Modifier.padding(top = Dimens.SpaceXs),
             )
         }
         if (event.reminders.isNotEmpty()) {
@@ -521,7 +516,7 @@ private fun EventBody(
                     event.reminders.joinToString("、") { reminderLabel(res, it) },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
+                modifier = Modifier.padding(top = Dimens.SpaceXs),
             )
         }
 
@@ -541,7 +536,7 @@ private fun EventBody(
                 text = "🏢 ${stringResource(R.string.meeting_room_detail_label)}: $detail",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
+                modifier = Modifier.padding(top = Dimens.SpaceXs),
             )
             if (room.bookingStatus == "conflict") {
                 Text(
@@ -555,25 +550,25 @@ private fun EventBody(
         if (parsed?.roomSlug != null && parsed.cancelled.not()) {
             // 会议信息(对标飞书:日程详情内嵌会议区块)—— 会议号/链接是「把会
             // 发给别人」的高频动作,原先只有一个入会按钮拿不到。
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(Dimens.IconTiny))
             MeetingInfoBlock(slug = parsed.roomSlug)
             // 会后纪要:紧跟会议信息,构成「会前(会议号/链接)→ 会后(纪要)」。
             // 这里只给摘要 + 入口,完整纪要/待办/转录仍由会议详情页渲染。
             val summary = ui.summary
             if (summary != null && summary.status != "failed" && event.room != null) {
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(Dimens.SpaceM))
                 SummaryEntryBlock(
                     summary = summary,
                     onOpen = { onOpenSummary(event.room) },
                 )
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(Dimens.IconTiny))
             Button(
                 onClick = { onJoinSlug(parsed.roomSlug) },
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Filled.Videocam, contentDescription = null)
-                Spacer(Modifier.padding(start = 8.dp))
+                Spacer(Modifier.padding(start = Dimens.SpaceS))
                 Text(stringResource(R.string.event_join_meeting))
             }
         }
@@ -581,7 +576,7 @@ private fun EventBody(
         // RSVP — only rendered when the backend gave the caller an attendee row
         // (`my_rsvp` non-null); the organizer's attendance is implied.
         if (event.myRsvp != null) {
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(Dimens.IconSmall))
             val options = listOf(
                 "accepted" to stringResource(R.string.event_rsvp_accept),
                 "tentative" to stringResource(R.string.event_rsvp_tentative),
@@ -601,57 +596,57 @@ private fun EventBody(
                     text = stringResource(R.string.event_rsvp_failed),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 4.dp),
+                    modifier = Modifier.padding(top = Dimens.SpaceXs),
                 )
             }
         }
 
         if (event.description.isNotBlank()) {
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(Dimens.IconSmall))
             HorizontalDivider()
             Text(
                 text = event.description,
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = 12.dp),
+                modifier = Modifier.padding(vertical = Dimens.SpaceM),
             )
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(Dimens.SpaceM))
         HorizontalDivider()
         Text(
             text = stringResource(R.string.event_attendees_count, event.attendees.size),
             style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(vertical = 10.dp),
+            modifier = Modifier.padding(vertical = Dimens.SpaceS),
         )
         event.attendees.forEach { attendee ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 6.dp),
+                    .padding(vertical = Dimens.SpaceXs),
             ) {
                 val (icon, tint) = when (attendee.rsvp) {
                     "accepted" -> Icons.Filled.Check to MaterialTheme.colorScheme.primary
                     "declined" -> Icons.Filled.Close to MaterialTheme.colorScheme.error
                     else -> Icons.Filled.QuestionMark to MaterialTheme.colorScheme.outline
                 }
-                Icon(icon, contentDescription = attendee.rsvp, tint = tint, modifier = Modifier.size(16.dp))
+                Icon(icon, contentDescription = attendee.rsvp, tint = tint, modifier = Modifier.size(Dimens.IconTiny))
                 Text(
                     text = attendee.fullName?.takeIf { it.isNotBlank() } ?: attendee.email.orEmpty(),
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(start = 10.dp),
+                    modifier = Modifier.padding(start = Dimens.SpaceS),
                 )
                 if (attendee.role == "organizer") {
                     Text(
                         text = stringResource(R.string.event_organizer),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(start = 8.dp),
+                        modifier = Modifier.padding(start = Dimens.SpaceS),
                     )
                 }
             }
         }
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(Dimens.SpaceXxl))
     }
 }
 
@@ -678,9 +673,9 @@ private fun MeetingInfoBlock(slug: String) {
             .fillMaxWidth()
             .background(
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                RoundedCornerShape(12.dp),
+                RoundedCornerShape(Dimens.CornerM),
             )
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -688,7 +683,7 @@ private fun MeetingInfoBlock(slug: String) {
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(Dimens.SpaceS))
             Text(
                 text = formatSlugDigits(slug),
                 style = MaterialTheme.typography.bodyMedium,
@@ -704,7 +699,7 @@ private fun MeetingInfoBlock(slug: String) {
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(Dimens.SpaceS))
             Text(
                 text = link,
                 style = MaterialTheme.typography.bodySmall,
@@ -739,25 +734,25 @@ private fun SummaryEntryBlock(summary: SummaryDto, onOpen: () -> Unit) {
             .clickable(onClick = onOpen)
             .background(
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                RoundedCornerShape(12.dp),
+                RoundedCornerShape(Dimens.CornerM),
             )
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 Icons.AutoMirrored.Filled.Notes,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(Dimens.IconTiny),
             )
-            Spacer(Modifier.width(6.dp))
+            Spacer(Modifier.width(Dimens.SpaceXs))
             Text(
                 text = stringResource(R.string.event_summary),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
             )
             if (summary.status == "pending") {
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(Dimens.SpaceXs))
                 Text(
                     text = stringResource(R.string.event_summary_pending),
                     style = MaterialTheme.typography.labelSmall,
@@ -772,14 +767,14 @@ private fun SummaryEntryBlock(summary: SummaryDto, onOpen: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 2.dp),
+                modifier = Modifier.padding(top = Dimens.SpaceXxs),
             )
         }
         Text(
             text = stringResource(R.string.event_summary_view),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(top = 6.dp),
+            modifier = Modifier.padding(top = Dimens.SpaceXs),
         )
     }
 }
@@ -819,7 +814,7 @@ private fun EventScopeDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { selected = option }
-                            .padding(vertical = 4.dp),
+                            .padding(vertical = Dimens.SpaceXs),
                     ) {
                         RadioButton(
                             selected = selected == option,
@@ -827,7 +822,7 @@ private fun EventScopeDialog(
                         )
                         Text(
                             text = scopeLabel(option),
-                            modifier = Modifier.padding(start = 4.dp),
+                            modifier = Modifier.padding(start = Dimens.SpaceXs),
                         )
                     }
                 }

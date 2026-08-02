@@ -16,7 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -39,7 +38,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -54,9 +52,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.we.meet.R
 import com.we.meet.core.directory.ui.MemberAvatar
+import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.WeMeetApp
 import com.we.meet.core.directory.ui.ContactPicker
@@ -389,22 +387,11 @@ fun CreateEventScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        stringResource(
-                            if (isEdit) R.string.calendar_edit_title else R.string.calendar_create_title
-                        )
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = handleClose) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back),
-                        )
-                    }
-                },
+            WeMeetTopBar(
+                title = stringResource(
+                    if (isEdit) R.string.calendar_edit_title else R.string.calendar_create_title
+                ),
+                onBack = handleClose,
                 actions = {
                     TextButton(
                         onClick = { submit() },
@@ -412,7 +399,7 @@ fun CreateEventScreen(
                     ) {
                         if (submitting) {
                             CircularProgressIndicator(
-                                modifier = Modifier.padding(end = 8.dp).height(18.dp),
+                                modifier = Modifier.padding(end = Dimens.SpaceS).height(Dimens.IconSmall),
                             )
                         } else {
                             Text(
@@ -450,7 +437,7 @@ fun CreateEventScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
+                    .padding(top = Dimens.SpaceS),
             )
 
             Row(
@@ -458,7 +445,7 @@ fun CreateEventScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = Dimens.SpaceS),
             ) {
                 Text(stringResource(R.string.calendar_field_all_day))
                 Switch(checked = allDay, onCheckedChange = { allDay = it })
@@ -514,7 +501,7 @@ fun CreateEventScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 12.dp),
+                        .padding(top = Dimens.SpaceM),
                 ) {
                     Text(
                         text = stringResource(
@@ -534,19 +521,19 @@ fun CreateEventScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 2.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .padding(vertical = Dimens.SpaceXxs)
+                            .clip(RoundedCornerShape(Dimens.CornerS))
                             .background(
                                 if (isBusy) MaterialTheme.colorScheme.errorContainer
                                 else MaterialTheme.colorScheme.surfaceVariant,
                             )
-                            .padding(start = 8.dp, top = 4.dp, bottom = 4.dp),
+                            .padding(start = Dimens.SpaceS, top = Dimens.SpaceXs, bottom = Dimens.SpaceXs),
                     ) {
                         MemberAvatar(
                             name = picked.displayName,
                             url = picked.avatarUrl,
                             cacheKey = "avatar:${picked.userId}",
-                            size = 24.dp,
+                            size = Dimens.AvatarXs,
                         )
                         Text(
                             text = picked.displayName,
@@ -557,7 +544,7 @@ fun CreateEventScreen(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(start = 8.dp),
+                                .padding(start = Dimens.SpaceS),
                         )
                         if (showFreeBusy) {
                             Text(
@@ -572,7 +559,7 @@ fun CreateEventScreen(
                         }
                         IconButton(
                             onClick = { attendees = attendees - picked },
-                            modifier = Modifier.size(32.dp),
+                            modifier = Modifier.size(Dimens.IconButtonCompact),
                         ) {
                             Icon(
                                 Icons.Filled.Close,
@@ -580,7 +567,7 @@ fun CreateEventScreen(
                                     R.string.calendar_attendee_remove,
                                     picked.displayName,
                                 ),
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(Dimens.IconTiny),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -592,7 +579,7 @@ fun CreateEventScreen(
                         text = stringResource(R.string.freebusy_self_busy),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(top = 4.dp),
+                        modifier = Modifier.padding(top = Dimens.SpaceXs),
                     )
                 }
                 HorizontalDivider()
@@ -605,7 +592,7 @@ fun CreateEventScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 12.dp),
+                        .padding(top = Dimens.SpaceM),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -636,7 +623,7 @@ fun CreateEventScreen(
             Text(
                 text = stringResource(R.string.meeting_room_field_label),
                 style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.padding(top = 12.dp),
+                modifier = Modifier.padding(top = Dimens.SpaceM),
             )
             if (allDay) {
                 // M1 不支持全天订会议室(服务端同样 400):「按谁的时区的
@@ -645,13 +632,13 @@ fun CreateEventScreen(
                     text = stringResource(R.string.meeting_room_all_day_unsupported),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 4.dp),
+                    modifier = Modifier.padding(vertical = Dimens.SpaceXs),
                 )
             } else {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = Dimens.SpaceXs),
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         meetingRoom?.let { room ->
@@ -674,7 +661,7 @@ fun CreateEventScreen(
                                         contentDescription = stringResource(
                                             R.string.meeting_room_remove,
                                         ),
-                                        modifier = Modifier.size(16.dp),
+                                        modifier = Modifier.size(Dimens.IconTiny),
                                     )
                                 },
                             )
@@ -719,7 +706,7 @@ fun CreateEventScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 12.dp),
+                    .padding(vertical = Dimens.SpaceM),
             )
 
             errorRes?.let {
@@ -729,7 +716,7 @@ fun CreateEventScreen(
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(Dimens.SpaceXxl))
         }
     }
 
@@ -801,7 +788,7 @@ private fun DateTimeRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp),
+            .padding(vertical = Dimens.SpaceM),
     ) {
         Text(label)
         Row {
@@ -811,12 +798,12 @@ private fun DateTimeRow(
                 modifier = Modifier.clickable { showDate = true },
             )
             if (!allDay) {
-                Spacer(Modifier.padding(start = 12.dp))
+                Spacer(Modifier.padding(start = Dimens.SpaceM))
                 Text(
                     text = value.toLocalTime().format(timeFmt),
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
-                        .padding(start = 12.dp)
+                        .padding(start = Dimens.SpaceM)
                         .clickable { showTime = true },
                 )
             }
@@ -913,7 +900,7 @@ private fun RepeatDropdown(selected: String, onSelect: (String) -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = Dimens.SpaceS),
     ) {
         Text(stringResource(R.string.calendar_field_repeat))
         ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
@@ -951,7 +938,7 @@ private fun RepeatUntilRow(until: LocalDate?, onPick: (LocalDate?) -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = Dimens.SpaceS),
     ) {
         Text(stringResource(R.string.calendar_repeat_until))
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1017,7 +1004,7 @@ private fun ReminderDropdown(selectedMinutes: Int?, onSelect: (Int?) -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = Dimens.SpaceS),
     ) {
         Text(stringResource(R.string.calendar_field_reminder))
         ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
