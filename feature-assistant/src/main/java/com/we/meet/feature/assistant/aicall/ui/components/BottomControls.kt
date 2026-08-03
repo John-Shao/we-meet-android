@@ -1,5 +1,7 @@
 package com.we.meet.feature.assistant.aicall.ui.components
 
+import com.we.meet.feature.assistant.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -86,7 +88,9 @@ private fun MicButton(enabled: Boolean, muted: Boolean, onClick: () -> Unit) {
     ) {
         Icon(
             imageVector = if (muted) Icons.Filled.MicOff else Icons.Filled.Mic,
-            contentDescription = if (muted) "取消静音" else "静音",
+            contentDescription = stringResource(
+                if (muted) R.string.assistant_cd_unmute else R.string.assistant_cd_mute,
+            ),
             tint = tint,
         )
     }
@@ -106,7 +110,9 @@ private fun CallButton(isActive: Boolean, onClick: () -> Unit) {
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = if (isActive) "挂断" else "开始通话",
+            contentDescription = stringResource(
+                if (isActive) R.string.assistant_cd_hang_up else R.string.assistant_cd_start_call,
+            ),
             tint = Color.White,
         )
     }
@@ -137,7 +143,7 @@ private fun VideoToggleButton(
     ) {
         Icon(
             imageVector = Icons.Filled.Videocam,
-            contentDescription = "切换视频模式",
+            contentDescription = stringResource(R.string.assistant_cd_toggle_video),
             tint = tint,
         )
     }

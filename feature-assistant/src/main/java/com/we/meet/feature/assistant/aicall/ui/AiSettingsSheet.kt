@@ -1,5 +1,7 @@
 package com.we.meet.feature.assistant.aicall.ui
 
+import com.we.meet.feature.assistant.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,7 +35,7 @@ import com.we.meet.feature.assistant.aicall.model.AiModeSelection
 import com.we.meet.feature.assistant.aicall.model.AiProfileDto
 
 /** Sentinel label shown in the prompt dropdown when nothing is selected. */
-private const val NO_PROMPT_LABEL = "默认"
+
 
 /**
  * AI agent configuration sheet — entered from 「AI → 打电话 → 设置」.
@@ -80,12 +82,12 @@ fun AiSettingsSheet(
                 Tab(
                     selected = currentMode == AiCallMode.Voice,
                     onClick = { onModeChange(AiCallMode.Voice) },
-                    text = { Text("语音通话") },
+                    text = { Text(stringResource(R.string.assistant_voice_call)) },
                 )
                 Tab(
                     selected = currentMode == AiCallMode.Video,
                     onClick = { onModeChange(AiCallMode.Video) },
-                    text = { Text("视频通话") },
+                    text = { Text(stringResource(R.string.assistant_video_call)) },
                 )
             }
 
@@ -132,11 +134,11 @@ private fun ModeConfigSection(
     }
 
     // 模型
-    SectionLabel("模型")
+    SectionLabel(stringResource(R.string.assistant_section_model))
     Dropdown(
         value = resolvedProfile?.display_name?.takeIf { it.isNotBlank() }
             ?: resolvedProfile?.code
-            ?: "暂无可用模型",
+            ?: stringResource(R.string.assistant_no_model),
         options = profiles.map { it.display_name?.takeIf { n -> n.isNotBlank() } ?: it.code },
         onSelect = { idx -> onSelectProfile(profiles[idx].code) },
         // Stay visually 'enabled' even when there's a single option, so the
@@ -151,7 +153,7 @@ private fun ModeConfigSection(
     val voices = resolvedProfile?.voices.orEmpty()
     val voiceLabels = voices.map { it.label ?: it.value }
     val voiceIndex = voices.indexOfFirst { it.id == resolvedVoiceId }.takeIf { it >= 0 } ?: 0
-    SectionLabel("音色")
+    SectionLabel(stringResource(R.string.assistant_section_voice))
     Dropdown(
         value = voiceLabels.getOrNull(voiceIndex) ?: "",
         options = voiceLabels,
@@ -162,14 +164,15 @@ private fun ModeConfigSection(
     Spacer(modifier = Modifier.height(8.dp))
 
     // 提示词 — 第一项是「默认」（null），后续为后端目录中的 prompt
+    val noPromptLabel = stringResource(R.string.assistant_prompt_default)
     val promptOptions = buildList {
-        add(NO_PROMPT_LABEL)
+        add(noPromptLabel)
         addAll(prompts.map { it.label })
     }
     val currentPromptLabel = selection.promptId
         ?.let { id -> prompts.firstOrNull { it.id == id }?.label }
-        ?: NO_PROMPT_LABEL
-    SectionLabel("提示词")
+        ?: noPromptLabel
+    SectionLabel(stringResource(R.string.assistant_section_prompt))
     Dropdown(
         value = currentPromptLabel,
         options = promptOptions,

@@ -1,5 +1,7 @@
 package com.we.meet.feature.assistant.aicall.model
 
+import androidx.annotation.StringRes
+
 enum class AiCallMode { Voice, Video }
 
 enum class ConnectingStep {
@@ -50,7 +52,14 @@ data class AiCallUiState(
     val agentConfig: AiAgentConfigResponse? = null,
     val voiceSelection: AiModeSelection = AiModeSelection(),
     val videoSelection: AiModeSelection = AiModeSelection(),
-    val errorToast: String? = null,
+    /**
+     * 待弹的提示,存的是 string 资源 id 而不是已解析的文案。
+     *
+     * [AiCallViewModel] 是普通 ViewModel(拿不到 Context),文案必须由 UI 侧
+     * 用 `stringResource` 解析 —— 这样也才能跟随系统语言切换,VM 里写死中文
+     * 的话英文界面下就露馅了。
+     */
+    @StringRes val errorToastRes: Int? = null,
     val showPicker: Boolean = false,
 ) {
     fun selectionFor(mode: AiCallMode): AiModeSelection =

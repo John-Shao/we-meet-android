@@ -1,5 +1,8 @@
 package com.we.meet.feature.assistant.aicall.ui
 
+import androidx.annotation.StringRes
+import com.we.meet.feature.assistant.R
+import androidx.compose.ui.res.stringResource
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
@@ -108,14 +111,14 @@ fun AssistantCallScreen(
                 if (micGranted && (!needCamera || cameraGranted)) {
                     vm.startCall()
                 } else {
-                    scope.launch { snackbarHostState.showSnackbar("需要麦克风/摄像头权限") }
+                    scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.assistant_need_mic_camera)) }
                 }
             }
             PendingPermAction.ToggleVideo -> {
                 pendingAction = null
                 // Only hits this branch when going Voice → Video.
                 if (cameraGranted) vm.toggleMode()
-                else scope.launch { snackbarHostState.showSnackbar("需要摄像头权限") }
+                else scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.assistant_need_camera)) }
             }
             null -> Unit
         }
@@ -166,9 +169,9 @@ fun AssistantCallScreen(
     }
 
     // Surface transient toast as a snackbar.
-    LaunchedEffect(state.errorToast) {
-        val msg = state.errorToast ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(msg)
+    LaunchedEffect(state.errorToastRes) {
+        val resId = state.errorToastRes ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(context.getString(resId))
         vm.dismissError()
     }
 
@@ -249,7 +252,7 @@ fun AssistantCallScreen(
                 )
 
                 Text(
-                    text = "内容由 AI 生成",
+                    text = stringResource(R.string.assistant_ai_generated),
                     fontSize = 12.sp,
                     color = if (isVideoActive) Color.White.copy(alpha = 0.7f)
                         else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -303,7 +306,7 @@ private fun TopBar(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "返回",
+                    contentDescription = stringResource(R.string.assistant_cd_back),
                     tint = tint,
                 )
             }
@@ -312,7 +315,7 @@ private fun TopBar(
                 IconButton(onClick = onFlipCamera) {
                     Icon(
                         imageVector = Icons.Filled.FlipCameraIos,
-                        contentDescription = "切换摄像头",
+                        contentDescription = stringResource(R.string.assistant_cd_switch_camera),
                         tint = tint,
                     )
                 }
@@ -320,7 +323,7 @@ private fun TopBar(
             IconButton(onClick = onOpenSettings, enabled = canOpenSettings) {
                 Icon(
                     imageVector = Icons.Filled.Settings,
-                    contentDescription = "设置",
+                    contentDescription = stringResource(R.string.assistant_cd_settings),
                     tint = if (canOpenSettings) tint else tint.copy(alpha = 0.4f),
                 )
             }
@@ -328,7 +331,7 @@ private fun TopBar(
         // Centred title, overlaid so it stays centred regardless of the
         // asymmetric leading/trailing icon counts.
         Text(
-            text = "AI 助手",
+            text = stringResource(R.string.assistant_title),
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold,
             color = tint,
@@ -344,10 +347,12 @@ private fun StatusHint(
     onDark: Boolean,
 ) {
     val (label, isConnecting) = when (status) {
-        is AiCallStatus.Idle -> (if (mode == AiCallMode.Voice) "点击开始语音通话" else "点击开始视频通话") to false
-        is AiCallStatus.Connecting -> connectingLabel(status.step) to true
-        is AiCallStatus.Active -> (if (status.mode == AiCallMode.Voice) "说话或点击打断" else "正在聆听") to false
-        is AiCallStatus.Ended -> "通话已结束" to false
+        is AiCallStatus.Idle -> (if (mode == AiCallMode.Voice) stringResource(R.string.assistant_tap_to_start_voice)
+            else stringResource(R.string.assistant_tap_to_start_video)) to false
+        is AiCallStatus.Connecting -> stringResource(connectingLabelRes(status.step)) to true
+        is AiCallStatus.Active -> (if (status.mode == AiCallMode.Voice) stringResource(R.string.assistant_speak_or_interrupt)
+            else stringResource(R.string.assistant_listening)) to false
+        is AiCallStatus.Ended -> stringResource(R.string.assistant_call_ended) to false
         is AiCallStatus.Failed -> status.message to false
     }
     val background = if (onDark) Color.Black.copy(alpha = 0.4f)
@@ -380,11 +385,13 @@ private fun StatusHint(
     }
 }
 
-private fun connectingLabel(step: ConnectingStep): String = when (step) {
-    ConnectingStep.CreatingRoom -> "正在创建房间"
-    ConnectingStep.JoiningLiveKit -> "正在接入"
-    ConnectingStep.PublishingTracks -> "正在准备音视频"
-    ConnectingStep.StartingAgent -> "正在启动 AI 助手"
-    ConnectingStep.WaitingAgent -> "正在等待 AI 加入"
-    ConnectingStep.SwitchingMode -> "正在切换模式"
+/** 只做「步骤 → 文案资源」的映射,解析交给调用方 —— 保持它是个纯函数。 */
+@StringRes
+private fun connectingLabelRes(step: ConnectingStep): Int = when (step) {
+    ConnectingStep.CreatingRoom -> R.string.assistant_step_creating_room
+    ConnectingStep.JoiningLiveKit -> R.string.assistant_step_joining
+    ConnectingStep.PublishingTracks -> R.string.assistant_step_publishing
+    ConnectingStep.StartingAgent -> R.string.assistant_step_starting_agent
+    ConnectingStep.WaitingAgent -> R.string.assistant_step_waiting_agent
+    ConnectingStep.SwitchingMode -> R.string.assistant_step_switching_mode
 }

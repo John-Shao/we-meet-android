@@ -1,9 +1,5 @@
 # 设计规范违规基线 —— 由 ./gradlew checkDesignTokens -Pdesign.baseline 生成
 # 格式: 规则|文件路径|数量。数字只许降不许升,详见 docs/设计规范.md
-cjk-literal|feature-assistant/src/main/java/com/we/meet/feature/assistant/aicall/ui/AiSettingsSheet.kt|7
-cjk-literal|feature-assistant/src/main/java/com/we/meet/feature/assistant/aicall/ui/AssistantCallScreen.kt|18
-cjk-literal|feature-assistant/src/main/java/com/we/meet/feature/assistant/aicall/ui/components/BottomControls.kt|5
-cjk-literal|feature-assistant/src/main/java/com/we/meet/feature/assistant/aicall/vm/AiCallViewModel.kt|2
 cjk-literal|feature-im/src/main/java/com/we/meet/feature/im/ui/chat/EventCardBubble.kt|1
 cjk-literal|feature-im/src/main/java/com/we/meet/feature/im/ui/chat/MeetingCardBubble.kt|1
 cjk-literal|feature-im/src/main/java/com/we/meet/feature/im/vm/ChatViewModel.kt|8

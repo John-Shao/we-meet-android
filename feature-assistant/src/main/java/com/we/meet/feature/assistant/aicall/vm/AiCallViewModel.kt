@@ -1,5 +1,7 @@
 package com.we.meet.feature.assistant.aicall.vm
 
+import com.we.meet.feature.assistant.R
+import androidx.annotation.StringRes
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.getValue
@@ -135,7 +137,7 @@ class AiCallViewModel(
 
         val cfg = _state.value.agentConfig
         if (cfg == null) {
-            _state.update { it.copy(errorToast = "AI 配置加载中，请稍后重试") }
+            _state.update { it.copy(errorToastRes = R.string.assistant_config_loading) }
             loadConfig()
             return
         }
@@ -153,10 +155,10 @@ class AiCallViewModel(
         }
     }
 
-    fun endCall(reason: String? = null) {
+    fun endCall(@StringRes reasonRes: Int? = null) {
         if (_state.value.status is AiCallStatus.Idle) return
         val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-        cleanupScope.launch { endCallAsync(reason) }
+        cleanupScope.launch { endCallAsync(reasonRes) }
     }
 
     fun toggleMic() {
@@ -244,7 +246,7 @@ class AiCallViewModel(
     }
 
     fun dismissError() {
-        _state.update { it.copy(errorToast = null) }
+        _state.update { it.copy(errorToastRes = null) }
     }
 
     fun consumeEnded() {
@@ -456,7 +458,7 @@ class AiCallViewModel(
                 when (ev) {
                     is RoomEvent.Disconnected -> {
                         if (_state.value.status is AiCallStatus.Active) {
-                            endCall(reason = "连接已断开，通话已结束")
+                            endCall(reasonRes = R.string.assistant_disconnected_ended)
                         }
                     }
                     else -> Unit
@@ -515,7 +517,7 @@ class AiCallViewModel(
         }
     }
 
-    private suspend fun endCallAsync(reason: String?) {
+    private suspend fun endCallAsync(@StringRes reasonRes: Int?) {
         // Cancel any in-flight connect first
         connectJob?.let { it.cancel(); it.join() }
         connectJob = null
@@ -533,7 +535,7 @@ class AiCallViewModel(
                 cameraFront = false,
                 agentAudioLevel = 0f,
                 agentSpeaking = false,
-                errorToast = reason ?: it.errorToast,
+                errorToastRes = reasonRes ?: it.errorToastRes,
             )
         }
 
