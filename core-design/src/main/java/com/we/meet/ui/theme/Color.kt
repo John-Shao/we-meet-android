@@ -9,7 +9,23 @@ val Seed = Color(0xFF1F6FEB)
 val LightPrimary = Seed
 val LightOnPrimary = Color(0xFFFFFFFF)
 val LightPrimaryContainer = Color(0xFFD6E4FF)
-val LightOnPrimaryContainer = Seed
+
+/**
+ * 比 [Seed] 深一档的蓝,**不要**图省事写回 `Seed`。
+ *
+ * 这个 token 同时被图标和正文用(共 11 处:7 处图标着色、4 处文字),
+ * 而两者门槛不同 —— WCAG 2.2 AA 的 SC 1.4.11 对图标要 3:1、SC 1.4.3 对
+ * 正文要 4.5:1。`Seed` 压在 [LightPrimaryContainer] 上只有 3.62:1,正好
+ * 卡在中间:图标过,文字不过。不过的那 4 处是月视图「今天」那格的日期
+ * 数字、日视图全天条标题(12sp,更吃亏)、审批「已通过」标签、会中 AI
+ * 气泡正文。
+ *
+ * `1A5FCC` 压在同一个底上 4.62:1,过线;图标那 7 处本来就过,只会更好。
+ * 深色那套没这个问题(`D6E4FF` on `1E3A7A` = 8.45:1)。
+ *
+ * ⚠️ 改这个值或 [LightPrimaryContainer] 之前先算对比度,4.5:1 是底线。
+ */
+val LightOnPrimaryContainer = Color(0xFF1A5FCC)
 val LightBackground = Color(0xFFFCFCFD)
 val LightSurface = Color(0xFFFFFFFF)
 val LightOnSurface = Color(0xFF1A1C1E)
