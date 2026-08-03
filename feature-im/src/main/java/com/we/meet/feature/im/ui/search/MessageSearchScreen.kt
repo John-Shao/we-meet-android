@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.search
 
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -43,7 +44,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
@@ -311,6 +311,10 @@ fun MessageSearchScreen(
 
     Scaffold(
         topBar = {
+            // design-exempt: 标题位放的是搜索输入框,不是标题文字。
+            // WeMeetTopBar 的契约是「标题单行、超长省略号」,把输入框塞进去
+            // 就得开一个 @Composable 插槽,那等于把它退化成 M3 的透传壳子,
+            // 它对其余 20 多个页面的保证也就没了。搜索栏是另一种组件。
             TopAppBar(
                 title = {
                     TextField(
@@ -351,11 +355,11 @@ fun MessageSearchScreen(
         ) {
             // 分类标签行(飞书式,对齐 Web 面板)。
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                    .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
             ) {
                 categories.forEach { cat ->
                     FilterChip(
@@ -399,18 +403,18 @@ fun MessageSearchScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onOpenChat(s.cid, null) }
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
                         ) {
                             GroupAvatar(
                                 tiles = listOf(GroupTile(s.cid, title, null)),
-                                size = 40.dp,
+                                size = Dimens.AvatarM,
                             )
                             Text(
                                 text = title,
                                 style = MaterialTheme.typography.bodyLarge,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(start = 12.dp),
+                                modifier = Modifier.padding(start = Dimens.SpaceM),
                             )
                         }
                     }
@@ -478,8 +482,8 @@ fun MessageSearchScreen(
                                 horizontalArrangement = Arrangement.Center,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
-                            ) { CircularProgressIndicator(Modifier.width(24.dp)) }
+                                    .padding(Dimens.SpaceL),
+                            ) { CircularProgressIndicator(Modifier.width(Dimens.IconMedium)) }
                         }
                     } else if (items.isEmpty() && searchedOnce) {
                         item(key = "empty") {
@@ -487,7 +491,7 @@ fun MessageSearchScreen(
                                 text = stringResource(R.string.im_msg_search_no_results),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(16.dp),
+                                modifier = Modifier.padding(Dimens.SpaceL),
                             )
                         }
                     }
@@ -504,7 +508,7 @@ fun MessageSearchScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onOpenChat(hit.cid, hit.seq) }
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -518,7 +522,7 @@ fun MessageSearchScreen(
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.weight(1f),
                                 )
-                                Spacer(Modifier.width(8.dp))
+                                Spacer(Modifier.width(Dimens.SpaceS))
                                 Text(
                                     text = DateFormat.getDateTimeInstance(
                                         DateFormat.SHORT, DateFormat.SHORT,
@@ -548,7 +552,7 @@ fun MessageSearchScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable(enabled = !loadingMore) { loadMore() }
-                                    .padding(16.dp),
+                                    .padding(Dimens.SpaceL),
                             )
                         }
                     }
@@ -588,7 +592,7 @@ private fun AiAskPanel(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
     ) {
         if (state.status == "idle") {
             Text(
@@ -597,14 +601,14 @@ private fun AiAskPanel(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (query.length >= 2) {
-                Spacer(Modifier.padding(top = 8.dp))
+                Spacer(Modifier.padding(top = Dimens.SpaceS))
                 Text(
                     text = stringResource(R.string.im_search_ai_submit, query),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .clickable { onSubmit() }
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = Dimens.SpaceS),
                 )
             }
             return
@@ -616,7 +620,7 @@ private fun AiAskPanel(
                     text = "✨ ${state.question}",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 6.dp),
+                    modifier = Modifier.padding(bottom = Dimens.SpaceXs),
                 )
             }
             if (state.degraded) {
@@ -625,7 +629,7 @@ private fun AiAskPanel(
                         text = stringResource(R.string.im_search_ai_degraded),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 6.dp),
+                        modifier = Modifier.padding(bottom = Dimens.SpaceXs),
                     )
                 }
             }
@@ -640,7 +644,7 @@ private fun AiAskPanel(
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(bottom = 6.dp),
+                        modifier = Modifier.padding(bottom = Dimens.SpaceXs),
                     )
                 }
             }
@@ -652,7 +656,7 @@ private fun AiAskPanel(
                         text = stringResource(R.string.im_search_ai_im_skipped),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(bottom = 4.dp),
+                        modifier = Modifier.padding(bottom = Dimens.SpaceXs),
                     )
                 }
             }
@@ -661,21 +665,21 @@ private fun AiAskPanel(
                     Text(
                         text = state.answer,
                         style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(bottom = 8.dp),
+                        modifier = Modifier.padding(bottom = Dimens.SpaceS),
                     )
                 }
             } else if (state.status == "asking") {
                 item(key = "asking") {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(vertical = 8.dp),
+                        modifier = Modifier.padding(vertical = Dimens.SpaceS),
                     ) {
-                        CircularProgressIndicator(Modifier.width(20.dp))
+                        CircularProgressIndicator(Modifier.width(Dimens.IconSmall))
                         Text(
                             text = stringResource(R.string.im_search_ai_asking),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 8.dp),
+                            modifier = Modifier.padding(start = Dimens.SpaceS),
                         )
                     }
                 }
@@ -719,10 +723,10 @@ private fun TwoLineRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
     ) {
         Text(text = emoji, style = MaterialTheme.typography.titleLarge)
-        Column(Modifier.padding(start = 12.dp)) {
+        Column(Modifier.padding(start = Dimens.SpaceM)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
@@ -748,6 +752,6 @@ private fun SectionHeader(label: String) {
         text = label,
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp),
+        modifier = Modifier.padding(start = Dimens.ScreenPadding, top = Dimens.SpaceM, bottom = Dimens.SpaceXs),
     )
 }

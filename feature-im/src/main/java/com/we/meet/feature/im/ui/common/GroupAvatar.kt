@@ -1,5 +1,8 @@
 package com.we.meet.feature.im.ui.common
 
+import com.we.meet.ui.theme.WeMeetTheme
+import com.we.meet.ui.theme.WeMeetTextStyles
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,8 +27,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
@@ -34,16 +35,16 @@ import coil.request.ImageRequest
 import com.we.meet.feature.im.data.GroupTile
 import kotlin.math.abs
 
-/** Deterministic palette — same member always gets the same tint. */
-private val AVATAR_COLORS = listOf(
-    Color(0xFF2563EB), Color(0xFF7C3AED), Color(0xFFDB2777),
-    Color(0xFFEA580C), Color(0xFF16A34A), Color(0xFF0891B2),
-)
-
-private fun tintFor(name: String): Color {
+/**
+ * 同一个群永远同色 —— 按名字 hash 从调色板取。
+ *
+ * 调色板由调用方从 token 传入(而不是在这里读 CompositionLocal),好让这个
+ * 函数保持纯函数:同样的入参永远同样的结果,好测也好推理。
+ */
+private fun tintFor(name: String, palette: List<Color>): Color {
     var h = 0
     for (c in name) h = (h * 31 + c.code) ushr 0
-    return AVATAR_COLORS[abs(h) % AVATAR_COLORS.size]
+    return palette[abs(h) % palette.size]
 }
 
 private fun initialOf(name: String): String =
@@ -65,7 +66,7 @@ private fun initialOf(name: String): String =
 @Composable
 fun GroupAvatar(
     tiles: List<GroupTile>,
-    size: Dp = 44.dp,
+    size: Dp = Dimens.ListLeadingIcon,
     modifier: Modifier = Modifier,
 ) {
     val members = tiles.take(9)
@@ -138,7 +139,7 @@ fun GroupAvatar(
 
 @Composable
 private fun Tile(avatarUrl: String?, name: String, cacheKey: String) {
-    val fallbackColor = tintFor(name)
+    val fallbackColor = tintFor(name, WeMeetTheme.extras.im.groupAvatarPalette)
     val effectiveKey = com.we.meet.core.directory.ui.avatarCacheKey(avatarUrl, cacheKey)
     var imageFailed by remember(effectiveKey) { mutableStateOf(false) }
 
@@ -166,7 +167,7 @@ private fun Tile(avatarUrl: String?, name: String, cacheKey: String) {
                 text = initialOf(name),
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
-                fontSize = 10.sp,
+                style = WeMeetTextStyles.LabelTiny,
                 textAlign = TextAlign.Center,
             )
         }

@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.call
 
+import com.we.meet.ui.theme.Dimens
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioManager
@@ -52,7 +53,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
@@ -232,7 +232,7 @@ private fun ConnectingContent(session: ImSession, info: CallInfo) {
         statusText = stringResource(R.string.im_call_connecting),
         onBack = null,
     ) {
-        CircularProgressIndicator(modifier = Modifier.size(32.dp))
+        CircularProgressIndicator(modifier = Modifier.size(Dimens.IconXl))
     }
 }
 
@@ -263,7 +263,7 @@ private fun CallScaffold(
                 onClick = onBack,
                 modifier = Modifier
                     .statusBarsPadding()
-                    .padding(4.dp)
+                    .padding(Dimens.SpaceXs)
                     .align(Alignment.TopStart),
             ) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
@@ -273,20 +273,20 @@ private fun CallScaffold(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.Center)
-                .padding(horizontal = 32.dp),
+                .padding(horizontal = Dimens.SpaceXxl),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             GroupAvatar(
                 tiles = listOf(GroupTile(peerUid, displayName, peer?.avatarUrl)),
-                size = 112.dp,
+                size = Dimens.Chat.CallAvatarSize,
             )
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(Dimens.SpaceXl))
             Text(
                 text = displayName,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Dimens.SpaceM))
             Text(
                 text = statusText,
                 style = MaterialTheme.typography.bodyLarge,
@@ -297,7 +297,7 @@ private fun CallScaffold(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(bottom = 48.dp),
+                .padding(bottom = Dimens.SpaceXxxl),
         ) {
             bottomBar()
         }
@@ -314,15 +314,15 @@ private fun RoundActionButton(
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Surface(
             color = background,
-            shape = RoundedCornerShape(20.dp),
-            modifier = Modifier.size(64.dp),
+            shape = RoundedCornerShape(Dimens.CornerL),
+            modifier = Modifier.size(Dimens.IconIllustrationLarge),
             onClick = onClick,
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Icon(icon, contentDescription = label, tint = Color.White, modifier = Modifier.size(30.dp))
+                Icon(icon, contentDescription = label, tint = Color.White, modifier = Modifier.size(Dimens.Chat.CallControlIcon))
             }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Dimens.SpaceS))
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,

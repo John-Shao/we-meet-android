@@ -290,4 +290,6 @@
     <string name="im_doc_picker_error">获取文档列表失败</string>
     <string name="im_starred_marker">星标联系人</string>
     <string name="im_special_alert_marker">已开启特别提醒</string>
+    <string name="im_fmt_month_day">M月d日</string>
+    <string name="im_fmt_month_day_time">M月d日 HH:mm</string>
 </resources>

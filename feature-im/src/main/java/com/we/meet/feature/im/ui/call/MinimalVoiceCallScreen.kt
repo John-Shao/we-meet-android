@@ -1,5 +1,7 @@
 package com.we.meet.feature.im.ui.call
 
+import com.we.meet.ui.theme.WeMeetTheme
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -43,7 +45,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
@@ -159,29 +160,29 @@ fun MinimalVoiceCallScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.Center)
-                    .padding(horizontal = 24.dp),
+                    .padding(horizontal = Dimens.SpaceXl),
             )
         } else {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.Center)
-                    .padding(horizontal = 32.dp),
+                    .padding(horizontal = Dimens.SpaceXxl),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 GroupAvatar(
                     tiles = listOf(
                         GroupTile(soloRemote?.id ?: peerUid, displayName, displayAvatar)
                     ),
-                    size = 112.dp,
+                    size = Dimens.Chat.CallAvatarSize,
                 )
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(Dimens.SpaceXl))
                 Text(
                     text = displayName,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(Dimens.SpaceM))
                 Text(
                     text = status,
                     style = MaterialTheme.typography.bodyLarge,
@@ -194,7 +195,11 @@ fun MinimalVoiceCallScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 56.dp, start = 24.dp, end = 24.dp),
+                .padding(
+                    bottom = Dimens.Chat.CallControlsBottomInset,
+                    start = Dimens.SpaceXl,
+                    end = Dimens.SpaceXl,
+                ),
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             RoundButton(
@@ -253,11 +258,11 @@ private fun VoiceGrid(
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 420.dp),
+                .heightIn(max = Dimens.Chat.SheetListMaxHeight),
         ) {
             items(participants, key = { "p:${it.id}" }) { p ->
                 val prof = resolved[p.id]
@@ -306,7 +311,7 @@ private fun VoiceGrid(
             }
         }
         if (failed.isNotEmpty()) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Dimens.SpaceM))
             // map{} is inline so the stringResource call keeps its composable
             // context; joinToString's lambda wouldn't.
             val parts = failed.map { "${it.label}: ${stringResource(inviteStateRes(it.state))}" }
@@ -316,14 +321,14 @@ private fun VoiceGrid(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(Dimens.SpaceL))
         Text(
             text = status,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (participants.count { !it.isLocal } == 0 && pending.isEmpty()) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Dimens.SpaceS))
             Text(
                 text = stringResource(R.string.im_call_left_alone),
                 style = MaterialTheme.typography.bodyMedium,
@@ -348,14 +353,14 @@ private fun GridCell(
     ) {
         Box(
             modifier = if (speaking) {
-                Modifier.border(2.dp, AcceptGreen, RoundedCornerShape(18.dp))
+                Modifier.border(Dimens.BorderEmphasis, AcceptGreen, RoundedCornerShape(Dimens.CornerL))
             } else {
                 Modifier
             },
         ) {
-            GroupAvatar(tiles = listOf(GroupTile(id, name, avatarUrl)), size = 72.dp)
+            GroupAvatar(tiles = listOf(GroupTile(id, name, avatarUrl)), size = Dimens.ActionTile)
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(Dimens.SpaceXs))
         Text(
             text = name,
             style = MaterialTheme.typography.bodyMedium,
@@ -392,15 +397,15 @@ internal fun RoundButton(
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Surface(
             color = background,
-            shape = RoundedCornerShape(20.dp),
-            modifier = Modifier.size(64.dp),
+            shape = RoundedCornerShape(Dimens.CornerL),
+            modifier = Modifier.size(Dimens.IconIllustrationLarge),
             onClick = onClick,
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Icon(icon, contentDescription = label, tint = Color.White, modifier = Modifier.size(30.dp))
+                Icon(icon, contentDescription = label, tint = Color.White, modifier = Modifier.size(Dimens.Chat.CallControlIcon))
             }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Dimens.SpaceS))
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
@@ -417,7 +422,18 @@ internal fun formatElapsed(sec: Long): String {
     return if (h > 0) "%d:%02d:%02d".format(h, m, ss) else "%02d:%02d".format(m, ss)
 }
 
-internal val HangupRed = Color(0xFFE5484D)
-internal val AcceptGreen = Color(0xFF30A46C)
-internal val NeutralControl = Color(0xFF6B7280)
-internal val MutedControl = Color(0xFF9CA3AF)
+/**
+ * 通话配色的取值入口。
+ *
+ * 写成 @Composable 取值属性(而不是让每个调用处自己写
+ * `WeMeetTheme.extras.im.callHangUp`)是为了让这两个通话页的几十处引用一行
+ * 不用改 —— 这也正是 `MaterialTheme.colorScheme` 自己的写法。
+ */
+internal val HangupRed: Color
+    @Composable get() = WeMeetTheme.extras.im.callHangUp
+internal val AcceptGreen: Color
+    @Composable get() = WeMeetTheme.extras.im.callAccept
+internal val NeutralControl: Color
+    @Composable get() = WeMeetTheme.extras.im.callNeutralControl
+internal val MutedControl: Color
+    @Composable get() = WeMeetTheme.extras.im.callMutedControl

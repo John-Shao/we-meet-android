@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.chat
 
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.data.ImUserInfo
@@ -38,7 +38,7 @@ fun ReadReceiptSheet(
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        LazyColumn(modifier = Modifier.padding(bottom = 24.dp)) {
+        LazyColumn(modifier = Modifier.padding(bottom = Dimens.SpaceXl)) {
             item {
                 SectionHeader(stringResource(R.string.im_receipt_read_section, read.size))
             }
@@ -58,7 +58,7 @@ private fun SectionHeader(text: String) {
         style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+        modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceS),
     )
 }
 
@@ -75,18 +75,18 @@ private fun MemberLine(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 6.dp),
+            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceXs),
     ) {
         MemberAvatar(
             name = label,
             url = info?.avatarUrl,
             cacheKey = "im-avatar:$uid",
-            size = 32.dp,
+            size = Dimens.IconXl,
         )
         Text(
             text = label.ifBlank { uid.take(8) },
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(start = 12.dp),
+            modifier = Modifier.padding(start = Dimens.SpaceM),
         )
     }
 }

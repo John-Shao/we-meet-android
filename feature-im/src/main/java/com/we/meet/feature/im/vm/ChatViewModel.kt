@@ -391,14 +391,22 @@ class ChatViewModel internal constructor(
     }
 
     /** Full plain-text for a merged line (media → placeholder, text/quote → full). */
+    /**
+     * 媒体消息在「合并转发」正文里的占位。
+     *
+     * ⚠️ 这几个串**不进 strings.xml**,是有意的:它们会被 put 进 JSON 作为
+     * 消息内容发给对方(见调用处),属于「数据」而不是「界面文案」。按发送方
+     * 语言本地化只会让同一条消息在不同人那里语言不一 —— 真正的修法是协议层
+     * 传结构化占位符类型、由接收方渲染,那是独立的协议改动。
+     */
     private fun mergedTextOf(m: Message): String =
         when (val c = MessageContentParser.parse(m.contentType, m.body)) {
             is MessageContent.Text -> c.body
             is MessageContent.Quote -> c.text
-            is MessageContent.Image -> "[图片]"
-            is MessageContent.File -> "[文件] ${c.name}"
-            is MessageContent.Voice -> "[语音]"
-            is MessageContent.Merged -> "[聊天记录]"
+            is MessageContent.Image -> "[图片]" // i18n-exempt
+            is MessageContent.File -> "[文件] ${c.name}" // i18n-exempt
+            is MessageContent.Voice -> "[语音]" // i18n-exempt
+            is MessageContent.Merged -> "[聊天记录]" // i18n-exempt
             else -> ""
         }
 
@@ -707,14 +715,22 @@ class ChatViewModel internal constructor(
     fun snippetPreview(m: Message): String = snippetOf(m)
 
     /** Plain-text snippet of a message for quote previews (media → placeholder). */
+    /**
+     * 媒体消息在「合并转发」正文里的占位。
+     *
+     * ⚠️ 这几个串**不进 strings.xml**,是有意的:它们会被 put 进 JSON 作为
+     * 消息内容发给对方(见调用处),属于「数据」而不是「界面文案」。按发送方
+     * 语言本地化只会让同一条消息在不同人那里语言不一 —— 真正的修法是协议层
+     * 传结构化占位符类型、由接收方渲染,那是独立的协议改动。
+     */
     private fun snippetOf(m: Message): String =
         when (val c = MessageContentParser.parse(m.contentType, m.body)) {
             is MessageContent.Text -> c.body.take(SNIPPET_MAX)
             is MessageContent.Quote -> c.text.take(SNIPPET_MAX)
-            is MessageContent.Image -> "[图片]"
-            is MessageContent.File -> "[文件] ${c.name}"
-            is MessageContent.Voice -> "[语音]"
-            is MessageContent.Merged -> "[聊天记录]"
+            is MessageContent.Image -> "[图片]" // i18n-exempt
+            is MessageContent.File -> "[文件] ${c.name}" // i18n-exempt
+            is MessageContent.Voice -> "[语音]" // i18n-exempt
+            is MessageContent.Merged -> "[聊天记录]" // i18n-exempt
             else -> ""
         }
 

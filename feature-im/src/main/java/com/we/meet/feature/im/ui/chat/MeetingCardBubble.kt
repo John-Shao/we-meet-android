@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.chat
 
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -25,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.model.MessageContent
 import java.time.OffsetDateTime
@@ -45,19 +45,21 @@ internal fun MeetingCardBubble(
     onJoin: () -> Unit,
 ) {
     val clickable = content.slug.isNotBlank()
+    // 日期格式随语言走,从资源取而不是写死在格式化函数里。
+    val whenPattern = stringResource(R.string.im_fmt_month_day_time)
     val whenText =
-        if (content.status == "scheduled") formatMeetingWhen(content.scheduledAtIso)
+        if (content.status == "scheduled") formatMeetingWhen(content.scheduledAtIso, whenPattern)
         else stringResource(R.string.im_meeting_card_ongoing)
 
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(Dimens.CornerM),
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
+        tonalElevation = Dimens.ElevationSubtle,
         border = androidx.compose.foundation.BorderStroke(
-            1.dp, MaterialTheme.colorScheme.outlineVariant,
+            Dimens.BorderThin, MaterialTheme.colorScheme.outlineVariant,
         ),
         modifier = Modifier
-            .widthIn(min = 220.dp, max = 300.dp)
+            .widthIn(min = Dimens.Chat.CardMinWidth, max = Dimens.Chat.CardMaxWidth)
             .combinedClickable(
                 enabled = clickable,
                 onClick = onJoin,
@@ -67,19 +69,19 @@ internal fun MeetingCardBubble(
         Row {
             Box(
                 Modifier
-                    .width(4.dp)
+                    .width(Dimens.Chat.CardAccentBarWidth)
                     .fillMaxHeight()
                     .background(MaterialTheme.colorScheme.primary),
             )
-            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+            Column(modifier = Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Filled.Videocam,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(Dimens.IconTiny),
                     )
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(Dimens.SpaceXs))
                     Text(
                         text = content.title.ifBlank {
                             stringResource(R.string.im_preview_meeting)
@@ -96,7 +98,7 @@ internal fun MeetingCardBubble(
                         text = whenText,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp),
+                        modifier = Modifier.padding(top = Dimens.SpaceXs),
                     )
                 }
                 if (content.slug.isNotBlank()) {
@@ -106,7 +108,7 @@ internal fun MeetingCardBubble(
                         ),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(top = 2.dp),
+                        modifier = Modifier.padding(top = Dimens.SpaceXxs),
                     )
                 }
                 if (clickable) {
@@ -115,7 +117,7 @@ internal fun MeetingCardBubble(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(top = 6.dp),
+                        modifier = Modifier.padding(top = Dimens.SpaceXs),
                     )
                 }
             }
@@ -128,10 +130,10 @@ private fun formatMeetingNo(slug: String): String =
     if (slug.all { it.isDigit() }) slug.chunked(4).joinToString(" ") else slug
 
 /** 「M月d日 HH:mm」(本地时区);解析失败 → null。 */
-private fun formatMeetingWhen(iso: String): String? {
+private fun formatMeetingWhen(iso: String, pattern: String): String? {
     if (iso.isBlank()) return null
     val zoned = runCatching {
         OffsetDateTime.parse(iso).toInstant().atZone(ZoneId.systemDefault())
     }.getOrNull() ?: return null
-    return zoned.format(DateTimeFormatter.ofPattern("M月d日 HH:mm"))
+    return zoned.format(DateTimeFormatter.ofPattern(pattern))
 }

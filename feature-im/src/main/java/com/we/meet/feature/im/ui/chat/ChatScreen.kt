@@ -1,5 +1,7 @@
 package com.we.meet.feature.im.ui.chat
 
+import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.theme.Dimens
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -22,7 +24,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddPhotoAlternate
@@ -38,7 +39,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -54,7 +54,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -297,38 +296,19 @@ fun ChatScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = if (selectMode) {
-                                stringResource(R.string.im_selected_count, selectedMids.size)
-                            } else ui.title.ifBlank { stringResource(R.string.im_untitled_chat) },
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        // 私聊对端已离职:提示单独一行,不拼进标题 —— 标题会流进
-                        // peerName / roomName(通话与会议室命名),那些地方不该带后缀。
-                        if (ui.peerLeft && !selectMode) {
-                            Text(
-                                text = stringResource(R.string.im_departed_hint),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { if (selectMode) exitSelect() else onBack() }) {
-                        Icon(
-                            if (selectMode) Icons.Filled.Close
-                            else Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null,
-                        )
-                    }
-                },
+            WeMeetTopBar(
+                title = if (selectMode) {
+                    stringResource(R.string.im_selected_count, selectedMids.size)
+                } else ui.title.ifBlank { stringResource(R.string.im_untitled_chat) },
+                // 私聊对端已离职:提示走副标题,不拼进标题 —— 标题会流进
+                // peerName / roomName(通话与会议室命名),那些地方不该带后缀。
+                subtitle = if (ui.peerLeft && !selectMode) {
+                    stringResource(R.string.im_departed_hint)
+                } else null,
+                // 选择模式下导航位的语义是「退出选择」而非「回上一层」,
+                // 所以走 onClose(✕)那一档,图标和 TalkBack 文案一起换。
+                onBack = if (selectMode) null else onBack,
+                onClose = if (selectMode) ({ exitSelect() }) else null,
                 actions = {
                     if (!selectMode) {
                         if (ui.isGroup) {
@@ -553,7 +533,7 @@ fun ChatScreen(
                                         androidx.compose.material3.Checkbox(
                                             checked = message.mid in selectedMids,
                                             onCheckedChange = null,
-                                            modifier = Modifier.padding(start = 8.dp),
+                                            modifier = Modifier.padding(start = Dimens.SpaceS),
                                         )
                                         Box(Modifier.weight(1f)) { bubble() }
                                     }
@@ -838,13 +818,13 @@ private fun SelectActionBar(
     onDelete: () -> Unit,
 ) {
     androidx.compose.material3.Surface(
-        tonalElevation = 3.dp,
+        tonalElevation = Dimens.ElevationSubtle,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             TextButton(onClick = onOneByOne, enabled = enabled) {
@@ -871,11 +851,11 @@ private fun PendingRow(kind: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
+            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs),
         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CircularProgressIndicator(modifier = Modifier.size(16.dp))
+        CircularProgressIndicator(modifier = Modifier.size(Dimens.IconTiny))
         Text(
             text = stringResource(
                 when (kind) {
@@ -886,7 +866,7 @@ private fun PendingRow(kind: String) {
             ),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.padding(start = 8.dp),
+            modifier = Modifier.padding(start = Dimens.SpaceS),
         )
     }
 }
@@ -985,7 +965,7 @@ private fun MessageInputBar(
         }
         if (replyPreview != null) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(top = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceM).padding(top = Dimens.SpaceXs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -996,11 +976,11 @@ private fun MessageInputBar(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = onClearReply, modifier = Modifier.size(28.dp)) {
+                IconButton(onClick = onClearReply, modifier = Modifier.size(Dimens.IconLarge)) {
                     Icon(
                         Icons.Filled.Close,
                         contentDescription = stringResource(R.string.im_reply_cancel),
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(Dimens.IconSmall),
                     )
                 }
             }
@@ -1010,7 +990,7 @@ private fun MessageInputBar(
         var inputFocused by remember { mutableStateOf(false) }
         val expanded = inputFocused || text.isNotBlank() || voiceMode || panel != InputPanel.None
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
         ) {
             if (voiceMode) {
                 HoldToTalkBar(
@@ -1029,7 +1009,7 @@ private fun MessageInputBar(
                 )
             } else {
                 Surface(
-                    shape = RoundedCornerShape(if (expanded) 16.dp else 22.dp),
+                    shape = RoundedCornerShape(if (expanded) Dimens.CornerL else Dimens.CornerL),
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
@@ -1037,7 +1017,7 @@ private fun MessageInputBar(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(horizontal = 14.dp, vertical = 9.dp),
+                                .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
                             contentAlignment = Alignment.CenterStart,
                         ) {
                             if (text.isEmpty()) {
@@ -1072,25 +1052,25 @@ private fun MessageInputBar(
                             IconButton(
                                 onClick = { onPickImage() },
                                 enabled = canSend,
-                                modifier = Modifier.size(38.dp),
+                                modifier = Modifier.size(Dimens.AvatarS),
                             ) {
                                 Icon(
                                     Icons.Filled.Image,
                                     contentDescription = stringResource(R.string.im_attach_image),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(22.dp),
+                                    modifier = Modifier.size(Dimens.IconSmall),
                                 )
                             }
                             IconButton(
                                 onClick = { openPanel(InputPanel.Emoji) },
                                 enabled = canSend,
-                                modifier = Modifier.size(38.dp).padding(end = 4.dp),
+                                modifier = Modifier.size(Dimens.AvatarS).padding(end = Dimens.SpaceXs),
                             ) {
                                 Icon(
                                     Icons.Filled.EmojiEmotions,
                                     contentDescription = stringResource(R.string.im_input_emoji),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(22.dp),
+                                    modifier = Modifier.size(Dimens.IconSmall),
                                 )
                             }
                         }
@@ -1100,7 +1080,7 @@ private fun MessageInputBar(
             // 展开态:下方完整工具栏 + 发送键
             AnimatedVisibility(visible = expanded) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = Dimens.SpaceS),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconButton(onClick = { onPickImage() }, enabled = canSend) {
@@ -1144,8 +1124,8 @@ private fun MessageInputBar(
                     Button(
                         onClick = { onSend(text) },
                         enabled = canSend && text.isNotBlank(),
-                        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
-                        modifier = Modifier.height(36.dp),
+                        contentPadding = PaddingValues(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceXs),
+                        modifier = Modifier.height(Dimens.AvatarS),
                     ) { Text(stringResource(R.string.im_input_send)) }
                 }
             }
@@ -1182,9 +1162,9 @@ private fun HoldToTalkBar(
     Surface(
         color = if (recording) MaterialTheme.colorScheme.errorContainer
         else MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(Dimens.CornerS),
         modifier = modifier
-            .padding(horizontal = 4.dp)
+            .padding(horizontal = Dimens.SpaceXs)
             .pointerInput(enabled, hasPermission) {
                 if (!enabled) return@pointerInput
                 detectTapGestures(
@@ -1200,7 +1180,7 @@ private fun HoldToTalkBar(
                 )
             },
     ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().height(Dimens.ButtonHeight)) {
             Text(
                 text = stringResource(
                     if (recording) R.string.im_voice_release else R.string.im_voice_hold
@@ -1227,14 +1207,14 @@ private fun EmojiPanel(onPick: (String) -> Unit) {
         columns = GridCells.Fixed(8),
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp)
+            .height(Dimens.Chat.CardMinWidth)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-            .padding(8.dp),
+            .padding(Dimens.SpaceS),
     ) {
         items(EMOJIS) { e ->
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.padding(4.dp).size(36.dp).clickable { onPick(e) },
+                modifier = Modifier.padding(Dimens.SpaceXs).size(Dimens.AvatarS).clickable { onPick(e) },
             ) {
                 Text(text = e, style = MaterialTheme.typography.headlineSmall)
             }
@@ -1277,19 +1257,19 @@ private fun PlusPanel(
         columns = GridCells.Fixed(4),
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(max = 280.dp)
+            .heightIn(max = Dimens.Chat.BubbleMaxWidth)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-            .padding(vertical = 12.dp),
+            .padding(vertical = Dimens.SpaceM),
     ) {
         items(items) { item ->
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(vertical = 8.dp).clickable { item.onClick() },
+                modifier = Modifier.padding(vertical = Dimens.SpaceS).clickable { item.onClick() },
             ) {
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.size(56.dp),
+                    shape = RoundedCornerShape(Dimens.CornerM),
+                    modifier = Modifier.size(Dimens.ListThumbnail),
                 ) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                         Icon(
@@ -1299,7 +1279,7 @@ private fun PlusPanel(
                         )
                     }
                 }
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(Dimens.SpaceXs))
                 Text(
                     stringResource(item.labelRes),
                     style = MaterialTheme.typography.labelSmall,
@@ -1364,7 +1344,7 @@ private fun MentionDropdown(names: List<String>, onPick: (String) -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         androidx.compose.foundation.lazy.LazyColumn(
-            modifier = Modifier.heightIn(max = 200.dp),
+            modifier = Modifier.heightIn(max = Dimens.Chat.MentionListMaxHeight),
         ) {
             items(names) { name ->
                 Text(
@@ -1373,7 +1353,7 @@ private fun MentionDropdown(names: List<String>, onPick: (String) -> Unit) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onPick(name) }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                        .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
                 )
             }
         }
@@ -1387,7 +1367,7 @@ private const val TIME_DIVIDER_GAP_MS = 5 * 60 * 1000L
 private fun TimeDivider(tsMs: Long) {
     val label = dividerLabel(tsMs, stringResource(R.string.im_time_yesterday))
     Box(
-        Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
         contentAlignment = Alignment.Center,
     ) {
         Text(

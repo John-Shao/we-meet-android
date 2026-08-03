@@ -1,5 +1,7 @@
 package com.we.meet.feature.im.ui.call
 
+import com.we.meet.ui.theme.WeMeetTheme
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,7 +39,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
@@ -113,9 +114,9 @@ fun MinimalVideoCallScreen(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
-                    .padding(top = 12.dp)
-                    .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                    .padding(top = Dimens.SpaceM)
+                    .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(Dimens.CornerM))
+                    .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs),
             )
         } else {
             // Peer camera off / not joined yet — voice-screen style center block.
@@ -123,21 +124,21 @@ fun MinimalVideoCallScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.Center)
-                    .padding(horizontal = 32.dp),
+                    .padding(horizontal = Dimens.SpaceXxl),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 GroupAvatar(
                     tiles = listOf(GroupTile(peerUid, displayName, peer?.avatarUrl)),
-                    size = 112.dp,
+                    size = Dimens.Chat.CallAvatarSize,
                 )
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(Dimens.SpaceXl))
                 Text(
                     text = displayName,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White,
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(Dimens.SpaceM))
                 Text(
                     text = status,
                     style = MaterialTheme.typography.bodyLarge,
@@ -153,9 +154,9 @@ fun MinimalVideoCallScreen(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .statusBarsPadding()
-                    .padding(top = 12.dp, end = 16.dp)
-                    .size(width = 110.dp, height = 160.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .padding(top = Dimens.SpaceM, end = Dimens.ScreenPadding)
+                    .size(width = Dimens.Chat.PipWidth, height = Dimens.Chat.PipHeight)
+                    .clip(RoundedCornerShape(Dimens.CornerM))
                     .background(Color.Black.copy(alpha = 0.4f)),
             ) {
                 localVideo()
@@ -166,13 +167,13 @@ fun MinimalVideoCallScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 40.dp),
+                .padding(bottom = Dimens.SpaceXxl),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = Dimens.ScreenPadding),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
                 RoundButton(
@@ -219,7 +220,7 @@ fun MinimalVideoCallScreen(
                     )
                 }
             }
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(Dimens.SpaceXxl))
             RoundButton(
                 icon = Icons.Filled.CallEnd,
                 label = stringResource(R.string.im_call_hangup),
@@ -232,5 +233,9 @@ fun MinimalVideoCallScreen(
 }
 
 /** The video stage is always dark (video behind), regardless of app theme. */
-private val VideoStageBackground = Color(0xFF111418)
-private val VideoStageLabel = Color(0xEEFFFFFF)
+
+/** 视频通话舞台配色,同 [HangupRed] 一组的取值方式。 */
+private val VideoStageBackground: Color
+    @Composable get() = WeMeetTheme.extras.im.videoStageBackground
+private val VideoStageLabel: Color
+    @Composable get() = WeMeetTheme.extras.im.videoStageLabel

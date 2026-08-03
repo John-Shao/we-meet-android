@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.list
 
+import com.we.meet.ui.theme.Dimens
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -70,7 +71,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jusi.lightim.ConnectionState
@@ -174,14 +174,14 @@ fun ConversationListScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+                    .padding(start = Dimens.SpaceM, end = Dimens.SpaceXs, top = Dimens.SpaceS, bottom = Dimens.SpaceXs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 MemberAvatar(
                     name = selfName,
                     url = selfAvatarUrl,
                     cacheKey = "self",
-                    size = 36.dp,
+                    size = Dimens.AvatarS,
                     modifier = Modifier
                         .clip(CircleShape)
                         .clickable(
@@ -189,7 +189,7 @@ fun ConversationListScreen(
                             onClick = onAvatarClick,
                         ),
                 )
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(Dimens.SpaceM))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = selfName.ifBlank { stringResource(R.string.im_list_title) },
@@ -307,7 +307,7 @@ fun ConversationListScreen(
                     )
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.padding(start = 76.dp),
+                        modifier = Modifier.padding(start = Dimens.Chat.ConversationDividerIndent),
                     )
                 }
             }
@@ -316,7 +316,7 @@ fun ConversationListScreen(
 
     menuFor?.let { row ->
         ModalBottomSheet(onDismissRequest = { menuFor = null }) {
-            Column(modifier = Modifier.padding(bottom = 24.dp)) {
+            Column(modifier = Modifier.padding(bottom = Dimens.SpaceXl)) {
                 SheetAction(
                     text = stringResource(if (row.pinned) R.string.im_menu_unpin else R.string.im_menu_pin),
                 ) {
@@ -410,7 +410,7 @@ private fun ConversationRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (row.isGroup) {
@@ -422,13 +422,13 @@ private fun ConversationRow(
                     name = row.title,
                     url = row.avatarUrl,
                     cacheKey = "im-avatar:${row.avatarKey}",
-                    size = 44.dp,
+                    size = Dimens.ListLeadingIcon,
                 )
             }
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 12.dp),
+                    .padding(start = Dimens.SpaceM),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -446,8 +446,8 @@ private fun ConversationRow(
                             contentDescription = stringResource(R.string.im_starred_marker),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
-                                .padding(start = 4.dp)
-                                .size(14.dp),
+                                .padding(start = Dimens.SpaceXs)
+                                .size(Dimens.IconTiny),
                         )
                     }
                     // 「他的消息特别提醒」:一个小铃铛。会话开了免打扰时 row.specialAlert
@@ -458,8 +458,8 @@ private fun ConversationRow(
                             contentDescription = stringResource(R.string.im_special_alert_marker),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
-                                .padding(start = 4.dp)
-                                .size(14.dp),
+                                .padding(start = Dimens.SpaceXs)
+                                .size(Dimens.IconTiny),
                         )
                     }
                     if (row.pinned) {
@@ -468,12 +468,12 @@ private fun ConversationRow(
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.outline,
                             modifier = Modifier
-                                .padding(start = 4.dp)
-                                .size(14.dp),
+                                .padding(start = Dimens.SpaceXs)
+                                .size(Dimens.IconTiny),
                         )
                     }
                 }
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(Dimens.SpaceXxs))
                 val preview = previewText(row.lastContentType, row.lastMessage)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (row.mentioned) {
@@ -481,7 +481,7 @@ private fun ConversationRow(
                             text = stringResource(R.string.im_mention_marker),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(end = 4.dp),
+                            modifier = Modifier.padding(end = Dimens.SpaceXs),
                         )
                     }
                     Text(
@@ -495,22 +495,22 @@ private fun ConversationRow(
                     )
                 }
             }
-            Column(horizontalAlignment = Alignment.End, modifier = Modifier.padding(start = 8.dp)) {
+            Column(horizontalAlignment = Alignment.End, modifier = Modifier.padding(start = Dimens.SpaceS)) {
                 Text(
                     text = row.lastMessageTs?.let { timeLabel(it) }.orEmpty(),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(Dimens.SpaceXs))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (row.muted) {
                         Icon(
                             Icons.Filled.NotificationsOff,
                             contentDescription = stringResource(R.string.im_menu_mute),
                             tint = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.size(14.dp),
+                            modifier = Modifier.size(Dimens.IconTiny),
                         )
-                        Spacer(Modifier.width(4.dp))
+                        Spacer(Modifier.width(Dimens.SpaceXs))
                     }
                     if (row.unread > 0) {
                         UnreadBadge(count = row.unread, subdued = row.muted)
@@ -531,7 +531,7 @@ private fun UnreadBadge(count: Long, subdued: Boolean) {
             text = if (count > 99) stringResource(R.string.im_unread_overflow) else count.toString(),
             color = if (subdued) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onError,
             style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
+            modifier = Modifier.padding(horizontal = Dimens.SpaceXs, vertical = Dimens.BorderThin),
         )
     }
 }
@@ -545,7 +545,7 @@ private fun SheetAction(text: String, destructive: Boolean = false, onClick: () 
             color = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 14.dp),
+                .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
         )
     }
 }

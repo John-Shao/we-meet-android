@@ -1,5 +1,7 @@
 package com.we.meet.feature.im.ui.common
 
+import com.we.meet.ui.theme.WeMeetTheme
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,9 +15,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.jusi.lightim.ConnectionState
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.model.MessageContent
@@ -39,19 +39,20 @@ fun ConnectionStatusBar(state: ConnectionState, onRetry: (() -> Unit)?) {
     // strip reads in BOTH light and dark themes. Without an explicit fg the text
     // inherits LocalContentColor — light-on-light-pink in dark mode (unreadable).
     // Same approach as [ErrorBanner] below, which was never reported broken.
+    val im = WeMeetTheme.extras.im
     val (bgColor, fgColor) = when (state) {
-        ConnectionState.CONNECTED -> Color(0xFFE7F5E7) to Color(0xFF1B5E20)
+        ConnectionState.CONNECTED -> im.connConnectedBg to im.connConnectedFg
         ConnectionState.CONNECTING, ConnectionState.RECONNECTING ->
-            Color(0xFFFFF6E0) to Color(0xFF7A4F01)
-        ConnectionState.AUTH_FAILED -> Color(0xFFFCE4E4) to Color(0xFF8B0000)
-        ConnectionState.DISCONNECTED -> Color(0xFFEDEDED) to Color(0xFF444444)
+            im.connConnectingBg to im.connConnectingFg
+        ConnectionState.AUTH_FAILED -> im.connFailedBg to im.connFailedFg
+        ConnectionState.DISCONNECTED -> im.connOfflineBg to im.connOfflineFg
     }
     Surface(color = bgColor, contentColor = fgColor, modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 40.dp)
-                .padding(start = 16.dp, end = 8.dp),
+                .heightIn(min = Dimens.AvatarM)
+                .padding(start = Dimens.ScreenPadding, end = Dimens.SpaceS),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -66,7 +67,7 @@ fun ConnectionStatusBar(state: ConnectionState, onRetry: (() -> Unit)?) {
                 // that looked nothing like the button-less states.
                 TextButton(
                     onClick = onRetry,
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    contentPadding = PaddingValues(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs),
                 ) {
                     Text(
                         text = stringResource(R.string.im_action_retry),
@@ -81,12 +82,13 @@ fun ConnectionStatusBar(state: ConnectionState, onRetry: (() -> Unit)?) {
 
 @Composable
 fun ErrorBanner(message: String) {
-    Surface(color = Color(0xFFFCE4E4), modifier = Modifier.fillMaxWidth()) {
+    val im = WeMeetTheme.extras.im
+    Surface(color = im.connFailedBg, modifier = Modifier.fillMaxWidth()) {
         Text(
             text = message,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             style = MaterialTheme.typography.bodySmall,
-            color = Color(0xFF8B0000),
+            color = im.connFailedFg,
         )
     }
 }

@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.chat
 
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,7 +39,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.we.meet.feature.im.R
@@ -79,7 +79,7 @@ fun DocPickerDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                        .padding(horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXs),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconButton(onClick = onDismiss) {
@@ -93,7 +93,7 @@ fun DocPickerDialog(
                         textAlign = TextAlign.Center,
                     )
                     // Balances the leading close button so the title stays visually centered.
-                    Spacer(Modifier.width(48.dp))
+                    Spacer(Modifier.width(Dimens.SpaceXxxl))
                 }
 
                 OutlinedTextField(
@@ -104,7 +104,7 @@ fun DocPickerDialog(
                     placeholder = { Text(stringResource(R.string.im_doc_picker_search)) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                        .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
                 )
 
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -112,7 +112,7 @@ fun DocPickerDialog(
                         error -> Text(
                             text = stringResource(R.string.im_doc_picker_error),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                            modifier = Modifier.align(Alignment.Center).padding(Dimens.SpaceXl),
                         )
                         loading && docs.isEmpty() -> CircularProgressIndicator(
                             modifier = Modifier.align(Alignment.Center),
@@ -120,7 +120,7 @@ fun DocPickerDialog(
                         docs.isEmpty() -> Text(
                             text = stringResource(R.string.im_doc_picker_empty),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                            modifier = Modifier.align(Alignment.Center).padding(Dimens.SpaceXl),
                         )
                         else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                             items(docs.size) { i ->
@@ -138,11 +138,11 @@ fun DocPickerDialog(
                     }
                 }
 
-                Surface(tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
+                Surface(tonalElevation = Dimens.ElevationSubtle, modifier = Modifier.fillMaxWidth()) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
@@ -174,17 +174,17 @@ private fun DocPickerRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(checked = checked, onCheckedChange = null)
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(Dimens.SpaceS))
         Icon(
             Icons.Filled.Description,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
         )
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(Dimens.SpaceM))
         Text(
             text = doc.title.ifBlank { stringResource(R.string.im_preview_doc) },
             style = MaterialTheme.typography.bodyLarge,

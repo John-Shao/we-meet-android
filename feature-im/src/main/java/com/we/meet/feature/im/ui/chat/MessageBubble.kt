@@ -1,5 +1,7 @@
 package com.we.meet.feature.im.ui.chat
 
+import com.we.meet.ui.theme.WeMeetTheme
+import com.we.meet.ui.theme.Dimens
 import android.media.MediaPlayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -46,7 +48,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -112,7 +113,7 @@ fun MessageBubble(
 
     if (recalled) {
         // Web parity: tombstone replaces the bubble entirely.
-        Box(Modifier.fillMaxWidth().padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceXs), contentAlignment = Alignment.Center) {
             Text(
                 text = if (isOwn) stringResource(R.string.im_recalled_self)
                 else stringResource(R.string.im_recalled_other, senderName.orEmpty()),
@@ -125,7 +126,7 @@ fun MessageBubble(
 
     if (content is MessageContent.System) {
         // Centered gray notice, no bubble.
-        Box(Modifier.fillMaxWidth().padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceXs), contentAlignment = Alignment.Center) {
             Text(
                 text = content.body,
                 style = MaterialTheme.typography.labelSmall,
@@ -139,7 +140,7 @@ fun MessageBubble(
     // (正常路径卡片已由组织者 IM 身份发出,走下方常规气泡;此分支只兜
     // uid 解析失败的降级,否则全零 uid 会渲染成「?」气泡)。
     if (content is MessageContent.EventCard && message.senderUid == IM_SYSTEM_UID) {
-        Box(Modifier.fillMaxWidth().padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceXs), contentAlignment = Alignment.Center) {
             EventCardBubble(content, isOwn = false, onLongPress = onLongPress) {
                 onOpenEvent?.invoke(content.eventId)
             }
@@ -149,7 +150,7 @@ fun MessageBubble(
 
     if (content is MessageContent.PhoneViewed) {
         // Centered notice, perspective-aware: sender = the viewer (P3).
-        Box(Modifier.fillMaxWidth().padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceXs), contentAlignment = Alignment.Center) {
             Text(
                 text = stringResource(
                     if (isOwn) R.string.im_phone_viewed_by_me
@@ -165,7 +166,7 @@ fun MessageBubble(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
+            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs),
         horizontalArrangement = if (isOwn) Arrangement.End else Arrangement.Start,
     ) {
         // 对方消息:左侧头像(私聊 + 群聊都显示,对齐企业微信/微信)。
@@ -174,10 +175,10 @@ fun MessageBubble(
                 name = senderName.orEmpty(),
                 url = senderAvatarUrl,
                 cacheKey = "im-avatar:${message.senderUid}",
-                size = 36.dp,
+                size = Dimens.AvatarS,
                 modifier = if (onAvatarClick != null) Modifier.clickable(onClick = onAvatarClick) else Modifier,
             )
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(Dimens.SpaceS))
         }
         Column(
             horizontalAlignment = if (isOwn) Alignment.End else Alignment.Start,
@@ -195,7 +196,7 @@ fun MessageBubble(
                     text = senderName,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(bottom = 2.dp),
+                    modifier = Modifier.padding(bottom = Dimens.SpaceXxs),
                 )
             }
             when (content) {
@@ -251,7 +252,7 @@ fun MessageBubble(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,
                     modifier = Modifier
-                        .padding(top = 2.dp)
+                        .padding(top = Dimens.SpaceXxs)
                         .then(
                             if (onReceiptClick != null) Modifier.clickable(onClick = onReceiptClick)
                             else Modifier
@@ -261,18 +262,18 @@ fun MessageBubble(
         }
         // 自己消息:右侧头像(对齐企业微信/微信)。
         if (isOwn) {
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(Dimens.SpaceS))
             MemberAvatar(
                 name = senderName.orEmpty(),
                 url = senderAvatarUrl,
                 cacheKey = "im-avatar:${message.senderUid}",
-                size = 36.dp,
+                size = Dimens.AvatarS,
             )
         }
     }
 }
 
-private val bubbleShape = RoundedCornerShape(12.dp)
+private val bubbleShape = RoundedCornerShape(Dimens.CornerM)
 
 @Composable
 private fun TextBubble(
@@ -290,8 +291,8 @@ private fun TextBubble(
             text = mentionAnnotated(body, mentionNames, selfMentionNames),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier
-                .widthIn(max = 280.dp)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .widthIn(max = Dimens.Chat.BubbleMaxWidth)
+                .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
         )
     }
 }
@@ -310,6 +311,7 @@ private fun mentionAnnotated(
     if (names.isEmpty() || !body.contains('@')) return AnnotatedString(body)
     val sorted = names.filter { it.isNotBlank() }.sortedByDescending { it.length }
     val primary = MaterialTheme.colorScheme.primary
+    val mention = WeMeetTheme.extras.im
     return buildAnnotatedString {
         var i = 0
         while (i < body.length) {
@@ -319,8 +321,8 @@ private fun mentionAnnotated(
                 if (hit != null) {
                     val style = if (hit in selfNames) {
                         SpanStyle(
-                            background = Color(0xFFFDE68A),
-                            color = Color(0xFF92400E),
+                            background = mention.mentionSelfBg,
+                            color = mention.mentionSelfFg,
                             fontWeight = FontWeight.Bold,
                         )
                     } else {
@@ -354,8 +356,8 @@ private fun ImageBubble(
 
     Box(
         modifier = Modifier
-            .widthIn(max = 220.dp)
-            .heightIn(min = 80.dp, max = 280.dp)
+            .widthIn(max = Dimens.Chat.CardMinWidth)
+            .heightIn(min = Dimens.Chat.ImageMinHeight, max = Dimens.Chat.ImageMaxHeight)
             .clip(bubbleShape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .combinedClickable(onClick = onClick, onLongClick = onLongPress),
@@ -366,9 +368,9 @@ private fun ImageBubble(
                 text = stringResource(R.string.im_image_load_failed),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier.padding(Dimens.SpaceXl),
             )
-            url == null -> CircularProgressIndicator(modifier = Modifier.padding(24.dp).size(20.dp))
+            url == null -> CircularProgressIndicator(modifier = Modifier.padding(Dimens.SpaceXl).size(Dimens.IconSmall))
             else -> AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(url)
@@ -379,7 +381,7 @@ private fun ImageBubble(
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
                 onError = { failed = true },
-                modifier = Modifier.widthIn(max = 220.dp).heightIn(max = 280.dp),
+                modifier = Modifier.widthIn(max = Dimens.Chat.CardMinWidth).heightIn(max = Dimens.Chat.BubbleMaxWidth),
             )
         }
     }
@@ -403,16 +405,16 @@ private fun FileBubble(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .widthIn(max = 280.dp)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .widthIn(max = Dimens.Chat.BubbleMaxWidth)
+                .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.InsertDriveFile,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(Dimens.IconXl),
             )
-            Column(modifier = Modifier.padding(start = 10.dp)) {
+            Column(modifier = Modifier.padding(start = Dimens.SpaceS)) {
                 Text(
                     text = name,
                     style = MaterialTheme.typography.bodyMedium,
@@ -478,15 +480,15 @@ private fun VoiceBubble(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .width(bubbleWidth.dp)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
         ) {
             Icon(
                 if (playing) Icons.Filled.Stop else Icons.Filled.PlayArrow,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(Dimens.IconSmall),
             )
-            Spacer(Modifier.width(6.dp))
+            Spacer(Modifier.width(Dimens.SpaceXs))
             Text(
                 text = "${seconds}″",
                 style = MaterialTheme.typography.bodyMedium,
@@ -534,12 +536,12 @@ private fun QuoteBubble(
     ) {
         Column(
             modifier = Modifier
-                .widthIn(max = 280.dp)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .widthIn(max = Dimens.Chat.BubbleMaxWidth)
+                .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
         ) {
             Surface(
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
-                shape = RoundedCornerShape(6.dp),
+                shape = RoundedCornerShape(Dimens.CornerS),
             ) {
                 Text(
                     text = listOf(content.quotedSender, content.quotedSnippet)
@@ -549,10 +551,10 @@ private fun QuoteBubble(
                     color = MaterialTheme.colorScheme.outline,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    modifier = Modifier.padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
                 )
             }
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(Dimens.SpaceXs))
             Text(
                 text = mentionAnnotated(content.text, mentionNames, selfMentionNames),
                 style = MaterialTheme.typography.bodyMedium,
@@ -577,8 +579,8 @@ private fun MergedBubble(content: MessageContent.Merged, isOwn: Boolean, onLongP
     ) {
         Column(
             modifier = Modifier
-                .widthIn(min = 180.dp, max = 280.dp)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .widthIn(min = Dimens.Chat.BubbleMinWidth, max = Dimens.Chat.BubbleMaxWidth)
+                .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
         ) {
             Text(
                 text = content.title.ifBlank { stringResource(R.string.im_merged_title) },
@@ -593,10 +595,10 @@ private fun MergedBubble(content: MessageContent.Merged, isOwn: Boolean, onLongP
                     color = MaterialTheme.colorScheme.outline,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp),
+                    modifier = Modifier.padding(top = Dimens.SpaceXxs),
                 )
             }
-            HorizontalDivider(Modifier.padding(vertical = 6.dp))
+            HorizontalDivider(Modifier.padding(vertical = Dimens.SpaceXs))
             Text(
                 text = stringResource(R.string.im_merged_view_count, content.count),
                 style = MaterialTheme.typography.labelSmall,
@@ -620,10 +622,10 @@ private fun MergedRecordDialog(content: MessageContent.Merged, onDismiss: () -> 
             Text(content.title.ifBlank { stringResource(R.string.im_merged_title) })
         },
         text = {
-            LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+            LazyColumn(modifier = Modifier.heightIn(max = Dimens.Chat.MergedListMaxHeight)) {
                 items(content.items.size) { i ->
                     val item = content.items[i]
-                    Column(Modifier.padding(vertical = 6.dp)) {
+                    Column(Modifier.padding(vertical = Dimens.SpaceXs)) {
                         Text(
                             text = item.sender,
                             style = MaterialTheme.typography.labelSmall,
@@ -644,18 +646,18 @@ private fun MergedRecordDialog(content: MessageContent.Merged, onDismiss: () -> 
 @Composable
 private fun ReactionChips(reactions: Map<String, List<String>>) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.padding(top = 3.dp),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
+        modifier = Modifier.padding(top = Dimens.SpaceXxs),
     ) {
         reactions.forEach { (emoji, uids) ->
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(Dimens.CornerS),
             ) {
                 Text(
                     text = if (uids.size > 1) "$emoji ${uids.size}" else emoji,
                     style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    modifier = Modifier.padding(horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXxs),
                 )
             }
         }
@@ -704,18 +706,18 @@ private fun CallLogBubble(content: MessageContent.CallLog, isOwn: Boolean) {
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
         ) {
             Icon(
                 if (content.media == "video") Icons.Filled.Videocam else Icons.Filled.Call,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(Dimens.IconSmall),
             )
             Text(
                 text = "$media · $result",
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(start = 6.dp),
+                modifier = Modifier.padding(start = Dimens.SpaceXs),
             )
         }
     }
@@ -739,13 +741,13 @@ private fun GroupCallBubble(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
         ) {
             Icon(
                 Icons.Filled.Call,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(Dimens.IconSmall),
             )
             Text(
                 text = stringResource(R.string.im_calllog_voice) + " · " +
@@ -754,14 +756,14 @@ private fun GroupCallBubble(
                         else R.string.im_group_card_ongoing
                     ),
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(start = 6.dp),
+                modifier = Modifier.padding(start = Dimens.SpaceXs),
             )
             if (!ended) {
                 Text(
                     text = stringResource(R.string.im_group_card_join),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 8.dp),
+                    modifier = Modifier.padding(start = Dimens.SpaceS),
                 )
             }
         }
@@ -779,7 +781,7 @@ private fun UnsupportedBubble(isOwn: Boolean) {
             text = stringResource(R.string.im_preview_unsupported),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
         )
     }
 }

@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.chat
 
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.we.meet.feature.im.R
 
 /**
@@ -51,7 +51,7 @@ fun CallOptionsSheet(
         ) {
             onDialPhone?.let { it(); onDismiss() }
         }
-        Column(Modifier.padding(bottom = 16.dp)) {}
+        Column(Modifier.padding(bottom = Dimens.SpaceL)) {}
     }
 }
 
@@ -69,7 +69,7 @@ private fun CallRow(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
@@ -81,7 +81,7 @@ private fun CallRow(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha),
-            modifier = Modifier.padding(start = 16.dp),
+            modifier = Modifier.padding(start = Dimens.ScreenPadding),
         )
     }
 }

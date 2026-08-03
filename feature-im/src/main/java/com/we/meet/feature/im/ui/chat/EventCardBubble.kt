@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.chat
 
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -26,7 +27,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.model.MessageContent
 import java.time.OffsetDateTime
@@ -54,26 +54,28 @@ internal fun EventCardBubble(
         else -> null
     }
     val allDayLabel = stringResource(R.string.im_event_card_all_day)
+    // 日期格式随语言走(中文「M月d日」、英文「MMM d」),所以从资源取而不是写死。
+    val datePattern = stringResource(R.string.im_fmt_month_day)
     val timeText = formatEventWhen(
-        content.startIso, content.endIso, content.allDay, allDayLabel,
+        content.startIso, content.endIso, content.allDay, allDayLabel, datePattern,
     )
     // 改期卡把**改期前**的时间窗划掉显示在新时间上方(与 Web 一致)。原先 App
     // 只有一个「时间已变更」徽章 —— 看得出变了,看不出从什么变成什么。
     val oldTimeText = if (content.kind == "time_changed") {
         formatEventWhen(
-            content.oldStartIso, content.oldEndIso, content.allDay, allDayLabel,
+            content.oldStartIso, content.oldEndIso, content.allDay, allDayLabel, datePattern,
         )
     } else null
 
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(Dimens.CornerM),
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
+        tonalElevation = Dimens.ElevationSubtle,
         border = androidx.compose.foundation.BorderStroke(
-            1.dp, MaterialTheme.colorScheme.outlineVariant,
+            Dimens.BorderThin, MaterialTheme.colorScheme.outlineVariant,
         ),
         modifier = Modifier
-            .widthIn(min = 220.dp, max = 300.dp)
+            .widthIn(min = Dimens.Chat.CardMinWidth, max = Dimens.Chat.CardMaxWidth)
             .combinedClickable(
                 enabled = content.eventId.isNotBlank(),
                 onClick = onOpen,
@@ -83,23 +85,23 @@ internal fun EventCardBubble(
         Row {
             Box(
                 Modifier
-                    .width(4.dp)
+                    .width(Dimens.Chat.CardAccentBarWidth)
                     .fillMaxHeight()
                     .background(
                         if (cancelled) MaterialTheme.colorScheme.outlineVariant
                         else MaterialTheme.colorScheme.primary,
                     ),
             )
-            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+            Column(modifier = Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Filled.CalendarMonth,
                         contentDescription = null,
                         tint = if (cancelled) MaterialTheme.colorScheme.outline
                         else MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(Dimens.IconTiny),
                     )
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(Dimens.SpaceXs))
                     Text(
                         text = content.title.ifBlank {
                             stringResource(R.string.im_preview_event)
@@ -112,7 +114,7 @@ internal fun EventCardBubble(
                         modifier = Modifier.weight(1f, fill = false),
                     )
                     if (badge != null) {
-                        Spacer(Modifier.width(6.dp))
+                        Spacer(Modifier.width(Dimens.SpaceXs))
                         Text(
                             text = badge,
                             style = MaterialTheme.typography.labelSmall,
@@ -123,9 +125,9 @@ internal fun EventCardBubble(
                                     MaterialTheme.colorScheme.primary.copy(
                                         alpha = if (cancelled) 0.06f else 0.10f,
                                     ),
-                                    RoundedCornerShape(4.dp),
+                                    RoundedCornerShape(Dimens.CornerXs),
                                 )
-                                .padding(horizontal = 4.dp, vertical = 1.dp),
+                                .padding(horizontal = Dimens.SpaceXs, vertical = Dimens.BorderThin),
                         )
                     }
                 }
@@ -135,7 +137,7 @@ internal fun EventCardBubble(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                         textDecoration = TextDecoration.LineThrough,
-                        modifier = Modifier.padding(top = 4.dp),
+                        modifier = Modifier.padding(top = Dimens.SpaceXs),
                     )
                 }
                 if (timeText != null) {
@@ -143,7 +145,7 @@ internal fun EventCardBubble(
                         text = timeText,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = if (oldTimeText != null) 0.dp else 4.dp),
+                        modifier = Modifier.padding(top = if (oldTimeText != null) Dimens.SpaceNone else Dimens.SpaceXs),
                     )
                 }
                 if (content.attendeeCount > 0 || content.organizerName.isNotBlank()) {
@@ -157,7 +159,7 @@ internal fun EventCardBubble(
                         color = MaterialTheme.colorScheme.outline,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 2.dp),
+                        modifier = Modifier.padding(top = Dimens.SpaceXxs),
                     )
                 }
                 if (content.eventId.isNotBlank()) {
@@ -165,7 +167,7 @@ internal fun EventCardBubble(
                         text = stringResource(R.string.im_event_card_view),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 6.dp),
+                        modifier = Modifier.padding(top = Dimens.SpaceXs),
                     )
                 }
             }
@@ -179,13 +181,14 @@ private fun formatEventWhen(
     endIso: String,
     allDay: Boolean,
     allDayLabel: String,
+    datePattern: String,
 ): String? {
     val zone = ZoneId.systemDefault()
     val s = runCatching { OffsetDateTime.parse(startIso).toInstant().atZone(zone) }
         .getOrNull() ?: return null
     val e = runCatching { OffsetDateTime.parse(endIso).toInstant().atZone(zone) }
         .getOrNull() ?: return null
-    val dateFmt = DateTimeFormatter.ofPattern("M月d日")
+    val dateFmt = DateTimeFormatter.ofPattern(datePattern)
     val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
     if (allDay) return "${s.format(dateFmt)} $allDayLabel"
     return if (s.toLocalDate() == e.toLocalDate()) {

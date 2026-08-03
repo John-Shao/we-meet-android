@@ -271,4 +271,55 @@ object Dimens {
         /** 议程/网格底部留白,免得浮动按钮盖住最后一条。 */
         val FabClearance = 88.dp
     }
+
+    /**
+     * 聊天与通话界面的几何常量。
+     *
+     * 气泡宽度这类值不是随便定的:太窄一行放不下几个字、太宽长消息会横穿
+     * 整屏难以扫读。改之前先想清楚是不是真的要改所有消息的观感。
+     */
+    object Chat {
+        // ---- 气泡 ----
+        /** 文字气泡最大宽度。超过这个宽度长句会横贯全屏,反而更难读。 */
+        val BubbleMaxWidth = 280.dp
+        /** 引用/合并转发这类带结构的气泡的最小宽度,太窄标题会折行。 */
+        val BubbleMinWidth = 180.dp
+        /** 卡片气泡(会议/日程/文档)的宽度区间 —— 卡片要比纯文字更规整。 */
+        val CardMinWidth = 220.dp
+        val CardMaxWidth = 300.dp
+
+        // ---- 图片消息 ----
+        /** 图片气泡的尺寸约束:缩略图要能看清,又不能顶掉整屏。 */
+        val ImageMaxWidth = 220.dp
+        val ImageMinHeight = 80.dp
+        val ImageMaxHeight = 280.dp
+
+        // ---- 面板与弹层 ----
+        /** 表情面板高度(固定 8 列网格)。 */
+        val EmojiPanelHeight = 220.dp
+        /** 更多功能面板的最大高度(4 列网格,条目少时自适应收缩)。 */
+        val ActionPanelMaxHeight = 280.dp
+        /** @提及候选名单的最大高度,再高就盖住聊天内容了。 */
+        val MentionListMaxHeight = 200.dp
+        /** 底部弹层里长列表的最大高度(群成员、已读回执等)。 */
+        val SheetListMaxHeight = 420.dp
+        /** 合并转发详情对话框里消息列表的最大高度。 */
+        val MergedListMaxHeight = 400.dp
+
+        /** 卡片气泡左侧那条表示类型的竖色条。 */
+        val CardAccentBarWidth = 4.dp
+        /** 会话列表分隔线的左缩进(行内边距 + 头像 + 间距),让线从文字左缘起。 */
+        val ConversationDividerIndent = 76.dp
+
+        // ---- 通话 ----
+        /** 通话页中央的大头像。 */
+        val CallAvatarSize = 112.dp
+        /** 通话控件条上的图标。 */
+        val CallControlIcon = 30.dp
+        /** 通话控件条距屏幕底部的留白 —— 要避开手势条又不能太靠上。 */
+        val CallControlsBottomInset = 56.dp
+        /** 视频通话本地画中画的尺寸。 */
+        val PipWidth = 110.dp
+        val PipHeight = 160.dp
+    }
 }

@@ -1,5 +1,7 @@
 package com.we.meet.feature.im.ui.group
 
+import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,16 +10,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,7 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.feature.im.ImDeps
@@ -66,15 +64,9 @@ fun MyGroupsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(stringResource(R.string.im_my_groups_title, groups.size))
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
+            WeMeetTopBar(
+                title = stringResource(R.string.im_my_groups_title, groups.size),
+                onBack = onBack,
             )
         },
     ) { padding ->
@@ -91,7 +83,7 @@ fun MyGroupsScreen(
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             )
 
             if (visible.isEmpty()) {
@@ -102,7 +94,7 @@ fun MyGroupsScreen(
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
+                    modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXl),
                 )
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -111,16 +103,16 @@ fun MyGroupsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onOpenChat(row.cid) }
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
                         ) {
                             androidx.compose.foundation.layout.Row(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                GroupAvatar(tiles = row.memberTiles, size = 40.dp)
+                                GroupAvatar(tiles = row.memberTiles, size = Dimens.AvatarM)
                                 Column(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .padding(start = 12.dp),
+                                        .padding(start = Dimens.SpaceM),
                                 ) {
                                     Text(
                                         text = row.title.ifBlank {

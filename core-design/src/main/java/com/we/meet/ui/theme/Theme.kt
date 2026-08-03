@@ -54,6 +54,8 @@ data class WeMeetExtras(
     val room: RoomColors,
     /** AI 通话页控件专用色(见 [AiCallColors])。 */
     val aiCall: AiCallColors,
+    /** IM 聊天与一对一通话专用色(见 [ImColors])。 */
+    val im: ImColors,
     /**
      * 无头像时按名字哈希取色的调色板。顺序与长度不可变 —— 见 Color.kt 说明。
      */
@@ -130,6 +132,55 @@ data class RoomColors(
 /**
  * AI 通话页控件色。深浅色两套取值相同 —— 这一屏控件固定浅色,见 Color.kt。
  */
+/**
+ * IM 专用色。分三块:一对一通话控件、连接状态条四态、消息搜索高亮。
+ *
+ * 通话的红/绿与 [AiCallColors] 目前取值不同(见 Color.kt 的说明),这是
+ * 收进 token 后暴露出来的既有差异,本次只搬不改。
+ */
+data class ImColors(
+    val callHangUp: Color,
+    val callAccept: Color,
+    val callNeutralControl: Color,
+    val callMutedControl: Color,
+    val videoStageBackground: Color,
+    val videoStageLabel: Color,
+    /** 连接状态条:一档一对「底色 + 文字色」。 */
+    val connConnectedBg: Color,
+    val connConnectedFg: Color,
+    val connConnectingBg: Color,
+    val connConnectingFg: Color,
+    val connFailedBg: Color,
+    val connFailedFg: Color,
+    val connOfflineBg: Color,
+    val connOfflineFg: Color,
+    /** 「@我」提及的高亮。 */
+    val mentionSelfBg: Color,
+    val mentionSelfFg: Color,
+    /** 群头像无图时的底色池,按群名 hash 取。 */
+    val groupAvatarPalette: List<Color>,
+)
+
+private val SharedImColors = ImColors(
+    callHangUp = ImCallHangUp,
+    callAccept = ImCallAccept,
+    callNeutralControl = ImCallNeutralControl,
+    callMutedControl = ImCallMutedControl,
+    videoStageBackground = ImVideoStageBackground,
+    videoStageLabel = ImVideoStageLabel,
+    connConnectedBg = ImConnConnectedBg,
+    connConnectedFg = ImConnConnectedFg,
+    connConnectingBg = ImConnConnectingBg,
+    connConnectingFg = ImConnConnectingFg,
+    connFailedBg = ImConnFailedBg,
+    connFailedFg = ImConnFailedFg,
+    connOfflineBg = ImConnOfflineBg,
+    connOfflineFg = ImConnOfflineFg,
+    mentionSelfBg = ImMentionSelfBg,
+    mentionSelfFg = ImMentionSelfFg,
+    groupAvatarPalette = GroupAvatarPalette,
+)
+
 data class AiCallColors(
     /** 麦克风/视频切换这类中性控件的圆底。 */
     val controlSurface: Color,
@@ -231,6 +282,7 @@ private val LightExtras = WeMeetExtras(
     ),
     room = SharedRoomColors,
     aiCall = SharedAiCallColors,
+    im = SharedImColors,
     avatarPalette = AvatarFallbackPalette,
 )
 
@@ -268,6 +320,7 @@ private val DarkExtras = WeMeetExtras(
     ),
     room = SharedRoomColors,
     aiCall = SharedAiCallColors,
+    im = SharedImColors,
     avatarPalette = AvatarFallbackPalette,
 )
 

@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.chat
 
+import com.we.meet.ui.theme.Dimens
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,7 +42,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.we.meet.core.directory.data.DirectoryRepository
@@ -155,7 +155,7 @@ fun ForwardPicker(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                        .padding(horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXs),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconButton(onClick = onDismiss) {
@@ -192,7 +192,7 @@ fun ForwardPicker(
                     placeholder = { Text(stringResource(R.string.im_forward_search_hint)) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                        .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
                 )
 
                 // Create-group-and-forward entry (hidden in multi mode: the two
@@ -202,7 +202,7 @@ fun ForwardPicker(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable(onClick = onCreateGroupForward)
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
@@ -223,7 +223,7 @@ fun ForwardPicker(
                     text = stringResource(R.string.im_forward_recent),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(start = Dimens.ScreenPadding, top = Dimens.SpaceM, bottom = Dimens.SpaceXs),
                 )
 
                 LazyColumn(modifier = Modifier.weight(1f)) {
@@ -250,9 +250,9 @@ fun ForwardPicker(
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(
-                                    start = 16.dp,
-                                    top = 12.dp,
-                                    bottom = 4.dp,
+                                    start = Dimens.ScreenPadding,
+                                    top = Dimens.SpaceM,
+                                    bottom = Dimens.SpaceXs,
                                 ),
                             )
                         }
@@ -281,11 +281,11 @@ fun ForwardPicker(
                 // Multi-select send bar.
                 if (multi) {
                     val total = selected.size + selectedUsers.size
-                    Surface(tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
+                    Surface(tonalElevation = Dimens.ElevationSubtle, modifier = Modifier.fillMaxWidth()) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.End,
                         ) {
@@ -377,20 +377,20 @@ private fun MemberForwardRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (multi) {
             Checkbox(checked = checked, onCheckedChange = null)
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(Dimens.SpaceS))
         }
         MemberAvatar(
             name = label,
             url = member.avatarUrl,
             cacheKey = "directory-avatar:${member.id}",
-            size = 44.dp,
+            size = Dimens.ListLeadingIcon,
         )
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(Dimens.SpaceM))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = label,
@@ -422,25 +422,25 @@ private fun ForwardRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (multi) {
             // Checkbox is a visual indicator only — the whole row drives selection.
             Checkbox(checked = checked, onCheckedChange = null)
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(Dimens.SpaceS))
         }
         if (target.isGroup) {
-            GroupAvatar(tiles = target.memberTiles, size = 44.dp)
+            GroupAvatar(tiles = target.memberTiles, size = Dimens.ListLeadingIcon)
         } else {
             MemberAvatar(
                 name = target.title,
                 url = target.avatarUrl,
                 cacheKey = "im-avatar:${target.avatarKey}",
-                size = 44.dp,
+                size = Dimens.ListLeadingIcon,
             )
         }
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(Dimens.SpaceM))
         Text(
             text = target.title.ifBlank { stringResource(R.string.im_untitled_chat) },
             style = MaterialTheme.typography.bodyLarge,

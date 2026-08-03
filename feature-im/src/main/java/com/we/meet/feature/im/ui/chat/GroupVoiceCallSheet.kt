@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.chat
 
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.call.MeetInviteTracker
@@ -86,9 +86,9 @@ fun GroupVoiceCallSheet(
             text = title ?: stringResource(R.string.im_group_voice_call_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceS),
         )
-        LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
+        LazyColumn(modifier = Modifier.heightIn(max = Dimens.Chat.SheetListMaxHeight)) {
             items(candidates, key = { it.second.id }) { (uid, m) ->
                 val checked = m.id !in deselected
                 val label = nicknames[uid] ?: m.displayName
@@ -99,7 +99,7 @@ fun GroupVoiceCallSheet(
                             deselected =
                                 if (checked) deselected + m.id else deselected - m.id
                         }
-                        .padding(horizontal = 20.dp, vertical = 6.dp),
+                        .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceXs),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Checkbox(
@@ -111,12 +111,12 @@ fun GroupVoiceCallSheet(
                     )
                     GroupAvatar(
                         tiles = listOf(GroupTile(m.id, label, m.avatarUrl)),
-                        size = 36.dp,
+                        size = Dimens.AvatarS,
                     )
                     Text(
                         text = label,
                         style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(start = 12.dp),
+                        modifier = Modifier.padding(start = Dimens.SpaceM),
                     )
                 }
             }
@@ -124,7 +124,7 @@ fun GroupVoiceCallSheet(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
+                .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -133,7 +133,7 @@ fun GroupVoiceCallSheet(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.padding(4.dp))
+            Spacer(Modifier.padding(Dimens.SpaceXs))
             Button(
                 enabled = picked.isNotEmpty(),
                 onClick = {
@@ -154,6 +154,6 @@ fun GroupVoiceCallSheet(
                 Text(stringResource(R.string.im_group_voice_call_confirm))
             }
         }
-        Column(Modifier.padding(bottom = 16.dp)) {}
+        Column(Modifier.padding(bottom = Dimens.SpaceL)) {}
     }
 }

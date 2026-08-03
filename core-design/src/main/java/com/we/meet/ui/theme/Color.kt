@@ -115,6 +115,55 @@ val DarkAccentActiveContainer = Color(0xFF1E3A7A)
 val DarkOnAccentActiveContainer = Color(0xFFD9E8FF)
 
 /**
+ * IM(聊天与一对一通话)专用色。
+ *
+ * ⚠️ **两套通话配色目前不一致**,这是收进 token 后才暴露出来的:
+ *
+ * | 语义 | AI 通话 | IM 通话 |
+ * |---|---|---|
+ * | 挂断 | `E0524C` | `E5484D` |
+ * | 接听 | `1FB85F` | `30A46C` |
+ *
+ * 同一个动作在两个界面是两种红/绿。本次迁移**只搬不改**,两边都保留原值,
+ * 免得在纯重构里夹带视觉变更。要统一的话是个独立决定 —— 选定一套后把
+ * 另一套删掉即可,调用处不用动。
+ */
+val ImCallHangUp = Color(0xFFE5484D)
+val ImCallAccept = Color(0xFF30A46C)
+/** 通话中的中性控件(免提、静音等未激活态)与其禁用态。 */
+val ImCallNeutralControl = Color(0xFF6B7280)
+val ImCallMutedControl = Color(0xFF9CA3AF)
+/** 视频通话舞台:永远深色(要压住视频画面),不随主题。 */
+val ImVideoStageBackground = Color(0xFF111418)
+val ImVideoStageLabel = Color(0xEEFFFFFF)
+
+/**
+ * IM 连接状态条的四态配色,每档一对「底色 + 文字色」。
+ *
+ * 不复用 [LightSuccess] / [LightWarning] 那几档:那是**动作反馈**的语义,
+ * 这里是**长驻的连接状态提示**,底色要更淡才不会一直抢注意力。
+ */
+val ImConnConnectedBg = Color(0xFFE7F5E7)
+val ImConnConnectedFg = Color(0xFF1B5E20)
+val ImConnConnectingBg = Color(0xFFFFF6E0)
+val ImConnConnectingFg = Color(0xFF7A4F01)
+val ImConnFailedBg = Color(0xFFFCE4E4)
+val ImConnFailedFg = Color(0xFF8B0000)
+val ImConnOfflineBg = Color(0xFFEDEDED)
+val ImConnOfflineFg = Color(0xFF444444)
+
+/** 群头像无图时的底色调色板。与人物头像的 [AvatarFallbackPalette] 分开 ——
+ *  群和人在列表里混排,配色不同才好一眼区分。 */
+val GroupAvatarPalette = listOf(
+    Color(0xFF2563EB), Color(0xFF7C3AED), Color(0xFFDB2777),
+    Color(0xFFEA580C), Color(0xFF16A34A), Color(0xFF0891B2),
+)
+
+/** 「@我」提及在消息正文里的高亮底与文字 —— 让人一眼扫到自己被点名。 */
+val ImMentionSelfBg = Color(0xFFFDE68A)
+val ImMentionSelfFg = Color(0xFF92400E)
+
+/**
  * AI 通话页控件专用色。
  *
  * 这一屏的控件是**固定浅色**的:浅灰底 + 黑色图标,不随深浅色主题变(视频开启

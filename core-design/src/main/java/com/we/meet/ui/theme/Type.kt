@@ -73,6 +73,14 @@ object WeMeetTextStyles {
     )
 
     /**
+     * 表情选择器里的大表情。
+     *
+     * 这不是「文字」而是「图形」—— 26sp 是让人一眼认出表情所需的尺寸,不参与
+     * 正文的字号阶梯,也不受 11sp 可读下限那条规矩约束。
+     */
+    val EmojiPicker: TextStyle = TextStyle(fontSize = 26.sp)
+
+    /**
      * 等宽数字风格的会议号/验证码展示。字距放宽,让 8 位数字好读、好抄。
      */
     val CodeDisplay: TextStyle = TextStyle(

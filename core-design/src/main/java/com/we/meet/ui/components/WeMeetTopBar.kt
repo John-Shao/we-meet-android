@@ -1,5 +1,7 @@
 package com.we.meet.ui.components
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -36,6 +38,9 @@ import com.we.meet.design.R
  *   是「关掉它」而不是「回上一层」,图标必须跟着变。与 [onBack] 二选一。
  * @param transparent 顶栏压在内容之上(全屏摄像头预览、登录背景图)时置 true,
  *   底色透明。常规页面不要用 —— 顶栏和内容之间需要那层底色来分隔。
+ * @param subtitle 标题下方的第二行小字,用于**跟着标题走的状态**(对端已离职、
+ *   对方正在输入)。放不下时同样省略号截断。注意它只该放状态,不该放本属于
+ *   正文的信息 —— 顶栏两行已经是高度上限。
  * @param actions 右侧操作区,直接放 [IconButton]。超过 3 个请收进溢出菜单。
  * @param scrollBehavior 需要「滚动时顶栏收起」时传入,配合 `Scaffold` 的
  *   `Modifier.nestedScroll`。不传就是固定顶栏。
@@ -45,6 +50,7 @@ import com.we.meet.design.R
 fun WeMeetTopBar(
     title: String,
     modifier: Modifier = Modifier,
+    subtitle: String? = null,
     onBack: (() -> Unit)? = null,
     onClose: (() -> Unit)? = null,
     transparent: Boolean = false,
@@ -57,11 +63,22 @@ fun WeMeetTopBar(
     TopAppBar(
         modifier = modifier,
         title = {
-            Text(
-                text = title,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Column {
+                Text(
+                    text = title,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         },
         navigationIcon = {
             when {

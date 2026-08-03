@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.chat
 
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,7 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.core.directory.ui.MemberAvatar
@@ -90,19 +90,19 @@ fun DirectChatSettingsScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                    .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.ScreenPadding),
             ) {
                 MemberAvatar(
                     name = ui.peerName,
                     url = ui.peerAvatarUrl,
                     cacheKey = "im-avatar:${ui.peerUserId ?: cid}",
-                    size = 44.dp,
+                    size = Dimens.ListLeadingIcon,
                 )
                 Text(
                     text = ui.peerName.ifBlank { cid.take(8) },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(start = 12.dp),
+                    modifier = Modifier.padding(start = Dimens.SpaceM),
                 )
             }
             HorizontalDivider()
@@ -113,7 +113,7 @@ fun DirectChatSettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(enabled = !ui.busy) { onCreateGroup(ui.peerUserId) }
-                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                    .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
             ) {
                 Text(
                     text = stringResource(R.string.im_group_button),
@@ -134,7 +134,7 @@ fun DirectChatSettingsScreen(
                         .clickable(enabled = peerId != null) {
                             peerId?.let { onViewCalendar(it, ui.peerName) }
                         }
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                        .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
                 ) {
                     Text(
                         text = stringResource(R.string.im_view_calendar),
@@ -162,7 +162,7 @@ fun DirectChatSettingsScreen(
             )
 
             HorizontalDivider()
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Dimens.SpaceM))
 
             // Clear history.
             Text(
@@ -171,7 +171,7 @@ fun DirectChatSettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { confirmClear = true }
-                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                    .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
             )
         }
     }
@@ -202,7 +202,7 @@ private fun SwitchRow(label: String, checked: Boolean, onToggle: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onToggle)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
     ) {
         Text(
             text = label,

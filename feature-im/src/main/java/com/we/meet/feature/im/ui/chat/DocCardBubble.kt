@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.chat
 
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -25,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.model.MessageContent
 
@@ -44,14 +44,14 @@ internal fun DocCardBubble(
     val clickable = content.docId.isNotBlank() && content.url.isNotBlank()
 
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(Dimens.CornerM),
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
+        tonalElevation = Dimens.ElevationSubtle,
         border = androidx.compose.foundation.BorderStroke(
-            1.dp, MaterialTheme.colorScheme.outlineVariant,
+            Dimens.BorderThin, MaterialTheme.colorScheme.outlineVariant,
         ),
         modifier = Modifier
-            .widthIn(min = 220.dp, max = 300.dp)
+            .widthIn(min = Dimens.Chat.CardMinWidth, max = Dimens.Chat.CardMaxWidth)
             .combinedClickable(
                 enabled = clickable,
                 onClick = onOpen,
@@ -61,19 +61,19 @@ internal fun DocCardBubble(
         Row {
             Box(
                 Modifier
-                    .width(4.dp)
+                    .width(Dimens.Chat.CardAccentBarWidth)
                     .fillMaxHeight()
                     .background(MaterialTheme.colorScheme.primary),
             )
-            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+            Column(modifier = Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Filled.Description,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(Dimens.IconTiny),
                     )
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(Dimens.SpaceXs))
                     Text(
                         text = content.title.ifBlank {
                             stringResource(R.string.im_preview_doc)
@@ -90,7 +90,7 @@ internal fun DocCardBubble(
                         text = stringResource(R.string.im_doc_card_view),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 6.dp),
+                        modifier = Modifier.padding(top = Dimens.SpaceXs),
                     )
                 }
             }

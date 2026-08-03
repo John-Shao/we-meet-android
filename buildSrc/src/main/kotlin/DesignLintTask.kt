@@ -50,7 +50,7 @@ abstract class DesignLintTask : DefaultTask() {
                 val rel = f.relativeTo(root).invariantSeparatorsPath
                 val parsed = parse(f.readText())
                 for (rule in RULES) {
-                    val n = rule.count("/$rel", parsed.code, parsed.literals)
+                    val n = rule.count("/$rel", parsed.code, parsed.literals, parsed.lines)
                     if (n > 0) current["${rule.id}|$rel"] = n
                 }
             }
@@ -131,13 +131,23 @@ abstract class DesignLintTask : DefaultTask() {
      * @param literals 字符串字面量,连同它所在那一行的原文 —— cjk 规则要靠
      *   上下文判断这条到底是不是给用户看的。
      */
-    private class Parsed(val code: String, val literals: List<Pair<String, String>>)
+    private class Parsed(
+        val code: String,
+        val literals: List<Pair<String, String>>,
+        /** 原始行(含注释)—— 豁免标记写在注释里,剥完注释就看不到了。 */
+        val lines: List<String>,
+    )
 
     private class Rule(
         val id: String,
         val hint: String,
         /** 返回该文件的违规数。path 形如 "/app/src/main/java/…"。 */
-        val count: (path: String, code: String, literals: List<Pair<String, String>>) -> Int,
+        val count: (
+            path: String,
+            code: String,
+            literals: List<Pair<String, String>>,
+            lines: List<String>,
+        ) -> Int,
     )
 
     private companion object {
@@ -177,29 +187,64 @@ abstract class DesignLintTask : DefaultTask() {
         )
         const val I18N_EXEMPT = "i18n-exempt"
 
+        /**
+         * 结构性豁免标记 `// design-exempt: 理由`。
+         *
+         * 给「确实不该套共享组件」的地方用 —— 比如把搜索输入框放在标题位的
+         * 顶栏,那是另一种组件,硬塞进 [WeMeetTopBar] 会毁掉它「标题单行截断」
+         * 的保证。**必须写理由**,否则它就成了绕过规则的后门。
+         *
+         * 标记可以写在该行上,或**紧邻其上的那段注释**里的任意一行 —— 往上
+         * 一直找到第一个非注释行为止。不用固定的「往上 N 行」:理由通常要写
+         * 好几行,写多写少不该影响它认不认。
+         */
+        const val DESIGN_EXEMPT = "design-exempt"
+
+        fun isExempt(lines: List<String>, idx: Int): Boolean {
+            if (DESIGN_EXEMPT in lines.getOrElse(idx) { "" }) return true
+            var i = idx - 1
+            while (i >= 0) {
+                val t = lines[i].trim()
+                if (!t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*")) return false
+                if (DESIGN_EXEMPT in t) return true
+                i--
+            }
+            return false
+        }
+
         // 提示语一律用 ASCII:Windows 控制台默认 GBK 代码页,中文在这里会变成
         // 乱码 —— 护栏报错读不懂就等于没护栏。规范正文仍是中文,靠 §号索引。
         val RULES = listOf(
             Rule(
                 "raw-color",
                 "use MaterialTheme.colorScheme / WeMeetTheme.extras -- spec 1.1",
-            ) { p, code, _ -> if (isTheme(p)) 0 else RAW_COLOR.findAll(code).count() },
+            ) { p, code, _, _ -> if (isTheme(p)) 0 else RAW_COLOR.findAll(code).count() },
             Rule(
                 "raw-font-size",
                 "use MaterialTheme.typography -- spec 1.2",
-            ) { p, code, _ -> if (isTheme(p)) 0 else RAW_FONT.findAll(code).count() },
+            ) { p, code, _, _ -> if (isTheme(p)) 0 else RAW_FONT.findAll(code).count() },
             Rule(
                 "raw-dimen",
                 "use Dimens.* instead of a bare N.dp -- spec 1.3",
-            ) { p, code, _ -> if (isTheme(p)) 0 else RAW_DIMEN.findAll(code).count() },
+            ) { p, code, _, _ -> if (isTheme(p)) 0 else RAW_DIMEN.findAll(code).count() },
             Rule(
                 "raw-topbar",
                 "use WeMeetTopBar instead of M3 TopAppBar -- spec 2",
-            ) { p, code, _ -> if (isComponents(p)) 0 else RAW_TOPBAR.findAll(code).count() },
+            ) { p, _, _, lines ->
+                if (isComponents(p)) {
+                    0
+                } else {
+                    // 按行数,才能看它上面几行有没有豁免注释。
+                    lines.withIndex().sumOf { (i, line) ->
+                        val hits = RAW_TOPBAR.findAll(line).count()
+                        if (hits == 0 || isExempt(lines, i)) 0 else hits
+                    }
+                }
+            },
             Rule(
                 "cjk-literal",
                 "move the string into strings.xml, or mark // i18n-exempt -- spec 4",
-            ) { _, _, literals ->
+            ) { _, _, literals, _ ->
                 literals.count { (text, line) ->
                     CJK.containsMatchIn(text) &&
                         !DEV_FACING.containsMatchIn(line) &&
@@ -312,7 +357,7 @@ abstract class DesignLintTask : DefaultTask() {
                     }
                 }
             }
-            return Parsed(code.toString(), literals)
+            return Parsed(code.toString(), literals, srcLines)
         }
     }
 }

@@ -300,4 +300,6 @@
     <string name="im_doc_picker_error">Failed to load documents</string>
     <string name="im_starred_marker">Starred contact</string>
     <string name="im_special_alert_marker">Special alerts on</string>
+    <string name="im_fmt_month_day">MMM d</string>
+    <string name="im_fmt_month_day_time">MMM d, HH:mm</string>
 </resources>

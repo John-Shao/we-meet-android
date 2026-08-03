@@ -264,4 +264,6 @@
     <string name="im_doc_picker_error">Échec du chargement des documents</string>
     <string name="im_starred_marker">Contact favori</string>
     <string name="im_special_alert_marker">Alertes spéciales activées</string>
+    <string name="im_fmt_month_day">d MMM</string>
+    <string name="im_fmt_month_day_time">d MMM, HH:mm</string>
 </resources>

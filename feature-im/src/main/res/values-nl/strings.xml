@@ -264,4 +264,6 @@
     <string name="im_doc_picker_error">Documenten laden mislukt</string>
     <string name="im_starred_marker">Favoriet contact</string>
     <string name="im_special_alert_marker">Speciale melding aan</string>
+    <string name="im_fmt_month_day">d MMM</string>
+    <string name="im_fmt_month_day_time">d MMM, HH:mm</string>
 </resources>

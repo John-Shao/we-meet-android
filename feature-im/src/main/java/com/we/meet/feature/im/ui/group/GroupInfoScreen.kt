@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.group
 
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -42,7 +43,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.core.directory.ui.MemberAvatar
@@ -125,7 +125,7 @@ fun GroupInfoScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable(enabled = ui.isOwner) { showRename = true }
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.ScreenPadding),
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
@@ -154,7 +154,7 @@ fun GroupInfoScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable(enabled = ui.isOwner) { showAnnounce = true }
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.ScreenPadding),
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
@@ -177,7 +177,7 @@ fun GroupInfoScreen(
                                 text = stringResource(R.string.im_group_announce_edit),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(start = 12.dp),
+                                modifier = Modifier.padding(start = Dimens.SpaceM),
                             )
                         }
                     }
@@ -188,7 +188,7 @@ fun GroupInfoScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { showNickname = true }
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.ScreenPadding),
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
@@ -218,32 +218,32 @@ fun GroupInfoScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 12.dp),
+                                .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
                         ) {
                             Text(
                                 text = stringResource(R.string.im_group_apps),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            Row(modifier = Modifier.padding(top = 10.dp)) {
+                            Row(modifier = Modifier.padding(top = Dimens.SpaceS)) {
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(10.dp))
+                                        .clip(RoundedCornerShape(Dimens.CornerS))
                                         .clickable {
                                             onOpenGroupCalendar(
                                                 ui.members.mapNotNull { it.userId },
                                             )
                                         }
-                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                        .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
                                 ) {
                                     Box(
                                         contentAlignment = Alignment.Center,
                                         modifier = Modifier
-                                            .size(44.dp)
+                                            .size(Dimens.ListLeadingIcon)
                                             .background(
                                                 MaterialTheme.colorScheme.primaryContainer,
-                                                RoundedCornerShape(10.dp),
+                                                RoundedCornerShape(Dimens.CornerS),
                                             ),
                                     ) {
                                         Icon(
@@ -255,7 +255,7 @@ fun GroupInfoScreen(
                                     Text(
                                         text = stringResource(R.string.im_group_calendar),
                                         style = MaterialTheme.typography.labelSmall,
-                                        modifier = Modifier.padding(top = 4.dp),
+                                        modifier = Modifier.padding(top = Dimens.SpaceXs),
                                     )
                                 }
                             }
@@ -284,7 +284,7 @@ fun GroupInfoScreen(
                         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
                     ) {
                         Text(
                             text = stringResource(R.string.im_group_members_count, ui.members.size),
@@ -304,7 +304,7 @@ fun GroupInfoScreen(
                             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 4.dp),
+                                .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceXs),
                         )
                     }
                     if (visibleMembers.isEmpty() && ui.members.isNotEmpty()) {
@@ -312,7 +312,7 @@ fun GroupInfoScreen(
                             text = stringResource(R.string.im_group_no_member_match),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                            modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
                         )
                     }
                 }
@@ -322,20 +322,20 @@ fun GroupInfoScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 8.dp),
+                            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceS),
                     ) {
                         MemberAvatar(
                             name = member.displayName,
                             url = member.avatarUrl,
                             cacheKey = "im-avatar:${member.uid}",
-                            size = 36.dp,
+                            size = Dimens.AvatarS,
                         )
                         Text(
                             text = member.displayName.ifBlank { member.uid.take(8) },
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(start = 12.dp),
+                                .padding(start = Dimens.SpaceM),
                         )
                         // 离职标记与群主徽章各自独立 —— 群主本人也可能已离职,
                         // 挂在 else 分支上正好会漏掉最该提醒的那种情况。中性灰:
@@ -345,7 +345,7 @@ fun GroupInfoScreen(
                                 text = stringResource(R.string.im_departed_chip),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(end = 8.dp),
+                                modifier = Modifier.padding(end = Dimens.SpaceS),
                             )
                         }
                         if (member.isOwner) {
@@ -360,7 +360,7 @@ fun GroupInfoScreen(
                                     Icons.Filled.Close,
                                     contentDescription = stringResource(R.string.im_group_remove_member),
                                     tint = MaterialTheme.colorScheme.outline,
-                                    modifier = Modifier.size(18.dp),
+                                    modifier = Modifier.size(Dimens.IconSmall),
                                 )
                             }
                         }
@@ -368,7 +368,7 @@ fun GroupInfoScreen(
                 }
 
                 item {
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(Dimens.SpaceM))
                     HorizontalDivider()
                     ActionRow(stringResource(R.string.im_group_clear_history)) { confirmClear = true }
                     if (ui.isOwner && ui.members.any { !it.isSelf }) {
@@ -380,7 +380,7 @@ fun GroupInfoScreen(
                         text = stringResource(R.string.im_menu_leave),
                         destructive = true,
                     ) { confirmLeave = true }
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(Dimens.SpaceXl))
                 }
             }
         }
@@ -503,17 +503,17 @@ fun GroupInfoScreen(
                                     transferTarget = member
                                     showTransferPicker = false
                                 }
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = Dimens.SpaceS),
                         ) {
                             MemberAvatar(
                                 name = member.displayName,
                                 url = member.avatarUrl,
                                 cacheKey = "im-avatar:${member.uid}",
-                                size = 32.dp,
+                                size = Dimens.IconXl,
                             )
                             Text(
                                 text = member.displayName.ifBlank { member.uid.take(8) },
-                                modifier = Modifier.padding(start = 12.dp),
+                                modifier = Modifier.padding(start = Dimens.SpaceM),
                             )
                         }
                     }
@@ -601,7 +601,7 @@ private fun ActionRow(text: String, destructive: Boolean = false, onClick: () ->
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
     )
 }
 
@@ -613,7 +613,7 @@ private fun SwitchRow(label: String, checked: Boolean, onToggle: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onToggle)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
     ) {
         Text(
             text = label,

@@ -1,5 +1,7 @@
 package com.we.meet.feature.im.ui.chat
 
+import com.we.meet.ui.theme.WeMeetTextStyles
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,8 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.we.meet.feature.im.R
 
 /** Quick-reaction emoji set — mirrors the web context-menu bar. */
@@ -57,18 +57,18 @@ fun MessageActionSheet(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             QUICK_REACTIONS.forEach { emoji ->
                 val active = emoji in myReactions
                 Text(
                     text = emoji,
-                    fontSize = 26.sp,
+                    style = WeMeetTextStyles.EmojiPicker,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .clickable { onReact(emoji); onDismiss() }
-                        .padding(8.dp)
+                        .padding(Dimens.SpaceS)
                         .then(
                             if (active) Modifier.background(
                                 MaterialTheme.colorScheme.secondaryContainer,
@@ -103,7 +103,7 @@ fun MessageActionSheet(
                 onRecall(); onDismiss()
             }
         }
-        Column(Modifier.padding(bottom = 16.dp)) {}
+        Column(Modifier.padding(bottom = Dimens.SpaceL)) {}
     }
 }
 
@@ -117,14 +117,14 @@ private fun ActionRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(start = 16.dp),
+            modifier = Modifier.padding(start = Dimens.ScreenPadding),
         )
     }
 }

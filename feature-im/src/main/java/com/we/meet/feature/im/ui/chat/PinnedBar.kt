@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.chat
 
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -25,7 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.jusi.lightim.PinnedMessage
 import com.we.meet.feature.im.R
 
@@ -51,14 +51,14 @@ fun PinnedBar(
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f))
                 .clickable { expanded = !expanded }
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 Icons.Filled.PushPin,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(end = 8.dp),
+                modifier = Modifier.padding(end = Dimens.SpaceS),
             )
             Text(
                 text = latest.message.body.ifBlank {
@@ -73,17 +73,17 @@ fun PinnedBar(
                 text = stringResource(R.string.im_pin_count, pins.size),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(start = 8.dp),
+                modifier = Modifier.padding(start = Dimens.SpaceS),
             )
         }
         if (expanded) {
-            LazyColumn(Modifier.heightIn(max = 280.dp)) {
+            LazyColumn(Modifier.heightIn(max = Dimens.Chat.BubbleMaxWidth)) {
                 items(pins.size) { i ->
                     val pin = pins[i]
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(
