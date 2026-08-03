@@ -46,10 +46,15 @@ object Dimens {
     /**
      * 密集列表行里被压小的图标按钮。
      *
-     * ⚠️ 32dp **低于** [MinTouchTarget],不满足 WCAG 2.2 AA。收在这里是为了
-     * 让这笔欠账只有一处、可一次改掉,不是为它背书。修的方向是热区回到 48dp
-     * 而视觉图标保持小(`IconButton(Modifier.size(MinTouchTarget))` + 小 Icon),
-     * 会让参会人列表行变高,属于布局改动,应单独评估。
+     * 32dp 低于 [MinTouchTarget],但**不是合规缺陷** —— WCAG 2.2 AA 的
+     * SC 2.5.8 门槛是 24×24,32 过得去;48dp 是 Material 自己的建议,44×44
+     * 是 WCAG **AAA**(SC 2.5.5)。所以这是「没达到我们自订的更严标准」,
+     * 不是「上架卡点」,别按 P0 排。
+     *
+     * 修的方向是热区回到 48dp 而视觉图标保持小
+     * (`IconButton(Modifier.size(MinTouchTarget))` + 小 Icon),会让列表行变高,
+     * 属于布局改动。真要修先修**误触代价高**的那处(CreateEventScreen 里删除
+     * 参会人的 ✕),而不是按数量铺开。
      *
      * 新代码不要用它。
      */

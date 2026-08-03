@@ -117,16 +117,22 @@ val DarkOnAccentActiveContainer = Color(0xFFD9E8FF)
 /**
  * IM(聊天与一对一通话)专用色。
  *
- * ⚠️ **两套通话配色目前不一致**,这是收进 token 后才暴露出来的:
+ * 通话的红/绿是**全 App 唯一一套**,AI 通话页也用这两个值(见 Theme.kt 的
+ * [AiCallColors])。曾经两边各有一套:AI 用 `E0524C`/`1FB85F`,IM 用现在
+ * 这两个 —— 同一个动作两种红绿。收进 token 后暴露出来,并入这一套。
  *
- * | 语义 | AI 通话 | IM 通话 |
+ * 选 IM 这套不是因为它先来,是因为白图标压在它上面才够对比度
+ * (WCAG 2.2 AA 的 SC 1.4.11 非文本对比,门槛 3:1):
+ *
+ * | | 白图标对比度 | |
  * |---|---|---|
- * | 挂断 | `E0524C` | `E5484D` |
- * | 接听 | `1FB85F` | `30A46C` |
+ * | 挂断 `E5484D` | 3.91:1 | ✅ |
+ * | 挂断 `E0524C`(原 AI) | 3.83:1 | ✅ |
+ * | 接听 `30A46C` | 3.16:1 | ✅ |
+ * | 发起 `1FB85F`(原 AI) | **2.60:1** | ❌ |
  *
- * 同一个动作在两个界面是两种红/绿。本次迁移**只搬不改**,两边都保留原值,
- * 免得在纯重构里夹带视觉变更。要统一的话是个独立决定 —— 选定一套后把
- * 另一套删掉即可,调用处不用动。
+ * ⚠️ 接听绿的 3.16:1 离 3:1 门槛只差一点,**调它之前先算对比度**。要更多
+ * 余量可换 `218A56`(4.34:1,肉眼只深一档)—— 现在只有这一处定义,改一行即可。
  */
 val ImCallHangUp = Color(0xFFE5484D)
 val ImCallAccept = Color(0xFF30A46C)
@@ -173,8 +179,8 @@ val ImMentionSelfFg = Color(0xFF92400E)
  * 控件的观感会变),应当单独评估,不该混在 token 迁移里顺手做掉。
  */
 val AiCallControlSurface = Color(0xFFEDEDED)
-val AiCallHangUp = Color(0xFFE0524C)
-val AiCallStartCall = Color(0xFF1FB85F)
+// 挂断/发起两色不在这里定义 —— 通话红绿全 App 共用 [ImCallHangUp] /
+// [ImCallAccept] 那一套,理由和对比度数字见那里。
 
 /** 说话动效球:外层辉光两色 + 球体本身的扫描渐变(五档首尾同色,才能接成环)。 */
 val AiCallSphereGlowOuter = Color(0xFF4DA8FF)

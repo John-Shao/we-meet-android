@@ -130,13 +130,10 @@ data class RoomColors(
 )
 
 /**
- * AI 通话页控件色。深浅色两套取值相同 —— 这一屏控件固定浅色,见 Color.kt。
- */
-/**
- * IM 专用色。分三块:一对一通话控件、连接状态条四态、消息搜索高亮。
+ * IM 专用色。分四块:一对一通话控件、连接状态条四态、「@我」高亮、群头像调色板。
  *
- * 通话的红/绿与 [AiCallColors] 目前取值不同(见 Color.kt 的说明),这是
- * 收进 token 后暴露出来的既有差异,本次只搬不改。
+ * [callHangUp] / [callAccept] 是全 App 通话红绿的**唯一**来源,AI 通话页
+ * ([AiCallColors]) 取的也是这两个值 —— 同一个动作不该有两种颜色。
  */
 data class ImColors(
     val callHangUp: Color,
@@ -181,10 +178,17 @@ private val SharedImColors = ImColors(
     groupAvatarPalette = GroupAvatarPalette,
 )
 
+/**
+ * AI 通话页控件色。深浅色两套取值相同 —— 这一屏控件固定浅色,见 Color.kt。
+ *
+ * [hangUp] / [startCall] 不是这一屏独有的值,而是复用 [ImColors] 那套通话
+ * 红绿。曾经两屏各一套(AI `E0524C`/`1FB85F`,IM `E5484D`/`30A46C`),其中
+ * AI 的绿配白图标只有 2.60:1,过不了 WCAG 1.4.11 的 3:1 —— 并过来同时修掉。
+ */
 data class AiCallColors(
     /** 麦克风/视频切换这类中性控件的圆底。 */
     val controlSurface: Color,
-    /** 挂断按钮底色,以及静音时的图标色。 */
+    /** 挂断按钮底色,以及静音时的图标色(压在 [controlSurface] 上 3.34:1)。 */
     val hangUp: Color,
     /** 发起通话按钮底色。 */
     val startCall: Color,
@@ -196,8 +200,9 @@ data class AiCallColors(
 
 private val SharedAiCallColors = AiCallColors(
     controlSurface = AiCallControlSurface,
-    hangUp = AiCallHangUp,
-    startCall = AiCallStartCall,
+    // 与 SharedImColors 同源 —— 通话红绿只此一套。
+    hangUp = ImCallHangUp,
+    startCall = ImCallAccept,
     sphereGlowOuter = AiCallSphereGlowOuter,
     sphereGlowInner = AiCallSphereGlowInner,
     sphereGradient = AiCallSphereGradient,
