@@ -568,7 +568,7 @@ fun FreeBusyCompareScreen(
                                                 R.string.freebusy_unavailable,
                                             ),
                                             style = WeMeetTextStyles.LabelMicro,
-                                            color = MaterialTheme.colorScheme.outline,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
                                     }
                                 }

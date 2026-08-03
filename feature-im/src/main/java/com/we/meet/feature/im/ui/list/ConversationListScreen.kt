@@ -276,7 +276,7 @@ fun ConversationListScreen(
                 Text(
                     text = stringResource(R.string.im_list_empty),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         } else {
@@ -499,7 +499,7 @@ private fun ConversationRow(
                 Text(
                     text = row.lastMessageTs?.let { timeLabel(it) }.orEmpty(),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(Dimens.SpaceXs))
                 Row(verticalAlignment = Alignment.CenterVertically) {

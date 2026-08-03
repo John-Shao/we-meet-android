@@ -118,7 +118,7 @@ fun MessageBubble(
                 text = if (isOwn) stringResource(R.string.im_recalled_self)
                 else stringResource(R.string.im_recalled_other, senderName.orEmpty()),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         return
@@ -130,7 +130,7 @@ fun MessageBubble(
             Text(
                 text = content.body,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         return
@@ -157,7 +157,7 @@ fun MessageBubble(
                     else R.string.im_phone_viewed_by_peer
                 ),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         return
@@ -195,7 +195,7 @@ fun MessageBubble(
                 Text(
                     text = senderName,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = Dimens.SpaceXxs),
                 )
             }
@@ -250,7 +250,7 @@ fun MessageBubble(
                 Text(
                     text = receiptLabel,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .padding(top = Dimens.SpaceXxs)
                         .then(
@@ -367,7 +367,7 @@ private fun ImageBubble(
             failed -> Text(
                 text = stringResource(R.string.im_image_load_failed),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(Dimens.SpaceXl),
             )
             url == null -> CircularProgressIndicator(modifier = Modifier.padding(Dimens.SpaceXl).size(Dimens.IconSmall))
@@ -426,7 +426,7 @@ private fun FileBubble(
                     Text(
                         text = sizeText,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -548,7 +548,7 @@ private fun QuoteBubble(
                         .filter { it.isNotBlank() }
                         .joinToString(": "),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
@@ -592,7 +592,7 @@ private fun MergedBubble(content: MessageContent.Merged, isOwn: Boolean, onLongP
                 Text(
                     text = "${item.sender}: ${item.text}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = Dimens.SpaceXxs),
@@ -629,7 +629,7 @@ private fun MergedRecordDialog(content: MessageContent.Merged, onDismiss: () -> 
                         Text(
                             text = item.sender,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
                             text = item.text,
@@ -780,7 +780,7 @@ private fun UnsupportedBubble(isOwn: Boolean) {
         Text(
             text = stringResource(R.string.im_preview_unsupported),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.outline,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
         )
     }

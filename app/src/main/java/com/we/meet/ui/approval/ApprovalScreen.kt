@@ -133,7 +133,7 @@ fun ApprovalScreen(
                     }
                     state.items.isEmpty() -> Text(
                         stringResource(R.string.approval_empty),
-                        color = MaterialTheme.colorScheme.outline,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.align(Alignment.Center),
                     )
                     else -> LazyColumn(
@@ -198,7 +198,7 @@ private fun InstanceCard(
             Text(
                 text = "${inst.applicant?.displayName.orEmpty()} · ${inst.createdAt?.take(10).orEmpty()}",
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = Dimens.SpaceXxs),
             )
 
@@ -208,7 +208,7 @@ private fun InstanceCard(
                     Text(
                         text = "$k: ",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = v?.toString().orEmpty(),

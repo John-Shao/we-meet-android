@@ -221,7 +221,7 @@ fun HourRail(
                 Text(
                     text = "%02d:00".format(h),
                     style = WeMeetTextStyles.LabelTiny,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.End,
                     modifier = Modifier
                         .fillMaxWidth()

@@ -416,7 +416,7 @@ fun ChatScreen(
                         Text(
                             text = stringResource(R.string.im_chat_empty),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 } else {
@@ -865,7 +865,7 @@ private fun PendingRow(kind: String) {
                 }
             ),
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.outline,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = Dimens.SpaceS),
         )
     }
@@ -971,7 +971,7 @@ private fun MessageInputBar(
                 Text(
                     text = "${replyPreview.sender}: ${replyPreview.snippet}",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
@@ -1283,7 +1283,7 @@ private fun PlusPanel(
                 Text(
                     stringResource(item.labelRes),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -1373,7 +1373,7 @@ private fun TimeDivider(tsMs: Long) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.outline,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

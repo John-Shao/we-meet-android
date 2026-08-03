@@ -72,7 +72,7 @@ fun PinnedBar(
             Text(
                 text = stringResource(R.string.im_pin_count, pins.size),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = Dimens.SpaceS),
             )
         }
@@ -101,7 +101,7 @@ fun PinnedBar(
                             Text(
                                 text = senderName(pin.message.senderUid),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.outline,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
                                 text = pin.message.body.ifBlank {

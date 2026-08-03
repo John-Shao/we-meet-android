@@ -311,7 +311,7 @@ fun GroupInfoScreen(
                         Text(
                             text = stringResource(R.string.im_group_no_member_match),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
                         )
                     }

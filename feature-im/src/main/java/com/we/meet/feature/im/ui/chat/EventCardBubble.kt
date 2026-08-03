@@ -135,7 +135,7 @@ internal fun EventCardBubble(
                     Text(
                         text = oldTimeText,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textDecoration = TextDecoration.LineThrough,
                         modifier = Modifier.padding(top = Dimens.SpaceXs),
                     )
@@ -156,7 +156,7 @@ internal fun EventCardBubble(
                             content.organizerName,
                         ),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = Dimens.SpaceXxs),

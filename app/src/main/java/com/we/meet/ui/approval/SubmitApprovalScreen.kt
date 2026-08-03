@@ -175,7 +175,7 @@ fun SubmitApprovalScreen(
                 }
                 ui.templates.isEmpty() -> Text(
                     stringResource(R.string.approval_no_templates),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(Dimens.SpaceXl),
                 )
                 else -> {
@@ -215,7 +215,7 @@ fun SubmitApprovalScreen(
                         Text(
                             text = it,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = Dimens.SpaceS),
                         )
                     }

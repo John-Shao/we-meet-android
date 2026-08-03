@@ -93,7 +93,7 @@ fun MyGroupsScreen(
                         else R.string.im_my_groups_no_match,
                     ),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXl),
                 )
             } else {

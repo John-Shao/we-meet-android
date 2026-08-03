@@ -54,6 +54,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.settings.CalendarWeekStart
@@ -584,7 +585,10 @@ private fun MonthGrid(
                                 color = when {
                                     isSelected -> MaterialTheme.colorScheme.onPrimary
                                     isToday -> MaterialTheme.colorScheme.onPrimaryContainer
-                                    !inMonth -> MaterialTheme.colorScheme.outlineVariant
+                                    // 不用 outlineVariant —— 那是描边色,当数字色
+                                    // 只有 1.66:1(浅)/ 1.98:1(深),弱化过头
+                                    // 成了看不见。见 Color.kt 的 outOfMonthDay。
+                                    !inMonth -> WeMeetTheme.extras.calendar.outOfMonthDay
                                     else -> MaterialTheme.colorScheme.onSurface
                                 },
                             )
@@ -669,7 +673,7 @@ internal fun AgendaCard(
                     Text(
                         text = event.end.format(timeFmt),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }

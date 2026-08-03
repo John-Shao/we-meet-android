@@ -462,7 +462,7 @@ private fun SummaryTab(
                     Text(
                         text = stringResource(R.string.meeting_detail_summary_edited),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = Dimens.SpaceXs),
                     )
                 }
@@ -499,7 +499,7 @@ private fun ChaptersTab(
                         Text(
                             text = chapterTimeLabel(chapter.started_at, chapter.ended_at),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.widthIn(min = Dimens.AvatarXl),
                         )
                         Column(Modifier.padding(start = Dimens.SpaceS)) {

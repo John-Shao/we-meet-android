@@ -71,6 +71,20 @@ val LightRsvpDeclinedText = Color(0xFF6B7280)
  * 都不复用 [LightDanger]:`conflict` 表示的是「这两个日程撞了」,是一种信息
  * 标注,不是「点下去会造成损失」,语义不同不该共用一个 token。
  */
+/**
+ * 月网格里**非本月**那几天的日期数字。
+ *
+ * 原先直接用 `colorScheme.outlineVariant`,压在页面底上只有 1.66:1(浅)/
+ * 1.98:1(深)——「弱化」过头成了「几乎看不见」。日期是有信息的文字,不是
+ * 装饰:用户会拿它对齐周次、点上月末那几天。
+ *
+ * 现在取到 3.05:1 / 3.33:1 —— 仍比本月的正文弱一大截(那边 15:1 以上),
+ * 弱化的意图保住了,但读得出。这里**不按 4.5:1 要求**:这几个数字是
+ * 刻意降级的辅助信息,不是正文;3:1 是我们自订的下限。
+ */
+val LightCalendarOutOfMonthDay = Color(0xFF968F9D)
+val DarkCalendarOutOfMonthDay = Color(0xFF6B6675)
+
 val LightCalendarNowLine = Color(0xFFEF4444)
 val LightCalendarConflict = Color(0xFFDC2626)
 val LightCalendarReminder = Color(0xFFFF8800)

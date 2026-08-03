@@ -271,6 +271,8 @@ data class CalendarColors(
     val nowLine: Color,
     /** 时间冲突标记(忙闲对比的红点、网格里的冲突选区)。 */
     val conflict: Color,
+    /** 月网格里非本月那几天的日期数字。见 Color.kt:不是装饰,别弱化到读不出。 */
+    val outOfMonthDay: Color,
     /** 提醒条目的强调橙。 */
     val reminder: Color,
     /** 压在 [reminder] **实底**上的前景(图标)。深浅同值,底本来就不翻转。 */
@@ -306,6 +308,7 @@ private val LightExtras = WeMeetExtras(
         declinedText = LightRsvpDeclinedText,
     ),
     calendar = CalendarColors(
+        outOfMonthDay = LightCalendarOutOfMonthDay,
         nowLine = LightCalendarNowLine,
         conflict = LightCalendarConflict,
         reminder = LightCalendarReminder,
@@ -346,6 +349,7 @@ private val DarkExtras = WeMeetExtras(
         declinedText = DarkRsvpDeclinedText,
     ),
     calendar = CalendarColors(
+        outOfMonthDay = DarkCalendarOutOfMonthDay,
         nowLine = DarkCalendarNowLine,
         conflict = DarkCalendarConflict,
         reminder = DarkCalendarReminder,

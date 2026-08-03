@@ -655,7 +655,7 @@ private fun AiAskPanel(
                     Text(
                         text = stringResource(R.string.im_search_ai_im_skipped),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = Dimens.SpaceXs),
                     )
                 }

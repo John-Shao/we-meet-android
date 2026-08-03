@@ -107,7 +107,7 @@ internal fun MeetingCardBubble(
                             R.string.im_meeting_card_no, formatMeetingNo(content.slug),
                         ),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = Dimens.SpaceXxs),
                     )
                 }
