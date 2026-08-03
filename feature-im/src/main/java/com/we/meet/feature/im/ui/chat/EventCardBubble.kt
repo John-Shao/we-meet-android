@@ -97,7 +97,7 @@ internal fun EventCardBubble(
                     Icon(
                         Icons.Filled.CalendarMonth,
                         contentDescription = null,
-                        tint = if (cancelled) MaterialTheme.colorScheme.outline
+                        tint = if (cancelled) MaterialTheme.colorScheme.onSurfaceVariant
                         else MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(Dimens.IconTiny),
                     )
@@ -118,7 +118,7 @@ internal fun EventCardBubble(
                         Text(
                             text = badge,
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (cancelled) MaterialTheme.colorScheme.outline
+                            color = if (cancelled) MaterialTheme.colorScheme.onSurfaceVariant
                             else MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .background(

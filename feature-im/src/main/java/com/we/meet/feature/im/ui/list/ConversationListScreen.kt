@@ -466,7 +466,7 @@ private fun ConversationRow(
                         Icon(
                             Icons.Filled.PushPin,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.outline,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier
                                 .padding(start = Dimens.SpaceXs)
                                 .size(Dimens.IconTiny),
@@ -507,7 +507,7 @@ private fun ConversationRow(
                         Icon(
                             Icons.Filled.NotificationsOff,
                             contentDescription = stringResource(R.string.im_menu_mute),
-                            tint = MaterialTheme.colorScheme.outline,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(Dimens.IconTiny),
                         )
                         Spacer(Modifier.width(Dimens.SpaceXs))

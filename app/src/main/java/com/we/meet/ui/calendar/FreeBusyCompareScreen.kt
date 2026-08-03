@@ -558,7 +558,7 @@ fun FreeBusyCompareScreen(
                                         overflow = TextOverflow.Ellipsis,
                                         textAlign = TextAlign.Center,
                                         color = if (invisible) {
-                                            MaterialTheme.colorScheme.outline
+                                            MaterialTheme.colorScheme.onSurfaceVariant
                                         } else MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.padding(horizontal = Dimens.SpaceXxs),
                                     )
@@ -803,7 +803,7 @@ private fun MemberPickerPage(
                                 person.isSelf -> MaterialTheme.colorScheme.primary
                                     .copy(alpha = 0.45f)
                                 isChecked -> MaterialTheme.colorScheme.primary
-                                else -> MaterialTheme.colorScheme.outlineVariant
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
                             },
                             modifier = Modifier.size(Dimens.IconSmall),
                         )

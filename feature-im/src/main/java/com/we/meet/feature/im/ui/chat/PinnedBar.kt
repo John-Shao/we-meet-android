@@ -116,7 +116,7 @@ fun PinnedBar(
                             Icon(
                                 Icons.Filled.Close,
                                 contentDescription = stringResource(R.string.im_action_unpin),
-                                tint = MaterialTheme.colorScheme.outline,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }

@@ -198,7 +198,7 @@ private fun Breadcrumbs(
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.outline,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(Dimens.IconSmall),
             )
             val isLast = index == stack.lastIndex
@@ -239,7 +239,7 @@ private fun StarredEntryRow(onClick: () -> Unit) {
         Icon(
             Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.outline,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -270,7 +270,7 @@ private fun MyGroupsEntryRow(onClick: () -> Unit) {
         Icon(
             Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.outline,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -300,7 +300,7 @@ private fun DepartmentRow(dept: DepartmentDto, onClick: () -> Unit) {
         Icon(
             Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.outline,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

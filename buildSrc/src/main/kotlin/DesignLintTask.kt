@@ -44,6 +44,8 @@ abstract class DesignLintTask : DefaultTask() {
         val baseline = baselineFile.get().asFile
 
         val current = sortedMapOf<String, Int>()
+        // 只在报回归时用得上,所以按 key 顺手存着,不额外再解析一遍文件。
+        val where = mutableMapOf<String, List<Int>>()
         sources.files
             .filter { it.isFile && it.extension == "kt" }
             .forEach { f ->
@@ -51,7 +53,10 @@ abstract class DesignLintTask : DefaultTask() {
                 val parsed = parse(f.readText())
                 for (rule in RULES) {
                     val n = rule.count("/$rel", parsed.code, parsed.literals, parsed.lines)
-                    if (n > 0) current["${rule.id}|$rel"] = n
+                    if (n > 0) {
+                        current["${rule.id}|$rel"] = n
+                        rule.locate?.let { where["${rule.id}|$rel"] = it(parsed.lines) }
+                    }
                 }
             }
 
@@ -96,7 +101,10 @@ abstract class DesignLintTask : DefaultTask() {
             if (now > was) {
                 val ruleId = key.substringBefore('|')
                 val path = key.substringAfter('|')
-                regressions += "  $path\n    [$ruleId] $was → $now(+${now - was}) · ${hints[ruleId]}"
+                // 有行号就报行号 —— 光说「0 变成 4」等于让改的人自己再找一遍。
+                val at = where[key]?.distinct()?.takeIf { it.isNotEmpty() }
+                    ?.let { "\n    at lines ${it.joinToString(", ")}" }.orEmpty()
+                regressions += "  $path\n    [$ruleId] $was → $now(+${now - was}) · ${hints[ruleId]}$at"
             }
         }
 
@@ -141,6 +149,13 @@ abstract class DesignLintTask : DefaultTask() {
     private class Rule(
         val id: String,
         val hint: String,
+        /**
+         * 报违规时顺带给出行号。
+         *
+         * 只有「一处一行」的规则给得出 —— 给得出就给:基线只记数量,回归时光说
+         * 「这个文件从 0 变成 4」而不说是哪四行,改的人得自己再 grep 一遍。
+         */
+        val locate: ((lines: List<String>) -> List<Int>)? = null,
         /** 返回该文件的违规数。path 形如 "/app/src/main/java/…"。 */
         val count: (
             path: String,
@@ -162,6 +177,83 @@ abstract class DesignLintTask : DefaultTask() {
         val RAW_FONT = Regex("\\b(fontSize|lineHeight)\\s*=\\s*[0-9]+(\\.[0-9]+)?\\.sp")
         val RAW_DIMEN = Regex("\\b[0-9]+(\\.[0-9]+)?\\.dp\\b")
         val RAW_TOPBAR = Regex("(?<![A-Za-z0-9_.])TopAppBar\\s*\\(")
+
+        // ---- 文字/图标色必须取前景槽位 ------------------------------------
+        //
+        // M3 的 ColorScheme 是**成对**的:每个「面」有一个配套的 `on-` 色,配对
+        // 关系本身就是对比度保证。拿面色当文字色,对比度就是碰运气 —— 这一类
+        // 我们已经踩过四次:月网格今天那格取错 on- 色(1.2:1)、非本月日期用
+        // outlineVariant(1.66:1)、全仓 36 处拿 outline 当次要文字(4.44:1)、
+        // 提醒角标文字和底同色(2.07:1)。
+        //
+        // 所以规则很直白:`color =` / `tint =` 右边**不许**出现下面这些槽位。
+        val NON_FG_SLOTS = setOf(
+            "background", "surface", "surfaceVariant", "surfaceTint",
+            "surfaceDim", "surfaceBright", "surfaceContainer", "surfaceContainerLow",
+            "surfaceContainerLowest", "surfaceContainerHigh", "surfaceContainerHighest",
+            "primaryContainer", "secondaryContainer", "tertiaryContainer", "errorContainer",
+            "outline", "outlineVariant", "scrim", "inverseSurface",
+        )
+
+        /**
+         * 只查 `MaterialTheme.colorScheme.*`,**不查** `WeMeetTheme.extras.*`。
+         *
+         * extras 里没有 M3 那种系统性的 `on-` 命名(有 `onReminder`,也有
+         * `connConnectedFg`、`acceptedText` 这类各叫各的),机械匹配只会误报到
+         * 没人看。extras 的配对关系靠 Color.kt 的 KDoc 和走查清单守。
+         */
+        val SCHEME_SLOT = Regex("MaterialTheme\\.colorScheme\\.(\\w+)")
+        val FG_ASSIGN = Regex("\\b(color|tint)\\s*=")
+
+        /**
+         * `color = when {` / `color = if (…) {` —— 分支体在后面几行,光看这一行
+         * 看不到取的是哪个槽位。月网格那个 bug(`!inMonth -> outlineVariant`)
+         * 和群资料的占位文字(`if (blank) { outline }`)都是这么藏住的。
+         */
+        val FG_BRANCH = Regex("\\b(color|tint)\\s*=\\s*(when|if)\\b")
+
+        /**
+         * 这些上下文里的 `color =` 不是文字色,放过。
+         *
+         * 两条最要紧:
+         * - `background(color = …)` —— 和文字色写法一模一样,不排掉的话每个
+         *   铺底都会误报。
+         * - `Surface(color = …)` —— M3 的 Surface 拿 `color` 当**底色**(前景走
+         *   `contentColor`)。聊天气泡、表态 chip、群头像兜底全是这个写法,
+         *   不排掉的话这条规则报出来的绝大多数都是底色,很快就没人看了。
+         *
+         * 分隔线/描边/进度条/Canvas 同理 —— 它们本来就该用 outline 那几档。
+         */
+        val NON_FG_CONTEXT = Regex(
+            "\\.background\\(|\\bbackground\\s*=|Divider\\(|DividerDefaults|" +
+                "(?<![A-Za-z0-9_])Surface\\s*\\(|" +
+                "\\.border\\(|ProgressIndicator\\(|Canvas\\(|draw[A-Z]\\w*\\(|" +
+                "containerColor|\\bBrush\\.|\\.drawBehind\\b",
+        )
+
+        /**
+         * 这一行的 `color =` 是不是长在「不是文字色」的调用里。
+         *
+         * 判断靠**缩进**找外层调用,而不是往上数固定行数:`Surface(` 到它的
+         * `color =` 之间可以隔着十几行别的参数,数行数要么漏(窗口小)要么误伤
+         * (窗口大,把上一个不相干的调用也算进来)。缩进比它浅、且带 `(` 的
+         * 第一行,就是包着它的那个调用。
+         *
+         * 对齐得不规范的代码会判错 —— 那是棘轮基线兜底的部分,不值得为它上
+         * 真解析器。
+         */
+        fun inNonFgContext(lines: List<String>, idx: Int): Boolean {
+            val line = lines[idx]
+            if (NON_FG_CONTEXT.containsMatchIn(line)) return true
+            val indent = line.indexOfFirst { !it.isWhitespace() }
+            if (indent <= 0) return false
+            for (i in idx - 1 downTo 0) {
+                val l = lines[i]
+                val t = l.indexOfFirst { !it.isWhitespace() }
+                if (t in 0 until indent && '(' in l) return NON_FG_CONTEXT.containsMatchIn(l)
+            }
+            return false
+        }
 
         /** theme 包是 token 的定义处,色值/字号字面量本就该写在那。 */
         fun isTheme(path: String) = "/theme/" in path
@@ -242,6 +334,14 @@ abstract class DesignLintTask : DefaultTask() {
                 }
             },
             Rule(
+                "text-color-slot",
+                "text/icon color must be an on-* slot (or primary/error accent), " +
+                    "not a surface/container/outline slot -- spec 1.1",
+                locate = { lines -> textColorMisuseLines(lines) },
+            ) { p, _, _, lines ->
+                if (isTheme(p)) 0 else textColorMisuseLines(lines).size
+            },
+            Rule(
                 "cjk-literal",
                 "move the string into strings.xml, or mark // i18n-exempt -- spec 4",
             ) { _, _, literals, _ ->
@@ -252,6 +352,60 @@ abstract class DesignLintTask : DefaultTask() {
                 }
             },
         )
+
+        /**
+         * 数这个文件里「拿面色当文字色」的处数。
+         *
+         * 两种写法都要认:
+         *
+         * 1. 直接赋值 —— `color = MaterialTheme.colorScheme.outline`。
+         * 2. **when 分支** —— 月网格那个 bug 就藏在这儿:
+         *
+         *        color = when {
+         *            isToday -> …onPrimaryContainer
+         *            !inMonth -> …outlineVariant     // ← 只看 `color =` 那行看不见
+         *        }
+         *
+         *    所以进了 `color = when {` 就一路盯到这个块闭合,块内每个面色都算。
+         *    括号深度用 `{` `}` 数 —— 够用了,不为一条棘轮规则写 Kotlin 解析器。
+         *
+         * 用**原始行**(含注释)而不是挖空后的 code:豁免标记写在注释里。代价是
+         * 注释里出现 `color = MaterialTheme.colorScheme.surface` 这样的示例会被
+         * 算进去 —— 真遇上了写 `// design-exempt: 这是注释里的示例` 即可。
+         */
+        fun textColorMisuseLines(lines: List<String>): List<Int> {
+            val hits = mutableListOf<Int>()
+            var depth = 0
+            // 不在 color/tint 的分支块里时为 null;在的话记块开始时的深度。
+            var branchAt: Int? = null
+            // 分支块的第一行(`color = when {` 那行)—— 上下文判断要看它,
+            // 而不是看分支体所在的行,否则 `.background(color = when {…})`
+            // 里的每个分支都会误报。
+            var branchHead = -1
+            lines.forEachIndexed { i, line ->
+                val before = depth
+                val opensBranch = FG_BRANCH.containsMatchIn(line)
+                val inBranch = branchAt != null
+                // 分支块内每一行都查;块外只查带 color=/tint= 的行。
+                if ((inBranch || FG_ASSIGN.containsMatchIn(line)) && !isExempt(lines, i)) {
+                    val n = SCHEME_SLOT.findAll(line).count { it.groupValues[1] in NON_FG_SLOTS }
+                    val ctxAt = if (inBranch) branchHead else i
+                    if (n > 0 && !inNonFgContext(lines, ctxAt)) repeat(n) { hits += i + 1 }
+                }
+                depth += line.count { it == '{' } - line.count { it == '}' }
+                when {
+                    // 真开了块才盯下去。`color = if (a) X else Y` 写在一行里
+                    // 深度不变,同一行已经查过了,不要留下没人关的标记。
+                    opensBranch && depth > before -> {
+                        branchAt = before
+                        branchHead = i
+                    }
+                    // 深度回到进块前 → 块结束。
+                    !opensBranch -> branchAt?.let { if (depth <= it) branchAt = null }
+                }
+            }
+            return hits
+        }
 
         /**
          * 把注释挖空(保留换行,行号才准),同时把字符串字面量单独收出来。

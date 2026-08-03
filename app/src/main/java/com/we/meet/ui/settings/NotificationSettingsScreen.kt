@@ -218,7 +218,7 @@ fun NotificationSettingsScreen(
                     Icon(
                         Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.outline,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }

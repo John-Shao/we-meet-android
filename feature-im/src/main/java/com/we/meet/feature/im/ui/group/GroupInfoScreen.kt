@@ -168,7 +168,7 @@ fun GroupInfoScreen(
                                 },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = if (ui.description.isBlank()) {
-                                    MaterialTheme.colorScheme.outline
+                                    MaterialTheme.colorScheme.onSurfaceVariant
                                 } else MaterialTheme.colorScheme.onSurface,
                             )
                         }
@@ -202,7 +202,7 @@ fun GroupInfoScreen(
                                 },
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = if (ui.myNickname.isBlank()) {
-                                    MaterialTheme.colorScheme.outline
+                                    MaterialTheme.colorScheme.onSurfaceVariant
                                 } else MaterialTheme.colorScheme.onSurface,
                             )
                         }
@@ -359,7 +359,7 @@ fun GroupInfoScreen(
                                 Icon(
                                     Icons.Filled.Close,
                                     contentDescription = stringResource(R.string.im_group_remove_member),
-                                    tint = MaterialTheme.colorScheme.outline,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(Dimens.IconSmall),
                                 )
                             }

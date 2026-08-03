@@ -141,7 +141,7 @@ fun DirectChatSettingsScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         color = if (peerId != null) {
                             MaterialTheme.colorScheme.primary
-                        } else MaterialTheme.colorScheme.outline,
+                        } else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                     )
                 }
