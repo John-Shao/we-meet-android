@@ -1,5 +1,6 @@
 package com.we.meet.feature.assistant.aicall.ui.components
 
+import com.we.meet.ui.theme.AiCallControlColors
 import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.feature.assistant.R
@@ -38,10 +39,19 @@ fun BottomControls(
     onPrimaryAction: () -> Unit,
     onToggleVideoMode: () -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * 控件压在摄像头画面上(视频已开)。此时恒用深色那套配色,不看主题 ——
+     * 与顶栏 / 状态提示条的 `onDark` 同一套判断。
+     */
+    onDark: Boolean = false,
 ) {
     val isActive = status is AiCallStatus.Active
     val isConnecting = status is AiCallStatus.Connecting
     val videoSelected = mode == AiCallMode.Video
+    // 中性控件的配色:压在视频上恒深色,否则跟随主题。挂断/发起是实底红绿,
+    // 深浅一致,不走这里。
+    val palette = WeMeetTheme.extras.aiCall
+    val controls = if (onDark) palette.controlOnDark else palette.control
 
     Row(
         modifier = modifier
@@ -52,6 +62,7 @@ fun BottomControls(
     ) {
         // Left — mic mute: always visible, enabled only during Active call.
         MicButton(
+            controls = controls,
             enabled = isActive,
             muted = isMicMuted,
             onClick = onToggleMic,
@@ -65,6 +76,7 @@ fun BottomControls(
 
         // Right — video toggle: always visible, disabled while connecting.
         VideoToggleButton(
+            controls = controls,
             selected = videoSelected,
             enabled = !isConnecting,
             onClick = onToggleVideoMode,
@@ -73,13 +85,20 @@ fun BottomControls(
 }
 
 @Composable
-private fun MicButton(enabled: Boolean, muted: Boolean, onClick: () -> Unit) {
-    val palette = WeMeetTheme.extras.aiCall
-    val bg = if (enabled) palette.controlSurface else palette.controlSurface.copy(alpha = 0.5f)
+private fun MicButton(
+    controls: AiCallControlColors,
+    enabled: Boolean,
+    muted: Boolean,
+    onClick: () -> Unit,
+) {
+    val hangUp = WeMeetTheme.extras.aiCall.hangUp
+    val bg = if (enabled) controls.surface else controls.surface.copy(alpha = 0.5f)
     val tint = when {
-        !enabled -> Color.Black.copy(alpha = 0.35f)
-        muted -> palette.hangUp
-        else -> Color.Black
+        !enabled -> controls.onSurface.copy(alpha = 0.35f)
+        // 静音是「出事了」的状态,用通话红标出来。压在圆底上 3.34:1(浅)/
+        // 3.49:1(深),两边都过 SC 1.4.11 的 3:1。
+        muted -> hangUp
+        else -> controls.onSurface
     }
     Box(
         modifier = Modifier
@@ -124,19 +143,20 @@ private fun CallButton(isActive: Boolean, onClick: () -> Unit) {
 
 @Composable
 private fun VideoToggleButton(
+    controls: AiCallControlColors,
     selected: Boolean,
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
-    val palette = WeMeetTheme.extras.aiCall
     val bg = when {
-        !enabled -> palette.controlSurface.copy(alpha = 0.5f)
-        selected -> Color.White
-        else -> palette.controlSurface
+        !enabled -> controls.surface.copy(alpha = 0.5f)
+        selected -> controls.selected
+        else -> controls.surface
     }
     val tint = when {
-        !enabled -> Color.Black.copy(alpha = 0.35f)
-        else -> Color.Black
+        !enabled -> controls.onSurface.copy(alpha = 0.35f)
+        selected -> controls.onSelected
+        else -> controls.onSurface
     }
     Box(
         modifier = Modifier

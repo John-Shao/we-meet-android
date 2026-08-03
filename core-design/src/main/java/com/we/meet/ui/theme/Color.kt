@@ -170,17 +170,42 @@ val ImMentionSelfBg = Color(0xFFFDE68A)
 val ImMentionSelfFg = Color(0xFF92400E)
 
 /**
- * AI 通话页控件专用色。
+ * AI 通话页中性控件(麦克风、视频切换)的圆底与图标色,深浅各一套。
  *
- * 这一屏的控件是**固定浅色**的:浅灰底 + 黑色图标,不随深浅色主题变(视频开启
- * 时画面本身变暗,靠 `onDark` 单独切文字色)。所以这几个值只有一套。
+ * 原先只有固定浅色一套(`EDEDED` + 黑图标)。深色模式逐屏核对时,这排控件
+ * 在近黑的页面底上连成一条亮带,像块贴上去的浅色岛。参考通话类 App 的通行
+ * 做法改成跟随主题:深色下取比页面底高一档的深灰圆 + 浅色图标,圆本身退回
+ * 页面里,亮的只有图标。
  *
- * 保持原样是有意的 —— 把它改成跟随主题是个真实的设计改动(深色模式下这排
- * 控件的观感会变),应当单独评估,不该混在 token 迁移里顺手做掉。
+ * 视频开启时控件压在摄像头画面上,那种情况**恒取深色这套**(不看主题)——
+ * 判断收在 `AiCallColors.controlOnDark`,和顶栏 / 状态条的 `onDark` 同一套
+ * 逻辑。
+ *
+ * 选中态(视频已开)沿用「比未选中更亮」这条规则,深浅两套方向一致。
+ *
+ * 对比度(SC 1.4.11 门槛 3:1,图标是识别控件的那个元素):
+ *
+ * | | 图标 / 圆底 | |
+ * |---|---|---|
+ * | 浅色 `1A1C1E` on `EDEDED` | 15.2:1 | ✅ |
+ * | 深色 `E6E8EB` on `2A2E33` | 11.1:1 | ✅ |
+ * | 静音红 `E5484D` on `EDEDED` | 3.34:1 | ✅ |
+ * | 静音红 `E5484D` on `2A2E33` | 3.49:1 | ✅ |
+ *
+ * 圆底相对页面底只有 1.35:1(深色),是有意的 —— 它是装饰,承担识别的是
+ * 图标。改圆底颜色前先确认上表里的图标那几行还成立。
  */
-val AiCallControlSurface = Color(0xFFEDEDED)
+val LightAiCallControlSurface = Color(0xFFEDEDED)
+val LightAiCallOnControlSurface = Color(0xFF1A1C1E)
+val LightAiCallControlSelected = Color(0xFFFFFFFF)
+val LightAiCallOnControlSelected = Color(0xFF1A1C1E)
+val DarkAiCallControlSurface = Color(0xFF2A2E33)
+val DarkAiCallOnControlSurface = Color(0xFFE6E8EB)
+val DarkAiCallControlSelected = Color(0xFFE6E8EB)
+val DarkAiCallOnControlSelected = Color(0xFF111418)
 // 挂断/发起两色不在这里定义 —— 通话红绿全 App 共用 [ImCallHangUp] /
-// [ImCallAccept] 那一套,理由和对比度数字见那里。
+// [ImCallAccept] 那一套,理由和对比度数字见那里。它们是实底圆(白图标压在
+// 红/绿上),深浅色一致,不属于上面这套「跟随主题的中性控件」。
 
 /** 说话动效球:外层辉光两色 + 球体本身的扫描渐变(五档首尾同色,才能接成环)。 */
 val AiCallSphereGlowOuter = Color(0xFF4DA8FF)

@@ -179,16 +179,33 @@ private val SharedImColors = ImColors(
 )
 
 /**
- * AI 通话页控件色。深浅色两套取值相同 —— 这一屏控件固定浅色,见 Color.kt。
+ * AI 通话页里麦克风 / 视频切换这类**中性**控件的一组配色:未选中与选中各
+ * 一对「圆底 + 图标」。取值与对比度见 Color.kt 的 [LightAiCallControlSurface]。
+ */
+data class AiCallControlColors(
+    val surface: Color,
+    val onSurface: Color,
+    /** 选中态(视频已开)。规则是「比未选中更亮」,深浅两套方向一致。 */
+    val selected: Color,
+    val onSelected: Color,
+)
+
+/**
+ * AI 通话页控件色。
+ *
+ * [control] 跟随主题;[controlOnDark] 是视频开启、控件压在摄像头画面上时用的
+ * 那套 —— 恒深色,浅色主题下也一样。两个字段并存是因为组件要在同一次组合里
+ * 按 `onDark` 二选一,没法只拿到当前主题的那套。
  *
  * [hangUp] / [startCall] 不是这一屏独有的值,而是复用 [ImColors] 那套通话
  * 红绿。曾经两屏各一套(AI `E0524C`/`1FB85F`,IM `E5484D`/`30A46C`),其中
  * AI 的绿配白图标只有 2.60:1,过不了 WCAG 1.4.11 的 3:1 —— 并过来同时修掉。
+ * 它们是实底圆(白图标压在红/绿上),深浅色一致,所以不在 [control] 里。
  */
 data class AiCallColors(
-    /** 麦克风/视频切换这类中性控件的圆底。 */
-    val controlSurface: Color,
-    /** 挂断按钮底色,以及静音时的图标色(压在 [controlSurface] 上 3.34:1)。 */
+    val control: AiCallControlColors,
+    val controlOnDark: AiCallControlColors,
+    /** 挂断按钮底色,以及静音时的图标色。 */
     val hangUp: Color,
     /** 发起通话按钮底色。 */
     val startCall: Color,
@@ -198,8 +215,24 @@ data class AiCallColors(
     val sphereGradient: List<Color>,
 )
 
-private val SharedAiCallColors = AiCallColors(
-    controlSurface = AiCallControlSurface,
+private val LightAiCallControls = AiCallControlColors(
+    surface = LightAiCallControlSurface,
+    onSurface = LightAiCallOnControlSurface,
+    selected = LightAiCallControlSelected,
+    onSelected = LightAiCallOnControlSelected,
+)
+
+private val DarkAiCallControls = AiCallControlColors(
+    surface = DarkAiCallControlSurface,
+    onSurface = DarkAiCallOnControlSurface,
+    selected = DarkAiCallControlSelected,
+    onSelected = DarkAiCallOnControlSelected,
+)
+
+private fun aiCallColors(control: AiCallControlColors) = AiCallColors(
+    control = control,
+    // 压在摄像头画面上时恒用深色那套。
+    controlOnDark = DarkAiCallControls,
     // 与 SharedImColors 同源 —— 通话红绿只此一套。
     hangUp = ImCallHangUp,
     startCall = ImCallAccept,
@@ -286,7 +319,7 @@ private val LightExtras = WeMeetExtras(
         onAccentActiveContainer = LightOnAccentActiveContainer,
     ),
     room = SharedRoomColors,
-    aiCall = SharedAiCallColors,
+    aiCall = aiCallColors(LightAiCallControls),
     im = SharedImColors,
     avatarPalette = AvatarFallbackPalette,
 )
@@ -324,7 +357,7 @@ private val DarkExtras = WeMeetExtras(
         onAccentActiveContainer = DarkOnAccentActiveContainer,
     ),
     room = SharedRoomColors,
-    aiCall = SharedAiCallColors,
+    aiCall = aiCallColors(DarkAiCallControls),
     im = SharedImColors,
     avatarPalette = AvatarFallbackPalette,
 )

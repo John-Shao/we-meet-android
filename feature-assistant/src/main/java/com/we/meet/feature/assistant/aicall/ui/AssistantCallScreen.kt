@@ -249,6 +249,7 @@ fun AssistantCallScreen(
                         }
                     },
                     onToggleVideoMode = { handleToggleVideo() },
+                    onDark = isVideoActive,
                 )
 
                 Text(
