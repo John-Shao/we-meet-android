@@ -576,10 +576,16 @@ private fun MonthGrid(
                             Text(
                                 text = date.dayOfMonth.toString(),
                                 style = MaterialTheme.typography.labelLarge,
+                                // 这里的判断顺序必须和上面底色的顺序一致。原先
+                                // 底色先看 isToday、文字先看 !inMonth,两者不一致
+                                // ——翻到别的月份时,今天那格画了 primaryContainer
+                                // 的圆底,数字却取了「非本月」的 outlineVariant,
+                                // 对比度只有 1.2:1,数字等于隐形(深浅色都中招)。
+                                // 有底色就必须用它的 on- 色,这是配对关系,不是选色。
                                 color = when {
                                     isSelected -> MaterialTheme.colorScheme.onPrimary
+                                    isToday -> MaterialTheme.colorScheme.onPrimaryContainer
                                     !inMonth -> MaterialTheme.colorScheme.outlineVariant
-                                    isToday -> MaterialTheme.colorScheme.primary
                                     else -> MaterialTheme.colorScheme.onSurface
                                 },
                             )

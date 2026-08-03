@@ -410,7 +410,11 @@ private fun AvatarBubble(
         modifier = modifier
             .size(Dimens.AvatarXxl)
             .clip(CircleShape)
-            .border(Dimens.SpaceXxs, MaterialTheme.colorScheme.background, CircleShape)
+            // 这圈是「把头像从抽屉面板里抠出来」的留白,所以必须取面板自己的
+            // 底色 surface,不是页面底色 background。浅色下两者只差 3 个色阶
+            // (FCFCFD / FFFFFF)看不出来,深色下差得出来(111418 / 1A1C1E)——
+            // 用 background 会在封面上描出一圈比周围都黑的硬边。
+            .border(Dimens.SpaceXxs, MaterialTheme.colorScheme.surface, CircleShape)
             .background(MaterialTheme.colorScheme.primary)
             .clickable(enabled = !isUploading, onClick = onClick),
         contentAlignment = Alignment.Center,
