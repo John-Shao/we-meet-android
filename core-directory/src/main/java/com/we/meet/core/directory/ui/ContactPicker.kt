@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.core.directory.DirectoryDeps
 import com.we.meet.core.directory.R
 import com.we.meet.core.directory.data.DirectoryRepository
@@ -131,7 +132,7 @@ fun ContactPicker(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.85f)
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = Dimens.ScreenPadding),
         ) {
             OutlinedTextField(
                 value = query,
@@ -143,10 +144,10 @@ fun ContactPicker(
 
             if (mode == ContactPickerMode.Multi && selected.value.isNotEmpty()) {
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp),
+                        .padding(top = Dimens.SpaceS),
                 ) {
                     items(selected.value.values.toList(), key = { it.userId }) { picked ->
                         InputChip(
@@ -167,14 +168,14 @@ fun ContactPicker(
                     error -> Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(top = 32.dp),
+                            .padding(top = Dimens.SpaceXxl),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
                             stringResource(R.string.picker_load_error),
                             color = MaterialTheme.colorScheme.error,
                         )
-                        Button(onClick = { reloadTick++ }, modifier = Modifier.padding(top = 8.dp)) {
+                        Button(onClick = { reloadTick++ }, modifier = Modifier.padding(top = Dimens.SpaceS)) {
                             Text(stringResource(R.string.picker_retry))
                         }
                     }
@@ -222,12 +223,12 @@ fun ContactPicker(
                     enabled = selected.value.isNotEmpty(),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp),
+                        .padding(vertical = Dimens.SpaceM),
                 ) {
                     Text(stringResource(R.string.picker_confirm_count, selected.value.size))
                 }
             } else {
-                Spacer(Modifier.padding(bottom = 12.dp))
+                Spacer(Modifier.padding(bottom = Dimens.SpaceM))
             }
         }
     }
@@ -245,7 +246,7 @@ private fun MemberRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 10.dp),
+            .padding(vertical = Dimens.SpaceS),
     ) {
         MemberAvatar(
             name = member.displayName,
@@ -255,7 +256,7 @@ private fun MemberRow(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 12.dp),
+                .padding(start = Dimens.SpaceM),
         ) {
             Text(
                 member.displayName,
@@ -278,7 +279,7 @@ private fun MemberRow(
             }
         }
         if (mode == ContactPickerMode.Multi) {
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(Dimens.SpaceS))
             Checkbox(checked = checked, onCheckedChange = { onClick() })
         }
     }

@@ -115,6 +115,45 @@ val DarkAccentActiveContainer = Color(0xFF1E3A7A)
 val DarkOnAccentActiveContainer = Color(0xFFD9E8FF)
 
 /**
+ * AI 通话页控件专用色。
+ *
+ * 这一屏的控件是**固定浅色**的:浅灰底 + 黑色图标,不随深浅色主题变(视频开启
+ * 时画面本身变暗,靠 `onDark` 单独切文字色)。所以这几个值只有一套。
+ *
+ * 保持原样是有意的 —— 把它改成跟随主题是个真实的设计改动(深色模式下这排
+ * 控件的观感会变),应当单独评估,不该混在 token 迁移里顺手做掉。
+ */
+val AiCallControlSurface = Color(0xFFEDEDED)
+val AiCallHangUp = Color(0xFFE0524C)
+val AiCallStartCall = Color(0xFF1FB85F)
+
+/** 说话动效球:外层辉光两色 + 球体本身的扫描渐变(五档首尾同色,才能接成环)。 */
+val AiCallSphereGlowOuter = Color(0xFF4DA8FF)
+val AiCallSphereGlowInner = Color(0xFF1968F0)
+val AiCallSphereGradient = listOf(
+    Color(0xFF7BC1FF),
+    Color(0xFF3D90FF),
+    Color(0xFF1F6BFF),
+    Color(0xFF3D90FF),
+    Color(0xFF7BC1FF),
+)
+
+/**
+ * 无头像时按名字哈希取色的调色板。
+ *
+ * 同一个人必须永远同色 —— 取色靠 `floorMod(name.hashCode(), size)`,所以**这个
+ * 列表的顺序和长度都不能随便改**:改了等于全公司的头像颜色重新洗牌。
+ */
+val AvatarFallbackPalette = listOf(
+    Color(0xFF5B8DEF),
+    Color(0xFF7C6FE0),
+    Color(0xFF43A88A),
+    Color(0xFFE0876F),
+    Color(0xFFD46A9C),
+    Color(0xFF6FA8DC),
+)
+
+/**
  * 会中(RoomScreen)专用色。
  *
  * 会中界面永远是深色的 —— 视频画面之上必须压暗才看得清叠加控件,不跟随

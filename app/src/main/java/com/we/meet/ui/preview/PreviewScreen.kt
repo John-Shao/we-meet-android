@@ -74,6 +74,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.WeMeetApp
 import com.we.meet.R
+import com.we.meet.design.R as DesignR
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.audio.AudioOutput
 import com.we.meet.audio.AudioOutputController
@@ -486,7 +487,7 @@ private fun ErrorBanner(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = stringResource(R.string.cd_close),
+                            contentDescription = stringResource(DesignR.string.cd_close),
                             tint = MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.size(Dimens.IconTiny),
                         )

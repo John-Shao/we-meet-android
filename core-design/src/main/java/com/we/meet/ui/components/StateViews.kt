@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import com.we.meet.R
+import com.we.meet.design.R
 import com.we.meet.ui.theme.Dimens
 
 /**

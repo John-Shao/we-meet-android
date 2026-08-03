@@ -179,6 +179,24 @@ object Dimens {
         val QrSize = 200.dp
     }
 
+    /**
+     * 底部弹层内可滚动区的最大高度。
+     *
+     * 超过就滚动,而不是把弹层顶到全屏 —— 用户得始终看得见下面还有页面,
+     * 才知道点空白处可以关掉它。
+     */
+    val SheetContentMaxHeight = 360.dp
+
+    /** AI 通话页的几何常量。 */
+    object AiCall {
+        /** 说话动效球的直径。占屏幕主要视觉,不跟随通用刻度。 */
+        val SphereSize = 280.dp
+        /** 麦克风/视频切换这类次要圆形控件。 */
+        val ControlButton = 64.dp
+        /** 接听/挂断主按钮,比次要控件大一圈,一眼能找到。 */
+        val CallButton = 72.dp
+    }
+
     /** 个人资料页的头图布局。 */
     object Profile {
         /** 顶部封面图高度。 */

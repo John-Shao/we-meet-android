@@ -1,5 +1,7 @@
 package com.we.meet.feature.assistant.aicall.ui.components
 
+import com.we.meet.ui.theme.WeMeetTheme
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -38,9 +40,12 @@ fun AnimatedSphere(
         label = "phase",
     )
 
+    // DrawScope 不是 @Composable 作用域,颜色要在进 Canvas 之前取出来。
+    val colors = WeMeetTheme.extras.aiCall
+
     Canvas(
         modifier = modifier
-            .size(280.dp)
+            .size(Dimens.AiCall.SphereSize)
             .pointerInput(Unit) { detectTapGestures(onTap = { onTap() }) },
     ) {
         val level = audioLevel().coerceIn(0f, 1f)
@@ -51,8 +56,8 @@ fun AnimatedSphere(
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    Color(0xFF4DA8FF).copy(alpha = 0.30f + level * 0.30f),
-                    Color(0xFF1968F0).copy(alpha = 0.12f),
+                    colors.sphereGlowOuter.copy(alpha = 0.30f + level * 0.30f),
+                    colors.sphereGlowInner.copy(alpha = 0.12f),
                     Color.Transparent,
                 ),
                 radius = r * 1.3f * growth,
@@ -64,11 +69,7 @@ fun AnimatedSphere(
             drawCircle(
                 brush = Brush.sweepGradient(
                     colors = listOf(
-                        Color(0xFF7BC1FF),
-                        Color(0xFF3D90FF),
-                        Color(0xFF1F6BFF),
-                        Color(0xFF3D90FF),
-                        Color(0xFF7BC1FF),
+                        *colors.sphereGradient.toTypedArray(),
                     ),
                 ),
                 radius = r * 0.78f * growth,

@@ -143,6 +143,9 @@ dependencies {
     implementation(libs.posthog.android)
 
     // AI assistant feature (Sprint 3) — realtime "打电话" call screen.
+    // 设计系统(token + 共享组件)。api 而非 implementation:app 的公开
+    // Composable 签名里会出现 Dimens/WeMeetTheme 这些类型。
+    api(project(":core-design"))
     implementation(project(":feature-assistant"))
 
     // IM feature (P4) — chat list + 1:1/group messaging via jusi-light-im SDK.

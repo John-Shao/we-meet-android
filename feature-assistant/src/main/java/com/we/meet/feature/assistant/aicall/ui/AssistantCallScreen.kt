@@ -1,6 +1,7 @@
 package com.we.meet.feature.assistant.aicall.ui
 
 import androidx.annotation.StringRes
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.feature.assistant.R
 import androidx.compose.ui.res.stringResource
 import android.Manifest
@@ -46,7 +47,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -253,12 +253,12 @@ fun AssistantCallScreen(
 
                 Text(
                     text = stringResource(R.string.assistant_ai_generated),
-                    fontSize = 12.sp,
+                    style = MaterialTheme.typography.bodySmall,
                     color = if (isVideoActive) Color.White.copy(alpha = 0.7f)
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp),
+                        .padding(bottom = Dimens.SpaceL),
                     textAlign = TextAlign.Center,
                 )
             }
@@ -296,7 +296,7 @@ private fun TopBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceS),
     ) {
         // Leading back + trailing (flip?, settings) on the same row.
         Row(
@@ -332,7 +332,7 @@ private fun TopBar(
         // asymmetric leading/trailing icon counts.
         Text(
             text = stringResource(R.string.assistant_title),
-            fontSize = 18.sp,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = tint,
             modifier = Modifier.align(Alignment.Center),
@@ -362,25 +362,25 @@ private fun StatusHint(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp),
+            .padding(vertical = Dimens.SpaceM),
         contentAlignment = Alignment.Center,
     ) {
         Row(
             modifier = Modifier
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(Dimens.CornerL))
                 .background(background)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (isConnecting) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(14.dp),
-                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(Dimens.IconTiny),
+                    strokeWidth = Dimens.BorderEmphasis,
                     color = textColor,
                 )
-                Spacer(modifier = Modifier.size(8.dp))
+                Spacer(modifier = Modifier.size(Dimens.SpaceS))
             }
-            Text(text = label, color = textColor, fontSize = 14.sp)
+            Text(text = label, color = textColor, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

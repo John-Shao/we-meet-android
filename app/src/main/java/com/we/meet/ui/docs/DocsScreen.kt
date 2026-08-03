@@ -41,6 +41,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.BuildConfig
 import com.we.meet.R
+import com.we.meet.design.R as DesignR
 import java.util.Locale
 
 private const val TAG = "WeMeetDocs"
@@ -374,7 +375,7 @@ internal fun DocsLoadStateOverlay(loading: Boolean, error: Boolean, onRetry: () 
                     color = MaterialTheme.colorScheme.error,
                 )
                 Button(onClick = onRetry, modifier = Modifier.padding(top = Dimens.SpaceS)) {
-                    Text(stringResource(R.string.common_retry))
+                    Text(stringResource(DesignR.string.common_retry))
                 }
             }
         }

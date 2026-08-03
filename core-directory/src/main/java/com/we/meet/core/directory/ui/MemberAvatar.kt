@@ -1,5 +1,7 @@
 package com.we.meet.core.directory.ui
 
+import com.we.meet.ui.theme.AvatarFallbackPalette
+import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -54,7 +56,7 @@ fun MemberAvatar(
     name: String,
     url: String?,
     cacheKey: String,
-    size: Dp = 40.dp,
+    size: Dp = Dimens.AvatarM,
     modifier: Modifier = Modifier,
 ) {
     val effectiveKey = avatarCacheKey(url, cacheKey)
@@ -96,10 +98,8 @@ fun MemberAvatar(
 
 private fun fallbackColor(name: String): Color {
     // Deterministic tint per name so the same person keeps the same color.
-    val palette = listOf(
-        Color(0xFF5B8DEF), Color(0xFF7C6FE0), Color(0xFF43A88A),
-        Color(0xFFE0876F), Color(0xFFD46A9C), Color(0xFF6FA8DC),
-    )
+    // 调色板在 core-design 的 Color.kt:顺序和长度不能改,改了全公司头像换色。
+    val palette = AvatarFallbackPalette
     // floorMod (not abs %): abs(Int.MIN_VALUE) is still negative → would crash
     // with a negative index for a name whose hashCode is exactly Int.MIN_VALUE.
     return palette[Math.floorMod(name.hashCode(), palette.size)]

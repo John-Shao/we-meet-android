@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_retry">重试</string>
+    <string name="common_load_error">加载失败，请检查网络后重试</string>
+
+    <!-- 无障碍(TalkBack)内容描述 -->
+    <string name="cd_back">返回</string>
+    <string name="cd_close">关闭</string>
+</resources>

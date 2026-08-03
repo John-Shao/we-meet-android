@@ -433,12 +433,8 @@
     <string name="scheduled_edit_title">Edit meeting</string>
     <string name="scheduled_edit_name_label">Meeting name</string>
     <string name="scheduled_edit_failed">Couldn\'t save. Please try again.</string>
-    <string name="common_retry">Retry</string>
-    <string name="common_load_error">Couldn\'t load. Check your connection and try again.</string>
     <!-- Accessibility (TalkBack) content descriptions -->
-    <string name="cd_back">Back</string>
     <string name="cd_more">More</string>
-    <string name="cd_close">Close</string>
     <string name="cd_prev">Previous</string>
     <string name="cd_next">Next</string>
     <string name="cd_mic_on">Mic on</string>

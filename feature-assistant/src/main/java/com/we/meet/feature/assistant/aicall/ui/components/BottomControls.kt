@@ -1,5 +1,7 @@
 package com.we.meet.feature.assistant.aicall.ui.components
 
+import com.we.meet.ui.theme.WeMeetTheme
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.feature.assistant.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
@@ -44,7 +46,7 @@ fun BottomControls(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp, vertical = 24.dp),
+            .padding(horizontal = Dimens.SpaceXxl, vertical = Dimens.SpaceXl),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -72,15 +74,16 @@ fun BottomControls(
 
 @Composable
 private fun MicButton(enabled: Boolean, muted: Boolean, onClick: () -> Unit) {
-    val bg = if (enabled) Color(0xFFEDEDED) else Color(0xFFEDEDED).copy(alpha = 0.5f)
+    val palette = WeMeetTheme.extras.aiCall
+    val bg = if (enabled) palette.controlSurface else palette.controlSurface.copy(alpha = 0.5f)
     val tint = when {
         !enabled -> Color.Black.copy(alpha = 0.35f)
-        muted -> Color(0xFFE0524C)
+        muted -> palette.hangUp
         else -> Color.Black
     }
     Box(
         modifier = Modifier
-            .size(64.dp)
+            .size(Dimens.AiCall.ControlButton)
             .clip(CircleShape)
             .background(bg)
             .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),
@@ -98,11 +101,12 @@ private fun MicButton(enabled: Boolean, muted: Boolean, onClick: () -> Unit) {
 
 @Composable
 private fun CallButton(isActive: Boolean, onClick: () -> Unit) {
-    val bg = if (isActive) Color(0xFFE0524C) else Color(0xFF1FB85F)
+    val palette = WeMeetTheme.extras.aiCall
+    val bg = if (isActive) palette.hangUp else palette.startCall
     val icon = if (isActive) Icons.Filled.CallEnd else Icons.Filled.Call
     Box(
         modifier = Modifier
-            .size(72.dp)
+            .size(Dimens.AiCall.CallButton)
             .clip(CircleShape)
             .background(bg)
             .clickable(onClick = onClick),
@@ -124,10 +128,11 @@ private fun VideoToggleButton(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
+    val palette = WeMeetTheme.extras.aiCall
     val bg = when {
-        !enabled -> Color(0xFFEDEDED).copy(alpha = 0.5f)
+        !enabled -> palette.controlSurface.copy(alpha = 0.5f)
         selected -> Color.White
-        else -> Color(0xFFEDEDED)
+        else -> palette.controlSurface
     }
     val tint = when {
         !enabled -> Color.Black.copy(alpha = 0.35f)
@@ -135,7 +140,7 @@ private fun VideoToggleButton(
     }
     Box(
         modifier = Modifier
-            .size(64.dp)
+            .size(Dimens.AiCall.ControlButton)
             .clip(CircleShape)
             .background(bg)
             .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),

@@ -126,6 +126,7 @@ import com.we.meet.LocalIsInPipMode
 import com.we.meet.MainActivity
 import com.we.meet.WeMeetApp
 import com.we.meet.R
+import com.we.meet.design.R as DesignR
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.audio.AudioOutput
@@ -2813,7 +2814,7 @@ private fun ErrorView(message: String?, onRetry: () -> Unit, onLeave: () -> Unit
                 // A failed join is often a transient network blip — offer retry
                 // before forcing the user to leave and rejoin from scratch.
                 Button(onClick = onRetry) {
-                    Text(stringResource(R.string.common_retry))
+                    Text(stringResource(DesignR.string.common_retry))
                 }
                 Button(
                     onClick = onLeave,

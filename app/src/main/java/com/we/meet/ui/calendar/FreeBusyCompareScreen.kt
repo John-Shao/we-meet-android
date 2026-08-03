@@ -58,6 +58,7 @@ import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTextStyles
 import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.R
+import com.we.meet.design.R as DesignR
 import com.we.meet.WeMeetApp
 import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.data.api.dto.BusyIntervalDto
@@ -592,7 +593,7 @@ fun FreeBusyCompareScreen(
                                             onClick = { busyReloadKey += 1 },
                                             modifier = Modifier.padding(top = Dimens.SpaceS),
                                         ) {
-                                            Text(stringResource(R.string.common_retry))
+                                            Text(stringResource(DesignR.string.common_retry))
                                         }
                                     }
                                 } else {

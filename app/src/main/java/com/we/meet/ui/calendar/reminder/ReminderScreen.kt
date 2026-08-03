@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.we.meet.R
+import com.we.meet.design.R as DesignR
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
@@ -134,7 +135,7 @@ fun ReminderScreen(
                             onClick = { loadFailed = false; refreshKey += 1 },
                             modifier = Modifier.padding(top = Dimens.SpaceS),
                         ) {
-                            Text(stringResource(R.string.common_retry))
+                            Text(stringResource(DesignR.string.common_retry))
                         }
                     }
                 } else {

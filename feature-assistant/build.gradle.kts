@@ -40,6 +40,9 @@ android {
 }
 
 dependencies {
+    implementation(project(":core-design"))
+
+    // Kotlin
     // Kotlin
     implementation(libs.kotlinx.coroutines.android)
 

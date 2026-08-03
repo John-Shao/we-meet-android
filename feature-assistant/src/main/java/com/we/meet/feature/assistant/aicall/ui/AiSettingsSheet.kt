@@ -1,5 +1,6 @@
 package com.we.meet.feature.assistant.aicall.ui
 
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.feature.assistant.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Column
@@ -28,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.we.meet.feature.assistant.aicall.model.AiAgentConfigResponse
 import com.we.meet.feature.assistant.aicall.model.AiCallMode
 import com.we.meet.feature.assistant.aicall.model.AiModeSelection
@@ -77,7 +77,7 @@ fun AiSettingsSheet(
         // Use Material3's theme-aware sheet container; hardcoded white
         // looked broken in dark mode (TabRow drew dark, sheet drew white).
     ) {
-        Column(modifier = Modifier.padding(bottom = 24.dp)) {
+        Column(modifier = Modifier.padding(bottom = Dimens.SpaceXl)) {
             TabRow(selectedTabIndex = if (currentMode == AiCallMode.Voice) 0 else 1) {
                 Tab(
                     selected = currentMode == AiCallMode.Voice,
@@ -91,7 +91,7 @@ fun AiSettingsSheet(
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpaceM))
 
             val selection = if (currentMode == AiCallMode.Voice) voiceSelection else videoSelection
             val profiles = if (currentMode == AiCallMode.Voice) audioProfiles else videoProfiles
@@ -104,7 +104,7 @@ fun AiSettingsSheet(
                 onSelectPrompt = { id -> onSelectPrompt(currentMode, id) },
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpaceM))
         }
     }
 }
@@ -147,7 +147,7 @@ private fun ModeConfigSection(
         enabled = profiles.isNotEmpty(),
     )
 
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(Dimens.SpaceS))
 
     // 音色
     val voices = resolvedProfile?.voices.orEmpty()
@@ -161,7 +161,7 @@ private fun ModeConfigSection(
         enabled = voices.isNotEmpty(),
     )
 
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(Dimens.SpaceS))
 
     // 提示词 — 第一项是「默认」（null），后续为后端目录中的 prompt
     val noPromptLabel = stringResource(R.string.assistant_prompt_default)
@@ -194,12 +194,12 @@ private fun ModeConfigSection(
 private fun SectionLabel(text: String) {
     Text(
         text = text,
-        fontSize = 14.sp,
+        style = MaterialTheme.typography.bodyMedium,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 8.dp),
+            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceS),
     )
 }
 
@@ -218,7 +218,7 @@ private fun Dropdown(
         onExpandedChange = { if (enabled) expanded = it },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = Dimens.SpaceXl),
     ) {
         OutlinedTextField(
             value = value,
@@ -235,7 +235,7 @@ private fun Dropdown(
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.heightIn(max = 360.dp),
+            modifier = Modifier.heightIn(max = Dimens.SheetContentMaxHeight),
         ) {
             options.forEachIndexed { idx, label ->
                 DropdownMenuItem(

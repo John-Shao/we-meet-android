@@ -51,6 +51,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.WeMeetApp
 import com.we.meet.R
+import com.we.meet.design.R as DesignR
 import com.we.meet.ui.theme.Dimens
 
 @Composable
@@ -149,7 +150,7 @@ private fun PhoneInputPage(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Cancel,
-                            contentDescription = stringResource(R.string.cd_close),
+                            contentDescription = stringResource(DesignR.string.cd_close),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(Dimens.IconSmall),
                         )

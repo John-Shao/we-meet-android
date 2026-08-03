@@ -52,6 +52,12 @@ data class WeMeetExtras(
     val status: StatusColors,
     /** 会中界面专用色(见 [RoomColors])。 */
     val room: RoomColors,
+    /** AI 通话页控件专用色(见 [AiCallColors])。 */
+    val aiCall: AiCallColors,
+    /**
+     * 无头像时按名字哈希取色的调色板。顺序与长度不可变 —— 见 Color.kt 说明。
+     */
+    val avatarPalette: List<Color>,
 )
 
 /**
@@ -119,6 +125,31 @@ data class RoomColors(
     val onWarningFill: Color,
     val dangerFill: Color,
     val onDangerFill: Color,
+)
+
+/**
+ * AI 通话页控件色。深浅色两套取值相同 —— 这一屏控件固定浅色,见 Color.kt。
+ */
+data class AiCallColors(
+    /** 麦克风/视频切换这类中性控件的圆底。 */
+    val controlSurface: Color,
+    /** 挂断按钮底色,以及静音时的图标色。 */
+    val hangUp: Color,
+    /** 发起通话按钮底色。 */
+    val startCall: Color,
+    val sphereGlowOuter: Color,
+    val sphereGlowInner: Color,
+    /** 球体扫描渐变,首尾同色才能接成环。 */
+    val sphereGradient: List<Color>,
+)
+
+private val SharedAiCallColors = AiCallColors(
+    controlSurface = AiCallControlSurface,
+    hangUp = AiCallHangUp,
+    startCall = AiCallStartCall,
+    sphereGlowOuter = AiCallSphereGlowOuter,
+    sphereGlowInner = AiCallSphereGlowInner,
+    sphereGradient = AiCallSphereGradient,
 )
 
 private val SharedRoomColors = RoomColors(
@@ -199,6 +230,8 @@ private val LightExtras = WeMeetExtras(
         onAccentActiveContainer = LightOnAccentActiveContainer,
     ),
     room = SharedRoomColors,
+    aiCall = SharedAiCallColors,
+    avatarPalette = AvatarFallbackPalette,
 )
 
 private val DarkExtras = WeMeetExtras(
@@ -234,6 +267,8 @@ private val DarkExtras = WeMeetExtras(
         onAccentActiveContainer = DarkOnAccentActiveContainer,
     ),
     room = SharedRoomColors,
+    aiCall = SharedAiCallColors,
+    avatarPalette = AvatarFallbackPalette,
 )
 
 private val LocalWeMeetExtras = staticCompositionLocalOf { LightExtras }

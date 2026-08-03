@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import com.we.meet.R
+import com.we.meet.design.R
 
 /**
  * 全 App 统一的顶栏。
