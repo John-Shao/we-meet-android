@@ -44,7 +44,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -614,7 +613,7 @@ private fun MonthGrid(
 internal fun AgendaCard(
     event: EventUi,
     onClick: () -> Unit,
-    /** P8「降低已结束日程的亮度」:非空且日程已结束时整卡降透明度。 */
+    /** P8「降低已结束日程的亮度」:非空且日程已结束时压淡卡片底色(不压文字)。 */
     dimPastNow: java.time.ZonedDateTime? = null,
 ) {
     val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
@@ -627,12 +626,20 @@ internal fun AgendaCard(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .alpha(if (dimmed) 0.5f else 1f)
             // 色条要贴左缘且随卡片圆角裁切 → 先 clip 再铺底;IntrinsicSize.Min
             // 给色条的 fillMaxHeight 一个确定高度(Row 本身高度不定)。
             .height(IntrinsicSize.Min)
             .clip(RoundedCornerShape(Dimens.CornerM))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            // 已结束只压卡片底,不压文字 —— 理由同 TimeGrid 里的 fillDim:
+            // 原先整卡 .alpha(0.5f) 把标题一起压了,读不清。底色半透明铺在
+            // 页面底上,等于向页面底混合 50%,卡片自然退后,文字保持原色。
+            .background(
+                if (dimmed) {
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
+                },
+            )
             .clickable(onClick = onClick),
     ) {
         Box(

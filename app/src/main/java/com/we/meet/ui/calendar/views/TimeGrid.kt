@@ -767,6 +767,20 @@ fun TimelineScaffold(
                                 val blockBg = bgOf.getValue(visual)
                                 // 正在被拖走的块:原位留一层虚影,落点画预览。
                                 val ghost = movePreview?.key == b.key
+                                /**
+                                 * P8「降低已结束日程的亮度」—— 只压**填充**,不压文字。
+                                 *
+                                 * 原先是整块 `.alpha(0.5f)`,底和字一起淡下去,标题对比度
+                                 * 掉到 2.2:1(浅色)/ 2.8:1(深色),两套主题都读不清。
+                                 * 「已结束」不等于「不用读」:开完的会叫什么名字,仍然是
+                                 * 用户要在网格上一眼扫到的信息。
+                                 *
+                                 * 改成只把填充压淡后,块整体退到背景里,而标题保持原色 ——
+                                 * 底离文字更远了,对比度反而升到 6.8:1 / 8.0:1。
+                                 * 强调色条不跟着压:它是表态状态的唯一载体,而且只有 3dp
+                                 * 宽,占不了视觉重量。
+                                 */
+                                val fillDim = if (b.dimmed) 0.5f else 1f
                                 // 长按选中态:主色描边提示「这块现在可拖」。
                                 val picked = b.key == selectedBlockKey && b.movable
                                 Box(
@@ -775,21 +789,19 @@ fun TimelineScaffold(
                                         .width(colWidth)
                                         .height(blockHeight)
                                         .padding(horizontal = Dimens.Calendar.ChipInset, vertical = Dimens.BorderThin)
-                                        // P8「降低已结束日程的亮度」:整块(底+文字)降透明。
-                                        .alpha(
-                                            when {
-                                                ghost -> 0.3f
-                                                b.dimmed -> 0.5f
-                                                else -> 1f
-                                            },
-                                        )
+                                        // 拖走中的原位虚影:整块降透明,它本来就是个占位。
+                                        .alpha(if (ghost) 0.3f else 1f)
                                         .clip(RoundedCornerShape(Dimens.CornerXs))
                                         .background(
                                             color = when {
-                                                b.label == null -> busyColor
-                                                b.hatched -> blockBg.copy(alpha = 0.35f)
-                                                b.faded -> blockBg.copy(alpha = 0.45f)
-                                                else -> blockBg
+                                                b.label == null -> busyColor.copy(
+                                                    alpha = busyColor.alpha * fillDim,
+                                                )
+                                                b.hatched -> blockBg.copy(alpha = 0.35f * fillDim)
+                                                b.faded -> blockBg.copy(alpha = 0.45f * fillDim)
+                                                else -> blockBg.copy(
+                                                    alpha = blockBg.alpha * fillDim,
+                                                )
                                             },
                                         )
                                         // 未回复:斜纹 + 虚线框(飞书同款「还没定」)。
