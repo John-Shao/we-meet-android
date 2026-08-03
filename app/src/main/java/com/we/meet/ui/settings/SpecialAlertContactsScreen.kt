@@ -12,19 +12,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,8 +34,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.core.directory.data.ContactPrefs
@@ -91,16 +88,9 @@ fun SpecialAlertContactsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.special_alert_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back),
-                        )
-                    }
-                },
+            WeMeetTopBar(
+                title = stringResource(R.string.special_alert_title),
+                onBack = onBack,
                 actions = {
                     TextButton(onClick = { picking = true }) {
                         Text(stringResource(R.string.special_alert_add))
@@ -127,7 +117,7 @@ fun SpecialAlertContactsScreen(
                     )
                     Button(
                         onClick = { ContactPrefs.refresh() },
-                        modifier = Modifier.padding(top = 8.dp),
+                        modifier = Modifier.padding(top = Dimens.SpaceS),
                     ) { Text(stringResource(R.string.contacts_retry)) }
                 }
 
@@ -136,7 +126,7 @@ fun SpecialAlertContactsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .padding(horizontal = 32.dp),
+                        .padding(horizontal = Dimens.SpaceXxl),
                 )
 
                 else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -159,7 +149,7 @@ fun SpecialAlertContactsScreen(
                         )
                         HorizontalDivider(
                             color = MaterialTheme.colorScheme.outlineVariant,
-                            modifier = Modifier.padding(start = 72.dp),
+                            modifier = Modifier.padding(start = Dimens.DividerIndentAvatar),
                         )
                     }
                 }
@@ -207,8 +197,8 @@ private fun AlertRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(start = Dimens.ScreenPadding, end = 4.dp)
-            .padding(vertical = 10.dp),
+            .padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs)
+            .padding(vertical = Dimens.SpaceS),
     ) {
         MemberAvatar(
             name = member.displayName,
@@ -218,7 +208,7 @@ private fun AlertRow(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 12.dp),
+                .padding(start = Dimens.SpaceM),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -233,8 +223,8 @@ private fun AlertRow(
                     contentDescription = stringResource(R.string.special_alert_title),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
-                        .padding(start = 4.dp)
-                        .size(14.dp),
+                        .padding(start = Dimens.SpaceXs)
+                        .size(Dimens.IconTiny),
                 )
             }
             val subtitle = listOfNotNull(

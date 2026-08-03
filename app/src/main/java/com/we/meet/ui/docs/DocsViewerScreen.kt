@@ -6,13 +6,10 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -23,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
+import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.R
 import com.we.meet.ui.theme.WeMeetTheme
 
@@ -65,13 +63,9 @@ fun DocsViewerScreen(url: String, onClose: () -> Unit) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.docs_viewer_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onClose) {
-                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.cd_close))
-                    }
-                },
+            WeMeetTopBar(
+                title = stringResource(R.string.docs_viewer_title),
+                onClose = onClose,
             )
         },
     ) { padding ->

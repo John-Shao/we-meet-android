@@ -24,6 +24,8 @@ object Dimens {
     val SpaceL = 16.dp
     val SpaceXl = 24.dp
     val SpaceXxl = 32.dp
+    /** 撑开整屏留白用(空态上下、预览页两侧),不用于常规排版。 */
+    val SpaceXxxl = 48.dp
 
     /**
      * Standard horizontal content inset (screen bodies, dialogs, sheets, list
@@ -59,6 +61,8 @@ object Dimens {
     val IconSmall = 18.dp
     val IconMedium = 24.dp
     val IconLarge = 28.dp
+    /** 功能入口方块里那种大一号的图标。 */
+    val IconXl = 32.dp
 
     // ---- 圆角 ----
     /** 极小的标签底(如消息里的「主持人」角标)。 */
@@ -71,6 +75,8 @@ object Dimens {
     val CornerL = 16.dp
 
     // ---- 描边 ----
+    /** 列表行之间的细分隔线。比 [BorderThin] 更轻,免得长列表显得像表格。 */
+    val DividerThin = 0.5.dp
     /** 普通描边/分隔线。 */
     val BorderThin = 1.dp
     /** 需要强调的描边(如「正在说话」的画面块外框)。 */
@@ -88,9 +94,49 @@ object Dimens {
     val AvatarS = 36.dp
     /** 列表行主位头像。 */
     val AvatarM = 40.dp
+    /** 详情页/资料页的大头像。 */
+    val AvatarXl = 88.dp
+    /** 个人资料页顶部的最大头像,以及启动页的 App 图标。 */
+    val AvatarXxl = 96.dp
 
     /** 列表行左侧的图标容器(圆角方块,内含一个居中图标)。 */
     val ListLeadingIcon = 44.dp
+
+    /** 空态/错误态里那个大图标。比正文图标大一档,用来撑起整屏的视觉重心。 */
+    val IconIllustration = 48.dp
+    /** 占据整屏的状态图标(等候室、被移出会议等只有一个图标 + 一句话的页面)。 */
+    val IconIllustrationLarge = 64.dp
+
+    /** 列表行左侧的方形缩略图(历史会议、文件等)。 */
+    val ListThumbnail = 56.dp
+    /** 首页那种大号功能入口方块。 */
+    val ActionTile = 72.dp
+
+    /** 键值行左侧标签列的宽度,让冒号后的值对齐成一列。 */
+    val LabelColumnWidth = 88.dp
+
+    /**
+     * 隐藏的取焦锚点。
+     *
+     * 验证码那种「看着是 N 个格子、实际是一个不可见输入框」的做法需要一个
+     * 有尺寸才能取焦、又不能被看见的元素。1dp 是这个 hack 的一部分,不是
+     * 排版尺寸 —— 别拿它当间距用。
+     */
+    val HiddenFocusAnchor = 1.dp
+
+    /**
+     * 列表分隔线的左缩进 —— 让线从文字左缘起,不横穿头像/图标。
+     *
+     * 两档对应两种行:[DividerIndent] 用于图标行(部门、入口行),
+     * [DividerIndentAvatar] 用于头像行(成员),后者的头像更宽。
+     * 值要和对应行的实际左侧元素宽度对得上,改行内布局时记得一起改。
+     */
+    val DividerIndent = 56.dp
+    val DividerIndentThumbnail = 68.dp
+    val DividerIndentAvatar = 72.dp
+
+    /** 按钮内联转圈的描边粗细。 */
+    val ProgressStroke = 2.dp
 
     /**
      * 会中界面的布局常量。
@@ -131,6 +177,16 @@ object Dimens {
         val TitleSideInset = 110.dp
         /** 邀请弹层里的二维码边长。 */
         val QrSize = 200.dp
+    }
+
+    /** 个人资料页的头图布局。 */
+    object Profile {
+        /** 顶部封面图高度。 */
+        val HeaderHeight = 160.dp
+        /** 头像相对封面底边的下探量,让它压在封面与内容的交界上。 */
+        val AvatarOverlap = 44.dp
+        /** 封面下方给下探的头像预留的垂直空间,免得头像压住下面第一行内容。 */
+        val AvatarReserve = 56.dp
     }
 
     /**

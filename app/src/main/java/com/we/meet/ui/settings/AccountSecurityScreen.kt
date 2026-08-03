@@ -17,19 +17,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,11 +35,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
+import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.ui.theme.Dimens
@@ -73,19 +68,10 @@ fun AccountSecurityScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.settings_account_security)) },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (!backPending) { backPending = true; onBack() }
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+            WeMeetTopBar(
+                title = stringResource(R.string.settings_account_security),
+                onBack = { if (!backPending) { backPending = true; onBack() } },
+                transparent = true,
             )
         },
     ) { padding ->
@@ -134,19 +120,19 @@ fun AccountSecurityScreen(
 
 @Composable
 private fun PhoneSection(phone: String) {
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(Dimens.SpaceS))
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Dimens.CornerM))
             .background(MaterialTheme.colorScheme.surface),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -162,7 +148,7 @@ private fun PhoneSection(phone: String) {
         }
     }
 
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(Dimens.SpaceL))
 }
 
 @Composable
@@ -174,14 +160,14 @@ private fun DeregisterSection(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Dimens.CornerM))
             .background(MaterialTheme.colorScheme.surface),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onDeregisterClick)
-                .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
         ) {
@@ -194,15 +180,15 @@ private fun DeregisterSection(
     }
 
     if (errorMessage != null) {
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Dimens.SpaceS))
         Text(
             text = errorMessage,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.padding(horizontal = 24.dp),
+            modifier = Modifier.padding(horizontal = Dimens.SpaceXl),
         )
     }
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(Dimens.SpaceL))
 }
 
 /**
@@ -224,7 +210,7 @@ private fun DeregisterDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.profile_deregister_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                 Text(
                     text = stringResource(R.string.profile_deregister_warning),
                     style = MaterialTheme.typography.bodyMedium,
@@ -249,8 +235,8 @@ private fun DeregisterDialog(
             ) {
                 if (inFlight) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(Dimens.IconSmall),
+                        strokeWidth = Dimens.BorderEmphasis,
                         color = MaterialTheme.colorScheme.error,
                     )
                 } else {

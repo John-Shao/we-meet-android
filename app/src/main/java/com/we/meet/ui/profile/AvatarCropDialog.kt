@@ -39,7 +39,6 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.imageLoader
@@ -163,7 +162,7 @@ fun ImageCropDialog(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = Dimens.ScreenPadding, vertical = 12.dp),
+                    .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {

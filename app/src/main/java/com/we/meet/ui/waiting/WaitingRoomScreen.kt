@@ -27,9 +27,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 
@@ -84,7 +84,7 @@ fun WaitingRoomScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(Dimens.SpaceXl),
         contentAlignment = Alignment.Center,
     ) {
         when (state.phase) {
@@ -110,10 +110,10 @@ fun WaitingRoomScreen(
 private fun WaitingContent(roomName: String, onCancel: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
     ) {
-        CircularProgressIndicator(modifier = Modifier.size(56.dp))
-        Spacer(Modifier.height(8.dp))
+        CircularProgressIndicator(modifier = Modifier.size(Dimens.ListThumbnail))
+        Spacer(Modifier.height(Dimens.SpaceS))
         Text(
             text = stringResource(R.string.waiting_title),
             style = MaterialTheme.typography.titleLarge,
@@ -125,7 +125,7 @@ private fun WaitingContent(roomName: String, onCancel: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Dimens.SpaceS))
         OutlinedButton(onClick = onCancel) {
             Text(stringResource(R.string.waiting_cancel))
         }
@@ -136,13 +136,13 @@ private fun WaitingContent(roomName: String, onCancel: () -> Unit) {
 private fun DeniedContent(onBack: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
     ) {
         Icon(
             imageVector = Icons.Default.RemoveCircleOutline,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.error,
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier.size(Dimens.IconIllustrationLarge),
         )
         Text(
             text = stringResource(R.string.waiting_denied_title),
@@ -155,7 +155,7 @@ private fun DeniedContent(onBack: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Dimens.SpaceS))
         Button(
             onClick = onBack,
             modifier = Modifier.fillMaxWidth(),
@@ -167,13 +167,13 @@ private fun DeniedContent(onBack: () -> Unit) {
 private fun ErrorContent(message: String?, onBack: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
     ) {
         Icon(
             imageVector = Icons.Default.HourglassEmpty,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier.size(Dimens.IconIllustrationLarge),
         )
         Text(
             text = stringResource(R.string.waiting_error_title),
@@ -188,7 +188,7 @@ private fun ErrorContent(message: String?, onBack: () -> Unit) {
                 textAlign = TextAlign.Center,
             )
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Dimens.SpaceS))
         Button(
             onClick = onBack,
             modifier = Modifier.fillMaxWidth(),

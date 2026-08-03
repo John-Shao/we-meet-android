@@ -55,8 +55,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.we.meet.ui.theme.WeMeetTextStyles
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.feature.im.ImSession
@@ -447,12 +448,12 @@ private fun CompactTabBar(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface),
     ) {
-        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+        HorizontalDivider(thickness = Dimens.DividerThin, color = MaterialTheme.colorScheme.outlineVariant)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(top = 6.dp, bottom = 6.dp),
+                .padding(top = Dimens.SpaceXs, bottom = Dimens.SpaceXs),
             horizontalArrangement = Arrangement.SpaceAround,
         ) {
             tabs.forEachIndexed { index, tab ->
@@ -464,7 +465,7 @@ private fun CompactTabBar(
                     verticalArrangement = Arrangement.Center,
                     modifier = Modifier
                         .weight(1f)
-                        .heightIn(min = 48.dp)
+                        .heightIn(min = Dimens.IconIllustration)
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
@@ -475,18 +476,18 @@ private fun CompactTabBar(
                             imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
                             contentDescription = stringResource(tab.labelRes),
                             tint = color,
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(Dimens.IconLarge),
                         )
                         if (tab.badgeCount > 0) {
                             TabBadge(
                                 count = tab.badgeCount,
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
-                                    .offset(x = 10.dp, y = (-4).dp),
+                                    .offset(x = Dimens.SpaceS, y = (-4).dp),
                             )
                         }
                     }
-                    Spacer(Modifier.height(2.dp))
+                    Spacer(Modifier.height(Dimens.SpaceXxs))
                     Text(
                         text = stringResource(tab.labelRes),
                         style = MaterialTheme.typography.labelMedium,
@@ -503,14 +504,13 @@ private fun TabBadge(count: Long, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .background(MaterialTheme.colorScheme.error, CircleShape)
-            .padding(horizontal = 4.dp),
+            .padding(horizontal = Dimens.SpaceXs),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = if (count > 99) "99+" else count.toString(),
             color = MaterialTheme.colorScheme.onError,
-            fontSize = 9.sp,
-            lineHeight = 12.sp,
+            style = WeMeetTextStyles.LabelTiny,
         )
     }
 }

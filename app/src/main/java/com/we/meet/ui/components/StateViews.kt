@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 
@@ -89,7 +88,7 @@ fun WeMeetEmptyState(
                     imageVector = icon,
                     // 纯装饰:文案已经说清楚了,再读一遍图标是噪音
                     contentDescription = null,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(Dimens.IconIllustration),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

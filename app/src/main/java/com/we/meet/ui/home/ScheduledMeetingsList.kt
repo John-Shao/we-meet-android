@@ -23,7 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.data.api.dto.RoomDto
 import java.text.SimpleDateFormat
@@ -52,7 +52,7 @@ fun ScheduledMeetingsList(
             text = stringResource(R.string.scheduled_section_title),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(vertical = 12.dp),
+            modifier = Modifier.padding(vertical = Dimens.SpaceM),
         )
         rooms.forEach { room ->
             if (room.slug == null) return@forEach
@@ -71,12 +71,12 @@ private fun ScheduledRow(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp),
+                .padding(vertical = Dimens.SpaceM),
         ) {
             Box(
                 modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .size(Dimens.ListThumbnail)
+                    .clip(RoundedCornerShape(Dimens.CornerS))
                     // Match HistoryList's primary-container palette so
                     // both lists read as one visual family — the icon
                     // shape (Event vs Videocam) is what tells them apart.
@@ -89,9 +89,9 @@ private fun ScheduledRow(
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
-            Spacer(Modifier.size(12.dp))
+            Spacer(Modifier.size(Dimens.SpaceM))
             Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
@@ -116,9 +116,9 @@ private fun ScheduledRow(
         }
     }
     HorizontalDivider(
-        modifier = Modifier.padding(start = 68.dp),
+        modifier = Modifier.padding(start = Dimens.DividerIndentThumbnail),
         color = MaterialTheme.colorScheme.outlineVariant,
-        thickness = 0.5.dp,
+        thickness = Dimens.DividerThin,
     )
 }
 

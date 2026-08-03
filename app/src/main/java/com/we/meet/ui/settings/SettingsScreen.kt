@@ -20,7 +20,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
@@ -28,13 +27,10 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,13 +39,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.WeMeetApp
 import com.we.meet.R
 import com.we.meet.core.directory.data.ContactPrefs
@@ -79,19 +74,10 @@ fun SettingsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.settings_title)) },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (!backPending) { backPending = true; onBack() }
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+            WeMeetTopBar(
+                title = stringResource(R.string.settings_title),
+                onBack = { if (!backPending) { backPending = true; onBack() } },
+                transparent = true,
             )
         },
     ) { padding ->
@@ -159,12 +145,12 @@ private fun ModuleSettingsSection(
     onMeetingClick: () -> Unit,
     onCalendarClick: () -> Unit,
 ) {
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(Dimens.SpaceS))
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Dimens.CornerM))
             .background(MaterialTheme.colorScheme.surface),
     ) {
         Column {
@@ -178,7 +164,7 @@ private fun ModuleSettingsSection(
             )
         }
     }
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(Dimens.SpaceS))
 }
 
 @Composable
@@ -187,7 +173,7 @@ private fun ModuleEntryRow(label: String, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -210,7 +196,7 @@ private fun AccountSection(
     onAccountSecurityClick: () -> Unit,
     onSignOutClick: () -> Unit,
 ) {
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(Dimens.SpaceS))
 
     // 账号与安全 entry (navigates to the account-scoped surface: phone number +
     // the destructive deregister flow) sits above the reversible sign-out.
@@ -218,14 +204,14 @@ private fun AccountSection(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Dimens.CornerM))
             .background(MaterialTheme.colorScheme.surface),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onAccountSecurityClick)
-                .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -241,20 +227,20 @@ private fun AccountSection(
         }
     }
 
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(Dimens.SpaceL))
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Dimens.CornerM))
             .background(MaterialTheme.colorScheme.surface),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onSignOutClick)
-                .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
         ) {
@@ -266,7 +252,7 @@ private fun AccountSection(
         }
     }
 
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(Dimens.SpaceL))
 }
 
 // ── Notifications ───────────────────────────────────────────────────────
@@ -277,12 +263,12 @@ private fun AccountSection(
  */
 @Composable
 private fun NotificationEntrySection(onClick: () -> Unit) {
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(Dimens.SpaceS))
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Dimens.CornerM))
             .background(MaterialTheme.colorScheme.surface),
     ) {
         ModuleEntryRow(
@@ -290,7 +276,7 @@ private fun NotificationEntrySection(onClick: () -> Unit) {
             onClick = onClick,
         )
     }
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(Dimens.SpaceL))
 }
 
 // ── Theme ───────────────────────────────────────────────────────────────
@@ -300,13 +286,13 @@ private fun ThemeSection(
     selected: ThemeMode,
     onSelect: (ThemeMode) -> Unit,
 ) {
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(Dimens.SpaceS))
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Dimens.CornerM))
             .background(MaterialTheme.colorScheme.surface),
     ) {
         ThemeDropdownRow(
@@ -316,7 +302,7 @@ private fun ThemeSection(
         )
     }
 
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(Dimens.SpaceL))
 }
 
 @Composable
@@ -331,7 +317,7 @@ private fun ThemeDropdownRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { expanded = true }
-            .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -346,7 +332,7 @@ private fun ThemeDropdownRow(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(Modifier.width(2.dp))
+                Spacer(Modifier.width(Dimens.SpaceXxs))
                 Icon(
                     imageVector = Icons.Default.ArrowDropDown,
                     contentDescription = null,
@@ -369,7 +355,7 @@ private fun ThemeDropdownRow(
                                 Icon(
                                     imageVector = Icons.Default.Check,
                                     contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
+                                    modifier = Modifier.size(Dimens.IconSmall),
                                     tint = MaterialTheme.colorScheme.primary,
                                 )
                             }
@@ -400,8 +386,10 @@ private fun themeLabel(mode: ThemeMode): String = stringResource(
  */
 private data class LanguageOption(val tag: String, val display: String)
 
+// 语言名一律用该语言自己的写法,不进 strings.xml —— 挪进去就会被翻译,
+// 而「简体中文」在英文界面里也应该显示成「简体中文」,用户才认得出。
 private val LANGUAGE_OPTIONS = listOf(
-    LanguageOption("zh-CN", "简体中文"),
+    LanguageOption("zh-CN", "简体中文"), // i18n-exempt
     LanguageOption("en", "English"),
     LanguageOption("fr", "Français"),
     LanguageOption("de", "Deutsch"),
@@ -410,26 +398,26 @@ private val LANGUAGE_OPTIONS = listOf(
 
 @Composable
 private fun LanguageSection() {
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(Dimens.SpaceS))
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Dimens.CornerM))
             .background(MaterialTheme.colorScheme.surface),
     ) {
         LanguageDropdownRow(label = stringResource(R.string.settings_language))
     }
 
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(Dimens.SpaceS))
     Text(
         text = stringResource(R.string.settings_language_hint),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 24.dp),
+        modifier = Modifier.padding(horizontal = Dimens.SpaceXl),
     )
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(Dimens.SpaceL))
 }
 
 @Composable
@@ -449,7 +437,7 @@ private fun LanguageDropdownRow(label: String) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { expanded = true }
-            .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -464,7 +452,7 @@ private fun LanguageDropdownRow(label: String) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(Modifier.width(2.dp))
+                Spacer(Modifier.width(Dimens.SpaceXxs))
                 Icon(
                     imageVector = Icons.Default.ArrowDropDown,
                     contentDescription = null,
@@ -486,7 +474,7 @@ private fun LanguageDropdownRow(label: String) {
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
-                                modifier = Modifier.size(20.dp),
+                                modifier = Modifier.size(Dimens.IconSmall),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }
@@ -507,7 +495,7 @@ private fun LanguageDropdownRow(label: String) {
                                 Icon(
                                     imageVector = Icons.Default.Check,
                                     contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
+                                    modifier = Modifier.size(Dimens.IconSmall),
                                     tint = MaterialTheme.colorScheme.primary,
                                 )
                             }

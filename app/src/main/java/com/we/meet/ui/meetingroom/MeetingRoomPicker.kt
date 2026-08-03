@@ -44,7 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.data.api.ApiClient
 import com.we.meet.data.api.dto.MeetingRoomBriefDto
@@ -213,7 +213,7 @@ fun MeetingRoomPicker(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.85f)
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = Dimens.ScreenPadding),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -267,7 +267,7 @@ fun MeetingRoomPicker(
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
+                    .padding(top = Dimens.SpaceS),
             )
 
             FilterRow(
@@ -317,14 +317,14 @@ fun MeetingRoomPicker(
                     error -> Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(top = 32.dp),
+                            .padding(top = Dimens.SpaceXxl),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
                             stringResource(R.string.meeting_room_load_error),
                             color = MaterialTheme.colorScheme.error,
                         )
-                        Button(onClick = { reloadTick++ }, modifier = Modifier.padding(top = 8.dp)) {
+                        Button(onClick = { reloadTick++ }, modifier = Modifier.padding(top = Dimens.SpaceS)) {
                             Text(stringResource(R.string.meeting_room_retry))
                         }
                     }
@@ -358,7 +358,7 @@ fun MeetingRoomPicker(
                 }
             }
 
-            Spacer(Modifier.padding(bottom = 12.dp))
+            Spacer(Modifier.padding(bottom = Dimens.SpaceM))
         }
     }
 }
@@ -378,9 +378,9 @@ private fun FilterRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp)
+            .padding(top = Dimens.SpaceS)
             .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         FilterChip(
@@ -426,7 +426,7 @@ private fun MeetingRoomRow(
         color = Color.Transparent,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(vertical = 10.dp)) {
+        Column(modifier = Modifier.padding(vertical = Dimens.SpaceS)) {
             Text(
                 room.name,
                 style = MaterialTheme.typography.bodyLarge,

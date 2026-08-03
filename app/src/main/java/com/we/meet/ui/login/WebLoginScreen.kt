@@ -47,8 +47,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.BuildConfig
 import com.we.meet.R
 import com.we.meet.WeMeetApp
@@ -251,12 +251,12 @@ fun WebLoginScreen(onLoggedIn: () -> Unit) {
                     Image(
                         painter = painterResource(R.mipmap.ic_launcher_foreground),
                         contentDescription = null,
-                        modifier = Modifier.size(96.dp),
+                        modifier = Modifier.size(Dimens.AvatarXxl),
                     )
-                    Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(Dimens.SpaceXl))
                     CircularProgressIndicator(
-                        strokeWidth = 2.dp,
-                        modifier = Modifier.size(24.dp),
+                        strokeWidth = Dimens.BorderEmphasis,
+                        modifier = Modifier.size(Dimens.IconMedium),
                     )
                 }
             }
@@ -273,7 +273,7 @@ fun WebLoginScreen(onLoggedIn: () -> Unit) {
                         // The insets moved onto the WebView, so this overlay
                         // has to keep itself clear of the system bars.
                         .systemBarsPadding()
-                        .padding(32.dp),
+                        .padding(Dimens.SpaceXxl),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -287,7 +287,7 @@ fun WebLoginScreen(onLoggedIn: () -> Unit) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 8.dp, bottom = 24.dp),
+                        modifier = Modifier.padding(top = Dimens.SpaceS, bottom = Dimens.SpaceXl),
                     )
                     Button(onClick = {
                         error = null

@@ -13,18 +13,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,8 +34,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.core.directory.data.MemberDto
@@ -84,16 +81,9 @@ fun StarredContactsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.starred_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back),
-                        )
-                    }
-                },
+            WeMeetTopBar(
+                title = stringResource(R.string.starred_title),
+                onBack = onBack,
                 actions = {
                     TextButton(onClick = { picking = true }) {
                         Text(stringResource(R.string.starred_add))
@@ -142,7 +132,7 @@ fun StarredContactsScreen(
                         )
                         HorizontalDivider(
                             color = MaterialTheme.colorScheme.outlineVariant,
-                            modifier = Modifier.padding(start = 72.dp),
+                            modifier = Modifier.padding(start = Dimens.DividerIndentAvatar),
                         )
                     }
                 }
@@ -191,8 +181,8 @@ private fun StarredRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(start = Dimens.ScreenPadding, end = 4.dp)
-            .padding(vertical = 10.dp),
+            .padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs)
+            .padding(vertical = Dimens.SpaceS),
     ) {
         MemberAvatar(
             name = member.displayName,
@@ -202,7 +192,7 @@ private fun StarredRow(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 12.dp),
+                .padding(start = Dimens.SpaceM),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -218,8 +208,8 @@ private fun StarredRow(
                     contentDescription = stringResource(R.string.starred_title),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
-                        .padding(start = 4.dp)
-                        .size(14.dp),
+                        .padding(start = Dimens.SpaceXs)
+                        .size(Dimens.IconTiny),
                 )
             }
             val subtitle = listOfNotNull(
@@ -236,7 +226,7 @@ private fun StarredRow(
                 )
             }
         }
-        Spacer(Modifier.size(4.dp))
+        Spacer(Modifier.size(Dimens.SpaceXs))
         TextButton(onClick = onUnstar) {
             Text(stringResource(R.string.starred_remove))
         }

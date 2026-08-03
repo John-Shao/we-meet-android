@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
@@ -34,8 +33,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,14 +41,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
+import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.BuildConfig
 import com.we.meet.R
 import com.we.meet.WeMeetApp
@@ -133,11 +130,13 @@ fun ScheduledDetailScreen(
             },
         )
     }
+    // Toast 在协程回调里弹,那儿已经不是 @Composable 作用域,文案得先取出来。
+    val saveFailedMsg = stringResource(R.string.scheduled_edit_failed)
     if (showEdit) {
         AlertDialog(
             onDismissRequest = { showEdit = false },
-            title = { Text("编辑会议") },
-            text = { OutlinedTextField(value = editedName, onValueChange = { editedName = it }, label = { Text("会议名称") }) },
+            title = { Text(stringResource(R.string.scheduled_edit_title)) },
+            text = { OutlinedTextField(value = editedName, onValueChange = { editedName = it }, label = { Text(stringResource(R.string.scheduled_edit_name_label)) }) },
             confirmButton = { TextButton(onClick = {
                 val newName = editedName.trim()
                 if (newName.isNotBlank()) {
@@ -145,33 +144,26 @@ fun ScheduledDetailScreen(
                         app.roomRepository.renameRoom(slug, newName)
                             .onSuccess { meetingName = newName }
                             .onFailure {
-                                Toast.makeText(context, "保存失败，请稍后重试", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, saveFailedMsg, Toast.LENGTH_SHORT).show()
                             }
                     }
                     showEdit = false
                 }
-            }) { Text("保存") } },
-            dismissButton = { TextButton(onClick = { showEdit = false }) { Text("取消") } },
+            }) { Text(stringResource(R.string.common_save)) } },
+            dismissButton = { TextButton(onClick = { showEdit = false }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.meeting_detail_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back),
-                        )
-                    }
-                },
+            WeMeetTopBar(
+                title = stringResource(R.string.meeting_detail_title),
+                onBack = onBack,
                 actions = {
-                    IconButton(onClick = { showShare = true }) { Icon(Icons.Filled.Share, contentDescription = "分享到聊天") }
-                    IconButton(onClick = { editedName = meetingName; showEdit = true }) { Icon(Icons.Filled.Edit, contentDescription = "编辑会议") }
+                    IconButton(onClick = { showShare = true }) { Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.invite_share_to_chat)) }
+                    IconButton(onClick = { editedName = meetingName; showEdit = true }) { Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.scheduled_edit_title)) }
                     Box {
-                        IconButton(onClick = { showMore = true }) { Icon(Icons.Filled.MoreVert, contentDescription = "更多") }
+                        IconButton(onClick = { showMore = true }) { Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.cd_more)) }
                         DropdownMenu(expanded = showMore, onDismissRequest = { showMore = false }) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.history_action_delete), color = MaterialTheme.colorScheme.error) },
@@ -180,7 +172,7 @@ fun ScheduledDetailScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                transparent = true,
             )
         },
     ) { padding ->
@@ -189,14 +181,14 @@ fun ScheduledDetailScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 8.dp),
+                .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceS),
         ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(Dimens.SpaceL))
 
             // 时钟图标已表意,不再带「预约时间:」前缀;详情页带年份。
             DetailRow(icon = Icons.Filled.Schedule) {
@@ -232,13 +224,13 @@ fun ScheduledDetailScreen(
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(Dimens.SpaceXl))
             Button(
                 onClick = { onJoinSlug(slug) },
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Filled.Videocam, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(Dimens.SpaceS))
                 Text(stringResource(R.string.event_join_meeting))
             }
         }
@@ -278,13 +270,13 @@ private fun DetailRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = Dimens.SpaceXs),
     ) {
         Icon(
             icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(end = 12.dp),
+            modifier = Modifier.padding(end = Dimens.SpaceM),
         )
         content()
     }

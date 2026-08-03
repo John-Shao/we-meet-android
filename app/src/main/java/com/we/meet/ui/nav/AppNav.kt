@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
@@ -1326,7 +1325,7 @@ private fun HostEndedSheet(onDismiss: () -> Unit) {
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp),
+                    .padding(vertical = Dimens.SpaceL),
             )
             HorizontalDivider()
             TextButton(
@@ -1342,7 +1341,7 @@ private fun HostEndedSheet(onDismiss: () -> Unit) {
                     style = MaterialTheme.typography.titleMedium,
                 )
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(Dimens.SpaceL))
         }
     }
 }

@@ -28,7 +28,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Hearing
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
@@ -50,8 +49,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -69,12 +66,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.WeMeetApp
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
@@ -230,16 +227,10 @@ fun PreviewScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (!closePending) { closePending = true; onClose() }
-                    }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+            WeMeetTopBar(
+                title = "",
+                onBack = { if (!closePending) { closePending = true; onClose() } },
+                transparent = true,
             )
         },
     ) { padding ->
@@ -247,10 +238,10 @@ fun PreviewScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = Dimens.SpaceXl),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Dimens.SpaceS))
 
             // Header: editable meeting name (create) or meeting ID input (join)
             when (mode) {
@@ -267,7 +258,7 @@ fun PreviewScreen(
                         ),
                     )
                     HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 48.dp),
+                        modifier = Modifier.padding(horizontal = Dimens.SpaceXxxl),
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -297,13 +288,13 @@ fun PreviewScreen(
                         ),
                     )
                     HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 48.dp),
+                        modifier = Modifier.padding(horizontal = Dimens.SpaceXxxl),
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(Dimens.SpaceL))
 
             // Camera preview area. `weight(1f)` lets it absorb whatever
             // vertical space is left after the text field, toggle row,
@@ -313,7 +304,7 @@ fun PreviewScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(Dimens.CornerL))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center,
             ) {
@@ -332,12 +323,12 @@ fun PreviewScreen(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(Dimens.SpaceL))
 
             // Mic / Camera / Speaker toggles
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM, Alignment.CenterHorizontally),
             ) {
                 ToggleCard(
                     icon = if (micEnabled) Icons.Default.Mic else Icons.Default.MicOff,
@@ -407,15 +398,15 @@ fun PreviewScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(Dimens.ButtonHeight),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(Dimens.CornerM),
             ) {
                 if (state.isLoading) {
                     CircularProgressIndicator(
-                        strokeWidth = 2.dp,
-                        modifier = Modifier.size(20.dp),
+                        strokeWidth = Dimens.BorderEmphasis,
+                        modifier = Modifier.size(Dimens.IconSmall),
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(Dimens.SpaceS))
                 }
                 Text(
                     text = actionLabel,
@@ -423,7 +414,7 @@ fun PreviewScreen(
                 )
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(Dimens.SpaceXxl))
         }
     }
 
@@ -443,8 +434,8 @@ fun PreviewScreen(
  * out inside the reserved space, vertically centred with 8dp margin on
  * top and bottom.
  */
-private val BannerContentHeight = 40.dp
-private val BannerSlotHeight = BannerContentHeight + 16.dp
+private val BannerContentHeight = Dimens.SpaceXxl
+private val BannerSlotHeight = BannerContentHeight + Dimens.SpaceL
 
 @Composable
 private fun ErrorBanner(
@@ -455,7 +446,7 @@ private fun ErrorBanner(
         modifier = Modifier
             .fillMaxWidth()
             .height(BannerSlotHeight)
-            .padding(vertical = 8.dp),
+            .padding(vertical = Dimens.SpaceS),
     ) {
         androidx.compose.animation.AnimatedVisibility(
             visible = message != null,
@@ -467,22 +458,22 @@ private fun ErrorBanner(
             val text = message ?: ""
             Surface(
                 color = MaterialTheme.colorScheme.errorContainer,
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(Dimens.CornerS),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(BannerContentHeight),
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 12.dp),
+                    modifier = Modifier.padding(horizontal = Dimens.SpaceM),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         imageVector = Icons.Default.ErrorOutline,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(Dimens.IconSmall),
                     )
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(Dimens.SpaceS))
                     Text(
                         text = text,
                         style = MaterialTheme.typography.bodyMedium,
@@ -491,13 +482,13 @@ private fun ErrorBanner(
                     )
                     IconButton(
                         onClick = onDismiss,
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(Dimens.IconMedium),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = stringResource(R.string.cd_close),
                             tint = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(Dimens.IconTiny),
                         )
                     }
                 }
@@ -540,13 +531,13 @@ private fun AudioOutputSheet(
                 isSelected = current == AudioOutput.Mute,
                 onClick = { onSelect(AudioOutput.Mute) },
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Dimens.SpaceS))
             Button(
                 onClick = onDismiss,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(12.dp),
+                    .height(Dimens.IconIllustration),
+                shape = RoundedCornerShape(Dimens.CornerM),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface,
@@ -554,7 +545,7 @@ private fun AudioOutputSheet(
             ) {
                 Text(stringResource(R.string.cancel))
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(Dimens.SpaceXl))
         }
     }
 }
@@ -570,16 +561,16 @@ private fun AudioOutputOption(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 16.dp),
+            .padding(vertical = Dimens.SpaceL),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(Dimens.IconMedium),
         )
-        Spacer(Modifier.width(16.dp))
+        Spacer(Modifier.width(Dimens.SpaceL))
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
@@ -591,7 +582,7 @@ private fun AudioOutputOption(
                 imageVector = Icons.Default.Check,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(Dimens.IconMedium),
             )
         }
     }
@@ -614,18 +605,18 @@ private fun ToggleCard(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Dimens.CornerM))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(vertical = Dimens.SpaceM),
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
             tint = iconTint,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(Dimens.IconMedium),
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(Dimens.SpaceXs))
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
@@ -641,14 +632,14 @@ private fun ToggleCard(
 private fun PermissionDeniedContent(onOpenSettings: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
+        modifier = Modifier.padding(Dimens.SpaceXl),
     ) {
         Icon(
             imageVector = Icons.Default.VideocamOff,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(32.dp),
+            modifier = Modifier.size(Dimens.IconXl),
         )
         Text(
             text = stringResource(R.string.room_permission_required),

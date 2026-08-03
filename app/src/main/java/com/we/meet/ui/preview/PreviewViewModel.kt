@@ -65,7 +65,8 @@ class PreviewViewModel(
             ?: getApplication<Application>().getString(R.string.default_display_name)
 
     val defaultMeetingName: String
-        get() = "${displayUsername}的会议"
+        get() = getApplication<Application>()
+            .getString(R.string.default_meeting_name, displayUsername)
 
     fun createMeeting(meetingName: String, onSuccess: (RoomTarget) -> Unit) {
         if (_state.value.isLoading) return

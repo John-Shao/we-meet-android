@@ -12,7 +12,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material.icons.filled.DateRange
@@ -26,13 +25,11 @@ import java.time.Instant
 import java.time.ZoneOffset
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,6 +46,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.WeMeetApp
@@ -138,20 +135,16 @@ fun SubmitApprovalScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.approval_form_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
-                    }
-                },
+            WeMeetTopBar(
+                title = stringResource(R.string.approval_form_title),
+                onBack = onBack,
                 actions = {
                     TextButton(
                         onClick = { selectedId?.let { vm.submit(it, formData, onDone) } },
                         enabled = selectedId != null && !missingRequired && !ui.submitting,
                     ) {
                         if (ui.submitting) {
-                            CircularProgressIndicator(Modifier.padding(end = 8.dp).height(18.dp))
+                            CircularProgressIndicator(Modifier.padding(end = Dimens.SpaceS).height(Dimens.IconSmall))
                         } else {
                             Text(stringResource(R.string.approval_form_submit))
                         }
@@ -168,10 +161,10 @@ fun SubmitApprovalScreen(
                 .padding(horizontal = Dimens.ScreenPadding),
         ) {
             when {
-                ui.loading -> CircularProgressIndicator(Modifier.padding(24.dp))
+                ui.loading -> CircularProgressIndicator(Modifier.padding(Dimens.SpaceXl))
                 // Load failure ≠ genuinely-empty: show an error + retry instead
                 // of the misleading "no templates available".
-                ui.error && ui.templates.isEmpty() -> Column(Modifier.padding(24.dp)) {
+                ui.error && ui.templates.isEmpty() -> Column(Modifier.padding(Dimens.SpaceXl)) {
                     Text(
                         stringResource(R.string.approval_load_error),
                         color = MaterialTheme.colorScheme.error,
@@ -183,14 +176,14 @@ fun SubmitApprovalScreen(
                 ui.templates.isEmpty() -> Text(
                     stringResource(R.string.approval_no_templates),
                     color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier.padding(Dimens.SpaceXl),
                 )
                 else -> {
                     // Template picker.
                     ExposedDropdownMenuBox(
                         expanded = menuOpen,
                         onExpandedChange = { menuOpen = it },
-                        modifier = Modifier.padding(top = 12.dp),
+                        modifier = Modifier.padding(top = Dimens.SpaceM),
                     ) {
                         OutlinedTextField(
                             value = selected?.name.orEmpty(),
@@ -223,7 +216,7 @@ fun SubmitApprovalScreen(
                             text = it,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.padding(top = 8.dp),
+                            modifier = Modifier.padding(top = Dimens.SpaceS),
                         )
                     }
 
@@ -249,7 +242,7 @@ fun SubmitApprovalScreen(
                                         else -> KeyboardType.Text
                                     }
                                 ),
-                                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                                modifier = Modifier.fillMaxWidth().padding(top = Dimens.SpaceM),
                             )
                         }
                     }
@@ -259,7 +252,7 @@ fun SubmitApprovalScreen(
                             text = stringResource(R.string.approval_submit_failed),
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(top = 12.dp),
+                            modifier = Modifier.padding(top = Dimens.SpaceM),
                         )
                     }
                 }
@@ -274,7 +267,7 @@ fun SubmitApprovalScreen(
 @Composable
 private fun DateField(label: String, value: String, onPick: (String) -> Unit) {
     var show by remember { mutableStateOf(false) }
-    Box(Modifier.fillMaxWidth().padding(top = 12.dp)) {
+    Box(Modifier.fillMaxWidth().padding(top = Dimens.SpaceM)) {
         OutlinedTextField(
             value = value,
             onValueChange = {},

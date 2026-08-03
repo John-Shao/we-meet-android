@@ -16,7 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,8 +25,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,13 +34,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.WeMeetApp
 import com.we.meet.R
 import com.we.meet.data.api.dto.ActionItemDto
@@ -151,16 +148,9 @@ fun HistoryDetailScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.meeting_detail_title)) },
-                navigationIcon = {
-                    IconButton(onClick = handleBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back),
-                        )
-                    }
-                },
+            WeMeetTopBar(
+                title = stringResource(R.string.meeting_detail_title),
+                onBack = handleBack,
                 actions = {
                     // 删除仅房主可见:历史列表含「我只是参会」的会议,参会者
                     // 对别人的会没有删除权(后端 DELETE → is_owner),不收敛
@@ -174,7 +164,7 @@ fun HistoryDetailScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                transparent = true,
             )
         },
     ) { padding ->
@@ -186,7 +176,7 @@ fun HistoryDetailScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 12.dp),
+                .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
         ) {
             // P8:进入会议(房间仍在,可重进)——操作收进详情页。
             room?.slug?.takeIf { it.isNotBlank() }?.let { slug ->
@@ -196,7 +186,7 @@ fun HistoryDetailScreen(
                 ) {
                     Text(stringResource(R.string.event_join_meeting))
                 }
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(Dimens.SpaceS))
             }
 
             SectionHeader(stringResource(R.string.meeting_detail_tab_info))
@@ -236,7 +226,7 @@ fun HistoryDetailScreen(
 
             SectionHeader(stringResource(R.string.meeting_detail_tab_transcript))
             TranscriptTab(state = transcriptsState)
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(Dimens.SpaceXl))
         }
     }
 }
@@ -249,7 +239,7 @@ private fun SectionHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 16.dp, bottom = 8.dp),
+            .padding(top = Dimens.SpaceL, bottom = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -262,15 +252,15 @@ private fun SectionHeader(
         if (trailing != null) trailing()
     }
     HorizontalDivider(
-        thickness = 1.dp,
+        thickness = Dimens.BorderThin,
         color = MaterialTheme.colorScheme.outlineVariant,
     )
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(Dimens.SpaceS))
 }
 
 @Composable
 private fun SectionSpacer() {
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(Dimens.SpaceL))
 }
 
 // ---------------------------------------------------------------------------
@@ -346,13 +336,13 @@ private fun InfoTab(
             // Device-local timeline — only present if the user has
             // actually joined this room from this device.
             if (localEntry != null && localEntry.firstJoinedAtMs > 0) {
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(Dimens.SpaceXl))
                 Text(
                     text = stringResource(R.string.meeting_detail_info_timeline),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(Dimens.SpaceS))
                 TimelineRow(
                     time = HistoryTimeFormatter.time(localEntry.firstJoinedAtMs),
                     label = stringResource(R.string.history_detail_joined),
@@ -373,13 +363,13 @@ private fun InfoRow(label: String, value: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp),
+            .padding(vertical = Dimens.SpaceS),
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(88.dp),
+            modifier = Modifier.width(Dimens.AvatarXl),
         )
         Text(
             text = value,
@@ -388,7 +378,7 @@ private fun InfoRow(label: String, value: String) {
             modifier = Modifier.weight(1f),
         )
     }
-    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = Dimens.DividerThin)
 }
 
 @Composable
@@ -396,13 +386,13 @@ private fun InfoRowMultiLine(label: String, values: List<String>) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp),
+            .padding(vertical = Dimens.SpaceS),
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(88.dp),
+            modifier = Modifier.width(Dimens.AvatarXl),
         )
         Column(modifier = Modifier.weight(1f)) {
             values.forEach { v ->
@@ -410,12 +400,12 @@ private fun InfoRowMultiLine(label: String, values: List<String>) {
                     text = v,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(vertical = 2.dp),
+                    modifier = Modifier.padding(vertical = Dimens.SpaceXxs),
                 )
             }
         }
     }
-    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = Dimens.DividerThin)
 }
 
 @Composable
@@ -424,14 +414,14 @@ private fun TimelineRow(time: String, label: String) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp),
+            .padding(vertical = Dimens.SpaceS),
     ) {
         Text(
             text = time,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Spacer(Modifier.width(16.dp))
+        Spacer(Modifier.width(Dimens.SpaceL))
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
@@ -473,7 +463,7 @@ private fun SummaryTab(
                         text = stringResource(R.string.meeting_detail_summary_edited),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(bottom = 4.dp),
+                        modifier = Modifier.padding(bottom = Dimens.SpaceXs),
                     )
                 }
                 MarkdownText(content = body)
@@ -504,15 +494,15 @@ private fun ChaptersTab(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 6.dp),
+                            .padding(vertical = Dimens.SpaceXs),
                     ) {
                         Text(
                             text = chapterTimeLabel(chapter.started_at, chapter.ended_at),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.widthIn(min = 88.dp),
+                            modifier = Modifier.widthIn(min = Dimens.AvatarXl),
                         )
-                        Column(Modifier.padding(start = 8.dp)) {
+                        Column(Modifier.padding(start = Dimens.SpaceS)) {
                             Text(
                                 text = chapter.title,
                                 style = MaterialTheme.typography.bodyMedium,
@@ -523,7 +513,7 @@ private fun ChaptersTab(
                                     text = chapter.digest,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(top = 2.dp),
+                                    modifier = Modifier.padding(top = Dimens.SpaceXxs),
                                 )
                             }
                         }
@@ -564,28 +554,28 @@ private fun MarkdownText(content: String) {
         content.lineSequence().forEach { rawLine ->
             val line = rawLine.trimEnd()
             when {
-                line.isBlank() -> Spacer(Modifier.height(8.dp))
+                line.isBlank() -> Spacer(Modifier.height(Dimens.SpaceS))
                 line.startsWith("### ") -> Text(
                     text = line.removePrefix("### "),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(top = Dimens.SpaceS, bottom = Dimens.SpaceXs),
                 )
                 line.startsWith("## ") -> Text(
                     text = line.removePrefix("## "),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(top = 10.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(top = Dimens.SpaceS, bottom = Dimens.SpaceXs),
                 )
                 line.startsWith("# ") -> Text(
                     text = line.removePrefix("# "),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(top = Dimens.SpaceM, bottom = Dimens.SpaceXs),
                 )
                 line.trimStart().startsWith("- ") || line.trimStart().startsWith("* ") -> {
                     val text = line.trimStart().removePrefix("- ").removePrefix("* ")
-                    Row(modifier = Modifier.padding(vertical = 2.dp)) {
+                    Row(modifier = Modifier.padding(vertical = Dimens.SpaceXxs)) {
                         Text("• ", style = MaterialTheme.typography.bodyMedium)
                         Text(text, style = MaterialTheme.typography.bodyMedium)
                     }
@@ -593,7 +583,7 @@ private fun MarkdownText(content: String) {
                 else -> Text(
                     text = line,
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(vertical = 2.dp),
+                    modifier = Modifier.padding(vertical = Dimens.SpaceXxs),
                 )
             }
         }
@@ -615,18 +605,18 @@ private fun ActionItemsTab(state: MeetingDetailViewModel.LoadState<List<ActionIt
                 CenteredText(stringResource(R.string.meeting_detail_action_items_empty))
                 return
             }
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                 items.forEach { item ->
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(Dimens.CornerS))
                             .background(
                                 if (item.is_completed)
                                     MaterialTheme.colorScheme.surfaceVariant
                                 else MaterialTheme.colorScheme.surface
                             )
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
                     ) {
                         Text(
                             text = item.content,
@@ -634,7 +624,7 @@ private fun ActionItemsTab(state: MeetingDetailViewModel.LoadState<List<ActionIt
                             fontWeight = FontWeight.Medium,
                         )
                         if (item.owner_text.isNotBlank() || item.due_text.isNotBlank()) {
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(Dimens.SpaceXs))
                             Row {
                                 if (item.owner_text.isNotBlank()) {
                                     Text(
@@ -643,7 +633,7 @@ private fun ActionItemsTab(state: MeetingDetailViewModel.LoadState<List<ActionIt
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
-                                    Spacer(Modifier.width(12.dp))
+                                    Spacer(Modifier.width(Dimens.SpaceM))
                                 }
                                 if (item.due_text.isNotBlank()) {
                                     Text(
@@ -680,7 +670,7 @@ private fun TranscriptTab(state: MeetingDetailViewModel.LoadState<List<Transcrip
             // System language — used to pick a relevant translation row
             // when the speaker's `language` differs.
             val userLang = Locale.getDefault().language.lowercase()
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                 rows.forEach { row ->
                     val ts = formatTime(row.started_at)
                     val speaker = row.speaker_name.takeIf { it.isNotBlank() }
@@ -694,12 +684,12 @@ private fun TranscriptTab(state: MeetingDetailViewModel.LoadState<List<Transcrip
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 12.dp)
+                            .padding(start = Dimens.SpaceM)
                             .background(
                                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                shape = RoundedCornerShape(4.dp),
+                                shape = RoundedCornerShape(Dimens.CornerXs),
                             )
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                            .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
                     ) {
                         Text(
                             text = "$ts · $speaker",
@@ -734,7 +724,7 @@ private fun CenteredText(text: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 24.dp),
+            .padding(vertical = Dimens.SpaceXl),
         contentAlignment = Alignment.Center,
     ) {
         Text(text = text, color = MaterialTheme.colorScheme.onSurfaceVariant)

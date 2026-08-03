@@ -15,17 +15,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -36,10 +32,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.PushPreferencesUpdate
@@ -121,17 +116,10 @@ fun NotificationSettingsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.notification_settings_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+            WeMeetTopBar(
+                title = stringResource(R.string.notification_settings_title),
+                onBack = onBack,
+                transparent = true,
             )
         },
     ) { padding ->
@@ -141,13 +129,13 @@ fun NotificationSettingsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState()),
         ) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Dimens.SpaceS))
             SettingsCard {
                 Column {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = Dimens.ScreenPadding, vertical = 8.dp),
+                            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
@@ -198,20 +186,20 @@ fun NotificationSettingsScreen(
                                 }
                             },
                         )
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(Dimens.SpaceXs))
                     }
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Dimens.SpaceS))
             Text(
                 text = stringResource(R.string.settings_quiet_hint, tz.ifBlank { "-" }),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 24.dp),
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl),
             )
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(Dimens.SpaceXl))
             // 「消息特别提醒」名单入口:逐个人的开关在各自详情页上,这里是回顾/
             // 批量整理的地方(与星标的「详情页开关 + 名单页」同构)。
             SettingsCard {
@@ -219,7 +207,7 @@ fun NotificationSettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable(onClick = onOpenSpecialAlerts)
-                        .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
+                        .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -234,14 +222,14 @@ fun NotificationSettingsScreen(
                     )
                 }
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Dimens.SpaceS))
             Text(
                 text = stringResource(R.string.special_alert_entry_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 24.dp),
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl),
             )
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(Dimens.SpaceXl))
         }
     }
 }
@@ -253,7 +241,7 @@ private fun SettingsCard(content: @Composable () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Dimens.CornerM))
             .background(MaterialTheme.colorScheme.surface),
     ) {
         content()
@@ -266,7 +254,7 @@ private fun QuietTimeRow(label: String, value: String, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = 12.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text = label, style = MaterialTheme.typography.bodyLarge)

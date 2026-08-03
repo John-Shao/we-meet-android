@@ -11,7 +11,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 
@@ -50,7 +49,7 @@ fun PrimaryButton(
         if (loading) {
             CircularProgressIndicator(
                 modifier = Modifier.size(Dimens.IconSmall),
-                strokeWidth = 2.dp,
+                strokeWidth = Dimens.ProgressStroke,
                 color = MaterialTheme.colorScheme.onPrimary,
             )
         } else {

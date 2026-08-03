@@ -37,8 +37,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.BuildConfig
 import com.we.meet.R
 import java.util.Locale
@@ -373,7 +373,7 @@ internal fun DocsLoadStateOverlay(loading: Boolean, error: Boolean, onRetry: () 
                     stringResource(R.string.docs_load_error),
                     color = MaterialTheme.colorScheme.error,
                 )
-                Button(onClick = onRetry, modifier = Modifier.padding(top = 8.dp)) {
+                Button(onClick = onRetry, modifier = Modifier.padding(top = Dimens.SpaceS)) {
                     Text(stringResource(R.string.common_retry))
                 }
             }

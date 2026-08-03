@@ -25,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 
@@ -48,7 +47,7 @@ fun AiHubScreen(
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = 24.dp, bottom = 16.dp),
+            modifier = Modifier.padding(top = Dimens.SpaceXl, bottom = Dimens.SpaceL),
         )
 
         FeatureCard(
@@ -70,20 +69,20 @@ private fun FeatureCard(
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(Dimens.CornerL),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = Dimens.ElevationSubtle),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(Dimens.SpaceL),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(44.dp),
+                modifier = Modifier.size(Dimens.ListLeadingIcon),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
@@ -93,7 +92,7 @@ private fun FeatureCard(
                     )
                 }
             }
-            Spacer(Modifier.size(14.dp))
+            Spacer(Modifier.size(Dimens.SpaceM))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
@@ -101,7 +100,7 @@ private fun FeatureCard(
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
-                Spacer(Modifier.size(2.dp))
+                Spacer(Modifier.size(Dimens.SpaceXxs))
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,

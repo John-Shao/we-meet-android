@@ -31,12 +31,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -80,7 +80,7 @@ fun HomeScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 24.dp, end = 4.dp, top = 8.dp),
+                .padding(start = Dimens.SpaceXl, end = Dimens.SpaceXs, top = Dimens.SpaceS),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -102,8 +102,8 @@ fun HomeScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 32.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(start = Dimens.SpaceXl, end = Dimens.SpaceXl, top = Dimens.SpaceS, bottom = Dimens.SpaceXxl),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
         ) {
             ActionCard(
                 icon = Icons.Default.Bolt,
@@ -137,7 +137,7 @@ fun HomeScreen(
         Spacer(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp)
+                .height(Dimens.SpaceS)
                 .background(WeMeetTheme.extras.surfaceBand),
         )
 
@@ -149,7 +149,7 @@ fun HomeScreen(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = Dimens.SpaceXl),
         ) {
             // P8(对标飞书):行点击进详情,操作(进会/复制/删除)收进详情页。
             ScheduledMeetingsList(
@@ -195,8 +195,8 @@ private fun ActionCard(
     ) {
         Box(
             modifier = Modifier
-                .size(72.dp)
-                .clip(RoundedCornerShape(16.dp))
+                .size(Dimens.ActionTile)
+                .clip(RoundedCornerShape(Dimens.CornerL))
                 .background(backgroundColor),
             contentAlignment = Alignment.Center,
         ) {
@@ -204,10 +204,10 @@ private fun ActionCard(
                 imageVector = icon,
                 contentDescription = label,
                 tint = iconTint,
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(Dimens.IconXl),
             )
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Dimens.SpaceS))
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,

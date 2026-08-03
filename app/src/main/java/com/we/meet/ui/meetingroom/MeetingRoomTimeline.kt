@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.data.api.dto.MeetingRoomTimelineEntryDto
 import com.we.meet.ui.calendar.views.TimeBlock
@@ -87,7 +87,7 @@ internal fun MeetingRoomTimeline(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 6.dp),
+                .padding(vertical = Dimens.SpaceXs),
         )
         TimelineScaffold(
             modifier = Modifier.fillMaxSize(),
@@ -126,7 +126,7 @@ internal fun MeetingRoomTimeline(
             },
             columnHeader = { i ->
                 val room = rooms[i]
-                Column(modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp)) {
+                Column(modifier = Modifier.padding(horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXs)) {
                     Text(
                         text = room.name,
                         style = MaterialTheme.typography.labelMedium,

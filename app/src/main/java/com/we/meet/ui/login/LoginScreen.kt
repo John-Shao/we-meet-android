@@ -15,11 +15,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,8 +29,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,9 +46,9 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.WeMeetApp
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
@@ -91,9 +89,9 @@ private fun PhoneInputPage(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 32.dp),
+                .padding(horizontal = Dimens.SpaceXxl),
         ) {
-            Spacer(Modifier.height(100.dp))
+            Spacer(Modifier.height(Dimens.SpaceXxxl * 2))
 
             Text(
                 text = stringResource(R.string.login_title),
@@ -102,14 +100,14 @@ private fun PhoneInputPage(
                 textAlign = TextAlign.Center,
             )
 
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(Dimens.SpaceXxl))
 
             // Phone input row: +86 | phone number | clear
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
-                    .padding(horizontal = Dimens.ScreenPadding, vertical = 14.dp),
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(Dimens.CornerS))
+                    .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 // No region picker in scope — show a plain "+86" without the
@@ -119,7 +117,7 @@ private fun PhoneInputPage(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(Dimens.SpaceM))
 
                 Box(modifier = Modifier.weight(1f)) {
                     if (state.phone.isEmpty()) {
@@ -147,19 +145,19 @@ private fun PhoneInputPage(
                         onClick = { onPhoneChange("") },
                         // 48dp hit target (accessibility minimum) around a 20dp
                         // glyph — the visible icon stays small.
-                        modifier = Modifier.size(48.dp),
+                        modifier = Modifier.size(Dimens.IconIllustration),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Cancel,
                             contentDescription = stringResource(R.string.cd_close),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp),
+                            modifier = Modifier.size(Dimens.IconSmall),
                         )
                     }
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(Dimens.SpaceXxl))
 
             // Next button
             val isPhoneValid = state.phone.length == 11
@@ -169,12 +167,12 @@ private fun PhoneInputPage(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(Dimens.ButtonHeight),
-                shape = RoundedCornerShape(26.dp),
+                shape = CircleShape,
             ) {
                 if (state.isSendingOtp) {
                     CircularProgressIndicator(
-                        strokeWidth = 2.dp,
-                        modifier = Modifier.size(20.dp),
+                        strokeWidth = Dimens.BorderEmphasis,
+                        modifier = Modifier.size(Dimens.IconSmall),
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 } else {
@@ -187,7 +185,7 @@ private fun PhoneInputPage(
 
             // Error message
             state.errorMessage?.let { rawMessage ->
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Dimens.SpaceL))
                 val text = when (rawMessage) {
                     LoginViewModel.ErrorKey.PHONE_FORMAT.name -> stringResource(R.string.login_error_phone_format)
                     else -> rawMessage
@@ -224,14 +222,10 @@ private fun OtpInputPage(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+            WeMeetTopBar(
+                title = "",
+                onBack = onBack,
+                transparent = true,
             )
         },
     ) { padding ->
@@ -239,17 +233,17 @@ private fun OtpInputPage(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 32.dp),
+                .padding(horizontal = Dimens.SpaceXxl),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.height(48.dp))
+            Spacer(Modifier.height(Dimens.SpaceXxxl))
 
             Text(
                 text = stringResource(R.string.login_otp_sent_title),
                 style = MaterialTheme.typography.headlineMedium,
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Dimens.SpaceS))
 
             Text(
                 text = stringResource(R.string.login_otp_sent_to, "+86${state.phone}"),
@@ -257,7 +251,7 @@ private fun OtpInputPage(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(Dimens.SpaceXxl))
 
             // 6 digit boxes
             OtpBoxes(
@@ -265,7 +259,7 @@ private fun OtpInputPage(
                 onOtpChange = onOtpChange,
             )
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(Dimens.SpaceXl))
 
             // Resend button
             Button(
@@ -274,7 +268,7 @@ private fun OtpInputPage(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(Dimens.ButtonHeight),
-                shape = RoundedCornerShape(26.dp),
+                shape = CircleShape,
             ) {
                 if (state.resendCooldown > 0) {
                     Text(
@@ -291,13 +285,13 @@ private fun OtpInputPage(
 
             // Loading indicator
             if (state.isVerifying) {
-                Spacer(Modifier.height(24.dp))
-                CircularProgressIndicator(modifier = Modifier.size(36.dp))
+                Spacer(Modifier.height(Dimens.SpaceXl))
+                CircularProgressIndicator(modifier = Modifier.size(Dimens.AvatarS))
             }
 
             // Error message
             state.errorMessage?.let { rawMessage ->
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Dimens.SpaceL))
                 val text = when (rawMessage) {
                     LoginViewModel.ErrorKey.OTP_FORMAT.name -> stringResource(R.string.login_error_otp_format)
                     else -> rawMessage
@@ -344,13 +338,13 @@ private fun OtpBoxes(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
             modifier = Modifier
                 .focusRequester(focusRequester)
-                .size(1.dp) // invisible but focusable
+                .size(Dimens.HiddenFocusAnchor) // invisible but focusable
                 .background(Color.Transparent),
         )
 
         // Visual boxes
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
             modifier = Modifier.fillMaxWidth(),
         ) {
             repeat(6) { index ->
@@ -360,13 +354,13 @@ private fun OtpBoxes(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(56.dp)
+                        .height(Dimens.ListThumbnail)
                         .border(
-                            width = if (isCurrent) 2.dp else 1.dp,
+                            width = if (isCurrent) Dimens.BorderEmphasis else Dimens.BorderThin,
                             color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(Dimens.CornerS),
                         )
-                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)),
+                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(Dimens.CornerS)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(

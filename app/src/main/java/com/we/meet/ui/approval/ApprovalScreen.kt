@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -20,7 +19,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -30,7 +28,6 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,10 +40,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.data.api.dto.ApprovalInstanceDto
 
@@ -85,13 +83,9 @@ fun ApprovalScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.approval_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
-                    }
-                },
+            WeMeetTopBar(
+                title = stringResource(R.string.approval_title),
+                onBack = onBack,
             )
         },
         floatingActionButton = {
@@ -144,8 +138,8 @@ fun ApprovalScreen(
                     )
                     else -> LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(Dimens.SpaceM),
+                        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
                     ) {
                         items(state.items, key = { it.id }) { inst ->
                             InstanceCard(
@@ -159,9 +153,9 @@ fun ApprovalScreen(
                         }
                         if (state.hasMore) {
                             item {
-                                Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
+                                Box(Modifier.fillMaxWidth().padding(Dimens.SpaceS), contentAlignment = Alignment.Center) {
                                     if (state.loadingMore) {
-                                        CircularProgressIndicator(Modifier.padding(8.dp))
+                                        CircularProgressIndicator(Modifier.padding(Dimens.SpaceS))
                                     } else {
                                         OutlinedButton(onClick = { vm.loadMore() }) {
                                             Text(stringResource(R.string.approval_load_more))
@@ -187,11 +181,11 @@ private fun InstanceCard(
     onUrge: () -> Unit,
 ) {
     Surface(
-        tonalElevation = 1.dp,
+        tonalElevation = Dimens.ElevationSubtle,
         shape = MaterialTheme.shapes.medium,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.padding(Dimens.SpaceL)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = inst.templateName.orEmpty(),
@@ -205,12 +199,12 @@ private fun InstanceCard(
                 text = "${inst.applicant?.displayName.orEmpty()} · ${inst.createdAt?.take(10).orEmpty()}",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(top = 2.dp),
+                modifier = Modifier.padding(top = Dimens.SpaceXxs),
             )
 
             // Submitted form values.
             inst.formData.forEach { (k, v) ->
-                Row(Modifier.padding(top = 6.dp)) {
+                Row(Modifier.padding(top = Dimens.SpaceXs)) {
                     Text(
                         text = "$k: ",
                         style = MaterialTheme.typography.bodySmall,
@@ -232,13 +226,13 @@ private fun InstanceCard(
                 Surface(
                     color = MaterialTheme.colorScheme.errorContainer,
                     shape = MaterialTheme.shapes.small,
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = Dimens.SpaceS),
                 ) {
                     Text(
                         text = stringResource(R.string.approval_needs_assignment_hint),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.padding(10.dp),
+                        modifier = Modifier.padding(Dimens.SpaceS),
                     )
                 }
             }
@@ -251,11 +245,11 @@ private fun InstanceCard(
                     onValueChange = { comment = it },
                     placeholder = { Text(stringResource(R.string.approval_comment_hint)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = Dimens.SpaceS),
                 )
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
+                    modifier = Modifier.padding(top = Dimens.SpaceS),
                 ) {
                     Button(
                         onClick = { onAct("approved", comment) },
@@ -264,8 +258,8 @@ private fun InstanceCard(
                     ) {
                         if (acting) {
                             CircularProgressIndicator(
-                                strokeWidth = 2.dp,
-                                modifier = Modifier.size(18.dp),
+                                strokeWidth = Dimens.BorderEmphasis,
+                                modifier = Modifier.size(Dimens.IconSmall),
                                 color = MaterialTheme.colorScheme.onPrimary,
                             )
                         } else {
@@ -282,8 +276,8 @@ private fun InstanceCard(
             if (tab == ApprovalTab.Mine && inst.status == "pending") {
                 var confirm by remember { mutableStateOf(false) }
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
+                    modifier = Modifier.padding(top = Dimens.SpaceXs),
                 ) {
                     TextButton(onClick = onUrge, enabled = !acting) {
                         Text(stringResource(R.string.approval_urge))
@@ -320,7 +314,7 @@ private fun InstanceCard(
 @Composable
 private fun ApproverChain(inst: ApprovalInstanceDto) {
     val nodeIndexes = inst.tasks.map { it.nodeIndex }.distinct().sorted()
-    Column(Modifier.padding(top = 8.dp)) {
+    Column(Modifier.padding(top = Dimens.SpaceS)) {
         nodeIndexes.forEach { idx ->
             val tasks = inst.tasks.filter { it.nodeIndex == idx }
             val cc = tasks.filter { it.kind == "cc" }
@@ -412,7 +406,7 @@ private fun StatusBadge(status: String) {
             text = if (labelRes != null) stringResource(labelRes) else status,
             style = MaterialTheme.typography.labelSmall,
             color = fg,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            modifier = Modifier.padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXxs),
         )
     }
 }

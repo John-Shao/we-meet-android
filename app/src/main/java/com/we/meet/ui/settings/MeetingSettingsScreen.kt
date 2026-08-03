@@ -17,19 +17,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,11 +34,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.settings.VideoCodecPref
@@ -67,19 +62,10 @@ fun MeetingSettingsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.meeting_settings_title)) },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (!backPending) { backPending = true; onBack() }
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+            WeMeetTopBar(
+                title = stringResource(R.string.meeting_settings_title),
+                onBack = { if (!backPending) { backPending = true; onBack() } },
+                transparent = true,
             )
         },
     ) { padding ->
@@ -102,13 +88,13 @@ private fun CodecSection(
     selected: VideoCodecPref,
     onSelect: (VideoCodecPref) -> Unit,
 ) {
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(Dimens.SpaceS))
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Dimens.CornerM))
             .background(MaterialTheme.colorScheme.surface),
     ) {
         CodecDropdownRow(
@@ -118,14 +104,14 @@ private fun CodecSection(
         )
     }
 
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(Dimens.SpaceS))
     Text(
         text = stringResource(R.string.settings_video_codec_hint),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 24.dp),
+        modifier = Modifier.padding(horizontal = Dimens.SpaceXl),
     )
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(Dimens.SpaceL))
 }
 
 @Composable
@@ -142,7 +128,7 @@ private fun CodecDropdownRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { expanded = true }
-            .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -157,7 +143,7 @@ private fun CodecDropdownRow(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(Modifier.width(2.dp))
+                Spacer(Modifier.width(Dimens.SpaceXxs))
                 Icon(
                     imageVector = Icons.Default.ArrowDropDown,
                     contentDescription = null,
@@ -180,7 +166,7 @@ private fun CodecDropdownRow(
                                 Icon(
                                     imageVector = Icons.Default.Check,
                                     contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
+                                    modifier = Modifier.size(Dimens.IconSmall),
                                     tint = MaterialTheme.colorScheme.primary,
                                 )
                             }

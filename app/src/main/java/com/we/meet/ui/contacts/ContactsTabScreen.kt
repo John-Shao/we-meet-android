@@ -35,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.R
@@ -68,7 +67,7 @@ fun ContactsTabScreen(
             text = stringResource(R.string.contacts_title),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp),
+            modifier = Modifier.padding(start = Dimens.ScreenPadding, top = Dimens.SpaceM, bottom = Dimens.SpaceXs),
         )
         OutlinedTextField(
             value = ui.query,
@@ -77,7 +76,7 @@ fun ContactsTabScreen(
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = Dimens.ScreenPadding, vertical = 4.dp),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
         )
 
         if (!ui.searching) {
@@ -96,12 +95,12 @@ fun ContactsTabScreen(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Spacer(Modifier.height(48.dp))
+                Spacer(Modifier.height(Dimens.SpaceXxxl))
                 Text(
                     stringResource(R.string.contacts_load_error),
                     color = MaterialTheme.colorScheme.error,
                 )
-                Button(onClick = { vm.retry() }, modifier = Modifier.padding(top = 8.dp)) {
+                Button(onClick = { vm.retry() }, modifier = Modifier.padding(top = Dimens.SpaceS)) {
                     Text(stringResource(R.string.contacts_retry))
                 }
             }
@@ -115,7 +114,7 @@ fun ContactsTabScreen(
                         MyGroupsEntryRow(onClick = onOpenMyGroups)
                         HorizontalDivider(
                             color = MaterialTheme.colorScheme.outlineVariant,
-                            modifier = Modifier.padding(start = 56.dp),
+                            modifier = Modifier.padding(start = Dimens.DividerIndent),
                         )
                     }
                 }
@@ -124,7 +123,7 @@ fun ContactsTabScreen(
                         DepartmentRow(dept = dept, onClick = { vm.openDepartment(dept) })
                         HorizontalDivider(
                             color = MaterialTheme.colorScheme.outlineVariant,
-                            modifier = Modifier.padding(start = 56.dp),
+                            modifier = Modifier.padding(start = Dimens.DividerIndent),
                         )
                     }
                 }
@@ -133,7 +132,7 @@ fun ContactsTabScreen(
                         Box(
                             Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 48.dp),
+                                .padding(vertical = Dimens.SpaceXxxl),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
@@ -150,7 +149,7 @@ fun ContactsTabScreen(
                         MemberRow(member = member, onClick = { onMemberClick(member.id) })
                         HorizontalDivider(
                             color = MaterialTheme.colorScheme.outlineVariant,
-                            modifier = Modifier.padding(start = 72.dp),
+                            modifier = Modifier.padding(start = Dimens.DividerIndentAvatar),
                         )
                     }
                     if (ui.hasMore) {
@@ -160,10 +159,10 @@ fun ContactsTabScreen(
                                 enabled = !ui.loadingMore,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
+                                    .padding(vertical = Dimens.SpaceXs),
                             ) {
                                 if (ui.loadingMore) {
-                                    CircularProgressIndicator(modifier = Modifier.size(18.dp))
+                                    CircularProgressIndicator(modifier = Modifier.size(Dimens.IconSmall))
                                 } else {
                                     Text(stringResource(R.string.contacts_load_more))
                                 }
@@ -186,7 +185,7 @@ private fun Breadcrumbs(
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = Dimens.ScreenPadding, vertical = 8.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
     ) {
         Text(
             text = stringResource(R.string.contacts_root_org),
@@ -200,7 +199,7 @@ private fun Breadcrumbs(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(Dimens.IconSmall),
             )
             val isLast = index == stack.lastIndex
             Text(
@@ -222,20 +221,20 @@ private fun StarredEntryRow(onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = 12.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
     ) {
         Icon(
             Icons.Filled.Star,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(Dimens.IconMedium),
         )
         Text(
             text = stringResource(R.string.starred_title),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 16.dp),
+                .padding(start = Dimens.ScreenPadding),
         )
         Icon(
             Icons.AutoMirrored.Filled.KeyboardArrowRight,
@@ -253,20 +252,20 @@ private fun MyGroupsEntryRow(onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = 12.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
     ) {
         Icon(
             Icons.Filled.Groups,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(Dimens.IconMedium),
         )
         Text(
             text = stringResource(R.string.contacts_my_groups),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 16.dp),
+                .padding(start = Dimens.ScreenPadding),
         )
         Icon(
             Icons.AutoMirrored.Filled.KeyboardArrowRight,
@@ -283,20 +282,20 @@ private fun DepartmentRow(dept: DepartmentDto, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = 12.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
     ) {
         Icon(
             Icons.Filled.Folder,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(Dimens.IconMedium),
         )
         Text(
             text = dept.name.orEmpty(),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 16.dp),
+                .padding(start = Dimens.ScreenPadding),
         )
         Icon(
             Icons.AutoMirrored.Filled.KeyboardArrowRight,
@@ -313,7 +312,7 @@ private fun MemberRow(member: MemberDto, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = 10.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
     ) {
         MemberAvatar(
             name = member.displayName,
@@ -323,7 +322,7 @@ private fun MemberRow(member: MemberDto, onClick: () -> Unit) {
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 12.dp),
+                .padding(start = Dimens.SpaceM),
         ) {
             Text(
                 text = member.displayName,

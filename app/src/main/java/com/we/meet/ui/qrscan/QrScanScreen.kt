@@ -30,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.journeyapps.barcodescanner.ScanContract
@@ -123,7 +122,7 @@ fun QrScanScreen(onDone: (QrScanResult) -> Unit) {
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxSize().padding(Dimens.SpaceXl), contentAlignment = Alignment.Center) {
             if (permissionDenied) {
                 PermissionDeniedCard(
                     onOpenSettings = { openAppSettings(context) },
@@ -170,7 +169,7 @@ private fun ConfirmCard(
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
     ) {
         Text(
             text = stringResource(R.string.qr_scan_confirm_title),
@@ -190,13 +189,13 @@ private fun ConfirmCard(
                 textAlign = TextAlign.Center,
             )
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Dimens.SpaceS))
         Text(
             text = stringResource(R.string.qr_scan_confirm_hint),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(Dimens.SpaceL))
         Button(
             onClick = onConfirm,
             enabled = !isPending,
@@ -204,8 +203,8 @@ private fun ConfirmCard(
         ) {
             if (isPending) {
                 CircularProgressIndicator(
-                    strokeWidth = 2.dp,
-                    modifier = Modifier.height(20.dp),
+                    strokeWidth = Dimens.BorderEmphasis,
+                    modifier = Modifier.height(Dimens.IconSmall),
                     color = MaterialTheme.colorScheme.onPrimary,
                 )
             } else {
@@ -232,7 +231,7 @@ private fun ErrorCard(reason: ErrorReason, onDismiss: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
     ) {
         Text(
             text = message,
@@ -254,7 +253,7 @@ private fun PermissionDeniedCard(onOpenSettings: () -> Unit, onBack: () -> Unit)
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
     ) {
         Text(
             text = stringResource(R.string.qr_scan_permission_denied),

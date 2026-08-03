@@ -15,20 +15,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,11 +39,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.core.directory.ui.avatarCacheKey
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -192,13 +190,9 @@ fun MemberDetailScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.member_detail_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
-                    }
-                },
+            WeMeetTopBar(
+                title = stringResource(R.string.member_detail_title),
+                onBack = onBack,
             )
         },
     ) { padding ->
@@ -270,28 +264,28 @@ private fun MemberDetailBody(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = Dimens.SpaceXl),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(Dimens.SpaceXxl))
         MemberAvatar(
             name = member.displayName,
             url = member.avatarUrl,
             cacheKey = "avatar:${member.id}",
-            size = 88.dp,
+            size = Dimens.AvatarXl,
             modifier = if (hasAvatar) {
                 Modifier
-                    .clip(RoundedCornerShape(88.dp * 0.2f))
+                    .clip(RoundedCornerShape(Dimens.AvatarXl * 0.2f))
                     .clickable { showAvatar = true }
             } else Modifier,
         )
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(Dimens.SpaceL))
         Text(
             text = member.displayName,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
         )
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(Dimens.SpaceXxl))
 
         InfoRow(stringResource(R.string.member_label_department), member.department?.name)
         InfoRow(stringResource(R.string.member_label_title), member.title)
@@ -313,7 +307,7 @@ private fun MemberDetailBody(
             )
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(Dimens.SpaceXxl))
         if (!member.isSelf) {
             Button(
                 onClick = onStartChat,
@@ -321,7 +315,7 @@ private fun MemberDetailBody(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null)
-                Spacer(Modifier.padding(start = 8.dp))
+                Spacer(Modifier.padding(start = Dimens.SpaceS))
                 Text(stringResource(R.string.member_action_message))
             }
             if (chatError) {
@@ -329,7 +323,7 @@ private fun MemberDetailBody(
                     text = stringResource(R.string.member_message_failed),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 8.dp),
+                    modifier = Modifier.padding(top = Dimens.SpaceS),
                 )
             }
         }
@@ -383,7 +377,7 @@ private fun AvatarViewerDialog(
                 contentDescription = name,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
+                    .padding(Dimens.SpaceXl),
             )
         }
     }
@@ -436,7 +430,7 @@ private fun SwitchRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
+                .padding(vertical = Dimens.SpaceXs),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -449,7 +443,7 @@ private fun SwitchRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 10.dp),
+                .padding(bottom = Dimens.SpaceS),
         )
     }
 }
@@ -461,7 +455,7 @@ private fun InfoRow(label: String, value: String?) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 10.dp),
+                .padding(vertical = Dimens.SpaceS),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
@@ -498,7 +492,7 @@ private fun PhoneRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 10.dp),
+                .padding(vertical = Dimens.SpaceS),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -509,11 +503,11 @@ private fun PhoneRow(
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(text = shown, style = MaterialTheme.typography.bodyMedium)
-                Spacer(Modifier.padding(start = 12.dp))
+                Spacer(Modifier.padding(start = Dimens.SpaceM))
                 when {
                     revealing -> CircularProgressIndicator(
-                        strokeWidth = 2.dp,
-                        modifier = Modifier.padding(start = 4.dp).height(16.dp),
+                        strokeWidth = Dimens.BorderEmphasis,
+                        modifier = Modifier.padding(start = Dimens.SpaceXs).height(Dimens.IconTiny),
                     )
                     // Revealed-but-empty (owner had no number after all).
                     revealedPhone != null && revealedPhone.isBlank() -> Unit

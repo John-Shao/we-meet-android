@@ -186,12 +186,12 @@ fun ProfileScreen(
                 },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .offset(y = 44.dp),
+                    .offset(y = Dimens.Profile.AvatarOverlap),
             )
         }
 
         // Reserve space for the avatar bubble overlapping the banner
-        Spacer(Modifier.height(56.dp))
+        Spacer(Modifier.height(Dimens.Profile.AvatarReserve))
 
         Text(
             text = nickname.ifBlank { phone },
@@ -199,23 +199,23 @@ fun ProfileScreen(
             fontWeight = FontWeight.Medium,
         )
         if (intro.isNotBlank()) {
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(Dimens.SpaceXs))
             Text(
                 text = intro,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 24.dp),
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl),
             )
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(Dimens.SpaceXl))
 
         // Settings list
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = Dimens.ScreenPadding)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(Dimens.CornerM))
                 .background(MaterialTheme.colorScheme.surface),
         ) {
             SettingsRow(
@@ -232,7 +232,7 @@ fun ProfileScreen(
             // Phone moved to Settings → 账号与安全 alongside the deregister flow.
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(Dimens.SpaceXl))
 
         // App-level settings live in a separate group: language / theme /
         // video codec — all device-wide preferences, not per-meeting.
@@ -242,7 +242,7 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = Dimens.ScreenPadding)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(Dimens.CornerM))
                 .background(MaterialTheme.colorScheme.surface),
         ) {
             // AI hub moved here when its bottom tab was replaced by 日历/通讯录.
@@ -267,7 +267,7 @@ fun ProfileScreen(
         }
 
         if (errorMessage != null) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Dimens.SpaceM))
             Text(
                 text = errorMessage!!,
                 color = MaterialTheme.colorScheme.error,
@@ -281,7 +281,7 @@ fun ProfileScreen(
         // surface. Phone number still drives the deregister confirm-friction
         // prompt; SettingsScreen pulls it from TokenStore.
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(Dimens.SpaceXl))
     }
 
     cropRequest?.let { req ->
@@ -364,7 +364,7 @@ private fun CoverBanner(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(160.dp)
+            .height(Dimens.Profile.HeaderHeight)
             .background(placeholderColor)
             .clickable(enabled = !isUploading, onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -383,16 +383,16 @@ private fun CoverBanner(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(12.dp)
+                    .padding(Dimens.SpaceM)
                     .clip(CircleShape)
                     .background(Color.Black.copy(alpha = 0.4f))
-                    .padding(6.dp),
+                    .padding(Dimens.SpaceXs),
             ) {
                 Icon(
                     imageVector = Icons.Default.CameraAlt,
                     contentDescription = stringResource(R.string.profile_change_cover),
                     tint = Color.White,
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(Dimens.IconSmall),
                 )
             }
         }
@@ -408,9 +408,9 @@ private fun AvatarBubble(
 ) {
     Box(
         modifier = modifier
-            .size(96.dp)
+            .size(Dimens.AvatarXxl)
             .clip(CircleShape)
-            .border(3.dp, MaterialTheme.colorScheme.background, CircleShape)
+            .border(Dimens.SpaceXxs, MaterialTheme.colorScheme.background, CircleShape)
             .background(MaterialTheme.colorScheme.primary)
             .clickable(enabled = !isUploading, onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -418,7 +418,7 @@ private fun AvatarBubble(
         when {
             isUploading -> CircularProgressIndicator(
                 color = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(Dimens.AvatarM),
             )
 
             avatarUrl.isNotBlank() -> AsyncImage(
@@ -432,7 +432,7 @@ private fun AvatarBubble(
                 imageVector = Icons.Default.Person,
                 contentDescription = stringResource(R.string.profile_avatar),
                 tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(48.dp),
+                modifier = Modifier.size(Dimens.IconIllustration),
             )
         }
     }
@@ -448,7 +448,7 @@ private fun SettingsRow(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = 16.dp),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -462,16 +462,16 @@ private fun SettingsRow(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
-                modifier = Modifier.padding(end = 4.dp),
+                modifier = Modifier.padding(end = Dimens.SpaceXs),
             )
         }
         if (onClick != null) {
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(Dimens.SpaceXs))
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(Dimens.IconSmall),
             )
         }
     }
@@ -527,7 +527,7 @@ private fun IntroDialog(
         text = {
             Column(
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
             ) {
                 OutlinedTextField(
                     value = input,
