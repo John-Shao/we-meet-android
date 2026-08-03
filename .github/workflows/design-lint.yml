@@ -1,0 +1,29 @@
+# 设计规范护栏(docs/设计规范.md §9)。
+#
+# 为什么单独一个 workflow 而不是塞进构建流水线:这个仓库目前没有 CI,而护栏
+# 需要一个**绕不过去的**执行点 —— pre-commit 钩子可以 --no-verify,PR 检查不行。
+# 这里只跑护栏,不跑构建/测试;要补完整流水线是另一件事,往这个文件里加即可。
+name: design-lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check-design-tokens:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # 只跑护栏这一个任务。任务本身是纯文本扫描、秒级完成;耗时几乎全在
+      # Gradle 配置阶段(要配置所有 Android 模块,所以仍需 SDK —— ubuntu-latest
+      # 自带,不用额外装)。
+      - run: ./gradlew checkDesignTokens --console=plain

@@ -1,0 +1,24 @@
+#!/bin/sh
+# 设计规范护栏 —— 提交前跑一遍。见 docs/设计规范.md §9。
+#
+# 装它:./gradlew installGitHooks(每个克隆跑一次,把 core.hooksPath 指到 .githooks/)
+# 绕过它:git commit --no-verify —— 能绕,但 CI 会再拦一次,所以别拿它当出口。
+#
+# ⚠️ 一处刻意的不精确:检查扫的是**工作区**,不是暂存区。部分暂存
+# (git add -p)时,未暂存的改动也会被算进来。要做到精确得先把 index 导出到
+# 临时目录再扫,为一个本地便利钩子做这些不值 —— 真正的判定以 CI 为准。
+
+changed=$(git diff --cached --name-only --diff-filter=ACM | grep '\.kt$')
+[ -z "$changed" ] && exit 0
+
+echo "→ checkDesignTokens…"
+if ! ./gradlew checkDesignTokens --quiet --console=plain; then
+    cat <<'EOF'
+
+提交被设计规范护栏拦下。三条出路:
+  1. 改成 token / 共享组件(默认应该走这条,见 docs/设计规范.md)
+  2. 确有理由不套规范 → 加 // design-exempt: 理由 或 // i18n-exempt
+  3. 确属有意的存量变动(少见)→ ./gradlew checkDesignTokens -Pdesign.baseline
+EOF
+    exit 1
+fi
