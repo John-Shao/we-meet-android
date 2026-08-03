@@ -184,7 +184,10 @@ fun ReminderScreen(
                                         )
                                     },
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = reminderColor,
+                                    // 文字不能和底同色 —— 橙字压在 14% 橙底上
+                                    // 浅色只有 2.07:1。见 Color.kt 的
+                                    // LightCalendarReminderText。
+                                    color = WeMeetTheme.extras.calendar.reminderText,
                                     modifier = Modifier
                                         .background(
                                             reminderColor.copy(alpha = 0.14f),

@@ -273,6 +273,13 @@ data class CalendarColors(
     val conflict: Color,
     /** 提醒条目的强调橙。 */
     val reminder: Color,
+    /** 压在 [reminder] **实底**上的前景(图标)。深浅同值,底本来就不翻转。 */
+    val onReminder: Color,
+    /**
+     * 压在 [reminder] **淡底**(14% 左右)上的文字。浅色下必须比 [reminder]
+     * 深一大截才够 4.5:1 —— 文字和底同色是这里踩过的坑,数字见 Color.kt。
+     */
+    val reminderText: Color,
 )
 
 data class RsvpColors(
@@ -302,6 +309,8 @@ private val LightExtras = WeMeetExtras(
         nowLine = LightCalendarNowLine,
         conflict = LightCalendarConflict,
         reminder = LightCalendarReminder,
+        onReminder = CalendarOnReminder,
+        reminderText = LightCalendarReminderText,
     ),
     status = StatusColors(
         danger = LightDanger,
@@ -340,6 +349,9 @@ private val DarkExtras = WeMeetExtras(
         nowLine = DarkCalendarNowLine,
         conflict = DarkCalendarConflict,
         reminder = DarkCalendarReminder,
+        // 深色下角标底被页面底压暗了,橙字压上去有 7.39:1,不需要单独取值。
+        onReminder = CalendarOnReminder,
+        reminderText = DarkCalendarReminder,
     ),
     status = StatusColors(
         danger = DarkDanger,

@@ -75,6 +75,28 @@ val LightCalendarNowLine = Color(0xFFEF4444)
 val LightCalendarConflict = Color(0xFFDC2626)
 val LightCalendarReminder = Color(0xFFFF8800)
 
+/**
+ * 压在提醒橙**实底**上的前景(消息列表提醒行的日历图标)。
+ *
+ * 深浅两套同一个值,是因为 [LightCalendarReminder] / [DarkCalendarReminder]
+ * 本身在两套主题里都是亮橙 —— 底不翻转,前景也就不该翻转。
+ *
+ * 原先这里写死 `Color.White`,压在橙上只有 2.39:1(浅)/ 1.95:1(深),
+ * 两套都过不了 SC 1.4.11 的 3:1,深色更差。换成深色后 7.14:1 / 8.77:1。
+ * 亮底配白字是最容易凭感觉写错的一种 —— 橙看着"挺深",算出来不是。
+ */
+val CalendarOnReminder = Color(0xFF1A1C1E)
+
+/**
+ * 提醒页「现在 / N 分钟后」角标的**文字**色 —— 它压在 14% 提醒橙的淡底上,
+ * 不是压在实底上,所以不能直接用 [LightCalendarReminder] 本身。
+ *
+ * 原先文字和底同色(都用 reminder),浅色下算出来 2.07:1,远低于正文 4.5:1;
+ * 深色下同样写法反而有 7.39:1(底被页面底压暗了),所以只有浅色需要单独取值。
+ * `9A5200` 压在浅色实际底 `FCECDA` 上 5.07:1。
+ */
+val LightCalendarReminderText = Color(0xFF9A5200)
+
 val DarkCalendarNowLine = Color(0xFFFF7A7A)
 val DarkCalendarConflict = Color(0xFFF87171)
 val DarkCalendarReminder = Color(0xFFFFA640)

@@ -20,7 +20,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -63,7 +62,9 @@ fun ReminderEntryRow(
                 Icon(
                     Icons.Filled.EditCalendar,
                     contentDescription = stringResource(R.string.reminder_title),
-                    tint = Color.White,
+                    // 不是白 —— 白压在提醒橙上只有 2.39:1(浅)/ 1.95:1(深),
+                    // 过不了 SC 1.4.11 的 3:1。见 Color.kt 的 CalendarOnReminder。
+                    tint = WeMeetTheme.extras.calendar.onReminder,
                 )
             }
             Spacer(Modifier.width(Dimens.SpaceM))
@@ -90,7 +91,8 @@ fun ReminderEntryRow(
                                 )
                             },
                             style = MaterialTheme.typography.labelSmall,
-                            color = reminderColor,
+                            // 同 ReminderScreen 的角标:文字不能和底同色。
+                            color = WeMeetTheme.extras.calendar.reminderText,
                             modifier = Modifier
                                 .background(
                                     reminderColor.copy(alpha = 0.14f),
