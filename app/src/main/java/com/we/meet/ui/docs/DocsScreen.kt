@@ -41,6 +41,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.BuildConfig
 import com.we.meet.R
+import com.we.meet.WeMeetApp
+import com.we.meet.data.api.DocsSessionRequest
 import com.we.meet.design.R as DesignR
 import java.util.Locale
 
@@ -56,10 +58,11 @@ private const val EMBED_UA_MARKER = "WeMeetApp/1.0 (embedded-docs)"
 /**
  * 云文档 tab (p3-docs-app.md D6): a WebView on La Suite Docs.
  *
- * Auth is invisible by design — the in-WebView Keycloak login seeded the KC
- * session cookie into the process-wide CookieManager, and [docsUrl] enters
- * through docs' OIDC authenticate endpoint, which trades that cookie for an
- * authenticated docs session with no user interaction.
+ * 登录态由 [docsEntryUrl] 引导:后端拿 App 自己的登录态(Bearer)去 Docs 换一张
+ * 一次性票据,WebView 载着票据进站即得 Docs 会话 —— 与 WebView cookie 罐里有没有
+ * Keycloak 会话无关。老路子([docsUrl] 的 OIDC authenticate 入口)保留作兜底:它
+ * 赌的那份 KC 会话 cookie 不随 App 登录态存活,赌输时云文档 tab 会变成一张 Keycloak
+ * 手机号登录页 —— 其它 tab 全都登着,唯独云文档要求再登一次。
  */
 internal class DocsWebViewClient : WebViewClient() {
 
@@ -212,6 +215,12 @@ fun createDocsWebView(
     initialUrl: String? = null,
     /** UA 主题标记(docs embedderTheme 解析初始深浅);调用方传当前主题。 */
     darkTheme: Boolean = false,
+    /**
+     * true = 这里不做初始加载,由调用方随后用 [loadDocsEntry] 驱动。进站 URL 现在要
+     * 先向后端换一张登录票据(suspend),构造函数里做不了;两个调用方都走这条路,
+     * 直接在构造时 load 只会先闪一下没有登录态的老入口。
+     */
+    deferInitialLoad: Boolean = false,
 ): WebView =
     WebView(context).apply {
         // A programmatically-built WebView has no LayoutParams, so its host
@@ -266,9 +275,60 @@ fun createDocsWebView(
         // we-meet-docs useIsEmbedded.sendToHost() 里检测的 `window.WeMeetHost` 一致。
         addJavascriptInterface(DocsHostBridge(this, client), "WeMeetHost")
         // 搜索统一 M2:文档命中查看器复用同一构造,直载目标文档深链
-        // (KC session cookie 由 CookieManager 全局共享,登录态自动带上)。
-        loadUrl(initialUrl ?: docsUrl())
+        // (docs 会话 cookie 由 CookieManager 全局共享,登录态自动带上)。
+        if (!deferInitialLoad) loadUrl(initialUrl ?: docsUrl())
     }
+
+/**
+ * 云文档进站 URL:优先「票据引导」,失败退回 [fallback]。
+ *
+ * we-meet 后端用调用者自己的登录态(App 的 Bearer)去 Docs 换一张 60 秒、单次使用
+ * 的票据,拼成可直接加载的 URL;WebView 载过去就拿到 Docs 会话,**全程不碰
+ * Keycloak**。后端未接 Docs / 不可达 / 调用失败时返回 [fallback](老的 authenticate
+ * 入口或文档深链本身),行为与改动前一致。
+ *
+ * @param next Docs 站内落地路径(可带 query),票据校验通过后 302 过去。
+ */
+internal suspend fun docsEntryUrl(context: Context, next: String, fallback: String): String {
+    val app = context.applicationContext as? WeMeetApp ?: return fallback
+    val url = runCatching { app.apiClient.docsApi.createSession(DocsSessionRequest(next)).url }
+        .onFailure { Log.w(TAG, "[bootstrap] docs session ticket failed", it) }
+        .getOrNull()
+    return url?.takeIf { it.isNotBlank() } ?: fallback
+}
+
+/**
+ * 云文档 tab 的进站加载:票据优先,拿不到退回 authenticate 入口。
+ *
+ * 调用方是 Compose 的 LaunchedEffect(主线程),WebView.loadUrl 也必须在主线程 ——
+ * Retrofit 的 suspend 调用会回到同一个调度器,中间不切线程。
+ */
+suspend fun loadDocsTabEntry(context: Context, webView: WebView) {
+    val next = "/?embed=1&lang=${Uri.encode(appLanguageTag())}"
+    webView.loadUrl(docsEntryUrl(context, next = next, fallback = docsUrl()))
+}
+
+/**
+ * 文档深链(搜索命中 / 聊天里的 doc-card)查看器的进站加载:同样票据优先,拿不到
+ * 就直载深链本身 —— 那时靠云文档 tab 早前在 CookieManager 里留下的 docs 会话。
+ */
+suspend fun loadDocsDeepLinkEntry(context: Context, webView: WebView, url: String) {
+    val next = docsRelativePathOrNull(url)
+    webView.loadUrl(
+        if (next == null) url else docsEntryUrl(context, next = next, fallback = url),
+    )
+}
+
+/**
+ * 把 Docs 站上的绝对 URL 折成站内相对路径(票据引导的 `next`);非 Docs 站返回 null。
+ */
+private fun docsRelativePathOrNull(url: String): String? {
+    val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return null
+    if (!uri.host.equals(DOCS_HOST, ignoreCase = true)) return null
+    val path = uri.path.orEmpty().ifEmpty { "/" }
+    val query = uri.query
+    return if (query.isNullOrEmpty()) path else "$path?$query"
+}
 
 /**
  * The language docs should render in: the app's own in-app language (我的 → 设置

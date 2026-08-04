@@ -12,6 +12,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,8 +37,11 @@ import com.we.meet.ui.theme.WeMeetTheme
 fun DocsViewerScreen(url: String, onClose: () -> Unit) {
     val context = LocalContext.current
     val darkTheme = WeMeetTheme.isDark
+    // deferInitialLoad:先向后端换一张 Docs 登录票据再进站(suspend,构造时做不了),
+    // 这样即便这页先于云文档 tab 打开(cookie 罐里还没有 docs 会话)也能直接看到文档。
     val webView =
-        remember { createDocsWebView(context, initialUrl = url, darkTheme = darkTheme) }
+        remember { createDocsWebView(context, darkTheme = darkTheme, deferInitialLoad = true) }
+    LaunchedEffect(webView, url) { loadDocsDeepLinkEntry(context, webView, url) }
     var canGoBack by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var everLoaded by remember { mutableStateOf(false) }

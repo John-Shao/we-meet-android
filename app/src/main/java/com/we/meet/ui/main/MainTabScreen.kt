@@ -73,6 +73,7 @@ import android.view.ViewGroup
 import com.we.meet.ui.contacts.ContactsTabScreen
 import com.we.meet.ui.docs.DocsTabScreen
 import com.we.meet.ui.docs.createDocsWebView
+import com.we.meet.ui.docs.loadDocsTabEntry
 import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.ui.home.HomeScreen
 import com.we.meet.ui.docs.DocsWebViewClient
@@ -140,7 +141,11 @@ fun MainTabScreen(
     // 若放进 content lambda,每次切 tab 都会重建 WebView、重走加载 + KC SSO 重定向。
     // remember 一次跨 tab 存活;MainTabScreen 退出(登出)时销毁,避免泄漏。
     val docsDark = WeMeetTheme.isDark
-    val docsWebView = remember { createDocsWebView(ctx, darkTheme = docsDark) }
+    // deferInitialLoad:进站 URL 要先向后端换一张 Docs 登录票据(suspend),构造时
+    // 拿不到 —— 直接 load 老入口只会先闪一下没有登录态的那条链路。
+    val docsWebView =
+        remember { createDocsWebView(ctx, darkTheme = docsDark, deferInitialLoad = true) }
+    LaunchedEffect(docsWebView) { loadDocsTabEntry(ctx, docsWebView) }
     DisposableEffect(Unit) {
         onDispose {
             (docsWebView.parent as? ViewGroup)?.removeView(docsWebView)
