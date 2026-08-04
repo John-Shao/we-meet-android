@@ -443,18 +443,9 @@ fun CreateEventScreen(
                     .padding(top = Dimens.SpaceS),
             )
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = Dimens.SpaceS),
-            ) {
-                Text(stringResource(R.string.calendar_field_all_day))
-                Switch(checked = allDay, onCheckedChange = { allDay = it })
-            }
-            HorizontalDivider()
-
+            // 全天开关已撤(与 Web 对齐)。allDay 仍是事件的字段 —— 编辑既有
+            // 全天日程时按它自己的值渲染日期行并原样回传,只是表单里不再给
+            // 用户开关;新建恒为定时日程。
             DateTimeRow(
                 label = stringResource(R.string.calendar_field_start),
                 value = start,
