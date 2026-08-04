@@ -341,7 +341,9 @@
     <string name="calendar_reminder_at_time">At event time</string>
     <string name="calendar_reminder_minutes">%1$d minutes before</string>
     <string name="calendar_reminder_hour">1 hour before</string>
+    <string name="calendar_reminder_hours">%1$d hours before</string>
     <string name="calendar_reminder_day">1 day before</string>
+    <string name="calendar_reminder_days">%1$d days before</string>
     <string name="calendar_field_attendees">Attendees</string>
     <string name="calendar_add_attendees">Add attendees</string>
     <string name="calendar_field_description_hint">Description (optional)</string>

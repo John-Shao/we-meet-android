@@ -220,7 +220,10 @@ fun CreateEventScreen(
                 start = startLdt
                 // All-day end is stored exclusive (next midnight) → show inclusive last day.
                 end = if (e.allDay) endLdt.minusDays(1) else endLdt
-                reminderMinutes = e.reminders.firstOrNull()
+                // 后端 push_due_reminders 按 max(reminders) 算触发点并只推一次,
+                // 历史多值数据(Web 旧版多选留下的)里生效的是最大那条 —— 取 max
+                // 而不是 first,免得编辑时把实际会响的那条改掉。
+                reminderMinutes = e.reminders.maxOrNull()
                 // P8 编辑增删参与者:预填既有参与者(组织者恒在,不进列表);
                 // 重复日程不放开(服务端三选路径剔除 attendee_ids)。
                 editIsRecurring = e.isRecurring
@@ -990,15 +993,11 @@ private fun RepeatUntilRow(until: LocalDate?, onPick: (LocalDate?) -> Unit) {
 @Composable
 private fun ReminderDropdown(selectedMinutes: Int?, onSelect: (Int?) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    val options: List<Int?> = listOf(null, 0, 5, 10, 15, 30, 60, 1440)
-
-    @Composable
-    fun labelFor(minutes: Int?): String = when (minutes) {
-        null -> stringResource(R.string.calendar_reminder_none)
-        0 -> stringResource(R.string.calendar_reminder_at_time)
-        60 -> stringResource(R.string.calendar_reminder_hour)
-        1440 -> stringResource(R.string.calendar_reminder_day)
-        else -> stringResource(R.string.calendar_reminder_minutes, minutes)
+    // 「不提醒」= null 排首位,其余档位读共享的 REMINDER_OPTIONS(与 Web 同一份)。
+    // 历史数据里的非标准值(45 这种)追加进去,免得下拉里选不中当前值。
+    val options: List<Int?> = remember(selectedMinutes) {
+        val extra = selectedMinutes?.takeIf { it !in REMINDER_OPTIONS }
+        listOf<Int?>(null) + (REMINDER_OPTIONS + listOfNotNull(extra)).sorted()
     }
 
     Row(
@@ -1014,7 +1013,7 @@ private fun ReminderDropdown(selectedMinutes: Int?, onSelect: (Int?) -> Unit) {
                 onClick = { expanded = true },
                 modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable),
             ) {
-                Text(labelFor(selectedMinutes))
+                Text(reminderLabel(selectedMinutes))
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             }
             ExposedDropdownMenu(
@@ -1024,7 +1023,7 @@ private fun ReminderDropdown(selectedMinutes: Int?, onSelect: (Int?) -> Unit) {
             ) {
                 options.forEach { minutes ->
                     DropdownMenuItem(
-                        text = { Text(labelFor(minutes), softWrap = false) },
+                        text = { Text(reminderLabel(minutes), softWrap = false) },
                         onClick = {
                             onSelect(minutes)
                             expanded = false

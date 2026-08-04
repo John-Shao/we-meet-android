@@ -133,7 +133,7 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
             SettingDropdownRow(
                 label = stringResource(R.string.calendar_settings_default_reminder),
                 current = reminderLabel(reminderMin.takeIf { it >= 0 }),
-                options = listOf<Int?>(null, 0, 5, 10, 15, 30, 60, 1440).map { min ->
+                options = (listOf<Int?>(null) + REMINDER_OPTIONS).map { min ->
                     reminderLabel(min) to { store.setCalendarDefaultReminderMin(min ?: -1) }
                 },
             )
@@ -147,16 +147,6 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
             }
         }
     }
-}
-
-/** 与新建表单 ReminderDropdown 相同的提醒文案口径。 */
-@Composable
-private fun reminderLabel(minutes: Int?): String = when (minutes) {
-    null -> stringResource(R.string.calendar_reminder_none)
-    0 -> stringResource(R.string.calendar_reminder_at_time)
-    60 -> stringResource(R.string.calendar_reminder_hour)
-    1440 -> stringResource(R.string.calendar_reminder_day)
-    else -> stringResource(R.string.calendar_reminder_minutes, minutes)
 }
 
 @Composable

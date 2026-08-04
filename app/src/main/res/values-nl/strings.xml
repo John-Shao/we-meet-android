@@ -315,7 +315,9 @@
     <string name="calendar_reminder_at_time">Bij aanvang</string>
     <string name="calendar_reminder_minutes">%1$d minuten van tevoren</string>
     <string name="calendar_reminder_hour">1 uur van tevoren</string>
+    <string name="calendar_reminder_hours">%1$d uur van tevoren</string>
     <string name="calendar_reminder_day">1 dag van tevoren</string>
+    <string name="calendar_reminder_days">%1$d dagen van tevoren</string>
     <string name="calendar_field_attendees">Deelnemers</string>
     <string name="calendar_add_attendees">Deelnemers toevoegen</string>
     <string name="calendar_field_description_hint">Beschrijving (optioneel)</string>

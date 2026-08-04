@@ -509,11 +509,14 @@ private fun EventBody(
                 modifier = Modifier.padding(top = Dimens.SpaceXs),
             )
         }
-        if (event.reminders.isNotEmpty()) {
+        // 只显示真正会响的那一条:后端按 max(reminders) 算触发点并只推一次,
+        // 把历史多值数据全列出来等于承诺了不会发生的提醒。
+        val effectiveReminder = event.reminders.maxOrNull()
+        if (effectiveReminder != null) {
             val res = LocalContext.current.resources
             Text(
                 text = "🔔 ${stringResource(R.string.calendar_field_reminder)}: " +
-                    event.reminders.joinToString("、") { reminderLabel(res, it) },
+                    reminderLabel(res, effectiveReminder),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = Dimens.SpaceXs),
@@ -778,16 +781,6 @@ private fun SummaryEntryBlock(summary: SummaryDto, onOpen: () -> Unit) {
         )
     }
 }
-
-/** Reminder lead-time → label, mirroring CreateEventScreen's dropdown. Plain
- * function (not @Composable) so it works inside a joinToString lambda. */
-private fun reminderLabel(res: android.content.res.Resources, minutes: Int): String =
-    when (minutes) {
-        0 -> res.getString(R.string.calendar_reminder_at_time)
-        60 -> res.getString(R.string.calendar_reminder_hour)
-        1440 -> res.getString(R.string.calendar_reminder_day)
-        else -> res.getString(R.string.calendar_reminder_minutes, minutes)
-    }
 
 /**
  * P2-M2 重复日程三选范围弹窗(编辑/删除共用)。弹窗本身即确认步骤——确认后
