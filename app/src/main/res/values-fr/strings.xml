@@ -251,7 +251,7 @@
     <string name="calendar_retry">Réessayer</string>
     <!-- P8: calendar view modes + agenda view -->
     <string name="calendar_view_switch">Switch view</string>
-    <string name="calendar_view_agenda">Agenda</string>
+    <string name="calendar_view_agenda">Liste</string>
     <string name="calendar_view_day">Day</string>
     <string name="calendar_view_week">Week</string>
     <string name="calendar_view_month">Month</string>
