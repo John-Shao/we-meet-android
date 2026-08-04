@@ -53,6 +53,14 @@ data class ImUserInfo(
      * 默认 false,老后端不返回该字段时按在职处理。
      */
     val left: Boolean = false,
+    /**
+     * 该 uid 是群机器人(jusi role='bot')。机器人不是 User —— 后端在同一个
+     * 解析端点里额外查一遍机器人表,于是气泡拿头像/名字/描述副标题不用多发
+     * 一次请求。老后端不返回该字段,默认 false。
+     */
+    @Json(name = "is_bot") val isBot: Boolean = false,
+    /** 机器人的一行说明,挂在气泡的发送人名字后面。真人不返回。 */
+    val description: String = "",
 ) {
     val displayName: String
         get() = fullName.ifBlank { shortName }
@@ -95,4 +103,47 @@ internal data class ImSearchItem(
 internal data class ImSearchResponse(
     val items: List<ImSearchItem> = emptyList(),
     @Json(name = "next_before_mid") val nextBeforeMid: Long? = null,
+)
+
+// ---- 群机器人 (core/api/im_bots.py) ----
+
+/**
+ * 一个机器人在某个群里的安装。
+ *
+ * 凭据字段(webhook / 签名 / 关键词 / IP 白名单)对**非群主**返回 null ——
+ * 每个成员都该看得见群里有什么在说话,但不该拿到往里发消息的钥匙。
+ */
+@JsonClass(generateAdapter = true)
+internal data class ImBotDto(
+    val id: String = "",
+    val cid: String = "",
+    /** custom = 自定义 webhook 机器人;builtin = 内置助手,不可移除。 */
+    val kind: String = "custom",
+    val slug: String = "",
+    /** jusi uid —— 与消息的 sender_uid 对得上。 */
+    val uid: String = "",
+    val name: String = "",
+    val description: String = "",
+    @Json(name = "avatar_url") val avatarUrl: String? = null,
+    @Json(name = "avatar_color_index") val avatarColorIndex: Int = 0,
+    @Json(name = "is_active") val isActive: Boolean = true,
+    @Json(name = "disabled_reason") val disabledReason: String = "",
+    @Json(name = "created_at") val createdAt: String = "",
+    @Json(name = "last_used_at") val lastUsedAt: String? = null,
+    @Json(name = "message_count") val messageCount: Int = 0,
+    @Json(name = "webhook_url") val webhookUrl: String? = null,
+    @Json(name = "sign_verify_enabled") val signVerifyEnabled: Boolean? = null,
+    val keywords: List<String>? = null,
+    @Json(name = "ip_allowlist") val ipAllowlist: List<String>? = null,
+) {
+    /** 非群主拿不到凭据,详情页据此只读展示。 */
+    val canManage: Boolean get() = webhookUrl != null || kind == "builtin"
+}
+
+@JsonClass(generateAdapter = true)
+internal data class ImBotSecretResponse(val secret: String = "")
+
+@JsonClass(generateAdapter = true)
+internal data class ImBotTokenResponse(
+    @Json(name = "webhook_url") val webhookUrl: String = "",
 )

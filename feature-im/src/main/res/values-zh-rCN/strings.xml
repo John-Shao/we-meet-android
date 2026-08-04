@@ -292,4 +292,59 @@
     <string name="im_special_alert_marker">已开启特别提醒</string>
     <string name="im_fmt_month_day">M月d日</string>
     <string name="im_fmt_month_day_time">M月d日 HH:mm</string>
+    <string name="im_preview_rich_text">[富文本]</string>
+    <!-- 群机器人 -->
+    <string name="im_bots_entry">群机器人</string>
+    <string name="im_bots_title">群机器人</string>
+    <string name="im_bots_add">添加机器人</string>
+    <string name="im_bots_add_title">添加机器人</string>
+    <string name="im_bots_help">使用说明</string>
+    <string name="im_bots_help_title">机器人使用说明</string>
+    <string name="im_bots_empty">本群还没有机器人</string>
+    <string name="im_bots_chip">机器人</string>
+    <string name="im_bots_disabled_chip">已停用</string>
+    <string name="im_bots_gone">该机器人已不存在</string>
+    <string name="im_bots_edit">编辑</string>
+    <string name="im_bots_enabled">在本群启用</string>
+    <string name="im_bots_remove">移除机器人</string>
+    <string name="im_bots_remove_confirm">确定将「%1$s」移出本群?该机器人的 webhook 地址会立即失效。</string>
+    <string name="im_bots_owner_only">只有群主可以添加机器人、查看和修改 webhook 配置。</string>
+    <string name="im_bots_builtin_hint">内置助手随产品提供,不能移除;关闭后它在本群不再发送通知。</string>
+    <string name="im_bots_catalog_custom">自定义机器人</string>
+    <string name="im_bots_catalog_custom_desc">通过 webhook 将自定义服务的消息推送到群里</string>
+    <string name="im_bots_form_title">自定义机器人</string>
+    <string name="im_bots_form_avatar">机器人头像</string>
+    <string name="im_bots_form_color">预设颜色 %1$d</string>
+    <string name="im_bots_form_name">机器人名称</string>
+    <string name="im_bots_form_name_hint">请输入机器人名称</string>
+    <string name="im_bots_form_desc">描述</string>
+    <string name="im_bots_form_desc_hint">一句话说明这个机器人是做什么的</string>
+    <string name="im_bots_form_submit">添加</string>
+    <string name="im_bots_form_save">保存</string>
+    <string name="im_bots_counter">%1$d/%2$d</string>
+    <string name="im_bots_webhook_title">webhook 地址</string>
+    <string name="im_bots_webhook_copy">复制</string>
+    <string name="im_bots_webhook_copied">已复制</string>
+    <string name="im_bots_webhook_hint">向该地址 POST 消息即可发到本群。地址等同于凭证,不要公开。</string>
+    <string name="im_bots_security_title">安全设置</string>
+    <string name="im_bots_security_hint">至少开启一项,否则拿到地址的人都能往群里发消息。</string>
+    <string name="im_bots_security_sign">签名校验</string>
+    <string name="im_bots_security_secret">密钥</string>
+    <string name="im_bots_security_show">显示密钥</string>
+    <string name="im_bots_security_hide">隐藏密钥</string>
+    <string name="im_bots_security_reset">重置密钥</string>
+    <string name="im_bots_security_reset_confirm">重置后旧密钥立即失效,还在用旧密钥的服务会发送失败。确定重置?</string>
+    <string name="im_bots_security_keywords">自定义关键词</string>
+    <string name="im_bots_security_keyword_hint">输入后回车添加,点击已有关键词可删除</string>
+    <string name="im_bots_security_keywords_hint">消息需包含其中任意一个关键词,否则不会发送成功;留空表示不限制。</string>
+    <string name="im_bots_security_ip">IP 白名单</string>
+    <string name="im_bots_security_ip_hint">一行一个 IP 或网段,留空表示不限制。</string>
+    <string name="im_bots_security_save">保存</string>
+    <string name="im_bots_help_body">向机器人的 webhook 地址 POST 一段 JSON,消息就会以这个机器人的身份发到本群。请求格式与飞书自定义机器人一致,原有脚本改一个地址即可。
+
+纯文本 body:{\"msg_type\":\"text\",\"content\":{\"text\":\"构建完成\"}}
+
+签名校验(可选):sign = base64(hmac_sha256(key = timestamp + 换行 + 密钥, data = 空串))。timestamp 与 sign 都放在 JSON body 顶层,不是 header。
+
+限额:每个机器人 100 次/分钟、5 次/秒,请求体不超过 20 KB。重试请带 X-Request-Id,同一个 id 只会发一条。</string>
 </resources>

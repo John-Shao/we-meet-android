@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.chat
 
+import com.we.meet.feature.im.ui.common.ImSwitchRow
 import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -149,13 +150,13 @@ fun DirectChatSettingsScreen(
             }
 
             // Pin toggle.
-            SwitchRow(
+            ImSwitchRow(
                 label = stringResource(R.string.im_menu_pin),
                 checked = ui.pinned,
                 onToggle = { vm.togglePin() },
             )
             // Mute toggle.
-            SwitchRow(
+            ImSwitchRow(
                 label = stringResource(R.string.im_menu_mute),
                 checked = ui.muted,
                 onToggle = { vm.toggleMute() },
@@ -195,20 +196,3 @@ fun DirectChatSettingsScreen(
     }
 }
 
-@Composable
-private fun SwitchRow(label: String, checked: Boolean, onToggle: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onToggle)
-            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
-        )
-        Switch(checked = checked, onCheckedChange = { onToggle() })
-    }
-}

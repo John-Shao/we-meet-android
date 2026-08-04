@@ -465,6 +465,8 @@ fun ChatScreen(
                                         } else n
                                     },
                                     senderAvatarUrl = sender?.avatarUrl?.takeIf { it.isNotBlank() },
+                                    senderIsBot = vm.isBot(message.senderUid),
+                                    senderBotDescription = vm.botDescription(message.senderUid),
                                     receiptLabel = receipt,
                                     onReceiptClick = if (receipt != null && ui.isGroup) {
                                         { showReceipts = true }

@@ -20,6 +20,7 @@ import com.jusi.lightim.ConnectionState
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.model.MessageContent
 import com.we.meet.feature.im.model.MessageContentParser
+import com.we.meet.feature.im.model.RichTextParser
 
 /** Connection banner shared by the list + chat screens. Hidden while CONNECTED. */
 @Composable
@@ -111,6 +112,10 @@ fun previewText(contentType: String?, body: String?): String {
         "event-card" -> return stringResource(R.string.im_preview_event)
         "doc-card" -> return stringResource(R.string.im_preview_doc)
         "meeting-card" -> return stringResource(R.string.im_preview_meeting)
+        // 富文本同理:预览 body 会被截断,但服务端在 body 里带了 `plain` 投影,
+        // 截断的 plain 仍然是人话。解析不出来才退固定文案。
+        "rich-text" -> return RichTextParser.preview(body)
+            .ifBlank { stringResource(R.string.im_preview_rich_text) }
     }
     return when (val content = MessageContentParser.parse(contentType ?: "text", body)) {
         is MessageContent.Text -> content.body
@@ -121,6 +126,7 @@ fun previewText(contentType: String?, body: String?): String {
         is MessageContent.Merged -> stringResource(R.string.im_preview_merged)
         is MessageContent.Recall -> stringResource(R.string.im_recalled_preview)
         is MessageContent.Reaction -> stringResource(R.string.im_preview_reaction)
+        is MessageContent.RichText -> RichTextParser.flatten(content.body)
         is MessageContent.System -> content.body
         is MessageContent.CallLog -> stringResource(
             if (content.media == "video") R.string.im_calllog_video else R.string.im_calllog_voice

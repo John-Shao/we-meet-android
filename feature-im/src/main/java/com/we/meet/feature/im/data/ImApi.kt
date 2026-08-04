@@ -1,8 +1,11 @@
 package com.we.meet.feature.im.data
 
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 /**
@@ -121,4 +124,36 @@ internal interface ImApi {
         @Query("limit") limit: Int? = null,
         @Query("before_mid") beforeMid: Long? = null,
     ): ImSearchResponse
+
+    // ---- 群机器人(对标飞书)。REST 资源而非 action 风格:双端都要标准 CRUD。
+    //      建/改/删/看凭据都是群主 only,后端判定;列表全体成员可读。 ----
+
+    /** 本群机器人列表。非群主拿到的凭据字段是 null。 */
+    @GET("api/v1.0/im/bots/")
+    suspend fun listBots(@Query("cid") cid: String): List<ImBotDto>
+
+    /** 建自定义机器人:`{cid, name, description, avatar_color_index}`。 */
+    @POST("api/v1.0/im/bots/")
+    suspend fun createBot(
+        @Body body: Map<String, @JvmSuppressWildcards Any>,
+    ): ImBotDto
+
+    /** 改名/改描述/改头像色/开关三道闸门/停用。只发要改的键。 */
+    @PATCH("api/v1.0/im/bots/{id}/")
+    suspend fun updateBot(
+        @Path("id") id: String,
+        @Body body: Map<String, @JvmSuppressWildcards Any>,
+    ): ImBotDto
+
+    /** 移除机器人。内置助手返回 400 —— 它们只能停用。 */
+    @DELETE("api/v1.0/im/bots/{id}/")
+    suspend fun deleteBot(@Path("id") id: String)
+
+    /** 按需取签名密钥(列表刻意不带),后端记一条审计。 */
+    @GET("api/v1.0/im/bots/{id}/secret/")
+    suspend fun fetchBotSecret(@Path("id") id: String): ImBotSecretResponse
+
+    /** 重置签名密钥,旧密钥立即失效。 */
+    @POST("api/v1.0/im/bots/{id}/reset-secret/")
+    suspend fun resetBotSecret(@Path("id") id: String): ImBotSecretResponse
 }

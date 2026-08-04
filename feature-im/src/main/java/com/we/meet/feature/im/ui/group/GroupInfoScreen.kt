@@ -1,5 +1,8 @@
 package com.we.meet.feature.im.ui.group
 
+import com.we.meet.feature.im.ui.common.ImActionRow
+import com.we.meet.feature.im.ui.common.ImNavRow
+import com.we.meet.feature.im.ui.common.ImSwitchRow
 import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -65,6 +68,8 @@ fun GroupInfoScreen(
     /** P8 群应用「群成员日历」:携带已解析出 we-meet id 的成员(未解析静默过滤,
      * 忙闲页会对 freebusy 缺席列另行置灰)。null 隐藏宫格。 */
     onOpenGroupCalendar: ((memberUserIds: List<String>) -> Unit)? = null,
+    /** 群机器人二级页(对标飞书)。null 隐藏入口。 */
+    onOpenBots: ((cid: String) -> Unit)? = null,
 ) {
     val vm: GroupInfoViewModel =
         viewModel(key = "group-$cid", factory = remember(deps, cid) { GroupInfoViewModel.Factory(deps, cid) })
@@ -262,18 +267,29 @@ fun GroupInfoScreen(
                         }
                         HorizontalDivider()
                     }
+                    // 群机器人:单独一行而不是塞进上面的宫格 —— 宫格里的「群成员
+                    // 日历」是打开一个只读视图,机器人是管理入口(增删改配置、看
+                    // 密钥),飞书自己也是独立一行;而且这一行以后要挂计数和配置
+                    // 异常红点,宫格格子里放不下。
+                    if (onOpenBots != null) {
+                        ImNavRow(
+                            label = stringResource(R.string.im_bots_entry),
+                            onClick = { onOpenBots(cid) },
+                        )
+                        HorizontalDivider()
+                    }
                     // P10: private per-conversation toggles (pin / mute / mute @all).
-                    SwitchRow(
+                    ImSwitchRow(
                         label = stringResource(R.string.im_menu_pin),
                         checked = ui.pinned,
                         onToggle = { vm.togglePin() },
                     )
-                    SwitchRow(
+                    ImSwitchRow(
                         label = stringResource(R.string.im_menu_mute),
                         checked = ui.muted,
                         onToggle = { vm.toggleMute() },
                     )
-                    SwitchRow(
+                    ImSwitchRow(
                         label = stringResource(R.string.im_menu_mute_at_all),
                         checked = ui.muteAtAll,
                         onToggle = { vm.toggleMuteAtAll() },
@@ -370,13 +386,13 @@ fun GroupInfoScreen(
                 item {
                     Spacer(Modifier.height(Dimens.SpaceM))
                     HorizontalDivider()
-                    ActionRow(stringResource(R.string.im_group_clear_history)) { confirmClear = true }
+                    ImActionRow(stringResource(R.string.im_group_clear_history)) { confirmClear = true }
                     if (ui.isOwner && ui.members.any { !it.isSelf }) {
-                        ActionRow(stringResource(R.string.im_group_transfer_owner)) {
+                        ImActionRow(stringResource(R.string.im_group_transfer_owner)) {
                             showTransferPicker = true
                         }
                     }
-                    ActionRow(
+                    ImActionRow(
                         text = stringResource(R.string.im_menu_leave),
                         destructive = true,
                     ) { confirmLeave = true }
@@ -592,37 +608,7 @@ fun GroupInfoScreen(
     }
 }
 
-@Composable
-private fun ActionRow(text: String, destructive: Boolean = false, onClick: () -> Unit) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyLarge,
-        color = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
-    )
-}
 
-/** Toggle row with label + switch — mirrors the Web GroupSettingsPanel toggles (P10). */
-@Composable
-private fun SwitchRow(label: String, checked: Boolean, onToggle: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onToggle)
-            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
-        )
-        Switch(checked = checked, onCheckedChange = { onToggle() })
-    }
-}
 
 /** 成员数超过这个值才出搜索框 —— 少于一屏的名单上顶个输入框纯属噪音。与 Web
  *  GroupInfoPanel 的 MEMBER_SEARCH_THRESHOLD 取同一个值,免得两端一个有一个没有。 */

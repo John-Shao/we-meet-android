@@ -217,6 +217,22 @@ val GroupAvatarPalette = listOf(
     Color(0xFFEA580C), Color(0xFF16A34A), Color(0xFF0891B2),
 )
 
+/**
+ * 群机器人预设头像的 8 档底色。
+ *
+ * ⚠️ 存进后端的是**下标**,所以改顺序等于把所有已存在机器人的头像换色。
+ * 三端各存一份同样的值:后端 `core/services/im_bots.BOT_AVATAR_PALETTE`、
+ * Web `features/im/components/bots/botAvatar.ts` 的 `BOT_COLORS`。
+ * 改色必须三端同步。
+ *
+ * 与 [GroupAvatarPalette] 分开:机器人的底色是创建者**明确挑的**,不是按名字
+ * 哈希兜底的 —— 挑了蓝色渲染成绿色是 bug,不是降级。深浅共用一套。
+ */
+val BotAvatarPalette = listOf(
+    Color(0xFF3370FF), Color(0xFF0891B2), Color(0xFF16A34A), Color(0xFF65A30D),
+    Color(0xFFD97706), Color(0xFFEA580C), Color(0xFF7C3AED), Color(0xFFDB2777),
+)
+
 /** 「@我」提及在消息正文里的高亮底与文字 —— 让人一眼扫到自己被点名。 */
 val ImMentionSelfBg = Color(0xFFFDE68A)
 val ImMentionSelfFg = Color(0xFF92400E)

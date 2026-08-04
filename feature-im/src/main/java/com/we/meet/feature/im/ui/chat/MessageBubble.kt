@@ -80,6 +80,14 @@ fun MessageBubble(
     isGroup: Boolean,
     senderName: String?,
     senderAvatarUrl: String?,
+    /**
+     * 发送者是群机器人时的一行说明(对标飞书:名字后跟「机器人」标签 + 描述)。
+     * null = 真人。刻意是独立参数而不是拼进 senderName —— 名字字符串会被写进
+     * 引用条和合并转发快照发到服务端,加了后缀就永久冻在历史里。
+     */
+    senderBotDescription: String? = null,
+    /** 发送者是群机器人。与 [senderBotDescription] 分开:描述可以为空。 */
+    senderIsBot: Boolean = false,
     receiptLabel: String?,
     onReceiptClick: (() -> Unit)? = null,
     onImageClick: (objectKey: String) -> Unit,
@@ -193,9 +201,20 @@ fun MessageBubble(
         ) {
             if (!isOwn && isGroup && !senderName.isNullOrBlank()) {
                 Text(
-                    text = senderName,
+                    text = if (senderIsBot) {
+                        val chip = stringResource(R.string.im_bots_chip)
+                        if (senderBotDescription.isNullOrBlank()) {
+                            "$senderName · $chip"
+                        } else {
+                            "$senderName · $chip | $senderBotDescription"
+                        }
+                    } else {
+                        senderName
+                    },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(bottom = Dimens.SpaceXxs),
                 )
             }
@@ -238,6 +257,12 @@ fun MessageBubble(
                 is MessageContent.MeetingCard -> MeetingCardBubble(
                     content, onLongPress,
                 ) { onJoinMeeting?.invoke(content.slug) }
+                is MessageContent.RichText -> RichTextBubble(
+                    body = content.body,
+                    isOwn = isOwn,
+                    selfMentionNames = selfMentionNames,
+                    onLongPress = onLongPress,
+                )
                 is MessageContent.Unsupported -> UnsupportedBubble(isOwn)
                 // Control/system rows never reach here (filtered / early-returned).
                 is MessageContent.Recall, is MessageContent.Reaction,

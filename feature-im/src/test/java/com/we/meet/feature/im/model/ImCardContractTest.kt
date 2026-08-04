@@ -140,6 +140,7 @@ class ImCardContractTest {
             ),
             "doc-card" to listOf("doc_card"),
             "meeting-card" to listOf("meeting_card_ongoing", "meeting_card_scheduled"),
+            "rich-text" to listOf("rich_text_simple", "rich_text_full"),
         )
         // 同时兜住「有人往目录里加了 fixture 但忘了在这里登记」——漏登记的话
         // 上面每条断言都还是绿的,这个测试才会红。
@@ -160,5 +161,42 @@ class ImCardContractTest {
                 )
             }
         }
+    }
+
+    // ---- rich-text (群机器人富文本) ----
+
+    @Test
+    fun `rich text parses a single paragraph`() {
+        val content = parse("rich-text", "rich_text_simple")
+        assertTrue(content is MessageContent.RichText)
+        val body = (content as MessageContent.RichText).body
+        assertEquals("部署完成", body.title)
+        assertEquals(1, body.paragraphs.size)
+        assertEquals(
+            RichTextTag.Text("生产环境已更新到 v1.2.0"),
+            body.paragraphs[0][0],
+        )
+    }
+
+    @Test
+    fun `rich text parses every tag a bot can send`() {
+        val body = (parse("rich-text", "rich_text_full") as MessageContent.RichText).body
+        assertEquals("构建失败", body.title)
+        assertEquals(
+            RichTextTag.Link("查看日志", "https://ci.example.com/runs/1"),
+            body.paragraphs[0][1],
+        )
+        assertEquals(RichTextTag.At("all", "所有人"), body.paragraphs[1][0])
+        // Images degrade server-side; the client only ever sees the placeholder.
+        assertEquals(RichTextTag.Text("[图片]"), body.paragraphs[2][0])
+    }
+
+    @Test
+    fun `rich text carries the server derived plain projection`() {
+        val body = (parse("rich-text", "rich_text_full") as MessageContent.RichText).body
+        // Never rendered — it backs the conversation preview, full-text search
+        // and the substring-based "@我" check.
+        assertTrue("plain should mention @所有人", body.plain.contains("@所有人"))
+        assertTrue(RichTextParser.flatten(body).contains("构建失败"))
     }
 }

@@ -156,6 +156,8 @@ data class ImColors(
     val mentionSelfFg: Color,
     /** 群头像无图时的底色池,按群名 hash 取。 */
     val groupAvatarPalette: List<Color>,
+    /** 群机器人预设头像底色;存的是下标,顺序不可改。 */
+    val botAvatarPalette: List<Color>,
 )
 
 private val SharedImColors = ImColors(
@@ -176,6 +178,7 @@ private val SharedImColors = ImColors(
     mentionSelfBg = ImMentionSelfBg,
     mentionSelfFg = ImMentionSelfFg,
     groupAvatarPalette = GroupAvatarPalette,
+    botAvatarPalette = BotAvatarPalette,
 )
 
 /**

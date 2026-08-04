@@ -126,6 +126,12 @@ sealed interface MessageContent {
         val roomId: String = "",
     ) : MessageContent
 
+    /**
+     * 群机器人经 webhook 发来的富文本 — content_type `rich-text`。协议与解析
+     * 都在 [RichText.kt];这里只是 sealed 分支,让 MessageBubble 的 when 穷尽。
+     */
+    data class RichText(val body: RichTextBody) : MessageContent
+
     /** Anything this client version doesn't render natively yet. */
     data class Unsupported(val contentType: String, val body: String) : MessageContent
 }
@@ -221,6 +227,9 @@ object MessageContentParser {
                 url = it.optString("url"),
             )
         }
+        "rich-text" -> RichTextParser.parse(body)
+            ?.let { MessageContent.RichText(it) }
+            ?: MessageContent.Unsupported(contentType, body)
         "meeting-card" -> parseJson(contentType, body) {
             MessageContent.MeetingCard(
                 // slug 是入会关键,缺失=坏卡 → getString 抛异常落 Unsupported 兜底。

@@ -22,6 +22,7 @@ import com.we.meet.feature.im.data.GroupTile
 import com.we.meet.feature.im.data.ImUserInfo
 import com.we.meet.feature.im.model.MessageContent
 import com.we.meet.feature.im.model.MessageContentParser
+import com.we.meet.feature.im.model.RichTextParser
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -407,6 +408,9 @@ class ChatViewModel internal constructor(
             is MessageContent.File -> "[文件] ${c.name}" // i18n-exempt
             is MessageContent.Voice -> "[语音]" // i18n-exempt
             is MessageContent.Merged -> "[聊天记录]" // i18n-exempt
+            // ⚠️ 这两个 when 带 else,编译器不会提醒漏了新类型。少了这一支,
+            // 引用/合并转发一条机器人富文本会得到**空快照**。
+            is MessageContent.RichText -> RichTextParser.flatten(c.body)
             else -> ""
         }
 
@@ -731,6 +735,9 @@ class ChatViewModel internal constructor(
             is MessageContent.File -> "[文件] ${c.name}" // i18n-exempt
             is MessageContent.Voice -> "[语音]" // i18n-exempt
             is MessageContent.Merged -> "[聊天记录]" // i18n-exempt
+            // ⚠️ 这两个 when 带 else,编译器不会提醒漏了新类型。少了这一支,
+            // 引用/合并转发一条机器人富文本会得到**空快照**。
+            is MessageContent.RichText -> RichTextParser.flatten(c.body).take(SNIPPET_MAX)
             else -> ""
         }
 
@@ -762,6 +769,18 @@ class ChatViewModel internal constructor(
      * 消息体发到服务端**,一旦带上后缀就永久冻在历史里,人复职了也改不回来。
      * 所以标记与名字分开走,只在纯渲染处合成。
      */
+    /**
+     * 该 uid 是群机器人(后端在 `/im/users/resolve/` 里额外解析了机器人表)。
+     * 与 [isDeparted] 同一条道理:标记和名字分开走,只在纯渲染处合成 —— 名字
+     * 字符串会被写进引用条和合并转发快照发到服务端。
+     */
+    fun isBot(uid: String): Boolean =
+        session.userDirectory.get(uid)?.isBot == true
+
+    /** 机器人的一行说明,挂在名字后面。真人返回 null。 */
+    fun botDescription(uid: String): String? =
+        session.userDirectory.get(uid)?.description?.takeIf { it.isNotBlank() }
+
     fun isDeparted(uid: String): Boolean =
         session.userDirectory.get(uid)?.left == true
 

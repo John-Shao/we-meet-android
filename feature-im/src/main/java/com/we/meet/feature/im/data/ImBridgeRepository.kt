@@ -89,4 +89,53 @@ internal class ImBridgeRepository(private val api: ImApi) {
         limit: Int? = null,
         beforeMid: Long? = null,
     ): ImSearchResponse = api.searchMessages(q, cid, limit, beforeMid)
+
+    // ---- 群机器人。类型化门面:后端若改成 action 风格,只动 ImApi,VM/UI 不变。 ----
+
+    suspend fun listBots(cid: String): List<ImBotDto> = api.listBots(cid)
+
+    suspend fun createBot(
+        cid: String,
+        name: String,
+        description: String,
+        avatarColorIndex: Int,
+    ): ImBotDto = api.createBot(
+        mapOf(
+            "cid" to cid,
+            "name" to name,
+            "description" to description,
+            "avatar_color_index" to avatarColorIndex,
+        ),
+    )
+
+    /** 只发要改的键 —— 后端按 key 是否出现决定改不改。 */
+    suspend fun updateBot(
+        id: String,
+        name: String? = null,
+        description: String? = null,
+        avatarColorIndex: Int? = null,
+        signVerifyEnabled: Boolean? = null,
+        keywords: List<String>? = null,
+        ipAllowlist: List<String>? = null,
+        isActive: Boolean? = null,
+    ): ImBotDto = api.updateBot(
+        id,
+        buildMap {
+            name?.let { put("name", it) }
+            description?.let { put("description", it) }
+            avatarColorIndex?.let { put("avatar_color_index", it) }
+            signVerifyEnabled?.let { put("sign_verify_enabled", it) }
+            keywords?.let { put("keywords", it) }
+            ipAllowlist?.let { put("ip_allowlist", it) }
+            isActive?.let { put("is_active", it) }
+        },
+    )
+
+    suspend fun deleteBot(id: String) {
+        api.deleteBot(id)
+    }
+
+    suspend fun botSecret(id: String): String = api.fetchBotSecret(id).secret
+
+    suspend fun resetBotSecret(id: String): String = api.resetBotSecret(id).secret
 }

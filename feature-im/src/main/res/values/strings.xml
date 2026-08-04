@@ -302,4 +302,59 @@
     <string name="im_special_alert_marker">Special alerts on</string>
     <string name="im_fmt_month_day">MMM d</string>
     <string name="im_fmt_month_day_time">MMM d, HH:mm</string>
+    <string name="im_preview_rich_text">[Rich text]</string>
+    <!-- 群机器人 (group bots) -->
+    <string name="im_bots_entry">Group bots</string>
+    <string name="im_bots_title">Group bots</string>
+    <string name="im_bots_add">Add bot</string>
+    <string name="im_bots_add_title">Add a bot</string>
+    <string name="im_bots_help">How it works</string>
+    <string name="im_bots_help_title">Using group bots</string>
+    <string name="im_bots_empty">No bots in this group yet</string>
+    <string name="im_bots_chip">Bot</string>
+    <string name="im_bots_disabled_chip">Disabled</string>
+    <string name="im_bots_gone">This bot no longer exists</string>
+    <string name="im_bots_edit">Edit</string>
+    <string name="im_bots_enabled">Active in this group</string>
+    <string name="im_bots_remove">Remove bot</string>
+    <string name="im_bots_remove_confirm">Remove “%1$s” from this group? Its webhook URL stops working immediately.</string>
+    <string name="im_bots_owner_only">Only the group owner can add bots or change webhook settings.</string>
+    <string name="im_bots_builtin_hint">Built-in assistants ship with the product and cannot be removed; turning one off stops its notifications in this group.</string>
+    <string name="im_bots_catalog_custom">Custom bot</string>
+    <string name="im_bots_catalog_custom_desc">Push messages from your own service into this group via webhook</string>
+    <string name="im_bots_form_title">Custom bot</string>
+    <string name="im_bots_form_avatar">Bot avatar</string>
+    <string name="im_bots_form_color">Preset colour %1$d</string>
+    <string name="im_bots_form_name">Bot name</string>
+    <string name="im_bots_form_name_hint">Enter a name</string>
+    <string name="im_bots_form_desc">Description</string>
+    <string name="im_bots_form_desc_hint">One line about what this bot does</string>
+    <string name="im_bots_form_submit">Add</string>
+    <string name="im_bots_form_save">Save</string>
+    <string name="im_bots_counter">%1$d/%2$d</string>
+    <string name="im_bots_webhook_title">Webhook URL</string>
+    <string name="im_bots_webhook_copy">Copy</string>
+    <string name="im_bots_webhook_copied">Copied</string>
+    <string name="im_bots_webhook_hint">POST to this URL to send into this group. The URL is a credential — do not share it.</string>
+    <string name="im_bots_security_title">Security</string>
+    <string name="im_bots_security_hint">Turn on at least one — otherwise anyone with the URL can post here.</string>
+    <string name="im_bots_security_sign">Verify signature</string>
+    <string name="im_bots_security_secret">Secret</string>
+    <string name="im_bots_security_show">Show secret</string>
+    <string name="im_bots_security_hide">Hide secret</string>
+    <string name="im_bots_security_reset">Rotate secret</string>
+    <string name="im_bots_security_reset_confirm">Rotating invalidates the old secret immediately; services still using it will fail. Continue?</string>
+    <string name="im_bots_security_keywords">Keywords</string>
+    <string name="im_bots_security_keyword_hint">Type and press Enter; tap a keyword to remove it</string>
+    <string name="im_bots_security_keywords_hint">A message must contain at least one keyword to be delivered. Leave empty for no restriction.</string>
+    <string name="im_bots_security_ip">IP allowlist</string>
+    <string name="im_bots_security_ip_hint">One IP or CIDR per line. Leave empty for no restriction.</string>
+    <string name="im_bots_security_save">Save</string>
+    <string name="im_bots_help_body">POST JSON to the webhook URL of a bot and the message appears in this group under that name. The request format matches Feishu custom bots, so an existing script only needs a new URL.
+
+Plain text body: {\"msg_type\":\"text\",\"content\":{\"text\":\"Build finished\"}}
+
+Signature (optional): sign = base64(hmac_sha256(key = timestamp + newline + secret, data = empty)). Both timestamp and sign go in the JSON body, not in headers.
+
+Limits: 100 requests per minute and 5 per second per bot, bodies up to 20 KB. Send X-Request-Id on retries so the same id only posts once.</string>
 </resources>

@@ -47,6 +47,10 @@ import com.we.meet.push.CallNotifier
 import com.we.meet.util.dialNumber
 import com.we.meet.feature.im.ui.chat.ChatScreen
 import com.we.meet.feature.im.ui.chat.DirectChatSettingsScreen
+import com.we.meet.feature.im.ui.bot.BotDetailScreen
+import com.we.meet.feature.im.ui.bot.BotFormScreen
+import com.we.meet.feature.im.ui.bot.BotTypePickerScreen
+import com.we.meet.feature.im.ui.bot.GroupBotsScreen
 import com.we.meet.feature.im.ui.group.GroupInfoScreen
 import com.we.meet.feature.im.ui.group.MyGroupsScreen
 import com.we.meet.feature.im.ui.newchat.AddMembersScreen
@@ -121,6 +125,18 @@ object Routes {
     const val IM_ADD_MEMBERS = "$IM_ADD_MEMBERS_BASE/{cid}"
     private const val IM_DIRECT_SETTINGS_BASE = "im_direct_settings"
     const val IM_DIRECT_SETTINGS = "$IM_DIRECT_SETTINGS_BASE/{cid}"
+    // 群机器人(对标飞书):列表 → 选类型 → 表单 → 详情。四个独立 route ——
+    // 返回键语义由 Navigation 免费给(第一步回列表、第二步回选择页),而创建
+    // 成功要「一次 pop 掉表单+选择两层再 push 详情」,那正是 popUpTo 的本职。
+    private const val IM_GROUP_BOTS_BASE = "im_group_bots"
+    const val IM_GROUP_BOTS = "$IM_GROUP_BOTS_BASE/{cid}"
+    private const val IM_BOT_PICK_BASE = "im_bot_pick"
+    const val IM_BOT_PICK = "$IM_BOT_PICK_BASE/{cid}"
+    /** botId 为空 = 新建;非空 = 编辑同一张表单。 */
+    private const val IM_BOT_FORM_BASE = "im_bot_form"
+    const val IM_BOT_FORM = "$IM_BOT_FORM_BASE/{cid}?botId={botId}"
+    private const val IM_BOT_DETAIL_BASE = "im_bot_detail"
+    const val IM_BOT_DETAIL = "$IM_BOT_DETAIL_BASE/{cid}/{botId}"
     /** P1 一对一通话 — full-screen call UI (outgoing/incoming/connecting). */
     const val IM_CALL = "im_call"
 
@@ -167,6 +183,25 @@ object Routes {
 
     fun imDirectSettings(cid: String): String =
         "$IM_DIRECT_SETTINGS_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
+
+    fun imGroupBots(cid: String): String =
+        "$IM_GROUP_BOTS_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
+
+    fun imBotPick(cid: String): String =
+        "$IM_BOT_PICK_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
+
+    fun imBotForm(cid: String, botId: String? = null): String {
+        val base = "$IM_BOT_FORM_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
+        return if (botId.isNullOrBlank()) {
+            base
+        } else {
+            "$base?botId=${URLEncoder.encode(botId, StandardCharsets.UTF_8.name())}"
+        }
+    }
+
+    fun imBotDetail(cid: String, botId: String): String =
+        "$IM_BOT_DETAIL_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}" +
+            "/${URLEncoder.encode(botId, StandardCharsets.UTF_8.name())}"
 
     fun memberDetail(userId: String): String =
         "$MEMBER_DETAIL_BASE/${URLEncoder.encode(userId, StandardCharsets.UTF_8.name())}"
@@ -592,12 +627,90 @@ fun AppNav() {
                     navController.popBackStack(Routes.HOME, inclusive = false)
                 },
                 onAddMembers = { navController.navigate(Routes.imAddMembers(it)) },
+                onOpenBots = { navController.navigate(Routes.imGroupBots(it)) },
                 // P8 群应用「群成员日历」→ 全员忙闲对比;srcCid 供创建后回发卡片。
                 onOpenGroupCalendar = { memberIds ->
                     navController.navigate(
                         Routes.freeBusy(memberIds, groupCalendarTitle, cid),
                     )
                 },
+            )
+        }
+
+        composable(
+            route = Routes.IM_GROUP_BOTS,
+            arguments = listOf(navArgument("cid") { type = NavType.StringType }),
+        ) { entry ->
+            val cid = Routes.decode(entry.arguments?.getString("cid").orEmpty())
+            GroupBotsScreen(
+                deps = app,
+                cid = cid,
+                onBack = rememberOnceOnly(safePop),
+                onAddBot = { navController.navigate(Routes.imBotPick(cid)) },
+                onOpenBot = { botId ->
+                    navController.navigate(Routes.imBotDetail(cid, botId))
+                },
+            )
+        }
+
+        composable(
+            route = Routes.IM_BOT_PICK,
+            arguments = listOf(navArgument("cid") { type = NavType.StringType }),
+        ) { entry ->
+            val cid = Routes.decode(entry.arguments?.getString("cid").orEmpty())
+            BotTypePickerScreen(
+                onBack = rememberOnceOnly(safePop),
+                onPickCustom = { navController.navigate(Routes.imBotForm(cid)) },
+            )
+        }
+
+        composable(
+            route = Routes.IM_BOT_FORM,
+            arguments = listOf(
+                navArgument("cid") { type = NavType.StringType },
+                navArgument("botId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
+        ) { entry ->
+            val cid = Routes.decode(entry.arguments?.getString("cid").orEmpty())
+            val botId = entry.arguments?.getString("botId")
+                ?.takeIf { it.isNotBlank() }
+                ?.let { Routes.decode(it) }
+            BotFormScreen(
+                deps = app,
+                cid = cid,
+                botId = botId,
+                onBack = rememberOnceOnly(safePop),
+                onCreated = { newId ->
+                    // 一次 pop 掉表单 + 选类型两层,再落到详情页(webhook 地址在
+                    // 那里)—— 返回键不该把人送回刚填完的表单。
+                    navController.navigate(Routes.imBotDetail(cid, newId)) {
+                        popUpTo(Routes.IM_GROUP_BOTS) { inclusive = false }
+                    }
+                },
+                onSaved = safePop,
+            )
+        }
+
+        composable(
+            route = Routes.IM_BOT_DETAIL,
+            arguments = listOf(
+                navArgument("cid") { type = NavType.StringType },
+                navArgument("botId") { type = NavType.StringType },
+            ),
+        ) { entry ->
+            val cid = Routes.decode(entry.arguments?.getString("cid").orEmpty())
+            val botId = Routes.decode(entry.arguments?.getString("botId").orEmpty())
+            BotDetailScreen(
+                deps = app,
+                cid = cid,
+                botId = botId,
+                onBack = rememberOnceOnly(safePop),
+                onEdit = { navController.navigate(Routes.imBotForm(cid, botId)) },
+                onRemoved = safePop,
             )
         }
 
