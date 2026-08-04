@@ -82,6 +82,36 @@ internal class DocsWebViewClient : WebViewClient() {
     var onShareDoc: ((docId: String, title: String, url: String) -> Unit)? = null
 
     /**
+     * docs 挂载后宣告自己支持哪些内嵌协议(`wemeet-embed-hello`)。宿主收到后回一条
+     * `wemeet-host-hello` 宣告自己有什么 —— docs 据此才决定要不要收敛自带入口。
+     *
+     * **能力驱动而非版本驱动**:三端发布速度差两个数量级,按版本猜对方支持什么,
+     * 迟早撞上「docs 把搜索收了、宿主却还没提供替代」的死角。
+     */
+    var onEmbedHello: (() -> Unit)? = null
+
+    /** docs 里点搜索 / 按 Ctrl+K:它的自带搜索已收敛,请求宿主打开全局搜索。 */
+    var onOpenSearch: (() -> Unit)? = null
+
+    /** docs 左右面板的开合状态,驱动返回键的优先级(见 [DocsTabScreen])。 */
+    var onPanelState: ((leftOpen: Boolean, rightOpen: Boolean) -> Unit)? = null
+
+    /**
+     * docs 左栏(移动端是抽屉)是否展开。
+     *
+     * 同 [isLoading]:状态记在 client 上而不只发回调。消息可能在用户还没点进云文档
+     * tab 时就到了(WebView 是预加载的),DocsTabScreen 组合时要能拿到当前值。
+     * docs 老镜像不发 panel-state → 恒为 false → 返回键行为与改动前一致。
+     */
+    var leftPanelOpen: Boolean = false
+        private set
+
+    internal fun updatePanelState(leftOpen: Boolean, rightOpen: Boolean) {
+        leftPanelOpen = leftOpen
+        onPanelState?.invoke(leftOpen, rightOpen)
+    }
+
+    /**
      * 加载态同时记在 client 上,不只发回调:WebView 在 MainTabScreen 挂载时就开始
      * 预加载,若用户在加载**完成后**才首次点进云文档 tab,onPageFinished 早已错过,
      * DocsTabScreen 里 `loading` 的初值 true 永远翻不过来——转圈永久盖在已渲染好的
@@ -191,22 +221,59 @@ private class DocsHostBridge(
     fun postEvent(json: String) {
         runCatching {
             val o = JSONObject(json)
-            if (o.optString("type") != "wemeet-share-doc") return
-            val docId = o.optString("docId")
-            val title = o.optString("title")
-            val url = o.optString("url")
-            if (docId.isBlank() || url.isBlank()) return
+            // ⚠️ 未知 type 一律静默忽略 —— 新版 docs 会发老 App 不认识的消息,
+            // 这里必须当没看见,否则每加一条协议就得先发 App。
+            val type = o.optString("type")
+            if (type !in HANDLED_EVENTS) return
             // webView.url 必须在主线程读(WebView 非线程安全);顺带在主线程做 host 校验。
+            // host 校验对**所有** type 生效,不只分享那条。
             mainHandler.post {
                 val host = Uri.parse(webView.url).host?.lowercase(Locale.ROOT)
                 if (host == null || host != DOCS_HOST) {
                     Log.w(TAG, "[bridge] postEvent from non-docs page dropped: $host")
                     return@post
                 }
-                client.onShareDoc?.invoke(docId, title, url)
+                when (type) {
+                    "wemeet-share-doc" -> {
+                        val docId = o.optString("docId")
+                        val title = o.optString("title")
+                        val url = o.optString("url")
+                        if (docId.isBlank() || url.isBlank()) return@post
+                        client.onShareDoc?.invoke(docId, title, url)
+                    }
+                    "wemeet-embed-hello" -> client.onEmbedHello?.invoke()
+                    "wemeet-open-search" -> client.onOpenSearch?.invoke()
+                    "wemeet-panel-state" -> client.updatePanelState(
+                        o.optBoolean("leftPanelOpen"),
+                        o.optBoolean("rightPanelOpen"),
+                    )
+                }
             }
         }.onFailure { Log.w(TAG, "[bridge] malformed postEvent payload", it) }
     }
+
+    private companion object {
+        val HANDLED_EVENTS = setOf(
+            "wemeet-share-doc",
+            "wemeet-embed-hello",
+            "wemeet-open-search",
+            "wemeet-panel-state",
+        )
+    }
+}
+
+/**
+ * 向 WebView 里的 docs 发一条消息。
+ *
+ * ⚠️ payload 一律用 [JSONObject] 拼再整体注入,**绝不**把变量插进 JS 源码字符串 ——
+ * 那等于把任意值当代码执行。必须在主线程调用(WebView 非线程安全)。
+ *
+ * ⚠️ 反方向(docs→原生)永远只走 `WeMeetHost.postEvent(String)` 这一个方法,
+ * **不要给 WeMeetHost 加新方法**:新版 docs 若调一个老 App 上不存在的方法,是
+ * TypeError → 白屏级故障。扩展一律加 type。
+ */
+internal fun postToDocs(webView: WebView, payload: JSONObject) {
+    webView.evaluateJavascript("window.postMessage($payload,'*')", null)
 }
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -304,19 +371,34 @@ internal suspend fun docsEntryUrl(context: Context, next: String, fallback: Stri
  * Retrofit 的 suspend 调用会回到同一个调度器,中间不切线程。
  */
 suspend fun loadDocsTabEntry(context: Context, webView: WebView) {
-    val next = "/?embed=1&lang=${Uri.encode(appLanguageTag())}"
+    // chrome=full:显式声明**不是**阅读态。docs 侧会据此清掉 sessionStorage 里的
+    // 阅读态标记 —— 不这么做就得赌两个 WebView 实例的 sessionStorage 互相隔离,
+    // 赌输的话打开一次文档查看器,常驻的云文档 tab 就永久丢了左栏开关。
+    val next = "/?embed=1&chrome=full&lang=${Uri.encode(appLanguageTag())}"
     webView.loadUrl(docsEntryUrl(context, next = next, fallback = docsUrl()))
 }
 
 /**
  * 文档深链(搜索命中 / 聊天里的 doc-card)查看器的进站加载:同样票据优先,拿不到
  * 就直载深链本身 —— 那时靠云文档 tab 早前在 CookieManager 里留下的 docs 会话。
+ *
+ * 带 `chrome=none` 让 docs 进「阅读态」:这一屏已经有 App 自己的顶栏
+ * ([DocsViewerScreen] 的 WeMeetTopBar),docs 再给一个左栏抽屉开关就是第三层导航壳。
+ * docs 侧在模块求值时就把它落进 sessionStorage(见 useEmbedShell),所以活得过
+ * 票据 302 与站内跳转;文档自身的分享 / 工具箱 / 右栏一个不少。
  */
 suspend fun loadDocsDeepLinkEntry(context: Context, webView: WebView, url: String) {
-    val next = docsRelativePathOrNull(url)
+    val next = docsRelativePathOrNull(url)?.let(::withReadingMode)
     webView.loadUrl(
         if (next == null) url else docsEntryUrl(context, next = next, fallback = url),
     )
+}
+
+/** 给站内相对路径追加 `chrome=none`(已有则不重复加)。 */
+private fun withReadingMode(path: String): String = when {
+    path.contains("chrome=none") -> path
+    path.contains('?') -> "$path&chrome=none"
+    else -> "$path?chrome=none"
 }
 
 /**
@@ -385,6 +467,7 @@ fun DocsTabScreen(webView: WebView) {
     var loading by remember { mutableStateOf(docsClient?.isLoading ?: true) }
     var everLoaded by remember { mutableStateOf(docsClient?.everLoaded ?: false) }
     var error by remember { mutableStateOf(false) }
+    var leftPanelOpen by remember { mutableStateOf(docsClient?.leftPanelOpen ?: false) }
 
     DisposableEffect(webView) {
         val client = docsClient
@@ -394,14 +477,36 @@ fun DocsTabScreen(webView: WebView) {
             if (l) error = false else everLoaded = true
         }
         client?.onMainFrameError = { error = true; loading = false }
+        client?.onPanelState = { leftOpen, _ -> leftPanelOpen = leftOpen }
         onDispose {
             client?.onHistoryChanged = null
             client?.onLoadingChanged = null
             client?.onMainFrameError = null
+            client?.onPanelState = null
         }
     }
 
-    BackHandler(enabled = canGoBack) { webView.goBack() }
+    /**
+     * 返回键三级优先级:先关抽屉 → 再退页内历史 → 都没有才放行(切走 tab)。
+     *
+     * 原本只有 `enabled = canGoBack`:docs 的左栏在手机上是覆盖全屏的抽屉,抽屉开着
+     * 且没有页内历史时按返回会**直接切走 tab,抽屉还开着**,回来一看还是那个抽屉 ——
+     * 系统返回键在这里的语义和用户预期正好相反。
+     *
+     * 抽屉状态由 docs 经 wemeet-panel-state 上报;老镜像不发 → 恒 false → 退回原来的
+     * 两级逻辑,不需要两端同时上线。
+     */
+    BackHandler(enabled = leftPanelOpen || canGoBack) {
+        when {
+            leftPanelOpen -> postToDocs(
+                webView,
+                JSONObject()
+                    .put("type", "wemeet-ui-command")
+                    .put("command", "close-left-panel"),
+            )
+            canGoBack -> webView.goBack()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(

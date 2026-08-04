@@ -74,11 +74,13 @@ import com.we.meet.ui.contacts.ContactsTabScreen
 import com.we.meet.ui.docs.DocsTabScreen
 import com.we.meet.ui.docs.createDocsWebView
 import com.we.meet.ui.docs.loadDocsTabEntry
+import com.we.meet.ui.docs.postToDocs
 import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.ui.home.HomeScreen
 import com.we.meet.ui.docs.DocsWebViewClient
 import com.we.meet.ui.profile.ProfileScreen
 import kotlinx.coroutines.launch
+import org.json.JSONArray
 import org.json.JSONObject
 
 /**
@@ -162,7 +164,18 @@ fun MainTabScreen(
         client?.onShareDoc = { docId, title, url ->
             shareDocRequest = ShareDocRequest(docId, title, url)
         }
-        onDispose { client?.onShareDoc = null }
+        // 能力握手:docs 挂载后发 wemeet-embed-hello,这里回一条宣告 App 能提供什么。
+        // 挂在这一层而不是 DocsTabScreen —— WebView 在 MainTabScreen 就开始预加载,
+        // 用户可能压根还没点进云文档 tab,握手早已发生。
+        client?.onEmbedHello = { replyDocsHostHello(docsWebView) }
+        // docs 里点搜索 / 按 Ctrl+K:它的自带搜索已收敛,转到 App 自己的全局搜索
+        // (那里本来就含文档源,命中进 DocsViewerScreen)。
+        client?.onOpenSearch = { onOpenSearch() }
+        onDispose {
+            client?.onShareDoc = null
+            client?.onEmbedHello = null
+            client?.onOpenSearch = null
+        }
     }
     // 运行时切换深浅:UA 是创建时固化的,靠注入 postMessage 让常驻 docs 立即跟随
     // (docs ConfigProvider 内嵌时监听 wemeet-theme 消息)。首帧主题已由 UA 覆盖。
@@ -435,11 +448,32 @@ fun MainTabScreen(
  * docId 直接插进 JS 源码。
  */
 private fun notifyDocsAccessUpdated(webView: android.webkit.WebView, docId: String) {
-    val payload = JSONObject()
-        .put("type", "wemeet-doc-access-updated")
-        .put("docId", docId)
-        .toString()
-    webView.evaluateJavascript("window.postMessage($payload,'*')", null)
+    postToDocs(
+        webView,
+        JSONObject()
+            .put("type", "wemeet-doc-access-updated")
+            .put("docId", docId),
+    )
+}
+
+/**
+ * 回应 docs 的 `wemeet-embed-hello`,宣告 App 这一侧提供了哪些能力。
+ *
+ * docs 据此才决定要不要把自带入口收掉 —— 譬如只有看到 `global-search`,它才会把
+ * 搜索按钮的点击改成派发给宿主。**老 App 不发这条 → docs 什么都不收 → 行为与
+ * 改动前一致**,所以 docs 镜像可以先于 App 上线,不需要三端同步发版。
+ *
+ * 不宣告 `route-sync`:App 没有地址栏,同步站内路由无意义。
+ */
+private fun replyDocsHostHello(webView: android.webkit.WebView) {
+    postToDocs(
+        webView,
+        JSONObject()
+            .put("type", "wemeet-host-hello")
+            .put("protocol", 1)
+            .put("platform", "app")
+            .put("features", JSONArray(listOf("global-search", "shell-nav"))),
+    )
 }
 
 @Composable
