@@ -193,10 +193,12 @@ private fun SettingDropdownRow(
             ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
+                // 锚点是窄按钮，菜单需按内容自适应宽度，避免选项文字折行
+                matchTextFieldWidth = false,
             ) {
                 options.forEach { (text, select) ->
                     DropdownMenuItem(
-                        text = { Text(text) },
+                        text = { Text(text, softWrap = false) },
                         onClick = {
                             select()
                             expanded = false

@@ -914,10 +914,12 @@ private fun RepeatDropdown(selected: String, onSelect: (String) -> Unit) {
             ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
+                // 锚点是窄按钮，不能让菜单跟着它收窄，否则「每个工作日」这类选项会折行
+                matchTextFieldWidth = false,
             ) {
                 options.forEach { key ->
                     DropdownMenuItem(
-                        text = { Text(labelFor(key)) },
+                        text = { Text(labelFor(key), softWrap = false) },
                         onClick = {
                             onSelect(key)
                             expanded = false
@@ -1018,10 +1020,11 @@ private fun ReminderDropdown(selectedMinutes: Int?, onSelect: (Int?) -> Unit) {
             ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
+                matchTextFieldWidth = false,
             ) {
                 options.forEach { minutes ->
                     DropdownMenuItem(
-                        text = { Text(labelFor(minutes)) },
+                        text = { Text(labelFor(minutes), softWrap = false) },
                         onClick = {
                             onSelect(minutes)
                             expanded = false

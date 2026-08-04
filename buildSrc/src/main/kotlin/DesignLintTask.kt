@@ -255,6 +255,19 @@ abstract class DesignLintTask : DefaultTask() {
             return false
         }
 
+        // ---- 下拉菜单不许跟着窄锚点收窄 ------------------------------------
+        //
+        // `ExposedDropdownMenu` 的 `matchTextFieldWidth` 默认 true —— 它的设计
+        // 前提是锚点为一个 fillMaxWidth 的输入框。锚点换成 TextButton(「不重复
+        // ▲」这种)时,菜单被强行约束成按钮那么窄,「每个工作日」当场折成两行。
+        //
+        // 所以:Box 里没有输入框当锚点的,必须**显式**给出 matchTextFieldWidth。
+        // 写 true 也算过 —— 这条要的是「想过这件事」,不是某个固定值。
+        val EDM_BOX = Regex("(?<![A-Za-z0-9_.])ExposedDropdownMenuBox\\s*\\(")
+        val EDM_MENU = Regex("(?<![A-Za-z0-9_.])ExposedDropdownMenu\\s*\\(")
+        val EDM_ANCHOR_FIELD = Regex("TextField\\s*\\(")
+        const val MATCH_WIDTH = "matchTextFieldWidth"
+
         /** theme 包是 token 的定义处,色值/字号字面量本就该写在那。 */
         fun isTheme(path: String) = "/theme/" in path
 
@@ -342,6 +355,12 @@ abstract class DesignLintTask : DefaultTask() {
                 if (isTheme(p)) 0 else textColorMisuseLines(lines).size
             },
             Rule(
+                "dropdown-menu-width",
+                "ExposedDropdownMenu on a non-TextField anchor must pass " +
+                    "matchTextFieldWidth explicitly, else options wrap -- spec 2.3",
+                locate = { lines -> dropdownWidthMisuseLines(lines) },
+            ) { _, _, _, lines -> dropdownWidthMisuseLines(lines).size },
+            Rule(
                 "cjk-literal",
                 "move the string into strings.xml, or mark // i18n-exempt -- spec 4",
             ) { _, _, literals, _ ->
@@ -403,6 +422,50 @@ abstract class DesignLintTask : DefaultTask() {
                     // 深度回到进块前 → 块结束。
                     !opensBranch -> branchAt?.let { if (depth <= it) branchAt = null }
                 }
+            }
+            return hits
+        }
+
+        /**
+         * 数这个文件里「菜单宽度绑死在窄锚点上」的处数。
+         *
+         * 一个 `ExposedDropdownMenuBox { … }` 块整体判:块里出现过 `*TextField(`
+         * 就认为锚点是输入框,跟宽是本分,放过;否则块里必须出现
+         * `matchTextFieldWidth`,不然块内每个 `ExposedDropdownMenu(` 都算一处。
+         *
+         * 按块判而不是按单行判,是因为「锚点是什么」这个信息根本不在
+         * `ExposedDropdownMenu(` 那一行上 —— 它在十几行之前的锚点那里。
+         * 块尾同样用 `{` `}` 数深度,和 [textColorMisuseLines] 一个路子。
+         */
+        fun dropdownWidthMisuseLines(lines: List<String>): List<Int> {
+            val hits = mutableListOf<Int>()
+            var i = 0
+            while (i < lines.size) {
+                if (!EDM_BOX.containsMatchIn(lines[i])) {
+                    i++
+                    continue
+                }
+                var depth = 0
+                var entered = false
+                var end = lines.size - 1
+                for (j in i until lines.size) {
+                    depth += lines[j].count { it == '{' } - lines[j].count { it == '}' }
+                    if (depth > 0) entered = true
+                    if (entered && depth <= 0) {
+                        end = j
+                        break
+                    }
+                }
+                val body = lines.subList(i, end + 1)
+                val anchoredOnField = body.any { EDM_ANCHOR_FIELD.containsMatchIn(it) }
+                if (!anchoredOnField && body.none { MATCH_WIDTH in it }) {
+                    body.forEachIndexed { k, line ->
+                        if (EDM_MENU.containsMatchIn(line) && !isExempt(lines, i + k)) {
+                            hits += i + k + 1
+                        }
+                    }
+                }
+                i = end + 1
             }
             return hits
         }
