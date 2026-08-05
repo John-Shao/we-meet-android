@@ -16,6 +16,8 @@ import com.we.meet.feature.im.data.ImApi
 import com.we.meet.feature.im.data.ImBridgeRepository
 import com.we.meet.feature.im.data.MediaResolver
 import com.we.meet.feature.im.data.UserDirectory
+import com.we.meet.feature.im.model.RichTextParser
+import com.we.meet.feature.im.model.RichTextTag
 import com.we.meet.feature.im.net.ImNetwork
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -208,20 +210,19 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
 
     init {
         conversations.start()
-        // @-mention detection (text heuristic, mirrors web): an inbound group
-        // message from someone else that names me (@myDisplayName) or @everyone
-        // (unless muted / mute-at-all) flags the conversation.
+        // @-mention detection: an inbound group message from someone else that
+        // names me or @everyone (unless muted / mute-at-all) flags the
+        // conversation. Which content types get scanned — and how — is decided
+        // in [mentionScan] and nowhere else.
         scope.launch {
             client.messages.collect { m ->
                 val self = _selfUid.value
                 if (m.senderUid == self || m.cid == activeCid) return@collect
-                if (m.contentType != "text") return@collect
                 val summary = conversations.conversations.value.firstOrNull { it.cid == m.cid }
                 if (summary?.type != "group" || summary.muted) return@collect
                 val selfName = self?.let { userDirectory.get(it)?.displayName }
-                val mentionsSelf = !selfName.isNullOrBlank() && m.body.contains("@$selfName")
-                val mentionsAll = m.body.contains("@$everyoneLabel")
-                if (mentionsSelf || (mentionsAll && !summary.muteAtAll)) {
+                val hit = mentionScan(m.contentType, m.body, selfName)
+                if (hit.self || (hit.everyone && !summary.muteAtAll)) {
                     _mentionedCids.value = _mentionedCids.value + m.cid
                 }
             }
@@ -275,6 +276,45 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
         }
     }
 
+    /** [mentionScan] 的结果:这条消息点到我了 / 点了所有人。 */
+    private data class MentionHit(
+        val self: Boolean = false,
+        val everyone: Boolean = false,
+    )
+
+    /**
+     * 一条入站消息有没有点到我 / 点所有人 —— **哪些 content_type 会被扫,只有这里说了算**。
+     *
+     * `text` 只有字面量可扫。`rich-text`(群机器人发的)是带结构的,所以 @所有人
+     * 走**结构判定**(`at` 标签的 uid == `all`),不再指望正文里恰好出现哪个语种的
+     * 字面量;字面量那一路仍然保留 —— 机器人完全可以在正文里直接打「@所有人」
+     * 而根本不发 `at` 标签。
+     *
+     * 但**点名到人只能走 `plain` 投影**:`at.uid` 是 webhook 发送方随手填的外部
+     * 字符串,不是我们的 im uid —— 拿它跟自己比既不对,还等于给外部开了个
+     * 「猜中 uid 就能定向戳人」的口子。
+     *
+     * 其余 content_type(卡片、日程、通话记录、控制消息……)一律不扫。
+     */
+    private fun mentionScan(contentType: String, body: String, selfName: String?): MentionHit {
+        fun scanLiteral(text: String) = MentionHit(
+            self = !selfName.isNullOrBlank() && text.contains("@$selfName"),
+            everyone = text.contains("@$everyoneLabel"),
+        )
+        return when (contentType) {
+            "text" -> scanLiteral(body)
+            "rich-text" -> {
+                val rich = RichTextParser.parse(body) ?: return MentionHit()
+                val byTag = rich.paragraphs.any { para ->
+                    para.any { it is RichTextTag.At && it.uid == AT_EVERYONE_UID }
+                }
+                val byPlain = scanLiteral(rich.plain)
+                MentionHit(self = byPlain.self, everyone = byTag || byPlain.everyone)
+            }
+            else -> MentionHit()
+        }
+    }
+
     /** The everyone token to insert for @-all (locale-aware). */
     fun everyoneLabel(): String = everyoneLabel
 
@@ -313,6 +353,12 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
 
     companion object {
         private const val TAG = "ImSession"
+
+        /**
+         * `at` 标签里代表「所有人」的 uid。后端在 webhook 入口就把大小写归一了
+         * (`core/services/bot_webhook.py` 的 `_at_tag`),所以这里严格相等即可。
+         */
+        private const val AT_EVERYONE_UID = "all"
 
         @Volatile
         private var instance: ImSession? = null
