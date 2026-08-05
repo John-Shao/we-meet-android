@@ -84,6 +84,18 @@ fun mentionScan(
             MentionHit(self = byPlain.self, everyone = byTag || byPlain.everyone)
         }
 
+        "rich-card" -> {
+            // 与 rich-text 同一套判定:@所有人 走结构(span 词汇是共用的),
+            // 点名到人只走 plain。卡片的 spans 分散在各块里,先摊平再判。
+            val card = RichCardParser.parse(body) ?: return MentionHit()
+            val byTag = card.blocks.any { block ->
+                block is CardBlock.Text &&
+                    block.spans.any { it is CardSpan.At && it.uid == AT_EVERYONE_UID }
+            }
+            val byPlain = scanLiteral(card.plain)
+            MentionHit(self = byPlain.self, everyone = byTag || byPlain.everyone)
+        }
+
         "quote" ->
             when (val parsed = MessageContentParser.parse(contentType, body)) {
                 is MessageContent.Quote -> scanLiteral(parsed.text)

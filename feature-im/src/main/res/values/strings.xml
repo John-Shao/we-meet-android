@@ -305,6 +305,7 @@
     <string name="im_fmt_month_day">MMM d</string>
     <string name="im_fmt_month_day_time">MMM d, HH:mm</string>
     <string name="im_preview_rich_text">[Rich text]</string>
+    <string name="im_preview_rich_card">[Card]</string>
     <!-- 群机器人 (group bots) -->
     <string name="im_bots_entry">Group bots</string>
     <string name="im_bots_title">Group bots</string>

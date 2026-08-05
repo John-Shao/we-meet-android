@@ -141,6 +141,11 @@ class ImCardContractTest {
             "doc-card" to listOf("doc_card"),
             "meeting-card" to listOf("meeting_card_ongoing", "meeting_card_scheduled"),
             "rich-text" to listOf("rich_text_simple", "rich_text_full"),
+            "rich-card" to listOf(
+                "rich_card_minimal",
+                "rich_card_full",
+                "rich_card_degraded",
+            ),
         )
         // 同一个目录里还住着几张**不是卡片正文**的三端共享常量表(各有自己的
         // 契约测试)。显式点名排除,不按前缀糊掉 —— 糊掉之后再有人加卡片忘登记

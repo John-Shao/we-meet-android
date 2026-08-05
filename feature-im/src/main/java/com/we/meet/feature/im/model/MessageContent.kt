@@ -132,6 +132,12 @@ sealed interface MessageContent {
      */
     data class RichText(val body: RichTextBody) : MessageContent
 
+    /**
+     * 群机器人经 webhook 发来的块级卡片 — content_type `rich-card`。协议与解析
+     * 都在 [RichCard.kt];这里只是 sealed 分支,让 MessageBubble 的 when 穷尽。
+     */
+    data class RichCard(val body: RichCardBody) : MessageContent
+
     /** Anything this client version doesn't render natively yet. */
     data class Unsupported(val contentType: String, val body: String) : MessageContent
 }
@@ -230,6 +236,9 @@ object MessageContentParser {
         "rich-text" -> RichTextParser.parse(body)
             ?.let { MessageContent.RichText(it) }
             ?: MessageContent.Unsupported(contentType, body)
+        "rich-card" -> RichCardParser.parse(body)
+            ?.let { MessageContent.RichCard(it) }
+            ?: MessageContent.Unsupported(contentType, body)
         "meeting-card" -> parseJson(contentType, body) {
             MessageContent.MeetingCard(
                 // slug 是入会关键,缺失=坏卡 → getString 抛异常落 Unsupported 兜底。
@@ -245,7 +254,11 @@ object MessageContentParser {
 
     /** True for message types that must not render as their own chat row. */
     fun isControlType(contentType: String): Boolean =
-        contentType == "recall" || contentType == "reaction"
+        contentType == "recall" || contentType == "reaction" ||
+            // card-state = 卡片按钮的点击结果(叠加层)。只该改已有卡片的渲染,
+            // 不该自成一行。本地这份是兜底:jusi 的 IM_NONBUMPING_CONTENT_TYPES
+            // 漏配时降级成「会话冒泡」,而不是列表里出现一坨 JSON。
+            contentType == "card-state"
 
     private fun parseFile(body: String): MessageContent = parseJson("file", body) {
         MessageContent.File(

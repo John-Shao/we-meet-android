@@ -257,6 +257,7 @@ fun MessageBubble(
                 is MessageContent.MeetingCard -> MeetingCardBubble(
                     content, onLongPress,
                 ) { onJoinMeeting?.invoke(content.slug) }
+                is MessageContent.RichCard -> RichCardBubble(content.body)
                 is MessageContent.RichText -> RichTextBubble(
                     body = content.body,
                     isOwn = isOwn,

@@ -1,0 +1,191 @@
+package com.we.meet.feature.im.model
+
+import java.io.File
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/**
+ * `rich-card` 的解析、投影与转发剥离。
+ *
+ * 金标准 fixture 与 [ImCardContractTest] 读同一个目录(后端仓),协议一动三端
+ * 一起红。这里额外验的是**解析层的降级**:坏数据不能把气泡变空,
+ * `javascript:` href 不能变成可点的链接。
+ */
+class RichCardParserTest {
+
+    private val fixtureDir: File by lazy {
+        File(
+            System.getProperty("imCardFixtures")
+                ?: error("imCardFixtures system property missing — see feature-im/build.gradle.kts."),
+        )
+    }
+
+    private fun load(name: String): String = File(fixtureDir, "$name.json").readText()
+
+    // ---- 金标准 ---------------------------------------------------------------
+
+    @Test
+    fun `full card carries header, every span kind, fields, divider and buttons`() {
+        val card = RichCardParser.parse(load("rich_card_full"))!!
+        assertTrue(card.hasHeader)
+        assertEquals("生产构建失败", card.headerTitle)
+        assertEquals(CardTheme.DANGER, card.headerTheme)
+
+        assertEquals(
+            listOf("Text", "Fields", "Divider", "Actions"),
+            card.blocks.map { it::class.simpleName },
+        )
+
+        val text = card.blocks[0] as CardBlock.Text
+        assertTrue(text.spans.contains(CardSpan.Text("main", bold = true)))
+        assertTrue(text.spans.contains(CardSpan.Text("02:14", italic = true)))
+        assertTrue(text.spans.contains(CardSpan.At("all", "所有人")))
+        assertTrue(text.spans.any { it is CardSpan.Link })
+    }
+
+    @Test
+    fun `full card has three fields — an odd count, so clients span the last one`() {
+        val fields = RichCardParser.parse(load("rich_card_full"))!!
+            .blocks.filterIsInstance<CardBlock.Fields>().single()
+        assertEquals(3, fields.items.size)
+        assertEquals(CardField("环境", "生产"), fields.items[0])
+    }
+
+    @Test
+    fun `no button ever carries a value — that is the servers private payload`() {
+        // 与后端 test_no_button_ever_carries_its_value、Web 同名断言是同一条
+        // 不变量的三端。CardButton 里根本没有 value 字段,所以这里验的是
+        // fixture 本身没把它漏进 body。
+        assertFalse(load("rich_card_full").contains("\"value\": {"))
+        val actions = RichCardParser.parse(load("rich_card_full"))!!
+            .blocks.filterIsInstance<CardBlock.Actions>().single()
+        assertEquals(3, actions.buttons.size)
+        assertTrue(actions.resolveOnce)
+    }
+
+    @Test
+    fun `minimal card parses without a header`() {
+        val card = RichCardParser.parse(load("rich_card_minimal"))!!
+        assertFalse(card.hasHeader)
+        assertEquals(1, card.blocks.size)
+    }
+
+    @Test
+    fun `degraded card keeps the remaining blocks in order and carries no warnings`() {
+        val raw = load("rich_card_degraded")
+        val card = RichCardParser.parse(raw)!!
+        assertEquals(
+            listOf("Text", "Divider", "Text"),
+            card.blocks.map { it::class.simpleName },
+        )
+        assertFalse(raw.contains("warning"))
+    }
+
+    // ---- 降级 -----------------------------------------------------------------
+
+    @Test
+    fun `malformed input yields null so the caller falls back to plain text`() {
+        assertNull(RichCardParser.parse("{ not json"))
+        assertNull(RichCardParser.parse("""{"v":1}"""))
+        assertNull(RichCardParser.parse("""{"v":1,"blocks":[]}"""))
+    }
+
+    @Test
+    fun `javascript href keeps the words and drops the link`() {
+        val raw = """
+            {"v":1,"blocks":[{"type":"text","spans":[
+              {"tag":"a","text":"点我","href":"javascript:alert(1)"}]}]}
+        """.trimIndent()
+        val block = RichCardParser.parse(raw)!!.blocks.single() as CardBlock.Text
+        assertEquals(listOf(CardSpan.Text("点我")), block.spans)
+    }
+
+    @Test
+    fun `unknown block types are dropped, not rendered as JSON`() {
+        val raw = """{"v":1,"blocks":[{"type":"chart","data":[1]},{"type":"divider"}]}"""
+        assertEquals(listOf(CardBlock.Divider), RichCardParser.parse(raw)!!.blocks)
+    }
+
+    @Test
+    fun `a button with an unrecognised action is not rendered`() {
+        // 点了没反应的按钮比没有按钮更糟。整块因此空掉 → 块被丢 → 无块无 header。
+        val raw = """
+            {"v":1,"blocks":[{"type":"actions","resolve":"once","buttons":[
+              {"id":"b0","text":"x","style":"default","action":"teleport"}]}]}
+        """.trimIndent()
+        assertNull(RichCardParser.parse(raw))
+    }
+
+    @Test
+    fun `a url button whose href is not http(s) is not rendered`() {
+        val raw = """
+            {"v":1,"blocks":[{"type":"actions","resolve":"once","buttons":[
+              {"id":"b0","text":"x","style":"default","action":"url","url":"javascript:x"}]}]}
+        """.trimIndent()
+        assertNull(RichCardParser.parse(raw))
+    }
+
+    @Test
+    fun `an unknown theme falls back to neutral`() {
+        val raw = """{"v":1,"header":{"title":"t","theme":"chartreuse"},"blocks":[{"type":"divider"}]}"""
+        assertEquals(CardTheme.NEUTRAL, RichCardParser.parse(raw)!!.headerTheme)
+    }
+
+    // ---- 投影 -----------------------------------------------------------------
+
+    @Test
+    fun `flatten skips button labels — buttons are controls, not speech`() {
+        // plain 若含按钮标签,会话预览会读成「构建失败 同意上线 查看日志」,
+        // 像机器人在念按钮。
+        val card = RichCardParser.parse(load("rich_card_full"))!!
+            .copy(plain = "") // 绕开服务端 plain,验本地摊平的口径
+        val flat = RichCardParser.flatten(card)
+        assertTrue(flat.contains("生产构建失败"))
+        assertTrue(flat.contains("环境 生产"))
+        assertFalse(flat.contains("同意上线"))
+    }
+
+    @Test
+    fun `preview prefers the servers plain projection`() {
+        // jusi 把 last_message 截到 200 字:截断的 JSON 解析不出来,截断的
+        // plain 仍是人话。短路必须在 parse 之前。
+        val raw = """
+            {"v":1,"blocks":[{"type":"text","spans":[{"tag":"text","text":"正文"}]}],
+             "plain":"服务端给的摘要"}
+        """.trimIndent()
+        assertEquals("服务端给的摘要", RichCardParser.preview(raw))
+    }
+
+    @Test
+    fun `preview of unparseable input is blank so the caller supplies the label`() {
+        assertEquals("", RichCardParser.preview("{ truncated"))
+    }
+
+    // ---- 转发剥离 --------------------------------------------------------------
+
+    @Test
+    fun `stripActions removes the buttons and keeps everything else`() {
+        val stripped = RichCardParser.parse(RichCardParser.stripActions(load("rich_card_full")))!!
+        assertEquals(
+            listOf("Text", "Fields", "Divider"),
+            stripped.blocks.map { it::class.simpleName },
+        )
+        assertEquals("生产构建失败", stripped.headerTitle)
+        assertNotNull(stripped.plain)
+    }
+
+    @Test
+    fun `stripActions returns the input untouched when there is nothing to strip`() {
+        val raw = load("rich_card_minimal")
+        assertEquals(raw, RichCardParser.stripActions(raw))
+    }
+
+    @Test
+    fun `stripActions never eats the message on malformed input`() {
+        assertEquals("{ not json", RichCardParser.stripActions("{ not json"))
+    }
+}

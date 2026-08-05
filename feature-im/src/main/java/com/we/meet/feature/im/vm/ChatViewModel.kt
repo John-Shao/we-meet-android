@@ -22,6 +22,7 @@ import com.we.meet.feature.im.data.GroupTile
 import com.we.meet.feature.im.data.ImUserInfo
 import com.we.meet.feature.im.model.MessageContent
 import com.we.meet.feature.im.model.MessageContentParser
+import com.we.meet.feature.im.model.RichCardParser
 import com.we.meet.feature.im.model.RichTextParser
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -411,6 +412,7 @@ class ChatViewModel internal constructor(
             // ⚠️ 这两个 when 带 else,编译器不会提醒漏了新类型。少了这一支,
             // 引用/合并转发一条机器人富文本会得到**空快照**。
             is MessageContent.RichText -> RichTextParser.flatten(c.body)
+            is MessageContent.RichCard -> RichCardParser.flatten(c.body)
             else -> ""
         }
 
@@ -738,6 +740,7 @@ class ChatViewModel internal constructor(
             // ⚠️ 这两个 when 带 else,编译器不会提醒漏了新类型。少了这一支,
             // 引用/合并转发一条机器人富文本会得到**空快照**。
             is MessageContent.RichText -> RichTextParser.flatten(c.body).take(SNIPPET_MAX)
+            is MessageContent.RichCard -> RichCardParser.flatten(c.body).take(SNIPPET_MAX)
             else -> ""
         }
 

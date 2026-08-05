@@ -20,6 +20,7 @@ import com.jusi.lightim.ConnectionState
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.model.MessageContent
 import com.we.meet.feature.im.model.MessageContentParser
+import com.we.meet.feature.im.model.RichCardParser
 import com.we.meet.feature.im.model.RichTextParser
 
 /** Connection banner shared by the list + chat screens. Hidden while CONNECTED. */
@@ -116,6 +117,10 @@ fun previewText(contentType: String?, body: String?): String {
         // 截断的 plain 仍然是人话。解析不出来才退固定文案。
         "rich-text" -> return RichTextParser.preview(body)
             .ifBlank { stringResource(R.string.im_preview_rich_text) }
+        // 卡片同理,而且**短路必须在 parse 之前**:jusi 把 last_message 截到
+        // 200 字,截断的 JSON 解析不出来,截断的 plain 仍是人话。
+        "rich-card" -> return RichCardParser.preview(body)
+            .ifBlank { stringResource(R.string.im_preview_rich_card) }
     }
     return when (val content = MessageContentParser.parse(contentType ?: "text", body)) {
         is MessageContent.Text -> content.body
@@ -127,6 +132,7 @@ fun previewText(contentType: String?, body: String?): String {
         is MessageContent.Recall -> stringResource(R.string.im_recalled_preview)
         is MessageContent.Reaction -> stringResource(R.string.im_preview_reaction)
         is MessageContent.RichText -> RichTextParser.flatten(content.body)
+        is MessageContent.RichCard -> RichCardParser.flatten(content.body)
         is MessageContent.System -> content.body
         is MessageContent.CallLog -> stringResource(
             if (content.media == "video") R.string.im_calllog_video else R.string.im_calllog_voice

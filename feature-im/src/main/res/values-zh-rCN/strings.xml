@@ -294,6 +294,7 @@
     <string name="im_fmt_month_day">M月d日</string>
     <string name="im_fmt_month_day_time">M月d日 HH:mm</string>
     <string name="im_preview_rich_text">[富文本]</string>
+    <string name="im_preview_rich_card">[卡片]</string>
     <!-- 群机器人 -->
     <string name="im_bots_entry">群机器人</string>
     <string name="im_bots_title">群机器人</string>
