@@ -20,10 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -64,12 +61,13 @@ fun GroupInfoScreen(
     cid: String,
     onBack: () -> Unit,
     onLeftGroup: () -> Unit,
-    onAddMembers: (cid: String) -> Unit,
     /** P8 群应用「群成员日历」:携带已解析出 we-meet id 的成员(未解析静默过滤,
      * 忙闲页会对 freebusy 缺席列另行置灰)。null 隐藏宫格。 */
     onOpenGroupCalendar: ((memberUserIds: List<String>) -> Unit)? = null,
     /** 群机器人二级页(对标飞书)。null 隐藏入口。 */
     onOpenBots: ((cid: String) -> Unit)? = null,
+    /** 群成员二级页(对标飞书)。null 隐藏入口。 */
+    onOpenMembers: ((cid: String) -> Unit)? = null,
 ) {
     val vm: GroupInfoViewModel =
         viewModel(key = "group-$cid", factory = remember(deps, cid) { GroupInfoViewModel.Factory(deps, cid) })
@@ -78,21 +76,15 @@ fun GroupInfoScreen(
     var showRename by remember { mutableStateOf(false) }
     var showAnnounce by remember { mutableStateOf(false) }
     var showNickname by remember { mutableStateOf(false) }
-    var removeTarget by remember { mutableStateOf<GroupMemberUi?>(null) }
     var transferTarget by remember { mutableStateOf<GroupMemberUi?>(null) }
     var showTransferPicker by remember { mutableStateOf(false) }
     var confirmLeave by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
 
-    // 群成员搜索。搜的是**名单上显示的那个名字**(群昵称优先、目录名兜底,
-    // displayName 已是这个口径)—— 搜不到自己刚看见的名字比没有搜索还费解。
-    var memberQuery by remember { mutableStateOf("") }
-    val searchable = ui.members.size > MEMBER_SEARCH_THRESHOLD
-    val visibleMembers = remember(ui.members, memberQuery, searchable) {
-        val q = memberQuery.trim()
-        if (q.isBlank() || !searchable) ui.members
-        else ui.members.filter { it.displayName.contains(q, ignoreCase = true) }
-    }
+    // 成员页有自己的 GroupInfoViewModel 实例(新 NavBackStackEntry = 新
+    // ViewModelStore),所以在那边踢人之后,这一页只能靠自己重新拉一次才知道 ——
+    // 指望 conversationEvents 一定会来是赌运气。同 GroupBotsScreen 的理由。
+    LaunchedEffect(Unit) { vm.refresh() }
 
     LaunchedEffect(vm) {
         vm.events.collect { event ->
@@ -267,6 +259,15 @@ fun GroupInfoScreen(
                         }
                         HorizontalDivider()
                     }
+                    // 群成员:放在机器人**上面** —— 人优先于工具。
+                    if (onOpenMembers != null) {
+                        ImNavRow(
+                            label = stringResource(R.string.im_group_members_title),
+                            value = ui.members.size.toString(),
+                            onClick = { onOpenMembers(cid) },
+                        )
+                        HorizontalDivider()
+                    }
                     // 群机器人:单独一行而不是塞进上面的宫格 —— 宫格里的「群成员
                     // 日历」是打开一个只读视图,机器人是管理入口(增删改配置、看
                     // 密钥),飞书自己也是独立一行;而且这一行以后要挂计数和配置
@@ -295,92 +296,6 @@ fun GroupInfoScreen(
                         onToggle = { vm.toggleMuteAtAll() },
                     )
                     HorizontalDivider()
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.im_group_members_count, ui.members.size),
-                            style = MaterialTheme.typography.titleSmall,
-                        )
-                        IconButton(onClick = { onAddMembers(cid) }) {
-                            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.im_group_add_members))
-                        }
-                    }
-                    // 小群不出搜索框:三个人的名单上顶一个输入框纯属噪音。
-                    if (searchable) {
-                        OutlinedTextField(
-                            value = memberQuery,
-                            onValueChange = { memberQuery = it },
-                            singleLine = true,
-                            placeholder = { Text(stringResource(R.string.im_group_search_members)) },
-                            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceXs),
-                        )
-                    }
-                    if (visibleMembers.isEmpty() && ui.members.isNotEmpty()) {
-                        Text(
-                            text = stringResource(R.string.im_group_no_member_match),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
-                        )
-                    }
-                }
-
-                items(visibleMembers, key = { it.uid }) { member ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceS),
-                    ) {
-                        MemberAvatar(
-                            name = member.displayName,
-                            url = member.avatarUrl,
-                            cacheKey = "im-avatar:${member.uid}",
-                            size = Dimens.AvatarS,
-                        )
-                        Text(
-                            text = member.displayName.ifBlank { member.uid.take(8) },
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = Dimens.SpaceM),
-                        )
-                        // 离职标记与群主徽章各自独立 —— 群主本人也可能已离职,
-                        // 挂在 else 分支上正好会漏掉最该提醒的那种情况。中性灰:
-                        // 离职是常态事实,不是错误态。
-                        if (member.isDeparted) {
-                            Text(
-                                text = stringResource(R.string.im_departed_chip),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(end = Dimens.SpaceS),
-                            )
-                        }
-                        if (member.isOwner) {
-                            Text(
-                                text = stringResource(R.string.im_group_owner_badge),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        } else if (ui.isOwner && !member.isSelf) {
-                            IconButton(onClick = { removeTarget = member }) {
-                                Icon(
-                                    Icons.Filled.Close,
-                                    contentDescription = stringResource(R.string.im_group_remove_member),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(Dimens.IconSmall),
-                                )
-                            }
-                        }
-                    }
                 }
 
                 item {
@@ -480,24 +395,6 @@ fun GroupInfoScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showNickname = false }) {
-                    Text(stringResource(R.string.im_action_cancel))
-                }
-            },
-        )
-    }
-
-    removeTarget?.let { member ->
-        AlertDialog(
-            onDismissRequest = { removeTarget = null },
-            title = { Text(stringResource(R.string.im_group_remove_member)) },
-            text = { Text(stringResource(R.string.im_group_remove_confirm, member.displayName)) },
-            confirmButton = {
-                TextButton(onClick = { vm.removeMember(member); removeTarget = null }) {
-                    Text(stringResource(R.string.im_action_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { removeTarget = null }) {
                     Text(stringResource(R.string.im_action_cancel))
                 }
             },
@@ -607,9 +504,3 @@ fun GroupInfoScreen(
         )
     }
 }
-
-
-
-/** 成员数超过这个值才出搜索框 —— 少于一屏的名单上顶个输入框纯属噪音。与 Web
- *  GroupInfoPanel 的 MEMBER_SEARCH_THRESHOLD 取同一个值,免得两端一个有一个没有。 */
-private const val MEMBER_SEARCH_THRESHOLD = 10

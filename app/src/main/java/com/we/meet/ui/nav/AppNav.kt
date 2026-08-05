@@ -52,6 +52,7 @@ import com.we.meet.feature.im.ui.bot.BotFormScreen
 import com.we.meet.feature.im.ui.bot.BotTypePickerScreen
 import com.we.meet.feature.im.ui.bot.GroupBotsScreen
 import com.we.meet.feature.im.ui.group.GroupInfoScreen
+import com.we.meet.feature.im.ui.group.GroupMembersScreen
 import com.we.meet.feature.im.ui.group.MyGroupsScreen
 import com.we.meet.feature.im.ui.newchat.AddMembersScreen
 import com.we.meet.feature.im.ui.newchat.NewChatScreen
@@ -120,6 +121,9 @@ object Routes {
     const val IM_SEARCH = "im_search"
     private const val IM_GROUP_INFO_BASE = "im_group_info"
     const val IM_GROUP_INFO = "$IM_GROUP_INFO_BASE/{cid}"
+    /** 群成员二级页(对标飞书)——与群机器人同级,不再内联在群信息页里。 */
+    private const val IM_GROUP_MEMBERS_BASE = "im_group_members"
+    const val IM_GROUP_MEMBERS = "$IM_GROUP_MEMBERS_BASE/{cid}"
     const val IM_NEW_CHAT = "im_new_chat?peer={peer}"
     private const val IM_ADD_MEMBERS_BASE = "im_add_members"
     const val IM_ADD_MEMBERS = "$IM_ADD_MEMBERS_BASE/{cid}"
@@ -177,6 +181,9 @@ object Routes {
 
     fun imGroupInfo(cid: String): String =
         "$IM_GROUP_INFO_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
+
+    fun imGroupMembers(cid: String): String =
+        "$IM_GROUP_MEMBERS_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
 
     fun imAddMembers(cid: String): String =
         "$IM_ADD_MEMBERS_BASE/${URLEncoder.encode(cid, StandardCharsets.UTF_8.name())}"
@@ -626,14 +633,28 @@ fun AppNav() {
                     // Pop past the chat screen back to the tabs.
                     navController.popBackStack(Routes.HOME, inclusive = false)
                 },
-                onAddMembers = { navController.navigate(Routes.imAddMembers(it)) },
+                // 「添加成员」的 ＋ 随名单一起搬进了成员二级页,群信息页不再需要它。
                 onOpenBots = { navController.navigate(Routes.imGroupBots(it)) },
+                onOpenMembers = { navController.navigate(Routes.imGroupMembers(it)) },
                 // P8 群应用「群成员日历」→ 全员忙闲对比;srcCid 供创建后回发卡片。
                 onOpenGroupCalendar = { memberIds ->
                     navController.navigate(
                         Routes.freeBusy(memberIds, groupCalendarTitle, cid),
                     )
                 },
+            )
+        }
+
+        composable(
+            route = Routes.IM_GROUP_MEMBERS,
+            arguments = listOf(navArgument("cid") { type = NavType.StringType }),
+        ) { entry ->
+            val cid = Routes.decode(entry.arguments?.getString("cid").orEmpty())
+            GroupMembersScreen(
+                deps = app,
+                cid = cid,
+                onBack = rememberOnceOnly(safePop),
+                onAddMembers = { navController.navigate(Routes.imAddMembers(it)) },
             )
         }
 

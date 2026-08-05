@@ -138,6 +138,8 @@
     <string name="im_group_my_nickname_hint">Enter your nickname in this group</string>
     <string name="im_group_rename">Rename</string>
     <string name="im_group_members_count">Members (%1$d)</string>
+    <!-- Title of the members sub-page and the label of the row that opens it. -->
+    <string name="im_group_members_title">Members</string>
     <string name="im_group_add_members">Add members</string>
     <string name="im_group_search_members">Search members</string>
     <string name="im_group_no_member_match">No matching members</string>
