@@ -47,6 +47,9 @@ android {
             // 布局不同就传 -PimCardFixtures=<绝对路径>。目录不存在时测试**直接失败**
             // 而不是跳过 —— 静默跳过等于把契约测试变成一个永远绿的空壳。
             it.systemProperty("imCardFixtures", imCardFixtureDir)
+            // @所有人 别名表的契约测试要逐个 locale 比对 im_mention_everyone,
+            // 而 JVM 单测拿不到 R.string —— 直接读 res 目录的 XML。
+            it.systemProperty("featureImResDir", file("src/main/res").absolutePath)
         }
     }
 }
