@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -45,13 +44,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.ui.common.ErrorBanner
 import com.we.meet.feature.im.vm.GroupInfoEvent
 import com.we.meet.feature.im.vm.GroupInfoViewModel
-import com.we.meet.feature.im.vm.GroupMemberUi
 
 /** Group management — roster, rename, add/remove, transfer, clear, leave. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,8 +73,6 @@ fun GroupInfoScreen(
     var showRename by remember { mutableStateOf(false) }
     var showAnnounce by remember { mutableStateOf(false) }
     var showNickname by remember { mutableStateOf(false) }
-    var transferTarget by remember { mutableStateOf<GroupMemberUi?>(null) }
-    var showTransferPicker by remember { mutableStateOf(false) }
     var confirmLeave by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
 
@@ -302,11 +297,9 @@ fun GroupInfoScreen(
                     Spacer(Modifier.height(Dimens.SpaceM))
                     HorizontalDivider()
                     ImActionRow(stringResource(R.string.im_group_clear_history)) { confirmClear = true }
-                    if (ui.isOwner && ui.members.any { !it.isSelf }) {
-                        ImActionRow(stringResource(R.string.im_group_transfer_owner)) {
-                            showTransferPicker = true
-                        }
-                    }
+                    // 「转让群主」不再在这里 —— 它现在是成员页每一行上的按钮
+                    // (与 Web 同口径)。原来那条入口会弹一个选人 Dialog,那就是
+                    // 同一屏上的第二份成员名单。
                     ImActionRow(
                         text = stringResource(R.string.im_menu_leave),
                         destructive = true,
@@ -395,64 +388,6 @@ fun GroupInfoScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showNickname = false }) {
-                    Text(stringResource(R.string.im_action_cancel))
-                }
-            },
-        )
-    }
-
-    if (showTransferPicker) {
-        AlertDialog(
-            onDismissRequest = { showTransferPicker = false },
-            title = { Text(stringResource(R.string.im_group_transfer_owner)) },
-            text = {
-                LazyColumn {
-                    items(ui.members.filterNot { it.isSelf }, key = { it.uid }) { member ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    transferTarget = member
-                                    showTransferPicker = false
-                                }
-                                .padding(vertical = Dimens.SpaceS),
-                        ) {
-                            MemberAvatar(
-                                name = member.displayName,
-                                url = member.avatarUrl,
-                                cacheKey = "im-avatar:${member.uid}",
-                                size = Dimens.IconXl,
-                            )
-                            Text(
-                                text = member.displayName.ifBlank { member.uid.take(8) },
-                                modifier = Modifier.padding(start = Dimens.SpaceM),
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showTransferPicker = false }) {
-                    Text(stringResource(R.string.im_action_cancel))
-                }
-            },
-        )
-    }
-
-    transferTarget?.let { member ->
-        AlertDialog(
-            onDismissRequest = { transferTarget = null },
-            title = { Text(stringResource(R.string.im_group_transfer_owner)) },
-            text = { Text(stringResource(R.string.im_group_transfer_confirm, member.displayName)) },
-            confirmButton = {
-                TextButton(onClick = { vm.transferOwner(member); transferTarget = null }) {
-                    Text(stringResource(R.string.im_action_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { transferTarget = null }) {
                     Text(stringResource(R.string.im_action_cancel))
                 }
             },

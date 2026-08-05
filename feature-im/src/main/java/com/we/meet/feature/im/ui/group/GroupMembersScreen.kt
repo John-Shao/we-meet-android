@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -64,6 +65,7 @@ fun GroupMembersScreen(
     val ui by vm.ui.collectAsStateWithLifecycle()
 
     var removeTarget by remember { mutableStateOf<GroupMemberUi?>(null) }
+    var transferTarget by remember { mutableStateOf<GroupMemberUi?>(null) }
 
     // 群成员搜索。搜的是**名单上显示的那个名字**(群昵称优先、目录名兜底,
     // displayName 已是这个口径)—— 搜不到自己刚看见的名字比没有搜索还费解。
@@ -172,6 +174,18 @@ fun GroupMembersScreen(
                                 color = MaterialTheme.colorScheme.primary,
                             )
                         } else if (ui.isOwner && !member.isSelf) {
+                            // 转让群主:每行一个按钮,与 Web 同口径。原来是底部一个
+                            // 「转让群主」入口再弹一个选人 Dialog —— 名单单独成页
+                            // 之后,那个 Dialog 就是同一屏上的第二份成员列表,而这
+                            // 整件事的动机正是「名单只该有一处」。
+                            IconButton(onClick = { transferTarget = member }) {
+                                Icon(
+                                    Icons.Filled.AdminPanelSettings,
+                                    contentDescription = stringResource(R.string.im_group_transfer_owner),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(Dimens.IconSmall),
+                                )
+                            }
                             IconButton(onClick = { removeTarget = member }) {
                                 Icon(
                                     Icons.Filled.Close,
@@ -199,6 +213,24 @@ fun GroupMembersScreen(
             },
             dismissButton = {
                 TextButton(onClick = { removeTarget = null }) {
+                    Text(stringResource(R.string.im_action_cancel))
+                }
+            },
+        )
+    }
+
+    transferTarget?.let { member ->
+        AlertDialog(
+            onDismissRequest = { transferTarget = null },
+            title = { Text(stringResource(R.string.im_group_transfer_owner)) },
+            text = { Text(stringResource(R.string.im_group_transfer_confirm, member.displayName)) },
+            confirmButton = {
+                TextButton(onClick = { vm.transferOwner(member); transferTarget = null }) {
+                    Text(stringResource(R.string.im_action_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { transferTarget = null }) {
                     Text(stringResource(R.string.im_action_cancel))
                 }
             },
