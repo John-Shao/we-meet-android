@@ -147,10 +147,17 @@ class ImCardContractTest {
                 "rich_card_degraded",
             ),
         )
-        // 同一个目录里还住着几张**不是卡片正文**的三端共享常量表(各有自己的
+        // 同一个目录里还住着几份**不是卡片正文**的三端共享 fixture(各有自己的
         // 契约测试)。显式点名排除,不按前缀糊掉 —— 糊掉之后再有人加卡片忘登记
         // 就又没人拦了,而拦这个正是下面那条断言唯一的用处。
-        val nonCardFixtures = setOf("mention_everyone_aliases")
+        val nonCardFixtures = setOf(
+            // @所有人 的全语种别名表(见 MentionAliasesTest)。
+            "mention_everyone_aliases",
+            // card-state 是**控制消息**的载荷,不是卡片正文 —— 它挂在
+            // target_mid 那张卡上渲染,自己不成一行。App 端解析它是 A2 的
+            // 客户端那一刀;做完之后这一项要从这里移进上面的 byType。
+            "rich_card_state",
+        )
 
         // 兜住「有人往目录里加了 fixture 但忘了在这里登记」——漏登记的话
         // 上面每条断言都还是绿的,这个测试才会红。
