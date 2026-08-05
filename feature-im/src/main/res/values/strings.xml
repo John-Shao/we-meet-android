@@ -353,6 +353,17 @@
     <string name="im_bots_security_ip">IP allowlist</string>
     <string name="im_bots_security_ip_hint">One IP or CIDR per line. Leave empty for no restriction.</string>
     <string name="im_bots_security_save">Save</string>
+    <string name="im_bots_callback_title">Button callback</string>
+    <string name="im_bots_callback_hint">Notify this address when a member clicks a card button. https only; leave empty to turn it off.</string>
+    <string name="im_bots_callback_placeholder">https://ci.example.com/hook</string>
+    <string name="im_bots_callback_identity">Send the name of the person who clicked</string>
+    <string name="im_bots_callback_identity_hint">By default only an anonymous per-bot identifier is sent: the external service can tell whether it is the same person twice, but not who. Turning this on also sends their name.</string>
+    <string name="im_bots_callback_disabled">Turned off automatically after repeated failures. Save the address again to re-enable it.</string>
+    <string name="im_bots_callback_last_error">Last failure: %1$s</string>
+    <string name="im_bots_callback_reason_timeout">The service did not answer in time</string>
+    <string name="im_bots_callback_reason_refused">The service refused the request</string>
+    <string name="im_bots_callback_reason_unreachable">The address could not be reached</string>
+    <string name="im_bots_callback_reason_blocked">This address is not allowed</string>
     <string name="im_bots_help_body">POST JSON to the webhook URL of a bot and the message appears in this group under that name. The request format matches Feishu custom bots, so an existing script only needs a new URL.
 
 Plain text body: {\"msg_type\":\"text\",\"content\":{\"text\":\"Build finished\"}}

@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -42,10 +44,12 @@ import com.we.meet.feature.im.R
 import com.we.meet.feature.im.ui.common.ImActionRow
 import com.we.meet.feature.im.ui.common.ImSwitchRow
 import com.we.meet.feature.im.vm.BotDetailViewModel
+import com.we.meet.feature.im.vm.callbackFailureLabel
 import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 import kotlinx.coroutines.launch
 
 /**
@@ -77,6 +81,7 @@ fun BotDetailScreen(
     var confirmReset by remember { mutableStateOf(false) }
     var keywordDraft by remember { mutableStateOf("") }
     var ipDraft by remember { mutableStateOf<String?>(null) }
+    var callbackDraft by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) { vm.refresh() }
     LaunchedEffect(ui.removed) { if (ui.removed) onRemoved() }
@@ -291,6 +296,80 @@ fun BotDetailScreen(
                                 Text(stringResource(R.string.im_bots_security_save))
                             }
                         }
+                    }
+
+                    // 出站回调 (A3)。地址挂在**机器人**上而不是按钮里 ——
+                    // 按钮里带 URL 等于任何拿到 webhook token 的人都能把我们的
+                    // 服务器变成任意 HTTP 代理。这是 SSRF 面上最重要的一刀。
+                    SectionLabel(stringResource(R.string.im_bots_callback_title))
+                    OutlinedTextField(
+                        value = callbackDraft ?: bot.callbackUrl,
+                        onValueChange = { callbackDraft = it },
+                        placeholder = {
+                            Text(stringResource(R.string.im_bots_callback_placeholder))
+                        },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Dimens.SpaceXl),
+                    )
+                    Hint(stringResource(R.string.im_bots_callback_hint))
+                    if (callbackDraft != null) {
+                        Row(modifier = Modifier.padding(horizontal = Dimens.SpaceL)) {
+                            TextButton(
+                                enabled = !ui.busy,
+                                onClick = {
+                                    // 地址不合法后端 400,错误行当场亮出来 ——
+                                    // 而不是配完之后每次点击都静默失败。
+                                    vm.setCallbackUrl(callbackDraft.orEmpty())
+                                    callbackDraft = null
+                                },
+                            ) {
+                                Text(stringResource(R.string.im_bots_security_save))
+                            }
+                        }
+                    }
+                    if (!bot.callbackEnabled) {
+                        Text(
+                            text = stringResource(R.string.im_bots_callback_disabled),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = WeMeetTheme.extras.status.onDangerContainer,
+                            modifier = Modifier
+                                .padding(
+                                    horizontal = Dimens.SpaceXl,
+                                    vertical = Dimens.SpaceXs,
+                                )
+                                .background(
+                                    color = WeMeetTheme.extras.status.dangerContainer,
+                                    shape = RoundedCornerShape(Dimens.CornerS),
+                                )
+                                .padding(Dimens.SpaceM),
+                        )
+                    }
+                    if (bot.callbackLastError.isNotEmpty()) {
+                        Text(
+                            text = stringResource(
+                                R.string.im_bots_callback_last_error,
+                                stringResource(callbackFailureLabel(bot.callbackLastError)),
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = WeMeetTheme.extras.status.onDangerContainer,
+                            modifier = Modifier.padding(
+                                horizontal = Dimens.SpaceXl,
+                                vertical = Dimens.SpaceXs,
+                            ),
+                        )
+                    }
+                    if (bot.callbackUrl.isNotEmpty()) {
+                        ImSwitchRow(
+                            label = stringResource(R.string.im_bots_callback_identity),
+                            checked = bot.callbackIncludeIdentity,
+                            enabled = !ui.busy,
+                            onToggle = {
+                                vm.setCallbackIdentity(!bot.callbackIncludeIdentity)
+                            },
+                        )
+                        Hint(stringResource(R.string.im_bots_callback_identity_hint))
                     }
 
                     HorizontalDivider()

@@ -135,6 +135,21 @@ internal data class ImBotDto(
     @Json(name = "sign_verify_enabled") val signVerifyEnabled: Boolean? = null,
     val keywords: List<String>? = null,
     @Json(name = "ip_allowlist") val ipAllowlist: List<String>? = null,
+    /**
+     * 出站回调 (A3)。地址挂在**机器人**上而不是按钮里 —— 按钮里带 URL 等于
+     * 任何拿到 webhook token 的人都能把服务器变成任意 HTTP 代理。
+     *
+     * `callback_secret` 后端不下发:那是签出站请求用的密钥,不出服务器。
+     */
+    @Json(name = "callback_url") val callbackUrl: String? = null,
+    @Json(name = "callback_include_identity") val callbackIncludeIdentity: Boolean? = null,
+    /** 连续失败多次会自己变 false;重新保存地址即可恢复。 */
+    @Json(name = "callback_enabled") val callbackEnabled: Boolean? = null,
+    /**
+     * 最近一次回调失败的**桶**(timeout / refused / unreachable / blocked),
+     * 上一次成功则为空串。**永远不是上游响应原文** —— 那是 SSRF 的信息回传通道。
+     */
+    @Json(name = "callback_last_error") val callbackLastError: String? = null,
 ) {
     /** 非群主拿不到凭据,详情页据此只读展示。 */
     val canManage: Boolean get() = webhookUrl != null || kind == "builtin"

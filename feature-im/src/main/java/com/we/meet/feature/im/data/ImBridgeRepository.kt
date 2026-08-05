@@ -129,6 +129,9 @@ internal class ImBridgeRepository(private val api: ImApi) {
         keywords: List<String>? = null,
         ipAllowlist: List<String>? = null,
         isActive: Boolean? = null,
+        /** 空串 = 关掉回调。所以判的是 null 而不是 isNotBlank。 */
+        callbackUrl: String? = null,
+        callbackIncludeIdentity: Boolean? = null,
     ): ImBotDto = api.updateBot(
         id,
         buildMap {
@@ -139,6 +142,8 @@ internal class ImBridgeRepository(private val api: ImApi) {
             keywords?.let { put("keywords", it) }
             ipAllowlist?.let { put("ip_allowlist", it) }
             isActive?.let { put("is_active", it) }
+            callbackUrl?.let { put("callback_url", it) }
+            callbackIncludeIdentity?.let { put("callback_include_identity", it) }
         },
     )
 

@@ -342,6 +342,17 @@
     <string name="im_bots_security_ip">IP 白名单</string>
     <string name="im_bots_security_ip_hint">一行一个 IP 或网段,留空表示不限制。</string>
     <string name="im_bots_security_save">保存</string>
+    <string name="im_bots_callback_title">按钮回调</string>
+    <string name="im_bots_callback_hint">群成员点击卡片按钮时通知这个地址。只支持 https,留空表示关闭。</string>
+    <string name="im_bots_callback_placeholder">https://ci.example.com/hook</string>
+    <string name="im_bots_callback_identity">发送点击人姓名</string>
+    <string name="im_bots_callback_identity_hint">默认只发送一个每个机器人独立的假名:外部服务能分辨是不是同一个人,但认不出是谁。开启后会把点击人的姓名一并发给外部服务。</string>
+    <string name="im_bots_callback_disabled">已因连续失败自动停用。重新保存地址即可恢复。</string>
+    <string name="im_bots_callback_last_error">最近一次失败:%1$s</string>
+    <string name="im_bots_callback_reason_timeout">对方没有在规定时间内响应</string>
+    <string name="im_bots_callback_reason_refused">对方拒绝了这次请求</string>
+    <string name="im_bots_callback_reason_unreachable">连不上对方的地址</string>
+    <string name="im_bots_callback_reason_blocked">这个地址不被允许</string>
     <string name="im_bots_help_body">向机器人的 webhook 地址 POST 一段 JSON,消息就会以这个机器人的身份发到本群。请求格式与飞书自定义机器人一致,原有脚本改一个地址即可。
 
 纯文本 body:{\"msg_type\":\"text\",\"content\":{\"text\":\"构建完成\"}}

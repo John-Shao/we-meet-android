@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
+import com.we.meet.feature.im.R
 import com.we.meet.feature.im.data.ImBotDto
 import com.we.meet.feature.im.userMessageRes
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -37,7 +38,29 @@ data class BotUi(
     val keywords: List<String>,
     val ipAllowlist: List<String>,
     val canManage: Boolean,
+    /** 出站回调 (A3)。空串 = 没配 = 关。 */
+    val callbackUrl: String,
+    val callbackIncludeIdentity: Boolean,
+    /** 连续失败多次后后端自己关掉的;重新保存地址即可恢复。 */
+    val callbackEnabled: Boolean,
+    /** 最近一次失败的桶,上一次成功则为空串。见 [callbackFailureLabel]。 */
+    val callbackLastError: String,
 )
+
+/**
+ * 失败桶 → 文案。桶由后端定(`services/bot_callback.FAILURE_BUCKETS`),
+ * 客户端只负责翻译 —— 每一档对应群主的一个不同动作:等一会儿 / 找对方 /
+ * 查网络 / 改地址。
+ *
+ * 认不出的桶按「对方拒绝」显示而不是隐藏:不认识的失败也是失败。
+ */
+@StringRes
+internal fun callbackFailureLabel(bucket: String): Int = when (bucket) {
+    "timeout" -> R.string.im_bots_callback_reason_timeout
+    "unreachable" -> R.string.im_bots_callback_reason_unreachable
+    "blocked" -> R.string.im_bots_callback_reason_blocked
+    else -> R.string.im_bots_callback_reason_refused
+}
 
 internal fun ImBotDto.toUi(): BotUi = BotUi(
     id = id,
@@ -52,6 +75,11 @@ internal fun ImBotDto.toUi(): BotUi = BotUi(
     keywords = keywords.orEmpty(),
     ipAllowlist = ipAllowlist.orEmpty(),
     canManage = canManage,
+    callbackUrl = callbackUrl.orEmpty(),
+    callbackIncludeIdentity = callbackIncludeIdentity == true,
+    // 非群主全部拿 null。默认 true 是对的:没配地址时「已停用」的横幅不该出现。
+    callbackEnabled = callbackEnabled != false,
+    callbackLastError = callbackLastError.orEmpty(),
 )
 
 data class GroupBotsUiState(
@@ -310,6 +338,17 @@ class BotDetailViewModel internal constructor(
 
     fun setIpAllowlist(entries: List<String>) = mutate {
         val bot = session.bridge.updateBot(id = botId, ipAllowlist = entries)
+        _ui.update { it.copy(bot = bot.toUi()) }
+    }
+
+    /** 空串 = 关掉回调。地址不合法时后端 400,走 [mutate] 的错误分支当场提示。 */
+    fun setCallbackUrl(url: String) = mutate {
+        val bot = session.bridge.updateBot(id = botId, callbackUrl = url.trim())
+        _ui.update { it.copy(bot = bot.toUi()) }
+    }
+
+    fun setCallbackIdentity(include: Boolean) = mutate {
+        val bot = session.bridge.updateBot(id = botId, callbackIncludeIdentity = include)
         _ui.update { it.copy(bot = bot.toUi()) }
     }
 
