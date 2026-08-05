@@ -361,6 +361,36 @@ fun BotDetailScreen(
                         )
                     }
                     if (bot.callbackUrl.isNotEmpty()) {
+                        // 没有这个字段,出站签名就只是装饰 —— 接收方拿不到密钥
+                        // 就验不了,只能退回「URL 保密」。
+                        SectionLabel(stringResource(R.string.im_bots_callback_secret))
+                        Text(
+                            text = ui.callbackSecret ?: "••••••••••••", // i18n-exempt
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(horizontal = Dimens.SpaceXl),
+                        )
+                        Row(modifier = Modifier.padding(horizontal = Dimens.SpaceL)) {
+                            TextButton(onClick = vm::toggleCallbackSecret) {
+                                Text(
+                                    stringResource(
+                                        if (ui.callbackSecret != null) {
+                                            R.string.im_bots_security_hide
+                                        } else {
+                                            R.string.im_bots_security_show
+                                        }
+                                    )
+                                )
+                            }
+                            ui.callbackSecret?.let { secret ->
+                                TextButton(onClick = {
+                                    clipboard.setText(AnnotatedString(secret))
+                                    scope.launch { snackbar.showSnackbar(copiedLabel) }
+                                }) {
+                                    Text(stringResource(R.string.im_bots_webhook_copy))
+                                }
+                            }
+                        }
+                        Hint(stringResource(R.string.im_bots_callback_secret_hint))
                         ImSwitchRow(
                             label = stringResource(R.string.im_bots_callback_identity),
                             checked = bot.callbackIncludeIdentity,

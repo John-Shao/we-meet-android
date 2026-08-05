@@ -166,6 +166,15 @@ internal interface ImApi {
     @GET("api/v1.0/im/bots/{id}/secret/")
     suspend fun fetchBotSecret(@Path("id") id: String): ImBotSecretResponse
 
+    /**
+     * 出站回调的验签密钥(A3)。与上面那把是**两把**:入站那把验第三方发进来的,
+     * 这把让第三方验我们发出去的。没有它出站签名就只是装饰。
+     *
+     * 没配回调地址时 404 —— 密钥还没铸出来,回空串会被抄进对方的配置里。
+     */
+    @GET("api/v1.0/im/bots/{id}/callback-secret/")
+    suspend fun fetchBotCallbackSecret(@Path("id") id: String): ImBotSecretResponse
+
     /** 重置签名密钥,旧密钥立即失效。 */
     @POST("api/v1.0/im/bots/{id}/reset-secret/")
     suspend fun resetBotSecret(@Path("id") id: String): ImBotSecretResponse

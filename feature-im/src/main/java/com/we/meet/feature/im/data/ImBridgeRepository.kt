@@ -153,5 +153,8 @@ internal class ImBridgeRepository(private val api: ImApi) {
 
     suspend fun botSecret(id: String): String = api.fetchBotSecret(id).secret
 
+    suspend fun botCallbackSecret(id: String): String =
+        api.fetchBotCallbackSecret(id).secret
+
     suspend fun resetBotSecret(id: String): String = api.resetBotSecret(id).secret
 }

@@ -269,6 +269,8 @@ data class BotDetailUiState(
     val loading: Boolean = true,
     /** 明文密钥,只在用户点「显示」后才拉;隐藏时清空,不留在内存里。 */
     val secret: String? = null,
+    /** 出站回调的验签密钥。与 [secret] 是两把,各自独立显示/隐藏。 */
+    val callbackSecret: String? = null,
     val busy: Boolean = false,
     @StringRes val error: Int? = null,
     /** 已移除 —— 页面该 pop 回列表。 */
@@ -313,6 +315,16 @@ class BotDetailViewModel internal constructor(
             return
         }
         mutate { _ui.update { it.copy(secret = session.bridge.botSecret(botId)) } }
+    }
+
+    fun toggleCallbackSecret() {
+        if (_ui.value.callbackSecret != null) {
+            _ui.update { it.copy(callbackSecret = null) }
+            return
+        }
+        mutate {
+            _ui.update { it.copy(callbackSecret = session.bridge.botCallbackSecret(botId)) }
+        }
     }
 
     fun resetSecret() = mutate {
