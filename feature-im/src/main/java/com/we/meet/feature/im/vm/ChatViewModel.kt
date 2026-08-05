@@ -20,6 +20,7 @@ import com.we.meet.feature.im.data.ChatUploadException
 import com.we.meet.feature.im.data.DocHit
 import com.we.meet.feature.im.data.GroupTile
 import com.we.meet.feature.im.data.ImUserInfo
+import com.we.meet.feature.im.model.CardResolution
 import com.we.meet.feature.im.model.MessageContent
 import com.we.meet.feature.im.model.MessageContentParser
 import com.we.meet.feature.im.model.RichCardParser
@@ -65,6 +66,14 @@ data class ChatUiState(
     val recalledMids: Set<Long> = emptySet(),
     /** target mid → aggregated reactions (replayed in seq order, add/remove). */
     val reactions: Map<Long, ReactionMap> = emptyMap(),
+    /**
+     * 卡片按钮的叠加层(A2):卡片 mid → (actions 块 key → 定局结果)。
+     *
+     * **它是唯一真相** —— ws 的 card-state 可能早于点击接口的响应到达,所以
+     * 这里不做本地乐观态,点完等服务端。做了乐观态就要回答「响应和 ws 谁先
+     * 到」,而按时间戳合并会让先到的 ws 被后到的响应覆盖回旧值。
+     */
+    val cardStates: Map<Long, Map<String, CardResolution>> = emptyMap(),
     val pending: List<PendingSend> = emptyList(),
     val hasMore: Boolean = false,
     val loadingOlder: Boolean = false,
@@ -127,6 +136,14 @@ class ChatViewModel internal constructor(
      * [ChatUiState.messages] only carries renderable rows.
      */
     private var raw: List<Message> = emptyList()
+
+    /**
+     * 服务端批量拉到的叠加层(卡片 mid → 块 key → 结果)。
+     *
+     * 消息流回放只覆盖**已加载窗口内**的 card-state;往上翻到一张老卡时它的
+     * 结果条可能落在窗口之外,靠这份补上。两份合并见 [deriveRows]。
+     */
+    private var fetchedCardStates: Map<Long, Map<String, CardResolution>> = emptyMap()
 
     /** Locally-deleted mids (仅本端删除,持久化);filtered out of rendered rows. */
     private var deletedMids: Set<Long> = session.deletedMessages.get(cid)
@@ -577,6 +594,61 @@ class ChatViewModel internal constructor(
         }
     }
 
+    // ---- 卡片按钮(A2)----
+
+    /**
+     * 补拉当前窗口里所有卡片的叠加层。
+     *
+     * best-effort:拉不到就只靠消息流回放,少的是「窗口外那张老卡的结果条」,
+     * 而不是整屏空白。
+     */
+    private fun refreshCardStates() {
+        val mids = raw.filter { it.contentType == "rich-card" }.map { it.mid }.distinct()
+        if (mids.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { session.bridge.cardStates(mids) }
+                .onSuccess { response ->
+                    val parsed = mutableMapOf<Long, MutableMap<String, CardResolution>>()
+                    val states = response["states"] as? List<*> ?: emptyList<Any>()
+                    states.forEach { entry ->
+                        val row = entry as? Map<*, *> ?: return@forEach
+                        val mid = (row["mid"] as? Number)?.toLong() ?: return@forEach
+                        val resolved = row["resolved"] as? Map<*, *> ?: return@forEach
+                        resolved.forEach { (block, value) ->
+                            val item = value as? Map<*, *> ?: return@forEach
+                            parsed.getOrPut(mid) { linkedMapOf() }[block.toString()] =
+                                CardResolution(
+                                    buttonId = item["button_id"]?.toString().orEmpty(),
+                                    text = item["text"]?.toString().orEmpty(),
+                                )
+                        }
+                    }
+                    fetchedCardStates = parsed
+                    _ui.update { deriveRows(it) }
+                }
+                .onFailure { Log.w(TAG, "card states fetch failed", it) }
+        }
+    }
+
+    /**
+     * 点一个 callback 按钮。
+     *
+     * 不做本地乐观态:点完重新拉一次,让叠加层保持唯一真相(见 cardStates 的
+     * 注释)。409(别人已定局)走同一条路 —— 响应里其实带着当前状态,但统一
+     * 靠重取能少一条「响应和 ws 谁先到」的分支要想。
+     */
+    fun clickCardButton(mid: Long, buttonId: String) {
+        viewModelScope.launch {
+            val clickId = "$mid:$buttonId:${java.util.UUID.randomUUID()}"
+            runCatching { session.bridge.clickCardButton(mid, buttonId, clickId) }
+                .onFailure { e ->
+                    Log.w(TAG, "card click failed", e)
+                    _ui.update { it.copy(error = e.userMessageRes()) }
+                }
+            refreshCardStates()
+        }
+    }
+
     // ---- long-press actions (quote / recall / reaction) ----
 
     /**
@@ -832,6 +904,9 @@ class ChatViewModel internal constructor(
                         raw.lastOrNull()?.let { markRead(it.seq) }
                     }
                     requestNameResolution()
+                    // 窗口里可能有卡片,补拉它们的叠加层(消息流回放只覆盖
+                    // 窗口内的 card-state)。
+                    refreshCardStates()
                     locateSeq?.takeIf { !locateDone }?.let { locateTo(it) }
                 }
                 .onFailure { e ->
@@ -907,6 +982,8 @@ class ChatViewModel internal constructor(
     private fun deriveRows(s: ChatUiState): ChatUiState {
         val recalled = mutableSetOf<Long>()
         val reactions = mutableMapOf<Long, LinkedHashMap<String, MutableList<String>>>()
+        // 先铺服务端批量拉到的那份,再让消息流回放覆盖/补齐。
+        val cardStates = fetchedCardStates.mapValues { LinkedHashMap(it.value) }.toMutableMap()
         // P16 native final state first (history snapshot + live-patched raw):
         // recalled flag + aggregated reactions arrive on the message itself.
         raw.forEach { m ->
@@ -927,10 +1004,18 @@ class ChatViewModel internal constructor(
                     if (c.op == "remove") uids.remove(m.senderUid)
                     else if (m.senderUid !in uids) uids.add(m.senderUid)
                 }
+                // 卡片按钮的定局结果(A2)。与 fetched 那份合并的规则是**谁有
+                // 算谁,不比时间戳** —— once 块的定局靠数据库唯一约束保证每块
+                // 只有一条,两个来源不可能给出不同答案。
+                is MessageContent.CardState -> {
+                    cardStates.getOrPut(c.body.targetMid) { linkedMapOf() }[c.body.block] =
+                        CardResolution(c.body.buttonId, c.body.text)
+                }
                 else -> Unit
             }
         }
         return s.copy(
+            cardStates = cardStates,
             messages = raw.filterNot {
                 MessageContentParser.isControlType(it.contentType) || it.mid in deletedMids
             },

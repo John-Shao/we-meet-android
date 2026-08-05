@@ -29,6 +29,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import com.we.meet.feature.im.model.CardBlock
+import com.we.meet.feature.im.model.CardResolution
+import com.we.meet.feature.im.model.actionsBlockKey
 import com.we.meet.feature.im.model.CardButton
 import com.we.meet.feature.im.model.CardButtonAction
 import com.we.meet.feature.im.model.CardButtonStyle
@@ -69,7 +71,17 @@ private fun themeColors(theme: CardTheme): Pair<Color, Color> {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun RichCardBubble(body: RichCardBody, modifier: Modifier = Modifier) {
+fun RichCardBubble(
+    body: RichCardBody,
+    modifier: Modifier = Modifier,
+    /**
+     * 服务端的叠加层(actions 块 key → 定局结果)。**它是唯一真相** ——
+     * ws 的 card-state 可能早于点击接口的响应到达,所以这里不做本地乐观态。
+     */
+    resolved: Map<String, CardResolution> = emptyMap(),
+    /** 点一个 callback 按钮。null = 按钮渲染成禁用态(引用/转发的场景)。 */
+    onClickButton: ((String) -> Unit)? = null,
+) {
     Column(
         modifier = modifier
             .widthIn(max = Dimens.Chat.CardMaxWidth)
@@ -99,7 +111,7 @@ fun RichCardBubble(body: RichCardBody, modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
             modifier = Modifier.padding(Dimens.SpaceM),
         ) {
-            body.blocks.forEach { block ->
+            body.blocks.forEachIndexed { index, block ->
                 when (block) {
                     CardBlock.Divider -> HorizontalDivider(
                         color = MaterialTheme.colorScheme.outlineVariant,
@@ -130,11 +142,25 @@ fun RichCardBubble(body: RichCardBody, modifier: Modifier = Modifier) {
                         }
                     }
 
-                    is CardBlock.Actions -> FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
-                        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
-                    ) {
-                        block.buttons.forEach { CardButtonView(it) }
+                    is CardBlock.Actions -> {
+                        // 定局之后**原地换成结果条**,而不是把按钮置灰留着 ——
+                        // 留着会让人以为还能改。block key 的推导是三端契约,
+                        // 见 actionsBlockKey。
+                        val hit = resolved[actionsBlockKey(body.blocks, index)]
+                        if (hit != null) {
+                            Text(
+                                text = hit.text,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        } else {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
+                                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
+                            ) {
+                                block.buttons.forEach { CardButtonView(it, onClickButton) }
+                            }
+                        }
                     }
                 }
             }
@@ -179,18 +205,22 @@ private fun SpansText(spans: List<CardSpan>) {
 }
 
 @Composable
-private fun CardButtonView(button: CardButton) {
+private fun CardButtonView(button: CardButton, onClickButton: ((String) -> Unit)?) {
     val uriHandler = LocalUriHandler.current
     val tint = when (button.style) {
         CardButtonStyle.PRIMARY -> MaterialTheme.colorScheme.primary
         CardButtonStyle.DANGER -> WeMeetTheme.extras.status.danger
         CardButtonStyle.DEFAULT -> MaterialTheme.colorScheme.onSurface
     }
+    // 没有 onClickButton 的场合(引用、转发预览)callback 按钮渲染成禁用态
+    // —— 一个明摆着不能点的按钮,比一个点了没反应的按钮诚实。
+    val clickable = button.action == CardButtonAction.URL || onClickButton != null
     OutlinedButton(
-        // A2 之前 callback 按钮不会到达客户端(映射器丢掉了它们)。这个分支
-        // 是给协议兼容留的:万一来了,禁用比一个点了没反应的按钮诚实。
-        enabled = button.action == CardButtonAction.URL,
-        onClick = { if (button.action == CardButtonAction.URL) uriHandler.openUri(button.url) },
+        enabled = clickable,
+        onClick = {
+            if (button.action == CardButtonAction.URL) uriHandler.openUri(button.url)
+            else onClickButton?.invoke(button.id)
+        },
     ) {
         Text(text = button.text, color = tint, style = MaterialTheme.typography.labelLarge)
     }

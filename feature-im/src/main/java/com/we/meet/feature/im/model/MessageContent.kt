@@ -138,6 +138,13 @@ sealed interface MessageContent {
      */
     data class RichCard(val body: RichCardBody) : MessageContent
 
+    /**
+     * 卡片按钮的点击结果 — content_type `card-state`(A2)。**控制消息**:
+     * 不自成一行,由 ChatViewModel 回放成叠加层挂在 [CardStateBody.targetMid]
+     * 那张卡上。协议与解析在 [CardState.kt]。
+     */
+    data class CardState(val body: CardStateBody) : MessageContent
+
     /** Anything this client version doesn't render natively yet. */
     data class Unsupported(val contentType: String, val body: String) : MessageContent
 }
@@ -238,6 +245,9 @@ object MessageContentParser {
             ?: MessageContent.Unsupported(contentType, body)
         "rich-card" -> RichCardParser.parse(body)
             ?.let { MessageContent.RichCard(it) }
+            ?: MessageContent.Unsupported(contentType, body)
+        "card-state" -> CardStateParser.parse(body)
+            ?.let { MessageContent.CardState(it) }
             ?: MessageContent.Unsupported(contentType, body)
         "meeting-card" -> parseJson(contentType, body) {
             MessageContent.MeetingCard(

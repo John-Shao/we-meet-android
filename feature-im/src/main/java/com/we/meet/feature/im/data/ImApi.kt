@@ -46,6 +46,19 @@ internal interface ImApi {
     ): Map<String, Any>
 
     /** P9 踢人 (owner-only): `{"cid": ..., "member_user_id": ...}`. */
+    // 卡片按钮(A2)。**请求里没有 cid,也没有 value** —— 服务端按 mid 查
+    // 自己的记录拿权威 cid 再验成员资格。客户端说的一概不算。
+    @POST("api/v1.0/im/cards/{mid}/click/")
+    suspend fun clickCardButton(
+        @retrofit2.http.Path("mid") mid: Long,
+        @Body body: Map<String, String>,
+    ): Map<String, @JvmSuppressWildcards Any>
+
+    @POST("api/v1.0/im/cards/states/")
+    suspend fun cardStates(
+        @Body body: Map<String, @JvmSuppressWildcards Any>,
+    ): Map<String, @JvmSuppressWildcards Any>
+
     @POST("api/v1.0/im/conversations/remove-member/")
     suspend fun removeMember(@Body body: Map<String, String>): Map<String, Any>
 

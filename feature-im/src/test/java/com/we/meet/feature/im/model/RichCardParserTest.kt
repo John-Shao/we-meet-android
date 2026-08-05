@@ -189,3 +189,73 @@ class RichCardParserTest {
         assertEquals("{ not json", RichCardParser.stripActions("{ not json"))
     }
 }
+
+/**
+ * `card-state` 控制消息与 block key 推导(A2)。
+ *
+ * `actionsBlockKey` 是**三端契约**:服务端 `bot_cards.card_button_defs` 与 Web
+ * 的同名函数按同样规则编号,叠加层就是按这个 key 索引的。数错一位的后果是
+ * 「点了第二块,结果显示在第一块上」—— 不报错,只诡异。
+ */
+class CardStateParserTest {
+
+    private val fixtureDir: File by lazy {
+        File(
+            System.getProperty("imCardFixtures")
+                ?: error("imCardFixtures system property missing — see feature-im/build.gradle.kts."),
+        )
+    }
+
+    private fun load(name: String): String = File(fixtureDir, "$name.json").readText()
+
+    @Test
+    fun `parses the golden card-state payload`() {
+        val body = CardStateParser.parse(load("rich_card_state"))!!
+        assertEquals(717L, body.targetMid)
+        assertEquals("a0", body.block)
+        assertEquals("b0", body.buttonId)
+        assertTrue(body.text.contains("同意上线"))
+    }
+
+    @Test
+    fun `a payload without a target or block is not a state`() {
+        assertNull(CardStateParser.parse("""{"v":1,"block":"a0"}"""))
+        assertNull(CardStateParser.parse("""{"v":1,"target_mid":7}"""))
+        assertNull(CardStateParser.parse("{ not json"))
+    }
+
+    @Test
+    fun `the golden card's single actions block is a0`() {
+        val blocks = RichCardParser.parse(load("rich_card_full"))!!.blocks
+        val index = blocks.indexOfFirst { it is CardBlock.Actions }
+        assertEquals("a0", actionsBlockKey(blocks, index))
+    }
+
+    @Test
+    fun `block keys count actions blocks only — other blocks do not take a number`() {
+        val blocks = RichCardParser.parse(
+            """
+            {"v":1,"blocks":[
+              {"type":"actions","resolve":"once","buttons":[
+                {"id":"b0","text":"x","style":"default","action":"callback"}]},
+              {"type":"divider"},
+              {"type":"text","spans":[{"tag":"text","text":"中间"}]},
+              {"type":"actions","resolve":"each","buttons":[
+                {"id":"b1","text":"y","style":"default","action":"callback"}]}]}
+            """.trimIndent(),
+        )!!.blocks
+        assertEquals("a0", actionsBlockKey(blocks, 0))
+        assertEquals("a1", actionsBlockKey(blocks, 3))
+    }
+
+    @Test
+    fun `card-state routes to its own content type, not Unsupported`() {
+        val parsed = MessageContentParser.parse("card-state", load("rich_card_state"))
+        assertTrue(parsed is MessageContent.CardState)
+    }
+
+    @Test
+    fun `card-state is a control type — it must never render as its own row`() {
+        assertTrue(MessageContentParser.isControlType("card-state"))
+    }
+}

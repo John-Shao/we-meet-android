@@ -8,6 +8,17 @@ package com.we.meet.feature.im.data
  */
 internal class ImBridgeRepository(private val api: ImApi) {
 
+    /**
+     * 点一个卡片按钮(A2)。`clickId` 是幂等键 —— 同一次点击重试带同一个值,
+     * 服务端重放上次结果而不是再记一笔(与入站 webhook 的 X-Request-Id 同
+     * 一个思路)。409 = 这个 once 块已被别人定局。
+     */
+    suspend fun clickCardButton(mid: Long, buttonId: String, clickId: String) =
+        api.clickCardButton(mid, mapOf("button_id" to buttonId, "click_id" to clickId))
+
+    /** 批量拉一屏卡片的叠加层 —— 往上翻到窗口外的老卡时用得上。 */
+    suspend fun cardStates(mids: List<Long>) = api.cardStates(mapOf("mids" to mids))
+
     /** Mint an IM JWT via we-meet's `api/v1.0/im/token/`. */
     suspend fun token(): ImTokenResponse = api.fetchToken()
 

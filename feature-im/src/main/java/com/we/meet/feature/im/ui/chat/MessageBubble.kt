@@ -63,6 +63,7 @@ import com.jusi.lightim.Message
 import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.model.IM_SYSTEM_UID
+import com.we.meet.feature.im.model.CardResolution
 import com.we.meet.feature.im.model.MessageContent
 import com.we.meet.feature.im.model.MessageContentParser
 import com.we.meet.feature.im.model.formatCallDuration
@@ -97,6 +98,10 @@ fun MessageBubble(
     recalled: Boolean = false,
     /** Aggregated reactions on this message: emoji → reacting uids. */
     reactions: Map<String, List<String>> = emptyMap(),
+    /** 卡片按钮的叠加层(A2):actions 块 key → 定局结果。只有 rich-card 用得上。 */
+    cardResolved: Map<String, CardResolution> = emptyMap(),
+    /** 点一个 callback 按钮。null = 按钮渲染成禁用态。 */
+    onCardButton: ((String) -> Unit)? = null,
     /** Long-press on the bubble → open the message action menu. */
     onLongPress: (() -> Unit)? = null,
     /** @-mention highlighting (P10): all candidate names + the subset meaning "you". */
@@ -257,7 +262,11 @@ fun MessageBubble(
                 is MessageContent.MeetingCard -> MeetingCardBubble(
                     content, onLongPress,
                 ) { onJoinMeeting?.invoke(content.slug) }
-                is MessageContent.RichCard -> RichCardBubble(content.body)
+                is MessageContent.RichCard -> RichCardBubble(
+                    body = content.body,
+                    resolved = cardResolved,
+                    onClickButton = onCardButton,
+                )
                 is MessageContent.RichText -> RichTextBubble(
                     body = content.body,
                     isOwn = isOwn,
@@ -265,6 +274,9 @@ fun MessageBubble(
                     onLongPress = onLongPress,
                 )
                 is MessageContent.Unsupported -> UnsupportedBubble(isOwn)
+                // card-state 是控制消息:它被 isControlType 过滤在渲染之外,
+                // 由 ChatViewModel 回放成叠加层。走到这里说明过滤漏了。
+                is MessageContent.CardState -> Unit
                 // Control/system rows never reach here (filtered / early-returned).
                 is MessageContent.Recall, is MessageContent.Reaction,
                 is MessageContent.System, is MessageContent.PhoneViewed -> Unit

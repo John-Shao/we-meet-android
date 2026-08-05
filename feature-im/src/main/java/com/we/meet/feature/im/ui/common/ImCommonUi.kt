@@ -133,6 +133,9 @@ fun previewText(contentType: String?, body: String?): String {
         is MessageContent.Reaction -> stringResource(R.string.im_preview_reaction)
         is MessageContent.RichText -> RichTextParser.flatten(content.body)
         is MessageContent.RichCard -> RichCardParser.flatten(content.body)
+        // card-state 是控制消息,不进预览 —— 它被 isControlType 过滤在渲染
+        // 之外,由 ChatViewModel 回放成卡片上的叠加层。
+        is MessageContent.CardState -> ""
         is MessageContent.System -> content.body
         is MessageContent.CallLog -> stringResource(
             if (content.media == "video") R.string.im_calllog_video else R.string.im_calllog_voice
