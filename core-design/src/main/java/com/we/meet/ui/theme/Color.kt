@@ -149,6 +149,12 @@ val LightOnSuccessContainer = Color(0xFF005222)
 val LightAccentActive = Color(0xFF3366FF)
 val LightAccentActiveContainer = Color(0xFFD9E8FF)
 val LightOnAccentActiveContainer = Color(0xFF1E3A8A)
+// neutral 是「没有强调」那一档,**必须是真中性灰**。曾经直接用
+// `colorScheme.surfaceVariant`,但那个值 M3 是从 primary 派生的 —— 在本 App
+// 里带明显紫调,于是「无强调」的卡片头看起来像有强调,而且跟普通消息气泡同色。
+// 对比度 7.9:1,远超 WCAG AA。
+val LightNeutralContainer = Color(0xFFEDEDED)
+val LightOnNeutralContainer = Color(0xFF424242)
 
 // 深色主题下 danger 是浅红(它同时充当图标前景色,必须在深底上够亮),
 // 所以压在它上面的文字反过来要用深色。
@@ -165,6 +171,10 @@ val DarkOnSuccessContainer = Color(0xFFD6F5E0)
 val DarkAccentActive = Color(0xFF7BAAFB)
 val DarkAccentActiveContainer = Color(0xFF1E3A7A)
 val DarkOnAccentActiveContainer = Color(0xFFD9E8FF)
+// 深色下的中性档。亮度与其余几个 *Container 同一档,免得 neutral 卡片在深色
+// 里显得比 danger/warning 更「重」。对比度 7.4:1。
+val DarkNeutralContainer = Color(0xFF3A3F44)
+val DarkOnNeutralContainer = Color(0xFFD5D8DC)
 
 /**
  * IM(聊天与一对一通话)专用色。

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,6 +35,7 @@ import com.we.meet.feature.im.model.actionsBlockKey
 import com.we.meet.feature.im.model.CardButton
 import com.we.meet.feature.im.model.CardButtonAction
 import com.we.meet.feature.im.model.CardButtonStyle
+import com.we.meet.feature.im.model.CardField
 import com.we.meet.feature.im.model.CardSpan
 import com.we.meet.feature.im.model.CardTheme
 import com.we.meet.feature.im.model.RichCardBody
@@ -48,13 +50,15 @@ import com.we.meet.ui.theme.Dimens
  *
  * ## 配色:零新增色值
  *
- * 5 档语义全部映射到 `WeMeetTheme.extras.status` 已有的 `…Container` /
- * `on…Container` 配对(深浅两套齐备,对比度算过),neutral 走
- * `surfaceVariant` / `onSurfaceVariant`。**不要在这里写 `Color(0x…)`** ——
- * checkDesignTokens 会拦,而且那种硬编码在深色模式下必然失守。
+ * 5 档语义全部映射到 `WeMeetTheme.extras.status` 的 `…Container` /
+ * `on…Container` 配对(深浅两套齐备,对比度算过)。**不要在这里写
+ * `Color(0x…)`** —— checkDesignTokens 会拦,而且那种硬编码在深色模式下必然
+ * 失守。
  *
- * `surfaceVariant` 只出现在 `.background()`(规则显式豁免这一处),文字一律取
- * `onSurfaceVariant`。
+ * neutral 曾经走 `colorScheme.surfaceVariant`,真机上暴露出问题:那个值 M3
+ * 是从 primary 派生的,在本 App 里带明显紫调 —— 「无强调」的卡片头看起来像
+ * 有强调,而且**跟普通消息气泡撞色**,一眼分不出是卡片还是一条普通消息。
+ * 现在走专门的 `neutralContainer`,与 Web 的 `greyscale.100` 对齐。
  */
 @Composable
 private fun themeColors(theme: CardTheme): Pair<Color, Color> {
@@ -64,8 +68,7 @@ private fun themeColors(theme: CardTheme): Pair<Color, Color> {
         CardTheme.SUCCESS -> status.successContainer to status.onSuccessContainer
         CardTheme.WARNING -> status.warningContainer to status.onWarningContainer
         CardTheme.DANGER -> status.dangerContainer to status.onDangerContainer
-        CardTheme.NEUTRAL ->
-            MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+        CardTheme.NEUTRAL -> status.neutralContainer to status.onNeutralContainer
     }
 }
 
@@ -122,22 +125,27 @@ fun RichCardBubble(
                     is CardBlock.Fields -> Column(
                         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
                     ) {
-                        // 两列在窄屏上会把「4 分 12 秒」挤成两行,所以 App 端
-                        // 一列一项。Web 是宽屏才做两列 —— 这是布局差异,协议
-                        // 只保证顺序(见 build_rich_card 的注释)。
-                        block.items.forEach { item ->
-                            Column {
-                                if (item.label.isNotBlank()) {
-                                    Text(
-                                        text = item.label,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
+                        // **恒两列,奇数末项跨整行** —— 与 Web 同一条规则。
+                        // 发送方是照着两列网格设计卡片的(「环境 | 耗时」本来
+                        // 就该并排读),单列会把这个意图拆掉。
+                        //
+                        // 曾经这里是一列一项,理由是「窄屏会把『4 分 12 秒』
+                        // 挤成两行」。真机上看:卡片宽度下每列仍有富余,而且
+                        // 就算折行也比丢掉网格语义好。
+                        val rows = block.items.chunked(2)
+                        rows.forEach { pair ->
+                            if (pair.size == 1) {
+                                // 落单的一项跨整行,不留半行空白。
+                                FieldItem(pair[0], Modifier.fillMaxWidth())
+                            } else {
+                                Row(
+                                    horizontalArrangement =
+                                        Arrangement.spacedBy(Dimens.SpaceM),
+                                ) {
+                                    pair.forEach { item ->
+                                        FieldItem(item, Modifier.weight(1f))
+                                    }
                                 }
-                                Text(
-                                    text = item.value,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
                             }
                         }
                     }
@@ -223,5 +231,25 @@ private fun CardButtonView(button: CardButton, onClickButton: ((String) -> Unit)
         },
     ) {
         Text(text = button.text, color = tint, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+/**
+ * fields 里的一项。两列时 `weight(1f)` 平分,落单的一项 `fillMaxWidth()`。
+ *
+ * 抽出来是因为两个分支要渲染同一个东西 —— 内联两遍的话,以后改标签样式必然
+ * 只改一处。
+ */
+@Composable
+private fun FieldItem(item: CardField, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        if (item.label.isNotBlank()) {
+            Text(
+                text = item.label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(text = item.value, style = MaterialTheme.typography.bodyMedium)
     }
 }

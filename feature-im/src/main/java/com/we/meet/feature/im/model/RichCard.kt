@@ -252,13 +252,21 @@ object RichCardParser {
     fun stripActions(body: String): String = try {
         val root = JSONObject(body)
         val blocks = root.optJSONArray("blocks") ?: JSONArray()
-        val kept = JSONArray()
+        val kept = mutableListOf<Any>()
         var dropped = false
         for (i in 0 until blocks.length()) {
             val block = blocks.optJSONObject(i)
-            if (block?.optString("type") == "actions") dropped = true else kept.put(blocks.get(i))
+            if (block?.optString("type") == "actions") dropped = true else kept.add(blocks.get(i))
         }
-        if (!dropped) body else root.put("blocks", kept).toString()
+        // 按钮上面那条 divider 现在什么都不分隔了 —— 只掐**尾部**的,中间的
+        // 还在分隔内容。飞书的卡片几乎都是「…内容 / hr / 按钮」这个形状,
+        // 不处理的话每张转发过去的卡都会挂一条悬空的线。
+        while (kept.isNotEmpty() &&
+            (kept.last() as? JSONObject)?.optString("type") == "divider"
+        ) {
+            kept.removeAt(kept.size - 1)
+        }
+        if (!dropped) body else root.put("blocks", JSONArray(kept)).toString()
     } catch (_: Throwable) {
         body
     }

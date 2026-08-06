@@ -168,14 +168,35 @@ class RichCardParserTest {
     // ---- 转发剥离 --------------------------------------------------------------
 
     @Test
-    fun `stripActions removes the buttons and keeps everything else`() {
+    fun `stripActions removes the buttons and the now-pointless trailing rule`() {
+        // 金标准卡片是「text / fields / divider / actions」—— 飞书的卡几乎都
+        // 是这个形状。不掐尾部 divider 的话,每张转发过去的卡都挂一条什么都
+        // 不分隔的悬空线(真机上就是这么发现的)。
         val stripped = RichCardParser.parse(RichCardParser.stripActions(load("rich_card_full")))!!
         assertEquals(
-            listOf("Text", "Fields", "Divider"),
+            listOf("Text", "Fields"),
             stripped.blocks.map { it::class.simpleName },
         )
         assertEquals("生产构建失败", stripped.headerTitle)
         assertNotNull(stripped.plain)
+    }
+
+    @Test
+    fun `stripActions only trims trailing rules - the ones between content stay`() {
+        val raw = """
+            {"v":1,"blocks":[
+              {"type":"text","spans":[{"tag":"text","text":"上"}]},
+              {"type":"divider"},
+              {"type":"text","spans":[{"tag":"text","text":"下"}]},
+              {"type":"divider"},
+              {"type":"actions","resolve":"once","buttons":[]}
+            ]}
+        """.trimIndent()
+        val stripped = RichCardParser.parse(RichCardParser.stripActions(raw))!!
+        assertEquals(
+            listOf("Text", "Divider", "Text"),
+            stripped.blocks.map { it::class.simpleName },
+        )
     }
 
     @Test

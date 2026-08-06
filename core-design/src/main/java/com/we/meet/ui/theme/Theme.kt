@@ -88,6 +88,13 @@ data class StatusColors(
     val accentActive: Color,
     val accentActiveContainer: Color,
     val onAccentActiveContainer: Color,
+    /**
+     * 「没有强调」那一档。**不要用 `colorScheme.surfaceVariant` 代替** ——
+     * 那个值 M3 从 primary 派生,在本 App 里带紫调,会让 neutral 看起来像
+     * 一种颜色而不是「无色」,而且跟普通消息气泡撞色。
+     */
+    val neutralContainer: Color,
+    val onNeutralContainer: Color,
 )
 
 /**
@@ -331,6 +338,8 @@ private val LightExtras = WeMeetExtras(
         onSuccessContainer = LightOnSuccessContainer,
         accentActive = LightAccentActive,
         accentActiveContainer = LightAccentActiveContainer,
+        neutralContainer = LightNeutralContainer,
+        onNeutralContainer = LightOnNeutralContainer,
         onAccentActiveContainer = LightOnAccentActiveContainer,
     ),
     room = SharedRoomColors,
@@ -373,6 +382,8 @@ private val DarkExtras = WeMeetExtras(
         onSuccessContainer = DarkOnSuccessContainer,
         accentActive = DarkAccentActive,
         accentActiveContainer = DarkAccentActiveContainer,
+        neutralContainer = DarkNeutralContainer,
+        onNeutralContainer = DarkOnNeutralContainer,
         onAccentActiveContainer = DarkOnAccentActiveContainer,
     ),
     room = SharedRoomColors,
