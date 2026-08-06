@@ -1034,9 +1034,11 @@ class ChatViewModel internal constructor(
                     if (c.op == "remove") uids.remove(m.senderUid)
                     else if (m.senderUid !in uids) uids.add(m.senderUid)
                 }
-                // 卡片按钮的定局结果(A2)。与 fetched 那份合并的规则是**谁有
-                // 算谁,不比时间戳** —— once 块的定局靠数据库唯一约束保证每块
-                // 只有一条,两个来源不可能给出不同答案。
+                // 卡片按钮的定局结果(A2)。规则是**流内后到的覆盖先到的、流
+                // 压过 fetched**,仍然不比时间戳(消息流本身有序)。once 块靠
+                // 数据库唯一约束保证每块只有一条,但那一条的**文案可以被改写
+                // 一次** —— A3 的出站回调成功后上游能覆盖结果条,服务端会为此
+                // 再播一条 card-state。写成「谁有算谁」的话它永远显示不出来。
                 is MessageContent.CardState -> {
                     cardStates.getOrPut(c.body.targetMid) { linkedMapOf() }[c.body.block] =
                         CardResolution(c.body.buttonId, c.body.text)
