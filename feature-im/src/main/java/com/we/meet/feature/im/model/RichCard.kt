@@ -236,12 +236,19 @@ object RichCardParser {
     }
 
     /**
-     * 直接吃原始 body:解析不出来返回空串,调用方自己兜底文案。
+     * 直接吃原始 body:什么都拿不到返回空串,调用方自己兜底文案。
      *
-     * **必须在 parse 之前短路到服务端给的 plain** —— jusi 会把 last_message
-     * 截到 200 字,截断的 JSON 解析不出来,但截断的 plain 仍是人话。
+     * **必须在 parse 之前短路到 plain** —— jusi 会截断 last_message,截断的
+     * JSON 解析不出来,但截断的 plain 仍是人话。
+     *
+     * 这条注释以前就在,但代码是先 parse 再取 plain —— 于是每张卡在会话列表里
+     * 都显示成「[卡片]」。实现见 [RichTextParser.rawPlain]。
      */
-    fun preview(body: String): String = parse(body)?.let(::flatten).orEmpty()
+    fun preview(body: String): String {
+        val short = RichTextParser.rawPlain(body)
+        if (short.isNotBlank()) return RichTextParser.squeezePreview(short)
+        return parse(body)?.let { RichTextParser.squeezePreview(flatten(it)) }.orEmpty()
+    }
 
     /**
      * 转发副本要剥掉 actions 块。

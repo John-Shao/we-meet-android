@@ -112,6 +112,64 @@ object RichTextParser {
         return lines.joinToString(" ").trim()
     }
 
-    /** 直接吃原始 body:解析不出来就返回空串,调用方自己兜底文案。 */
-    fun preview(body: String): String = parse(body)?.let(::flatten).orEmpty()
+    /**
+     * 直接吃原始 body:什么都拿不到就返回空串,调用方自己兜底文案。
+     *
+     * **短路在 parse 之前** —— 见 [rawPlain]。
+     */
+    fun preview(body: String): String {
+        val short = rawPlain(body)
+        if (short.isNotBlank()) return squeezePreview(short)
+        return parse(body)?.let { squeezePreview(flatten(it)) }.orEmpty()
+    }
+
+    /**
+     * 从**原始字符串**里抠出 `plain`,不经过 JSON 解析。
+     *
+     * 会话列表的 `last_message` 被 jusi 截断过,截断的 JSON 解析不出来 —— 但
+     * 截断的 plain 仍然是人话。所以预览的短路必须在 parse **之前**;后端把
+     * `plain` 序列化成第一个键也是为了这个(排在最后的话它整段落在截断点之外,
+     * 抠也抠不到)。不这么做的后果真机上验到了:会话列表里每张卡都是「[卡片]」。
+     *
+     * 手写扫描而不是正则:既要正确处理转义,又要能在字符串**中途被截断**时把
+     * 已经读到的部分交出来。正则做不到后者。
+     */
+    fun rawPlain(raw: String): String {
+        val at = raw.indexOf("\"plain\"")
+        if (at < 0) return ""
+        val colon = raw.indexOf(':', at + 7)
+        if (colon < 0) return ""
+        val open = raw.indexOf('"', colon + 1)
+        if (open < 0) return ""
+
+        val out = StringBuilder()
+        var i = open + 1
+        while (i < raw.length) {
+            val ch = raw[i]
+            if (ch != '\\') {
+                if (ch == '"') break
+                out.append(ch)
+                i++
+                continue
+            }
+            if (i + 1 >= raw.length) break // 截断刚好落在转义符上
+            val next = raw[i + 1]
+            if (next == 'u') {
+                // 后端用 ensure_ascii=False,中文不走这里;控制字符才会。
+                val code = raw.substring(i + 2, minOf(i + 6, raw.length))
+                    .toIntOrNull(16)
+                out.append(if (code == null) ' ' else code.toChar())
+                i += 6
+                continue
+            }
+            // 换行/制表在一行预览里读作空格,其余(\" \\ \/)取字符本身。
+            out.append(if (next in "ntr") ' ' else next)
+            i += 2
+        }
+        return out.toString()
+    }
+
+    /** 预览统一收口:压掉空白、截到一行放得下的长度。 */
+    fun squeezePreview(text: String): String =
+        text.replace(Regex("\\s+"), " ").trim().take(60)
 }
