@@ -174,4 +174,110 @@ class MentionAliasesTest {
         assertEquals(MentionHit(), mentionScan("rich-text", "{ not json", me))
         assertEquals(MentionHit(), mentionScan("quote", "nope", me))
     }
+
+    // --- 转发时拆 @ --------------------------------------------------------------
+
+    /** 这块唯一真正要成立的事:转发副本扫不出任何 @。 */
+    private fun scanForward(ct: String, body: String) =
+        mentionScan(ct, defuseMentions(ct, body), me)
+
+    private fun cardWith(spans: String, plain: String? = null): String {
+        val tail = if (plain == null) "" else ""","plain":${JSONObject.quote(plain)}"""
+        return """{"v":1,"header":{"title":"build failed","theme":"danger"},""" +
+            """"blocks":[{"type":"text","spans":[$spans]}]$tail}"""
+    }
+
+    @Test
+    fun `the golden card no longer lights up once forwarded`() {
+        val raw = File(
+            System.getProperty("imCardFixtures") ?: error("imCardFixtures missing"),
+            "rich_card_full.json",
+        ).readText()
+        // 原件是会点亮的 —— 否则下面那条断言是空转。
+        assertTrue(mentionScan("rich-card", raw, me).everyone)
+        assertEquals(MentionHit(), scanForward("rich-card", raw))
+    }
+
+    @Test
+    fun `the words stay put, only the at tag is demoted`() {
+        // 读者该看到机器人当时说了什么。降级成普通文字后渲染从高亮变正文色,
+        // 那正是「这个 @ 不生效」的视觉信号 —— 与飞书同一口径。
+        val raw = cardWith(
+            """{"tag":"text","text":"please "},""" +
+                """{"tag":"at","uid":"all","name":"Everyone"},""" +
+                """{"tag":"text","text":" confirm"}""",
+        )
+        val block = RichCardParser.parse(defuseMentions("rich-card", raw))!!.blocks.first()
+        assertEquals(
+            listOf(
+                CardSpan.Text("please "),
+                CardSpan.Text("@Everyone"),
+                CardSpan.Text(" confirm"),
+            ),
+            (block as CardBlock.Text).spans,
+        )
+    }
+
+    @Test
+    fun `the plain leg is cut too — the at prefix goes, the words stay`() {
+        // 机器人完全可以不发 at 标签、直接在正文里打「@所有人」。只断结构那条腿
+        // 等于没断。字面量那条腿只看服务端给的 plain(从不自己推)。
+        val raw = cardWith(
+            """{"tag":"text","text":"@Iedereen let op"}""",
+            "build failed @Iedereen let op",
+        )
+        assertTrue(mentionScan("rich-card", raw, me).everyone)
+        assertEquals(MentionHit(), scanForward("rich-card", raw))
+        assertTrue(defuseMentions("rich-card", raw).contains("Iedereen let op"))
+    }
+
+    @Test
+    fun `naming a person is defused by name, without touching other at signs`() {
+        val raw = cardWith(
+            """{"tag":"at","uid":"ou_x","name":"Wang Xiaoming"}""",
+            "@Wang Xiaoming see also x@example.com",
+        )
+        assertTrue(mentionScan("rich-card", raw, me).self)
+        assertEquals(MentionHit(), scanForward("rich-card", raw))
+        // 邮箱里那个 @ 与点名无关,不该被动。
+        assertTrue(defuseMentions("rich-card", raw).contains("x@example.com"))
+    }
+
+    @Test
+    fun `a card with no plain gets a defused one written into the copy`() {
+        // 不写回去的话,对端会照降级后的正文重推一遍 plain,`@所有人` 原样长回来。
+        val raw = cardWith("""{"tag":"at","uid":"all","name":"Everyone"}""")
+        val defused = RichCardParser.parse(defuseMentions("rich-card", raw))!!
+        assertTrue(defused.plain.isNotBlank())
+        assertFalse(defused.plain.contains("@"))
+        assertEquals(MentionHit(), scanForward("rich-card", raw))
+    }
+
+    @Test
+    fun `rich-text works the same way`() {
+        val raw = """
+            {"v":1,"title":"build failed",
+             "content":[[{"tag":"at","uid":"all","name":"Everyone"}]],
+             "plain":"build failed @Everyone"}
+        """.trimIndent()
+        assertTrue(mentionScan("rich-text", raw, me).everyone)
+        assertEquals(MentionHit(), scanForward("rich-text", raw))
+    }
+
+    @Test
+    fun `nothing to defuse returns the body verbatim`() {
+        val raw = cardWith("""{"tag":"text","text":"build passed"}""", "build passed")
+        assertEquals(raw, defuseMentions("rich-card", raw))
+        assertEquals("{ not json", defuseMentions("rich-card", "{ not json"))
+        assertEquals("{ not json", defuseMentions("rich-text", "{ not json"))
+    }
+
+    @Test
+    fun `plain text is deliberately left alone`() {
+        // 已知边界:转发一条纯文本的 @所有人 仍然会亮。body 就是正文,改它等于
+        // 替人改口;而纯文本里的人名与普通文字也无从区分。
+        val raw = "@Alle tomorrow at nine"
+        assertEquals(raw, defuseMentions("text", raw))
+        assertTrue(mentionScan("text", defuseMentions("text", raw), me).everyone)
+    }
 }

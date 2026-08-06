@@ -1,7 +1,12 @@
 package com.we.meet.feature.im.model
 
+import org.json.JSONArray
+import org.json.JSONObject
+
 /**
- * 「我被 @ 了吗」的判定 —— **哪些 content_type 会被扫、怎么扫,只有这里说了算**。
+ * @ 的口径 —— **哪些 content_type 会被扫、怎么扫,只有这里说了算**;转发时怎么
+ * 把 @ 拆掉([defuseMentions])也在这里,两者必须同进同退:判定多认一条腿而拆
+ * 的时候漏了它,就是「转发一张卡把全群又 @ 一遍」。
  *
  * ## 为什么要有别名表
  *
@@ -104,4 +109,102 @@ fun mentionScan(
 
         else -> MentionHit()
     }
+}
+
+// ---- 转发时拆掉 @ ------------------------------------------------------------
+
+/** `@所有人` → `所有人`。与 [mentionsEveryone] 同一张表、同样大小写无关。 */
+private val EVERYONE_AT = Regex(
+    "@(" + MENTION_EVERYONE_ALIASES.joinToString("|") { Regex.escape(it) } + ")",
+    RegexOption.IGNORE_CASE,
+)
+
+/** 只摘 `@` 前缀,字一个不删 —— 预览里读作「…运行日志 所有人 环境 生产」。 */
+private fun unmark(plain: String, atNames: List<String>): String {
+    var out = EVERYONE_AT.replace(plain) { it.groupValues[1] }
+    // 点名到人:只摘这条消息自己 `at` 标签里出现过的名字,不碰正文里别的 `@`。
+    for (name in atNames) if (name.isNotEmpty()) out = out.replace("@$name", name)
+    return out
+}
+
+/**
+ * 把要**转发**出去的 body 里的 @ 拆掉,让它在目标会话里不再点亮任何人。
+ *
+ * 转发的人想 @ 全群,应该自己打 —— 而不是靠转发时夹带。飞书也是这个口径:
+ * 转发过去的 @ 退化成普通文字,不触发通知。
+ *
+ * ## 为什么正文保留 `@`、只把 `plain` 里的摘掉
+ *
+ * [mentionScan] 有两条腿:结构(`at` 标签)和 `plain` 里的字面量。**两条都得断**,
+ * 只断一条等于没断。但正文是「机器人当时说了什么」,读者该照原样看到 —— 所以
+ * 正文只把 `at` 标签降级成普通文字(渲染上从高亮变成正文色,这正是「这个 @ 不
+ * 生效」的视觉信号),文字一个字不改;真正被改掉的是 `plain` 投影里那个 `@`。
+ * 这层刻意的不一致只在预览/搜索里看得见,换来的是正文不被篡改。
+ *
+ * ## 拆不掉的那一半(刻意不做)
+ *
+ * 纯 `text` 消息不碰:那是**人写的一句话**,body 就是正文、没有投影层可改,
+ * 动它等于替人改口。同理机器人在正文里手打的「@张三」—— 纯文本里的人名与普通
+ * 文字无从区分。所以转发一条纯文本的 `@所有人` 仍然会亮,这条是已知边界。
+ *
+ * 这里直接改 JSON 而不是走数据类:两个 parser 都是单向的(App 端只渲染不构造),
+ * 为拆个 @ 造一套 builder 反而多一份会漂的协议实现。手法同
+ * [RichCardParser.stripActions]。
+ */
+fun defuseMentions(contentType: String, body: String): String = try {
+    when (contentType) {
+        "rich-card" -> defuseCard(body)
+        "rich-text" -> defuseRichText(body)
+        else -> body
+    }
+} catch (_: Throwable) {
+    body
+}
+
+private fun defuseCard(body: String): String {
+    val root = JSONObject(body)
+    // plain 从**原始** spans 推,推完一定要写回去 —— 不写的话对端拿不到 plain
+    // 会照降级后的正文重推一遍,`@所有人` 原样长回来。
+    val derived = root.optString("plain").ifBlank {
+        RichCardParser.parse(body)?.let(RichCardParser::flatten).orEmpty()
+    }
+    val names = mutableListOf<String>()
+    val blocks = root.optJSONArray("blocks") ?: JSONArray()
+    for (i in 0 until blocks.length()) {
+        val block = blocks.optJSONObject(i) ?: continue
+        if (block.optString("type") != "text") continue
+        val spans = block.optJSONArray("spans") ?: continue
+        for (j in 0 until spans.length()) {
+            val span = spans.optJSONObject(j) ?: continue
+            if (span.optString("tag") != "at") continue
+            val name = span.optString("name").ifBlank { span.optString("uid") }
+            names.add(name)
+            spans.put(j, JSONObject().put("tag", "text").put("text", "@$name"))
+        }
+    }
+    val plain = unmark(derived, names)
+    if (names.isEmpty() && plain == derived) return body
+    return root.put("plain", plain).toString()
+}
+
+private fun defuseRichText(body: String): String {
+    val root = JSONObject(body)
+    val derived = root.optString("plain").ifBlank {
+        RichTextParser.parse(body)?.let(RichTextParser::flatten).orEmpty()
+    }
+    val names = mutableListOf<String>()
+    val content = root.optJSONArray("content") ?: JSONArray()
+    for (i in 0 until content.length()) {
+        val paragraph = content.optJSONArray(i) ?: continue
+        for (j in 0 until paragraph.length()) {
+            val tag = paragraph.optJSONObject(j) ?: continue
+            if (tag.optString("tag") != "at") continue
+            val name = tag.optString("name").ifBlank { tag.optString("uid") }
+            names.add(name)
+            paragraph.put(j, JSONObject().put("tag", "text").put("text", "@$name"))
+        }
+    }
+    val plain = unmark(derived, names)
+    if (names.isEmpty() && plain == derived) return body
+    return root.put("plain", plain).toString()
 }

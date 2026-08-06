@@ -25,6 +25,7 @@ import com.we.meet.feature.im.model.MessageContent
 import com.we.meet.feature.im.model.MessageContentParser
 import com.we.meet.feature.im.model.RichCardParser
 import com.we.meet.feature.im.model.RichTextParser
+import com.we.meet.feature.im.model.defuseMentions
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -360,11 +361,36 @@ class ChatViewModel internal constructor(
             }
     }
 
-    /** Re-send [message] verbatim (same content_type/body) into [targetCid]. */
+    /**
+     * 转发副本的 body —— 同 content_type,但正文不是原样照搬。两件事:
+     *
+     * 1. **卡片要剥掉 actions 块**:转发产生新 mid、服务端没有它的按钮记录,
+     *    点了必然 404。那个 404 是真正的兜底,这里是不让用户看到一排点不动的
+     *    按钮(以及按钮上面那条什么都不分隔的悬空线)。
+     * 2. **拆掉 @**:转发的人想 @ 全群应该自己打,不能靠转发夹带。见
+     *    [defuseMentions]。
+     *
+     * 两条对不带这些结构的类型都是恒等的,所以转发入口无脑过一遍即可。
+     */
+    private fun forwardBodyOf(message: Message): String {
+        val body = if (message.contentType == "rich-card") {
+            RichCardParser.stripActions(message.body)
+        } else {
+            message.body
+        }
+        return defuseMentions(message.contentType, body)
+    }
+
+    /** Re-send [message] (same content_type, [forwardBodyOf] body) into [targetCid]. */
     fun forward(message: Message, targetCid: String) {
         viewModelScope.launch {
-            runCatching { session.client.sendText(targetCid, message.body, contentType = message.contentType) }
-                .onFailure { Log.w(TAG, "forward failed", it) }
+            runCatching {
+                session.client.sendText(
+                    targetCid,
+                    forwardBodyOf(message),
+                    contentType = message.contentType,
+                )
+            }.onFailure { Log.w(TAG, "forward failed", it) }
         }
     }
 
@@ -403,7 +429,11 @@ class ChatViewModel internal constructor(
         viewModelScope.launch {
             messages.sortedBy { it.seq }.forEach { m ->
                 runCatching {
-                    session.client.sendText(targetCid, m.body, contentType = m.contentType)
+                    session.client.sendText(
+                        targetCid,
+                        forwardBodyOf(m),
+                        contentType = m.contentType,
+                    )
                 }.onFailure { Log.w(TAG, "forwardOneByOne failed for mid=${m.mid}", it) }
             }
         }
