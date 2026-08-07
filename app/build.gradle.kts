@@ -171,4 +171,9 @@ dependencies {
     // Activity Result API. Pulled in as a direct coordinate rather than via
     // libs.versions.toml because it's the only ZXing-derived dep we use.
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+
+    // JVM 单测。这个模块此前一个测试都没有 —— 加它是因为提醒角标的窗口口径
+    // 必须和 Web / 服务端三处对齐,而「对齐」这种事只有测试守得住。
+    // 先例:feature-im 的 build.gradle.kts。
+    testImplementation(libs.junit)
 }

@@ -21,6 +21,11 @@ data class EventUi(
     val organizerId: String? = null,
     /** 主事件(带 RRULE)或子场次:改期涉及三选语义,拖动一律不开放。 */
     val recurring: Boolean = false,
+    /**
+     * 这条日程设的提前量(分钟)。消息列表「日程提醒」的倒计时角标按它算 ——
+     * 见 `reminder/ReminderModels.countdownWindowMinutes`。
+     */
+    val reminders: List<Int> = emptyList(),
 ) {
     /**
      * Every LocalDate this event covers, for day bucketing. All-day events use
@@ -65,6 +70,7 @@ fun CalendarEventDto.toParsed(): ParsedEvent? {
             cancelled = status.equals("cancelled", ignoreCase = true),
             organizerId = organizer?.id?.takeIf { it.isNotBlank() },
             recurring = isRecurring,
+            reminders = reminders,
         ),
         zone = eventZone,
     )
