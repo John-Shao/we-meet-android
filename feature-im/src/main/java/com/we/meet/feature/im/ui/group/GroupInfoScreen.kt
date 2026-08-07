@@ -270,6 +270,7 @@ fun GroupInfoScreen(
                     if (onOpenBots != null) {
                         ImNavRow(
                             label = stringResource(R.string.im_bots_entry),
+                            value = ui.botCount?.toString(),
                             onClick = { onOpenBots(cid) },
                         )
                         HorizontalDivider()

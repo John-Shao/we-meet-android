@@ -38,6 +38,13 @@ data class GroupInfoUiState(
     val name: String = "",
     val description: String = "",
     val members: List<GroupMemberUi> = emptyList(),
+    /**
+     * 群里装了几个机器人(对标飞书:入口右侧带数字)。
+     *
+     * null = 还没拿到 / 拉取失败,这时那一行不显示数字 —— 先写 0 再跳成 2,
+     * 看着像刚被人加了一个。
+     */
+    val botCount: Int? = null,
     val isOwner: Boolean = false,
     /** Caller's own per-conversation 群昵称 (P10); blank = use directory name. */
     val myNickname: String = "",
@@ -129,6 +136,12 @@ class GroupInfoViewModel internal constructor(
                     Log.w(TAG, "group info refresh failed", e)
                     _ui.update { it.copy(error = e.userMessageRes()) }
                 }
+            // 机器人计数。**失败不报错、不清空**:这一行没有数字照样能点进去,
+            // 为一个角标把整屏推进错误态不值当。装/删机器人会让 jusi 发
+            // member_added/removed,顺着上面那条 collect 再跑一遍,数字自己会更。
+            runCatching { session.bridge.listBots(cid) }
+                .onSuccess { bots -> _ui.update { it.copy(botCount = bots.size) } }
+                .onFailure { e -> Log.w(TAG, "bot count failed", e) }
         }
     }
 
