@@ -202,6 +202,15 @@ class ChatViewModel internal constructor(
                 _ui.update { deriveRows(it) }
             }
         }
+        // P24 仅对我删除:回声只会为本账号发,可能来自另一台设备 —— 或者是
+        // 重连补拉替我们补上的那批。幂等应用。
+        viewModelScope.launch {
+            session.client.messagesDeleted.collect { e ->
+                if (e.cid != cid) return@collect
+                applyDeleted(e.mids)
+            }
+        }
+        migrateLocalDeletions()
         // P17 pin set changed (own or peers') → refetch the snapshot list.
         viewModelScope.launch {
             session.client.pins.collect { e ->
@@ -728,8 +737,9 @@ class ChatViewModel internal constructor(
     }
 
     /**
-     * Batch-delete selected messages via the backend bridge. On success, the
-     * messages are removed from the local cache so the UI updates immediately.
+     * 仅对我删除(P24):删除落在服务端,同一账号的所有设备一致;其他成员照常
+     * 可见。本地那份从「唯一真相」降级为乐观隐藏 + 离线容忍缓存——服务端回声
+     * (messagesDeleted)到达前 UI 就已经撤下,到达后再确认一遍,幂等。
      */
     fun deleteMessages(
         mids: Collection<Long>,
@@ -739,20 +749,37 @@ class ChatViewModel internal constructor(
     ) {
         viewModelScope.launch {
             try {
-                session.bridge.deleteMessages(cid, mids)
-                // 仅本端删除:持久化已删 mid(重进/重启不复现)+ 立即从渲染中过滤。
-                session.deletedMessages.add(cid, mids)
-                deletedMids = deletedMids + mids
-                raw = raw.filterNot { it.mid in mids }
-                _ui.update { s ->
-                    deriveRows(s).copy(error = null)
-                }
+                session.client.deleteMessages(cid, mids.toList())
+                applyDeleted(mids)
                 onSuccess()
             } catch (e: Throwable) {
                 Log.w(TAG, "deleteMessages failed", e)
                 _ui.update { it.copy(error = e.userMessageRes()) }
                 onError(e.userMessageRes())
             }
+        }
+    }
+
+    /** Drop [mids] from the rendered stream + the local cache. Idempotent. */
+    private fun applyDeleted(mids: Collection<Long>) {
+        if (mids.isEmpty()) return
+        session.deletedMessages.add(cid, mids)
+        deletedMids = deletedMids + mids
+        raw = raw.filterNot { it.mid in mids }
+        _ui.update { s -> deriveRows(s).copy(error = null) }
+    }
+
+    /**
+     * 一次性迁移:P24 之前的删除只存在本设备。进会话时把存量补发给服务端,
+     * 成功后清掉本地那份。不做这步,老用户升级后历史删除会当场全部复活。
+     */
+    private fun migrateLocalDeletions() {
+        val pending = session.deletedMessages.get(cid)
+        if (pending.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { session.client.deleteMessages(cid, pending.toList()) }
+                .onSuccess { session.deletedMessages.clear(cid) }
+                .onFailure { Log.w(TAG, "migrate local deletions failed; will retry next entry", it) }
         }
     }
 

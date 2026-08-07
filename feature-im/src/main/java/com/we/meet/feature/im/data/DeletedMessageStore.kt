@@ -3,9 +3,11 @@ package com.we.meet.feature.im.data
 import android.content.Context
 
 /**
- * 「删除消息」= 仅本端删除(微信/飞书语义)。jusi-light-im 暂无服务端删除端点,
- * 后端只验成员身份;真正的隐藏在客户端。已删 mid 按 cid 持久化到本设备,
- * 使删除在刷新/重进会话/重启后不复现(但不影响其他成员,他们仍能看到)。
+ * 「删除消息」= 仅对我删除(微信/飞书语义,不影响其他成员)。
+ *
+ * P24 起服务端(jusi `message_deletions`)才是真相,拉历史时已删的行根本不会
+ * 回来。这份本地缓存降级为两件事:①服务端回声到达前的乐观隐藏;②P24 之前的
+ * 存量——进会话时补发给服务端后 [clear] 掉(见 ChatViewModel.migrateLocalDeletions)。
  */
 internal class DeletedMessageStore(context: Context) {
     private val prefs =
@@ -24,6 +26,11 @@ internal class DeletedMessageStore(context: Context) {
         // getStringSet's result must not be mutated — build a fresh set.
         val merged = (get(cid) + mids).map { it.toString() }.toSet()
         prefs.edit().putStringSet(key(cid), merged).apply()
+    }
+
+    /** Forget [cid]'s local set — called once the server has taken it over. */
+    fun clear(cid: String) {
+        prefs.edit().remove(key(cid)).apply()
     }
 
     private fun key(cid: String) = "cid:$cid"

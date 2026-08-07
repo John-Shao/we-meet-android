@@ -114,12 +114,6 @@ internal interface ImApi {
         @Body body: Map<String, @JvmSuppressWildcards Any>,
     ): Map<String, String>
 
-    /** Batch-delete messages: `{"cid": ..., "mids": [...]}`. Any member may delete. */
-    @POST("api/v1.0/im/messages/delete/")
-    suspend fun deleteMessages(
-        @Body body: Map<String, @JvmSuppressWildcards Any>,
-    ): Map<String, Any>
-
     /**
      * 分享云文档到聊天:给目标会话成员对文档授只读。Body `{doc_id, cids:[...]}`。
      * 后端权威解析会话成员 → sub/email → 调 Docs s2s 精准授权。best-effort。
