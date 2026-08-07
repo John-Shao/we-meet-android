@@ -294,8 +294,9 @@ fun GroupInfoScreen(
                 }
 
                 item {
-                    Spacer(Modifier.height(Dimens.SpaceM))
-                    HorizontalDivider()
+                    // 分组靠这段空白断开就够了 —— 上一组末行已经有收尾线(与本屏
+                    // 其它行同口径),这里再补一条起始线就成了 12dp 里夹两条线。
+                    Spacer(Modifier.height(Dimens.SpaceL))
                     ImActionRow(stringResource(R.string.im_group_clear_history)) { confirmClear = true }
                     // 「转让群主」不再在这里 —— 它现在是成员页每一行上的按钮
                     // (与 Web 同口径)。原来那条入口会弹一个选人 Dialog,那就是
