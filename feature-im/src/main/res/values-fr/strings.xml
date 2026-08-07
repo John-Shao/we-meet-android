@@ -185,6 +185,7 @@
     <string name="im_action_delete">Supprimer</string>
     <string name="im_delete_confirm_title">Supprimer les messages ?</string>
     <string name="im_delete_confirm_message">Supprimer %1$d messages sélectionnés ? Ils seront retirés de votre affichage uniquement ; les autres membres les voient toujours.</string>
+    <string name="im_delete_one_confirm_message">Supprimer ce message ? Il sera retiré de votre affichage uniquement ; les autres membres le voient toujours.</string>
     <string name="im_delete_failed">Échec de la suppression</string>
     <!-- P4 call escalation -->
     <string name="im_call_incoming_meet_voice">Vous invite à rejoindre un appel vocal</string>

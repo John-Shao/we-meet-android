@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.we.meet.feature.im.R
@@ -34,8 +36,9 @@ val QUICK_REACTIONS = listOf("👍", "❤️", "😂", "😮", "😢", "🙏")
 
 /**
  * Long-press message menu: a quick-reaction emoji row on top, then actions
- * (copy / reply / recall). Recall shows only for the caller's own recent
- * messages ([canRecall]).
+ * (copy / reply / forward / multi-select / pin / recall / delete). Recall shows
+ * only for the caller's own recent messages ([canRecall]); delete is 仅本端 so
+ * it shows for every message.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,6 +54,8 @@ fun MessageActionSheet(
     onMultiSelect: () -> Unit,
     onRecall: () -> Unit,
     onTogglePin: () -> Unit,
+    /** 仅本端删除(不限发送者),与多选删除同一条路径,只是一次一条。 */
+    onDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -103,6 +108,13 @@ fun MessageActionSheet(
                 onRecall(); onDismiss()
             }
         }
+        ActionRow(
+            Icons.Filled.DeleteOutline,
+            stringResource(R.string.im_action_delete),
+            danger = true,
+        ) {
+            onDelete(); onDismiss()
+        }
         Column(Modifier.padding(bottom = Dimens.SpaceL)) {}
     }
 }
@@ -111,8 +123,12 @@ fun MessageActionSheet(
 private fun ActionRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
+    /** Destructive rows (删除) render in the error colour, like the web menu. */
+    danger: Boolean = false,
     onClick: () -> Unit,
 ) {
+    val tint =
+        if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -120,10 +136,11 @@ private fun ActionRow(
             .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(icon, contentDescription = null, tint = tint)
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
+            color = if (danger) MaterialTheme.colorScheme.error else Color.Unspecified,
             modifier = Modifier.padding(start = Dimens.ScreenPadding),
         )
     }

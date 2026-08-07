@@ -185,6 +185,7 @@
     <string name="im_action_delete">Verwijderen</string>
     <string name="im_delete_confirm_title">Berichten verwijderen?</string>
     <string name="im_delete_confirm_message">%1$d geselecteerde berichten verwijderen? Ze worden alleen uit jouw weergave verwijderd; andere leden zien ze nog.</string>
+    <string name="im_delete_one_confirm_message">Dit bericht verwijderen? Het wordt alleen uit jouw weergave verwijderd; andere leden zien het nog.</string>
     <string name="im_delete_failed">Verwijderen mislukt</string>
     <!-- P4 call escalation -->
     <string name="im_call_incoming_meet_voice">Nodigt je uit voor een spraakoproep</string>

@@ -185,6 +185,7 @@
     <string name="im_action_delete">Löschen</string>
     <string name="im_delete_confirm_title">Nachrichten löschen?</string>
     <string name="im_delete_confirm_message">%1$d ausgewählte Nachrichten löschen? Sie werden nur aus deiner Ansicht entfernt; andere Mitglieder sehen sie weiterhin.</string>
+    <string name="im_delete_one_confirm_message">Diese Nachricht löschen? Sie wird nur aus deiner Ansicht entfernt; andere Mitglieder sehen sie weiterhin.</string>
     <string name="im_delete_failed">Löschen fehlgeschlagen</string>
     <!-- P4 call escalation -->
     <string name="im_call_incoming_meet_voice">Lädt Sie zu einem Sprachanruf ein</string>

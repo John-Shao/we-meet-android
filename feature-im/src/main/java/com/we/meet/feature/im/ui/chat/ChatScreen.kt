@@ -174,7 +174,8 @@ fun ChatScreen(
     var forwardCreateGroup by remember { mutableStateOf(false) }
     var selectMode by remember { mutableStateOf(false) }
     var selectedMids by remember { mutableStateOf<Set<Long>>(emptySet()) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
+    // 待删除的 mid:多选底栏塞整批、长按菜单塞一条——非空即弹确认框,同一条路径。
+    var deleteTargets by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var showCallSheet by remember { mutableStateOf(false) }
     // 分享云文档到聊天(入口 A):「+」面板「云文档」→ 选择器。
     var showDocPicker by remember { mutableStateOf(false) }
@@ -563,7 +564,7 @@ fun ChatScreen(
                         val chosen = ui.messages.filter { it.mid in selectedMids }
                         forwardJob = { cid -> vm.forwardMerged(chosen, cid) }
                     },
-                    onDelete = { showDeleteConfirm = true },
+                    onDelete = { deleteTargets = selectedMids },
                 )
             } else
             MessageInputBar(
@@ -621,6 +622,7 @@ fun ChatScreen(
             onForward = { forwardJob = { cid -> vm.forward(target, cid) } },
             onMultiSelect = { selectMode = true; selectedMids = setOf(target.mid) },
             onRecall = { vm.recall(target) },
+            onDelete = { deleteTargets = setOf(target.mid) },
             onTogglePin = { vm.togglePin(target) },
             onDismiss = { actionTarget = null },
         )
@@ -671,25 +673,27 @@ fun ChatScreen(
         )
     }
 
-    // Delete confirmation dialog.
-    if (showDeleteConfirm) {
+    // Delete confirmation dialog (multi-select bottom bar + long-press menu).
+    if (deleteTargets.isNotEmpty()) {
+        val targets = deleteTargets
         AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
+            onDismissRequest = { deleteTargets = emptySet() },
             title = { Text(stringResource(R.string.im_delete_confirm_title)) },
             text = {
                 Text(
-                    stringResource(
-                        R.string.im_delete_confirm_message,
-                        selectedMids.size,
-                    )
+                    if (targets.size == 1) {
+                        stringResource(R.string.im_delete_one_confirm_message)
+                    } else {
+                        stringResource(R.string.im_delete_confirm_message, targets.size)
+                    }
                 )
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showDeleteConfirm = false
+                        deleteTargets = emptySet()
                         vm.deleteMessages(
-                            mids = selectedMids,
+                            mids = targets,
                             onSuccess = {
                                 exitSelect()
                                 Toast.makeText(
@@ -713,7 +717,7 @@ fun ChatScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
+                TextButton(onClick = { deleteTargets = emptySet() }) {
                     Text(stringResource(R.string.im_action_cancel))
                 }
             },
