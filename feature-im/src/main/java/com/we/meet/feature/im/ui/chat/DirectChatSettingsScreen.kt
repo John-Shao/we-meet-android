@@ -62,7 +62,7 @@ fun DirectChatSettingsScreen(
     onCreateGroup: (peerUserId: String?) -> Unit,
     /** P8 日程：双方忙闲对比页（app 层接 FREE_BUSY 路由）。resolve 未完成
      * (peerUserId null,如跨组织)时该行置灰。null 隐藏入口。 */
-    onViewCalendar: ((peerUserId: String, peerName: String) -> Unit)? = null,
+    onViewCalendar: ((peerUserId: String) -> Unit)? = null,
 ) {
     val vm: DirectChatSettingsViewModel =
         viewModel(key = "direct-settings-$cid", factory = remember(deps, cid) {
@@ -149,7 +149,7 @@ fun DirectChatSettingsScreen(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(Dimens.CornerS))
                                 .clickable(enabled = peerId != null) {
-                                    peerId?.let { onViewCalendar(it, ui.peerName) }
+                                    peerId?.let(onViewCalendar)
                                 }
                                 .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
                         ) {

@@ -744,6 +744,8 @@ fun AppNav() {
             arguments = listOf(navArgument("cid") { type = NavType.StringType }),
         ) { entry ->
             val cid = Routes.decode(entry.arguments?.getString("cid").orEmpty())
+            val directCalendarTitle =
+                androidx.compose.ui.res.stringResource(R.string.freebusy_title)
             DirectChatSettingsScreen(
                 deps = app,
                 cid = cid,
@@ -755,9 +757,9 @@ fun AppNav() {
                     }
                 },
                 // P8 私聊应用「日程」：我 + 对端两列忙闲；srcCid 供创建后回发卡片。
-                onViewCalendar = { peerUserId, peerName ->
+                onViewCalendar = { peerUserId ->
                     navController.navigate(
-                        Routes.freeBusy(listOf(peerUserId), peerName, cid),
+                        Routes.freeBusy(listOf(peerUserId), directCalendarTitle, cid),
                     )
                 },
             )
