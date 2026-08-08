@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.AttachFile
@@ -1099,7 +1098,7 @@ private fun PlusPanel(
     val items = buildList {
         add(PlusItem(Icons.Filled.PhotoLibrary, R.string.im_plus_album, onImage))
         add(PlusItem(Icons.Filled.PhotoCamera, R.string.im_plus_camera, onCamera))
-        add(PlusItem(Icons.AutoMirrored.Filled.InsertDriveFile, R.string.im_plus_file, onFile))
+        add(PlusItem(Icons.Filled.AttachFile, R.string.im_plus_file, onFile))
         add(PlusItem(Icons.Filled.Description, R.string.im_plus_doc, onDoc))
     }
     LazyVerticalGrid(
