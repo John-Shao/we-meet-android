@@ -594,6 +594,10 @@ fun ChatScreen(
                 onPickDoc = { showDocPicker = true },
                 onCamera = { launchCamera() },
                 onSchedule = { onOpenSchedule?.invoke(cid, vm.memberUserIds()) },
+                isGroup = ui.isGroup,
+                onVoice = {
+                    if (ui.isGroup) groupCallMedia = "audio" else startCall(false)
+                },
                 onMeeting = {
                     if (ui.isGroup) groupCallMedia = "video" else startCall(true)
                 },
@@ -912,6 +916,8 @@ private fun MessageInputBar(
     onPickDoc: () -> Unit,
     onCamera: () -> Unit,
     onSchedule: () -> Unit,
+    isGroup: Boolean,
+    onVoice: () -> Unit,
     onMeeting: () -> Unit,
     recentEmojis: List<ImRecentEmojiDto>,
     customEmojis: List<ImCustomEmojiDto>,
@@ -976,6 +982,20 @@ private fun MessageInputBar(
             Icons.Filled.Description,
         ),
         ImInputCommand(
+            if (isGroup) "voice-meeting" else "voice-call",
+            stringResource(
+                if (isGroup) R.string.im_group_voice_call else R.string.im_plus_call
+            ),
+            listOf(
+                stringResource(
+                    if (isGroup) R.string.im_group_voice_call else R.string.im_plus_call
+                ),
+                "voice",
+                "call",
+            ),
+            Icons.Filled.Call,
+        ),
+        ImInputCommand(
             "meeting",
             stringResource(R.string.im_command_meeting),
             listOf(stringResource(R.string.im_command_meeting), "meeting"),
@@ -989,7 +1009,8 @@ private fun MessageInputBar(
         when (command.id) {
             "schedule" -> onSchedule()
             "document" -> onPickDoc()
-            else -> onMeeting()
+            "voice-call", "voice-meeting" -> onVoice()
+            "meeting" -> onMeeting()
         }
     }
 
