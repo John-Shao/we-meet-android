@@ -63,7 +63,7 @@
     <string name="im_image_load_failed">Bild konnte nicht geladen werden</string>
     <string name="im_file_open_failed">Datei konnte nicht geöffnet werden</string>
     <string name="im_upload_invalid_type">Nicht unterstützter Bildtyp</string>
-    <string name="im_upload_too_large">Datei ist zu groß</string>
+    <string name="im_upload_too_large">Bilder dürfen höchstens 10 MB, Dateien 50 MB groß sein</string>
     <string name="im_upload_failed">Upload fehlgeschlagen — bitte erneut versuchen</string>
 
     <string name="im_group_info">Gruppeninfo</string>

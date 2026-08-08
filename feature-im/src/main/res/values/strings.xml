@@ -77,7 +77,7 @@
     <string name="im_image_load_failed">Image failed to load</string>
     <string name="im_file_open_failed">Could not open the file</string>
     <string name="im_upload_invalid_type">Unsupported image type</string>
-    <string name="im_upload_too_large">File is too large</string>
+    <string name="im_upload_too_large">Images must be under 10 MB; files under 50 MB</string>
     <string name="im_upload_failed">Upload failed — try again</string>
 
     <!-- Group management. -->

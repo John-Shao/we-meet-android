@@ -63,7 +63,7 @@
     <string name="im_image_load_failed">Échec du chargement de l\'image</string>
     <string name="im_file_open_failed">Impossible d\'ouvrir le fichier</string>
     <string name="im_upload_invalid_type">Type d\'image non pris en charge</string>
-    <string name="im_upload_too_large">Fichier trop volumineux</string>
+    <string name="im_upload_too_large">Images : 10 Mo maximum ; fichiers : 50 Mo maximum</string>
     <string name="im_upload_failed">Échec de l\'envoi — réessayez</string>
 
     <string name="im_group_info">Infos du groupe</string>

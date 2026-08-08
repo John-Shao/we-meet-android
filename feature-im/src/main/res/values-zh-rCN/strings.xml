@@ -73,7 +73,7 @@
     <string name="im_image_load_failed">图片加载失败</string>
     <string name="im_file_open_failed">无法打开该文件</string>
     <string name="im_upload_invalid_type">不支持的图片类型</string>
-    <string name="im_upload_too_large">文件过大</string>
+    <string name="im_upload_too_large">图片不能超过 10 MB，文件不能超过 50 MB</string>
     <string name="im_upload_failed">上传失败,请重试</string>
 
     <!-- 群管理。 -->

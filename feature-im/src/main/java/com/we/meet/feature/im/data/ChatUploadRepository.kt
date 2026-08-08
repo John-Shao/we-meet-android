@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.OpenableColumns
 import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -67,9 +68,10 @@ internal class ChatUploadRepository(
         if (size > FILE_MAX_BYTES) throw ChatUploadException(ChatUploadException.Code.TooLarge)
         val mime = contentResolver.getType(uri) ?: "application/octet-stream"
 
-        val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
+        val bytes = contentResolver.openInputStream(uri)?.use {
+            it.readBytesCapped(FILE_MAX_BYTES)
+        }
             ?: throw ChatUploadException(ChatUploadException.Code.UploadError, "unreadable uri")
-        if (bytes.size > FILE_MAX_BYTES) throw ChatUploadException(ChatUploadException.Code.TooLarge)
 
         val presigned = runCatching { bridge.fileUploadUrl(name, mime, bytes.size.toLong()) }
             .getOrElse { throw ChatUploadException(ChatUploadException.Code.UploadError, it.message) }
@@ -170,6 +172,23 @@ internal class ChatUploadRepository(
             }
         }
         return "file" to -1L
+    }
+
+    /** Read at most [maxBytes]. Some document providers report SIZE=-1, so
+     * metadata validation alone cannot prevent a large attachment from being
+     * loaded fully into memory. */
+    private fun InputStream.readBytesCapped(maxBytes: Int): ByteArray {
+        val out = ByteArrayOutputStream(minOf(DEFAULT_BUFFER_SIZE, maxBytes))
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        var total = 0
+        while (true) {
+            val read = read(buffer)
+            if (read < 0) break
+            total += read
+            if (total > maxBytes) throw ChatUploadException(ChatUploadException.Code.TooLarge)
+            out.write(buffer, 0, read)
+        }
+        return out.toByteArray()
     }
 
     private companion object {

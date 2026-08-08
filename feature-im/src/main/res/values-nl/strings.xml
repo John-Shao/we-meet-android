@@ -63,7 +63,7 @@
     <string name="im_image_load_failed">Afbeelding laden mislukt</string>
     <string name="im_file_open_failed">Kan het bestand niet openen</string>
     <string name="im_upload_invalid_type">Niet-ondersteund afbeeldingstype</string>
-    <string name="im_upload_too_large">Bestand is te groot</string>
+    <string name="im_upload_too_large">Afbeeldingen maximaal 10 MB; bestanden maximaal 50 MB</string>
     <string name="im_upload_failed">Upload mislukt — probeer opnieuw</string>
 
     <string name="im_group_info">Groepsinfo</string>
