@@ -70,7 +70,7 @@ fun DirectChatSettingsScreen(
     Scaffold(
         topBar = {
             androidx.compose.material3.TopAppBar(
-                title = { Text(stringResource(R.string.im_direct_settings_title)) },
+                title = { Text(stringResource(R.string.im_settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
@@ -195,4 +195,3 @@ fun DirectChatSettingsScreen(
         )
     }
 }
-

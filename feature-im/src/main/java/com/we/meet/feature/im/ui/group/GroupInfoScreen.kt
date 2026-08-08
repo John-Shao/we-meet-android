@@ -93,7 +93,7 @@ fun GroupInfoScreen(
     Scaffold(
         topBar = {
             androidx.compose.material3.TopAppBar(
-                title = { Text(stringResource(R.string.im_group_info)) },
+                title = { Text(stringResource(R.string.im_settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)

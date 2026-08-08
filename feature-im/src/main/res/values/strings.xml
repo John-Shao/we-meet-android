@@ -81,7 +81,7 @@
     <string name="im_upload_failed">Upload failed — try again</string>
 
     <!-- Group management. -->
-    <string name="im_group_info">Group info</string>
+    <string name="im_settings_title">Settings</string>
     <string name="im_start_meeting">Video meeting</string>
     <string name="im_group_meeting_name">%1$s video meeting</string>
     <string name="im_call">Call</string>
@@ -163,7 +163,6 @@
     <string name="im_group_transfer_confirm">Transfer group ownership to %1$s?</string>
     <string name="im_group_clear_history">Clear chat history</string>
     <string name="im_group_clear_confirm">Clears the history on this device view only; other members keep theirs.</string>
-    <string name="im_direct_settings_title">Chat settings</string>
     <string name="im_group_button">New group</string>
     <string name="im_removed_from_group">You were removed from this group</string>
 

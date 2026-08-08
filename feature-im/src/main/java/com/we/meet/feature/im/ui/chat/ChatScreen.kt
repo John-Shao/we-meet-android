@@ -327,11 +327,11 @@ fun ChatScreen(
                         }
                         if (ui.isGroup) {
                             IconButton(onClick = { onOpenInfo(cid) }) {
-                                Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.im_group_info))
+                                Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.im_settings_title))
                             }
                         } else if (onOpenDirectSettings != null) {
                             IconButton(onClick = { onOpenDirectSettings(cid) }) {
-                                Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.im_direct_settings_title))
+                                Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.im_settings_title))
                             }
                         }
                     }

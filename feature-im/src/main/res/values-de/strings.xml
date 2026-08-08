@@ -66,7 +66,7 @@
     <string name="im_upload_too_large">Bilder dürfen höchstens 10 MB, Dateien 50 MB groß sein</string>
     <string name="im_upload_failed">Upload fehlgeschlagen — bitte erneut versuchen</string>
 
-    <string name="im_group_info">Gruppeninfo</string>
+    <string name="im_settings_title">Einstellungen</string>
     <string name="im_start_meeting">Videokonferenz</string>
     <string name="im_group_meeting_name">Videomeeting von %1$s</string>
     <string name="im_call">Anruf</string>
@@ -131,7 +131,6 @@
     <string name="im_group_transfer_confirm">Gruppenbesitz an %1$s übertragen?</string>
     <string name="im_group_clear_history">Chatverlauf leeren</string>
     <string name="im_group_clear_confirm">Leert nur deine eigene Ansicht; andere Mitglieder behalten ihren Verlauf.</string>
-    <string name="im_direct_settings_title">Chat-Einstellungen</string>
     <string name="im_group_button">Neue Gruppe</string>
     <string name="im_removed_from_group">Du wurdest aus dieser Gruppe entfernt</string>
 

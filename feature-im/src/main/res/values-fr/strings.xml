@@ -66,7 +66,7 @@
     <string name="im_upload_too_large">Images : 10 Mo maximum ; fichiers : 50 Mo maximum</string>
     <string name="im_upload_failed">Échec de l\'envoi — réessayez</string>
 
-    <string name="im_group_info">Infos du groupe</string>
+    <string name="im_settings_title">Paramètres</string>
     <string name="im_start_meeting">Réunion vidéo</string>
     <string name="im_group_meeting_name">Réunion vidéo de %1$s</string>
     <string name="im_call">Appel</string>
@@ -131,7 +131,6 @@
     <string name="im_group_transfer_confirm">Transférer la propriété du groupe à %1$s ?</string>
     <string name="im_group_clear_history">Effacer l\'historique</string>
     <string name="im_group_clear_confirm">N\'efface que votre propre vue ; les autres membres conservent leur historique.</string>
-    <string name="im_direct_settings_title">Paramètres de discussion</string>
     <string name="im_group_button">Nouveau groupe</string>
     <string name="im_removed_from_group">Vous avez été retiré de ce groupe</string>
 

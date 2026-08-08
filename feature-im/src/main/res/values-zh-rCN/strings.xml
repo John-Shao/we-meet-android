@@ -77,7 +77,7 @@
     <string name="im_upload_failed">上传失败,请重试</string>
 
     <!-- 群管理。 -->
-    <string name="im_group_info">群信息</string>
+    <string name="im_settings_title">设置</string>
     <string name="im_start_meeting">视频会议</string>
     <string name="im_group_meeting_name">%1$s的视频会议</string>
     <string name="im_call">通话</string>
@@ -153,7 +153,6 @@
     <string name="im_group_transfer_confirm">将群主转让给 %1$s？</string>
     <string name="im_group_clear_history">清空聊天记录</string>
     <string name="im_group_clear_confirm">仅清空你自己可见的记录,其他成员不受影响。</string>
-    <string name="im_direct_settings_title">聊天设置</string>
     <string name="im_group_button">新建群聊</string>
     <string name="im_removed_from_group">你已被移出该群聊</string>
 
