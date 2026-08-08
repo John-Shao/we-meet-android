@@ -9,7 +9,7 @@ internal data class LocalImDraft(
     val updatedAt: Long,
 )
 
-/** Account-scoped local fallback for drafts; attachments are intentionally absent. */
+/** Account-scoped local storage for drafts; attachments are intentionally absent. */
 internal class ImInputStateStore(context: Context) {
     private val prefs = context.getSharedPreferences("im_input_state_v2", Context.MODE_PRIVATE)
 

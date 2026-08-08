@@ -38,8 +38,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 
@@ -139,7 +137,6 @@ class ChatViewModel internal constructor(
     private var visible = false
 
     private var nextLocalId = 1L
-    private var draftJob: Job? = null
 
     /**
      * Full seq-ordered window including control messages (recall/reaction) —
@@ -554,24 +551,10 @@ class ChatViewModel internal constructor(
         }
     }
 
-    private suspend fun restoreInputState(uid: String) {
+    private fun restoreInputState(uid: String) {
         val local = session.inputState.draft(uid, cid)
         if (local != null && _ui.value.draftText.isEmpty()) {
             _ui.update { it.copy(draftText = local.text, draftReply = local.reply) }
-        }
-        val cloud = runCatching { session.bridge.drafts().firstOrNull { it.cid == cid } }.getOrNull()
-        if (cloud != null) {
-            val cloudUpdatedAt = runCatching {
-                java.time.Instant.parse(cloud.updatedAt).toEpochMilli()
-            }.getOrDefault(0L)
-            if (local == null || cloudUpdatedAt >= local.updatedAt) {
-                session.inputState.putDraft(uid, cid, cloud.text, cloud.reply, cloudUpdatedAt)
-                _ui.update { it.copy(draftText = cloud.text, draftReply = cloud.reply) }
-            } else {
-                runCatching { session.bridge.saveDraft(cid, local.text, local.reply) }
-            }
-        } else if (local != null) {
-            runCatching { session.bridge.saveDraft(cid, local.text, local.reply) }
         }
     }
 
@@ -579,25 +562,6 @@ class ChatViewModel internal constructor(
         val safe = text.take(4000)
         _ui.update { it.copy(draftText = safe) }
         _ui.value.selfUid?.let { session.inputState.putDraft(it, cid, safe, _ui.value.draftReply) }
-        draftJob?.cancel()
-        draftJob = viewModelScope.launch {
-            delay(800)
-            runCatching {
-                if (safe.isEmpty() && _ui.value.draftReply == null) session.bridge.deleteDraft(cid)
-                else session.bridge.saveDraft(cid, safe, _ui.value.draftReply)
-            }
-        }
-    }
-
-    fun flushDraft() {
-        draftJob?.cancel()
-        val text = _ui.value.draftText
-        viewModelScope.launch {
-            runCatching {
-                if (text.isEmpty() && _ui.value.draftReply == null) session.bridge.deleteDraft(cid)
-                else session.bridge.saveDraft(cid, text, _ui.value.draftReply)
-            }
-        }
     }
 
     fun setDraftReply(reply: ImDraftReplyDto?) {
@@ -606,9 +570,7 @@ class ChatViewModel internal constructor(
     }
 
     private fun clearDraft() {
-        draftJob?.cancel()
         _ui.value.selfUid?.let { session.inputState.putDraft(it, cid, "") }
-        viewModelScope.launch { runCatching { session.bridge.deleteDraft(cid) } }
     }
 
     fun rememberEmoji(emoji: ImRecentEmojiDto) {

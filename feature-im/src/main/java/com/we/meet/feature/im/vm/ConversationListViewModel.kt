@@ -133,18 +133,9 @@ class ConversationListViewModel internal constructor(
     }
 
     private fun refreshDrafts() {
-        viewModelScope.launch {
-            val uid = session.selfUid.value
-            val local = uid?.let(session.inputState::drafts).orEmpty()
-            if (local.isNotEmpty()) {
-                _drafts.value = local.mapValues { it.value.text }
-            }
-            runCatching { session.bridge.drafts() }
-                .onSuccess { values ->
-                    val cloud = values.associate { it.cid to it.text }
-                    _drafts.value = cloud + local.mapValues { it.value.text }
-                }
-        }
+        val uid = session.selfUid.value
+        val local = uid?.let(session.inputState::drafts).orEmpty()
+        _drafts.value = local.mapValues { it.value.text }
     }
 
     fun retryConnection() = session.retry()

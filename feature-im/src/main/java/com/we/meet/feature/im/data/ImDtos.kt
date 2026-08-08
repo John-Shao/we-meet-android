@@ -94,14 +94,6 @@ data class ImDraftReplyDto(
 )
 
 @JsonClass(generateAdapter = true)
-internal data class ImDraftDto(
-    val cid: String = "",
-    val text: String = "",
-    val reply: ImDraftReplyDto? = null,
-    @Json(name = "updated_at") val updatedAt: String = "",
-)
-
-@JsonClass(generateAdapter = true)
 data class ImRecentEmojiDto(
     val kind: String = "unicode",
     val value: String? = null,

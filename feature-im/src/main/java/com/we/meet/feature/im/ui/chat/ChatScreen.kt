@@ -191,7 +191,7 @@ fun ChatScreen(
             vm.retryConnection()
             Toast.makeText(context, context.getString(R.string.im_status_reconnecting), Toast.LENGTH_SHORT).show()
         }
-        onPauseOrDispose { vm.flushDraft(); vm.setVisible(false) }
+        onPauseOrDispose { vm.setVisible(false) }
     }
 
     LaunchedEffect(vm) {
