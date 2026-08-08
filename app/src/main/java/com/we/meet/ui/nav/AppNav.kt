@@ -593,6 +593,11 @@ fun AppNav() {
                 onOpenDoc = { url -> navController.navigate(Routes.docsViewer(url)) },
                 // 分享会议卡片 → 按 slug 走入会预览(与会议详情「加入会议」同一路径)。
                 onJoinMeeting = { slug -> navController.navigate(Routes.joinPreview(slug)) },
+                onOpenSchedule = { sourceCid, memberIds ->
+                    navController.navigate(
+                        Routes.freeBusy(memberIds, context.getString(R.string.freebusy_group_title), sourceCid),
+                    )
+                },
                 // 1:1 通话 no longer flows through here — ChatScreen drives
                 // CallController directly and the top-level collector below
                 // pushes Routes.IM_CALL when the call machine leaves Idle.

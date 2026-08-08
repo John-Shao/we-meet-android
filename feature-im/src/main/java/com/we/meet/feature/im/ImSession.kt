@@ -15,6 +15,7 @@ import com.we.meet.feature.im.data.DocsApi
 import com.we.meet.feature.im.data.ImApi
 import com.we.meet.feature.im.data.ImBridgeRepository
 import com.we.meet.feature.im.data.MediaResolver
+import com.we.meet.feature.im.data.ImInputStateStore
 import com.we.meet.feature.im.data.UserDirectory
 import com.we.meet.feature.im.model.mentionScan
 import com.we.meet.feature.im.net.ImNetwork
@@ -187,6 +188,7 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
 
     /** Per-device 「删除消息」持久化(仅本端隐藏,jusi 无服务端删除)。 */
     internal val deletedMessages = DeletedMessageStore(appContext)
+    internal val inputState = ImInputStateStore(appContext)
 
     val connectionState: StateFlow<ConnectionState> = client.state
 
@@ -307,6 +309,7 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
     }
 
     private fun close() {
+        _selfUid.value?.let(inputState::clearUser)
         client.close()
         conversations.clear()
         userDirectory.clear()

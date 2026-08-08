@@ -20,6 +20,9 @@ import com.we.meet.feature.im.data.ChatUploadException
 import com.we.meet.feature.im.data.DocHit
 import com.we.meet.feature.im.data.GroupTile
 import com.we.meet.feature.im.data.ImUserInfo
+import com.we.meet.feature.im.data.ImCustomEmojiDto
+import com.we.meet.feature.im.data.ImRecentEmojiDto
+import com.we.meet.feature.im.data.ImDraftReplyDto
 import com.we.meet.feature.im.model.CardResolution
 import com.we.meet.feature.im.model.MessageContent
 import com.we.meet.feature.im.model.MessageContentParser
@@ -35,6 +38,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 
@@ -95,6 +100,10 @@ data class ChatUiState(
     val pins: List<PinnedMessage> = emptyList(),
     /** P1-M3 搜索定位:待滚动高亮的 mid(消费后置空)。 */
     val locateMid: Long? = null,
+    val draftText: String = "",
+    val recentEmojis: List<ImRecentEmojiDto> = emptyList(),
+    val customEmojis: List<ImCustomEmojiDto> = emptyList(),
+    val draftReply: ImDraftReplyDto? = null,
 )
 
 /** One-shot events the screen reacts to (toast + pop, etc.). */
@@ -130,6 +139,7 @@ class ChatViewModel internal constructor(
     private var visible = false
 
     private var nextLocalId = 1L
+    private var draftJob: Job? = null
 
     /**
      * Full seq-ordered window including control messages (recall/reaction) —
@@ -155,7 +165,18 @@ class ChatViewModel internal constructor(
 
     init {
         _ui.update { it.copy(selfUid = session.selfUid.value) }
-        viewModelScope.launch { session.selfUid.collect { uid -> _ui.update { s -> s.copy(selfUid = uid) } } }
+        viewModelScope.launch {
+            session.selfUid.collect { uid ->
+                _ui.update { s -> s.copy(selfUid = uid) }
+                if (!uid.isNullOrBlank()) restoreInputState(uid)
+            }
+        }
+        viewModelScope.launch {
+            runCatching { session.bridge.inputPreferences() }
+                .onSuccess { value -> _ui.update { it.copy(recentEmojis = value.recentEmojis) } }
+            runCatching { session.bridge.customEmojis() }
+                .onSuccess { value -> _ui.update { it.copy(customEmojis = value) } }
+        }
 
         refreshConversationShape()
         loadNewest()
@@ -524,13 +545,89 @@ class ChatViewModel internal constructor(
         viewModelScope.launch {
             try {
                 sendViaSocket(trimmed, "text")
-                _ui.update { it.copy(error = null, sentTick = it.sentTick + 1) }
+                clearDraft()
+                _ui.update { it.copy(error = null, sentTick = it.sentTick + 1, draftText = "") }
             } catch (e: Throwable) {
                 Log.w(TAG, "sendText failed", e)
                 _ui.update { it.copy(error = e.userMessageRes()) }
             }
         }
     }
+
+    private suspend fun restoreInputState(uid: String) {
+        val local = session.inputState.draft(uid, cid)
+        if (local != null && _ui.value.draftText.isEmpty()) {
+            _ui.update { it.copy(draftText = local.text, draftReply = local.reply) }
+        }
+        val cloud = runCatching { session.bridge.drafts().firstOrNull { it.cid == cid } }.getOrNull()
+        if (cloud != null) {
+            val cloudUpdatedAt = runCatching {
+                java.time.Instant.parse(cloud.updatedAt).toEpochMilli()
+            }.getOrDefault(0L)
+            if (local == null || cloudUpdatedAt >= local.updatedAt) {
+                session.inputState.putDraft(uid, cid, cloud.text, cloud.reply, cloudUpdatedAt)
+                _ui.update { it.copy(draftText = cloud.text, draftReply = cloud.reply) }
+            } else {
+                runCatching { session.bridge.saveDraft(cid, local.text, local.reply) }
+            }
+        } else if (local != null) {
+            runCatching { session.bridge.saveDraft(cid, local.text, local.reply) }
+        }
+    }
+
+    fun updateDraft(text: String) {
+        val safe = text.take(4000)
+        _ui.update { it.copy(draftText = safe) }
+        _ui.value.selfUid?.let { session.inputState.putDraft(it, cid, safe, _ui.value.draftReply) }
+        draftJob?.cancel()
+        draftJob = viewModelScope.launch {
+            delay(800)
+            runCatching {
+                if (safe.isEmpty() && _ui.value.draftReply == null) session.bridge.deleteDraft(cid)
+                else session.bridge.saveDraft(cid, safe, _ui.value.draftReply)
+            }
+        }
+    }
+
+    fun flushDraft() {
+        draftJob?.cancel()
+        val text = _ui.value.draftText
+        viewModelScope.launch {
+            runCatching {
+                if (text.isEmpty() && _ui.value.draftReply == null) session.bridge.deleteDraft(cid)
+                else session.bridge.saveDraft(cid, text, _ui.value.draftReply)
+            }
+        }
+    }
+
+    fun setDraftReply(reply: ImDraftReplyDto?) {
+        _ui.update { it.copy(draftReply = reply) }
+        updateDraft(_ui.value.draftText)
+    }
+
+    private fun clearDraft() {
+        draftJob?.cancel()
+        _ui.value.selfUid?.let { session.inputState.putDraft(it, cid, "") }
+        viewModelScope.launch { runCatching { session.bridge.deleteDraft(cid) } }
+    }
+
+    fun rememberEmoji(emoji: ImRecentEmojiDto) {
+        val identity = if (emoji.kind == "custom") "c:${emoji.id}" else "u:${emoji.value}"
+        val next = listOf(emoji) + _ui.value.recentEmojis.filter {
+            (if (it.kind == "custom") "c:${it.id}" else "u:${it.value}") != identity
+        }
+        val capped = next.take(24)
+        _ui.update { it.copy(recentEmojis = capped) }
+        viewModelScope.launch { runCatching { session.bridge.saveRecentEmojis(capped) } }
+    }
+
+    fun sendCustomEmoji(emoji: ImCustomEmojiDto) = sendMedia(kind = "image") {
+        session.client.sendText(cid, emoji.key, contentType = "image")
+    }
+
+    fun memberUserIds(): List<String> = _ui.value.memberUids.mapNotNull {
+        session.userDirectory.get(it)?.id?.takeIf(String::isNotBlank)
+    }.distinct()
 
     /**
      * Send one WS text frame, resilient to a dead-but-not-yet-detected socket.
@@ -715,9 +812,28 @@ class ChatViewModel internal constructor(
         viewModelScope.launch {
             try {
                 sendViaSocket(body, "quote")
-                _ui.update { it.copy(error = null, sentTick = it.sentTick + 1) }
+                clearDraft()
+                _ui.update { it.copy(error = null, sentTick = it.sentTick + 1, draftText = "", draftReply = null) }
             } catch (e: Throwable) {
                 Log.w(TAG, "sendQuote failed", e)
+                _ui.update { it.copy(error = e.userMessageRes()) }
+            }
+        }
+    }
+
+    fun sendQuoteSnapshot(reply: ImDraftReplyDto, text: String) {
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) return
+        val body = JSONObject()
+            .put("reply_to", JSONObject().put("sender", reply.sender).put("snippet", reply.summary))
+            .put("text", trimmed)
+            .toString()
+        viewModelScope.launch {
+            try {
+                sendViaSocket(body, "quote")
+                clearDraft()
+                _ui.update { it.copy(error = null, sentTick = it.sentTick + 1, draftText = "", draftReply = null) }
+            } catch (e: Throwable) {
                 _ui.update { it.copy(error = e.userMessageRes()) }
             }
         }

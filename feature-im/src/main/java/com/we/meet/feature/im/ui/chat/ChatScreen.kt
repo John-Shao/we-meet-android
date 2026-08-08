@@ -80,6 +80,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -90,6 +91,7 @@ import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.VideoCall
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -106,6 +108,15 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import java.io.File
+import coil.compose.AsyncImage
+import com.we.meet.feature.im.data.ImCustomEmojiDto
+import com.we.meet.feature.im.data.ImRecentEmojiDto
+import com.we.meet.feature.im.data.ImDraftReplyDto
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 
 /** Full-screen chat thread (no bottom tab bar) — app-level route `im_chat/{cid}`. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -131,6 +142,7 @@ fun ChatScreen(
     onOpenDoc: ((url: String) -> Unit)? = null,
     /** 分享会议卡片:点「加入会议」→ 按 slug 走入会预览(app 层接 joinPreview)。 */
     onJoinMeeting: ((slug: String) -> Unit)? = null,
+    onOpenSchedule: ((cid: String, memberUserIds: List<String>) -> Unit)? = null,
 ) {
     val vm: ChatViewModel =
         viewModel(
@@ -179,7 +191,7 @@ fun ChatScreen(
             vm.retryConnection()
             Toast.makeText(context, context.getString(R.string.im_status_reconnecting), Toast.LENGTH_SHORT).show()
         }
-        onPauseOrDispose { vm.setVisible(false) }
+        onPauseOrDispose { vm.flushDraft(); vm.setVisible(false) }
     }
 
     LaunchedEffect(vm) {
@@ -554,17 +566,21 @@ fun ChatScreen(
             MessageInputBar(
                 canSend = connection == ConnectionState.CONNECTED,
                 sentTick = ui.sentTick,
+                initialDraft = ui.draftText,
+                onDraftChange = vm::updateDraft,
                 replyPreview = replyTarget?.let { rt ->
                     // 群昵称(P10)优先,与气泡发送者名一致。
                     val name = vm.senderName(rt.senderUid).orEmpty()
-                    ReplyPreview(name, vm.snippetPreview(rt))
-                },
-                onClearReply = { replyTarget = null },
+                    ReplyPreview(rt.mid.toString(), name, vm.snippetPreview(rt))
+                } ?: ui.draftReply?.let { ReplyPreview(it.mid, it.sender, it.summary) },
+                onClearReply = { replyTarget = null; vm.setDraftReply(null) },
                 onSend = { text ->
                     val rt = replyTarget
                     if (rt != null) {
                         vm.sendQuote(rt, text)
                         replyTarget = null
+                    } else if (ui.draftReply != null) {
+                        vm.sendQuoteSnapshot(ui.draftReply!!, text)
                     } else {
                         vm.sendText(text)
                     }
@@ -577,6 +593,14 @@ fun ChatScreen(
                 onPickFile = { pickFile.launch(arrayOf("*/*")) },
                 onPickDoc = { showDocPicker = true },
                 onCamera = { launchCamera() },
+                onSchedule = { onOpenSchedule?.invoke(cid, vm.memberUserIds()) },
+                onMeeting = {
+                    if (ui.isGroup) groupCallMedia = "video" else startCall(true)
+                },
+                recentEmojis = ui.recentEmojis,
+                customEmojis = ui.customEmojis,
+                onRememberEmoji = vm::rememberEmoji,
+                onCustomEmoji = vm::sendCustomEmoji,
                 mentionCandidates = if (ui.isGroup) vm.mentionCandidates() else emptyList(),
             )
         }
@@ -591,7 +615,16 @@ fun ChatScreen(
             onCopy = {
                 clipboard.setText(androidx.compose.ui.text.AnnotatedString(vm.snippetPreview(target)))
             },
-            onReply = { replyTarget = target },
+            onReply = {
+                replyTarget = target
+                vm.setDraftReply(
+                    ImDraftReplyDto(
+                        mid = target.mid.toString(),
+                        sender = vm.senderName(target.senderUid).orEmpty(),
+                        summary = vm.snippetPreview(target),
+                    ),
+                )
+            },
             onForward = { forwardJob = { cid -> vm.forward(target, cid) } },
             onMultiSelect = { selectMode = true; selectedMids = setOf(target.mid) },
             onRecall = { vm.recall(target) },
@@ -855,7 +888,7 @@ private fun PendingRow(kind: String) {
 }
 
 /** Sender display name + text snippet of the message being replied to. */
-data class ReplyPreview(val sender: String, val snippet: String)
+data class ReplyPreview(val mid: String, val sender: String, val snippet: String)
 
 /** 输入区下方互斥面板:表情 / 「+」九宫格。 */
 private enum class InputPanel { None, Emoji, Plus }
@@ -868,6 +901,8 @@ private enum class InputPanel { None, Emoji, Plus }
 private fun MessageInputBar(
     canSend: Boolean,
     sentTick: Int,
+    initialDraft: String,
+    onDraftChange: (String) -> Unit,
     replyPreview: ReplyPreview?,
     onClearReply: () -> Unit,
     onSend: (String) -> Unit,
@@ -876,9 +911,18 @@ private fun MessageInputBar(
     /** 分享云文档到聊天(入口 A):「+」面板「云文档」。 */
     onPickDoc: () -> Unit,
     onCamera: () -> Unit,
+    onSchedule: () -> Unit,
+    onMeeting: () -> Unit,
+    recentEmojis: List<ImRecentEmojiDto>,
+    customEmojis: List<ImCustomEmojiDto>,
+    onRememberEmoji: (ImRecentEmojiDto) -> Unit,
+    onCustomEmoji: (ImCustomEmojiDto) -> Unit,
     mentionCandidates: List<String> = emptyList(),
 ) {
     var field by remember { mutableStateOf(TextFieldValue("")) }
+    LaunchedEffect(initialDraft) {
+        if (field.text != initialDraft) field = TextFieldValue(initialDraft, TextRange(initialDraft.length))
+    }
     val text = field.text
     // Active @-mention span before the caret, if any (web parity).
     val mention = remember(field, mentionCandidates) {
@@ -892,7 +936,7 @@ private fun MessageInputBar(
     val focus = LocalFocusManager.current
     // Clear only after the ViewModel confirms an acked send (failed send keeps draft).
     LaunchedEffect(sentTick) {
-        if (sentTick > 0) field = TextFieldValue("")
+        if (sentTick > 0) { field = TextFieldValue(""); onDraftChange("") }
     }
 
     var panel by remember { mutableStateOf(InputPanel.None) }
@@ -913,9 +957,60 @@ private fun MessageInputBar(
         val start = field.selection.start.coerceIn(0, t.length)
         val end = field.selection.end.coerceIn(start, t.length)
         field = TextFieldValue(t.substring(0, start) + e + t.substring(end), TextRange(start + e.length))
+        onDraftChange(field.text)
+        onRememberEmoji(ImRecentEmojiDto(kind = "unicode", value = e))
+    }
+
+    var commandIndex by remember { mutableStateOf(0) }
+    val commandRegistry = listOf(
+        ImInputCommand(
+            "schedule",
+            stringResource(R.string.im_command_schedule),
+            listOf(stringResource(R.string.im_command_schedule), "schedule"),
+            Icons.Filled.CalendarMonth,
+        ),
+        ImInputCommand(
+            "document",
+            stringResource(R.string.im_command_document),
+            listOf(stringResource(R.string.im_command_document), "doc"),
+            Icons.Filled.Description,
+        ),
+        ImInputCommand(
+            "meeting",
+            stringResource(R.string.im_command_meeting),
+            listOf(stringResource(R.string.im_command_meeting), "meeting"),
+            Icons.Filled.VideoCall,
+        ),
+    )
+    val commands = remember(text, commandRegistry) { matchInputCommands(text, commandRegistry) }
+    fun executeCommand(command: ImInputCommand) {
+        field = TextFieldValue("")
+        onDraftChange("")
+        when (command.id) {
+            "schedule" -> onSchedule()
+            "document" -> onPickDoc()
+            else -> onMeeting()
+        }
     }
 
     Column {
+        if (commands.isNotEmpty()) {
+            Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
+                commands.forEachIndexed { index, command ->
+                    Row(
+                        Modifier.fillMaxWidth().clickable { executeCommand(command) }
+                            .background(if (index == commandIndex) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface)
+                            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(command.icon, contentDescription = null, modifier = Modifier.size(Dimens.IconSmall))
+                        Spacer(Modifier.width(Dimens.SpaceS))
+                        Text(command.name, modifier = Modifier.weight(1f))
+                        Text("/${command.aliases.last()}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
         if (suggestions.isNotEmpty() && mention != null) {
             MentionDropdown(
                 names = suggestions,
@@ -972,7 +1067,12 @@ private fun MessageInputBar(
                             }
                             BasicTextField(
                                 value = field,
-                                onValueChange = { field = it },
+                                onValueChange = { value ->
+                                    field = if (value.text.length <= 4000) value
+                                    else TextFieldValue(value.text.take(4000), TextRange(4000))
+                                    onDraftChange(field.text)
+                                    commandIndex = 0
+                                },
                                 enabled = canSend,
                                 maxLines = if (expanded) 5 else 1,
                                 textStyle = MaterialTheme.typography.bodyLarge.copy(
@@ -982,6 +1082,16 @@ private fun MessageInputBar(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .focusRequester(inputFocusRequester)
+                                    .onPreviewKeyEvent { event ->
+                                        if (commands.isEmpty() || event.type != KeyEventType.KeyDown) false
+                                        else when (event.key) {
+                                            Key.DirectionDown -> { commandIndex = (commandIndex + 1) % commands.size; true }
+                                            Key.DirectionUp -> { commandIndex = (commandIndex - 1 + commands.size) % commands.size; true }
+                                            Key.Enter -> { executeCommand(commands[commandIndex.coerceAtMost(commands.lastIndex)]); true }
+                                            Key.Escape -> { field = TextFieldValue(field.text.removePrefix("/")); onDraftChange(field.text); true }
+                                            else -> false
+                                        }
+                                    }
                                     .onFocusChanged {
                                         inputFocused = it.isFocused
                                         // 点击输入框拉起键盘时,自动收起已展开的表情/「+」
@@ -1041,12 +1151,22 @@ private fun MessageInputBar(
         }
         AnimatedVisibility(visible = panel != InputPanel.None) {
             when (panel) {
-                InputPanel.Emoji -> EmojiPanel(onPick = { insertEmoji(it) })
+                InputPanel.Emoji -> EmojiPanel(
+                    recent = recentEmojis,
+                    custom = customEmojis,
+                    onPick = { insertEmoji(it) },
+                    onPickCustom = { emoji ->
+                        onRememberEmoji(ImRecentEmojiDto(kind = "custom", id = emoji.id, key = emoji.key, name = emoji.name))
+                        onCustomEmoji(emoji)
+                        panel = InputPanel.None
+                    },
+                )
                 InputPanel.Plus -> PlusPanel(
                     onImage = { panel = InputPanel.None; onPickImage() },
                     onCamera = { panel = InputPanel.None; onCamera() },
                     onFile = { panel = InputPanel.None; onPickFile() },
                     onDoc = { panel = InputPanel.None; onPickDoc() },
+                    onSchedule = { panel = InputPanel.None; onSchedule() },
                 )
                 InputPanel.None -> Unit
             }
@@ -1055,6 +1175,21 @@ private fun MessageInputBar(
 }
 
 /** 常用 emoji(纯 unicode,点击插入文本框光标处)。 */
+private data class ImInputCommand(
+    val id: String,
+    val name: String,
+    val aliases: List<String>,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+)
+
+private fun matchInputCommands(text: String, registry: List<ImInputCommand>): List<ImInputCommand> {
+    if (!text.startsWith('/') || text.any(Char::isWhitespace)) return emptyList()
+    val query = text.drop(1).lowercase()
+    return registry.filter { command ->
+        command.aliases.any { it.lowercase().startsWith(query) }
+    }
+}
+
 private val EMOJIS = listOf(
     "😀", "😁", "😂", "🤣", "😊", "😍", "😘", "😜", "🤔", "😎", "😴", "😭", "😅", "😢", "😡", "🥳",
     "👍", "👎", "👏", "🙏", "🙌", "💪", "🤝", "👌", "✌️", "🤙", "👋", "🫶", "❤️", "💔", "💯", "🔥",
@@ -1063,7 +1198,14 @@ private val EMOJIS = listOf(
 )
 
 @Composable
-private fun EmojiPanel(onPick: (String) -> Unit) {
+private fun EmojiPanel(
+    recent: List<ImRecentEmojiDto>,
+    custom: List<ImCustomEmojiDto>,
+    onPick: (String) -> Unit,
+    onPickCustom: (ImCustomEmojiDto) -> Unit,
+) {
+    val recentUnicode = recent.mapNotNull { it.value }.distinct()
+    val recentCustom = recent.mapNotNull { entry -> custom.firstOrNull { it.id == entry.id } }
     LazyVerticalGrid(
         columns = GridCells.Fixed(8),
         modifier = Modifier
@@ -1072,6 +1214,21 @@ private fun EmojiPanel(onPick: (String) -> Unit) {
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
             .padding(Dimens.SpaceS),
     ) {
+        if (recentUnicode.isNotEmpty() || recentCustom.isNotEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Text(stringResource(R.string.im_emoji_recent), style = MaterialTheme.typography.labelMedium)
+            }
+        }
+        items(recentUnicode) { e ->
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.padding(Dimens.SpaceXs).size(Dimens.AvatarS).clickable { onPick(e) },
+            ) { Text(text = e, style = MaterialTheme.typography.headlineSmall) }
+        }
+        items(recentCustom) { emoji -> CustomEmojiCell(emoji, onPickCustom) }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Text(stringResource(R.string.im_emoji_system), style = MaterialTheme.typography.labelMedium)
+        }
         items(EMOJIS) { e ->
             Box(
                 contentAlignment = Alignment.Center,
@@ -1080,7 +1237,24 @@ private fun EmojiPanel(onPick: (String) -> Unit) {
                 Text(text = e, style = MaterialTheme.typography.headlineSmall)
             }
         }
+        if (custom.isNotEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Text(stringResource(R.string.im_emoji_enterprise), style = MaterialTheme.typography.labelMedium)
+            }
+            items(custom.filter { item -> recentCustom.none { it.id == item.id } }) { emoji ->
+                CustomEmojiCell(emoji, onPickCustom)
+            }
+        }
     }
+}
+
+@Composable
+private fun CustomEmojiCell(emoji: ImCustomEmojiDto, onPick: (ImCustomEmojiDto) -> Unit) {
+    AsyncImage(
+        model = emoji.url,
+        contentDescription = emoji.name,
+        modifier = Modifier.padding(Dimens.SpaceXs).size(Dimens.AvatarS).clickable { onPick(emoji) },
+    )
 }
 
 @Composable
@@ -1089,6 +1263,7 @@ private fun PlusPanel(
     onCamera: () -> Unit,
     onFile: () -> Unit,
     onDoc: () -> Unit,
+    onSchedule: () -> Unit,
 ) {
     data class PlusItem(
         val icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -1100,6 +1275,7 @@ private fun PlusPanel(
         add(PlusItem(Icons.Filled.PhotoCamera, R.string.im_plus_camera, onCamera))
         add(PlusItem(Icons.Filled.AttachFile, R.string.im_plus_file, onFile))
         add(PlusItem(Icons.Filled.Description, R.string.im_plus_doc, onDoc))
+        add(PlusItem(Icons.Filled.CalendarMonth, R.string.im_plus_schedule, onSchedule))
     }
     LazyVerticalGrid(
         columns = GridCells.Fixed(4),

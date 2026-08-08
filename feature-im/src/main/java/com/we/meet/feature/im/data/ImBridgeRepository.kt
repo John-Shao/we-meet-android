@@ -8,6 +8,20 @@ package com.we.meet.feature.im.data
  */
 internal class ImBridgeRepository(private val api: ImApi) {
 
+    suspend fun drafts(): List<ImDraftDto> = api.listDrafts()
+
+    suspend fun saveDraft(cid: String, text: String, reply: ImDraftReplyDto? = null): ImDraftDto =
+        api.saveDraft(cid, mapOf("text" to text, "reply" to reply))
+
+    suspend fun deleteDraft(cid: String) = api.deleteDraft(cid)
+
+    suspend fun inputPreferences(): ImPreferenceDto = api.inputPreferences()
+
+    suspend fun saveRecentEmojis(items: List<ImRecentEmojiDto>): ImPreferenceDto =
+        api.saveInputPreferences(mapOf("recent_emojis" to items.take(24)))
+
+    suspend fun customEmojis(): List<ImCustomEmojiDto> = api.customEmojis()
+
     /**
      * 点一个卡片按钮(A2)。`clickId` 是幂等键 —— 同一次点击重试带同一个值,
      * 服务端重放上次结果而不是再记一笔(与入站 webhook 的 X-Request-Id 同

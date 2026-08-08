@@ -124,7 +124,10 @@ fun previewText(contentType: String?, body: String?): String {
     }
     return when (val content = MessageContentParser.parse(contentType ?: "text", body)) {
         is MessageContent.Text -> content.body
-        is MessageContent.Image -> stringResource(R.string.im_preview_image)
+        is MessageContent.Image -> stringResource(
+            if (content.objectKey.startsWith("emoji/")) R.string.im_preview_emoji
+            else R.string.im_preview_image,
+        )
         is MessageContent.File -> stringResource(R.string.im_preview_file, content.name)
         is MessageContent.Voice -> stringResource(R.string.im_preview_voice)
         is MessageContent.Quote -> content.text

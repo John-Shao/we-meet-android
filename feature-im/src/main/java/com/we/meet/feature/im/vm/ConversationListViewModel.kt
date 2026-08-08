@@ -59,6 +59,7 @@ data class ConversationRowUi(
      * 缺席正好如实表达「你的特别提醒在这个会话上被免打扰盖过了」。
      */
     val specialAlert: Boolean = false,
+    val draftText: String? = null,
 )
 
 /**
@@ -89,6 +90,11 @@ class ConversationListViewModel internal constructor(
             starred to alert
         }
 
+    private val _drafts = MutableStateFlow<Map<String, String>>(emptyMap())
+    private val listExtras = combine(contactMarks, _drafts) { marks, drafts -> marks to drafts }
+
+    init { refreshDrafts() }
+
     val rows: StateFlow<List<ConversationRowUi>> =
         combine(
             session.conversations.conversations,
@@ -97,8 +103,10 @@ class ConversationListViewModel internal constructor(
             session.mentionedCids,
             // 两个 flag 都是 we-meet user id 的集合(共享单例),而会话只有 IM uid
             // —— 靠 userDirectory 已解析出的 `id` 搭桥,不额外发请求。
-            contactMarks,
-        ) { conversations, _, selfUid, mentioned, marks ->
+            listExtras,
+        ) { conversations, _, selfUid, mentioned, extras ->
+            val marks = extras.first
+            val drafts = extras.second
             // 触发 resolve 但不阻塞首帧:列表立即用字母兜底头像渲染,真实头像随
             // userDirectory.version 下次 bump 补上(微信/飞书式)。之前在这里挂起
             // resolve(阻塞)会让冷启动/弱网时整列表空白直到返回——比短暂字母帧更差。
@@ -115,12 +123,28 @@ class ConversationListViewModel internal constructor(
             session.userDirectory.requestResolve(wanted)
             conversations.map {
                 it.toRow(selfUid, marks.first, marks.second)
-                    .copy(mentioned = it.cid in mentioned)
+                    .copy(mentioned = it.cid in mentioned, draftText = drafts[it.cid])
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun refresh() {
         viewModelScope.launch { session.conversations.refresh() }
+        refreshDrafts()
+    }
+
+    private fun refreshDrafts() {
+        viewModelScope.launch {
+            val uid = session.selfUid.value
+            val local = uid?.let(session.inputState::drafts).orEmpty()
+            if (local.isNotEmpty()) {
+                _drafts.value = local.mapValues { it.value.text }
+            }
+            runCatching { session.bridge.drafts() }
+                .onSuccess { values ->
+                    val cloud = values.associate { it.cid to it.text }
+                    _drafts.value = cloud + local.mapValues { it.value.text }
+                }
+        }
     }
 
     fun retryConnection() = session.retry()

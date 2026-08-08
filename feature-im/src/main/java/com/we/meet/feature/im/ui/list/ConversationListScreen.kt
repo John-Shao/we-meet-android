@@ -474,7 +474,9 @@ private fun ConversationRow(
                     }
                 }
                 Spacer(Modifier.height(Dimens.SpaceXxs))
-                val preview = previewText(row.lastContentType, row.lastMessage)
+                val preview = row.draftText?.takeIf { it.isNotBlank() }
+                    ?.let { stringResource(R.string.im_draft_preview, it) }
+                    ?: previewText(row.lastContentType, row.lastMessage)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (row.mentioned) {
                         Text(

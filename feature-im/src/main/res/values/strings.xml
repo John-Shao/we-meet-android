@@ -172,6 +172,7 @@
     <string name="im_preview_voice">[Voice]</string>
     <string name="im_preview_merged">[Chat record]</string>
     <string name="im_preview_reaction">[Reaction]</string>
+    <string name="im_preview_emoji">[Emoji]</string>
     <string name="im_recalled_preview">recalled a message</string>
     <string name="im_recalled_self">You recalled a message</string>
     <string name="im_recalled_other">%1$s recalled a message</string>
@@ -289,6 +290,7 @@
     <string name="im_event_card_cancelled">Cancelled</string>
     <!-- Share a cloud document to chat -->
     <string name="im_plus_doc">Document</string>
+    <string name="im_plus_schedule">Schedule</string>
     <string name="im_preview_doc">[Document]</string>
     <string name="im_doc_card_view">View document</string>
     <string name="im_preview_meeting">[Meeting]</string>
@@ -374,4 +376,11 @@ Plain text body: {\"msg_type\":\"text\",\"content\":{\"text\":\"Build finished\"
 Signature (optional): sign = base64(hmac_sha256(key = timestamp + newline + secret, data = empty)). Both timestamp and sign go in the JSON body, not in headers.
 
 Limits: 100 requests per minute and 5 per second per bot, bodies up to 20 KB. Send X-Request-Id on retries so the same id only posts once.</string>
+    <string name="im_command_schedule">Schedule</string>
+    <string name="im_command_document">Document</string>
+    <string name="im_command_meeting">Meeting</string>
+    <string name="im_emoji_recent">Recent</string>
+    <string name="im_emoji_system">System emoji</string>
+    <string name="im_emoji_enterprise">Enterprise emoji</string>
+    <string name="im_draft_preview">[Draft] %1$s</string>
 </resources>

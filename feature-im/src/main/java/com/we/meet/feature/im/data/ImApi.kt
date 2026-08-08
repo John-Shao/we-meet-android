@@ -5,6 +5,7 @@ import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -18,6 +19,29 @@ import retrofit2.http.Query
  * keeps the partial-body semantics obvious.
  */
 internal interface ImApi {
+
+    @GET("api/v1.0/im/drafts/")
+    suspend fun listDrafts(): List<ImDraftDto>
+
+    @PUT("api/v1.0/im/drafts/{cid}/")
+    suspend fun saveDraft(
+        @Path("cid") cid: String,
+        @Body body: Map<String, @JvmSuppressWildcards Any?>,
+    ): ImDraftDto
+
+    @DELETE("api/v1.0/im/drafts/{cid}/")
+    suspend fun deleteDraft(@Path("cid") cid: String)
+
+    @GET("api/v1.0/im/preferences/")
+    suspend fun inputPreferences(): ImPreferenceDto
+
+    @PATCH("api/v1.0/im/preferences/")
+    suspend fun saveInputPreferences(
+        @Body body: Map<String, @JvmSuppressWildcards Any>,
+    ): ImPreferenceDto
+
+    @GET("api/v1.0/im/custom-emojis/")
+    suspend fun customEmojis(): List<ImCustomEmojiDto>
 
     /** Mint a client-bound IM JWT. Empty body — identity comes from the bearer. */
     @POST("api/v1.0/im/token/")

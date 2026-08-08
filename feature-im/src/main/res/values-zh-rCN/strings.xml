@@ -162,6 +162,7 @@
     <string name="im_preview_voice">[语音]</string>
     <string name="im_preview_merged">[聊天记录]</string>
     <string name="im_preview_reaction">[表情回应]</string>
+    <string name="im_preview_emoji">[表情]</string>
     <string name="im_recalled_preview">撤回了一条消息</string>
     <string name="im_recalled_self">你撤回了一条消息</string>
     <string name="im_recalled_other">%1$s 撤回了一条消息</string>
@@ -278,6 +279,7 @@
     <string name="im_event_card_attendees_changed">参会人变更</string>
     <string name="im_event_card_cancelled">已取消</string>
     <string name="im_plus_doc">云文档</string>
+    <string name="im_plus_schedule">日程</string>
     <string name="im_preview_doc">[云文档]</string>
     <string name="im_doc_card_view">查看文档</string>
     <string name="im_preview_meeting">[会议]</string>
@@ -363,4 +365,11 @@
 签名校验(可选):sign = base64(hmac_sha256(key = timestamp + 换行 + 密钥, data = 空串))。timestamp 与 sign 都放在 JSON body 顶层,不是 header。
 
 限额:每个机器人 100 次/分钟、5 次/秒,请求体不超过 20 KB。重试请带 X-Request-Id,同一个 id 只会发一条。</string>
+    <string name="im_command_schedule">日程</string>
+    <string name="im_command_document">文档</string>
+    <string name="im_command_meeting">会议</string>
+    <string name="im_emoji_recent">最近</string>
+    <string name="im_emoji_system">系统表情</string>
+    <string name="im_emoji_enterprise">企业表情</string>
+    <string name="im_draft_preview">[草稿] %1$s</string>
 </resources>

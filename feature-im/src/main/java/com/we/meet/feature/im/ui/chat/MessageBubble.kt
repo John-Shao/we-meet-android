@@ -393,9 +393,9 @@ private fun ImageBubble(
     }
 
     Box(
-        modifier = Modifier
+        modifier = (if (objectKey.startsWith("emoji/")) Modifier.size(Dimens.AvatarXxl) else Modifier
             .widthIn(max = Dimens.Chat.CardMinWidth)
-            .heightIn(min = Dimens.Chat.ImageMinHeight, max = Dimens.Chat.ImageMaxHeight)
+            .heightIn(min = Dimens.Chat.ImageMinHeight, max = Dimens.Chat.ImageMaxHeight))
             .clip(bubbleShape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .combinedClickable(onClick = onClick, onLongClick = onLongPress),
@@ -419,7 +419,8 @@ private fun ImageBubble(
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
                 onError = { failed = true },
-                modifier = Modifier.widthIn(max = Dimens.Chat.CardMinWidth).heightIn(max = Dimens.Chat.BubbleMaxWidth),
+                modifier = if (objectKey.startsWith("emoji/")) Modifier.size(Dimens.AvatarXxl)
+                else Modifier.widthIn(max = Dimens.Chat.CardMinWidth).heightIn(max = Dimens.Chat.BubbleMaxWidth),
             )
         }
     }

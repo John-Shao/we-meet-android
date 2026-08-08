@@ -86,6 +86,46 @@ internal data class UploadUrlResponse(
     val headers: Map<String, String> = emptyMap(),
 )
 
+@JsonClass(generateAdapter = true)
+data class ImDraftReplyDto(
+    val mid: String = "",
+    val sender: String = "",
+    val summary: String = "",
+)
+
+@JsonClass(generateAdapter = true)
+internal data class ImDraftDto(
+    val cid: String = "",
+    val text: String = "",
+    val reply: ImDraftReplyDto? = null,
+    @Json(name = "updated_at") val updatedAt: String = "",
+)
+
+@JsonClass(generateAdapter = true)
+data class ImRecentEmojiDto(
+    val kind: String = "unicode",
+    val value: String? = null,
+    val id: String? = null,
+    val key: String? = null,
+    val name: String? = null,
+)
+
+@JsonClass(generateAdapter = true)
+internal data class ImPreferenceDto(
+    @Json(name = "recent_emojis") val recentEmojis: List<ImRecentEmojiDto> = emptyList(),
+)
+
+@JsonClass(generateAdapter = true)
+data class ImCustomEmojiDto(
+    val id: String = "",
+    val name: String = "",
+    val key: String = "",
+    val url: String = "",
+    val width: Int = 0,
+    val height: Int = 0,
+    val animated: Boolean = false,
+)
+
 /** P1-M3 消息全文检索:GET im/search/ 的命中项(镜像 web ImSearchItem)。 */
 @JsonClass(generateAdapter = true)
 internal data class ImSearchItem(
