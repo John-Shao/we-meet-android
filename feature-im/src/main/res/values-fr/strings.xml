@@ -67,7 +67,7 @@
     <string name="im_upload_failed">Échec de l\'envoi — réessayez</string>
 
     <string name="im_group_info">Infos du groupe</string>
-    <string name="im_start_meeting">Démarrer une réunion</string>
+    <string name="im_start_meeting">Réunion vidéo</string>
     <string name="im_group_meeting_name">Réunion vidéo de %1$s</string>
     <string name="im_call">Appel</string>
     <string name="im_call_video">Appel vidéo</string>
@@ -202,7 +202,7 @@
     <string name="im_call_invite_failed">Invitation échouée</string>
     <string name="im_meet_invite_room_name">Appel de groupe de %1$s</string>
     <!-- P4.1 group voice call -->
-    <string name="im_group_voice_call">Appel vocal</string>
+    <string name="im_group_voice_call">Réunion audio</string>
     <string name="im_group_call_room_name">Appel vocal %1$s</string>
     <string name="im_group_voice_call_title">Démarrer un appel vocal</string>
     <string name="im_group_voice_call_count">%1$d sélectionnés</string>

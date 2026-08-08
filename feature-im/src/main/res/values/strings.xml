@@ -82,7 +82,7 @@
 
     <!-- Group management. -->
     <string name="im_group_info">Group info</string>
-    <string name="im_start_meeting">Start meeting</string>
+    <string name="im_start_meeting">Video meeting</string>
     <string name="im_group_meeting_name">%1$s video meeting</string>
     <string name="im_call">Call</string>
     <string name="im_call_video">Video call</string>
@@ -239,7 +239,7 @@
     <string name="im_call_invite_failed">Invite failed</string>
     <string name="im_meet_invite_room_name">%1$s’s group call</string>
     <!-- P4.1 group voice call + meeting invite -->
-    <string name="im_group_voice_call">Voice call</string>
+    <string name="im_group_voice_call">Voice meeting</string>
     <string name="im_group_call_room_name">%1$s voice call</string>
     <string name="im_group_voice_call_title">Start voice call</string>
     <string name="im_group_video_meeting_title">Start video meeting</string>

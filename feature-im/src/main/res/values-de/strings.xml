@@ -67,7 +67,7 @@
     <string name="im_upload_failed">Upload fehlgeschlagen — bitte erneut versuchen</string>
 
     <string name="im_group_info">Gruppeninfo</string>
-    <string name="im_start_meeting">Meeting starten</string>
+    <string name="im_start_meeting">Videokonferenz</string>
     <string name="im_group_meeting_name">Videomeeting von %1$s</string>
     <string name="im_call">Anruf</string>
     <string name="im_call_video">Videoanruf</string>
@@ -202,7 +202,7 @@
     <string name="im_call_invite_failed">Einladung fehlgeschlagen</string>
     <string name="im_meet_invite_room_name">Gruppenanruf von %1$s</string>
     <!-- P4.1 group voice call -->
-    <string name="im_group_voice_call">Sprachanruf</string>
+    <string name="im_group_voice_call">Audiokonferenz</string>
     <string name="im_group_call_room_name">Sprachanruf %1$s</string>
     <string name="im_group_voice_call_title">Sprachanruf starten</string>
     <string name="im_group_voice_call_count">%1$d ausgewählt</string>

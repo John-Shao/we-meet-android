@@ -78,7 +78,7 @@
 
     <!-- 群管理。 -->
     <string name="im_group_info">群信息</string>
-    <string name="im_start_meeting">发起会议</string>
+    <string name="im_start_meeting">视频会议</string>
     <string name="im_group_meeting_name">%1$s的视频会议</string>
     <string name="im_call">通话</string>
     <string name="im_call_video">视频通话</string>
@@ -229,7 +229,7 @@
     <string name="im_call_invite_failed">邀请失败</string>
     <string name="im_meet_invite_room_name">%1$s发起的多人通话</string>
     <!-- P4.1 群语音通话 + 会议拉人 -->
-    <string name="im_group_voice_call">语音通话</string>
+    <string name="im_group_voice_call">语音会议</string>
     <string name="im_group_call_room_name">%1$s的语音通话</string>
     <string name="im_group_voice_call_title">发起语音通话</string>
     <string name="im_group_video_meeting_title">发起视频会议</string>

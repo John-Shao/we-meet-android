@@ -322,7 +322,7 @@ fun ChatScreen(
                         }
                         if (!ui.isGroup) {
                             IconButton(onClick = { showCallSheet = true }) {
-                                Icon(Icons.Filled.Call, contentDescription = stringResource(R.string.im_call))
+                                Icon(Icons.Filled.Call, contentDescription = stringResource(R.string.im_plus_call))
                             }
                         }
                         if (ui.isGroup) {
