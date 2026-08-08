@@ -9,7 +9,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,7 +39,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,7 +48,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -91,13 +88,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.EmojiEmotions
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Keyboard
-import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.VideoCall
-import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -125,14 +118,6 @@ fun ChatScreen(
     onOpenInfo: (cid: String) -> Unit,
     onOpenDirectSettings: ((cid: String) -> Unit)? = null,
     onMemberClick: ((userId: String) -> Unit)? = null,
-    /**
-     * Group-only: fired to 发起「快速会议」— from the top-bar video button and
-     * from the「+」面板「快速会议」item. Receives a pre-composed meeting name
-     * derived from the group title ("{群名}的视频会议"); the host wires this to
-     * the create-meeting preview. Null hides the top-bar button (the「+」面板
-     * item then falls back to 即将推出).
-     */
-    onStartMeeting: ((meetingName: String) -> Unit)? = null,
     /**
      * Direct-only (P3): fired from 拨打电话 in the call chooser. Receives the
      * peer's we-meet user id; the host reveals the full phone (server notifies
@@ -593,17 +578,6 @@ fun ChatScreen(
                 onPickFile = { pickFile.launch(arrayOf("*/*")) },
                 onPickDoc = { showDocPicker = true },
                 onCamera = { launchCamera() },
-                onVoiceRecorded = { file, durationMs -> vm.sendVoice(file, durationMs) },
-                isGroup = ui.isGroup,
-                // 「+」面板「语音通话」:私聊=1:1 极简通话;群聊=P4.1 群语音(成员多选)。
-                onVoiceCall = {
-                    if (ui.isGroup) groupCallMedia = "audio" else startCall(false)
-                },
-                // 「+」面板末位:私聊=视频通话(直接拨号);群聊=P5.1 群视频会议
-                // (同群语音管线:振铃 + 建议参会,替代原不振铃的快速会议)。
-                onQuickMeeting = {
-                    if (ui.isGroup) groupCallMedia = "video" else startCall(true)
-                },
                 mentionCandidates = if (ui.isGroup) vm.mentionCandidates() else emptyList(),
             )
         }
@@ -888,9 +862,8 @@ data class ReplyPreview(val sender: String, val snippet: String)
 private enum class InputPanel { None, Emoji, Plus }
 
 /**
- * 企业微信/微信式输入栏:左「语音⇄键盘」切换、中「文本框/按住说话」、
- * 右「表情」+「+ / 发送」;表情与「+」面板互斥展开于输入行下方。
- * 语音录制、@提及、回复预览逻辑沿用原实现。
+ * 办公消息输入栏:文本、表情与「+ / 发送」。图片/拍摄/文件/云文档统一
+ * 收口到「+」面板；通话和会议只保留会话顶栏入口。
  */
 @Composable
 private fun MessageInputBar(
@@ -904,13 +877,6 @@ private fun MessageInputBar(
     /** 分享云文档到聊天(入口 A):「+」面板「云文档」。 */
     onPickDoc: () -> Unit,
     onCamera: () -> Unit,
-    onVoiceRecorded: (java.io.File, Long) -> Unit,
-    /** 私聊=false → 「+」面板显示 语音通话+视频通话;群聊=true → 仅显示 快速会议。 */
-    isGroup: Boolean,
-    /** 私聊专属:「+」面板「语音通话」点击 → 拉起 1:1 语音通话(群聊不显示此项)。 */
-    onVoiceCall: () -> Unit,
-    /** 「+」面板末位点击:私聊拉起视频通话、群聊创建快速会议(见 [isGroup])。 */
-    onQuickMeeting: () -> Unit,
     mentionCandidates: List<String> = emptyList(),
 ) {
     var field by remember { mutableStateOf(TextFieldValue("")) }
@@ -924,27 +890,12 @@ private fun MessageInputBar(
             mentionCandidates.filter { it.contains(m.query, ignoreCase = true) }.take(8)
         }.orEmpty()
     }
-    val context = LocalContext.current
     val focus = LocalFocusManager.current
-    val recorder = remember { VoiceRecorder(context) }
-    var recording by remember { mutableStateOf(false) }
-    var hasAudioPermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context, Manifest.permission.RECORD_AUDIO,
-            ) == PackageManager.PERMISSION_GRANTED
-        )
-    }
-    val requestAudio = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted -> hasAudioPermission = granted }
-    DisposableEffect(Unit) { onDispose { if (recording) recorder.cancel() } }
     // Clear only after the ViewModel confirms an acked send (failed send keeps draft).
     LaunchedEffect(sentTick) {
         if (sentTick > 0) field = TextFieldValue("")
     }
 
-    var voiceMode by remember { mutableStateOf(false) }
     var panel by remember { mutableStateOf(InputPanel.None) }
     val inputFocusRequester = remember { FocusRequester() }
     fun openPanel(p: InputPanel) {
@@ -955,7 +906,6 @@ private fun MessageInputBar(
             inputFocusRequester.requestFocus()
         } else {
             panel = p
-            voiceMode = false
             focus.clearFocus()
         }
     }
@@ -995,30 +945,14 @@ private fun MessageInputBar(
                 }
             }
         }
-        // 抖音风格两态输入:折叠为灰底胶囊 + 尾部快捷图标(图片 / 表情);
+        // 两态输入:折叠为灰底胶囊 + 表情快捷图标;
         // 聚焦或有草稿后展开为大圆角框,下方浮出完整工具栏与发送键。
         var inputFocused by remember { mutableStateOf(false) }
-        val expanded = inputFocused || text.isNotBlank() || voiceMode || panel != InputPanel.None
+        val expanded = inputFocused || text.isNotBlank() || panel != InputPanel.None
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
         ) {
-            if (voiceMode) {
-                HoldToTalkBar(
-                    recording = recording,
-                    enabled = canSend,
-                    hasPermission = hasAudioPermission,
-                    onRequestPermission = { requestAudio.launch(Manifest.permission.RECORD_AUDIO) },
-                    onStart = { recording = recorder.start() },
-                    onStop = {
-                        if (recording) {
-                            recording = false
-                            recorder.stop()?.let { onVoiceRecorded(it.file, it.durationMs) }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            } else {
-                Surface(
+            Surface(
                     shape = RoundedCornerShape(if (expanded) Dimens.CornerL else Dimens.CornerL),
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.fillMaxWidth(),
@@ -1057,20 +991,8 @@ private fun MessageInputBar(
                                     },
                             )
                         }
-                        // 折叠态:胶囊尾部快捷图标
+                        // 折叠态:胶囊尾部只保留表情；图片统一从「+」面板选择。
                         if (!expanded) {
-                            IconButton(
-                                onClick = { onPickImage() },
-                                enabled = canSend,
-                                modifier = Modifier.size(Dimens.AvatarS),
-                            ) {
-                                Icon(
-                                    Icons.Filled.Image,
-                                    contentDescription = stringResource(R.string.im_attach_image),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(Dimens.IconSmall),
-                                )
-                            }
                             IconButton(
                                 onClick = { openPanel(InputPanel.Emoji) },
                                 enabled = canSend,
@@ -1086,39 +1008,17 @@ private fun MessageInputBar(
                         }
                     }
                 }
-            }
             // 展开态:下方完整工具栏 + 发送键
             AnimatedVisibility(visible = expanded) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = Dimens.SpaceS),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = { onPickImage() }, enabled = canSend) {
-                        Icon(
-                            Icons.Filled.Image,
-                            contentDescription = stringResource(R.string.im_attach_image),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
                     IconButton(onClick = { openPanel(InputPanel.Emoji) }, enabled = canSend) {
                         Icon(
                             Icons.Filled.EmojiEmotions,
                             contentDescription = stringResource(R.string.im_input_emoji),
                             tint = if (panel == InputPanel.Emoji) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    IconButton(
-                        onClick = { voiceMode = !voiceMode; panel = InputPanel.None; focus.clearFocus() },
-                        enabled = canSend,
-                    ) {
-                        Icon(
-                            if (voiceMode) Icons.Filled.Keyboard else Icons.Filled.KeyboardVoice,
-                            contentDescription = stringResource(
-                                if (voiceMode) R.string.im_input_keyboard_switch
-                                else R.string.im_input_voice_switch
-                            ),
-                            tint = if (voiceMode) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -1148,57 +1048,9 @@ private fun MessageInputBar(
                     onCamera = { panel = InputPanel.None; onCamera() },
                     onFile = { panel = InputPanel.None; onPickFile() },
                     onDoc = { panel = InputPanel.None; onPickDoc() },
-                    isGroup = isGroup,
-                    onVoiceCall = { panel = InputPanel.None; onVoiceCall() },
-                    onMeeting = { panel = InputPanel.None; onQuickMeeting() },
                 )
                 InputPanel.None -> Unit
             }
-        }
-    }
-}
-
-/** 微信式「按住 说话」条:按下开始录音、松手发送(权限不足则先申请)。 */
-@Composable
-private fun HoldToTalkBar(
-    recording: Boolean,
-    enabled: Boolean,
-    hasPermission: Boolean,
-    onRequestPermission: () -> Unit,
-    onStart: () -> Unit,
-    onStop: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        color = if (recording) MaterialTheme.colorScheme.errorContainer
-        else MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(Dimens.CornerS),
-        modifier = modifier
-            .padding(horizontal = Dimens.SpaceXs)
-            .pointerInput(enabled, hasPermission) {
-                if (!enabled) return@pointerInput
-                detectTapGestures(
-                    onPress = {
-                        if (!hasPermission) {
-                            onRequestPermission()
-                            return@detectTapGestures
-                        }
-                        onStart()
-                        tryAwaitRelease()
-                        onStop()
-                    },
-                )
-            },
-    ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().height(Dimens.ButtonHeight)) {
-            Text(
-                text = stringResource(
-                    if (recording) R.string.im_voice_release else R.string.im_voice_hold
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (recording) MaterialTheme.colorScheme.onErrorContainer
-                else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
@@ -1238,9 +1090,6 @@ private fun PlusPanel(
     onCamera: () -> Unit,
     onFile: () -> Unit,
     onDoc: () -> Unit,
-    isGroup: Boolean,
-    onVoiceCall: () -> Unit,
-    onMeeting: () -> Unit,
 ) {
     data class PlusItem(
         val icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -1252,16 +1101,6 @@ private fun PlusPanel(
         add(PlusItem(Icons.Filled.PhotoCamera, R.string.im_plus_camera, onCamera))
         add(PlusItem(Icons.AutoMirrored.Filled.InsertDriveFile, R.string.im_plus_file, onFile))
         add(PlusItem(Icons.Filled.Description, R.string.im_plus_doc, onDoc))
-        if (isGroup) {
-            // 群聊(≥3 人):语音通话(P4.1 成员多选响铃)+「快速会议」。
-            add(PlusItem(Icons.Filled.Call, R.string.im_group_voice_call, onVoiceCall))
-            add(PlusItem(Icons.Filled.VideoCall, R.string.im_plus_meeting, onMeeting))
-        } else {
-            // 私聊(2 人):语音通话 + 视频通话,直接拉起 1:1 通话(极简 UI);
-            // 视频通话用 Videocam,与顶栏通话选择器图标一致。
-            add(PlusItem(Icons.Filled.Call, R.string.im_plus_call, onVoiceCall))
-            add(PlusItem(Icons.Filled.Videocam, R.string.im_call_video, onMeeting))
-        }
     }
     LazyVerticalGrid(
         columns = GridCells.Fixed(4),
