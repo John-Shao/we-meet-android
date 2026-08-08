@@ -973,12 +973,14 @@ private fun MessageInputBar(
             "schedule",
             stringResource(R.string.im_command_schedule),
             listOf(stringResource(R.string.im_command_schedule), "schedule"),
+            "schedule",
             Icons.Filled.CalendarMonth,
         ),
         ImInputCommand(
             "document",
             stringResource(R.string.im_command_document),
             listOf(stringResource(R.string.im_command_document), "doc"),
+            "doc",
             Icons.Filled.Description,
         ),
         ImInputCommand(
@@ -990,15 +992,25 @@ private fun MessageInputBar(
                 stringResource(
                     if (isGroup) R.string.im_group_voice_call else R.string.im_plus_call
                 ),
-                "voice",
                 "call",
+                "voice",
             ),
+            "voice",
             Icons.Filled.Call,
         ),
         ImInputCommand(
+            if (isGroup) "video-meeting" else "video-call",
+            stringResource(
+                if (isGroup) R.string.im_start_meeting else R.string.im_call_video
+            ),
+            listOf(
+                stringResource(
+                    if (isGroup) R.string.im_start_meeting else R.string.im_call_video
+                ),
+                stringResource(R.string.im_command_meeting),
+                "meeting",
+            ),
             "meeting",
-            stringResource(R.string.im_command_meeting),
-            listOf(stringResource(R.string.im_command_meeting), "meeting"),
             Icons.Filled.VideoCall,
         ),
     )
@@ -1010,7 +1022,7 @@ private fun MessageInputBar(
             "schedule" -> onSchedule()
             "document" -> onPickDoc()
             "voice-call", "voice-meeting" -> onVoice()
-            "meeting" -> onMeeting()
+            "video-call", "video-meeting" -> onMeeting()
         }
     }
 
@@ -1027,7 +1039,7 @@ private fun MessageInputBar(
                         Icon(command.icon, contentDescription = null, modifier = Modifier.size(Dimens.IconSmall))
                         Spacer(Modifier.width(Dimens.SpaceS))
                         Text(command.name, modifier = Modifier.weight(1f))
-                        Text("/${command.aliases.last()}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("/${command.shortcut}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -1200,6 +1212,7 @@ private data class ImInputCommand(
     val id: String,
     val name: String,
     val aliases: List<String>,
+    val shortcut: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
 )
 
