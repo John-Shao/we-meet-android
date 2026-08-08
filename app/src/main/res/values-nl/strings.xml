@@ -260,8 +260,8 @@
     <string name="calendar_agenda_load_prev">Load previous month</string>
     <string name="calendar_agenda_load_next">Load next month</string>
     <!-- P8: free/busy compare screen -->
-    <string name="freebusy_title">View calendar</string>
-    <string name="freebusy_group_title">Members\' calendars</string>
+    <string name="freebusy_title">Agenda</string>
+    <string name="freebusy_group_title">Agenda</string>
     <string name="freebusy_all_free">Everyone is available</string>
     <string name="freebusy_conflict_names">%1$d bezet op dit tijdstip: %2$s</string>
     <string name="freebusy_conflict_names_more">%1$d bezet op dit tijdstip: %2$s e.a.</string>

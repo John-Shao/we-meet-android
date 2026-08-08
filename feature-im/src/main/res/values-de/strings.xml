@@ -239,9 +239,9 @@
     <string name="im_search_ai_quota">Zu viele Anfragen oder Tageslimit erreicht — bitte später erneut versuchen.</string>
     <string name="im_search_ai_im_skipped">Chatnachrichten wurden diesmal nicht einbezogen.</string>
     <!-- P8: event card + calendar entries -->
-    <string name="im_view_calendar">View calendar</string>
-    <string name="im_group_apps">Group apps</string>
-    <string name="im_group_calendar">Members\' calendars</string>
+    <string name="im_view_calendar">Kalender</string>
+    <string name="im_group_apps">Apps</string>
+    <string name="im_group_calendar">Kalender</string>
     <string name="im_preview_event">[Event]</string>
     <string name="im_event_card_meta">%1$d attendees · Organizer %2$s</string>
     <string name="im_event_card_view">View details</string>

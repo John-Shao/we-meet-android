@@ -58,7 +58,7 @@ fun GroupInfoScreen(
     cid: String,
     onBack: () -> Unit,
     onLeftGroup: () -> Unit,
-    /** P8 群应用「群成员日历」:携带已解析出 we-meet id 的成员(未解析静默过滤,
+    /** P8 应用「日程」：携带已解析出 we-meet id 的成员（未解析静默过滤，
      * 忙闲页会对 freebusy 缺席列另行置灰)。null 隐藏宫格。 */
     onOpenGroupCalendar: ((memberUserIds: List<String>) -> Unit)? = null,
     /** 群机器人二级页(对标飞书)。null 隐藏入口。 */
@@ -205,7 +205,7 @@ fun GroupInfoScreen(
                         )
                     }
                     HorizontalDivider()
-                    // P8 群应用宫格(首期仅「群成员日历」,对标飞书群设置)。
+                    // P8 应用宫格（首期仅「日程」）。
                     if (onOpenGroupCalendar != null) {
                         Column(
                             modifier = Modifier

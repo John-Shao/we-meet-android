@@ -231,7 +231,7 @@ object Routes {
         return if (srcCid.isNullOrBlank()) base else "$base&srcCid=${enc(srcCid)}"
     }
 
-    /** P8 忙闲对比页(单聊「查看日历」/群聊「群成员日历」共用)。 */
+    /** P8 日程忙闲对比页（单聊与群聊共用）。 */
     fun freeBusy(userIds: List<String>, title: String, srcCid: String? = null): String {
         fun enc(s: String) = URLEncoder.encode(s, StandardCharsets.UTF_8.name())
         val base = "free_busy?ids=${enc(userIds.joinToString(","))}&title=${enc(title)}"
@@ -640,7 +640,7 @@ fun AppNav() {
                 // 「添加成员」的 ＋ 随名单一起搬进了成员二级页,群信息页不再需要它。
                 onOpenBots = { navController.navigate(Routes.imGroupBots(it)) },
                 onOpenMembers = { navController.navigate(Routes.imGroupMembers(it)) },
-                // P8 群应用「群成员日历」→ 全员忙闲对比;srcCid 供创建后回发卡片。
+                // P8 群聊应用「日程」→ 全员忙闲对比；srcCid 供创建后回发卡片。
                 onOpenGroupCalendar = { memberIds ->
                     navController.navigate(
                         Routes.freeBusy(memberIds, groupCalendarTitle, cid),
@@ -754,7 +754,7 @@ fun AppNav() {
                         launchSingleTop = true
                     }
                 },
-                // P8 查看日历:我 + 对端 两列忙闲;srcCid 供创建后回发卡片。
+                // P8 私聊应用「日程」：我 + 对端两列忙闲；srcCid 供创建后回发卡片。
                 onViewCalendar = { peerUserId, peerName ->
                     navController.navigate(
                         Routes.freeBusy(listOf(peerUserId), peerName, cid),
@@ -1042,7 +1042,7 @@ fun AppNav() {
             )
         }
 
-        // P8 忙闲对比页(单聊「查看日历」/群聊「群成员日历」共用)。
+        // P8 日程忙闲对比页（单聊与群聊共用）。
         composable(
             route = Routes.FREE_BUSY,
             arguments = listOf(

@@ -277,8 +277,8 @@
     <string name="calendar_agenda_load_prev">加载上一月</string>
     <string name="calendar_agenda_load_next">加载下一月</string>
     <!-- P8: free/busy compare screen -->
-    <string name="freebusy_title">查看日历</string>
-    <string name="freebusy_group_title">群成员日历</string>
+    <string name="freebusy_title">日程</string>
+    <string name="freebusy_group_title">日程</string>
     <string name="freebusy_all_free">所有参与者都有空</string>
     <string name="freebusy_conflict_names">%1$d 人该时段忙碌：%2$s</string>
     <string name="freebusy_conflict_names_more">%1$d 人该时段忙碌：%2$s 等</string>
