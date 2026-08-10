@@ -489,25 +489,53 @@ private fun RoomFiltersSheet(
                 }
             }
             val depths = ui.nodes.map { it.depth }.distinct().sorted()
+            val firstDepth = depths.firstOrNull()
             depths.forEach { depth ->
-                val parentId = if (depth == depths.firstOrNull()) null
-                else selectedAncestors.firstOrNull { id ->
-                    ui.nodes.firstOrNull { it.id == id }?.depth == depth - 1
-                }
+                val parentId = locationLevelResetNodeId(
+                    depth = depth,
+                    firstDepth = firstDepth ?: depth,
+                    selectedNodeId = ui.nodeId,
+                    nodes = ui.nodes,
+                )
                 val options = ui.nodes.filter { node ->
-                    node.depth == depth && (depth == depths.firstOrNull() || node.parent == parentId)
+                    node.depth == depth && (depth == firstDepth || node.parent == parentId)
                 }
                 if (options.isNotEmpty()) {
                     item {
                         Text(
-                            stringResource(R.string.meeting_room_location_level, depth + 1),
+                            text = when (depth) {
+                                0 -> stringResource(R.string.meeting_room_location_country_region)
+                                1 -> stringResource(R.string.meeting_room_location_city)
+                                2 -> stringResource(R.string.meeting_room_location_campus)
+                                3 -> stringResource(R.string.meeting_room_location_building)
+                                4 -> stringResource(R.string.meeting_room_location_floor)
+                                else -> stringResource(
+                                    R.string.meeting_room_location_level,
+                                    depth + 1,
+                                )
+                            },
                             style = MaterialTheme.typography.labelLarge,
                             modifier = Modifier.padding(top = Dimens.SpaceM),
                         )
                         FilterChip(
-                            selected = ui.nodeId == null && depth == depths.firstOrNull(),
-                            onClick = { onNode(null) },
-                            label = { Text(stringResource(R.string.meeting_room_filter_level_all)) },
+                            selected = ui.nodeId == parentId,
+                            onClick = { onNode(parentId) },
+                            label = {
+                                Text(
+                                    when (depth) {
+                                        0 -> stringResource(
+                                            R.string.meeting_room_filter_all_country_regions,
+                                        )
+                                        1 -> stringResource(R.string.meeting_room_filter_all_cities)
+                                        2 -> stringResource(R.string.meeting_room_filter_all_campuses)
+                                        3 -> stringResource(R.string.meeting_room_filter_all_buildings)
+                                        4 -> stringResource(R.string.meeting_room_filter_all_floors)
+                                        else -> stringResource(
+                                            R.string.meeting_room_filter_level_all,
+                                        )
+                                    },
+                                )
+                            },
                         )
                     }
                     options.forEach { node ->
@@ -656,6 +684,19 @@ private fun ancestorIds(nodeId: String?, nodes: List<MeetingRoomNodeDto>): Set<S
     return generateSequence(nodeId?.let(byId::get)) { node ->
         node.parent?.let(byId::get)
     }.map { it.id }.toSet()
+}
+
+internal fun locationLevelResetNodeId(
+    depth: Int,
+    firstDepth: Int,
+    selectedNodeId: String?,
+    nodes: List<MeetingRoomNodeDto>,
+): String? {
+    if (depth == firstDepth) return null
+    val byId = nodes.associateBy { it.id }
+    return generateSequence(selectedNodeId?.let(byId::get)) { node ->
+        node.parent?.let(byId::get)
+    }.firstOrNull { it.depth == depth - 1 }?.id
 }
 
 private fun formatMinute(minute: Int): String =

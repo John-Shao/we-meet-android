@@ -611,6 +611,16 @@
     <string name="meeting_room_scope_too_large">This range contains too many rooms. Choose a campus, building, or floor.</string>
     <string name="meeting_room_filters_clear">Clear</string>
     <string name="meeting_room_location_level">Location level %1$d</string>
+    <string name="meeting_room_location_country_region">Country/region</string>
+    <string name="meeting_room_location_city">City</string>
+    <string name="meeting_room_location_campus">Campus</string>
+    <string name="meeting_room_location_building">Building</string>
+    <string name="meeting_room_location_floor">Floor</string>
+    <string name="meeting_room_filter_all_country_regions">All countries/regions</string>
+    <string name="meeting_room_filter_all_cities">All cities</string>
+    <string name="meeting_room_filter_all_campuses">All campuses</string>
+    <string name="meeting_room_filter_all_buildings">All buildings</string>
+    <string name="meeting_room_filter_all_floors">All floors</string>
     <string name="meeting_room_capacity_filter">Minimum capacity</string>
     <string name="meeting_room_facilities_filter">Facilities</string>
     <string name="meeting_room_busy">Busy</string>

@@ -531,6 +531,16 @@
     <string name="meeting_room_scope_too_large">Dieser Bereich enthält zu viele Räume. Wählen Sie Campus, Gebäude oder Etage.</string>
     <string name="meeting_room_filters_clear">Löschen</string>
     <string name="meeting_room_location_level">Standortebene %1$d</string>
+    <string name="meeting_room_location_country_region">Land/Region</string>
+    <string name="meeting_room_location_city">Stadt</string>
+    <string name="meeting_room_location_campus">Campus</string>
+    <string name="meeting_room_location_building">Gebäude</string>
+    <string name="meeting_room_location_floor">Etage</string>
+    <string name="meeting_room_filter_all_country_regions">Alle Länder/Regionen</string>
+    <string name="meeting_room_filter_all_cities">Alle Städte</string>
+    <string name="meeting_room_filter_all_campuses">Alle Campus-Standorte</string>
+    <string name="meeting_room_filter_all_buildings">Alle Gebäude</string>
+    <string name="meeting_room_filter_all_floors">Alle Etagen</string>
     <string name="meeting_room_capacity_filter">Mindestkapazität</string>
     <string name="meeting_room_facilities_filter">Ausstattung</string>
     <string name="meeting_room_busy">Belegt</string>
