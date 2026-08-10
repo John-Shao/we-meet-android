@@ -315,7 +315,11 @@ fun MeetingRoomsCalendarScreen(
                         columnHeader = { index ->
                             RoomColumnHeader(
                                 room = ui.rooms[index],
-                                location = roomLocation(ui.rooms[index].node?.id, ui.nodes),
+                                location = roomLocation(
+                                    ui.rooms[index].node?.id,
+                                    ui.rooms[index].floor,
+                                    ui.nodes,
+                                ),
                             )
                         },
                         onRailTap = { draft = null; detail = null },
@@ -508,7 +512,6 @@ private fun RoomFiltersSheet(
                                 1 -> stringResource(R.string.meeting_room_location_city)
                                 2 -> stringResource(R.string.meeting_room_location_campus)
                                 3 -> stringResource(R.string.meeting_room_location_building)
-                                4 -> stringResource(R.string.meeting_room_location_floor)
                                 else -> stringResource(
                                     R.string.meeting_room_location_level,
                                     depth + 1,
@@ -529,7 +532,6 @@ private fun RoomFiltersSheet(
                                         1 -> stringResource(R.string.meeting_room_filter_all_cities)
                                         2 -> stringResource(R.string.meeting_room_filter_all_campuses)
                                         3 -> stringResource(R.string.meeting_room_filter_all_buildings)
-                                        4 -> stringResource(R.string.meeting_room_filter_all_floors)
                                         else -> stringResource(
                                             R.string.meeting_room_filter_level_all,
                                         )
@@ -671,12 +673,18 @@ private fun bookingBounds(
     return BookingBounds(booking, startMin, endMin)
 }
 
-internal fun roomLocation(nodeId: String?, nodes: List<MeetingRoomNodeDto>): String {
+internal fun roomLocation(
+    nodeId: String?,
+    floor: String,
+    nodes: List<MeetingRoomNodeDto>,
+): String {
     val byId = nodes.associateBy { it.id }
     val chain = generateSequence(nodeId?.let(byId::get)) { node ->
         node.parent?.let(byId::get)
     }.toList().asReversed()
-    return chain.filter { it.depth in 2..4 }.joinToString(" · ") { it.name }
+    return (chain.filter { it.depth in 2..3 }.map { it.name } + floor.trim())
+        .filter { it.isNotBlank() }
+        .joinToString(" · ")
 }
 
 private fun ancestorIds(nodeId: String?, nodes: List<MeetingRoomNodeDto>): Set<String> {

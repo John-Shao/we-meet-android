@@ -34,6 +34,7 @@ data class MeetingRoomBriefDto(
     val id: String = "",
     val name: String = "",
     val code: String? = null,
+    val floor: String = "",
     val capacity: Int = 0,
     val node: MeetingRoomNodeRefDto? = null,
     /** 「北京 · A 座 · 3F」— composed server-side. */
@@ -66,6 +67,7 @@ data class MeetingRoomDto(
     val id: String = "",
     val name: String = "",
     val code: String? = null,
+    val floor: String = "",
     val capacity: Int = 0,
     val description: String? = null,
     val node: MeetingRoomNodeRefDto? = null,
@@ -81,6 +83,7 @@ data class MeetingRoomDto(
         id = id,
         name = name,
         code = code,
+        floor = floor,
         capacity = capacity,
         node = node,
         pathLabel = pathLabel,
@@ -129,6 +132,7 @@ data class RoomBookingDto(
 data class MeetingRoomTimelineEntryDto(
     val id: String = "",
     val name: String = "",
+    val floor: String = "",
     val capacity: Int = 0,
     val node: MeetingRoomNodeRefDto? = null,
     @Json(name = "path_label") val pathLabel: String? = null,

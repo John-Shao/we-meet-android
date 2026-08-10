@@ -306,6 +306,7 @@ fun MeetingRoomPicker(
                                 MeetingRoomBriefDto(
                                     id = room.id,
                                     name = room.name,
+                                    floor = room.floor,
                                     capacity = room.capacity,
                                     pathLabel = room.pathLabel,
                                 )

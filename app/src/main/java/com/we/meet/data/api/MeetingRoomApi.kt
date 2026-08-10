@@ -22,7 +22,7 @@ interface MeetingRoomApi {
     @GET("api/v1.0/meeting-rooms/{id}/")
     suspend fun getRoom(@Path("id") id: String): MeetingRoomDto
 
-    /** The building / floor hierarchy, flat and unpaginated. */
+    /** The country/region through building hierarchy, flat and unpaginated. */
     @GET("api/v1.0/meeting-room-nodes/")
     suspend fun listNodes(): List<MeetingRoomNodeDto>
 
@@ -65,7 +65,7 @@ interface MeetingRoomApi {
     /**
      * Occupancy per room for a window — the timeline view's data.
      *
-     * Unlike [availability] this names the organizer: staring at a floor's
+     * Unlike [availability] this names the organizer: staring at a room's
      * schedule is how you find who to ask about that 2pm block. Titles of
      * private events come back null. Windows longer than 7 days are rejected.
      */
