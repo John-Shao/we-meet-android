@@ -295,20 +295,16 @@ fun MeetingRoomsCalendarScreen(
                             }
                         },
                         onSlotTap = { column, minute ->
-                            if (draft != null || detail != null) {
-                                draft = null
-                                detail = null
-                            } else {
-                                val slot = draftSlotAt(
-                                    ui.selectedDate,
-                                    minute,
-                                    defaultDurationMin,
-                                    rangeStart,
-                                    rangeEnd,
-                                )
-                                draft = DraftSelection(column, slot.startMin, slot.endMin)
-                                draftRoomId = ui.rooms.getOrNull(column)?.id
-                            }
+                            detail = null
+                            val slot = draftSlotAt(
+                                ui.selectedDate,
+                                minute,
+                                defaultDurationMin,
+                                rangeStart,
+                                rangeEnd,
+                            )
+                            draft = DraftSelection(column, slot.startMin, slot.endMin)
+                            draftRoomId = ui.rooms.getOrNull(column)?.id
                         },
                         onBlockTap = { column, key ->
                             draft = null
