@@ -149,7 +149,7 @@ fun CalendarTabScreen(
         }
     }
     val draftLabel = stringResource(R.string.calendar_draft_add)
-    // 「点当前操作对象以外的地方就收手」——预选框与选中态共用这一条。
+    // 切换页面、点击日程或使用 FAB 时同时清除预选框与日程选中态。
     val clearPicks: () -> Unit = {
         draft = null
         selectedEventId = null
@@ -284,18 +284,16 @@ fun CalendarTabScreen(
                         date = ui.selectedDate,
                         events = ui.eventsByDay[ui.selectedDate].orEmpty(),
                         onEventClick = { id -> clearPicks(); onEventClick(id) },
-                        // 点空白:有预选块/选中态 → 先收手(点其外即取消);
-                        // 都没有 → 落新预选块。
+                        // 点其他空白位置直接移动预选块；点预选块本身才确认新建。
                         onSlotTap = { minute ->
-                            if (draft != null || selectedEventId != null) clearPicks()
-                            else draft =
-                                draftSlotAt(
-                                    ui.selectedDate,
-                                    minute,
-                                    defaultDurationMin,
-                                    visibleStartMin,
-                                    visibleEndMin,
-                                )
+                            selectedEventId = null
+                            draft = draftSlotAt(
+                                ui.selectedDate,
+                                minute,
+                                defaultDurationMin,
+                                visibleStartMin,
+                                visibleEndMin,
+                            )
                         },
                         visibleStartMin = visibleStartMin,
                         visibleEndMin = visibleEndMin,
@@ -319,10 +317,10 @@ fun CalendarTabScreen(
                         eventsByDay = ui.eventsByDay,
                         onEventClick = { id -> clearPicks(); onEventClick(id) },
                         onDayClick = { vm.selectDate(it) },
-                        // 同日视图:点当前操作对象以外的空白先收手,再点才落新框。
+                        // 同日视图：点击其他日期或时刻的空白位置直接移动预选块。
                         onSlotTap = { date, minute ->
-                            if (draft != null || selectedEventId != null) clearPicks()
-                            else draft = draftSlotAt(
+                            selectedEventId = null
+                            draft = draftSlotAt(
                                 date,
                                 minute,
                                 defaultDurationMin,
