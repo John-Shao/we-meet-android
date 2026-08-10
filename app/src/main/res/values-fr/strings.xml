@@ -518,6 +518,8 @@
     <string name="calendar_settings_working_start">Début du travail</string>
     <string name="calendar_settings_working_end">Fin du travail</string>
     <string name="calendar_settings_working_hours_hint">Réglage par pas de 30 minutes. La durée doit être comprise entre 6 et 12 heures.</string>
+    <string name="calendar_settings_calendar_time_range">Plage horaire du calendrier</string>
+    <string name="calendar_settings_meeting_room_time_range">Plage horaire des salles de réunion</string>
     <string name="calendar_working_time">Heures de travail</string>
     <string name="calendar_full_day_time">Journée entière</string>
     <string name="calendar_outside_working_hours">%1$d événements hors des heures de travail</string>

@@ -518,6 +518,8 @@
     <string name="calendar_settings_working_start">Arbeitsbeginn</string>
     <string name="calendar_settings_working_end">Arbeitsende</string>
     <string name="calendar_settings_working_hours_hint">Einstellung in 30-Minuten-Schritten. Die Arbeitszeit muss 6 bis 12 Stunden betragen.</string>
+    <string name="calendar_settings_calendar_time_range">Kalenderzeitraum</string>
+    <string name="calendar_settings_meeting_room_time_range">Besprechungsraum-Zeitraum</string>
     <string name="calendar_working_time">Arbeitszeit</string>
     <string name="calendar_full_day_time">Ganzer Tag</string>
     <string name="calendar_outside_working_hours">%1$d Termine außerhalb der Arbeitszeit</string>

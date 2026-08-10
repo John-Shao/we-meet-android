@@ -58,7 +58,6 @@ import com.we.meet.data.api.dto.RoomBookingDto
 import com.we.meet.data.settings.TimeRangeMode
 import com.we.meet.ui.calendar.CalendarPrimaryPage
 import com.we.meet.ui.calendar.CalendarPrimaryToolbar
-import com.we.meet.ui.calendar.TimeRangeSwitcher
 import com.we.meet.ui.calendar.views.DraftSelection
 import com.we.meet.ui.calendar.views.TimeBlock
 import com.we.meet.ui.calendar.views.TimelineScaffold
@@ -198,13 +197,9 @@ fun MeetingRoomsCalendarScreen(
             )
             RoomDateToolbar(
                 date = ui.selectedDate,
-                rangeMode = rangeMode,
                 onPrevious = { draft = null; vm.setDate(ui.selectedDate.minusDays(1)) },
                 onToday = { draft = null; vm.setDate(LocalDate.now()) },
                 onNext = { draft = null; vm.setDate(ui.selectedDate.plusDays(1)) },
-                onRangeMode = { mode ->
-                    app.settingsStore.setMeetingRoomTimeRangeMode(mode)
-                },
             )
             Row(
                 modifier = Modifier
@@ -380,11 +375,9 @@ fun MeetingRoomsCalendarScreen(
 @Composable
 private fun RoomDateToolbar(
     date: LocalDate,
-    rangeMode: TimeRangeMode,
     onPrevious: () -> Unit,
     onToday: () -> Unit,
     onNext: () -> Unit,
-    onRangeMode: (TimeRangeMode) -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -411,8 +404,6 @@ private fun RoomDateToolbar(
                 .format(date),
             style = MaterialTheme.typography.titleMedium,
         )
-        Spacer(Modifier.weight(1f))
-        TimeRangeSwitcher(rangeMode, onRangeMode)
     }
 }
 

@@ -35,6 +35,7 @@ import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.settings.CALENDAR_WEEK_VISIBLE_DAYS_RANGE
 import com.we.meet.data.settings.CalendarWeekStart
+import com.we.meet.data.settings.TimeRangeMode
 import com.we.meet.data.settings.WORKING_HOURS_STEP_MIN
 import com.we.meet.data.settings.isValidWorkingHours
 import java.time.DayOfWeek
@@ -61,6 +62,8 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
     val showWeekend by store.calendarShowWeekend.collectAsStateWithLifecycle()
     val weekVisibleDays by store.calendarWeekVisibleDays.collectAsStateWithLifecycle()
     val workingHours by store.workingHours.collectAsStateWithLifecycle()
+    val calendarTimeRangeMode by store.calendarTimeRangeMode.collectAsStateWithLifecycle()
+    val meetingRoomTimeRangeMode by store.meetingRoomTimeRangeMode.collectAsStateWithLifecycle()
 
     val locale = Locale.getDefault()
     val dowLabel: (CalendarWeekStart) -> String = { ws ->
@@ -154,6 +157,46 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = Dimens.SpaceS),
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            SettingDropdownRow(
+                label = stringResource(R.string.calendar_settings_calendar_time_range),
+                current = stringResource(
+                    if (calendarTimeRangeMode == TimeRangeMode.WORK) {
+                        R.string.calendar_working_time
+                    } else {
+                        R.string.calendar_full_day_time
+                    },
+                ),
+                options = listOf(
+                    stringResource(R.string.calendar_working_time) to {
+                        store.setCalendarTimeRangeMode(TimeRangeMode.WORK)
+                    },
+                    stringResource(R.string.calendar_full_day_time) to {
+                        store.setCalendarTimeRangeMode(TimeRangeMode.FULL)
+                    },
+                ),
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            SettingDropdownRow(
+                label = stringResource(R.string.calendar_settings_meeting_room_time_range),
+                current = stringResource(
+                    if (meetingRoomTimeRangeMode == TimeRangeMode.WORK) {
+                        R.string.calendar_working_time
+                    } else {
+                        R.string.calendar_full_day_time
+                    },
+                ),
+                options = listOf(
+                    stringResource(R.string.calendar_working_time) to {
+                        store.setMeetingRoomTimeRangeMode(TimeRangeMode.WORK)
+                    },
+                    stringResource(R.string.calendar_full_day_time) to {
+                        store.setMeetingRoomTimeRangeMode(TimeRangeMode.FULL)
+                    },
+                ),
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 

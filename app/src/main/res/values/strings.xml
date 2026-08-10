@@ -598,6 +598,8 @@
     <string name="calendar_settings_working_start">Work starts</string>
     <string name="calendar_settings_working_end">Work ends</string>
     <string name="calendar_settings_working_hours_hint">Times use 30-minute increments. Working hours must be between 6 and 12 hours.</string>
+    <string name="calendar_settings_calendar_time_range">Calendar time range</string>
+    <string name="calendar_settings_meeting_room_time_range">Meeting room time range</string>
     <string name="calendar_working_time">Working hours</string>
     <string name="calendar_full_day_time">Full day</string>
     <string name="calendar_outside_working_hours">%1$d events outside working hours</string>

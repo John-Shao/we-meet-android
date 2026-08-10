@@ -598,6 +598,8 @@
     <string name="calendar_settings_working_start">工作开始时间</string>
     <string name="calendar_settings_working_end">工作结束时间</string>
     <string name="calendar_settings_working_hours_hint">以 30 分钟为调整粒度，工作时间总长须为 6–12 小时。</string>
+    <string name="calendar_settings_calendar_time_range">日历时间范围</string>
+    <string name="calendar_settings_meeting_room_time_range">会议室时间范围</string>
     <string name="calendar_working_time">工作时间</string>
     <string name="calendar_full_day_time">全天时间</string>
     <string name="calendar_outside_working_hours">工作时间外有 %1$d 个日程</string>

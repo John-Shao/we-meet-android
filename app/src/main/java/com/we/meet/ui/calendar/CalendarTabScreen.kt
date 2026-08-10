@@ -48,10 +48,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -222,8 +218,6 @@ fun CalendarTabScreen(
                     }
                 },
                 onToday = { vm.goToToday() },
-                timeRangeMode = calendarTimeRangeMode,
-                onTimeRangeMode = app.settingsStore::setCalendarTimeRangeMode,
                 onShowMeetingRooms = {
                     clearPicks()
                     primaryPage = CalendarPrimaryPage.MEETING_ROOMS
@@ -450,8 +444,6 @@ private fun CalendarHeader(
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onToday: () -> Unit,
-    timeRangeMode: TimeRangeMode,
-    onTimeRangeMode: (TimeRangeMode) -> Unit,
     onShowMeetingRooms: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
@@ -514,55 +506,11 @@ private fun CalendarHeader(
                     fontWeight = FontWeight.SemiBold,
                 )
             }
-            if (ui.viewMode == CalendarViewMode.DAY || ui.viewMode == CalendarViewMode.WEEK) {
-                Spacer(Modifier.weight(1f))
-                TimeRangeSwitcher(timeRangeMode, onTimeRangeMode)
-            }
         }
     }
 }
 
-/** 日/周/月/日程 等宽分段切换器(Web CalendarViewSwitcher 同款)。 */
-@Composable
-internal fun TimeRangeSwitcher(
-    current: TimeRangeMode,
-    onSelect: (TimeRangeMode) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .background(
-                MaterialTheme.colorScheme.surfaceVariant,
-                RoundedCornerShape(Dimens.CornerS),
-            )
-            .padding(Dimens.SpaceXxs),
-    ) {
-        listOf(TimeRangeMode.WORK, TimeRangeMode.FULL).forEach { mode ->
-            val selected = current == mode
-            Text(
-                text = stringResource(
-                    if (mode == TimeRangeMode.WORK) R.string.calendar_working_time
-                    else R.string.calendar_full_day_time,
-                ),
-                style = MaterialTheme.typography.labelMedium,
-                color = if (selected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(Dimens.CornerXs))
-                    .background(
-                        if (selected) MaterialTheme.colorScheme.surface else Color.Transparent,
-                    )
-                    .semantics {
-                        role = Role.Tab
-                        this.selected = selected
-                    }
-                    .clickable { onSelect(mode) }
-                    .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
-            )
-        }
-    }
-}
-
+/** Counts timed events that cross the configured working-hours boundary. */
 private fun calendarOutsideWorkingHoursCount(
     ui: CalendarUiState,
     firstDow: DayOfWeek,
