@@ -38,7 +38,7 @@ class MeetingRoomTimelineMathTest {
     }
 
     @Test
-    fun allAtEachLocationLevelKeepsItsParentSelection() {
+    fun buildingContextUsesCityAndCampus() {
         val nodes = listOf(
             MeetingRoomNodeDto(id = "country", name = "China", depth = 0),
             MeetingRoomNodeDto(id = "city", name = "Shenzhen", parent = "country", depth = 1),
@@ -46,10 +46,7 @@ class MeetingRoomTimelineMathTest {
             MeetingRoomNodeDto(id = "building", name = "Tower 2", parent = "campus", depth = 3),
         )
 
-        assertEquals(null, locationLevelResetNodeId(0, 0, "building", nodes))
-        assertEquals("country", locationLevelResetNodeId(1, 0, "building", nodes))
-        assertEquals("city", locationLevelResetNodeId(2, 0, "building", nodes))
-        assertEquals("campus", locationLevelResetNodeId(3, 0, "building", nodes))
+        assertEquals("Shenzhen · Tech Park", buildingContext("building", nodes))
     }
 
     @Test

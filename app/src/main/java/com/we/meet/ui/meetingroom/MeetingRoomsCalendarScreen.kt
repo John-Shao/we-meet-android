@@ -307,15 +307,26 @@ fun MeetingRoomsCalendarScreen(
     }
 
     filterSection?.let { section ->
-        RoomFiltersSheet(
-            section = section,
-            ui = ui,
-            onApply = { nodeId, capacity, facilities ->
-                vm.applyFilters(nodeId, capacity, facilities)
-                filterSection = null
-            },
-            onDismiss = { filterSection = null },
-        )
+        if (section == RoomFilterSection.LOCATION) {
+            MeetingRoomBuildingPicker(
+                ui = ui,
+                onSelect = { buildingId ->
+                    vm.applyFilters(buildingId, ui.capacityMin, ui.facilityIds)
+                    filterSection = null
+                },
+                onDismiss = { filterSection = null },
+            )
+        } else {
+            RoomFiltersSheet(
+                section = section,
+                ui = ui,
+                onApply = { capacity, facilities ->
+                    vm.applyFilters(ui.nodeId, capacity, facilities)
+                    filterSection = null
+                },
+                onDismiss = { filterSection = null },
+            )
+        }
     }
     if (roomInfoOpen && selectedRoom != null) {
         RoomInfoSheet(
@@ -635,15 +646,13 @@ private fun StatusMessage(
 private fun RoomFiltersSheet(
     section: RoomFilterSection,
     ui: MeetingRoomsCalendarUiState,
-    onApply: (String?, Int?, Set<String>) -> Unit,
+    onApply: (Int?, Set<String>) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var nodeId by remember(section, ui.nodeId) { mutableStateOf(ui.nodeId) }
     var capacity by remember(section, ui.capacityMin) { mutableStateOf(ui.capacityMin) }
     var facilityIds by remember(section, ui.facilityIds) { mutableStateOf(ui.facilityIds) }
-    val selectedAncestors = remember(nodeId, ui.nodes) { ancestorIds(nodeId, ui.nodes) }
     val title = when (section) {
-        RoomFilterSection.LOCATION -> stringResource(R.string.meeting_room_filter_location)
+        RoomFilterSection.LOCATION -> stringResource(R.string.meeting_room_select_building)
         RoomFilterSection.CAPACITY -> stringResource(R.string.meeting_room_capacity_filter)
         RoomFilterSection.FACILITIES -> stringResource(R.string.meeting_room_facilities_filter)
     }
@@ -664,46 +673,6 @@ private fun RoomFiltersSheet(
                     .fillMaxWidth()
                     .heightIn(max = Dimens.SheetContentMaxHeight),
             ) {
-                if (section == RoomFilterSection.LOCATION) {
-                    val depths = ui.nodes.map { it.depth }.distinct().sorted()
-                    val firstDepth = depths.firstOrNull()
-                    depths.forEach { depth ->
-                        val parentId = locationLevelResetNodeId(
-                            depth = depth,
-                            firstDepth = firstDepth ?: depth,
-                            selectedNodeId = nodeId,
-                            nodes = ui.nodes,
-                        )
-                        val options = ui.nodes.filter { node ->
-                            node.depth == depth &&
-                                (depth == firstDepth || node.parent == parentId)
-                        }
-                        if (options.isNotEmpty()) {
-                            item {
-                                Text(
-                                    text = locationLevelLabel(depth),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    modifier = Modifier.padding(top = Dimens.SpaceM),
-                                )
-                                FilterChip(
-                                    selected = nodeId == parentId,
-                                    onClick = { nodeId = parentId },
-                                    label = { Text(locationAllLabel(depth)) },
-                                )
-                            }
-                            options.forEach { node ->
-                                item(key = node.id) {
-                                    FilterChip(
-                                        selected = node.id in selectedAncestors,
-                                        onClick = { nodeId = node.id },
-                                        label = { Text(node.name) },
-                                        modifier = Modifier.fillMaxWidth(),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
                 if (section == RoomFilterSection.CAPACITY) {
                     item {
                         Row(
@@ -756,7 +725,7 @@ private fun RoomFiltersSheet(
                 OutlinedButton(
                     onClick = {
                         when (section) {
-                            RoomFilterSection.LOCATION -> nodeId = null
+                            RoomFilterSection.LOCATION -> Unit
                             RoomFilterSection.CAPACITY -> capacity = null
                             RoomFilterSection.FACILITIES -> facilityIds = emptySet()
                         }
@@ -766,7 +735,7 @@ private fun RoomFiltersSheet(
                     Text(stringResource(R.string.meeting_room_filters_reset))
                 }
                 Button(
-                    onClick = { onApply(nodeId, capacity, facilityIds) },
+                    onClick = { onApply(capacity, facilityIds) },
                     modifier = Modifier.weight(1f),
                 ) {
                     Text(stringResource(R.string.meeting_room_filters_done))
@@ -774,24 +743,6 @@ private fun RoomFiltersSheet(
             }
         }
     }
-}
-
-@Composable
-private fun locationLevelLabel(depth: Int): String = when (depth) {
-    0 -> stringResource(R.string.meeting_room_location_country_region)
-    1 -> stringResource(R.string.meeting_room_location_city)
-    2 -> stringResource(R.string.meeting_room_location_campus)
-    3 -> stringResource(R.string.meeting_room_location_building)
-    else -> stringResource(R.string.meeting_room_location_level, depth + 1)
-}
-
-@Composable
-private fun locationAllLabel(depth: Int): String = when (depth) {
-    0 -> stringResource(R.string.meeting_room_filter_all_country_regions)
-    1 -> stringResource(R.string.meeting_room_filter_all_cities)
-    2 -> stringResource(R.string.meeting_room_filter_all_campuses)
-    3 -> stringResource(R.string.meeting_room_filter_all_buildings)
-    else -> stringResource(R.string.meeting_room_filter_level_all)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -913,26 +864,6 @@ internal fun roomLocation(
     return (chain.filter { it.depth in 2..3 }.map { it.name } + floor.trim())
         .filter { it.isNotBlank() }
         .joinToString(" · ")
-}
-
-private fun ancestorIds(nodeId: String?, nodes: List<MeetingRoomNodeDto>): Set<String> {
-    val byId = nodes.associateBy { it.id }
-    return generateSequence(nodeId?.let(byId::get)) { node ->
-        node.parent?.let(byId::get)
-    }.map { it.id }.toSet()
-}
-
-internal fun locationLevelResetNodeId(
-    depth: Int,
-    firstDepth: Int,
-    selectedNodeId: String?,
-    nodes: List<MeetingRoomNodeDto>,
-): String? {
-    if (depth == firstDepth) return null
-    val byId = nodes.associateBy { it.id }
-    return generateSequence(selectedNodeId?.let(byId::get)) { node ->
-        node.parent?.let(byId::get)
-    }.firstOrNull { it.depth == depth - 1 }?.id
 }
 
 internal fun formatMinute(minute: Int): String =

@@ -550,6 +550,10 @@
     <string name="meeting_room_filter_all_cities">Toutes les villes</string>
     <string name="meeting_room_filter_all_campuses">Tous les campus</string>
     <string name="meeting_room_filter_all_buildings">Tous les bâtiments</string>
+    <string name="meeting_room_select_building">Choisir un bâtiment</string>
+    <string name="meeting_room_search_building">Rechercher un bâtiment</string>
+    <string name="meeting_room_filters_close">Fermer le choix du bâtiment</string>
+    <string name="meeting_room_building_empty">Aucun bâtiment correspondant</string>
     <string name="meeting_room_capacity_filter">Capacité minimale</string>
     <string name="meeting_room_facilities_filter">Équipements</string>
     <string name="meeting_room_busy">Occupé</string>

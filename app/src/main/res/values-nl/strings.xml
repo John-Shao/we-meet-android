@@ -550,6 +550,10 @@
     <string name="meeting_room_filter_all_cities">Alle steden</string>
     <string name="meeting_room_filter_all_campuses">Alle campussen</string>
     <string name="meeting_room_filter_all_buildings">Alle gebouwen</string>
+    <string name="meeting_room_select_building">Gebouw kiezen</string>
+    <string name="meeting_room_search_building">Gebouwen zoeken</string>
+    <string name="meeting_room_filters_close">Gebouwkiezer sluiten</string>
+    <string name="meeting_room_building_empty">Geen overeenkomende gebouwen</string>
     <string name="meeting_room_capacity_filter">Minimumcapaciteit</string>
     <string name="meeting_room_facilities_filter">Faciliteiten</string>
     <string name="meeting_room_busy">Bezet</string>

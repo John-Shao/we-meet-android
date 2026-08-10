@@ -630,6 +630,10 @@
     <string name="meeting_room_filter_all_cities">全部城市</string>
     <string name="meeting_room_filter_all_campuses">全部园区</string>
     <string name="meeting_room_filter_all_buildings">全部楼栋</string>
+    <string name="meeting_room_select_building">选择楼栋</string>
+    <string name="meeting_room_search_building">搜索楼栋</string>
+    <string name="meeting_room_filters_close">关闭楼栋选择</string>
+    <string name="meeting_room_building_empty">没有符合搜索条件的楼栋</string>
     <string name="meeting_room_capacity_filter">最少容纳人数</string>
     <string name="meeting_room_facilities_filter">设施</string>
     <string name="meeting_room_busy">忙碌</string>

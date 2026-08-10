@@ -630,6 +630,10 @@
     <string name="meeting_room_filter_all_cities">All cities</string>
     <string name="meeting_room_filter_all_campuses">All campuses</string>
     <string name="meeting_room_filter_all_buildings">All buildings</string>
+    <string name="meeting_room_select_building">Select building</string>
+    <string name="meeting_room_search_building">Search buildings</string>
+    <string name="meeting_room_filters_close">Close building picker</string>
+    <string name="meeting_room_building_empty">No buildings match your search</string>
     <string name="meeting_room_capacity_filter">Minimum capacity</string>
     <string name="meeting_room_facilities_filter">Facilities</string>
     <string name="meeting_room_busy">Busy</string>
