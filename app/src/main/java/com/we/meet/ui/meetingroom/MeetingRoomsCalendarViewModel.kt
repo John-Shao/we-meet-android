@@ -137,6 +137,26 @@ class MeetingRoomsCalendarViewModel(
         requests.update { it.copy(nodeId = null, capacityMin = null, facilityIds = emptySet()) }
     }
 
+    fun applyFilters(nodeId: String?, capacityMin: Int?, facilityIds: Set<String>) {
+        savedStateHandle[KEY_NODE] = nodeId
+        savedStateHandle[KEY_CAPACITY] = capacityMin ?: -1
+        savedStateHandle[KEY_FACILITIES] = facilityIds.sorted().joinToString(",")
+        _ui.update {
+            it.copy(
+                nodeId = nodeId,
+                capacityMin = capacityMin,
+                facilityIds = facilityIds,
+            )
+        }
+        requests.update {
+            it.copy(
+                nodeId = nodeId,
+                capacityMin = capacityMin,
+                facilityIds = facilityIds,
+            )
+        }
+    }
+
     fun refresh() {
         requests.update { it.copy(refreshToken = it.refreshToken + 1) }
     }

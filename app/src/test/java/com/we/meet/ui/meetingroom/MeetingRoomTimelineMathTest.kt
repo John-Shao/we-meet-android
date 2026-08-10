@@ -51,4 +51,23 @@ class MeetingRoomTimelineMathTest {
         assertEquals("city", locationLevelResetNodeId(2, 0, "building", nodes))
         assertEquals("campus", locationLevelResetNodeId(3, 0, "building", nodes))
     }
+
+    @Test
+    fun compactAvailabilityClipsBookingsToVisibleRange() {
+        assertEquals(
+            VisibleMinuteRange(9 * 60, 10 * 60),
+            clipMinuteRange(8 * 60, 10 * 60, 9 * 60, 18 * 60),
+        )
+        assertEquals(
+            VisibleMinuteRange(17 * 60, 18 * 60),
+            clipMinuteRange(17 * 60, 19 * 60, 9 * 60, 18 * 60),
+        )
+        assertEquals(null, clipMinuteRange(7 * 60, 8 * 60, 9 * 60, 18 * 60))
+    }
+
+    @Test
+    fun compactAvailabilityTicksIncludeBothVisibleBoundaries() {
+        assertEquals(listOf(540, 720, 900, 1080), availabilityTicks(540, 1080))
+        assertEquals(listOf(0, 360, 720, 1080, 1440), availabilityTicks(0, 1440))
+    }
 }

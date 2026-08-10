@@ -525,6 +525,17 @@
     <string name="calendar_outside_working_hours">%1$d événements hors des heures de travail</string>
     <string name="meeting_rooms_title">Salles de réunion</string>
     <string name="meeting_room_filters">Filtres</string>
+    <string name="meeting_room_filter_location">Emplacement</string>
+    <string name="meeting_room_filter_capacity">Capacité</string>
+    <string name="meeting_room_filter_facility_count">Équipements (%1$d)</string>
+    <string name="meeting_room_refresh">Actualiser les salles</string>
+    <string name="meeting_room_open_schedule">Ouvrir le planning de la salle</string>
+    <string name="meeting_room_availability_summary">Disponibilités avec %1$d réservations</string>
+    <string name="meeting_room_list_hint">Sélectionnez une salle pour consulter son planning.</string>
+    <string name="meeting_room_schedule_back">Retour aux salles</string>
+    <string name="meeting_room_room_info">Détails de la salle</string>
+    <string name="meeting_room_filters_reset">Réinitialiser</string>
+    <string name="meeting_room_filters_done">Terminé</string>
     <string name="meeting_room_calendar_hint">Touchez un créneau libre pour le sélectionner. Faites-le glisser, puis touchez-le à nouveau pour créer un événement.</string>
     <string name="meeting_room_draft_conflict">Cette salle est déjà réservée pour la période sélectionnée</string>
     <string name="meeting_room_outside_working_hours">%1$d réservations hors des heures de travail</string>

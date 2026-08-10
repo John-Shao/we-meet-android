@@ -525,6 +525,17 @@
     <string name="calendar_outside_working_hours">%1$d Termine außerhalb der Arbeitszeit</string>
     <string name="meeting_rooms_title">Besprechungsräume</string>
     <string name="meeting_room_filters">Filter</string>
+    <string name="meeting_room_filter_location">Standort</string>
+    <string name="meeting_room_filter_capacity">Kapazität</string>
+    <string name="meeting_room_filter_facility_count">Ausstattung (%1$d)</string>
+    <string name="meeting_room_refresh">Besprechungsräume aktualisieren</string>
+    <string name="meeting_room_open_schedule">Raumkalender öffnen</string>
+    <string name="meeting_room_availability_summary">Verfügbarkeit mit %1$d Buchungen</string>
+    <string name="meeting_room_list_hint">Raum auswählen, um Kalender und freie Zeiten zu sehen.</string>
+    <string name="meeting_room_schedule_back">Zurück zu den Besprechungsräumen</string>
+    <string name="meeting_room_room_info">Raumdetails</string>
+    <string name="meeting_room_filters_reset">Zurücksetzen</string>
+    <string name="meeting_room_filters_done">Fertig</string>
     <string name="meeting_room_calendar_hint">Tippen Sie auf einen freien Zeitraum. Ziehen Sie zum Anpassen und tippen Sie erneut, um einen Termin zu erstellen.</string>
     <string name="meeting_room_draft_conflict">Dieser Raum ist im ausgewählten Zeitraum bereits gebucht</string>
     <string name="meeting_room_outside_working_hours">%1$d Buchungen außerhalb der Arbeitszeit</string>

@@ -605,6 +605,17 @@
     <string name="calendar_outside_working_hours">工作时间外有 %1$d 个日程</string>
     <string name="meeting_rooms_title">会议室</string>
     <string name="meeting_room_filters">筛选</string>
+    <string name="meeting_room_filter_location">位置</string>
+    <string name="meeting_room_filter_capacity">容纳人数</string>
+    <string name="meeting_room_filter_facility_count">设施（%1$d）</string>
+    <string name="meeting_room_refresh">刷新会议室</string>
+    <string name="meeting_room_open_schedule">查看会议室日程</string>
+    <string name="meeting_room_availability_summary">忙闲时间轴，共 %1$d 个预订</string>
+    <string name="meeting_room_list_hint">选择会议室查看日程，并预订空闲时段。</string>
+    <string name="meeting_room_schedule_back">返回会议室列表</string>
+    <string name="meeting_room_room_info">会议室详情</string>
+    <string name="meeting_room_filters_reset">重置</string>
+    <string name="meeting_room_filters_done">确定</string>
     <string name="meeting_room_calendar_hint">点击空白时段进行预选；可拖动调整，再次点击即可新建日程。</string>
     <string name="meeting_room_draft_conflict">该会议室在所选时段已被预订</string>
     <string name="meeting_room_outside_working_hours">工作时间外有 %1$d 个预订</string>

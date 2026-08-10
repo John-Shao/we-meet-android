@@ -1,5 +1,7 @@
 package com.we.meet.ui.meetingroom
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,28 +10,32 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -38,13 +44,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -55,6 +65,7 @@ import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.MeetingRoomNodeDto
 import com.we.meet.data.api.dto.MeetingRoomTimelineEntryDto
 import com.we.meet.data.api.dto.RoomBookingDto
+import com.we.meet.data.settings.CalendarWeekStart
 import com.we.meet.data.settings.TimeRangeMode
 import com.we.meet.ui.calendar.CalendarPrimaryPage
 import com.we.meet.ui.calendar.CalendarPrimaryToolbar
@@ -63,6 +74,7 @@ import com.we.meet.ui.calendar.views.TimeBlock
 import com.we.meet.ui.calendar.views.TimelineScaffold
 import com.we.meet.ui.calendar.views.draftSlotAt
 import com.we.meet.ui.theme.Dimens
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -72,10 +84,9 @@ import java.time.format.FormatStyle
 import java.util.Locale
 import kotlinx.coroutines.launch
 
-private const val VISIBLE_ROOM_COLUMNS = 3
 private val CAPACITY_FILTERS = listOf(2, 4, 6, 10, 20, 50)
 
-private data class BookingBounds(
+internal data class BookingBounds(
     val booking: RoomBookingDto,
     val startMin: Int,
     val endMin: Int,
@@ -97,44 +108,44 @@ fun MeetingRoomsCalendarScreen(
     val rangeMode by app.settingsStore.meetingRoomTimeRangeMode.collectAsStateWithLifecycle()
     val defaultDurationMin by app.settingsStore.calendarDefaultDurationMin
         .collectAsStateWithLifecycle()
+    val calendarWeekStart by app.settingsStore.calendarWeekStart.collectAsStateWithLifecycle()
     val rangeStart = if (rangeMode == TimeRangeMode.WORK) workingHours.startMin else 0
     val rangeEnd = if (rangeMode == TimeRangeMode.WORK) workingHours.endMin else 24 * 60
     val zone = ZoneId.systemDefault()
 
+    var selectedRoomId by rememberSaveable { mutableStateOf<String?>(null) }
     var draft by remember { mutableStateOf<DraftSelection?>(null) }
-    var draftRoomId by remember { mutableStateOf<String?>(null) }
-    var detail by remember { mutableStateOf<Pair<MeetingRoomTimelineEntryDto, RoomBookingDto>?>(null) }
-    var filtersOpen by remember { mutableStateOf(false) }
+    var detail by remember {
+        mutableStateOf<Pair<MeetingRoomTimelineEntryDto, RoomBookingDto>?>(null)
+    }
+    var filterSection by remember { mutableStateOf<RoomFilterSection?>(null) }
+    var roomInfoOpen by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val conflictMessage = stringResource(R.string.meeting_room_draft_conflict)
 
     val bookingBounds = remember(ui.rooms, ui.selectedDate, zone) {
-        ui.rooms.map { room ->
-            room.bookings.mapNotNull { booking ->
-                bookingBounds(ui.selectedDate, zone, booking)?.let { bounds ->
-                    booking.id to bounds
-                }
-            }.toMap()
-        }
-    }
-    val columns = remember(ui.rooms, bookingBounds) {
-        ui.rooms.mapIndexed { index, room ->
-            room.bookings.mapNotNull { booking ->
-                val bounds = bookingBounds.getOrNull(index)?.get(booking.id)
-                    ?: return@mapNotNull null
-                TimeBlock(
-                    startMin = bounds.startMin,
-                    endMin = bounds.endMin,
-                    label = booking.title,
-                    timeLabel = "${formatMinute(bounds.startMin)}–${formatMinute(bounds.endMin)}",
-                    key = booking.id,
-                )
+        ui.rooms.associate { room ->
+            room.id to room.bookings.mapNotNull { booking ->
+                bookingBounds(ui.selectedDate, zone, booking)
             }
         }
     }
+    val selectedRoom = ui.rooms.firstOrNull { it.id == selectedRoomId }
+    val selectedBounds = selectedRoomId?.let { bookingBounds[it].orEmpty() }.orEmpty()
+    val selectedBlocks = remember(selectedRoom, selectedBounds) {
+        selectedBounds.map { bounds ->
+            TimeBlock(
+                startMin = bounds.startMin,
+                endMin = bounds.endMin,
+                label = bounds.booking.title,
+                timeLabel = "${formatMinute(bounds.startMin)}–${formatMinute(bounds.endMin)}",
+                key = bounds.booking.id,
+            )
+        }
+    }
     val draftConflict = draft?.let { selected ->
-        bookingBounds.getOrNull(selected.colIndex)?.values?.any { booking ->
+        selectedBounds.any { booking ->
             rangesOverlapHalfOpen(
                 selected.startMin,
                 selected.endMin,
@@ -146,8 +157,12 @@ fun MeetingRoomsCalendarScreen(
 
     LaunchedEffect(ui.selectedDate) {
         draft = null
-        draftRoomId = null
         detail = null
+    }
+    LaunchedEffect(selectedRoomId) {
+        draft = null
+        detail = null
+        roomInfoOpen = false
     }
     LaunchedEffect(rangeMode, workingHours) {
         val selected = draft
@@ -155,17 +170,11 @@ fun MeetingRoomsCalendarScreen(
             (selected.startMin < rangeStart || selected.endMin > rangeEnd)
         ) {
             draft = null
-            draftRoomId = null
         }
     }
-    LaunchedEffect(ui.rooms.map { it.id }) {
-        val selected = draft ?: return@LaunchedEffect
-        val nextColumn = ui.rooms.indexOfFirst { it.id == draftRoomId }
-        if (nextColumn < 0) {
-            draft = null
-            draftRoomId = null
-        } else if (selected.colIndex != nextColumn) {
-            draft = selected.copy(colIndex = nextColumn)
+    LaunchedEffect(ui.rooms.map { it.id }, ui.loading, ui.error) {
+        if (!ui.loading && !ui.error && selectedRoomId != null && selectedRoom == null) {
+            selectedRoomId = null
         }
     }
     LifecycleResumeEffect(Unit) {
@@ -174,158 +183,95 @@ fun MeetingRoomsCalendarScreen(
     }
 
     val outsideCount = if (rangeMode == TimeRangeMode.WORK) {
-        bookingBounds.flatMap { it.values }
+        bookingBounds.values.flatten()
             .distinctBy { it.booking.id }
             .count { it.startMin < workingHours.startMin || it.endMin > workingHours.endMin }
-    } else 0
+    } else {
+        0
+    }
     val nowMinute = if (ui.selectedDate == LocalDate.now()) {
         LocalTime.now().let { it.hour * 60 + it.minute }
             .takeIf { it in rangeStart until rangeEnd }
-    } else null
+    } else {
+        null
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            CalendarPrimaryToolbar(
-                current = CalendarPrimaryPage.MEETING_ROOMS,
-                onSelect = { page ->
-                    if (page == CalendarPrimaryPage.CALENDAR) {
+        if (selectedRoom == null) {
+            MeetingRoomOverview(
+                ui = ui,
+                bookingBounds = bookingBounds,
+                rangeStart = rangeStart,
+                rangeEnd = rangeEnd,
+                workingStart = workingHours.startMin,
+                workingEnd = workingHours.endMin,
+                nowMinute = nowMinute,
+                outsideCount = outsideCount,
+                firstDayOfWeek = if (calendarWeekStart == CalendarWeekStart.SUNDAY) {
+                    DayOfWeek.SUNDAY
+                } else {
+                    DayOfWeek.MONDAY
+                },
+                onShowCalendar = onShowCalendar,
+                onOpenSettings = onOpenSettings,
+                onSelectDate = vm::setDate,
+                onQuery = vm::setQuery,
+                onOpenFilter = { filterSection = it },
+                onRefresh = vm::refresh,
+                onShowFullDay = {
+                    app.settingsStore.setMeetingRoomTimeRangeMode(TimeRangeMode.FULL)
+                },
+                onOpenRoom = { selectedRoomId = it },
+            )
+        } else {
+            MeetingRoomSchedule(
+                room = selectedRoom,
+                date = ui.selectedDate,
+                blocks = selectedBlocks,
+                rangeStart = rangeStart,
+                rangeEnd = rangeEnd,
+                workingStart = workingHours.startMin,
+                workingEnd = workingHours.endMin,
+                nowMinute = nowMinute,
+                draft = draft,
+                draftConflict = draftConflict,
+                conflictMessage = conflictMessage,
+                location = roomLocation(selectedRoom.node?.id, selectedRoom.floor, ui.nodes),
+                onBack = { selectedRoomId = null },
+                onOpenRoomInfo = { roomInfoOpen = true },
+                onDraftAdjust = { draft = it },
+                onSlotTap = { minute ->
+                    detail = null
+                    val slot = draftSlotAt(
+                        ui.selectedDate,
+                        minute,
+                        defaultDurationMin,
+                        rangeStart,
+                        rangeEnd,
+                    )
+                    draft = DraftSelection(0, slot.startMin, slot.endMin)
+                },
+                onDraftConfirm = { selected ->
+                    if (draftConflict) {
+                        scope.launch { snackbar.showSnackbar(conflictMessage) }
+                    } else {
+                        val dayStart = ui.selectedDate.atStartOfDay(zone)
                         draft = null
-                        onShowCalendar()
+                        onCreateEventInRoom(
+                            dayStart.plusMinutes(selected.startMin.toLong()).toEpochSecond(),
+                            dayStart.plusMinutes(selected.endMin.toLong()).toEpochSecond(),
+                            selectedRoom.id,
+                        )
                     }
                 },
-                onOpenSettings = onOpenSettings,
+                onBlockTap = { key ->
+                    draft = null
+                    selectedRoom.bookings.firstOrNull { it.id == key }?.let { booking ->
+                        detail = selectedRoom to booking
+                    }
+                },
+                onRailTap = { draft = null; detail = null },
             )
-            RoomDateToolbar(
-                date = ui.selectedDate,
-                onPrevious = { draft = null; vm.setDate(ui.selectedDate.minusDays(1)) },
-                onToday = { draft = null; vm.setDate(LocalDate.now()) },
-                onNext = { draft = null; vm.setDate(ui.selectedDate.plusDays(1)) },
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Dimens.SpaceM),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                OutlinedTextField(
-                    value = ui.query,
-                    onValueChange = vm::setQuery,
-                    placeholder = { Text(stringResource(R.string.meeting_room_picker_search_hint)) },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = { filtersOpen = true }) {
-                    Icon(
-                        Icons.Filled.FilterList,
-                        contentDescription = stringResource(R.string.meeting_room_filters),
-                    )
-                }
-            }
-            Text(
-                text = stringResource(R.string.meeting_room_calendar_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs),
-            )
-            if (outsideCount > 0) {
-                TextButton(
-                    onClick = {
-                        draft = null
-                        app.settingsStore.setMeetingRoomTimeRangeMode(TimeRangeMode.FULL)
-                    },
-                    modifier = Modifier.padding(horizontal = Dimens.SpaceS),
-                ) {
-                    Text(stringResource(R.string.meeting_room_outside_working_hours, outsideCount))
-                }
-            }
-            Box(modifier = Modifier.fillMaxSize()) {
-                when {
-                    ui.loading && ui.rooms.isEmpty() -> CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-                    ui.tooManyRooms -> StatusMessage(
-                        text = stringResource(R.string.meeting_room_scope_too_large),
-                        action = stringResource(R.string.meeting_room_filters),
-                        onAction = { filtersOpen = true },
-                    )
-                    ui.error -> StatusMessage(
-                        text = stringResource(R.string.meeting_room_load_error),
-                        action = stringResource(R.string.meeting_room_retry),
-                        onAction = vm::refresh,
-                    )
-                    ui.rooms.isEmpty() -> StatusMessage(
-                        text = stringResource(R.string.meeting_room_empty),
-                    )
-                    else -> TimelineScaffold(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .semantics {
-                                if (draftConflict) stateDescription = conflictMessage
-                            },
-                        columns = columns,
-                        scrollState = rememberScrollState(),
-                        visibleStartMin = rangeStart,
-                        visibleEndMin = rangeEnd,
-                        workingStartMin = workingHours.startMin,
-                        workingEndMin = workingHours.endMin,
-                        nowMinute = nowMinute,
-                        visibleColumnCount = VISIBLE_ROOM_COLUMNS,
-                        draft = draft,
-                        draftConflict = draftConflict,
-                        draftLabel = stringResource(R.string.calendar_draft_add),
-                        onDraftAdjust = {
-                            draft = it
-                            draftRoomId = ui.rooms.getOrNull(it.colIndex)?.id
-                        },
-                        onDraftConfirm = { selected ->
-                            if (draftConflict) {
-                                scope.launch { snackbar.showSnackbar(conflictMessage) }
-                            } else {
-                                val room = ui.rooms.getOrNull(selected.colIndex)
-                                if (room != null) {
-                                    val dayStart = ui.selectedDate.atStartOfDay(zone)
-                                    draft = null
-                                    draftRoomId = null
-                                    onCreateEventInRoom(
-                                        dayStart.plusMinutes(selected.startMin.toLong()).toEpochSecond(),
-                                        dayStart.plusMinutes(selected.endMin.toLong()).toEpochSecond(),
-                                        room.id,
-                                    )
-                                }
-                            }
-                        },
-                        onSlotTap = { column, minute ->
-                            detail = null
-                            val slot = draftSlotAt(
-                                ui.selectedDate,
-                                minute,
-                                defaultDurationMin,
-                                rangeStart,
-                                rangeEnd,
-                            )
-                            draft = DraftSelection(column, slot.startMin, slot.endMin)
-                            draftRoomId = ui.rooms.getOrNull(column)?.id
-                        },
-                        onBlockTap = { column, key ->
-                            draft = null
-                            val room = ui.rooms.getOrNull(column)
-                            val booking = room?.bookings?.firstOrNull { it.id == key }
-                            if (room != null && booking != null) detail = room to booking
-                        },
-                        columnHeader = { index ->
-                            RoomColumnHeader(
-                                room = ui.rooms[index],
-                                location = roomLocation(
-                                    ui.rooms[index].node?.id,
-                                    ui.rooms[index].floor,
-                                    ui.nodes,
-                                ),
-                            )
-                        },
-                        onRailTap = { draft = null; detail = null },
-                    )
-                }
-            }
         }
 
         FloatingActionButton(
@@ -335,7 +281,14 @@ fun MeetingRoomsCalendarScreen(
             },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(Dimens.SpaceXl),
+                .padding(
+                    end = Dimens.SpaceXl,
+                    bottom = if (selectedRoom == null) {
+                        Dimens.SpaceXl
+                    } else {
+                        Dimens.Calendar.FabClearance + Dimens.SpaceL
+                    },
+                ),
         ) {
             Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.calendar_create_title))
         }
@@ -343,32 +296,237 @@ fun MeetingRoomsCalendarScreen(
             hostState = snackbar,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = Dimens.SpaceM),
+                .padding(
+                    bottom = if (selectedRoom == null) {
+                        Dimens.SpaceM
+                    } else {
+                        Dimens.Calendar.FabClearance
+                    },
+                ),
         )
     }
 
-    if (filtersOpen) {
+    filterSection?.let { section ->
         RoomFiltersSheet(
+            section = section,
             ui = ui,
-            onNode = vm::setNode,
-            onCapacity = vm::setCapacity,
-            onFacility = vm::toggleFacility,
-            onClear = vm::clearFilters,
-            onDismiss = { filtersOpen = false },
+            onApply = { nodeId, capacity, facilities ->
+                vm.applyFilters(nodeId, capacity, facilities)
+                filterSection = null
+            },
+            onDismiss = { filterSection = null },
+        )
+    }
+    if (roomInfoOpen && selectedRoom != null) {
+        RoomInfoSheet(
+            room = selectedRoom,
+            location = roomLocation(selectedRoom.node?.id, selectedRoom.floor, ui.nodes),
+            onDismiss = { roomInfoOpen = false },
         )
     }
     detail?.let { (room, booking) ->
         BookingDetailSheet(
             room = room,
             booking = booking,
-            bounds = bookingBounds
-                .getOrNull(ui.rooms.indexOfFirst { it.id == room.id })
-                ?.get(booking.id),
+            bounds = bookingBounds[room.id]?.firstOrNull { it.booking.id == booking.id },
             onViewEvent = booking.eventId
                 ?.takeIf { booking.isMine }
                 ?.let { id -> { detail = null; onEventClick(id) } },
             onDismiss = { detail = null },
         )
+    }
+}
+
+@Composable
+private fun MeetingRoomOverview(
+    ui: MeetingRoomsCalendarUiState,
+    bookingBounds: Map<String, List<BookingBounds>>,
+    rangeStart: Int,
+    rangeEnd: Int,
+    workingStart: Int,
+    workingEnd: Int,
+    nowMinute: Int?,
+    outsideCount: Int,
+    firstDayOfWeek: DayOfWeek,
+    onShowCalendar: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onSelectDate: (LocalDate) -> Unit,
+    onQuery: (String) -> Unit,
+    onOpenFilter: (RoomFilterSection) -> Unit,
+    onRefresh: () -> Unit,
+    onShowFullDay: () -> Unit,
+    onOpenRoom: (String) -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        CalendarPrimaryToolbar(
+            current = CalendarPrimaryPage.MEETING_ROOMS,
+            onSelect = { page ->
+                if (page == CalendarPrimaryPage.CALENDAR) onShowCalendar()
+            },
+            onOpenSettings = onOpenSettings,
+        )
+        RoomDateToolbar(
+            date = ui.selectedDate,
+            onPrevious = { onSelectDate(ui.selectedDate.minusDays(1)) },
+            onToday = { onSelectDate(LocalDate.now()) },
+            onNext = { onSelectDate(ui.selectedDate.plusDays(1)) },
+        )
+        MeetingRoomWeekStrip(
+            selectedDate = ui.selectedDate,
+            firstDayOfWeek = firstDayOfWeek,
+            onSelectDate = onSelectDate,
+        )
+        OutlinedTextField(
+            value = ui.query,
+            onValueChange = onQuery,
+            placeholder = { Text(stringResource(R.string.meeting_room_picker_search_hint)) },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Dimens.SpaceM),
+        )
+        MeetingRoomFilterBar(
+            ui = ui,
+            onOpenFilter = onOpenFilter,
+            onRefresh = onRefresh,
+        )
+        Text(
+            text = stringResource(R.string.meeting_room_list_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = Dimens.SpaceM),
+        )
+        if (outsideCount > 0) {
+            TextButton(
+                onClick = onShowFullDay,
+                modifier = Modifier.padding(horizontal = Dimens.SpaceS),
+            ) {
+                Text(stringResource(R.string.meeting_room_outside_working_hours, outsideCount))
+            }
+        }
+        Box(modifier = Modifier.fillMaxSize()) {
+            when {
+                ui.loading && ui.rooms.isEmpty() -> CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                )
+                ui.tooManyRooms -> StatusMessage(
+                    text = stringResource(R.string.meeting_room_scope_too_large),
+                    action = stringResource(R.string.meeting_room_filter_location),
+                    onAction = { onOpenFilter(RoomFilterSection.LOCATION) },
+                )
+                ui.error -> StatusMessage(
+                    text = stringResource(R.string.meeting_room_load_error),
+                    action = stringResource(R.string.meeting_room_retry),
+                    onAction = onRefresh,
+                )
+                ui.rooms.isEmpty() -> StatusMessage(
+                    text = stringResource(R.string.meeting_room_empty),
+                )
+                else -> MeetingRoomOverviewList(
+                    rooms = ui.rooms,
+                    bookingBounds = bookingBounds,
+                    nodes = ui.nodes,
+                    visibleStartMin = rangeStart,
+                    visibleEndMin = rangeEnd,
+                    workingStartMin = workingStart,
+                    workingEndMin = workingEnd,
+                    nowMinute = nowMinute,
+                    onOpenRoom = onOpenRoom,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MeetingRoomSchedule(
+    room: MeetingRoomTimelineEntryDto,
+    date: LocalDate,
+    blocks: List<TimeBlock>,
+    rangeStart: Int,
+    rangeEnd: Int,
+    workingStart: Int,
+    workingEnd: Int,
+    nowMinute: Int?,
+    draft: DraftSelection?,
+    draftConflict: Boolean,
+    conflictMessage: String,
+    location: String,
+    onBack: () -> Unit,
+    onOpenRoomInfo: () -> Unit,
+    onDraftAdjust: (DraftSelection) -> Unit,
+    onSlotTap: (Int) -> Unit,
+    onDraftConfirm: (DraftSelection) -> Unit,
+    onBlockTap: (String) -> Unit,
+    onRailTap: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        RoomScheduleToolbar(
+            date = date,
+            onBack = onBack,
+        )
+        Box(modifier = Modifier.fillMaxSize()) {
+            TimelineScaffold(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = Dimens.Calendar.FabClearance)
+                    .semantics {
+                        if (draftConflict) stateDescription = conflictMessage
+                    },
+                columns = listOf(blocks),
+                scrollState = rememberScrollState(),
+                visibleStartMin = rangeStart,
+                visibleEndMin = rangeEnd,
+                workingStartMin = workingStart,
+                workingEndMin = workingEnd,
+                nowMinute = nowMinute,
+                visibleColumnCount = 1,
+                draft = draft,
+                draftConflict = draftConflict,
+                draftLabel = stringResource(R.string.calendar_draft_add),
+                onDraftAdjust = onDraftAdjust,
+                onDraftConfirm = onDraftConfirm,
+                onSlotTap = { _, minute -> onSlotTap(minute) },
+                onBlockTap = { _, key -> onBlockTap(key) },
+                onRailTap = onRailTap,
+            )
+            RoomInfoDock(
+                room = room,
+                location = location,
+                onClick = onOpenRoomInfo,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoomScheduleToolbar(
+    date: LocalDate,
+    onBack: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.meeting_room_schedule_back),
+            )
+        }
+        Text(
+            text = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+                .withLocale(Locale.getDefault())
+                .format(date),
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(Dimens.MinTouchTarget))
     }
 }
 
@@ -408,34 +566,45 @@ private fun RoomDateToolbar(
 }
 
 @Composable
-private fun RoomColumnHeader(room: MeetingRoomTimelineEntryDto, location: String) {
-    Column(
-        modifier = Modifier
+private fun RoomInfoDock(
+    room: MeetingRoomTimelineEntryDto,
+    location: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXs),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .clickable(onClick = onClick)
+            .semantics { role = Role.Button },
+        tonalElevation = Dimens.ElevationSticky,
+        shadowElevation = Dimens.ElevationSticky,
     ) {
-        Text(
-            room.name,
-            style = MaterialTheme.typography.labelMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-        )
-        val subtitle = listOfNotNull(
-            location.takeIf { it.isNotBlank() },
-            room.capacity.takeIf { it > 0 }?.let {
-                stringResource(R.string.meeting_room_capacity_people, it)
-            },
-        ).joinToString(" · ")
-        Text(
-            subtitle,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = room.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = location,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Icon(
+                Icons.Filled.ExpandLess,
+                contentDescription = stringResource(R.string.meeting_room_room_info),
+            )
+        }
     }
 }
 
@@ -464,142 +633,201 @@ private fun StatusMessage(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RoomFiltersSheet(
+    section: RoomFilterSection,
     ui: MeetingRoomsCalendarUiState,
-    onNode: (String?) -> Unit,
-    onCapacity: (Int?) -> Unit,
-    onFacility: (String) -> Unit,
-    onClear: () -> Unit,
+    onApply: (String?, Int?, Set<String>) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val selectedAncestors = remember(ui.nodeId, ui.nodes) {
-        ancestorIds(ui.nodeId, ui.nodes)
+    var nodeId by remember(section, ui.nodeId) { mutableStateOf(ui.nodeId) }
+    var capacity by remember(section, ui.capacityMin) { mutableStateOf(ui.capacityMin) }
+    var facilityIds by remember(section, ui.facilityIds) { mutableStateOf(ui.facilityIds) }
+    val selectedAncestors = remember(nodeId, ui.nodes) { ancestorIds(nodeId, ui.nodes) }
+    val title = when (section) {
+        RoomFilterSection.LOCATION -> stringResource(R.string.meeting_room_filter_location)
+        RoomFilterSection.CAPACITY -> stringResource(R.string.meeting_room_capacity_filter)
+        RoomFilterSection.FACILITIES -> stringResource(R.string.meeting_room_facilities_filter)
     }
+
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = Dimens.ScreenPadding),
         ) {
-            item {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        stringResource(R.string.meeting_room_filters),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    Spacer(Modifier.weight(1f))
-                    TextButton(onClick = onClear) {
-                        Text(stringResource(R.string.meeting_room_filters_clear))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = Dimens.SpaceS),
+            )
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = Dimens.SheetContentMaxHeight),
+            ) {
+                if (section == RoomFilterSection.LOCATION) {
+                    val depths = ui.nodes.map { it.depth }.distinct().sorted()
+                    val firstDepth = depths.firstOrNull()
+                    depths.forEach { depth ->
+                        val parentId = locationLevelResetNodeId(
+                            depth = depth,
+                            firstDepth = firstDepth ?: depth,
+                            selectedNodeId = nodeId,
+                            nodes = ui.nodes,
+                        )
+                        val options = ui.nodes.filter { node ->
+                            node.depth == depth &&
+                                (depth == firstDepth || node.parent == parentId)
+                        }
+                        if (options.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = locationLevelLabel(depth),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    modifier = Modifier.padding(top = Dimens.SpaceM),
+                                )
+                                FilterChip(
+                                    selected = nodeId == parentId,
+                                    onClick = { nodeId = parentId },
+                                    label = { Text(locationAllLabel(depth)) },
+                                )
+                            }
+                            options.forEach { node ->
+                                item(key = node.id) {
+                                    FilterChip(
+                                        selected = node.id in selectedAncestors,
+                                        onClick = { nodeId = node.id },
+                                        label = { Text(node.name) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
-            }
-            val depths = ui.nodes.map { it.depth }.distinct().sorted()
-            val firstDepth = depths.firstOrNull()
-            depths.forEach { depth ->
-                val parentId = locationLevelResetNodeId(
-                    depth = depth,
-                    firstDepth = firstDepth ?: depth,
-                    selectedNodeId = ui.nodeId,
-                    nodes = ui.nodes,
-                )
-                val options = ui.nodes.filter { node ->
-                    node.depth == depth && (depth == firstDepth || node.parent == parentId)
-                }
-                if (options.isNotEmpty()) {
+                if (section == RoomFilterSection.CAPACITY) {
                     item {
-                        Text(
-                            text = when (depth) {
-                                0 -> stringResource(R.string.meeting_room_location_country_region)
-                                1 -> stringResource(R.string.meeting_room_location_city)
-                                2 -> stringResource(R.string.meeting_room_location_campus)
-                                3 -> stringResource(R.string.meeting_room_location_building)
-                                else -> stringResource(
-                                    R.string.meeting_room_location_level,
-                                    depth + 1,
-                                )
-                            },
-                            style = MaterialTheme.typography.labelLarge,
-                            modifier = Modifier.padding(top = Dimens.SpaceM),
-                        )
-                        FilterChip(
-                            selected = ui.nodeId == parentId,
-                            onClick = { onNode(parentId) },
-                            label = {
-                                Text(
-                                    when (depth) {
-                                        0 -> stringResource(
-                                            R.string.meeting_room_filter_all_country_regions,
-                                        )
-                                        1 -> stringResource(R.string.meeting_room_filter_all_cities)
-                                        2 -> stringResource(R.string.meeting_room_filter_all_campuses)
-                                        3 -> stringResource(R.string.meeting_room_filter_all_buildings)
-                                        else -> stringResource(
-                                            R.string.meeting_room_filter_level_all,
+                        Row(
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
+                        ) {
+                            CAPACITY_FILTERS.forEach { value ->
+                                FilterChip(
+                                    selected = capacity == value,
+                                    onClick = { capacity = if (capacity == value) null else value },
+                                    label = {
+                                        Text(
+                                            stringResource(
+                                                R.string.meeting_room_filter_capacity_at_least,
+                                                value,
+                                            ),
                                         )
                                     },
                                 )
-                            },
-                        )
+                            }
+                        }
                     }
-                    options.forEach { node ->
-                        item(key = node.id) {
+                }
+                if (section == RoomFilterSection.FACILITIES) {
+                    ui.facilities.forEach { facility ->
+                        item(key = facility.id) {
                             FilterChip(
-                                selected = node.id in selectedAncestors,
-                                onClick = { onNode(node.id) },
-                                label = { Text(node.name) },
+                                selected = facility.id in facilityIds,
+                                onClick = {
+                                    facilityIds = if (facility.id in facilityIds) {
+                                        facilityIds - facility.id
+                                    } else {
+                                        facilityIds + facility.id
+                                    }
+                                },
+                                label = { Text(facility.name) },
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
                     }
                 }
             }
-            item {
+            HorizontalDivider(modifier = Modifier.padding(top = Dimens.SpaceS))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = Dimens.SpaceM),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        when (section) {
+                            RoomFilterSection.LOCATION -> nodeId = null
+                            RoomFilterSection.CAPACITY -> capacity = null
+                            RoomFilterSection.FACILITIES -> facilityIds = emptySet()
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(stringResource(R.string.meeting_room_filters_reset))
+                }
+                Button(
+                    onClick = { onApply(nodeId, capacity, facilityIds) },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(stringResource(R.string.meeting_room_filters_done))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun locationLevelLabel(depth: Int): String = when (depth) {
+    0 -> stringResource(R.string.meeting_room_location_country_region)
+    1 -> stringResource(R.string.meeting_room_location_city)
+    2 -> stringResource(R.string.meeting_room_location_campus)
+    3 -> stringResource(R.string.meeting_room_location_building)
+    else -> stringResource(R.string.meeting_room_location_level, depth + 1)
+}
+
+@Composable
+private fun locationAllLabel(depth: Int): String = when (depth) {
+    0 -> stringResource(R.string.meeting_room_filter_all_country_regions)
+    1 -> stringResource(R.string.meeting_room_filter_all_cities)
+    2 -> stringResource(R.string.meeting_room_filter_all_campuses)
+    3 -> stringResource(R.string.meeting_room_filter_all_buildings)
+    else -> stringResource(R.string.meeting_room_filter_level_all)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RoomInfoSheet(
+    room: MeetingRoomTimelineEntryDto,
+    location: String,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
+        ) {
+            Text(room.name, style = MaterialTheme.typography.titleLarge)
+            if (location.isNotBlank()) {
                 Text(
-                    stringResource(R.string.meeting_room_capacity_filter),
-                    style = MaterialTheme.typography.labelLarge,
+                    text = location,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = Dimens.SpaceXs),
+                )
+            }
+            if (room.capacity > 0) {
+                Text(
+                    text = stringResource(R.string.meeting_room_capacity_people, room.capacity),
                     modifier = Modifier.padding(top = Dimens.SpaceM),
                 )
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
-                ) {
-                    CAPACITY_FILTERS.forEach { capacity ->
-                        FilterChip(
-                            selected = ui.capacityMin == capacity,
-                            onClick = {
-                                onCapacity(if (ui.capacityMin == capacity) null else capacity)
-                            },
-                            label = {
-                                Text(
-                                    stringResource(
-                                        R.string.meeting_room_filter_capacity_at_least,
-                                        capacity,
-                                    ),
-                                )
-                            },
-                        )
-                    }
-                }
             }
-            if (ui.facilities.isNotEmpty()) {
-                item {
-                    Text(
-                        stringResource(R.string.meeting_room_facilities_filter),
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.padding(top = Dimens.SpaceM),
-                    )
-                }
-                ui.facilities.forEach { facility ->
-                    item(key = facility.id) {
-                        FilterChip(
-                            selected = facility.id in ui.facilityIds,
-                            onClick = { onFacility(facility.id) },
-                            label = { Text(facility.name) },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                }
+            if (room.facilities.isNotEmpty()) {
+                Text(
+                    text = room.facilities.joinToString(" · ") { it.name },
+                    modifier = Modifier.padding(top = Dimens.SpaceS),
+                )
             }
-            item { Spacer(Modifier.height(Dimens.SpaceXxl)) }
+            Spacer(Modifier.height(Dimens.SpaceXl))
         }
     }
 }
@@ -652,7 +880,7 @@ private fun BookingDetailSheet(
     }
 }
 
-private fun bookingBounds(
+internal fun bookingBounds(
     date: LocalDate,
     zone: ZoneId,
     booking: RoomBookingDto,
@@ -707,5 +935,5 @@ internal fun locationLevelResetNodeId(
     }.firstOrNull { it.depth == depth - 1 }?.id
 }
 
-private fun formatMinute(minute: Int): String =
+internal fun formatMinute(minute: Int): String =
     "%02d:%02d".format(minute / 60, minute % 60)

@@ -525,6 +525,17 @@
     <string name="calendar_outside_working_hours">%1$d afspraken buiten werktijd</string>
     <string name="meeting_rooms_title">Vergaderruimtes</string>
     <string name="meeting_room_filters">Filters</string>
+    <string name="meeting_room_filter_location">Locatie</string>
+    <string name="meeting_room_filter_capacity">Capaciteit</string>
+    <string name="meeting_room_filter_facility_count">Faciliteiten (%1$d)</string>
+    <string name="meeting_room_refresh">Vergaderruimtes vernieuwen</string>
+    <string name="meeting_room_open_schedule">Ruimteagenda openen</string>
+    <string name="meeting_room_availability_summary">Beschikbaarheid met %1$d boekingen</string>
+    <string name="meeting_room_list_hint">Kies een ruimte om de agenda en vrije tijden te bekijken.</string>
+    <string name="meeting_room_schedule_back">Terug naar vergaderruimtes</string>
+    <string name="meeting_room_room_info">Ruimtedetails</string>
+    <string name="meeting_room_filters_reset">Resetten</string>
+    <string name="meeting_room_filters_done">Gereed</string>
     <string name="meeting_room_calendar_hint">Tik op een vrij tijdvak om het te selecteren. Sleep om aan te passen en tik opnieuw om een afspraak te maken.</string>
     <string name="meeting_room_draft_conflict">Deze ruimte is op het geselecteerde tijdstip al geboekt</string>
     <string name="meeting_room_outside_working_hours">%1$d boekingen buiten werktijd</string>
