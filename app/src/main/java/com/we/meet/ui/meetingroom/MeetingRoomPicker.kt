@@ -102,6 +102,8 @@ fun MeetingRoomPicker(
     excludeEventId: String? = null,
     /** Seeds the capacity filter from the number of people invited. */
     seedCapacity: Int = 0,
+    workingStartMin: Int = 9 * 60,
+    workingEndMin: Int = 18 * 60,
     onConfirm: (MeetingRoomBriefDto) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -297,6 +299,8 @@ fun MeetingRoomPicker(
                         slotEndIso = endIso,
                         freeIds = freeIds,
                         scrollState = timelineScroll,
+                        workingStartMin = workingStartMin,
+                        workingEndMin = workingEndMin,
                         onPickRoom = { room ->
                             onConfirm(
                                 MeetingRoomBriefDto(

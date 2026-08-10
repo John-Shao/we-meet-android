@@ -25,7 +25,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
@@ -41,6 +40,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +48,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -58,6 +62,7 @@ import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.settings.CalendarWeekStart
+import com.we.meet.data.settings.TimeRangeMode
 import com.we.meet.ui.calendar.views.AgendaView
 import com.we.meet.ui.calendar.views.CalendarViewMode
 import com.we.meet.ui.calendar.views.DayTimelineView
@@ -65,6 +70,7 @@ import com.we.meet.ui.calendar.views.DraftSlot
 import com.we.meet.ui.calendar.views.WeekTimelineView
 import com.we.meet.ui.calendar.views.draftSlotAt
 import com.we.meet.ui.calendar.views.weekColumnDays
+import com.we.meet.ui.meetingroom.MeetingRoomsCalendarScreen
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -79,6 +85,9 @@ fun CalendarTabScreen(
     onCreateEvent: (epochDay: Long) -> Unit,
     /** 预选时段确认后按精确起止(epoch 秒)进创建表单;缺省退化成按天创建。 */
     onCreateEventAt: ((startEpochSecond: Long, endEpochSecond: Long) -> Unit)? = null,
+    onCreateEventInRoom: (
+        (startEpochSecond: Long, endEpochSecond: Long, meetingRoomId: String) -> Unit
+    )? = null,
     /** P8 日历设置页入口(header 齿轮)。 */
     onOpenSettings: () -> Unit = {},
 ) {
@@ -87,6 +96,21 @@ fun CalendarTabScreen(
 
     // P8 日历设置:每周的第一天(月网格/周视图跟随,默认周一)。
     val app = LocalContext.current.applicationContext as WeMeetApp
+    var primaryPage by rememberSaveable { mutableStateOf(CalendarPrimaryPage.CALENDAR) }
+    if (primaryPage == CalendarPrimaryPage.MEETING_ROOMS) {
+        MeetingRoomsCalendarScreen(
+            onShowCalendar = { primaryPage = CalendarPrimaryPage.CALENDAR },
+            onOpenSettings = onOpenSettings,
+            onCreateEvent = onCreateEvent,
+            onCreateEventInRoom = { start, end, roomId ->
+                val callback = onCreateEventInRoom
+                if (callback != null) callback(start, end, roomId)
+                else onCreateEventAt?.invoke(start, end)
+            },
+            onEventClick = onEventClick,
+        )
+        return
+    }
     val weekStart by app.settingsStore.calendarWeekStart.collectAsStateWithLifecycle()
     val firstDow =
         if (weekStart == CalendarWeekStart.SUNDAY) DayOfWeek.SUNDAY else DayOfWeek.MONDAY
@@ -101,6 +125,15 @@ fun CalendarTabScreen(
     // 新建日程默认时长:点空白落预选块时的初始长度(与表单默认一致)。
     val defaultDurationMin by app.settingsStore.calendarDefaultDurationMin
         .collectAsStateWithLifecycle()
+    val workingHours by app.settingsStore.workingHours.collectAsStateWithLifecycle()
+    val calendarTimeRangeMode by app.settingsStore.calendarTimeRangeMode
+        .collectAsStateWithLifecycle()
+    val visibleStartMin = if (calendarTimeRangeMode == TimeRangeMode.WORK) {
+        workingHours.startMin
+    } else 0
+    val visibleEndMin = if (calendarTimeRangeMode == TimeRangeMode.WORK) {
+        workingHours.endMin
+    } else 24 * 60
 
     // 对齐飞书:日/周视图点空白先落「预选时段」,拖上下手柄改起止,**再点一次**
     // 这个块才进创建表单 —— 误触不会直接弹表单。切视图/切日期即作废。
@@ -111,6 +144,13 @@ fun CalendarTabScreen(
     LaunchedEffect(ui.viewMode, ui.selectedDate) {
         draft = null
         selectedEventId = null
+    }
+    LaunchedEffect(calendarTimeRangeMode, workingHours) {
+        if (draft != null &&
+            (draft!!.startMin < visibleStartMin || draft!!.endMin > visibleEndMin)
+        ) {
+            draft = null
+        }
     }
     val draftLabel = stringResource(R.string.calendar_draft_add)
     // 「点当前操作对象以外的地方就收手」——预选框与选中态共用这一条。
@@ -182,10 +222,39 @@ fun CalendarTabScreen(
                     }
                 },
                 onToday = { vm.goToToday() },
+                timeRangeMode = calendarTimeRangeMode,
+                onTimeRangeMode = app.settingsStore::setCalendarTimeRangeMode,
+                onShowMeetingRooms = {
+                    clearPicks()
+                    primaryPage = CalendarPrimaryPage.MEETING_ROOMS
+                },
                 // 头部齿轮 = 日历表外的点击 → 顺手收手(切视图/切日期由上面的
                 // LaunchedEffect 清)。
                 onOpenSettings = { clearPicks(); onOpenSettings() },
             )
+
+            val outsideCount = if (calendarTimeRangeMode == TimeRangeMode.WORK) {
+                calendarOutsideWorkingHoursCount(
+                    ui = ui,
+                    firstDow = firstDow,
+                    showWeekend = showWeekend,
+                    workingStartMin = workingHours.startMin,
+                    workingEndMin = workingHours.endMin,
+                )
+            } else 0
+            if (outsideCount > 0 &&
+                (ui.viewMode == CalendarViewMode.DAY || ui.viewMode == CalendarViewMode.WEEK)
+            ) {
+                TextButton(
+                    onClick = {
+                        clearPicks()
+                        app.settingsStore.setCalendarTimeRangeMode(TimeRangeMode.FULL)
+                    },
+                    modifier = Modifier.padding(horizontal = Dimens.SpaceS),
+                ) {
+                    Text(stringResource(R.string.calendar_outside_working_hours, outsideCount))
+                }
+            }
 
             when {
                 ui.loading && ui.eventsByDay.isEmpty() -> Box(
@@ -226,8 +295,18 @@ fun CalendarTabScreen(
                         onSlotTap = { minute ->
                             if (draft != null || selectedEventId != null) clearPicks()
                             else draft =
-                                draftSlotAt(ui.selectedDate, minute, defaultDurationMin)
+                                draftSlotAt(
+                                    ui.selectedDate,
+                                    minute,
+                                    defaultDurationMin,
+                                    visibleStartMin,
+                                    visibleEndMin,
+                                )
                         },
+                        visibleStartMin = visibleStartMin,
+                        visibleEndMin = visibleEndMin,
+                        workingStartMin = workingHours.startMin,
+                        workingEndMin = workingHours.endMin,
                         dimPastNow = dimPastNow,
                         draft = draft,
                         draftLabel = draftLabel,
@@ -249,8 +328,18 @@ fun CalendarTabScreen(
                         // 同日视图:点当前操作对象以外的空白先收手,再点才落新框。
                         onSlotTap = { date, minute ->
                             if (draft != null || selectedEventId != null) clearPicks()
-                            else draft = draftSlotAt(date, minute, defaultDurationMin)
+                            else draft = draftSlotAt(
+                                date,
+                                minute,
+                                defaultDurationMin,
+                                visibleStartMin,
+                                visibleEndMin,
+                            )
                         },
+                        visibleStartMin = visibleStartMin,
+                        visibleEndMin = visibleEndMin,
+                        workingStartMin = workingHours.startMin,
+                        workingEndMin = workingHours.endMin,
                         firstDayOfWeek = firstDow,
                         showWeekend = showWeekend,
                         visibleDays = weekVisibleDays,
@@ -361,9 +450,19 @@ private fun CalendarHeader(
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onToday: () -> Unit,
+    timeRangeMode: TimeRangeMode,
+    onTimeRangeMode: (TimeRangeMode) -> Unit,
+    onShowMeetingRooms: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
+        CalendarPrimaryToolbar(
+            current = CalendarPrimaryPage.CALENDAR,
+            onSelect = { page ->
+                if (page == CalendarPrimaryPage.MEETING_ROOMS) onShowMeetingRooms()
+            },
+            onOpenSettings = onOpenSettings,
+        )
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -371,14 +470,6 @@ private fun CalendarHeader(
                 .padding(start = Dimens.SpaceM, end = Dimens.SpaceXs, top = Dimens.SpaceS),
         ) {
             ViewModeSwitcher(current = ui.viewMode, onSelect = onSelectMode)
-            Spacer(Modifier.weight(1f))
-            // P8:日历设置(列表提醒开关/周起始/默认时长/默认提醒)。
-            IconButton(onClick = onOpenSettings) {
-                Icon(
-                    Icons.Filled.Settings,
-                    contentDescription = stringResource(R.string.calendar_settings_title),
-                )
-            }
         }
         val (prevCd, nextCd) = when (ui.viewMode) {
             CalendarViewMode.DAY, CalendarViewMode.AGENDA ->
@@ -423,11 +514,79 @@ private fun CalendarHeader(
                     fontWeight = FontWeight.SemiBold,
                 )
             }
+            if (ui.viewMode == CalendarViewMode.DAY || ui.viewMode == CalendarViewMode.WEEK) {
+                Spacer(Modifier.weight(1f))
+                TimeRangeSwitcher(timeRangeMode, onTimeRangeMode)
+            }
         }
     }
 }
 
 /** 日/周/月/日程 等宽分段切换器(Web CalendarViewSwitcher 同款)。 */
+@Composable
+internal fun TimeRangeSwitcher(
+    current: TimeRangeMode,
+    onSelect: (TimeRangeMode) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant,
+                RoundedCornerShape(Dimens.CornerS),
+            )
+            .padding(Dimens.SpaceXxs),
+    ) {
+        listOf(TimeRangeMode.WORK, TimeRangeMode.FULL).forEach { mode ->
+            val selected = current == mode
+            Text(
+                text = stringResource(
+                    if (mode == TimeRangeMode.WORK) R.string.calendar_working_time
+                    else R.string.calendar_full_day_time,
+                ),
+                style = MaterialTheme.typography.labelMedium,
+                color = if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(Dimens.CornerXs))
+                    .background(
+                        if (selected) MaterialTheme.colorScheme.surface else Color.Transparent,
+                    )
+                    .semantics {
+                        role = Role.Tab
+                        this.selected = selected
+                    }
+                    .clickable { onSelect(mode) }
+                    .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
+            )
+        }
+    }
+}
+
+private fun calendarOutsideWorkingHoursCount(
+    ui: CalendarUiState,
+    firstDow: DayOfWeek,
+    showWeekend: Boolean,
+    workingStartMin: Int,
+    workingEndMin: Int,
+): Int {
+    val dates = when (ui.viewMode) {
+        CalendarViewMode.DAY -> listOf(ui.selectedDate)
+        CalendarViewMode.WEEK -> weekColumnDays(ui.selectedDate, firstDow, showWeekend)
+        else -> emptyList()
+    }
+    if (dates.isEmpty()) return 0
+    return dates.flatMap { date -> ui.eventsByDay[date].orEmpty() }
+        .distinctBy { it.id }
+        .count { event ->
+            if (event.allDay) return@count false
+            val crossesDay = event.start.toLocalDate() != event.end.toLocalDate()
+            val startsOutside = event.start.hour * 60 + event.start.minute < workingStartMin
+            val endsOutside = event.end.hour * 60 + event.end.minute > workingEndMin
+            crossesDay || startsOutside || endsOutside
+        }
+}
+
 @Composable
 private fun ViewModeSwitcher(
     current: CalendarViewMode,

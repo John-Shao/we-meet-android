@@ -124,6 +124,7 @@ fun FreeBusyCompareScreen(
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val zone = remember { ZoneId.systemDefault() }
+    val workingHours by app.settingsStore.workingHours.collectAsStateWithLifecycle()
 
     // ── 身份(拉一次):me 优先 + 目录补全;失败的列退 id 前 8 位。 ──
     var people by remember { mutableStateOf<List<PersonColumn>>(emptyList()) }
@@ -480,6 +481,8 @@ fun FreeBusyCompareScreen(
                             columns = busyColumns,
                             hourHeight = hourHeight,
                             scrollState = scrollState,
+                            workingStartMin = workingHours.startMin,
+                            workingEndMin = workingHours.endMin,
                             nowMinute = if (day == LocalDate.now()) {
                                 LocalTime.now().let { it.hour * 60 + it.minute }
                             } else null,

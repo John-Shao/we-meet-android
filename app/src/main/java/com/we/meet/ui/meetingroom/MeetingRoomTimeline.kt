@@ -61,6 +61,8 @@ internal fun MeetingRoomTimeline(
     /** 该时段空闲的会议室 id —— 其余列置灰不可选。 */
     freeIds: Set<String>,
     scrollState: ScrollState,
+    workingStartMin: Int,
+    workingEndMin: Int,
     onPickRoom: (MeetingRoomTimelineEntryDto) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -108,6 +110,8 @@ internal fun MeetingRoomTimeline(
                 }
             },
             scrollState = scrollState,
+            workingStartMin = workingStartMin,
+            workingEndMin = workingEndMin,
             nowMinute = if (dayStart.toLocalDate() == LocalDate.now()) {
                 LocalTime.now().let { it.hour * 60 + it.minute }
             } else {

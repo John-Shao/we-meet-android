@@ -595,4 +595,24 @@
     <string name="special_alert_remove">关闭</string>
     <string name="special_alert_empty">还没有人。在联系人页开启「他的消息特别提醒」，他的消息在免打扰时段也能送到你。</string>
     <string name="special_alert_entry_hint">名单里的人在免打扰时段也会通知你。逐个人的开关在各自的联系人页上。</string>
+    <string name="calendar_settings_working_start">工作开始时间</string>
+    <string name="calendar_settings_working_end">工作结束时间</string>
+    <string name="calendar_settings_working_hours_hint">以 30 分钟为调整粒度，工作时间总长须为 6–12 小时。</string>
+    <string name="calendar_working_time">工作时间</string>
+    <string name="calendar_full_day_time">全天时间</string>
+    <string name="calendar_outside_working_hours">工作时间外有 %1$d 个日程</string>
+    <string name="meeting_rooms_title">会议室</string>
+    <string name="meeting_room_filters">筛选</string>
+    <string name="meeting_room_calendar_hint">点击空白时段进行预选；可拖动调整，再次点击即可新建日程。</string>
+    <string name="meeting_room_draft_conflict">该会议室在所选时段已被预订</string>
+    <string name="meeting_room_outside_working_hours">工作时间外有 %1$d 个预订</string>
+    <string name="meeting_room_scope_too_large">范围过大，请选择园区、楼栋或楼层。</string>
+    <string name="meeting_room_filters_clear">清除</string>
+    <string name="meeting_room_location_level">位置层级 %1$d</string>
+    <string name="meeting_room_capacity_filter">最少容纳人数</string>
+    <string name="meeting_room_facilities_filter">设施</string>
+    <string name="meeting_room_busy">忙碌</string>
+    <string name="meeting_room_organizer">组织者：%1$s</string>
+    <string name="meeting_room_view_event">查看日程</string>
+    <string name="meeting_room_prefill_failed">无法加载所选会议室</string>
 </resources>

@@ -52,6 +52,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.R
 import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.ui.components.WeMeetTopBar
@@ -99,12 +100,15 @@ fun CreateEventScreen(
     initialEndEpochSecond: Long? = null,
     /** P8 忙闲页预填:参与者 we-meet uuid,屏内经目录补全身份(失败静默丢弃)。 */
     prefillAttendeeIds: List<String> = emptyList(),
+    /** 会议室时间轴预填。仅创建模式读取，不覆盖编辑态已有会议室。 */
+    initialMeetingRoomId: String? = null,
     /** P8:创建成功回调(仅创建模式,编辑不触发)——IM 链路用来回发日程卡片。 */
     onCreated: ((com.we.meet.data.api.dto.CalendarEventDto) -> Unit)? = null,
     /** P8:来源 IM 会话 cid,随创建落库(M3 变更推送用);非 IM 链路为 null。 */
     sourceConversationId: String? = null,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
+    val workingHours by app.settingsStore.workingHours.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val isEdit = editEventId != null
 
@@ -199,6 +203,19 @@ fun CreateEventScreen(
                 android.widget.Toast.LENGTH_SHORT,
             ).show()
         }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(initialMeetingRoomId, isEdit) {
+        if (isEdit || initialMeetingRoomId.isNullOrBlank()) return@LaunchedEffect
+        runCatching { app.apiClient.meetingRoomApi.getRoom(initialMeetingRoomId) }
+            .onSuccess { meetingRoom = it.toBrief() }
+            .onFailure {
+                android.widget.Toast.makeText(
+                    context,
+                    R.string.meeting_room_prefill_failed,
+                    android.widget.Toast.LENGTH_SHORT,
+                ).show()
+            }
     }
 
     androidx.compose.runtime.LaunchedEffect(editEventId) {
@@ -736,6 +753,8 @@ fun CreateEventScreen(
             excludeEventId = editEventId,
             // 组织者自己也占一个位子。
             seedCapacity = attendees.size + 1,
+            workingStartMin = workingHours.startMin,
+            workingEndMin = workingHours.endMin,
             onConfirm = { room ->
                 meetingRoom = room
                 showRoomPicker = false

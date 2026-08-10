@@ -515,4 +515,24 @@
     <string name="special_alert_remove">Ausschalten</string>
     <string name="special_alert_empty">Noch niemand. Aktiviere den Sonderhinweis bei einem Kontakt, damit seine Nachrichten dich auch in den Ruhezeiten erreichen.</string>
     <string name="special_alert_entry_hint">Diese Kontakte erreichen dich auch in den Ruhezeiten. Der Schalter pro Person steht in seinem Profil.</string>
+    <string name="calendar_settings_working_start">Arbeitsbeginn</string>
+    <string name="calendar_settings_working_end">Arbeitsende</string>
+    <string name="calendar_settings_working_hours_hint">Einstellung in 30-Minuten-Schritten. Die Arbeitszeit muss 6 bis 12 Stunden betragen.</string>
+    <string name="calendar_working_time">Arbeitszeit</string>
+    <string name="calendar_full_day_time">Ganzer Tag</string>
+    <string name="calendar_outside_working_hours">%1$d Termine außerhalb der Arbeitszeit</string>
+    <string name="meeting_rooms_title">Besprechungsräume</string>
+    <string name="meeting_room_filters">Filter</string>
+    <string name="meeting_room_calendar_hint">Tippen Sie auf einen freien Zeitraum. Ziehen Sie zum Anpassen und tippen Sie erneut, um einen Termin zu erstellen.</string>
+    <string name="meeting_room_draft_conflict">Dieser Raum ist im ausgewählten Zeitraum bereits gebucht</string>
+    <string name="meeting_room_outside_working_hours">%1$d Buchungen außerhalb der Arbeitszeit</string>
+    <string name="meeting_room_scope_too_large">Dieser Bereich enthält zu viele Räume. Wählen Sie Campus, Gebäude oder Etage.</string>
+    <string name="meeting_room_filters_clear">Löschen</string>
+    <string name="meeting_room_location_level">Standortebene %1$d</string>
+    <string name="meeting_room_capacity_filter">Mindestkapazität</string>
+    <string name="meeting_room_facilities_filter">Ausstattung</string>
+    <string name="meeting_room_busy">Belegt</string>
+    <string name="meeting_room_organizer">Organisator: %1$s</string>
+    <string name="meeting_room_view_event">Termin anzeigen</string>
+    <string name="meeting_room_prefill_failed">Der ausgewählte Raum konnte nicht geladen werden</string>
 </resources>

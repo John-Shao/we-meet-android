@@ -3,9 +3,11 @@ package com.we.meet.data.api
 import com.we.meet.data.api.dto.MeetingRoomAvailabilityDto
 import com.we.meet.data.api.dto.MeetingRoomFacilityDto
 import com.we.meet.data.api.dto.MeetingRoomNodeDto
+import com.we.meet.data.api.dto.MeetingRoomDto
 import com.we.meet.data.api.dto.MeetingRoomTimelineDto
 import com.we.meet.data.api.dto.PagedMeetingRoomsDto
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 /**
@@ -16,6 +18,9 @@ import retrofit2.http.Query
  * room for free. Admin CRUD lives on the web console only.
  */
 interface MeetingRoomApi {
+
+    @GET("api/v1.0/meeting-rooms/{id}/")
+    suspend fun getRoom(@Path("id") id: String): MeetingRoomDto
 
     /** The building / floor hierarchy, flat and unpaginated. */
     @GET("api/v1.0/meeting-room-nodes/")

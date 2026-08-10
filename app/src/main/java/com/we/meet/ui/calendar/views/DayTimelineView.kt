@@ -36,6 +36,10 @@ fun DayTimelineView(
     events: List<EventUi>,
     onEventClick: (String) -> Unit,
     onSlotTap: (minuteOfDay: Int) -> Unit,
+    visibleStartMin: Int = 0,
+    visibleEndMin: Int = 24 * 60,
+    workingStartMin: Int = 9 * 60,
+    workingEndMin: Int = 18 * 60,
     /** P8「降低已结束日程的亮度」:非空时,结束早于该时刻的块降透明度。 */
     dimPastNow: java.time.ZonedDateTime? = null,
     /** 当前预选时段(仅当它就是 [date] 当天时才画)。 */
@@ -63,11 +67,12 @@ fun DayTimelineView(
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
     // 首帧滚到 08:00(今天则当前时刻上方一点)。
-    LaunchedEffect(date) {
-        val anchorHour = if (isToday) {
-            (LocalTime.now().hour - 1).coerceAtLeast(0)
-        } else 8
-        scrollState.scrollTo(with(density) { (hourHeight * anchorHour).toPx() }.toInt())
+    LaunchedEffect(date, visibleStartMin, visibleEndMin) {
+        val anchorMinute = if (isToday) {
+            (LocalTime.now().hour * 60 + LocalTime.now().minute - 60)
+        } else 8 * 60
+        val offset = (anchorMinute.coerceIn(visibleStartMin, visibleEndMin) - visibleStartMin)
+        scrollState.scrollTo(with(density) { (hourHeight * (offset / 60f)).toPx() }.toInt())
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -109,6 +114,10 @@ fun DayTimelineView(
             columns = listOf(blocks),
             hourHeight = hourHeight,
             scrollState = scrollState,
+            visibleStartMin = visibleStartMin,
+            visibleEndMin = visibleEndMin,
+            workingStartMin = workingStartMin,
+            workingEndMin = workingEndMin,
             nowMinute = if (isToday) LocalTime.now().let { it.hour * 60 + it.minute } else null,
             onBlockTap = { _, key -> onEventClick(key) },
             onSlotTap = { _, minute -> onSlotTap(minute) },

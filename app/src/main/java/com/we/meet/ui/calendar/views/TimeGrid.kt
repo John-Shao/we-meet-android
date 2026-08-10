@@ -153,9 +153,15 @@ private data class MovePreview(
 )
 
 /** 把像素 y 折算成吸附到 [DRAFT_SNAP_MIN] 的分钟数(钳进当日)。 */
-private fun snapMinuteAt(y: Float, hourHeightPx: Float): Int {
-    val raw = y / hourHeightPx * 60f
-    return ((raw / DRAFT_SNAP_MIN).roundToInt() * DRAFT_SNAP_MIN).coerceIn(0, 24 * 60)
+private fun snapMinuteAt(
+    y: Float,
+    hourHeightPx: Float,
+    visibleStartMin: Int,
+    visibleEndMin: Int,
+): Int {
+    val raw = visibleStartMin + y / hourHeightPx * 60f
+    return ((raw / DRAFT_SNAP_MIN).roundToInt() * DRAFT_SNAP_MIN)
+        .coerceIn(visibleStartMin, visibleEndMin)
 }
 
 /**
@@ -167,6 +173,22 @@ fun draftSlotAt(date: LocalDate, minuteOfDay: Int, durationMin: Int): DraftSlot 
     val snapped = (minuteOfDay / 30) * 30
     val start = snapped.coerceIn(0, 24 * 60 - dur)
     return DraftSlot(date, start, start + dur)
+}
+
+fun draftSlotAt(
+    date: LocalDate,
+    minuteOfDay: Int,
+    durationMin: Int,
+    visibleStartMin: Int,
+    visibleEndMin: Int,
+): DraftSlot {
+    val startBound = visibleStartMin.coerceIn(0, 24 * 60 - DRAFT_MIN_DURATION)
+    val endBound = visibleEndMin.coerceIn(startBound + DRAFT_MIN_DURATION, 24 * 60)
+    val duration = durationMin.coerceIn(DRAFT_MIN_DURATION, endBound - startBound)
+    val snapped = (minuteOfDay / DRAFT_SNAP_MIN) * DRAFT_SNAP_MIN
+    val start = snapped.coerceIn(startBound, endBound - DRAFT_MIN_DURATION)
+    val end = (start + duration).coerceAtMost(endBound)
+    return DraftSlot(date, start, end)
 }
 
 /**
@@ -214,23 +236,37 @@ fun HourRail(
     hourHeight: Dp,
     modifier: Modifier = Modifier,
     highlightMinutes: List<Int> = emptyList(),
+    visibleStartMin: Int = 0,
+    visibleEndMin: Int = 24 * 60,
 ) {
-    Box(modifier = modifier.width(HOUR_RAIL_WIDTH)) {
-        Column {
-            repeat(24) { h ->
-                Text(
-                    text = "%02d:00".format(h),
-                    style = WeMeetTextStyles.LabelTiny,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(hourHeight)
-                        .padding(end = Dimens.SpaceXs),
-                )
-            }
+    val rangeMinutes = (visibleEndMin - visibleStartMin).coerceAtLeast(DRAFT_MIN_DURATION)
+    val firstHour = ((visibleStartMin + 59) / 60) * 60
+    val labels = buildList {
+        if (visibleStartMin % 60 != 0) add(visibleStartMin)
+        var minute = firstHour
+        while (minute < visibleEndMin) {
+            add(minute)
+            minute += 60
         }
-        highlightMinutes.forEach { min ->
+    }.distinct()
+    Box(
+        modifier = modifier
+            .width(HOUR_RAIL_WIDTH)
+            .height(hourHeight * (rangeMinutes / 60f)),
+    ) {
+        labels.forEach { min ->
+            Text(
+                text = fmtMin(min),
+                style = WeMeetTextStyles.LabelTiny,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.End,
+                modifier = Modifier
+                    .offset(y = hourHeight * ((min - visibleStartMin) / 60f))
+                    .fillMaxWidth()
+                    .padding(end = Dimens.SpaceXs),
+            )
+        }
+        highlightMinutes.filter { it in visibleStartMin..visibleEndMin }.forEach { min ->
             Text(
                 text = fmtMin(min),
                 style = WeMeetTextStyles.LabelTiny,
@@ -240,8 +276,10 @@ fun HourRail(
                 modifier = Modifier
                     // 24:00 贴着刻度列末尾,回收一行高度免得被滚动容器裁掉。
                     .offset(
-                        y = (hourHeight * (min / 60f))
-                            .coerceAtMost(hourHeight * 24 - DRAFT_HANDLE_SIZE),
+                        y = (hourHeight * ((min - visibleStartMin) / 60f))
+                            .coerceAtMost(
+                                hourHeight * (rangeMinutes / 60f) - DRAFT_HANDLE_SIZE,
+                            ),
                     )
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
@@ -266,6 +304,10 @@ fun TimelineScaffold(
     modifier: Modifier = Modifier,
     hourHeight: Dp = Dimens.Calendar.HourHeight,
     scrollState: ScrollState = rememberScrollState(),
+    visibleStartMin: Int = 0,
+    visibleEndMin: Int = 24 * 60,
+    workingStartMin: Int = 9 * 60,
+    workingEndMin: Int = 18 * 60,
     nowMinute: Int? = null,
     nowLineInColumn: (Int) -> Boolean = { true },
     disabledColumn: (Int) -> Boolean = { false },
@@ -290,6 +332,7 @@ fun TimelineScaffold(
     revealColumnIndex: Int? = null,
     /** 预选时段草稿(点空白后出现);为空 = 无草稿。见 [DraftSelection]。 */
     draft: DraftSelection? = null,
+    draftConflict: Boolean = false,
     /** 预选块里显示的文案(通常「添加日程」);null 时不画草稿。 */
     draftLabel: String? = null,
     /** 拖动上/下手柄时持续回调新草稿(已吸附到 [DRAFT_SNAP_MIN])。 */
@@ -321,6 +364,9 @@ fun TimelineScaffold(
     onRailTap: (() -> Unit)? = null,
 ) {
     val n = columns.size.coerceAtLeast(1)
+    val rangeStart = visibleStartMin.coerceIn(0, 24 * 60 - DRAFT_MIN_DURATION)
+    val rangeEnd = visibleEndMin.coerceIn(rangeStart + DRAFT_MIN_DURATION, 24 * 60)
+    val rangeMinutes = rangeEnd - rangeStart
     val nowLineColor = WeMeetTheme.extras.calendar.nowLine
     val selectionConflictColor = WeMeetTheme.extras.calendar.conflict
     val gridLine = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
@@ -368,6 +414,9 @@ fun TimelineScaffold(
         val colWidthPx = with(density) { colWidth.toPx() }
         // 网格视口宽(不含左侧刻度列):忙闲页选段的抓手贴它的左右缘定位。
         val availablePx = with(density) { available.toPx() }
+        fun minuteY(minute: Int): Dp = hourHeight * ((minute - rangeStart) / 60f)
+        fun minuteYPx(minute: Int): Float =
+            (minute - rangeStart) / 60f * hourHeightPx
 
         // 初次布局(及列宽变化时)横滚到让 revealColumnIndex 列落在可见区内:
         // 若它在前 vc 列内则回到最左,否则滚到把它作为最右可见列。
@@ -419,6 +468,8 @@ fun TimelineScaffold(
                         }
                     } else Modifier,
                     highlightMinutes = railHighlights,
+                    visibleStartMin = rangeStart,
+                    visibleEndMin = rangeEnd,
                 )
                 Box(
                     modifier = Modifier
@@ -428,7 +479,7 @@ fun TimelineScaffold(
                     Box(
                         modifier = Modifier
                             .width(contentWidth)
-                            .height(hourHeight * 24)
+                            .height(hourHeight * (rangeMinutes / 60f))
                             // 拖拽四条路径,统一在这里命中派发:
                             // ① 预选块的上下手柄 = 改起止;② 预选块本体 = 整块移位;
                             // ③ 选中态日程块的上下抓手 = 改时长;④ 日程块本体 =
@@ -451,20 +502,21 @@ fun TimelineScaffold(
                                     val d = draftNow.value
                                     val adjust = adjustNow.value
                                     val downCol = colAt(down.position.x)
-                                    val downMin = ((down.position.y / hourHeightPx) * 60)
+                                    val downMin = (rangeStart +
+                                        (down.position.y / hourHeightPx) * 60)
                                         .toInt()
-                                        .coerceIn(0, 24 * 60 - 1)
+                                        .coerceIn(rangeStart, rangeEnd - 1)
 
                                     // ① 手柄:落点离哪个手柄近就拖哪头,立即接管。
                                     if (d != null && adjust != null) {
                                         val baseX = colWidthPx * d.colIndex
                                         val topAt = Offset(
                                             baseX + colWidthPx - insetPx,
-                                            d.startMin / 60f * hourHeightPx,
+                                            minuteYPx(d.startMin),
                                         )
                                         val botAt = Offset(
                                             baseX + insetPx,
-                                            d.endMin / 60f * hourHeightPx,
+                                            minuteYPx(d.endMin),
                                         )
                                         val dTop = (down.position - topAt).getDistance()
                                         val dBot = (down.position - botAt).getDistance()
@@ -477,6 +529,8 @@ fun TimelineScaffold(
                                                 d.startMin,
                                                 d.endMin,
                                                 movingStart = dTop <= dBot,
+                                                visibleStartMin = rangeStart,
+                                                visibleEndMin = rangeEnd,
                                             ) { s, e ->
                                                 adjust(d.copy(startMin = s, endMin = e))
                                             }
@@ -490,8 +544,8 @@ fun TimelineScaffold(
                                     val selAdjust = selAdjustNow.value
                                     if (sel != null && selAdjust != null) {
                                         val viewportLeft = hScroll.value.toFloat()
-                                        val selTopY = sel.startMin / 60f * hourHeightPx
-                                        val selBotY = sel.endMin / 60f * hourHeightPx
+                                        val selTopY = minuteYPx(sel.startMin)
+                                        val selBotY = minuteYPx(sel.endMin)
                                         val topAt = Offset(
                                             viewportLeft + availablePx - insetPx, selTopY,
                                         )
@@ -506,6 +560,8 @@ fun TimelineScaffold(
                                                 sel.startMin,
                                                 sel.endMin,
                                                 movingStart = dTop <= dBot,
+                                                visibleStartMin = rangeStart,
+                                                visibleEndMin = rangeEnd,
                                             ) { s, e -> selAdjust(TimeSelection(s, e)) }
                                             return@awaitEachGesture
                                         }
@@ -527,11 +583,11 @@ fun TimelineScaffold(
                                                     .firstOrNull { it.id == down.id } ?: break
                                                 ch.consume()
                                                 if (!ch.pressed) break
-                                                val head =
+                                                val head = rangeStart +
                                                     (ch.position.y / hourHeightPx * 60f) - grab
                                                 val s = ((head / DRAFT_SNAP_MIN).roundToInt() *
                                                     DRAFT_SNAP_MIN)
-                                                    .coerceIn(0, 24 * 60 - duration)
+                                                    .coerceIn(rangeStart, rangeEnd - duration)
                                                 selAdjust(TimeSelection(s, s + duration))
                                             }
                                             return@awaitEachGesture
@@ -563,11 +619,11 @@ fun TimelineScaffold(
                                             val baseX = colWidthPx * selCol
                                             val topAt = Offset(
                                                 baseX + colWidthPx - insetPx,
-                                                sb.startMin / 60f * hourHeightPx,
+                                                minuteYPx(sb.startMin),
                                             )
                                             val botAt = Offset(
                                                 baseX + insetPx,
-                                                sb.endMin / 60f * hourHeightPx,
+                                                minuteYPx(sb.endMin),
                                             )
                                             val dTop = (down.position - topAt).getDistance()
                                             val dBot = (down.position - botAt).getDistance()
@@ -579,6 +635,8 @@ fun TimelineScaffold(
                                                     sb.startMin,
                                                     sb.endMin,
                                                     movingStart = dTop <= dBot,
+                                                    visibleStartMin = rangeStart,
+                                                    visibleEndMin = rangeEnd,
                                                 ) { s, e ->
                                                     movePreview =
                                                         MovePreview(selKey, selCol, s, e)
@@ -642,10 +700,11 @@ fun TimelineScaffold(
                                             ?: break
                                         ch.consume()
                                         if (!ch.pressed) break
-                                        val head = (ch.position.y / hourHeightPx * 60f) -
-                                            grabMin
+                                        val head = rangeStart +
+                                            (ch.position.y / hourHeightPx * 60f) - grabMin
                                         lastStart = ((head / DRAFT_SNAP_MIN).roundToInt() *
-                                            DRAFT_SNAP_MIN).coerceIn(0, 24 * 60 - duration)
+                                            DRAFT_SNAP_MIN)
+                                            .coerceIn(rangeStart, rangeEnd - duration)
                                         lastCol = colAt(ch.position.x)
                                         if (onDraftBody) {
                                             adjust!!(
@@ -686,9 +745,10 @@ fun TimelineScaffold(
                                     detectTapGestures { off ->
                                         val col =
                                             (off.x / colWidthPx).toInt().coerceIn(0, n - 1)
-                                        val minute = ((off.y / hourHeightPx) * 60)
+                                        val minute = (rangeStart +
+                                            (off.y / hourHeightPx) * 60)
                                             .toInt()
-                                            .coerceIn(0, 24 * 60 - 1)
+                                            .coerceIn(rangeStart, rangeEnd - 1)
                                         // 预选块画在最上层,点它 = 确认建日程(优先于
                                         // 底下压着的日程块)。
                                         val d = draftNow.value
@@ -712,23 +772,37 @@ fun TimelineScaffold(
                                 },
                         ) {
                             // 工作时间(09–18)以外整行淡阴影。
-                            drawRect(
-                                offWorkShade,
-                                size = Size(size.width, 9 * hourHeightPx),
+                            fun shade(from: Int, to: Int) {
+                                val start = maxOf(from, rangeStart)
+                                val end = minOf(to, rangeEnd)
+                                if (end <= start) return
+                                drawRect(
+                                    offWorkShade,
+                                    topLeft = Offset(0f, minuteYPx(start)),
+                                    size = Size(
+                                        size.width,
+                                        (end - start) / 60f * hourHeightPx,
+                                    ),
+                                )
+                            }
+                            shade(rangeStart, workingStartMin)
+                            shade(workingEndMin, rangeEnd)
+                            drawLine(
+                                gridLine,
+                                Offset.Zero,
+                                Offset(size.width, 0f),
+                                strokeWidth = 1f,
                             )
-                            drawRect(
-                                offWorkShade,
-                                topLeft = Offset(0f, 18 * hourHeightPx),
-                                size = Size(size.width, 6 * hourHeightPx),
-                            )
-                            for (h in 0..24) {
-                                val y = h * hourHeightPx
+                            var gridMinute = ((rangeStart + 59) / 60) * 60
+                            while (gridMinute <= rangeEnd) {
+                                val y = minuteYPx(gridMinute)
                                 drawLine(
                                     gridLine,
                                     Offset(0f, y),
                                     Offset(size.width, y),
                                     strokeWidth = 1f,
                                 )
+                                gridMinute += 60
                             }
                             for (c in 1 until n) {
                                 val x = c * colWidthPx
@@ -754,10 +828,13 @@ fun TimelineScaffold(
                                         ),
                                 )
                             }
-                            blocks.forEach { b ->
-                                val top = hourHeight * (b.startMin / 60f)
+                            blocks.filter { it.startMin < rangeEnd && it.endMin > rangeStart }
+                                .forEach { b ->
+                                val clippedStart = maxOf(b.startMin, rangeStart)
+                                val clippedEnd = minOf(b.endMin, rangeEnd)
+                                val top = minuteY(clippedStart)
                                 val blockHeight =
-                                    (hourHeight * ((b.endMin - b.startMin) / 60f))
+                                    (hourHeight * ((clippedEnd - clippedStart) / 60f))
                                         .coerceAtLeast(Dimens.Calendar.BlockMinHeight)
                                 // 对齐 Web/飞书:左侧实心竖条 + 同色系浅底;短块
                                 // (≤45min)时间并入标题行,长块标题行+时间行。
@@ -902,14 +979,14 @@ fun TimelineScaffold(
                                             modifier = Modifier.offset(
                                                 x = baseX + colWidth - inset -
                                                     DRAFT_HANDLE_SIZE / 2,
-                                                y = hourHeight * (sb.startMin / 60f) -
+                                                y = minuteY(sb.startMin.coerceIn(rangeStart, rangeEnd)) -
                                                     DRAFT_HANDLE_SIZE / 2,
                                             ),
                                         )
                                         DraftHandle(
                                             modifier = Modifier.offset(
                                                 x = baseX + inset - DRAFT_HANDLE_SIZE / 2,
-                                                y = hourHeight * (sb.endMin / 60f) -
+                                                y = minuteY(sb.endMin.coerceIn(rangeStart, rangeEnd)) -
                                                     DRAFT_HANDLE_SIZE / 2,
                                             ),
                                         )
@@ -919,7 +996,7 @@ fun TimelineScaffold(
 
                         // 日程块拖动中的落点预览:主色描边 + 新时段,松手才落库。
                         movePreview?.let { mv ->
-                            val mvTop = hourHeight * (mv.startMin / 60f)
+                            val mvTop = minuteY(mv.startMin)
                             val mvHeight =
                                 (hourHeight * ((mv.endMin - mv.startMin) / 60f))
                                     .coerceAtLeast(Dimens.Calendar.MovePreviewMinHeight)
@@ -954,12 +1031,15 @@ fun TimelineScaffold(
                         // 预选时段(飞书样式):浅蓝底 + 主色描边 + 「添加日程」,
                         // 右上/左下各一个圆手柄骑在边界线上(拖它改起止)。
                         if (draft != null && draftLabel != null) {
-                            val dTop = hourHeight * (draft.startMin / 60f)
+                            val dTop = minuteY(draft.startMin)
                             val dHeight =
                                 (hourHeight * ((draft.endMin - draft.startMin) / 60f))
                                     .coerceAtLeast(DRAFT_HANDLE_SIZE)
                             val inset = minOf(DRAFT_HANDLE_INSET, colWidth / 3)
                             val baseX = colWidth * draft.colIndex
+                            val draftAccent = if (draftConflict) {
+                                selectionConflictColor
+                            } else MaterialTheme.colorScheme.primary
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
@@ -969,30 +1049,32 @@ fun TimelineScaffold(
                                     .padding(horizontal = Dimens.Calendar.ChipInset)
                                     .clip(RoundedCornerShape(Dimens.CornerS))
                                     .background(
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                        draftAccent.copy(alpha = 0.12f),
                                     )
                                     .border(
                                         Dimens.BorderThin,
-                                        MaterialTheme.colorScheme.primary,
+                                        draftAccent,
                                         RoundedCornerShape(Dimens.CornerS),
                                     ),
                             ) {
                                 Text(
                                     text = draftLabel,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    color = draftAccent,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.padding(horizontal = Dimens.SpaceXxs),
                                 )
                             }
                             DraftHandle(
+                                accent = draftAccent,
                                 modifier = Modifier.offset(
                                     x = baseX + colWidth - inset - DRAFT_HANDLE_SIZE / 2,
                                     y = dTop - DRAFT_HANDLE_SIZE / 2,
                                 ),
                             )
                             DraftHandle(
+                                accent = draftAccent,
                                 modifier = Modifier.offset(
                                     x = baseX + inset - DRAFT_HANDLE_SIZE / 2,
                                     y = dTop + dHeight - DRAFT_HANDLE_SIZE / 2,
@@ -1002,8 +1084,8 @@ fun TimelineScaffold(
 
                         // 当前时刻红线(仅 nowLineInColumn 的列)。圆点只画在最左那
                         // 一列 —— 忙闲页每列都是「今天」,每列一个点会串成一串珠子。
-                        if (nowMinute != null) {
-                            val y = hourHeight * (nowMinute / 60f)
+                        if (nowMinute != null && nowMinute in rangeStart..rangeEnd) {
+                            val y = minuteY(nowMinute)
                             val firstLineCol = (0 until n).firstOrNull { nowLineInColumn(it) }
                             for (i in 0 until n) {
                                 if (!nowLineInColumn(i)) continue
@@ -1027,10 +1109,14 @@ fun TimelineScaffold(
                         }
 
                         // 选中时段:横贯所有列(忙闲页)。冲突时整框转红(底 + 边框)。
-                        if (selection != null) {
-                            val selTop = hourHeight * (selection.startMin / 60f)
+                        if (selection != null &&
+                            selection.startMin < rangeEnd && selection.endMin > rangeStart
+                        ) {
+                            val clippedStart = maxOf(selection.startMin, rangeStart)
+                            val clippedEnd = minOf(selection.endMin, rangeEnd)
+                            val selTop = minuteY(clippedStart)
                             val selHeight =
-                                (hourHeight * ((selection.endMin - selection.startMin) / 60f))
+                                (hourHeight * ((clippedEnd - clippedStart) / 60f))
                                     .coerceAtLeast(Dimens.Calendar.SelectionMinHeight)
                             val selAccent = if (selectionConflict) {
                                 selectionConflictColor
@@ -1058,8 +1144,8 @@ fun TimelineScaffold(
                             if (onSelectionAdjust != null) {
                                 val handlePx = with(density) { DRAFT_HANDLE_SIZE.toPx() }
                                 val insetPx = with(density) { DRAFT_HANDLE_INSET.toPx() }
-                                val topPx = selection.startMin / 60f * hourHeightPx
-                                val botPx = selection.endMin / 60f * hourHeightPx
+                                val topPx = minuteYPx(selection.startMin)
+                                val botPx = minuteYPx(selection.endMin)
                                 DraftHandle(
                                     accent = selAccent,
                                     // offset {} 在布局阶段读 hScroll,滚动时不触发重组。
@@ -1155,6 +1241,8 @@ private suspend fun AwaitPointerEventScope.dragEdge(
     startMin: Int,
     endMin: Int,
     movingStart: Boolean,
+    visibleStartMin: Int = 0,
+    visibleEndMin: Int = 24 * 60,
     emit: (Int, Int) -> Unit,
 ): Pair<Int, Int> {
     var s = startMin
@@ -1164,9 +1252,17 @@ private suspend fun AwaitPointerEventScope.dragEdge(
         val ch = ev.changes.firstOrNull { it.id == pointerId } ?: break
         ch.consume()
         if (!ch.pressed) break
-        val m = snapMinuteAt(ch.position.y, hourHeightPx)
-        if (movingStart) s = m.coerceIn(0, e - DRAFT_MIN_DURATION)
-        else e = m.coerceIn(s + DRAFT_MIN_DURATION, 24 * 60)
+        val m = snapMinuteAt(
+            ch.position.y,
+            hourHeightPx,
+            visibleStartMin,
+            visibleEndMin,
+        )
+        if (movingStart) {
+            s = m.coerceIn(visibleStartMin, e - DRAFT_MIN_DURATION)
+        } else {
+            e = m.coerceIn(s + DRAFT_MIN_DURATION, visibleEndMin)
+        }
         emit(s, e)
     }
     return s to e

@@ -35,6 +35,8 @@ import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.settings.CALENDAR_WEEK_VISIBLE_DAYS_RANGE
 import com.we.meet.data.settings.CalendarWeekStart
+import com.we.meet.data.settings.WORKING_HOURS_STEP_MIN
+import com.we.meet.data.settings.isValidWorkingHours
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.util.Locale
@@ -58,6 +60,7 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
     val dimPast by store.calendarDimPast.collectAsStateWithLifecycle()
     val showWeekend by store.calendarShowWeekend.collectAsStateWithLifecycle()
     val weekVisibleDays by store.calendarWeekVisibleDays.collectAsStateWithLifecycle()
+    val workingHours by store.workingHours.collectAsStateWithLifecycle()
 
     val locale = Locale.getDefault()
     val dowLabel: (CalendarWeekStart) -> String = { ws ->
@@ -130,6 +133,30 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
+            WorkingTimeDropdownRow(
+                label = stringResource(R.string.calendar_settings_working_start),
+                currentMin = workingHours.startMin,
+                options = (0 until 24 * 60 step WORKING_HOURS_STEP_MIN).toList(),
+                enabled = { start -> isValidWorkingHours(start, workingHours.endMin) },
+                onSelect = { start -> store.setWorkingHours(start, workingHours.endMin) },
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            WorkingTimeDropdownRow(
+                label = stringResource(R.string.calendar_settings_working_end),
+                currentMin = workingHours.endMin,
+                options = (WORKING_HOURS_STEP_MIN..24 * 60 step WORKING_HOURS_STEP_MIN).toList(),
+                enabled = { end -> isValidWorkingHours(workingHours.startMin, end) },
+                onSelect = { end -> store.setWorkingHours(workingHours.startMin, end) },
+            )
+            Text(
+                text = stringResource(R.string.calendar_settings_working_hours_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = Dimens.SpaceS),
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
             SettingDropdownRow(
                 label = stringResource(R.string.calendar_settings_default_reminder),
                 current = reminderLabel(reminderMin.takeIf { it >= 0 }),
@@ -144,6 +171,48 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
                     checked = dimPast,
                     onCheckedChange = { store.setCalendarDimPast(it) },
                 )
+            }
+        }
+    }
+}
+
+private fun formatMinuteOfDay(minute: Int): String =
+    "%02d:%02d".format(minute / 60, minute % 60)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WorkingTimeDropdownRow(
+    label: String,
+    currentMin: Int,
+    options: List<Int>,
+    enabled: (Int) -> Boolean,
+    onSelect: (Int) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    SettingRow(label = label) {
+        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+            TextButton(
+                onClick = { expanded = true },
+                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable),
+            ) {
+                Text(formatMinuteOfDay(currentMin))
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            }
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                matchTextFieldWidth = false,
+            ) {
+                options.forEach { minute ->
+                    DropdownMenuItem(
+                        text = { Text(formatMinuteOfDay(minute), softWrap = false) },
+                        enabled = enabled(minute),
+                        onClick = {
+                            onSelect(minute)
+                            expanded = false
+                        },
+                    )
+                }
             }
         }
     }

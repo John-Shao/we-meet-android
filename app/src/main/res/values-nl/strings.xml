@@ -515,4 +515,24 @@
     <string name="special_alert_remove">Uitzetten</string>
     <string name="special_alert_empty">Nog niemand. Zet speciale meldingen aan bij een contact zodat zijn berichten je ook tijdens stille uren bereiken.</string>
     <string name="special_alert_entry_hint">Deze contacten bereiken je ook tijdens stille uren. De schakelaar per persoon staat op zijn profiel.</string>
+    <string name="calendar_settings_working_start">Begin werktijd</string>
+    <string name="calendar_settings_working_end">Einde werktijd</string>
+    <string name="calendar_settings_working_hours_hint">Instelbaar per 30 minuten. De werktijd moet tussen 6 en 12 uur liggen.</string>
+    <string name="calendar_working_time">Werktijd</string>
+    <string name="calendar_full_day_time">Volledige dag</string>
+    <string name="calendar_outside_working_hours">%1$d afspraken buiten werktijd</string>
+    <string name="meeting_rooms_title">Vergaderruimtes</string>
+    <string name="meeting_room_filters">Filters</string>
+    <string name="meeting_room_calendar_hint">Tik op een vrij tijdvak om het te selecteren. Sleep om aan te passen en tik opnieuw om een afspraak te maken.</string>
+    <string name="meeting_room_draft_conflict">Deze ruimte is op het geselecteerde tijdstip al geboekt</string>
+    <string name="meeting_room_outside_working_hours">%1$d boekingen buiten werktijd</string>
+    <string name="meeting_room_scope_too_large">Dit bereik bevat te veel ruimtes. Kies een campus, gebouw of verdieping.</string>
+    <string name="meeting_room_filters_clear">Wissen</string>
+    <string name="meeting_room_location_level">Locatieniveau %1$d</string>
+    <string name="meeting_room_capacity_filter">Minimumcapaciteit</string>
+    <string name="meeting_room_facilities_filter">Faciliteiten</string>
+    <string name="meeting_room_busy">Bezet</string>
+    <string name="meeting_room_organizer">Organisator: %1$s</string>
+    <string name="meeting_room_view_event">Afspraak bekijken</string>
+    <string name="meeting_room_prefill_failed">De geselecteerde ruimte kon niet worden geladen</string>
 </resources>

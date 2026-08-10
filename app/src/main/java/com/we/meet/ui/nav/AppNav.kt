@@ -164,7 +164,8 @@ object Routes {
     const val CALENDAR_SETTINGS = "calendar_settings"
     const val CREATE_EVENT =
         "create_event?epochDay={epochDay}&eventId={eventId}&editScope={editScope}" +
-            "&startSec={startSec}&endSec={endSec}&attendeeIds={attendeeIds}&srcCid={srcCid}"
+            "&startSec={startSec}&endSec={endSec}&attendeeIds={attendeeIds}&srcCid={srcCid}" +
+            "&meetingRoomId={meetingRoomId}"
     /** P8 忙闲对比页:ids=逗号分隔 we-meet uuid;title=页标题;srcCid=回发日程卡片的会话。 */
     const val FREE_BUSY = "free_busy?ids={ids}&title={title}&srcCid={srcCid}"
 
@@ -224,11 +225,14 @@ object Routes {
         endSec: Long,
         attendeeIds: List<String>,
         srcCid: String? = null,
+        meetingRoomId: String? = null,
     ): String {
         fun enc(s: String) = URLEncoder.encode(s, StandardCharsets.UTF_8.name())
-        val base = "create_event?startSec=$startSec&endSec=$endSec" +
+        var base = "create_event?startSec=$startSec&endSec=$endSec" +
             "&attendeeIds=${enc(attendeeIds.joinToString(","))}"
-        return if (srcCid.isNullOrBlank()) base else "$base&srcCid=${enc(srcCid)}"
+        if (!srcCid.isNullOrBlank()) base += "&srcCid=${enc(srcCid)}"
+        if (!meetingRoomId.isNullOrBlank()) base += "&meetingRoomId=${enc(meetingRoomId)}"
+        return base
     }
 
     /** P8 日程忙闲对比页（单聊与群聊共用）。 */
@@ -524,6 +528,16 @@ fun AppNav() {
                 onCreateEventAt = { startSec, endSec ->
                     navController.navigate(
                         Routes.createEventPrefilled(startSec, endSec, emptyList()),
+                    )
+                },
+                onCreateEventInRoom = { startSec, endSec, roomId ->
+                    navController.navigate(
+                        Routes.createEventPrefilled(
+                            startSec = startSec,
+                            endSec = endSec,
+                            attendeeIds = emptyList(),
+                            meetingRoomId = roomId,
+                        ),
                     )
                 },
                 // P8「在消息列表提醒日程」:置顶入口 → 日程提醒页。
@@ -1004,6 +1018,11 @@ fun AppNav() {
                     nullable = true
                     defaultValue = null
                 },
+                navArgument("meetingRoomId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
             ),
         ) { entry ->
             val srcCid = entry.arguments?.getString("srcCid")?.let { Routes.decode(it) }
@@ -1022,6 +1041,8 @@ fun AppNav() {
                     ?.split(',')
                     ?.filter { it.isNotBlank() }
                     .orEmpty(),
+                initialMeetingRoomId = entry.arguments?.getString("meetingRoomId")
+                    ?.let { Routes.decode(it) },
                 // P8-M3:cid 随创建落库,后端在改期/加人/取消时向该会话推卡片。
                 sourceConversationId = srcCid,
                 // P8:IM 链路创建成功 → best-effort 回发 event-card 卡片(协议 v1,

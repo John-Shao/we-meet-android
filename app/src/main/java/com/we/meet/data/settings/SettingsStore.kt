@@ -20,6 +20,36 @@ val CALENDAR_WEEK_VISIBLE_DAYS_RANGE = 3..7
 /** 默认 3 天(对齐飞书「三日」视图):窄屏上列宽约 105dp,块内标题读得清。 */
 const val CALENDAR_WEEK_VISIBLE_DAYS_DEFAULT = 3
 
+const val WORKING_HOURS_STEP_MIN = 30
+const val WORKING_HOURS_DEFAULT_START_MIN = 9 * 60
+const val WORKING_HOURS_DEFAULT_END_MIN = 18 * 60
+const val WORKING_HOURS_MIN_DURATION_MIN = 6 * 60
+const val WORKING_HOURS_MAX_DURATION_MIN = 12 * 60
+
+data class WorkingHours(
+    val startMin: Int = WORKING_HOURS_DEFAULT_START_MIN,
+    val endMin: Int = WORKING_HOURS_DEFAULT_END_MIN,
+)
+
+enum class TimeRangeMode {
+    WORK,
+    FULL;
+
+    companion object {
+        fun fromKey(key: String?): TimeRangeMode =
+            entries.firstOrNull { it.name == key } ?: WORK
+    }
+}
+
+fun isValidWorkingHours(startMin: Int, endMin: Int): Boolean {
+    val duration = endMin - startMin
+    return startMin in 0 until 24 * 60 &&
+        endMin in 1..24 * 60 &&
+        startMin % WORKING_HOURS_STEP_MIN == 0 &&
+        endMin % WORKING_HOURS_STEP_MIN == 0 &&
+        duration in WORKING_HOURS_MIN_DURATION_MIN..WORKING_HOURS_MAX_DURATION_MIN
+}
+
 class SettingsStore(context: Context) {
 
     private val prefs = context.applicationContext
@@ -149,6 +179,51 @@ class SettingsStore(context: Context) {
         _calendarWeekVisibleDays.value = safe
     }
 
+    private val _workingHours = MutableStateFlow(loadWorkingHours())
+
+    /** User-local working window shared by calendar, free/busy and meeting rooms. */
+    val workingHours: StateFlow<WorkingHours> = _workingHours.asStateFlow()
+
+    /** Persist both endpoints in one edit so observers never see a mixed pair. */
+    fun setWorkingHours(startMin: Int, endMin: Int): Boolean {
+        if (!isValidWorkingHours(startMin, endMin)) return false
+        prefs.edit()
+            .putInt(KEY_WORKING_HOURS_START, startMin)
+            .putInt(KEY_WORKING_HOURS_END, endMin)
+            .apply()
+        _workingHours.value = WorkingHours(startMin, endMin)
+        return true
+    }
+
+    private fun loadWorkingHours(): WorkingHours {
+        val start = prefs.getInt(KEY_WORKING_HOURS_START, WORKING_HOURS_DEFAULT_START_MIN)
+        val end = prefs.getInt(KEY_WORKING_HOURS_END, WORKING_HOURS_DEFAULT_END_MIN)
+        return if (isValidWorkingHours(start, end)) WorkingHours(start, end)
+        else WorkingHours()
+    }
+
+    private val _calendarTimeRangeMode = MutableStateFlow(
+        TimeRangeMode.fromKey(prefs.getString(KEY_CALENDAR_TIME_RANGE_MODE, null)),
+    )
+    val calendarTimeRangeMode: StateFlow<TimeRangeMode> =
+        _calendarTimeRangeMode.asStateFlow()
+
+    fun setCalendarTimeRangeMode(mode: TimeRangeMode) {
+        prefs.edit().putString(KEY_CALENDAR_TIME_RANGE_MODE, mode.name).apply()
+        _calendarTimeRangeMode.value = mode
+    }
+
+    private val _meetingRoomTimeRangeMode = MutableStateFlow(
+        TimeRangeMode.fromKey(prefs.getString(KEY_MEETING_ROOM_TIME_RANGE_MODE, null)),
+    )
+    val meetingRoomTimeRangeMode: StateFlow<TimeRangeMode> =
+        _meetingRoomTimeRangeMode.asStateFlow()
+
+    fun setMeetingRoomTimeRangeMode(mode: TimeRangeMode) {
+        prefs.edit().putString(KEY_MEETING_ROOM_TIME_RANGE_MODE, mode.name).apply()
+        _meetingRoomTimeRangeMode.value = mode
+    }
+
     private companion object {
         const val FILE_NAME = "jusi_meet_settings"
         const val KEY_VIDEO_CODEC = "video_codec"
@@ -160,6 +235,10 @@ class SettingsStore(context: Context) {
         const val KEY_CALENDAR_DIM_PAST = "calendar_dim_past"
         const val KEY_CALENDAR_SHOW_WEEKEND = "calendar_show_weekend"
         const val KEY_CALENDAR_WEEK_VISIBLE_DAYS = "calendar_week_visible_days"
+        const val KEY_WORKING_HOURS_START = "calendar_working_hours_start"
+        const val KEY_WORKING_HOURS_END = "calendar_working_hours_end"
+        const val KEY_CALENDAR_TIME_RANGE_MODE = "calendar_time_range_mode"
+        const val KEY_MEETING_ROOM_TIME_RANGE_MODE = "meeting_room_time_range_mode"
     }
 }
 

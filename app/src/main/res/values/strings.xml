@@ -595,4 +595,24 @@
     <string name="special_alert_remove">Turn off</string>
     <string name="special_alert_empty">No one yet. Turn on special alerts on a contact to have their messages reach you during quiet hours.</string>
     <string name="special_alert_entry_hint">These contacts reach you even during quiet hours. The per-person switch is on their profile.</string>
+    <string name="calendar_settings_working_start">Work starts</string>
+    <string name="calendar_settings_working_end">Work ends</string>
+    <string name="calendar_settings_working_hours_hint">Times use 30-minute increments. Working hours must be between 6 and 12 hours.</string>
+    <string name="calendar_working_time">Working hours</string>
+    <string name="calendar_full_day_time">Full day</string>
+    <string name="calendar_outside_working_hours">%1$d events outside working hours</string>
+    <string name="meeting_rooms_title">Meeting rooms</string>
+    <string name="meeting_room_filters">Filters</string>
+    <string name="meeting_room_calendar_hint">Tap an empty slot to select it. Drag to adjust, then tap again to create an event.</string>
+    <string name="meeting_room_draft_conflict">This room is already booked for the selected time</string>
+    <string name="meeting_room_outside_working_hours">%1$d bookings outside working hours</string>
+    <string name="meeting_room_scope_too_large">This range contains too many rooms. Choose a campus, building, or floor.</string>
+    <string name="meeting_room_filters_clear">Clear</string>
+    <string name="meeting_room_location_level">Location level %1$d</string>
+    <string name="meeting_room_capacity_filter">Minimum capacity</string>
+    <string name="meeting_room_facilities_filter">Facilities</string>
+    <string name="meeting_room_busy">Busy</string>
+    <string name="meeting_room_organizer">Organizer: %1$s</string>
+    <string name="meeting_room_view_event">View event</string>
+    <string name="meeting_room_prefill_failed">The selected meeting room could not be loaded</string>
 </resources>

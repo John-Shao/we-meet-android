@@ -130,7 +130,10 @@ data class MeetingRoomTimelineEntryDto(
     val id: String = "",
     val name: String = "",
     val capacity: Int = 0,
+    val node: MeetingRoomNodeRefDto? = null,
     @Json(name = "path_label") val pathLabel: String? = null,
+    val timezone: String? = null,
+    val facilities: List<MeetingRoomFacilityDto> = emptyList(),
     val bookings: List<RoomBookingDto> = emptyList(),
 )
 

@@ -62,6 +62,10 @@ fun WeekTimelineView(
     onEventClick: (String) -> Unit,
     onDayClick: (LocalDate) -> Unit,
     onSlotTap: (date: LocalDate, minuteOfDay: Int) -> Unit,
+    visibleStartMin: Int = 0,
+    visibleEndMin: Int = 24 * 60,
+    workingStartMin: Int = 9 * 60,
+    workingEndMin: Int = 18 * 60,
     /** P8 日历设置:每周的第一天(默认周一,保持既有行为)。 */
     firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
     /** P8 日历设置:显示周末(默认 true;关闭 → 只列周一~周五 5 列)。 */
@@ -99,8 +103,9 @@ fun WeekTimelineView(
     val hourHeight = Dimens.Calendar.HourHeight
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
-    LaunchedEffect(days.first()) {
-        scrollState.scrollTo(with(density) { (hourHeight * 8).toPx() }.toInt())
+    LaunchedEffect(days.first(), visibleStartMin, visibleEndMin) {
+        val offset = (8 * 60).coerceIn(visibleStartMin, visibleEndMin) - visibleStartMin
+        scrollState.scrollTo(with(density) { (hourHeight * (offset / 60f)).toPx() }.toInt())
     }
     // 一屏只铺 VISIBLE_DAYS 天,横滚到让今天(不在本周则锚点)可见。
     val revealIndex = remember(days) {
@@ -113,6 +118,10 @@ fun WeekTimelineView(
         columns = columns,
         hourHeight = hourHeight,
         scrollState = scrollState,
+        visibleStartMin = visibleStartMin,
+        visibleEndMin = visibleEndMin,
+        workingStartMin = workingStartMin,
+        workingEndMin = workingEndMin,
         nowMinute = if (days.contains(today)) {
             LocalTime.now().let { it.hour * 60 + it.minute }
         } else null,
