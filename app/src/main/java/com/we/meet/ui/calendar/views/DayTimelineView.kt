@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -54,6 +55,8 @@ fun DayTimelineView(
     /** 长按选中的日程 id:出上下抓手,可直接拖移 / 改时长。 */
     selectedEventId: String? = null,
     onEventSelect: ((eventId: String) -> Unit)? = null,
+    /** Swipe horizontally to navigate days; a selected event keeps drag priority. */
+    onDateSwipe: ((LocalDate) -> Unit)? = null,
     /** 点左侧时刻刻度列 = 点在操作对象以外 → 收手。 */
     onRailTap: (() -> Unit)? = null,
 ) {
@@ -66,6 +69,8 @@ fun DayTimelineView(
     val hourHeight = Dimens.Calendar.HourHeight
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
+    val dateSwipeThresholdPx = with(density) { Dimens.MinTouchTarget.toPx() }
+    val onDateSwipeNow = rememberUpdatedState(onDateSwipe)
     // 首帧滚到 08:00(今天则当前时刻上方一点)。
     LaunchedEffect(date, visibleStartMin, visibleEndMin) {
         val anchorMinute = if (isToday) {
@@ -75,7 +80,17 @@ fun DayTimelineView(
         scrollState.scrollTo(with(density) { (hourHeight * (offset / 60f)).toPx() }.toInt())
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .horizontalDateSwipe(
+                enabled = onDateSwipe != null && selectedEventId == null,
+                gestureKey = date,
+                thresholdPx = dateSwipeThresholdPx,
+            ) { dayDelta ->
+                onDateSwipeNow.value?.invoke(date.plusDays(dayDelta))
+            },
+    ) {
         if (allDayEvents.isNotEmpty()) {
             Row(
                 modifier = Modifier

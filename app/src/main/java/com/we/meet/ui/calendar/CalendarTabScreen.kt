@@ -310,6 +310,7 @@ fun CalendarTabScreen(
                         selectedEventId = selectedEventId,
                         // 长按选中一条日程时,顺手撤掉预选框(同时只留一个操作对象)。
                         onEventSelect = { id -> draft = null; selectedEventId = id },
+                        onDateSwipe = vm::selectDate,
                     )
 
                     CalendarViewMode.WEEK -> WeekTimelineView(
