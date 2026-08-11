@@ -1,6 +1,7 @@
 package com.we.meet.ui.meetingroom
 
 import com.we.meet.data.api.dto.MeetingRoomNodeDto
+import com.we.meet.data.api.dto.RoomBookingDto
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
@@ -30,6 +31,38 @@ class MeetingRoomTimelineMathTest {
     fun datePickerKeepsTheSelectedCalendarDate() {
         val date = LocalDate.of(2026, 8, 11)
         assertEquals(date, datePickerDate(datePickerMillis(date)))
+    }
+
+    @Test
+    fun organizerBookingCanMoveOnlyWhenFullyInsideTheVisibleDay() {
+        val date = LocalDate.of(2026, 8, 11)
+        val zone = ZoneId.of("UTC")
+        val booking = RoomBookingDto(
+            id = "booking-1",
+            eventId = "event-1",
+            start = "2026-08-11T10:00:00Z",
+            end = "2026-08-11T11:00:00Z",
+            canMove = true,
+        )
+
+        val bounds = requireNotNull(bookingBounds(date, zone, booking))
+        assertTrue(bounds.withinSingleDay)
+        assertTrue(bounds.canMoveInRange(9 * 60, 18 * 60))
+        assertFalse(bounds.canMoveInRange(10 * 60 + 15, 18 * 60))
+        assertFalse(
+            bounds.copy(booking = booking.copy(canMove = false))
+                .canMoveInRange(9 * 60, 18 * 60),
+        )
+
+        val overnight = requireNotNull(
+            bookingBounds(
+                date,
+                zone,
+                booking.copy(start = "2026-08-10T23:30:00Z"),
+            ),
+        )
+        assertFalse(overnight.withinSingleDay)
+        assertFalse(overnight.canMoveInRange(0, 24 * 60))
     }
 
     @Test

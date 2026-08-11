@@ -8,14 +8,18 @@ import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.MeetingRoomFacilityDto
 import com.we.meet.data.api.dto.MeetingRoomNodeDto
 import com.we.meet.data.api.dto.MeetingRoomTimelineEntryDto
+import com.we.meet.data.api.dto.RescheduleEventRequest
+import com.we.meet.ui.calendar.MoveFailure
 import java.time.LocalDate
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -51,7 +55,9 @@ class MeetingRoomsCalendarViewModel(
     private val savedStateHandle: SavedStateHandle,
 ) : AndroidViewModel(app) {
 
-    private val api = (app as WeMeetApp).apiClient.meetingRoomApi
+    private val apiClient = (app as WeMeetApp).apiClient
+    private val api = apiClient.meetingRoomApi
+    private val calendarApi = apiClient.calendarApi
     private val initialDate = savedStateHandle.get<Long>(KEY_DATE)
         ?.let(LocalDate::ofEpochDay)
         ?: LocalDate.now()
@@ -70,6 +76,8 @@ class MeetingRoomsCalendarViewModel(
         ),
     )
     val ui: StateFlow<MeetingRoomsCalendarUiState> = _ui.asStateFlow()
+    private val _moveFailed = MutableSharedFlow<MoveFailure>(extraBufferCapacity = 1)
+    val moveFailed = _moveFailed.asSharedFlow()
 
     private val requests = MutableStateFlow(
         RoomTimelineRequest(
@@ -149,6 +157,62 @@ class MeetingRoomsCalendarViewModel(
 
     fun refresh() {
         requests.update { it.copy(refreshToken = it.refreshToken + 1) }
+    }
+
+    /** Move or resize an organizer-owned room booking, matching the calendar grid. */
+    fun moveBooking(bookingId: String, date: LocalDate, startMin: Int, endMin: Int) {
+        val before = _ui.value.rooms
+        val booking = before.asSequence()
+            .flatMap { it.bookings.asSequence() }
+            .firstOrNull { it.id == bookingId }
+            ?: return
+        val eventId = booking.eventId ?: return
+        if (!booking.canMove) return
+
+        val zone = ZoneId.systemDefault()
+        val newStart = date.atStartOfDay(zone).plusMinutes(startMin.toLong()).toInstant()
+        val newEnd = date.atStartOfDay(zone).plusMinutes(endMin.toLong()).toInstant()
+        val startAt = DateTimeFormatter.ISO_INSTANT.format(newStart)
+        val endAt = DateTimeFormatter.ISO_INSTANT.format(newEnd)
+        val currentStart = runCatching { Instant.parse(booking.start) }.getOrNull()
+        val currentEnd = runCatching { Instant.parse(booking.end) }.getOrNull()
+        if (currentStart == newStart && currentEnd == newEnd) return
+
+        _ui.update { state ->
+            state.copy(
+                rooms = state.rooms.map { room ->
+                    room.copy(
+                        bookings = room.bookings.map { item ->
+                            if (item.id == bookingId) {
+                                item.copy(start = startAt, end = endAt)
+                            } else {
+                                item
+                            }
+                        },
+                    )
+                },
+            )
+        }
+
+        viewModelScope.launch {
+            runCatching {
+                calendarApi.rescheduleEvent(
+                    eventId,
+                    RescheduleEventRequest(startAt = startAt, endAt = endAt),
+                )
+            }.onSuccess {
+                refresh()
+            }.onFailure { error ->
+                _ui.update { it.copy(rooms = before) }
+                _moveFailed.tryEmit(
+                    if (error is HttpException && error.code() == 409) {
+                        MoveFailure.ROOM_CONFLICT
+                    } else {
+                        MoveFailure.OTHER
+                    },
+                )
+            }
+        }
     }
 
     private suspend fun loadTimeline(request: RoomTimelineRequest) {

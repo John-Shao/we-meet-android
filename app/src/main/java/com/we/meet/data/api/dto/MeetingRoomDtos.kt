@@ -125,6 +125,10 @@ data class RoomBookingDto(
     val title: String? = null,
     @Json(name = "is_private") val isPrivate: Boolean = false,
     @Json(name = "is_mine") val isMine: Boolean = false,
+    /** Caller is the organizer and may edit/delete through event detail. */
+    @Json(name = "can_manage") val canManage: Boolean = false,
+    /** Organizer-owned, non-recurring event that may be moved or resized. */
+    @Json(name = "can_move") val canMove: Boolean = false,
     val organizer: RoomBookingOrganizerDto? = null,
 )
 

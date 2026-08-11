@@ -71,6 +71,7 @@ import com.we.meet.data.settings.CalendarWeekStart
 import com.we.meet.data.settings.TimeRangeMode
 import com.we.meet.ui.calendar.CalendarPrimaryPage
 import com.we.meet.ui.calendar.CalendarPrimaryToolbar
+import com.we.meet.ui.calendar.MoveFailure
 import com.we.meet.ui.calendar.views.DraftSelection
 import com.we.meet.ui.calendar.views.TimeBlock
 import com.we.meet.ui.calendar.views.TimelineScaffold
@@ -93,7 +94,11 @@ internal data class BookingBounds(
     val booking: RoomBookingDto,
     val startMin: Int,
     val endMin: Int,
+    val withinSingleDay: Boolean,
 )
+
+internal fun BookingBounds.canMoveInRange(rangeStart: Int, rangeEnd: Int): Boolean =
+    booking.canMove && withinSingleDay && startMin >= rangeStart && endMin <= rangeEnd
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,6 +123,7 @@ fun MeetingRoomsCalendarScreen(
 
     var selectedRoomId by rememberSaveable { mutableStateOf<String?>(null) }
     var draft by remember { mutableStateOf<DraftSelection?>(null) }
+    var selectedBookingId by rememberSaveable { mutableStateOf<String?>(null) }
     var detail by remember {
         mutableStateOf<Pair<MeetingRoomTimelineEntryDto, RoomBookingDto>?>(null)
     }
@@ -136,7 +142,7 @@ fun MeetingRoomsCalendarScreen(
     }
     val selectedRoom = ui.rooms.firstOrNull { it.id == selectedRoomId }
     val selectedBounds = selectedRoomId?.let { bookingBounds[it].orEmpty() }.orEmpty()
-    val selectedBlocks = remember(selectedRoom, selectedBounds) {
+    val selectedBlocks = remember(selectedRoom, selectedBounds, rangeStart, rangeEnd) {
         selectedBounds.map { bounds ->
             TimeBlock(
                 startMin = bounds.startMin,
@@ -144,6 +150,7 @@ fun MeetingRoomsCalendarScreen(
                 label = bounds.booking.title,
                 timeLabel = "${formatMinute(bounds.startMin)}–${formatMinute(bounds.endMin)}",
                 key = bounds.booking.id,
+                movable = bounds.canMoveInRange(rangeStart, rangeEnd),
             )
         }
     }
@@ -161,13 +168,16 @@ fun MeetingRoomsCalendarScreen(
     LaunchedEffect(ui.selectedDate) {
         draft = null
         detail = null
+        selectedBookingId = null
     }
     LaunchedEffect(selectedRoomId) {
         draft = null
         detail = null
+        selectedBookingId = null
         roomInfoOpen = false
     }
     LaunchedEffect(rangeMode, workingHours) {
+        selectedBookingId = null
         val selected = draft
         if (selected != null &&
             (selected.startMin < rangeStart || selected.endMin > rangeEnd)
@@ -183,6 +193,16 @@ fun MeetingRoomsCalendarScreen(
     LifecycleResumeEffect(Unit) {
         vm.refresh()
         onPauseOrDispose { }
+    }
+
+    val moveFailedText = stringResource(R.string.calendar_move_failed)
+    val roomConflictText = stringResource(R.string.calendar_move_room_conflict)
+    LaunchedEffect(vm) {
+        vm.moveFailed.collect { reason ->
+            snackbar.showSnackbar(
+                if (reason == MoveFailure.ROOM_CONFLICT) roomConflictText else moveFailedText,
+            )
+        }
     }
 
     val outsideCount = if (rangeMode == TimeRangeMode.WORK) {
@@ -244,6 +264,7 @@ fun MeetingRoomsCalendarScreen(
                 onDraftAdjust = { draft = it },
                 onSlotTap = { minute ->
                     detail = null
+                    selectedBookingId = null
                     val slot = draftSlotAt(
                         ui.selectedDate,
                         minute,
@@ -269,16 +290,35 @@ fun MeetingRoomsCalendarScreen(
                 onBlockTap = { key ->
                     draft = null
                     selectedRoom.bookings.firstOrNull { it.id == key }?.let { booking ->
-                        detail = selectedRoom to booking
+                        selectedBookingId = null
+                        if (booking.eventId != null) {
+                            onEventClick(booking.eventId)
+                        } else {
+                            detail = selectedRoom to booking
+                        }
                     }
                 },
-                onRailTap = { draft = null; detail = null },
+                selectedBlockKey = selectedBookingId,
+                onBlockSelect = { key ->
+                    draft = null
+                    detail = null
+                    selectedBookingId = key
+                },
+                onBlockMove = { key, startMin, endMin ->
+                    vm.moveBooking(key, ui.selectedDate, startMin, endMin)
+                },
+                onRailTap = {
+                    draft = null
+                    detail = null
+                    selectedBookingId = null
+                },
             )
         }
 
         FloatingActionButton(
             onClick = {
                 draft = null
+                selectedBookingId = null
                 onCreateEvent(ui.selectedDate.toEpochDay())
             },
             modifier = Modifier
@@ -342,7 +382,6 @@ fun MeetingRoomsCalendarScreen(
             booking = booking,
             bounds = bookingBounds[room.id]?.firstOrNull { it.booking.id == booking.id },
             onViewEvent = booking.eventId
-                ?.takeIf { booking.isMine }
                 ?.let { id -> { detail = null; onEventClick(id) } },
             onDismiss = { detail = null },
         )
@@ -460,6 +499,9 @@ private fun MeetingRoomSchedule(
     onSlotTap: (Int) -> Unit,
     onDraftConfirm: (DraftSelection) -> Unit,
     onBlockTap: (String) -> Unit,
+    selectedBlockKey: String?,
+    onBlockSelect: (String) -> Unit,
+    onBlockMove: (key: String, startMin: Int, endMin: Int) -> Unit,
     onRailTap: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -491,6 +533,11 @@ private fun MeetingRoomSchedule(
                 onDraftConfirm = onDraftConfirm,
                 onSlotTap = { _, minute -> onSlotTap(minute) },
                 onBlockTap = { _, key -> onBlockTap(key) },
+                onBlockMove = { _, key, startMin, endMin ->
+                    onBlockMove(key, startMin, endMin)
+                },
+                selectedBlockKey = selectedBlockKey,
+                onBlockSelect = onBlockSelect,
                 onRailTap = onRailTap,
             )
             RoomInfoDock(
@@ -868,7 +915,12 @@ internal fun bookingBounds(
         else -> end.hour * 60 + end.minute
     }
     if (endMin <= startMin) return null
-    return BookingBounds(booking, startMin, endMin)
+    return BookingBounds(
+        booking = booking,
+        startMin = startMin,
+        endMin = endMin,
+        withinSingleDay = start.toLocalDate() == date && end.toLocalDate() == date,
+    )
 }
 
 internal fun formatMinute(minute: Int): String =
