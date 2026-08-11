@@ -346,7 +346,10 @@ private fun CompactAvailabilityStrip(
     modifier: Modifier = Modifier,
 ) {
     val span = (visibleEndMin - visibleStartMin).coerceAtLeast(1)
-    val surface = MaterialTheme.colorScheme.surface
+    // Keep the whole 24-hour rail visible. Painting the working window with
+    // `surface` made it disappear into the light page background and left the
+    // two off-work sections looking like disconnected bars.
+    val availableTrack = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     val offWork = MaterialTheme.colorScheme.surfaceVariant
     val busy = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.32f)
     val nowLine = WeMeetTheme.extras.calendar.nowLine
@@ -359,16 +362,25 @@ private fun CompactAvailabilityStrip(
                 .height(Dimens.SpaceXl)
                 .clip(RoundedCornerShape(Dimens.CornerXs)),
         ) {
-            drawRect(offWork)
-            clipMinuteRange(
-                workingStartMin,
-                workingEndMin,
-                visibleStartMin,
-                visibleEndMin,
-            )?.let { work ->
-                val left = size.width * (work.startMin - visibleStartMin) / span
-                val right = size.width * (work.endMin - visibleStartMin) / span
-                drawRect(surface, topLeft = androidx.compose.ui.geometry.Offset(left, 0f), size = androidx.compose.ui.geometry.Size(right - left, size.height))
+            drawRect(availableTrack)
+            listOf(
+                visibleStartMin to workingStartMin,
+                workingEndMin to visibleEndMin,
+            ).forEach { (startMin, endMin) ->
+                clipMinuteRange(
+                    startMin,
+                    endMin,
+                    visibleStartMin,
+                    visibleEndMin,
+                )?.let { offWorkRange ->
+                    val left = size.width * (offWorkRange.startMin - visibleStartMin) / span
+                    val right = size.width * (offWorkRange.endMin - visibleStartMin) / span
+                    drawRect(
+                        offWork,
+                        topLeft = androidx.compose.ui.geometry.Offset(left, 0f),
+                        size = androidx.compose.ui.geometry.Size(right - left, size.height),
+                    )
+                }
             }
             bounds.forEach { bound ->
                 clipMinuteRange(
