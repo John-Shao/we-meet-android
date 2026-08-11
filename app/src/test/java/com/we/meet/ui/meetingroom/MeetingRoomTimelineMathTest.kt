@@ -54,13 +54,13 @@ class MeetingRoomTimelineMathTest {
     @Test
     fun compactMeetingRoomPathOmitsCountryAndCity() {
         assertEquals(
-            "Tech Park · Tower 2 · Floor 6",
+            "Tech Park-Tower 2-Floor 6",
             compactMeetingRoomPathLabel(
                 "China · Shenzhen · Tech Park · Tower 2 · Floor 6",
             ),
         )
         assertEquals(
-            "Tower 2 · Floor 6",
+            "Tower 2-Floor 6",
             compactMeetingRoomPathLabel("Tower 2 · Floor 6"),
         )
         assertEquals("", compactMeetingRoomPathLabel(null))
@@ -75,7 +75,7 @@ class MeetingRoomTimelineMathTest {
             MeetingRoomNodeDto(id = "building", name = "Tower 2", parent = "campus", depth = 3),
         )
 
-        assertEquals("Shenzhen · Tech Park", buildingContext("building", nodes))
+        assertEquals("Shenzhen-Tech Park", buildingContext("building", nodes))
     }
 
     @Test

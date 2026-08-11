@@ -83,7 +83,7 @@ internal fun compactMeetingRoomPathLabel(pathLabel: String?): String =
         .map(String::trim)
         .filter(String::isNotEmpty)
         .takeLast(3)
-        .joinToString(" · ")
+        .joinToString("-")
 
 internal data class VisibleMinuteRange(
     val startMin: Int,

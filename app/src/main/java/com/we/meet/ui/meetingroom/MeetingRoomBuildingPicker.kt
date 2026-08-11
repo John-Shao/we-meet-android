@@ -198,7 +198,7 @@ internal fun buildingContext(nodeId: String, nodes: List<MeetingRoomNodeDto>): S
     return ancestors
         .filter { it.depth in CITY_DEPTH..CAMPUS_DEPTH }
         .asReversed()
-        .joinToString(" · ") { it.name }
+        .joinToString("-") { it.name }
 }
 
 private const val BUILDING_DEPTH = 3
