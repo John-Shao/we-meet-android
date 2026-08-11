@@ -27,6 +27,12 @@ class MeetingRoomTimelineMathTest {
     }
 
     @Test
+    fun datePickerKeepsTheSelectedCalendarDate() {
+        val date = LocalDate.of(2026, 8, 11)
+        assertEquals(date, datePickerDate(datePickerMillis(date)))
+    }
+
+    @Test
     fun meetingRoomTitleUsesCodeAndOptionalName() {
         assertEquals("R0806 (Sail)", meetingRoomTitle("Sail", " R0806 "))
         assertEquals("R0806", meetingRoomTitle("", " R0806 "))

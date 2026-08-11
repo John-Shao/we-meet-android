@@ -22,7 +22,10 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -37,6 +40,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -77,6 +81,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
@@ -234,6 +239,7 @@ fun MeetingRoomsCalendarScreen(
                 draftConflict = draftConflict,
                 conflictMessage = conflictMessage,
                 onBack = { selectedRoomId = null },
+                onSelectDate = vm::setDate,
                 onOpenRoomInfo = { roomInfoOpen = true },
                 onDraftAdjust = { draft = it },
                 onSlotTap = { minute ->
@@ -448,6 +454,7 @@ private fun MeetingRoomSchedule(
     draftConflict: Boolean,
     conflictMessage: String,
     onBack: () -> Unit,
+    onSelectDate: (LocalDate) -> Unit,
     onOpenRoomInfo: () -> Unit,
     onDraftAdjust: (DraftSelection) -> Unit,
     onSlotTap: (Int) -> Unit,
@@ -459,6 +466,7 @@ private fun MeetingRoomSchedule(
         RoomScheduleToolbar(
             date = date,
             onBack = onBack,
+            onSelectDate = onSelectDate,
         )
         Box(modifier = Modifier.fillMaxSize()) {
             TimelineScaffold(
@@ -494,11 +502,15 @@ private fun MeetingRoomSchedule(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RoomScheduleToolbar(
     date: LocalDate,
     onBack: () -> Unit,
+    onSelectDate: (LocalDate) -> Unit,
 ) {
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -511,15 +523,50 @@ private fun RoomScheduleToolbar(
                 contentDescription = stringResource(R.string.meeting_room_schedule_back),
             )
         }
-        Text(
-            text = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-                .withLocale(Locale.getDefault())
-                .format(date),
-            style = MaterialTheme.typography.titleMedium,
-            textAlign = TextAlign.Center,
+        TextButton(
+            onClick = { showDatePicker = true },
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ),
             modifier = Modifier.weight(1f),
-        )
+        ) {
+            Text(
+                text = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+                    .withLocale(Locale.getDefault())
+                    .format(date),
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+            )
+        }
         Spacer(Modifier.width(Dimens.MinTouchTarget))
+    }
+
+    if (showDatePicker) {
+        val state = rememberDatePickerState(
+            initialSelectedDateMillis = datePickerMillis(date),
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        state.selectedDateMillis?.let { millis ->
+                            onSelectDate(datePickerDate(millis))
+                        }
+                        showDatePicker = false
+                    },
+                ) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        ) {
+            DatePicker(state = state)
+        }
     }
 }
 
@@ -826,3 +873,9 @@ internal fun bookingBounds(
 
 internal fun formatMinute(minute: Int): String =
     "%02d:%02d".format(minute / 60, minute % 60)
+
+internal fun datePickerMillis(date: LocalDate): Long =
+    date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+
+internal fun datePickerDate(millis: Long): LocalDate =
+    Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
