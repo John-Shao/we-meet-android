@@ -53,6 +53,12 @@ internal fun EventCardBubble(
         "cancelled" -> stringResource(R.string.im_event_card_cancelled)
         else -> null
     }
+    val recurrenceScopeLabel = when (content.recurrenceScope) {
+        "one" -> stringResource(R.string.im_event_card_scope_one)
+        "following" -> stringResource(R.string.im_event_card_scope_following)
+        "all" -> stringResource(R.string.im_event_card_scope_all)
+        else -> null
+    }
     val allDayLabel = stringResource(R.string.im_event_card_all_day)
     // 日期格式随语言走(中文「M月d日」、英文「MMM d」),所以从资源取而不是写死。
     val datePattern = stringResource(R.string.im_fmt_month_day)
@@ -130,6 +136,20 @@ internal fun EventCardBubble(
                                 .padding(horizontal = Dimens.SpaceXs, vertical = Dimens.BorderThin),
                         )
                     }
+                }
+                if (recurrenceScopeLabel != null) {
+                    Text(
+                        text = recurrenceScopeLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .padding(top = Dimens.SpaceXs)
+                            .background(
+                                MaterialTheme.colorScheme.surfaceVariant,
+                                RoundedCornerShape(Dimens.CornerXs),
+                            )
+                            .padding(horizontal = Dimens.SpaceXs, vertical = Dimens.BorderThin),
+                    )
                 }
                 if (oldTimeText != null) {
                     Text(

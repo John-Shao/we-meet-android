@@ -287,6 +287,9 @@
     <string name="im_event_card_time_changed">Rescheduled</string>
     <string name="im_event_card_attendees_changed">Attendees changed</string>
     <string name="im_event_card_cancelled">Cancelled</string>
+    <string name="im_event_card_scope_one">This occurrence only</string>
+    <string name="im_event_card_scope_following">This and following occurrences</string>
+    <string name="im_event_card_scope_all">All occurrences</string>
     <!-- Share a cloud document to chat -->
     <string name="im_plus_doc">Document</string>
     <string name="im_plus_schedule">Schedule</string>

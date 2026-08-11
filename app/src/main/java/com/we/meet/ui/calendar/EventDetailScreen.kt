@@ -165,8 +165,7 @@ class EventDetailViewModel(
 
     /**
      * Delete the event (organizer only); [onDone] fires on success so the screen
-     * pops. [scope] = "following"(仅重复子场次)截断该场次及之后;null = 缺省
-     * (子场次=仅此次记 exdate;主事件=删整个系列)。
+     * pops. Repeating events use an explicit one/following/all [scope].
      */
     fun delete(scope: String? = null, onDone: () -> Unit) {
         if (_ui.value.deleting) return
@@ -221,8 +220,8 @@ fun EventDetailScreen(
     val ui by vm.ui.collectAsStateWithLifecycle()
     // 单次/主事件删除:原确认弹窗(主事件=删整个系列)。
     var confirmDelete by remember { mutableStateOf(false) }
-    // P2-M2 重复子场次:编辑/删除先弹三选范围(编辑=仅此次/此次及以后/全部;
-    // 删除=仅此次/此次及以后)。主事件走直连(编辑=全部,删除=系列确认)。
+    // 重复子场次的编辑/删除都先选择 one/following/all。主事件走直连
+    // (编辑=全部,删除=系列确认)。
     var editScopeAsk by remember { mutableStateOf(false) }
     var deleteScopeAsk by remember { mutableStateOf(false) }
     // 分享日程到聊天(对标飞书:顶栏分享,删除收进「更多」)。
@@ -398,13 +397,12 @@ fun EventDetailScreen(
         if (deleteScopeAsk) {
             EventScopeDialog(
                 title = stringResource(R.string.event_delete_scope_title),
-                options = listOf("one", "following"),
+                options = DELETE_EVENT_SCOPES,
                 danger = true,
                 onConfirm = { scope ->
                     deleteScopeAsk = false
-                    // one=后端缺省(仅此次记 exdate);following=截断该场次及之后。
                     vm.delete(
-                        scope = if (scope == "following") "following" else null,
+                        scope = deleteScopeForApi(scope),
                         onDone = onBack,
                     )
                 },
@@ -844,4 +842,11 @@ private fun scopeLabel(scope: String): String = when (scope) {
     "one" -> stringResource(R.string.event_scope_one)
     "following" -> stringResource(R.string.event_scope_following)
     else -> stringResource(R.string.event_scope_all)
+}
+
+internal val DELETE_EVENT_SCOPES = listOf("one", "following", "all")
+
+internal fun deleteScopeForApi(scope: String): String {
+    require(scope in DELETE_EVENT_SCOPES) { "Unsupported recurrence scope: $scope" }
+    return scope
 }

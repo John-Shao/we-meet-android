@@ -77,8 +77,8 @@ interface CalendarApi {
     ): CalendarEventDto
 
     /**
-     * Delete an event. [scope] = "following"(仅重复子场次)截断该场次及之后;
-     * null = 缺省语义(子场次=仅此次记 exdate;主事件=删整个系列)。
+     * Delete an event. Repeating events accept [scope] = one/following/all;
+     * null keeps the server's event-type-specific default.
      */
     @DELETE("api/v1.0/calendar-events/{id}/")
     suspend fun deleteEvent(

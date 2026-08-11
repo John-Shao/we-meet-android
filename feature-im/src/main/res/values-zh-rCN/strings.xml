@@ -277,6 +277,9 @@
     <string name="im_event_card_time_changed">已改期</string>
     <string name="im_event_card_attendees_changed">参会人变更</string>
     <string name="im_event_card_cancelled">已取消</string>
+    <string name="im_event_card_scope_one">仅此场次</string>
+    <string name="im_event_card_scope_following">此场次及以后</string>
+    <string name="im_event_card_scope_all">所有场次</string>
     <string name="im_plus_doc">云文档</string>
     <string name="im_plus_schedule">日程</string>
     <string name="im_preview_doc">[云文档]</string>

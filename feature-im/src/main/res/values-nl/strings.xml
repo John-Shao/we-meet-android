@@ -249,6 +249,9 @@
     <string name="im_event_card_time_changed">Rescheduled</string>
     <string name="im_event_card_attendees_changed">Attendees changed</string>
     <string name="im_event_card_cancelled">Cancelled</string>
+    <string name="im_event_card_scope_one">Alleen deze keer</string>
+    <string name="im_event_card_scope_following">Deze en volgende keren</string>
+    <string name="im_event_card_scope_all">Alle keren</string>
     <string name="im_plus_doc">Document</string>
     <string name="im_preview_doc">[Document]</string>
     <string name="im_doc_card_view">Document bekijken</string>

@@ -91,6 +91,30 @@ class ImCardContractTest {
         assertEquals("cancelled", card.kind)
     }
 
+    @Test
+    fun `parses recurrence scopes from series change fixtures`() {
+        val moved = parse(
+            "event-card",
+            "event_card_recurrence_time_changed",
+        ) as MessageContent.EventCard
+        val cancelled = parse(
+            "event-card",
+            "event_card_recurrence_cancelled",
+        ) as MessageContent.EventCard
+
+        assertEquals("following", moved.recurrenceScope)
+        assertEquals("all", cancelled.recurrenceScope)
+    }
+
+    @Test
+    fun `unknown recurrence scope is ignored`() {
+        val card = MessageContentParser.parse(
+            "event-card",
+            """{"title":"Series","recurrence_scope":"future-client-value"}""",
+        ) as MessageContent.EventCard
+        assertEquals("", card.recurrenceScope)
+    }
+
     // --- doc-card ------------------------------------------------------------
 
     @Test
@@ -137,6 +161,8 @@ class ImCardContractTest {
                 "event_card_time_changed",
                 "event_card_attendees_changed",
                 "event_card_cancelled",
+                "event_card_recurrence_time_changed",
+                "event_card_recurrence_cancelled",
             ),
             "doc-card" to listOf("doc_card"),
             "meeting-card" to listOf("meeting_card_ongoing", "meeting_card_scheduled"),

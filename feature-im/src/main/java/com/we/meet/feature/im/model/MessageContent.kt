@@ -75,8 +75,9 @@ sealed interface MessageContent {
     /**
      * P8 日程卡片 — content_type `event-card`(与 Web/后端统一 kebab-case),
      * body = 协议 v1 JSON `{v,kind,event_id,title,start,end,all_day,
-     * attendee_count,organizer_name,...}`。start/end 为 ISO-8601 UTC,渲染时转
-     * 本地时区;kind 未知按 created 渲染;创建卡由客户端发,变更/取消卡由后端发。
+     * attendee_count,organizer_name,recurrence_scope?,...}`。start/end 为
+     * ISO-8601 UTC,渲染时转本地时区;kind 未知按 created 渲染;创建卡由客户端
+     * 发,变更/取消卡由后端发。
      */
     data class EventCard(
         val eventId: String,
@@ -96,6 +97,8 @@ sealed interface MessageContent {
          */
         val oldStartIso: String = "",
         val oldEndIso: String = "",
+        /** one | following | all; blank for non-series cards and unknown values. */
+        val recurrenceScope: String = "",
         /** kind=attendees_changed 时的增减人数(缺省 0 = 后端没发这一项)。 */
         val addedCount: Int = 0,
         val removedCount: Int = 0,
@@ -228,6 +231,9 @@ object MessageContentParser {
                 kind = it.optString("kind", "created"),
                 oldStartIso = it.optString("old_start"),
                 oldEndIso = it.optString("old_end"),
+                recurrenceScope = it.optString("recurrence_scope")
+                    .takeIf { scope -> scope in setOf("one", "following", "all") }
+                    .orEmpty(),
                 addedCount = it.optInt("added_count", 0),
                 removedCount = it.optInt("removed_count", 0),
             )
