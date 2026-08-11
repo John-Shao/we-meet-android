@@ -321,6 +321,8 @@ fun TimelineScaffold(
     onSlotTap: ((colIndex: Int, minuteOfDay: Int) -> Unit)? = null,
     onBlockTap: ((colIndex: Int, key: String) -> Unit)? = null,
     minColumnWidth: Dp? = null,
+    /** Fixed content above the hour rail, such as the device timezone label. */
+    railHeader: (@Composable () -> Unit)? = null,
     columnHeader: (@Composable (colIndex: Int) -> Unit)? = null,
     /** 窄列(周视图 7 列)块内只显标题,不显时间 —— 时刻由纵向位置 + 左侧刻度
      *  传达(对齐飞书/Google 周视图);日视图单宽列仍标题 + 时间。 */
@@ -429,17 +431,28 @@ fun TimelineScaffold(
         }
 
         Column(modifier = Modifier.fillMaxSize()) {
-            if (columnHeader != null) {
+            if (railHeader != null || columnHeader != null) {
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    Spacer(Modifier.width(HOUR_RAIL_WIDTH))
-                    Row(
+                    Box(
+                        contentAlignment = Alignment.BottomEnd,
                         modifier = Modifier
-                            .weight(1f)
-                            .horizontalScroll(hScroll),
+                            .width(HOUR_RAIL_WIDTH)
+                            .align(Alignment.Bottom),
                     ) {
-                        for (i in 0 until n) {
-                            Box(modifier = Modifier.width(colWidth)) { columnHeader(i) }
+                        railHeader?.invoke()
+                    }
+                    if (columnHeader != null) {
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .horizontalScroll(hScroll),
+                        ) {
+                            for (i in 0 until n) {
+                                Box(modifier = Modifier.width(colWidth)) { columnHeader(i) }
+                            }
                         }
+                    } else {
+                        Spacer(Modifier.weight(1f))
                     }
                 }
             }

@@ -152,6 +152,7 @@ fun DayTimelineView(
             selectedBlockKey = selectedEventId,
             onBlockSelect = onEventSelect,
             onRailTap = onRailTap,
+            railHeader = { CalendarTimeZoneHeader(date) },
         )
     }
 }

@@ -156,6 +156,7 @@ fun WeekTimelineView(
         // 看;拖块跨列改日期不受影响。
         visibleColumnCount = visibleDays,
         revealColumnIndex = revealIndex,
+        railHeader = { CalendarTimeZoneHeader(anchorDate) },
         // 星期条随网格横滚锁定同步(飞书样式):放进 scaffold 的列头槽。
         columnHeader = { i ->
             WeekDayHeader(
