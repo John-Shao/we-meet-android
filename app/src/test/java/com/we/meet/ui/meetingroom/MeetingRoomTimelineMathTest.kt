@@ -39,6 +39,9 @@ class MeetingRoomTimelineMathTest {
         assertEquals(date.plusDays(1), roomDateAfterSwipe(date, -80f, 48f))
         assertEquals(date.minusDays(1), roomDateAfterSwipe(date, 80f, 48f))
         assertEquals(null, roomDateAfterSwipe(date, 40f, 48f))
+        assertTrue(isHorizontalRoomDateSwipe(30f, 8f, 18f))
+        assertFalse(isHorizontalRoomDateSwipe(8f, 30f, 18f))
+        assertFalse(isHorizontalRoomDateSwipe(15f, 4f, 18f))
     }
 
     @Test
