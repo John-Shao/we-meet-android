@@ -1,6 +1,14 @@
 package com.we.meet.ui.meetingroom
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +28,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -51,7 +60,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -87,6 +98,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 private val CAPACITY_FILTERS = listOf(2, 4, 6, 10, 20, 50)
 
@@ -99,6 +111,16 @@ internal data class BookingBounds(
 
 internal fun BookingBounds.canMoveInRange(rangeStart: Int, rangeEnd: Int): Boolean =
     booking.canMove && withinSingleDay && startMin >= rangeStart && endMin <= rangeEnd
+
+internal fun roomDateAfterSwipe(
+    date: LocalDate,
+    horizontalDistancePx: Float,
+    thresholdPx: Float,
+): LocalDate? = when {
+    abs(horizontalDistancePx) < thresholdPx -> null
+    horizontalDistancePx < 0 -> date.plusDays(1)
+    else -> date.minusDays(1)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -504,13 +526,33 @@ private fun MeetingRoomSchedule(
     onBlockMove: (key: String, startMin: Int, endMin: Int) -> Unit,
     onRailTap: () -> Unit,
 ) {
+    val dateSwipeEnabled = draft == null && selectedBlockKey == null
+    val swipeThresholdPx = with(LocalDensity.current) { Dimens.MinTouchTarget.toPx() }
     Column(modifier = Modifier.fillMaxSize()) {
         RoomScheduleToolbar(
             date = date,
             onBack = onBack,
             onSelectDate = onSelectDate,
         )
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(date, dateSwipeEnabled, swipeThresholdPx) {
+                    if (!dateSwipeEnabled) return@pointerInput
+                    var horizontalDistance = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { horizontalDistance = 0f },
+                        onDragEnd = {
+                            roomDateAfterSwipe(date, horizontalDistance, swipeThresholdPx)
+                                ?.let(onSelectDate)
+                        },
+                        onDragCancel = { horizontalDistance = 0f },
+                    ) { change, dragAmount ->
+                        horizontalDistance += dragAmount
+                        change.consume()
+                    }
+                },
+        ) {
             TimelineScaffold(
                 modifier = Modifier
                     .fillMaxSize()
@@ -557,14 +599,21 @@ private fun RoomScheduleToolbar(
     onSelectDate: (LocalDate) -> Unit,
 ) {
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    val today = LocalDate.now()
+    val dateFormatter = remember {
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+            .withLocale(Locale.getDefault())
+    }
 
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXs),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onBack) {
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier.align(Alignment.CenterStart),
+        ) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = stringResource(R.string.meeting_room_schedule_back),
@@ -575,17 +624,38 @@ private fun RoomScheduleToolbar(
             colors = ButtonDefaults.textButtonColors(
                 contentColor = MaterialTheme.colorScheme.onSurface,
             ),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.align(Alignment.Center),
         ) {
-            Text(
-                text = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-                    .withLocale(Locale.getDefault())
-                    .format(date),
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
+            AnimatedContent(
+                targetState = date,
+                transitionSpec = {
+                    val direction = if (targetState.isAfter(initialState)) 1 else -1
+                    (slideInHorizontally(tween(180)) { direction * it / 4 } +
+                        fadeIn(tween(180))) togetherWith
+                        (slideOutHorizontally(tween(180)) { -direction * it / 4 } +
+                            fadeOut(tween(180)))
+                },
+                label = "meeting-room-date",
+            ) { displayedDate ->
+                Text(
+                    text = dateFormatter.format(displayedDate),
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            Icon(
+                Icons.Filled.ArrowDropDown,
+                contentDescription = null,
             )
         }
-        Spacer(Modifier.width(Dimens.MinTouchTarget))
+        if (date != today) {
+            TextButton(
+                onClick = { onSelectDate(today) },
+                modifier = Modifier.align(Alignment.CenterEnd),
+            ) {
+                Text(stringResource(R.string.calendar_today))
+            }
+        }
     }
 
     if (showDatePicker) {

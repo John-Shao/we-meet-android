@@ -34,6 +34,14 @@ class MeetingRoomTimelineMathTest {
     }
 
     @Test
+    fun horizontalSwipeChangesDateOnlyAfterTheThreshold() {
+        val date = LocalDate.of(2026, 8, 11)
+        assertEquals(date.plusDays(1), roomDateAfterSwipe(date, -80f, 48f))
+        assertEquals(date.minusDays(1), roomDateAfterSwipe(date, 80f, 48f))
+        assertEquals(null, roomDateAfterSwipe(date, 40f, 48f))
+    }
+
+    @Test
     fun organizerBookingCanMoveOnlyWhenFullyInsideTheVisibleDay() {
         val date = LocalDate.of(2026, 8, 11)
         val zone = ZoneId.of("UTC")
