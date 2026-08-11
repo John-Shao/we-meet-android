@@ -54,6 +54,21 @@ internal enum class RoomFilterSection {
     FACILITIES,
 }
 
+internal fun meetingRoomTitle(name: String, code: String?): String =
+    code?.trim()?.takeIf { it.isNotEmpty() }?.let { "$name · $it" } ?: name
+
+internal fun meetingRoomScheduleTitle(
+    building: String?,
+    code: String?,
+    name: String,
+): String {
+    val locationCode = listOfNotNull(
+        building?.trim()?.takeIf { it.isNotEmpty() },
+        code?.trim()?.takeIf { it.isNotEmpty() },
+    ).joinToString("-")
+    return if (locationCode.isEmpty()) name else "$locationCode ($name)"
+}
+
 internal data class VisibleMinuteRange(
     val startMin: Int,
     val endMin: Int,
@@ -159,48 +174,58 @@ internal fun MeetingRoomFilterBar(
         ?.let { id -> ui.nodes.firstOrNull { it.id == id }?.name }
         ?: stringResource(R.string.meeting_room_filter_location)
     val capacityLabel = ui.capacityMin?.let {
-        stringResource(R.string.meeting_room_filter_capacity_at_least, it)
+        stringResource(R.string.meeting_room_capacity_people, it)
     } ?: stringResource(R.string.meeting_room_filter_capacity)
-    val facilityLabel = if (ui.facilityIds.isEmpty()) {
-        stringResource(R.string.meeting_room_facilities_filter)
-    } else {
-        stringResource(R.string.meeting_room_filter_facility_count, ui.facilityIds.size)
+    val selectedFacilities = ui.facilities.filter { it.id in ui.facilityIds }
+    val facilityLabel = when {
+        ui.facilityIds.isEmpty() -> stringResource(R.string.meeting_room_facilities_filter)
+        selectedFacilities.isEmpty() -> stringResource(
+            R.string.meeting_room_filter_facility_count,
+            ui.facilityIds.size,
+        )
+        else -> selectedFacilities.joinToString(" · ") { it.name }
     }
 
-    LazyRow(
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = Dimens.SpaceM),
-        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        item {
-            FilterChip(
-                selected = ui.nodeId != null,
-                onClick = { onOpenFilter(RoomFilterSection.LOCATION) },
-                label = { Text(locationLabel, maxLines = 1) },
-            )
-        }
-        item {
-            FilterChip(
-                selected = ui.facilityIds.isNotEmpty(),
-                onClick = { onOpenFilter(RoomFilterSection.FACILITIES) },
-                label = { Text(facilityLabel, maxLines = 1) },
-            )
-        }
-        item {
-            FilterChip(
-                selected = ui.capacityMin != null,
-                onClick = { onOpenFilter(RoomFilterSection.CAPACITY) },
-                label = { Text(capacityLabel, maxLines = 1) },
-            )
-        }
-        item {
-            IconButton(onClick = onRefresh) {
-                Icon(
-                    Icons.Filled.Refresh,
-                    contentDescription = stringResource(R.string.meeting_room_refresh),
+        LazyRow(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(start = Dimens.SpaceM, end = Dimens.SpaceXs),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            item {
+                FilterChip(
+                    selected = ui.nodeId != null,
+                    onClick = { onOpenFilter(RoomFilterSection.LOCATION) },
+                    label = { Text(locationLabel, maxLines = 1) },
                 )
             }
+            item {
+                FilterChip(
+                    selected = ui.facilityIds.isNotEmpty(),
+                    onClick = { onOpenFilter(RoomFilterSection.FACILITIES) },
+                    label = { Text(facilityLabel, maxLines = 1) },
+                )
+            }
+            item {
+                FilterChip(
+                    selected = ui.capacityMin != null,
+                    onClick = { onOpenFilter(RoomFilterSection.CAPACITY) },
+                    label = { Text(capacityLabel, maxLines = 1) },
+                )
+            }
+        }
+        IconButton(
+            onClick = onRefresh,
+            modifier = Modifier.padding(end = Dimens.SpaceXs),
+        ) {
+            Icon(
+                Icons.Filled.Refresh,
+                contentDescription = stringResource(R.string.meeting_room_refresh),
+            )
         }
     }
 }
@@ -264,7 +289,7 @@ private fun MeetingRoomOverviewItem(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = room.name,
+                    text = meetingRoomTitle(room.name, room.code),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,

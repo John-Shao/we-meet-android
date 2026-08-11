@@ -32,7 +32,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -215,7 +214,6 @@ fun MeetingRoomsCalendarScreen(
                 onShowCalendar = onShowCalendar,
                 onOpenSettings = onOpenSettings,
                 onSelectDate = vm::setDate,
-                onQuery = vm::setQuery,
                 onOpenFilter = { filterSection = it },
                 onRefresh = vm::refresh,
                 onShowFullDay = {
@@ -236,7 +234,6 @@ fun MeetingRoomsCalendarScreen(
                 draft = draft,
                 draftConflict = draftConflict,
                 conflictMessage = conflictMessage,
-                location = roomLocation(selectedRoom.node?.id, selectedRoom.floor, ui.nodes),
                 onBack = { selectedRoomId = null },
                 onOpenRoomInfo = { roomInfoOpen = true },
                 onDraftAdjust = { draft = it },
@@ -362,7 +359,6 @@ private fun MeetingRoomOverview(
     onShowCalendar: () -> Unit,
     onOpenSettings: () -> Unit,
     onSelectDate: (LocalDate) -> Unit,
-    onQuery: (String) -> Unit,
     onOpenFilter: (RoomFilterSection) -> Unit,
     onRefresh: () -> Unit,
     onShowFullDay: () -> Unit,
@@ -386,15 +382,6 @@ private fun MeetingRoomOverview(
             selectedDate = ui.selectedDate,
             firstDayOfWeek = firstDayOfWeek,
             onSelectDate = onSelectDate,
-        )
-        OutlinedTextField(
-            value = ui.query,
-            onValueChange = onQuery,
-            placeholder = { Text(stringResource(R.string.meeting_room_picker_search_hint)) },
-            singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Dimens.SpaceM),
         )
         MeetingRoomFilterBar(
             ui = ui,
@@ -463,7 +450,6 @@ private fun MeetingRoomSchedule(
     draft: DraftSelection?,
     draftConflict: Boolean,
     conflictMessage: String,
-    location: String,
     onBack: () -> Unit,
     onOpenRoomInfo: () -> Unit,
     onDraftAdjust: (DraftSelection) -> Unit,
@@ -504,7 +490,6 @@ private fun MeetingRoomSchedule(
             )
             RoomInfoDock(
                 room = room,
-                location = location,
                 onClick = onOpenRoomInfo,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
@@ -579,7 +564,6 @@ private fun RoomDateToolbar(
 @Composable
 private fun RoomInfoDock(
     room: MeetingRoomTimelineEntryDto,
-    location: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -597,16 +581,9 @@ private fun RoomInfoDock(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = room.name,
+                    text = meetingRoomScheduleTitle(room.node?.name, room.code, room.name),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = location,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -686,7 +663,7 @@ private fun RoomFiltersSheet(
                                     label = {
                                         Text(
                                             stringResource(
-                                                R.string.meeting_room_filter_capacity_at_least,
+                                                R.string.meeting_room_capacity_people,
                                                 value,
                                             ),
                                         )
@@ -758,7 +735,10 @@ private fun RoomInfoSheet(
                 .fillMaxWidth()
                 .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
         ) {
-            Text(room.name, style = MaterialTheme.typography.titleLarge)
+            Text(
+                meetingRoomTitle(room.name, room.code),
+                style = MaterialTheme.typography.titleLarge,
+            )
             if (location.isNotBlank()) {
                 Text(
                     text = location,
@@ -808,7 +788,10 @@ private fun BookingDetailSheet(
                     modifier = Modifier.padding(top = Dimens.SpaceS),
                 )
             }
-            Text(room.name, modifier = Modifier.padding(top = Dimens.SpaceS))
+            Text(
+                meetingRoomTitle(room.name, room.code),
+                modifier = Modifier.padding(top = Dimens.SpaceS),
+            )
             booking.organizer?.fullName?.takeIf { it.isNotBlank() }?.let {
                 Text(
                     stringResource(R.string.meeting_room_organizer, it),

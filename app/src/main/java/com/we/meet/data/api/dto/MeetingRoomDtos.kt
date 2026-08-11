@@ -132,6 +132,7 @@ data class RoomBookingDto(
 data class MeetingRoomTimelineEntryDto(
     val id: String = "",
     val name: String = "",
+    val code: String? = null,
     val floor: String = "",
     val capacity: Int = 0,
     val node: MeetingRoomNodeRefDto? = null,

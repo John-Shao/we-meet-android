@@ -132,7 +132,7 @@ internal fun MeetingRoomTimeline(
                 val room = rooms[i]
                 Column(modifier = Modifier.padding(horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXs)) {
                     Text(
-                        text = room.name,
+                        text = meetingRoomTitle(room.name, room.code),
                         style = MaterialTheme.typography.labelMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

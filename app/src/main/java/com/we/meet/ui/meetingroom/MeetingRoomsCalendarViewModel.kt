@@ -26,7 +26,6 @@ import retrofit2.HttpException
 
 data class MeetingRoomsCalendarUiState(
     val selectedDate: LocalDate = LocalDate.now(),
-    val query: String = "",
     val nodeId: String? = null,
     val capacityMin: Int? = null,
     val facilityIds: Set<String> = emptySet(),
@@ -40,7 +39,6 @@ data class MeetingRoomsCalendarUiState(
 
 private data class RoomTimelineRequest(
     val date: LocalDate,
-    val query: String,
     val nodeId: String?,
     val capacityMin: Int?,
     val facilityIds: Set<String>,
@@ -66,7 +64,6 @@ class MeetingRoomsCalendarViewModel(
     private val _ui = MutableStateFlow(
         MeetingRoomsCalendarUiState(
             selectedDate = initialDate,
-            query = savedStateHandle[KEY_QUERY] ?: "",
             nodeId = savedStateHandle[KEY_NODE],
             capacityMin = initialCapacity,
             facilityIds = initialFacilities,
@@ -77,7 +74,6 @@ class MeetingRoomsCalendarViewModel(
     private val requests = MutableStateFlow(
         RoomTimelineRequest(
             date = initialDate,
-            query = _ui.value.query,
             nodeId = _ui.value.nodeId,
             capacityMin = initialCapacity,
             facilityIds = initialFacilities,
@@ -102,12 +98,6 @@ class MeetingRoomsCalendarViewModel(
         savedStateHandle[KEY_DATE] = date.toEpochDay()
         _ui.update { it.copy(selectedDate = date) }
         requests.update { it.copy(date = date) }
-    }
-
-    fun setQuery(query: String) {
-        savedStateHandle[KEY_QUERY] = query
-        _ui.update { it.copy(query = query) }
-        requests.update { it.copy(query = query) }
     }
 
     fun setNode(nodeId: String?) {
@@ -172,7 +162,6 @@ class MeetingRoomsCalendarViewModel(
                 node = request.nodeId,
                 capacityMin = request.capacityMin,
                 facilities = request.facilityIds.takeIf { it.isNotEmpty() }?.joinToString(","),
-                q = request.query.trim().takeIf { it.isNotEmpty() },
             )
             _ui.update {
                 it.copy(
@@ -203,7 +192,6 @@ class MeetingRoomsCalendarViewModel(
 
     private companion object {
         const val KEY_DATE = "meeting_room_date"
-        const val KEY_QUERY = "meeting_room_query"
         const val KEY_NODE = "meeting_room_node"
         const val KEY_CAPACITY = "meeting_room_capacity"
         const val KEY_FACILITIES = "meeting_room_facilities"

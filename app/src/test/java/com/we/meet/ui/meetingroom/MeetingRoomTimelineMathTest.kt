@@ -27,6 +27,23 @@ class MeetingRoomTimelineMathTest {
     }
 
     @Test
+    fun meetingRoomTitleAppendsNonBlankCode() {
+        assertEquals("Sail · R0806", meetingRoomTitle("Sail", " R0806 "))
+        assertEquals("Sail", meetingRoomTitle("Sail", null))
+        assertEquals("Sail", meetingRoomTitle("Sail", "  "))
+    }
+
+    @Test
+    fun meetingRoomScheduleTitleUsesBuildingCodeAndName() {
+        assertEquals(
+            "Tower 2-R0806 (Sail)",
+            meetingRoomScheduleTitle(" Tower 2 ", " R0806 ", "Sail"),
+        )
+        assertEquals("Tower 2 (Sail)", meetingRoomScheduleTitle("Tower 2", null, "Sail"))
+        assertEquals("Sail", meetingRoomScheduleTitle(null, null, "Sail"))
+    }
+
+    @Test
     fun roomLocationOmitsCountryAndCity() {
         val nodes = listOf(
             MeetingRoomNodeDto(id = "country", name = "China", depth = 0),
