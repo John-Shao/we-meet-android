@@ -81,8 +81,7 @@ import com.we.meet.feature.im.ui.chat.ForwardCreateGroupFlow
 import com.we.meet.feature.im.ui.chat.ForwardPicker
 // 复用会议详情页的会议号分组格式,避免两处实现漂移。
 import com.we.meet.ui.home.formatSlugDigits
-import com.we.meet.ui.meetingroom.compactMeetingRoomPathLabel
-import com.we.meet.ui.meetingroom.meetingRoomTitle
+import com.we.meet.ui.meetingroom.meetingRoomScheduleTitle
 import java.time.format.DateTimeFormatter
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -530,14 +529,13 @@ private fun EventBody(
         // 用户仍需要知道原本订的是哪一间。
         event.meetingRoom?.let { room ->
             val detail = buildString {
-                append(meetingRoomTitle(room.name, room.code))
-                compactMeetingRoomPathLabel(room.pathLabel)
-                    .takeIf { it.isNotBlank() }
-                    ?.let { append(" · ").append(it) }
-                if (room.capacity > 0) {
-                    append(" · ")
-                    append(stringResource(R.string.meeting_room_capacity_people, room.capacity))
-                }
+                append(
+                    meetingRoomScheduleTitle(room.node?.name, room.code, room.name),
+                )
+                append(" · ")
+                append(
+                    stringResource(R.string.meeting_room_capacity_people, room.capacity),
+                )
             }
             Text(
                 text = "🏢 ${stringResource(R.string.meeting_room_detail_label)}: $detail",
