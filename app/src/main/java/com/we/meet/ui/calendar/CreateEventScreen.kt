@@ -65,6 +65,7 @@ import com.we.meet.data.api.dto.CreateEventRequest
 import com.we.meet.data.api.dto.MeetingRoomBriefDto
 import com.we.meet.data.api.dto.UpdateEventRequest
 import com.we.meet.ui.meetingroom.MeetingRoomPicker
+import com.we.meet.ui.meetingroom.meetingRoomTitle
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -661,7 +662,7 @@ fun CreateEventScreen(
                                 label = {
                                     Text(
                                         listOfNotNull(
-                                            room.name,
+                                            meetingRoomTitle(room.name, room.code),
                                             room.pathLabel?.takeIf { it.isNotBlank() },
                                         ).joinToString(" · "),
                                     )
@@ -680,7 +681,7 @@ fun CreateEventScreen(
                                 Text(
                                     text = stringResource(
                                         R.string.meeting_room_conflict_inline,
-                                        room.name,
+                                        meetingRoomTitle(room.name, room.code),
                                     ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.error,

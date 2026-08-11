@@ -54,19 +54,27 @@ internal enum class RoomFilterSection {
     FACILITIES,
 }
 
-internal fun meetingRoomTitle(name: String, code: String?): String =
-    code?.trim()?.takeIf { it.isNotEmpty() }?.let { "$name · $it" } ?: name
+internal fun meetingRoomTitle(name: String, code: String?): String {
+    val normalizedName = name.trim()
+    val normalizedCode = code?.trim().orEmpty()
+    return when {
+        normalizedCode.isNotEmpty() && normalizedName.isNotEmpty() ->
+            "$normalizedCode ($normalizedName)"
+        normalizedCode.isNotEmpty() -> normalizedCode
+        else -> normalizedName
+    }
+}
 
 internal fun meetingRoomScheduleTitle(
     building: String?,
     code: String?,
     name: String,
 ): String {
-    val locationCode = listOfNotNull(
+    val identifier = meetingRoomTitle(name, code)
+    return listOfNotNull(
         building?.trim()?.takeIf { it.isNotEmpty() },
-        code?.trim()?.takeIf { it.isNotEmpty() },
+        identifier.takeIf { it.isNotEmpty() },
     ).joinToString("-")
-    return if (locationCode.isEmpty()) name else "$locationCode ($name)"
 }
 
 internal data class VisibleMinuteRange(
@@ -234,7 +242,6 @@ internal fun MeetingRoomFilterBar(
 internal fun MeetingRoomOverviewList(
     rooms: List<MeetingRoomTimelineEntryDto>,
     bookingBounds: Map<String, List<BookingBounds>>,
-    nodes: List<com.we.meet.data.api.dto.MeetingRoomNodeDto>,
     visibleStartMin: Int,
     visibleEndMin: Int,
     workingStartMin: Int,
@@ -250,7 +257,6 @@ internal fun MeetingRoomOverviewList(
         items(rooms, key = { it.id }) { room ->
             MeetingRoomOverviewItem(
                 room = room,
-                location = roomLocation(room.node?.id, room.floor, nodes),
                 bounds = bookingBounds[room.id].orEmpty(),
                 visibleStartMin = visibleStartMin,
                 visibleEndMin = visibleEndMin,
@@ -270,7 +276,6 @@ internal fun MeetingRoomOverviewList(
 @Composable
 private fun MeetingRoomOverviewItem(
     room: MeetingRoomTimelineEntryDto,
-    location: String,
     bounds: List<BookingBounds>,
     visibleStartMin: Int,
     visibleEndMin: Int,
@@ -289,21 +294,12 @@ private fun MeetingRoomOverviewItem(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = meetingRoomTitle(room.name, room.code),
+                    text = meetingRoomScheduleTitle(room.node?.name, room.code, room.name),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                if (location.isNotBlank()) {
-                    Text(
-                        text = location,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
                 val facilities = room.facilities.joinToString(" · ") { it.name }
                 val metadata = listOfNotNull(
                     room.capacity.takeIf { it > 0 }?.let {

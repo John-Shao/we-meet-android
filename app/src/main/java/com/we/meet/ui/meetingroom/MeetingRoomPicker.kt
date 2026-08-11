@@ -434,7 +434,7 @@ private fun MeetingRoomRow(
     ) {
         Column(modifier = Modifier.padding(vertical = Dimens.SpaceS)) {
             Text(
-                room.name,
+                meetingRoomTitle(room.name, room.code),
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (busy) {
                     MaterialTheme.colorScheme.onSurfaceVariant

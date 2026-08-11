@@ -423,7 +423,6 @@ private fun MeetingRoomOverview(
                 else -> MeetingRoomOverviewList(
                     rooms = ui.rooms,
                     bookingBounds = bookingBounds,
-                    nodes = ui.nodes,
                     visibleStartMin = rangeStart,
                     visibleEndMin = rangeEnd,
                     workingStartMin = workingStart,
