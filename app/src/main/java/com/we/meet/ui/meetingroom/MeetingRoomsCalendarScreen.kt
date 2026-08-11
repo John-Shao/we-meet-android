@@ -535,7 +535,9 @@ private fun MeetingRoomSchedule(
     onBlockMove: (key: String, startMin: Int, endMin: Int) -> Unit,
     onRailTap: () -> Unit,
 ) {
-    val dateSwipeEnabled = draft == null && selectedBlockKey == null
+    // A draft owns vertical move/resize gestures only; horizontal swipes still
+    // navigate dates. A selected event keeps exclusive control for rescheduling.
+    val dateSwipeEnabled = selectedBlockKey == null
     val swipeThresholdPx = with(LocalDensity.current) { Dimens.MinTouchTarget.toPx() }
     Column(modifier = Modifier.fillMaxSize()) {
         RoomScheduleToolbar(
