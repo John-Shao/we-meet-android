@@ -46,14 +46,18 @@ class MeetingRoomTimelineMathTest {
     }
 
     @Test
-    fun roomLocationOmitsCountryAndCity() {
-        val nodes = listOf(
-            MeetingRoomNodeDto(id = "country", name = "China", depth = 0),
-            MeetingRoomNodeDto(id = "city", name = "Shenzhen", parent = "country", depth = 1),
-            MeetingRoomNodeDto(id = "campus", name = "Tech Park", parent = "city", depth = 2),
-            MeetingRoomNodeDto(id = "building", name = "Tower 2", parent = "campus", depth = 3),
+    fun compactMeetingRoomPathOmitsCountryAndCity() {
+        assertEquals(
+            "Tech Park · Tower 2 · Floor 6",
+            compactMeetingRoomPathLabel(
+                "China · Shenzhen · Tech Park · Tower 2 · Floor 6",
+            ),
         )
-        assertEquals("Tech Park · Tower 2 · Floor 6", roomLocation("building", "Floor 6", nodes))
+        assertEquals(
+            "Tower 2 · Floor 6",
+            compactMeetingRoomPathLabel("Tower 2 · Floor 6"),
+        )
+        assertEquals("", compactMeetingRoomPathLabel(null))
     }
 
     @Test

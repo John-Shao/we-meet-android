@@ -61,7 +61,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.R
 import com.we.meet.WeMeetApp
-import com.we.meet.data.api.dto.MeetingRoomNodeDto
 import com.we.meet.data.api.dto.MeetingRoomTimelineEntryDto
 import com.we.meet.data.api.dto.RoomBookingDto
 import com.we.meet.data.settings.CalendarWeekStart
@@ -328,7 +327,6 @@ fun MeetingRoomsCalendarScreen(
     if (roomInfoOpen && selectedRoom != null) {
         RoomInfoSheet(
             room = selectedRoom,
-            location = roomLocation(selectedRoom.node?.id, selectedRoom.floor, ui.nodes),
             onDismiss = { roomInfoOpen = false },
         )
     }
@@ -725,7 +723,6 @@ private fun RoomFiltersSheet(
 @Composable
 private fun RoomInfoSheet(
     room: MeetingRoomTimelineEntryDto,
-    location: String,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -735,16 +732,9 @@ private fun RoomInfoSheet(
                 .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
         ) {
             Text(
-                meetingRoomTitle(room.name, room.code),
+                meetingRoomScheduleTitle(room.node?.name, room.code, room.name),
                 style = MaterialTheme.typography.titleLarge,
             )
-            if (location.isNotBlank()) {
-                Text(
-                    text = location,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = Dimens.SpaceXs),
-                )
-            }
             if (room.capacity > 0) {
                 Text(
                     text = stringResource(R.string.meeting_room_capacity_people, room.capacity),
@@ -788,7 +778,7 @@ private fun BookingDetailSheet(
                 )
             }
             Text(
-                meetingRoomTitle(room.name, room.code),
+                meetingRoomScheduleTitle(room.node?.name, room.code, room.name),
                 modifier = Modifier.padding(top = Dimens.SpaceS),
             )
             booking.organizer?.fullName?.takeIf { it.isNotBlank() }?.let {
@@ -832,20 +822,6 @@ internal fun bookingBounds(
     }
     if (endMin <= startMin) return null
     return BookingBounds(booking, startMin, endMin)
-}
-
-internal fun roomLocation(
-    nodeId: String?,
-    floor: String,
-    nodes: List<MeetingRoomNodeDto>,
-): String {
-    val byId = nodes.associateBy { it.id }
-    val chain = generateSequence(nodeId?.let(byId::get)) { node ->
-        node.parent?.let(byId::get)
-    }.toList().asReversed()
-    return (chain.filter { it.depth in 2..3 }.map { it.name } + floor.trim())
-        .filter { it.isNotBlank() }
-        .joinToString(" · ")
 }
 
 internal fun formatMinute(minute: Int): String =

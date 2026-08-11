@@ -67,7 +67,7 @@ private enum class RoomTab { Available, All }
  *  savedStateHandle 回传那一套),嵌套 ModalBottomSheet 又会打架。 */
 private enum class RoomView { List, Timeline }
 
-/** Capacity buckets offered in the filter row ("≥ N 人"). */
+/** Capacity buckets offered in the filter row. */
 private val CAPACITY_STEPS = listOf(2, 4, 6, 10, 20, 50)
 
 private val hhmm = DateTimeFormatter.ofPattern("HH:mm")
@@ -406,7 +406,7 @@ private fun FilterRow(
                 selected = capacityMin == step,
                 onClick = { onCapacity(if (capacityMin == step) null else step) },
                 label = {
-                    Text(stringResource(R.string.meeting_room_filter_capacity_at_least, step))
+                    Text(stringResource(R.string.meeting_room_capacity_people, step))
                 },
             )
         }
@@ -445,7 +445,9 @@ private fun MeetingRoomRow(
                 overflow = TextOverflow.Ellipsis,
             )
             val subtitle = buildString {
-                room.pathLabel?.takeIf { it.isNotBlank() }?.let { append(it) }
+                compactMeetingRoomPathLabel(room.pathLabel)
+                    .takeIf { it.isNotBlank() }
+                    ?.let { append(it) }
                 if (room.capacity > 0) {
                     if (isNotEmpty()) append(" · ")
                     append(room.capacity)

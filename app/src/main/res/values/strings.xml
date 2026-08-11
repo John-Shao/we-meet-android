@@ -558,7 +558,6 @@
     <string name="meeting_room_picker_tab_all">All rooms</string>
     <string name="meeting_room_picker_search_hint">Search rooms or levels</string>
     <string name="meeting_room_filter_level_all">All levels</string>
-    <string name="meeting_room_filter_capacity_at_least">≥ %1$d</string>
     <string name="meeting_room_unavailable">Booked for this slot</string>
     <string name="meeting_room_unavailable_range">%1$s–%2$s already booked</string>
     <string name="meeting_room_empty">No meeting rooms match these filters</string>

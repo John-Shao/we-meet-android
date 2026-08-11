@@ -77,6 +77,14 @@ internal fun meetingRoomScheduleTitle(
     ).joinToString("-")
 }
 
+internal fun compactMeetingRoomPathLabel(pathLabel: String?): String =
+    pathLabel.orEmpty()
+        .split("·")
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+        .takeLast(3)
+        .joinToString(" · ")
+
 internal data class VisibleMinuteRange(
     val startMin: Int,
     val endMin: Int,

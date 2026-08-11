@@ -558,7 +558,6 @@
     <string name="meeting_room_picker_tab_all">所有会议室</string>
     <string name="meeting_room_picker_search_hint">搜索会议室或层级</string>
     <string name="meeting_room_filter_level_all">全部层级</string>
-    <string name="meeting_room_filter_capacity_at_least">≥ %1$d 人</string>
     <string name="meeting_room_unavailable">该时段已被占用</string>
     <string name="meeting_room_unavailable_range">%1$s–%2$s 已被占用</string>
     <string name="meeting_room_empty">没有符合条件的会议室</string>

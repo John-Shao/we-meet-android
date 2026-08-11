@@ -81,6 +81,7 @@ import com.we.meet.feature.im.ui.chat.ForwardCreateGroupFlow
 import com.we.meet.feature.im.ui.chat.ForwardPicker
 // 复用会议详情页的会议号分组格式,避免两处实现漂移。
 import com.we.meet.ui.home.formatSlugDigits
+import com.we.meet.ui.meetingroom.compactMeetingRoomPathLabel
 import com.we.meet.ui.meetingroom.meetingRoomTitle
 import java.time.format.DateTimeFormatter
 import java.time.Instant
@@ -530,7 +531,9 @@ private fun EventBody(
         event.meetingRoom?.let { room ->
             val detail = buildString {
                 append(meetingRoomTitle(room.name, room.code))
-                room.pathLabel?.takeIf { it.isNotBlank() }?.let { append(" · ").append(it) }
+                compactMeetingRoomPathLabel(room.pathLabel)
+                    .takeIf { it.isNotBlank() }
+                    ?.let { append(" · ").append(it) }
                 if (room.capacity > 0) {
                     append(" · ")
                     append(stringResource(R.string.meeting_room_capacity_people, room.capacity))

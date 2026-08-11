@@ -479,7 +479,6 @@
     <string name="meeting_room_picker_tab_all">Alle Räume</string>
     <string name="meeting_room_picker_search_hint">Räume oder Ebenen suchen</string>
     <string name="meeting_room_filter_level_all">Alle Ebenen</string>
-    <string name="meeting_room_filter_capacity_at_least">≥ %1$d</string>
     <string name="meeting_room_unavailable">In diesem Zeitraum belegt</string>
     <string name="meeting_room_unavailable_range">%1$s–%2$s bereits belegt</string>
     <string name="meeting_room_empty">Keine Räume passen zu diesen Filtern</string>
