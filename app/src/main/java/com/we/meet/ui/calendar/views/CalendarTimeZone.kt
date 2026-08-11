@@ -48,9 +48,9 @@ internal fun CalendarTimeZoneHeader(date: LocalDate) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1,
         overflow = TextOverflow.Clip,
-        textAlign = TextAlign.End,
+        textAlign = TextAlign.Center,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(end = Dimens.SpaceXs, bottom = Dimens.SpaceXs),
+            .padding(bottom = Dimens.SpaceXs),
     )
 }

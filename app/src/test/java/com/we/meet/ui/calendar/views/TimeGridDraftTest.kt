@@ -21,4 +21,13 @@ class TimeGridDraftTest {
         assertEquals(17 * 60 + 45, draft.startMin)
         assertEquals(18 * 60, draft.endMin)
     }
+
+    @Test
+    fun hourRailIncludesBothRangeBoundaries() {
+        assertEquals(listOf(0, 60, 120, 180), hourRailLabelMinutes(0, 3 * 60))
+        assertEquals(
+            listOf(6 * 60 + 30, 7 * 60, 8 * 60, 9 * 60),
+            hourRailLabelMinutes(6 * 60 + 30, 9 * 60),
+        )
+    }
 }

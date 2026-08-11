@@ -227,7 +227,7 @@ object Dimens {
          */
         val HourHeight = 56.dp
         /** 左侧小时刻度栏宽度。日/周视图共用,改了两边一起动。 */
-        val HourRailWidth = 44.dp
+        val HourRailWidth = 56.dp
         /** 忙闲对比里每人一列的最小宽度,再窄名字就挤没了。 */
         val MinColumnWidth = 76.dp
 

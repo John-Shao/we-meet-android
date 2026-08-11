@@ -50,6 +50,7 @@ import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -117,6 +118,30 @@ internal const val SHORT_BLOCK_MIN = 45
 private const val BUSY_TIME_LABEL_MIN = 30
 
 private fun fmtMin(min: Int): String = "%02d:%02d".format(min / 60, min % 60)
+
+internal fun hourRailLabelMinutes(
+    visibleStartMin: Int,
+    visibleEndMin: Int,
+): List<Int> {
+    val firstHour = ((visibleStartMin + 59) / 60) * 60
+    return buildList {
+        add(visibleStartMin)
+        var minute = firstHour
+        while (minute < visibleEndMin) {
+            add(minute)
+            minute += 60
+        }
+        add(visibleEndMin)
+    }.distinct()
+}
+
+/** Place the measured text box with its vertical center on the modifier's y offset. */
+private fun Modifier.centerOnAnchorY(): Modifier = layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    layout(placeable.width, placeable.height) {
+        placeable.placeRelative(0, -placeable.height / 2)
+    }
+}
 
 /** 忙闲页选中的时段(横贯所有列的高亮框)。 */
 data class TimeSelection(val startMin: Int, val endMin: Int)
@@ -240,15 +265,7 @@ fun HourRail(
     visibleEndMin: Int = 24 * 60,
 ) {
     val rangeMinutes = (visibleEndMin - visibleStartMin).coerceAtLeast(DRAFT_MIN_DURATION)
-    val firstHour = ((visibleStartMin + 59) / 60) * 60
-    val labels = buildList {
-        if (visibleStartMin % 60 != 0) add(visibleStartMin)
-        var minute = firstHour
-        while (minute < visibleEndMin) {
-            add(minute)
-            minute += 60
-        }
-    }.distinct()
+    val labels = hourRailLabelMinutes(visibleStartMin, visibleEndMin)
     Box(
         modifier = modifier
             .width(HOUR_RAIL_WIDTH)
@@ -259,33 +276,31 @@ fun HourRail(
                 text = fmtMin(min),
                 style = WeMeetTextStyles.LabelTiny,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.End,
+                textAlign = TextAlign.Center,
                 modifier = Modifier
                     .offset(y = hourHeight * ((min - visibleStartMin) / 60f))
                     .fillMaxWidth()
-                    .padding(end = Dimens.SpaceXs),
+                    .centerOnAnchorY(),
             )
         }
-        highlightMinutes.filter { it in visibleStartMin..visibleEndMin }.forEach { min ->
-            Text(
-                text = fmtMin(min),
-                style = WeMeetTextStyles.LabelTiny,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.End,
-                modifier = Modifier
-                    // 24:00 贴着刻度列末尾,回收一行高度免得被滚动容器裁掉。
-                    .offset(
-                        y = (hourHeight * ((min - visibleStartMin) / 60f))
-                            .coerceAtMost(
-                                hourHeight * (rangeMinutes / 60f) - DRAFT_HANDLE_SIZE,
-                            ),
-                    )
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(end = Dimens.SpaceXs),
-            )
-        }
+        highlightMinutes
+            .filter { it in visibleStartMin..visibleEndMin }
+            .forEach { min ->
+                Text(
+                    text = fmtMin(min),
+                    style = WeMeetTextStyles.LabelTiny,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .offset(
+                            y = hourHeight * ((min - visibleStartMin) / 60f),
+                        )
+                        .fillMaxWidth()
+                        .centerOnAnchorY()
+                        .background(MaterialTheme.colorScheme.surface),
+                )
+            }
     }
 }
 
@@ -382,6 +397,9 @@ fun TimelineScaffold(
     // 短块「标题,时间」分隔符:中文全角逗号(对齐 Web),其他语言半角。
     val titleTimeSep = if (Locale.getDefault().language == "zh") "，" else ", "
     val density = LocalDensity.current
+    val hourLabelTopInset = with(density) {
+        WeMeetTextStyles.LabelTiny.lineHeight.toDp() / 2
+    }
     // 列头与网格共享一个横向 ScrollState → 严格同步滚动(飞书样式)。
     val hScroll = rememberScrollState()
     // 草稿相关的最新值用 rememberUpdatedState 兜住:pointerInput 的 key 不能带
@@ -460,7 +478,8 @@ fun TimelineScaffold(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .verticalScroll(scrollState),
+                    .verticalScroll(scrollState)
+                    .padding(vertical = hourLabelTopInset),
             ) {
                 // 左侧刻度高亮:预选框 > 拖动中的落点 > 选中态日程块的起止
                 // —— 都是「用户此刻正在摆弄的时段」,读时刻靠它。
