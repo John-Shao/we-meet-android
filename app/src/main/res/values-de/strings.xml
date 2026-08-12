@@ -322,8 +322,6 @@
     <string name="calendar_add_attendees">Teilnehmer hinzufügen</string>
     <string name="calendar_attendee_required">Erforderlich</string>
     <string name="calendar_attendee_optional">Optional</string>
-    <string name="calendar_external_email">E-Mail eines externen Teilnehmers</string>
-    <string name="calendar_external_add">Hinzufügen</string>
     <string name="calendar_private_event">Privater Termin</string>
     <string name="calendar_private_event_hint">Nichtteilnehmer sehen nur die Belegungszeit, keine Details oder Einwahlinformationen</string>
     <string name="event_private_redacted">Sie nehmen nicht teil; die Termindetails sind ausgeblendet.</string>

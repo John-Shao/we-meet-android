@@ -1,6 +1,7 @@
 package com.we.meet.core.directory.data
 
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -71,4 +72,27 @@ interface DirectoryApi {
         @Path("userId") userId: String,
         @Body body: Map<String, Boolean>,
     ): MemberDto
+
+    @GET("api/v1.0/directory/external-contacts/")
+    suspend fun listExternalContacts(): List<ExternalContactDto>
+
+    @GET("api/v1.0/directory/external-contacts/requests/")
+    suspend fun listExternalContactRequests(): List<ExternalContactDto>
+
+    @GET("api/v1.0/directory/external-contacts/search/")
+    suspend fun searchExternalAccounts(@Query("q") query: String): List<ExternalContactDto>
+
+    @POST("api/v1.0/directory/external-contacts/requests/")
+    suspend fun sendExternalContactRequest(
+        @Body body: ExternalContactRequestBody,
+    ): ExternalContactDto
+
+    @POST("api/v1.0/directory/external-contacts/{id}/accept/")
+    suspend fun acceptExternalContactRequest(@Path("id") id: String): ExternalContactDto
+
+    @POST("api/v1.0/directory/external-contacts/{id}/decline/")
+    suspend fun declineExternalContactRequest(@Path("id") id: String): ExternalContactDto
+
+    @DELETE("api/v1.0/directory/external-contacts/{id}/")
+    suspend fun removeExternalContact(@Path("id") id: String)
 }

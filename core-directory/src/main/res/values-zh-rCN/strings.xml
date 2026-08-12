@@ -5,4 +5,5 @@
     <string name="picker_load_error">成员加载失败</string>
     <string name="picker_retry">重试</string>
     <string name="picker_confirm_count">确定 (%1$d)</string>
+    <string name="picker_external_tag">外部联系人</string>
 </resources>

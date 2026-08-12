@@ -322,8 +322,6 @@
     <string name="calendar_add_attendees">Ajouter des participants</string>
     <string name="calendar_attendee_required">Requis</string>
     <string name="calendar_attendee_optional">Facultatif</string>
-    <string name="calendar_external_email">E-mail du participant externe</string>
-    <string name="calendar_external_add">Ajouter</string>
     <string name="calendar_private_event">Événement privé</string>
     <string name="calendar_private_event_hint">Les non-participants voient uniquement la plage occupée, sans détails ni informations de connexion</string>
     <string name="event_private_redacted">Vous ne participez pas à cet événement ; les détails sont masqués.</string>

@@ -5,4 +5,5 @@
     <string name="picker_load_error">Failed to load members</string>
     <string name="picker_retry">Retry</string>
     <string name="picker_confirm_count">Confirm (%1$d)</string>
+    <string name="picker_external_tag">External contact</string>
 </resources>

@@ -83,6 +83,8 @@ fun ContactPicker(
     /** P5.1(实测问题3):把参会人页「搜索或呼叫」框已输入的词带进来当初始
      * 搜索,输入不白打。默认空——既有调用方零变化。 */
     initialQuery: String = "",
+    /** Include accepted cross-organization contacts; never account-search here. */
+    includeExternal: Boolean = false,
     onConfirm: (List<PickedMember>) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -116,9 +118,21 @@ fun ContactPicker(
                 loading = true
                 error = false
                 val result = if (q.isBlank()) repository.allMembers() else repository.searchMembers(q)
+                val external = if (includeExternal) {
+                    repository.listExternalContacts().getOrDefault(emptyList())
+                        .filter { contact ->
+                            q.isBlank() || listOf(
+                                contact.displayName,
+                                contact.organization?.name.orEmpty(),
+                            ).any { it.contains(q, ignoreCase = true) }
+                        }
+                        .map { it.toMember() }
+                } else {
+                    emptyList()
+                }
                 result
                     .onSuccess { page ->
-                        members = page.members.filter { m ->
+                        members = (page.members + external).distinctBy { it.id }.filter { m ->
                             (!excludeSelf || !m.isSelf) && m.id !in excludeUserIds
                         }
                     }
@@ -265,6 +279,7 @@ private fun MemberRow(
                 overflow = TextOverflow.Ellipsis,
             )
             val subtitle = listOfNotNull(
+                stringResource(R.string.picker_external_tag).takeIf { member.external },
                 member.title?.takeIf { it.isNotBlank() },
                 member.department?.name?.takeIf { it.isNotBlank() },
             ).joinToString(" · ")

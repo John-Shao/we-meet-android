@@ -20,12 +20,12 @@ data class EventAttendeeDto(
     val rsvp: String? = null,
     /** organizer | required | optional */
     val role: String? = null,
+    val external: Boolean = false,
 )
 
 @JsonClass(generateAdapter = true)
 data class AttendeeEntryRequest(
-    @Json(name = "user_id") val userId: String? = null,
-    val email: String? = null,
+    @Json(name = "user_id") val userId: String,
     /** required | optional */
     val role: String = "required",
 )

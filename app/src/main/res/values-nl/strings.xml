@@ -322,8 +322,6 @@
     <string name="calendar_add_attendees">Deelnemers toevoegen</string>
     <string name="calendar_attendee_required">Verplicht</string>
     <string name="calendar_attendee_optional">Optioneel</string>
-    <string name="calendar_external_email">E-mailadres externe deelnemer</string>
-    <string name="calendar_external_add">Toevoegen</string>
     <string name="calendar_private_event">Privéafspraak</string>
     <string name="calendar_private_event_hint">Niet-deelnemers zien alleen de bezette tijd, zonder details of deelnamelink</string>
     <string name="event_private_redacted">Je bent geen deelnemer; de afspraakdetails zijn verborgen.</string>

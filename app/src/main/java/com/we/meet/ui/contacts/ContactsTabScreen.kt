@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -30,6 +31,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -38,6 +43,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.R
+import com.we.meet.WeMeetApp
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.core.directory.data.DepartmentDto
 import com.we.meet.core.directory.data.MemberDto
@@ -55,6 +61,8 @@ fun ContactsTabScreen(
 ) {
     val vm: ContactsViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
+    val app = LocalContext.current.applicationContext as WeMeetApp
+    var showExternalContacts by remember { mutableStateOf(false) }
 
     // System back clears an active search first, then pops one drill level —
     // otherwise back while searching would leave the tab entirely.
@@ -112,6 +120,7 @@ fun ContactsTabScreen(
                     item {
                         StarredEntryRow(onClick = onOpenStarred)
                         MyGroupsEntryRow(onClick = onOpenMyGroups)
+                        ExternalContactsEntryRow(onClick = { showExternalContacts = true })
                         HorizontalDivider(
                             color = MaterialTheme.colorScheme.outlineVariant,
                             modifier = Modifier.padding(start = Dimens.DividerIndent),
@@ -172,6 +181,13 @@ fun ContactsTabScreen(
                 }
             }
         }
+    }
+
+    if (showExternalContacts) {
+        ExternalContactsSheet(
+            repository = app.directoryRepository,
+            onDismiss = { showExternalContacts = false },
+        )
     }
 }
 
@@ -262,6 +278,36 @@ private fun MyGroupsEntryRow(onClick: () -> Unit) {
         )
         Text(
             text = stringResource(R.string.contacts_my_groups),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = Dimens.ScreenPadding),
+        )
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun ExternalContactsEntryRow(onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
+    ) {
+        Icon(
+            Icons.Filled.PersonAdd,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(Dimens.IconMedium),
+        )
+        Text(
+            text = stringResource(R.string.external_contacts_title),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier
                 .weight(1f)

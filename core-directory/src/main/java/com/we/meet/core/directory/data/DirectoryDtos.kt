@@ -68,12 +68,52 @@ data class MemberDto(
      * 与 [isStarred] **相互独立**:可以只开一个。
      */
     @Json(name = "special_alert") val specialAlert: Boolean = false,
+    /** Client-side marker for accepted cross-organization contacts. */
+    val external: Boolean = false,
 ) {
     val displayName: String
         get() = fullName?.takeIf { it.isNotBlank() }
             ?: shortName?.takeIf { it.isNotBlank() }
             ?: email.orEmpty()
 }
+
+@JsonClass(generateAdapter = true)
+data class ExternalOrganizationDto(
+    val id: String,
+    val name: String? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class ExternalContactDto(
+    @Json(name = "relationship_id") val relationshipId: String? = null,
+    val id: String,
+    @Json(name = "full_name") val fullName: String? = null,
+    @Json(name = "short_name") val shortName: String? = null,
+    @Json(name = "avatar_url") val avatarUrl: String? = null,
+    val organization: ExternalOrganizationDto? = null,
+    val status: String = "none",
+    val direction: String = "none",
+    @Json(name = "requested_at") val requestedAt: String? = null,
+) {
+    val displayName: String
+        get() = fullName?.takeIf { it.isNotBlank() }
+            ?: shortName?.takeIf { it.isNotBlank() }
+            ?: id
+
+    fun toMember() = MemberDto(
+        id = id,
+        fullName = fullName,
+        shortName = shortName,
+        avatarUrl = avatarUrl,
+        department = organization?.let { DeptRefDto(it.id, it.name) },
+        external = true,
+    )
+}
+
+@JsonClass(generateAdapter = true)
+data class ExternalContactRequestBody(
+    @Json(name = "target_user_id") val targetUserId: String,
+)
 
 /** One row of GET directory/contact-prefs/ — flags only, no card fields. */
 @JsonClass(generateAdapter = true)

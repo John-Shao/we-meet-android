@@ -78,6 +78,27 @@ class DirectoryRepository(private val api: DirectoryApi) {
             api.setContactPref(userId, body)
         }
 
+    suspend fun listExternalContacts(): Result<List<ExternalContactDto>> =
+        runCatching { api.listExternalContacts() }
+
+    suspend fun listExternalContactRequests(): Result<List<ExternalContactDto>> =
+        runCatching { api.listExternalContactRequests() }
+
+    suspend fun searchExternalAccounts(query: String): Result<List<ExternalContactDto>> =
+        runCatching { api.searchExternalAccounts(query.trim()) }
+
+    suspend fun sendExternalContactRequest(userId: String): Result<ExternalContactDto> =
+        runCatching { api.sendExternalContactRequest(ExternalContactRequestBody(userId)) }
+
+    suspend fun acceptExternalContactRequest(id: String): Result<ExternalContactDto> =
+        runCatching { api.acceptExternalContactRequest(id) }
+
+    suspend fun declineExternalContactRequest(id: String): Result<ExternalContactDto> =
+        runCatching { api.declineExternalContactRequest(id) }
+
+    suspend fun removeExternalContact(id: String): Result<Unit> =
+        runCatching { api.removeExternalContact(id) }
+
     private fun PagedMembersDto.toPage(page: Int) = MemberPage(
         members = results,
         hasMore = next != null,
