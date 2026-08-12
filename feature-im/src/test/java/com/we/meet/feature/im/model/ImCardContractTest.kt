@@ -66,6 +66,22 @@ class ImCardContractTest {
     }
 
     @Test
+    fun `parses invitation and removal cards`() {
+        val invited = parse("event-card", "event_card_invited") as MessageContent.EventCard
+        val removed = parse("event-card", "event_card_removed") as MessageContent.EventCard
+        assertEquals("invited", invited.kind)
+        assertEquals("removed", removed.kind)
+    }
+
+    @Test
+    fun `parses an RSVP reply card`() {
+        val card = parse("event-card", "event_card_rsvp_changed") as MessageContent.EventCard
+        assertEquals("rsvp_changed", card.kind)
+        assertEquals("李四", card.responderName)
+        assertEquals("accepted", card.rsvpStatus)
+    }
+
+    @Test
     fun `parses a time_changed card with the previous window`() {
         val card = parse("event-card", "event_card_time_changed") as MessageContent.EventCard
         assertEquals("time_changed", card.kind)
@@ -158,8 +174,11 @@ class ImCardContractTest {
         val byType = mapOf(
             "event-card" to listOf(
                 "event_card_created",
+                "event_card_invited",
                 "event_card_time_changed",
                 "event_card_attendees_changed",
+                "event_card_removed",
+                "event_card_rsvp_changed",
                 "event_card_cancelled",
                 "event_card_recurrence_time_changed",
                 "event_card_recurrence_cancelled",

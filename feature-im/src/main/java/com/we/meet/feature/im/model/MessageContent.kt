@@ -87,7 +87,7 @@ sealed interface MessageContent {
         val allDay: Boolean = false,
         val attendeeCount: Int = 0,
         val organizerName: String = "",
-        /** created | time_changed | attendees_changed | cancelled */
+        /** created | invited | time_changed | attendees_changed | removed | rsvp_changed | cancelled */
         val kind: String = "created",
         /**
          * kind=time_changed 时的**改期前**时间窗。后端一直在发这两个键,App 端
@@ -102,6 +102,9 @@ sealed interface MessageContent {
         /** kind=attendees_changed 时的增减人数(缺省 0 = 后端没发这一项)。 */
         val addedCount: Int = 0,
         val removedCount: Int = 0,
+        /** kind=rsvp_changed 时的回复人和状态。 */
+        val responderName: String = "",
+        val rsvpStatus: String = "",
     ) : MessageContent
 
     /**
@@ -236,6 +239,12 @@ object MessageContentParser {
                     .orEmpty(),
                 addedCount = it.optInt("added_count", 0),
                 removedCount = it.optInt("removed_count", 0),
+                responderName = it.optString("responder_name"),
+                rsvpStatus = it.optString("rsvp_status")
+                    .takeIf { status ->
+                        status in setOf("needs_action", "accepted", "declined", "tentative")
+                    }
+                    .orEmpty(),
             )
         }
         "doc-card" -> parseJson(contentType, body) {

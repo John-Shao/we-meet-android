@@ -46,13 +46,34 @@ internal fun EventCardBubble(
     onLongPress: (() -> Unit)?,
     onOpen: () -> Unit,
 ) {
-    val cancelled = content.kind == "cancelled"
+    val inactive = content.kind == "cancelled" || content.kind == "removed"
     val badge = when (content.kind) {
+        "invited" -> stringResource(R.string.im_event_card_invited)
         "time_changed" -> stringResource(R.string.im_event_card_time_changed)
         "attendees_changed" -> stringResource(R.string.im_event_card_attendees_changed)
+        "removed" -> stringResource(R.string.im_event_card_removed)
+        "rsvp_changed" -> stringResource(R.string.im_event_card_rsvp_changed)
         "cancelled" -> stringResource(R.string.im_event_card_cancelled)
         else -> null
     }
+    val rsvpStatusLabel = when (content.rsvpStatus) {
+        "needs_action" -> stringResource(R.string.im_event_card_rsvp_needs_action)
+        "accepted" -> stringResource(R.string.im_event_card_rsvp_accepted)
+        "declined" -> stringResource(R.string.im_event_card_rsvp_declined)
+        "tentative" -> stringResource(R.string.im_event_card_rsvp_tentative)
+        else -> null
+    }
+    val rsvpReply = if (
+        content.kind == "rsvp_changed" &&
+        content.responderName.isNotBlank() &&
+        rsvpStatusLabel != null
+    ) {
+        stringResource(
+            R.string.im_event_card_rsvp_reply,
+            content.responderName,
+            rsvpStatusLabel,
+        )
+    } else null
     val recurrenceScopeLabel = when (content.recurrenceScope) {
         "one" -> stringResource(R.string.im_event_card_scope_one)
         "following" -> stringResource(R.string.im_event_card_scope_following)
@@ -94,7 +115,7 @@ internal fun EventCardBubble(
                     .width(Dimens.Chat.CardAccentBarWidth)
                     .fillMaxHeight()
                     .background(
-                        if (cancelled) MaterialTheme.colorScheme.outlineVariant
+                        if (inactive) MaterialTheme.colorScheme.outlineVariant
                         else MaterialTheme.colorScheme.primary,
                     ),
             )
@@ -103,7 +124,7 @@ internal fun EventCardBubble(
                     Icon(
                         Icons.Filled.CalendarMonth,
                         contentDescription = null,
-                        tint = if (cancelled) MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = if (inactive) MaterialTheme.colorScheme.onSurfaceVariant
                         else MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(Dimens.IconTiny),
                     )
@@ -116,7 +137,7 @@ internal fun EventCardBubble(
                         fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        textDecoration = if (cancelled) TextDecoration.LineThrough else null,
+                        textDecoration = if (inactive) TextDecoration.LineThrough else null,
                         modifier = Modifier.weight(1f, fill = false),
                     )
                     if (badge != null) {
@@ -124,12 +145,12 @@ internal fun EventCardBubble(
                         Text(
                             text = badge,
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (cancelled) MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (inactive) MaterialTheme.colorScheme.onSurfaceVariant
                             else MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .background(
                                     MaterialTheme.colorScheme.primary.copy(
-                                        alpha = if (cancelled) 0.06f else 0.10f,
+                                        alpha = if (inactive) 0.06f else 0.10f,
                                     ),
                                     RoundedCornerShape(Dimens.CornerXs),
                                 )
@@ -157,6 +178,15 @@ internal fun EventCardBubble(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textDecoration = TextDecoration.LineThrough,
+                        modifier = Modifier.padding(top = Dimens.SpaceXs),
+                    )
+                }
+                if (rsvpReply != null) {
+                    Text(
+                        text = rsvpReply,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(top = Dimens.SpaceXs),
                     )
                 }

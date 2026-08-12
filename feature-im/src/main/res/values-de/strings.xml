@@ -246,8 +246,16 @@
     <string name="im_event_card_meta">%1$d attendees · Organizer %2$s</string>
     <string name="im_event_card_view">View details</string>
     <string name="im_event_card_all_day">All day</string>
+    <string name="im_event_card_invited">Du bist eingeladen</string>
     <string name="im_event_card_time_changed">Rescheduled</string>
     <string name="im_event_card_attendees_changed">Attendees changed</string>
+    <string name="im_event_card_removed">Du wurdest entfernt</string>
+    <string name="im_event_card_rsvp_changed">Antwort aktualisiert</string>
+    <string name="im_event_card_rsvp_reply">%1$s: %2$s</string>
+    <string name="im_event_card_rsvp_needs_action">Keine Antwort</string>
+    <string name="im_event_card_rsvp_accepted">Angenommen</string>
+    <string name="im_event_card_rsvp_declined">Abgelehnt</string>
+    <string name="im_event_card_rsvp_tentative">Vielleicht</string>
     <string name="im_event_card_cancelled">Cancelled</string>
     <string name="im_event_card_scope_one">Nur dieser Termin</string>
     <string name="im_event_card_scope_following">Dieser und alle folgenden Termine</string>
