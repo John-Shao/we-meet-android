@@ -1,6 +1,7 @@
 package com.we.meet.data.api
 
 import com.we.meet.data.api.dto.CalendarEventDto
+import com.we.meet.data.api.dto.CalendarPreferenceDto
 import com.we.meet.data.api.dto.CalendarAccessGrantDto
 import com.we.meet.data.api.dto.CalendarSubscriptionDto
 import com.we.meet.data.api.dto.CreateEventRequest
@@ -22,6 +23,7 @@ import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
+import okhttp3.RequestBody
 
 /**
  * Calendar / scheduling endpoints (core/api/calendar.py). List returns events
@@ -29,6 +31,13 @@ import retrofit2.http.Query
  * `scheduled_at = start_at` and grants every attendee access.
  */
 interface CalendarApi {
+
+    @GET("api/v1.0/calendar-preferences/me/")
+    suspend fun getCalendarPreference(): CalendarPreferenceDto
+
+    /** RequestBody is intentional: it preserves JSON null when clearing the default reminder. */
+    @PATCH("api/v1.0/calendar-preferences/me/")
+    suspend fun updateCalendarPreference(@Body body: RequestBody): CalendarPreferenceDto
 
     @GET("api/v1.0/personal-calendars/mine/")
     suspend fun getMyCalendar(): PersonalCalendarDto
@@ -44,6 +53,8 @@ interface CalendarApi {
         @Path("id") id: String,
         @Query("start") start: String? = null,
         @Query("end") end: String? = null,
+        @Query("date_start") dateStart: String? = null,
+        @Query("date_end") dateEnd: String? = null,
     ): List<CalendarEventDto>
 
     @GET("api/v1.0/calendar-access-grants/")
@@ -81,6 +92,8 @@ interface CalendarApi {
         /** ISO 8601 window (overlap filter, list-only) — narrows to the visible months. */
         @Query("start") start: String? = null,
         @Query("end") end: String? = null,
+        @Query("date_start") dateStart: String? = null,
+        @Query("date_end") dateEnd: String? = null,
     ): PagedCalendarEventsDto
 
     @GET("api/v1.0/calendar-events/{id}/")

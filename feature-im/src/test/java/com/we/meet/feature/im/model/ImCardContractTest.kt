@@ -66,6 +66,16 @@ class ImCardContractTest {
     }
 
     @Test
+    fun `parses canonical dates from an all-day card`() {
+        val card = parse("event-card", "event_card_all_day") as MessageContent.EventCard
+        assertTrue(card.allDay)
+        assertEquals("2026-08-12", card.startDate)
+        assertEquals("2026-08-14", card.endDate)
+        assertEquals("2026-08-10", card.oldStartDate)
+        assertEquals("2026-08-12", card.oldEndDate)
+    }
+
+    @Test
     fun `parses a redacted private card`() {
         val card = parse("event-card", "event_card_private") as MessageContent.EventCard
         assertEquals("private", card.visibility)
@@ -183,6 +193,7 @@ class ImCardContractTest {
         val byType = mapOf(
             "event-card" to listOf(
                 "event_card_created",
+                "event_card_all_day",
                 "event_card_private",
                 "event_card_invited",
                 "event_card_time_changed",

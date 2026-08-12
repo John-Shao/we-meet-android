@@ -123,7 +123,9 @@ fun FreeBusyCompareScreen(
     onCreateEvent: (startEpochSecond: Long, endEpochSecond: Long, attendeeIds: List<String>) -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
-    val zone = remember { ZoneId.systemDefault() }
+    val timezoneMode by app.settingsStore.calendarTimezoneMode.collectAsStateWithLifecycle()
+    val fixedTimezone by app.settingsStore.calendarFixedTimezone.collectAsStateWithLifecycle()
+    val zone = remember(timezoneMode, fixedTimezone) { app.settingsStore.calendarZoneId() }
     val workingHours by app.settingsStore.workingHours.collectAsStateWithLifecycle()
 
     // ── 身份(拉一次):me 优先 + 目录补全;失败的列退 id 前 8 位。 ──
@@ -167,7 +169,7 @@ fun FreeBusyCompareScreen(
     }
 
     // ── 日期 + 勾选 → 忙闲重拉。busyMap 缺 key = 不可见。 ──
-    var day by remember { mutableStateOf(LocalDate.now()) }
+    var day by remember(zone) { mutableStateOf(LocalDate.now(zone)) }
     var busyMap by remember { mutableStateOf<Map<String, List<BusyIntervalDto>>?>(null) }
     // Distinguish a fetch failure from "everyone's calendar is invisible": the
     // old code degraded failures to emptyMap(), which read as unavailable and
@@ -291,8 +293,8 @@ fun FreeBusyCompareScreen(
         else suggestCommonSlots(
             people = peopleBusy,
             durationMin = defaultDurationMin,
-            nowMinuteOfDay = if (day == LocalDate.now()) {
-                LocalTime.now().let { it.hour * 60 + it.minute }
+            nowMinuteOfDay = if (day == LocalDate.now(zone)) {
+                LocalTime.now(zone).let { it.hour * 60 + it.minute }
             } else null,
         )
     }
@@ -444,7 +446,7 @@ fun FreeBusyCompareScreen(
                 IconButton(onClick = { day = day.minusDays(1) }) {
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null)
                 }
-                TextButton(onClick = { day = LocalDate.now() }) {
+                TextButton(onClick = { day = LocalDate.now(zone) }) {
                     Text(stringResource(R.string.calendar_today))
                 }
                 IconButton(onClick = { day = day.plusDays(1) }) {
@@ -483,8 +485,8 @@ fun FreeBusyCompareScreen(
                             scrollState = scrollState,
                             workingStartMin = workingHours.startMin,
                             workingEndMin = workingHours.endMin,
-                            nowMinute = if (day == LocalDate.now()) {
-                                LocalTime.now().let { it.hour * 60 + it.minute }
+                            nowMinute = if (day == LocalDate.now(zone)) {
+                                LocalTime.now(zone).let { it.hour * 60 + it.minute }
                             } else null,
                             disabledColumn = { i ->
                                 busyMap != null &&

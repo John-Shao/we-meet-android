@@ -321,6 +321,10 @@
     <string name="reminder_load_error">Couldn\'t load reminders</string>
     <!-- P8: calendar settings page -->
     <string name="calendar_settings_title">Calendar settings</string>
+    <string name="calendar_settings_timezone_mode">Display timezone</string>
+    <string name="calendar_settings_fixed_timezone">Fixed timezone</string>
+    <string name="calendar_timezone_auto">Automatic (device)</string>
+    <string name="calendar_timezone_fixed">Fixed across devices</string>
     <string name="calendar_sharing_title">Calendar sharing</string>
     <string name="calendar_sharing_manage">Manage</string>
     <string name="calendar_sharing_org_default">Organization default</string>
@@ -365,6 +369,8 @@
     <string name="calendar_discard_message">You have unsaved changes. Discard them?</string>
     <string name="calendar_discard_ok">Discard</string>
     <string name="calendar_field_start">Starts</string>
+    <string name="calendar_field_timezone">Event timezone</string>
+    <string name="calendar_all_day_timezone_hint">All-day dates stay unchanged when viewed in another timezone.</string>
     <string name="calendar_field_end">Ends</string>
     <string name="calendar_field_all_day">All day</string>
     <string name="calendar_field_reminder">Reminder</string>

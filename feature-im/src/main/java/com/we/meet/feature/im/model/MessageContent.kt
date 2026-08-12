@@ -85,6 +85,8 @@ sealed interface MessageContent {
         val startIso: String,
         val endIso: String,
         val allDay: Boolean = false,
+        val startDate: String = "",
+        val endDate: String = "",
         val attendeeCount: Int = 0,
         val organizerName: String = "",
         /** private cards sent to a source conversation intentionally omit event details. */
@@ -99,6 +101,8 @@ sealed interface MessageContent {
          */
         val oldStartIso: String = "",
         val oldEndIso: String = "",
+        val oldStartDate: String = "",
+        val oldEndDate: String = "",
         /** one | following | all; blank for non-series cards and unknown values. */
         val recurrenceScope: String = "",
         /** kind=attendees_changed 时的增减人数(缺省 0 = 后端没发这一项)。 */
@@ -231,6 +235,8 @@ object MessageContentParser {
                 startIso = it.optString("start"),
                 endIso = it.optString("end"),
                 allDay = it.optBoolean("all_day", false),
+                startDate = it.optString("start_date"),
+                endDate = it.optString("end_date"),
                 attendeeCount = it.optInt("attendee_count", 0),
                 organizerName = it.optString("organizer_name"),
                 visibility = it.optString("visibility", "default")
@@ -239,6 +245,8 @@ object MessageContentParser {
                 kind = it.optString("kind", "created"),
                 oldStartIso = it.optString("old_start"),
                 oldEndIso = it.optString("old_end"),
+                oldStartDate = it.optString("old_start_date"),
+                oldEndDate = it.optString("old_end_date"),
                 recurrenceScope = it.optString("recurrence_scope")
                     .takeIf { scope -> scope in setOf("one", "following", "all") }
                     .orEmpty(),

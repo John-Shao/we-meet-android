@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.model.MessageContent
 import java.time.OffsetDateTime
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -90,13 +91,20 @@ internal fun EventCardBubble(
     // 日期格式随语言走(中文「M月d日」、英文「MMM d」),所以从资源取而不是写死。
     val datePattern = stringResource(R.string.im_fmt_month_day)
     val timeText = formatEventWhen(
-        content.startIso, content.endIso, content.allDay, allDayLabel, datePattern,
+        content.startIso, content.endIso, content.allDay, content.startDate, content.endDate,
+        allDayLabel, datePattern,
     )
     // 改期卡把**改期前**的时间窗划掉显示在新时间上方(与 Web 一致)。原先 App
     // 只有一个「时间已变更」徽章 —— 看得出变了,看不出从什么变成什么。
     val oldTimeText = if (content.kind == "time_changed") {
         formatEventWhen(
-            content.oldStartIso, content.oldEndIso, content.allDay, allDayLabel, datePattern,
+            startIso = content.oldStartIso,
+            endIso = content.oldEndIso,
+            allDay = content.allDay,
+            startDate = content.oldStartDate,
+            endDate = content.oldEndDate,
+            allDayLabel = allDayLabel,
+            datePattern = datePattern,
         )
     } else null
 
@@ -234,15 +242,28 @@ private fun formatEventWhen(
     startIso: String,
     endIso: String,
     allDay: Boolean,
+    startDate: String,
+    endDate: String,
     allDayLabel: String,
     datePattern: String,
 ): String? {
+    val dateFmt = DateTimeFormatter.ofPattern(datePattern)
+    if (allDay && startDate.isNotBlank()) {
+        val first = runCatching { LocalDate.parse(startDate) }.getOrNull()
+        val last = runCatching { LocalDate.parse(endDate).minusDays(1) }.getOrNull()
+        if (first != null) {
+            return if (last != null && last > first) {
+                "${first.format(dateFmt)} – ${last.format(dateFmt)} $allDayLabel"
+            } else {
+                "${first.format(dateFmt)} $allDayLabel"
+            }
+        }
+    }
     val zone = ZoneId.systemDefault()
     val s = runCatching { OffsetDateTime.parse(startIso).toInstant().atZone(zone) }
         .getOrNull() ?: return null
     val e = runCatching { OffsetDateTime.parse(endIso).toInstant().atZone(zone) }
         .getOrNull() ?: return null
-    val dateFmt = DateTimeFormatter.ofPattern(datePattern)
     val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
     if (allDay) return "${s.format(dateFmt)} $allDayLabel"
     return if (s.toLocalDate() == e.toLocalDate()) {

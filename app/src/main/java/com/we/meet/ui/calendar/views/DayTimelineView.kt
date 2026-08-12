@@ -26,6 +26,7 @@ import com.we.meet.R
 import com.we.meet.ui.calendar.EventUi
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 
 /**
  * P8 日视图:全天条(chips)+ 单列时间轴。点日程块进详情,点空白先落一个
@@ -41,6 +42,7 @@ fun DayTimelineView(
     visibleEndMin: Int = 24 * 60,
     workingStartMin: Int = 9 * 60,
     workingEndMin: Int = 18 * 60,
+    zoneId: ZoneId = ZoneId.systemDefault(),
     /** P8「降低已结束日程的亮度」:非空时,结束早于该时刻的块降透明度。 */
     dimPastNow: java.time.ZonedDateTime? = null,
     /** 当前预选时段(仅当它就是 [date] 当天时才画)。 */
@@ -64,7 +66,7 @@ fun DayTimelineView(
         events.mapNotNull { it.toTimeBlockOrNull(date, dimPastNow, selfUserId) }
     }
     val allDayEvents = remember(date, events) { events.filter { it.allDay } }
-    val isToday = date == LocalDate.now()
+    val isToday = date == LocalDate.now(zoneId)
 
     val hourHeight = Dimens.Calendar.HourHeight
     val scrollState = rememberScrollState()
@@ -74,7 +76,7 @@ fun DayTimelineView(
     // 首帧滚到 08:00(今天则当前时刻上方一点)。
     LaunchedEffect(date, visibleStartMin, visibleEndMin) {
         val anchorMinute = if (isToday) {
-            (LocalTime.now().hour * 60 + LocalTime.now().minute - 60)
+            (LocalTime.now(zoneId).hour * 60 + LocalTime.now(zoneId).minute - 60)
         } else 8 * 60
         val offset = (anchorMinute.coerceIn(visibleStartMin, visibleEndMin) - visibleStartMin)
         scrollState.scrollTo(with(density) { (hourHeight * (offset / 60f)).toPx() }.toInt())
@@ -133,7 +135,9 @@ fun DayTimelineView(
             visibleEndMin = visibleEndMin,
             workingStartMin = workingStartMin,
             workingEndMin = workingEndMin,
-            nowMinute = if (isToday) LocalTime.now().let { it.hour * 60 + it.minute } else null,
+            nowMinute = if (isToday) {
+                LocalTime.now(zoneId).let { it.hour * 60 + it.minute }
+            } else null,
             onBlockTap = { _, key -> onEventClick(key) },
             onSlotTap = { _, minute -> onSlotTap(minute) },
             // 日视图只有一列:同日的草稿投到 col 0,回调再补回日期。
@@ -152,7 +156,7 @@ fun DayTimelineView(
             selectedBlockKey = selectedEventId,
             onBlockSelect = onEventSelect,
             onRailTap = onRailTap,
-            railHeader = { CalendarTimeZoneHeader(date) },
+            railHeader = { CalendarTimeZoneHeader(date, zoneId) },
         )
     }
 }

@@ -1056,6 +1056,10 @@ fun AppNav() {
                         put("start", dto.startAt)
                         put("end", dto.endAt)
                         put("all_day", dto.allDay)
+                        if (dto.allDay && dto.startDate != null && dto.endDate != null) {
+                            put("start_date", dto.startDate)
+                            put("end_date", dto.endDate)
+                        }
                         put("attendee_count", if (dto.visibility == "private") 0 else dto.attendees.size)
                         put(
                             "organizer_name",

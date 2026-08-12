@@ -290,6 +290,10 @@
     <string name="reminder_empty">No events today or tomorrow</string>
     <!-- P8: calendar settings page -->
     <string name="calendar_settings_title">Calendar settings</string>
+    <string name="calendar_settings_timezone_mode">Anzeigezeitzone</string>
+    <string name="calendar_settings_fixed_timezone">Feste Zeitzone</string>
+    <string name="calendar_timezone_auto">Automatisch (Gerät)</string>
+    <string name="calendar_timezone_fixed">Geräteübergreifend fest</string>
     <string name="calendar_sharing_title">Kalenderfreigabe</string>
     <string name="calendar_sharing_manage">Verwalten</string>
     <string name="calendar_sharing_org_default">Organisationsstandard</string>
@@ -325,6 +329,8 @@
     <string name="calendar_create_title">Neuer Termin</string>
     <string name="calendar_field_title_hint">Termintitel</string>
     <string name="calendar_field_start">Beginn</string>
+    <string name="calendar_field_timezone">Terminzeitzone</string>
+    <string name="calendar_all_day_timezone_hint">Ganztägige Datumsangaben bleiben beim Zeitzonenwechsel unverändert.</string>
     <string name="calendar_field_end">Ende</string>
     <string name="calendar_field_all_day">Ganztägig</string>
     <string name="calendar_field_reminder">Erinnerung</string>

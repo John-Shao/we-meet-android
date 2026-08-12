@@ -113,17 +113,22 @@ fun CreateEventScreen(
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val workingHours by app.settingsStore.workingHours.collectAsStateWithLifecycle()
+    val calendarTimezoneMode by app.settingsStore.calendarTimezoneMode.collectAsStateWithLifecycle()
+    val calendarFixedTimezone by app.settingsStore.calendarFixedTimezone.collectAsStateWithLifecycle()
+    val calendarZone = remember(calendarTimezoneMode, calendarFixedTimezone) {
+        app.settingsStore.calendarZoneId()
+    }
     val scope = rememberCoroutineScope()
     val isEdit = editEventId != null
 
-    val initialDate = initialEpochDay?.let(LocalDate::ofEpochDay) ?: LocalDate.now()
-    val zoneNow = ZoneId.systemDefault()
+    val initialDate = initialEpochDay?.let(LocalDate::ofEpochDay) ?: LocalDate.now(calendarZone)
+    val zoneNow = calendarZone
     // Default slot: P8 精确预填 > next full hour (today) / 09:00 (another day), 1h long.
     val defaultStart = remember {
         initialStartEpochSecond?.let {
             Instant.ofEpochSecond(it).atZone(zoneNow).toLocalDateTime()
-        } ?: if (initialDate == LocalDate.now()) {
-            LocalDateTime.now().plusHours(1).withMinute(0).withSecond(0).withNano(0)
+        } ?: if (initialDate == LocalDate.now(calendarZone)) {
+            LocalDateTime.now(calendarZone).plusHours(1).withMinute(0).withSecond(0).withNano(0)
         } else {
             initialDate.atTime(9, 0)
         }
@@ -152,6 +157,7 @@ fun CreateEventScreen(
     var attendees by remember { mutableStateOf<List<PickedMember>>(emptyList()) }
     var attendeeRoles by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var visibility by remember { mutableStateOf("default") }
+    var eventTimezone by remember { mutableStateOf(calendarZone.id) }
     // P8:编辑态标记重复日程(加载详情时置位)——重复日程不开放参与者编辑。
     var editIsRecurring by remember { mutableStateOf(false) }
 
@@ -175,6 +181,10 @@ fun CreateEventScreen(
     // Edit mode starts not-ready until the event loads.
     var loaded by remember { mutableStateOf(!isEdit) }
     var showDiscardConfirm by remember { mutableStateOf(false) }
+
+    androidx.compose.runtime.LaunchedEffect(calendarZone.id, isEdit) {
+        if (!isEdit) eventTimezone = calendarZone.id
+    }
 
     // Create mode: treat any user-entered content as unsaved work worth
     // confirming before a back-out. (Edit mode prefills the form, so a
@@ -230,19 +240,28 @@ fun CreateEventScreen(
         if (editEventId == null) return@LaunchedEffect
         runCatching { app.apiClient.calendarApi.getEvent(editEventId) }
             .onSuccess { e ->
-                val zone = ZoneId.systemDefault()
+                val zone = calendarZone
                 // All-day events are anchored to their AUTHORED zone's midnight;
                 // parse them in that zone (device-TZ parsing shifts the shown day
                 // ±1 vs the calendar grid — same bug fixed on the detail page).
                 // Timed events keep device wall-clock, matching the timed pickers.
                 val eventZone = runCatching { ZoneId.of(e.timezone) }.getOrNull() ?: zone
-                val parseZone = if (e.allDay) eventZone else zone
+                val parseZone = eventZone
                 title = e.title
                 description = e.description
                 visibility = e.visibility.takeIf { it in EVENT_VISIBILITIES } ?: "default"
                 allDay = e.allDay
-                val startLdt = OffsetDateTime.parse(e.startAt).atZoneSameInstant(parseZone).toLocalDateTime()
-                val endLdt = OffsetDateTime.parse(e.endAt).atZoneSameInstant(parseZone).toLocalDateTime()
+                eventTimezone = eventZone.id
+                val startLdt = if (e.allDay && e.startDate != null) {
+                    LocalDate.parse(e.startDate).atStartOfDay()
+                } else {
+                    OffsetDateTime.parse(e.startAt).atZoneSameInstant(parseZone).toLocalDateTime()
+                }
+                val endLdt = if (e.allDay && e.endDate != null) {
+                    LocalDate.parse(e.endDate).atStartOfDay()
+                } else {
+                    OffsetDateTime.parse(e.endAt).atZoneSameInstant(parseZone).toLocalDateTime()
+                }
                 start = startLdt
                 // All-day end is stored exclusive (next midnight) → show inclusive last day.
                 end = if (e.allDay) endLdt.minusDays(1) else endLdt
@@ -286,7 +305,7 @@ fun CreateEventScreen(
             selfBusy = false
             return@LaunchedEffect
         }
-        val zone = ZoneId.systemDefault()
+        val zone = runCatching { ZoneId.of(eventTimezone) }.getOrDefault(calendarZone)
         val slotStart = start.atZone(zone).toInstant()
         val slotEnd = end.atZone(zone).toInstant()
         // 窗口取所选开始时刻当天,与 Web 一致(端点限制 ≤31 天)。
@@ -324,7 +343,7 @@ fun CreateEventScreen(
             roomConflict = false
             return@LaunchedEffect
         }
-        val zone = ZoneId.systemDefault()
+        val zone = runCatching { ZoneId.of(eventTimezone) }.getOrDefault(calendarZone)
         val startInstant = start.atZone(zone).toInstant()
         val endInstant = end.atZone(zone).toInstant()
         if (!endInstant.isAfter(startInstant)) {
@@ -342,15 +361,13 @@ fun CreateEventScreen(
 
     fun submit() {
         if (title.isBlank() || submitting) return
-        val zone = ZoneId.systemDefault()
-        val (startInstant, endInstant) = if (allDay) {
-            // Web convention: local midnight → exclusive next-midnight.
-            start.toLocalDate().atStartOfDay(zone).toInstant() to
-                end.toLocalDate().plusDays(1).atStartOfDay(zone).toInstant()
-        } else {
-            start.atZone(zone).toInstant() to end.atZone(zone).toInstant()
-        }
-        if (!endInstant.isAfter(startInstant)) {
+        val zone = runCatching { ZoneId.of(eventTimezone) }.getOrDefault(calendarZone)
+        val startInstant = if (allDay) null else start.atZone(zone).toInstant()
+        val endInstant = if (allDay) null else end.atZone(zone).toInstant()
+        if (
+            (allDay && end.toLocalDate().isBefore(start.toLocalDate())) ||
+            (!allDay && (startInstant == null || endInstant == null || !endInstant.isAfter(startInstant)))
+        ) {
             errorRes = R.string.calendar_error_end_before_start
             return
         }
@@ -370,13 +387,16 @@ fun CreateEventScreen(
                         UpdateEventRequest(
                             title = title.trim(),
                             description = description.trim(),
-                            startAt = isoUtc(startInstant),
-                            endAt = isoUtc(endInstant),
+                            startAt = startInstant?.let(::isoUtc),
+                            endAt = endInstant?.let(::isoUtc),
+                            startDate = start.toLocalDate().toString().takeIf { allDay },
+                            endDate = end.toLocalDate().plusDays(1).toString().takeIf { allDay },
                             allDay = allDay,
                             reminders = reminderMinutes?.let { listOf(it) } ?: emptyList(),
-                            // P1-8:结构化参与者携带 required/optional 和外部邮箱。
+                            // P1-8:结构化参与者携带 required/optional；外部联系人使用真实 user_id。
                             attendeeEntries = if (editIsRecurring) null else attendeeEntries,
                             visibility = visibility,
+                            timezone = zone.id,
                             visibilityExplicit = true,
                             editScope = editScope,
                             // P9:全天不允许带房间;"" = 释放(不能用 null,
@@ -391,8 +411,10 @@ fun CreateEventScreen(
                     app.apiClient.calendarApi.createEvent(
                         CreateEventRequest(
                             title = title.trim(),
-                            startAt = isoUtc(startInstant),
-                            endAt = isoUtc(endInstant),
+                            startAt = startInstant?.let(::isoUtc),
+                            endAt = endInstant?.let(::isoUtc),
+                            startDate = start.toLocalDate().toString().takeIf { allDay },
+                            endDate = end.toLocalDate().plusDays(1).toString().takeIf { allDay },
                             allDay = allDay,
                             reminders = reminderMinutes?.let { listOf(it) } ?: emptyList(),
                             attendeeEntries = attendeeEntries,
@@ -502,6 +524,17 @@ fun CreateEventScreen(
                 allDay = allDay,
                 onChange = { end = it },
             )
+            TimezoneDropdown(
+                selected = eventTimezone,
+                onSelect = { eventTimezone = it },
+            )
+            if (allDay) {
+                Text(
+                    text = stringResource(R.string.calendar_all_day_timezone_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             HorizontalDivider()
 
             ReminderDropdown(
@@ -519,6 +552,7 @@ fun CreateEventScreen(
                 if (repeat.isNotEmpty()) {
                     RepeatUntilRow(
                         until = repeatUntil,
+                        defaultDate = start.toLocalDate().plusMonths(1),
                         onPick = { repeatUntil = it },
                     )
                 }
@@ -802,7 +836,7 @@ fun CreateEventScreen(
     }
 
     if (showRoomPicker) {
-        val zone = ZoneId.systemDefault()
+        val zone = runCatching { ZoneId.of(eventTimezone) }.getOrDefault(calendarZone)
         MeetingRoomPicker(
             apiClient = app.apiClient,
             startIso = isoUtc(start.atZone(zone).toInstant()),
@@ -1003,7 +1037,11 @@ private fun RepeatDropdown(selected: String, onSelect: (String) -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RepeatUntilRow(until: LocalDate?, onPick: (LocalDate?) -> Unit) {
+private fun RepeatUntilRow(
+    until: LocalDate?,
+    defaultDate: LocalDate,
+    onPick: (LocalDate?) -> Unit,
+) {
     var showDate by remember { mutableStateOf(false) }
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -1031,7 +1069,7 @@ private fun RepeatUntilRow(until: LocalDate?, onPick: (LocalDate?) -> Unit) {
     // M3 date picker (matches DateTimeRow) — the earlier platform dialog was
     // the only non-M3 picker on this screen.
     if (showDate) {
-        val base = until ?: LocalDate.now().plusMonths(1)
+        val base = until ?: defaultDate
         val state = rememberDatePickerState(
             initialSelectedDateMillis = base.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
         )
@@ -1097,6 +1135,41 @@ private fun ReminderDropdown(selectedMinutes: Int?, onSelect: (Int?) -> Unit) {
                         },
                     )
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TimezoneDropdown(selected: String, onSelect: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = Dimens.SpaceS),
+    ) {
+        OutlinedTextField(
+            value = selected,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(stringResource(R.string.calendar_field_timezone)) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable),
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            calendarTimezoneOptions(selected).forEach { timezone ->
+                DropdownMenuItem(
+                    text = { Text(timezone) },
+                    onClick = {
+                        onSelect(timezone)
+                        expanded = false
+                    },
+                )
             }
         }
     }

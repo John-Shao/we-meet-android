@@ -128,6 +128,9 @@ data class CalendarEventDto(
     /** ISO 8601 (UTC). */
     @Json(name = "start_at") val startAt: String = "",
     @Json(name = "end_at") val endAt: String = "",
+    /** Canonical half-open civil-date range for all-day events. */
+    @Json(name = "start_date") val startDate: String? = null,
+    @Json(name = "end_date") val endDate: String? = null,
     /** IANA zone the event was authored in — drives all-day date math. */
     val timezone: String = "UTC",
     @Json(name = "all_day") val allDay: Boolean = false,
@@ -172,8 +175,10 @@ data class PagedCalendarEventsDto(
 @JsonClass(generateAdapter = true)
 data class CreateEventRequest(
     val title: String,
-    @Json(name = "start_at") val startAt: String,
-    @Json(name = "end_at") val endAt: String,
+    @Json(name = "start_at") val startAt: String? = null,
+    @Json(name = "end_at") val endAt: String? = null,
+    @Json(name = "start_date") val startDate: String? = null,
+    @Json(name = "end_date") val endDate: String? = null,
     @Json(name = "all_day") val allDay: Boolean = false,
     val reminders: List<Int> = emptyList(),
     @Json(name = "attendee_ids") val attendeeIds: List<String>? = null,
@@ -209,13 +214,16 @@ data class CreateEventRequest(
 data class UpdateEventRequest(
     val title: String,
     val description: String,
-    @Json(name = "start_at") val startAt: String,
-    @Json(name = "end_at") val endAt: String,
+    @Json(name = "start_at") val startAt: String? = null,
+    @Json(name = "end_at") val endAt: String? = null,
+    @Json(name = "start_date") val startDate: String? = null,
+    @Json(name = "end_date") val endDate: String? = null,
     @Json(name = "all_day") val allDay: Boolean,
     val reminders: List<Int>,
     @Json(name = "attendee_ids") val attendeeIds: List<String>? = null,
     @Json(name = "attendee_entries") val attendeeEntries: List<AttendeeEntryRequest>? = null,
     val visibility: String,
+    val timezone: String? = null,
     /** Distinguishes an intentional default selection from a legacy client's omitted concept. */
     @Json(name = "visibility_explicit") val visibilityExplicit: Boolean = true,
     /**
@@ -256,3 +264,21 @@ data class RsvpRequest(val status: String)
  */
 @JsonClass(generateAdapter = true)
 data class RsvpResponseDto(val status: String = "")
+
+/** Account-wide calendar preferences. Shared fields mirror the Web cache. */
+@JsonClass(generateAdapter = true)
+data class CalendarPreferenceDto(
+    @Json(name = "timezone_mode") val timezoneMode: String = "auto",
+    val timezone: String? = null,
+    @Json(name = "week_start") val weekStart: String = "mon",
+    @Json(name = "default_duration_minutes") val defaultDurationMinutes: Int = 60,
+    @Json(name = "default_reminder_minutes") val defaultReminderMinutes: Int? = 10,
+    @Json(name = "dim_past") val dimPast: Boolean = true,
+    @Json(name = "show_weekend") val showWeekend: Boolean = false,
+    @Json(name = "working_start_minutes") val workingStartMinutes: Int = 9 * 60,
+    @Json(name = "working_end_minutes") val workingEndMinutes: Int = 18 * 60,
+    @Json(name = "calendar_time_range") val calendarTimeRange: String = "work",
+    @Json(name = "meeting_rooms_time_range") val meetingRoomsTimeRange: String = "work",
+    val initialized: Boolean = false,
+    val revision: Int = 0,
+)

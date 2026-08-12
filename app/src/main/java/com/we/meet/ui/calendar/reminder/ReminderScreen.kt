@@ -40,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.R
 import com.we.meet.design.R as DesignR
 import com.we.meet.ui.components.WeMeetTopBar
@@ -47,7 +48,6 @@ import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.WeMeetApp
 import com.we.meet.ui.calendar.EventUi
-import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.delay
@@ -67,30 +67,33 @@ fun ReminderScreen(
     onJoinSlug: (slug: String) -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
+    val timezoneMode by app.settingsStore.calendarTimezoneMode.collectAsStateWithLifecycle()
+    val fixedTimezone by app.settingsStore.calendarFixedTimezone.collectAsStateWithLifecycle()
+    val calendarZone = remember(timezoneMode, fixedTimezone) { app.settingsStore.calendarZoneId() }
 
     var window by remember { mutableStateOf<ReminderWindow?>(null) }
     // First-load failure: without this the screen spins forever on an offline
     // first paint (the poll loop only handled onSuccess).
     var loadFailed by remember { mutableStateOf(false) }
-    var now by remember { mutableStateOf(ZonedDateTime.now(ZoneId.systemDefault())) }
+    var now by remember(calendarZone) { mutableStateOf(ZonedDateTime.now(calendarZone)) }
     var refreshKey by remember { mutableStateOf(0) }
 
     LifecycleResumeEffect(Unit) {
         refreshKey += 1
         onPauseOrDispose { }
     }
-    LaunchedEffect(refreshKey) {
+    LaunchedEffect(refreshKey, calendarZone) {
         while (true) {
-            runCatching { loadReminderWindow(app.apiClient.calendarApi) }
+            runCatching { loadReminderWindow(app.apiClient.calendarApi, calendarZone) }
                 .onSuccess { window = it; loadFailed = false }
                 .onFailure { if (window == null) loadFailed = true }
             delay(60_000)
         }
     }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(calendarZone) {
         while (true) {
             delay(30_000)
-            now = ZonedDateTime.now(ZoneId.systemDefault())
+            now = ZonedDateTime.now(calendarZone)
         }
     }
 

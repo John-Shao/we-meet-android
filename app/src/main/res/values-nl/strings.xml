@@ -290,6 +290,10 @@
     <string name="reminder_empty">No events today or tomorrow</string>
     <!-- P8: calendar settings page -->
     <string name="calendar_settings_title">Calendar settings</string>
+    <string name="calendar_settings_timezone_mode">Weergavetijdzone</string>
+    <string name="calendar_settings_fixed_timezone">Vaste tijdzone</string>
+    <string name="calendar_timezone_auto">Automatisch (apparaat)</string>
+    <string name="calendar_timezone_fixed">Vast op alle apparaten</string>
     <string name="calendar_sharing_title">Agenda delen</string>
     <string name="calendar_sharing_manage">Beheren</string>
     <string name="calendar_sharing_org_default">Organisatiestandaard</string>
@@ -325,6 +329,8 @@
     <string name="calendar_create_title">Nieuwe afspraak</string>
     <string name="calendar_field_title_hint">Titel van de afspraak</string>
     <string name="calendar_field_start">Begin</string>
+    <string name="calendar_field_timezone">Tijdzone van afspraak</string>
+    <string name="calendar_all_day_timezone_hint">Datums van afspraken voor de hele dag blijven gelijk in andere tijdzones.</string>
     <string name="calendar_field_end">Einde</string>
     <string name="calendar_field_all_day">Hele dag</string>
     <string name="calendar_field_reminder">Herinnering</string>

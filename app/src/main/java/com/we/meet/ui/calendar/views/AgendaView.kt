@@ -44,8 +44,8 @@ fun AgendaView(
     onEventClick: (String) -> Unit,
     /** P8「降低已结束日程的亮度」:非空且日程已结束时整卡降透明度。 */
     dimPastNow: java.time.ZonedDateTime? = null,
+    today: LocalDate = LocalDate.now(),
 ) {
-    val today = LocalDate.now()
     val windowEndExclusive = anchorDate.plusYears(1)
 
     val days = remember(anchorDate, eventsByDay) {

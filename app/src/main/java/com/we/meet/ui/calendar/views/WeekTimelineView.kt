@@ -26,6 +26,7 @@ import com.we.meet.ui.calendar.EventUi
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -66,6 +67,7 @@ fun WeekTimelineView(
     visibleEndMin: Int = 24 * 60,
     workingStartMin: Int = 9 * 60,
     workingEndMin: Int = 18 * 60,
+    zoneId: ZoneId = ZoneId.systemDefault(),
     /** P8 日历设置:每周的第一天(默认周一,保持既有行为)。 */
     firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
     /** P8 日历设置:显示周末(默认 true;关闭 → 只列周一~周五 5 列)。 */
@@ -89,7 +91,7 @@ fun WeekTimelineView(
     /** 点左侧时刻刻度列 = 点在操作对象以外 → 收手。 */
     onRailTap: (() -> Unit)? = null,
 ) {
-    val today = LocalDate.now()
+    val today = LocalDate.now(zoneId)
     val days = remember(anchorDate, firstDayOfWeek, showWeekend) {
         weekColumnDays(anchorDate, firstDayOfWeek, showWeekend)
     }
@@ -123,7 +125,7 @@ fun WeekTimelineView(
         workingStartMin = workingStartMin,
         workingEndMin = workingEndMin,
         nowMinute = if (days.contains(today)) {
-            LocalTime.now().let { it.hour * 60 + it.minute }
+            LocalTime.now(zoneId).let { it.hour * 60 + it.minute }
         } else null,
         nowLineInColumn = { i -> days[i] == today },
         onBlockTap = { _, key -> onEventClick(key) },
@@ -156,7 +158,7 @@ fun WeekTimelineView(
         // 看;拖块跨列改日期不受影响。
         visibleColumnCount = visibleDays,
         revealColumnIndex = revealIndex,
-        railHeader = { CalendarTimeZoneHeader(anchorDate) },
+        railHeader = { CalendarTimeZoneHeader(anchorDate, zoneId) },
         // 星期条随网格横滚锁定同步(飞书样式):放进 scaffold 的列头槽。
         columnHeader = { i ->
             WeekDayHeader(

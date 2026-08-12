@@ -41,9 +41,9 @@ internal fun calendarTimeZoneLabel(
 }
 
 @Composable
-internal fun CalendarTimeZoneHeader(date: LocalDate) {
+internal fun CalendarTimeZoneHeader(date: LocalDate, zoneId: ZoneId = ZoneId.systemDefault()) {
     Text(
-        text = calendarTimeZoneLabel(date),
+        text = calendarTimeZoneLabel(date, zoneId),
         style = WeMeetTextStyles.LabelTiny,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1,

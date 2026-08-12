@@ -321,6 +321,10 @@
     <string name="reminder_load_error">提醒加载失败</string>
     <!-- P8: calendar settings page -->
     <string name="calendar_settings_title">日历设置</string>
+    <string name="calendar_settings_timezone_mode">显示时区</string>
+    <string name="calendar_settings_fixed_timezone">固定时区</string>
+    <string name="calendar_timezone_auto">自动（跟随设备）</string>
+    <string name="calendar_timezone_fixed">固定（跨设备同步）</string>
     <string name="calendar_sharing_title">日历共享</string>
     <string name="calendar_sharing_manage">管理</string>
     <string name="calendar_sharing_org_default">组织内默认权限</string>
@@ -365,6 +369,8 @@
     <string name="calendar_discard_message">你有未保存的内容，确定放弃？</string>
     <string name="calendar_discard_ok">放弃</string>
     <string name="calendar_field_start">开始</string>
+    <string name="calendar_field_timezone">日程时区</string>
+    <string name="calendar_all_day_timezone_hint">全天日程按日期保存，切换时区不会跨日。</string>
     <string name="calendar_field_end">结束</string>
     <string name="calendar_field_all_day">全天</string>
     <string name="calendar_field_reminder">提醒</string>

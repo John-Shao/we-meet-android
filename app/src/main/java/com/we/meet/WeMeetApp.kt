@@ -109,7 +109,9 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
         roomAiRepository = RoomAiRepository(apiClient.okHttp)
         qrLoginRepository = QrLoginRepository(apiClient.qrLoginApi)
         historyStore = HistoryStore(this)
-        settingsStore = SettingsStore(this)
+        settingsStore = SettingsStore(this).also {
+            it.bindCalendarApi(apiClient.calendarApi)
+        }
         directoryRepository = DirectoryRepository(DirectoryNetwork.directoryApi(this))
         // 逐联系人偏好(星标 / 特别提醒):进程级单例,通讯录与会话列表共享(见 ContactPrefs)。
         ContactPrefs.init(directoryRepository)

@@ -202,24 +202,31 @@ fun MainTabScreen(
     // P8「在消息列表提醒日程」(对标飞书,默认开):今日/明日窗口 60s 轮询,
     // 30s tick 刷倒计时角标;开关关闭即停拉并隐藏入口。
     val reminderEnabled by app.settingsStore.imReminderEntry.collectAsStateWithLifecycle()
+    val calendarTimezoneMode by app.settingsStore.calendarTimezoneMode.collectAsStateWithLifecycle()
+    val calendarFixedTimezone by app.settingsStore.calendarFixedTimezone.collectAsStateWithLifecycle()
+    val calendarZone = remember(calendarTimezoneMode, calendarFixedTimezone) {
+        app.settingsStore.calendarZoneId()
+    }
     var reminderWindow by remember { mutableStateOf<ReminderWindow?>(null) }
-    var reminderNow by remember { mutableStateOf(java.time.ZonedDateTime.now()) }
-    LaunchedEffect(reminderEnabled) {
+    var reminderNow by remember(calendarZone) {
+        mutableStateOf(java.time.ZonedDateTime.now(calendarZone))
+    }
+    LaunchedEffect(reminderEnabled, calendarZone) {
         if (!reminderEnabled) {
             reminderWindow = null
             return@LaunchedEffect
         }
         while (true) {
-            runCatching { loadReminderWindow(app.apiClient.calendarApi) }
+            runCatching { loadReminderWindow(app.apiClient.calendarApi, calendarZone) }
                 .onSuccess { reminderWindow = it }
             kotlinx.coroutines.delay(60_000)
         }
     }
-    LaunchedEffect(reminderEnabled) {
+    LaunchedEffect(reminderEnabled, calendarZone) {
         if (!reminderEnabled) return@LaunchedEffect
         while (true) {
             kotlinx.coroutines.delay(30_000)
-            reminderNow = java.time.ZonedDateTime.now()
+            reminderNow = java.time.ZonedDateTime.now(calendarZone)
         }
     }
     val reminderNearest =

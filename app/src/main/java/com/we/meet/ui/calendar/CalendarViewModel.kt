@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 
@@ -52,9 +54,17 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
 
     private val apiClient = (app as WeMeetApp).apiClient
     private val calendarApi = apiClient.calendarApi
+    private val settingsStore = (app as WeMeetApp).settingsStore
     private val busyTitle = app.getString(com.we.meet.R.string.calendar_busy)
 
-    private val _ui = MutableStateFlow(CalendarUiState(loading = true))
+    private val initialToday = LocalDate.now(settingsStore.calendarZoneId())
+    private val _ui = MutableStateFlow(
+        CalendarUiState(
+            monthAnchor = YearMonth.from(initialToday),
+            selectedDate = initialToday,
+            loading = true,
+        ),
+    )
     val ui: StateFlow<CalendarUiState> = _ui.asStateFlow()
 
     /** 拖动改期失败 —— 屏幕订阅后按原因弹对应 Snackbar。 */
@@ -62,7 +72,20 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
     val moveFailed: SharedFlow<MoveFailure> = _moveFailed.asSharedFlow()
 
     init {
+        settingsStore.synchronizeCalendarPreferences()
         refresh()
+        viewModelScope.launch {
+            combine(
+                settingsStore.calendarTimezoneMode,
+                settingsStore.calendarFixedTimezone,
+            ) { _, _ -> settingsStore.calendarZoneId() }
+                .distinctUntilChanged()
+                .collect { zone ->
+                    val today = LocalDate.now(zone)
+                    _ui.update { it.copy(selectedDate = today, monthAnchor = YearMonth.from(today)) }
+                    refresh()
+                }
+        }
         viewModelScope.launch {
             val me = runCatching { apiClient.userApi.getMe() }.getOrNull()?.id
             if (me != null) _ui.update { it.copy(selfUserId = me) }
@@ -75,7 +98,7 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
      * 会走到这里,后端还会再校验一次组织者身份。
      */
     fun moveEvent(eventId: String, date: LocalDate, startMin: Int, endMin: Int) {
-        val zone = ZoneId.systemDefault()
+        val zone = settingsStore.calendarZoneId()
         val newStart = date.atStartOfDay(zone).plusMinutes(startMin.toLong())
         val newEnd = date.atStartOfDay(zone).plusMinutes(endMin.toLong())
         val before = _ui.value.eventsByDay
@@ -121,8 +144,10 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
             _ui.update { it.copy(loading = it.eventsByDay.isEmpty(), error = false) }
             runCatching { fetchWindow(_ui.value) }
                 .onSuccess { events ->
+                    val zone = settingsStore.calendarZoneId()
                     val parsed = events.mapNotNull { event ->
-                        (if (event.detailsRedacted) event.copy(title = busyTitle) else event).toParsed()
+                        (if (event.detailsRedacted) event.copy(title = busyTitle) else event)
+                            .toParsed(zone)
                     }
                     _ui.update {
                         it.copy(eventsByDay = bucketByDay(parsed), loading = false)
@@ -160,8 +185,9 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun goToToday() {
+        val today = LocalDate.now(settingsStore.calendarZoneId())
         _ui.update {
-            it.copy(selectedDate = LocalDate.now(), monthAnchor = YearMonth.now())
+            it.copy(selectedDate = today, monthAnchor = YearMonth.from(today))
         }
         refresh()
     }
@@ -169,7 +195,7 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
     /** Fetch only the events overlapping the visible window, server-side
      *  (?start&end):日程视图 = 锚点日期起一年(对齐 Web),其余 = 焦点月 ±1。 */
     private suspend fun fetchWindow(state: CalendarUiState): List<CalendarEventDto> {
-        val zone = ZoneId.systemDefault()
+        val zone = settingsStore.calendarZoneId()
         val agenda = state.viewMode == CalendarViewMode.AGENDA
         val start =
             if (agenda) state.selectedDate.atStartOfDay(zone)
@@ -183,7 +209,13 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
         var page = 1
         val maxPages = if (agenda) MAX_PAGES_AGENDA else MAX_PAGES
         while (page <= maxPages) {
-            val res = calendarApi.listEvents(page = page, start = startIso, end = endIso)
+            val res = calendarApi.listEvents(
+                page = page,
+                start = startIso,
+                end = endIso,
+                dateStart = start.toLocalDate().toString(),
+                dateEnd = end.toLocalDate().toString(),
+            )
             all += res.results
             if (res.next == null) break
             page++
@@ -199,6 +231,8 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
                     id = subscription.calendarId,
                     start = startIso,
                     end = endIso,
+                    dateStart = start.toLocalDate().toString(),
+                    dateEnd = end.toLocalDate().toString(),
                 )
             }.getOrDefault(emptyList())
             all += shared

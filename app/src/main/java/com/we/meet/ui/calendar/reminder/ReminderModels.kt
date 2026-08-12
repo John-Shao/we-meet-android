@@ -34,8 +34,10 @@ fun ReminderWindow.nearest(now: ZonedDateTime): EventUi? =
 fun EventUi.shouldRemind(): Boolean = !cancelled && myRsvp != "declined"
 
 /** 拉取 [今天 00:00, 后天 00:00) 的日程并分桶;不去的排除,按开始时间升序。 */
-suspend fun loadReminderWindow(calendarApi: CalendarApi): ReminderWindow {
-    val zone = ZoneId.systemDefault()
+suspend fun loadReminderWindow(
+    calendarApi: CalendarApi,
+    zone: ZoneId = ZoneId.systemDefault(),
+): ReminderWindow {
     val today0 = ZonedDateTime.now(zone).toLocalDate().atStartOfDay(zone)
     val tomorrow0 = today0.plusDays(1)
     val after0 = today0.plusDays(2)
@@ -47,8 +49,10 @@ suspend fun loadReminderWindow(calendarApi: CalendarApi): ReminderWindow {
             page = page,
             start = DateTimeFormatter.ISO_INSTANT.format(today0.toInstant()),
             end = DateTimeFormatter.ISO_INSTANT.format(after0.toInstant()),
+            dateStart = today0.toLocalDate().toString(),
+            dateEnd = after0.toLocalDate().toString(),
         )
-        all += res.results.mapNotNull { it.toParsed()?.ui }
+        all += res.results.mapNotNull { it.toParsed(zone)?.ui }
         if (res.next == null) break
         page++
     }

@@ -6,7 +6,7 @@ import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
-/** One event projected into the device timezone for display. */
+/** One event projected into the effective calendar display timezone. */
 data class EventUi(
     val id: String,
     val title: String,
@@ -26,6 +26,8 @@ data class EventUi(
      * 见 `reminder/ReminderModels.countdownWindowMinutes`。
      */
     val reminders: List<Int> = emptyList(),
+    val startDate: LocalDate? = null,
+    val endDateExclusive: LocalDate? = null,
 ) {
     /**
      * Every LocalDate this event covers, for day bucketing. All-day events use
@@ -35,7 +37,10 @@ data class EventUi(
     fun coveredDates(eventZone: ZoneId): List<LocalDate> {
         val startDate: LocalDate
         val endDate: LocalDate
-        if (allDay) {
+        if (allDay && this.startDate != null && endDateExclusive != null) {
+            startDate = this.startDate
+            endDate = endDateExclusive.minusDays(1)
+        } else if (allDay) {
             startDate = start.withZoneSameInstant(eventZone).toLocalDate()
             endDate = end.withZoneSameInstant(eventZone).minusNanos(1).toLocalDate()
         } else {
@@ -51,18 +56,29 @@ data class EventUi(
 
 data class ParsedEvent(val ui: EventUi, val zone: ZoneId)
 
-/** Parse a DTO into device-TZ display times; null when timestamps are absent/bad. */
-fun CalendarEventDto.toParsed(): ParsedEvent? {
-    val deviceZone = ZoneId.systemDefault()
-    val start = runCatching { OffsetDateTime.parse(startAt).toInstant() }.getOrNull() ?: return null
-    val end = runCatching { OffsetDateTime.parse(endAt).toInstant() }.getOrNull() ?: return null
-    val eventZone = runCatching { ZoneId.of(timezone) }.getOrDefault(deviceZone)
+/** Parse a DTO into display-zone times; null when required values are absent/bad. */
+fun CalendarEventDto.toParsed(displayZone: ZoneId = ZoneId.systemDefault()): ParsedEvent? {
+    val eventZone = runCatching { ZoneId.of(timezone) }.getOrDefault(displayZone)
+    val canonicalStartDate = startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+    val canonicalEndDate = endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+    val start = if (allDay && canonicalStartDate != null) {
+        canonicalStartDate.atStartOfDay(displayZone)
+    } else {
+        val instant = runCatching { OffsetDateTime.parse(startAt).toInstant() }.getOrNull() ?: return null
+        instant.atZone(displayZone)
+    }
+    val end = if (allDay && canonicalEndDate != null) {
+        canonicalEndDate.atStartOfDay(displayZone)
+    } else {
+        val instant = runCatching { OffsetDateTime.parse(endAt).toInstant() }.getOrNull() ?: return null
+        instant.atZone(displayZone)
+    }
     return ParsedEvent(
         ui = EventUi(
             id = id,
             title = title,
-            start = start.atZone(deviceZone),
-            end = end.atZone(deviceZone),
+            start = start,
+            end = end,
             allDay = allDay,
             myRsvp = myRsvp,
             roomSlug = roomSlug?.takeIf { it.isNotBlank() },
@@ -71,6 +87,8 @@ fun CalendarEventDto.toParsed(): ParsedEvent? {
             organizerId = organizer?.id?.takeIf { it.isNotBlank() },
             recurring = isRecurring,
             reminders = reminders,
+            startDate = canonicalStartDate,
+            endDateExclusive = canonicalEndDate,
         ),
         zone = eventZone,
     )

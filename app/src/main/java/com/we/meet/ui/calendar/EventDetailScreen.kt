@@ -329,6 +329,10 @@ fun EventDetailScreen(
                     put("start", ev.startAt)
                     put("end", ev.endAt)
                     put("all_day", ev.allDay)
+                    if (ev.allDay && ev.startDate != null && ev.endDate != null) {
+                        put("start_date", ev.startDate)
+                        put("end_date", ev.endDate)
+                    }
                     put("attendee_count", ev.attendees.size)
                     put("organizer_name", ev.organizer?.fullName ?: "")
                 }.toString()
@@ -456,7 +460,8 @@ private fun EventBody(
     ui: EventDetailUiState,
     onOpenSummary: (roomId: String) -> Unit,
 ) {
-    val parsedFull = event.toParsed()
+    val app = LocalContext.current.applicationContext as com.we.meet.WeMeetApp
+    val parsedFull = event.toParsed(app.settingsStore.calendarZoneId())
     val parsed = parsedFull?.ui
     val dateFmt = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")
     val dayFmt = DateTimeFormatter.ofPattern("yyyy/MM/dd")
@@ -509,8 +514,7 @@ private fun EventBody(
                 text = if (parsed.allDay) {
                     // All-day dates render in the event's authored zone (device-TZ
                     // formatting would shift the shown day ±1 vs the calendar grid).
-                    val eventZone = parsedFull?.zone ?: parsed.start.zone
-                    val allDayDate = parsed.start.withZoneSameInstant(eventZone)
+                    val allDayDate = parsed.startDate ?: parsed.start.toLocalDate()
                     "${allDayDate.format(dayFmt)} · ${stringResource(R.string.calendar_all_day)}"
                 } else {
                     "${parsed.start.format(dateFmt)} – ${parsed.end.format(dateFmt)}"

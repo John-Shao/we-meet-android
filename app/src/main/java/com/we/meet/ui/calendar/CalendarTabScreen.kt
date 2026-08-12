@@ -92,6 +92,11 @@ fun CalendarTabScreen(
 
     // P8 日历设置:每周的第一天(月网格/周视图跟随,默认周一)。
     val app = LocalContext.current.applicationContext as WeMeetApp
+    val calendarTimezoneMode by app.settingsStore.calendarTimezoneMode.collectAsStateWithLifecycle()
+    val calendarFixedTimezone by app.settingsStore.calendarFixedTimezone.collectAsStateWithLifecycle()
+    val calendarZone = remember(calendarTimezoneMode, calendarFixedTimezone) {
+        app.settingsStore.calendarZoneId()
+    }
     var primaryPage by rememberSaveable { mutableStateOf(CalendarPrimaryPage.CALENDAR) }
     if (primaryPage == CalendarPrimaryPage.MEETING_ROOMS) {
         MeetingRoomsCalendarScreen(
@@ -112,7 +117,7 @@ fun CalendarTabScreen(
         if (weekStart == CalendarWeekStart.SUNDAY) DayOfWeek.SUNDAY else DayOfWeek.MONDAY
     // P8 日历设置:降低已结束日程的亮度(开关关闭 → null,不降)。
     val dimPast by app.settingsStore.calendarDimPast.collectAsStateWithLifecycle()
-    val dimPastNow = if (dimPast) java.time.ZonedDateTime.now() else null
+    val dimPastNow = if (dimPast) java.time.ZonedDateTime.now(calendarZone) else null
     // P8 日历设置:周视图是否显示周末(App 默认关 → 聚焦工作周;Web 默认开)。
     val showWeekend by app.settingsStore.calendarShowWeekend.collectAsStateWithLifecycle()
     // 日历设置:周视图一屏铺几天(默认 4;比列数多则铺满不滚)。
@@ -156,8 +161,7 @@ fun CalendarTabScreen(
     }
     val confirmDraft: (DraftSlot) -> Unit = { slot ->
         clearPicks()
-        val zone = java.time.ZoneId.systemDefault()
-        val dayStart = slot.date.atStartOfDay(zone)
+        val dayStart = slot.date.atStartOfDay(calendarZone)
         val onAt = onCreateEventAt
         if (onAt != null) {
             onAt(
@@ -196,6 +200,7 @@ fun CalendarTabScreen(
             // ‹ › 语义随视图:日/日程=±1 天,周=±7 天,月=±1 月。
             CalendarHeader(
                 ui = ui,
+                today = LocalDate.now(calendarZone),
                 firstDow = firstDow,
                 showWeekend = showWeekend,
                 onSelectMode = { vm.setViewMode(it) },
@@ -278,6 +283,7 @@ fun CalendarTabScreen(
                         eventsByDay = ui.eventsByDay,
                         onEventClick = onEventClick,
                         dimPastNow = dimPastNow,
+                        today = LocalDate.now(calendarZone),
                     )
 
                     CalendarViewMode.DAY -> DayTimelineView(
@@ -299,6 +305,7 @@ fun CalendarTabScreen(
                         visibleEndMin = visibleEndMin,
                         workingStartMin = workingHours.startMin,
                         workingEndMin = workingHours.endMin,
+                        zoneId = calendarZone,
                         dimPastNow = dimPastNow,
                         draft = draft,
                         draftLabel = draftLabel,
@@ -333,6 +340,7 @@ fun CalendarTabScreen(
                         visibleEndMin = visibleEndMin,
                         workingStartMin = workingHours.startMin,
                         workingEndMin = workingHours.endMin,
+                        zoneId = calendarZone,
                         firstDayOfWeek = firstDow,
                         showWeekend = showWeekend,
                         visibleDays = weekVisibleDays,
@@ -352,6 +360,7 @@ fun CalendarTabScreen(
                         ui = ui,
                         firstDow = firstDow,
                         dimPastNow = dimPastNow,
+                        today = LocalDate.now(calendarZone),
                         onSelect = { vm.selectDate(it) },
                         onEventClick = onEventClick,
                     )
@@ -384,6 +393,7 @@ private fun MonthViewBody(
     ui: CalendarUiState,
     firstDow: DayOfWeek,
     dimPastNow: java.time.ZonedDateTime?,
+    today: LocalDate,
     onSelect: (LocalDate) -> Unit,
     onEventClick: (String) -> Unit,
 ) {
@@ -393,6 +403,7 @@ private fun MonthViewBody(
             selected = ui.selectedDate,
             eventsByDay = ui.eventsByDay,
             firstDow = firstDow,
+            today = today,
             onSelect = onSelect,
         )
         when {
@@ -437,6 +448,7 @@ private fun MonthViewBody(
 @Composable
 private fun CalendarHeader(
     ui: CalendarUiState,
+    today: LocalDate,
     firstDow: DayOfWeek,
     showWeekend: Boolean,
     onSelectMode: (CalendarViewMode) -> Unit,
@@ -496,7 +508,7 @@ private fun CalendarHeader(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (ui.viewMode == CalendarViewMode.DAY && ui.selectedDate == LocalDate.now()) {
+            if (ui.viewMode == CalendarViewMode.DAY && ui.selectedDate == today) {
                 Spacer(Modifier.width(Dimens.SpaceXs))
                 Text(
                     text = stringResource(R.string.calendar_today),
@@ -629,9 +641,9 @@ private fun MonthGrid(
     selected: LocalDate,
     eventsByDay: Map<LocalDate, List<EventUi>>,
     firstDow: DayOfWeek,
+    today: LocalDate,
     onSelect: (LocalDate) -> Unit,
 ) {
-    val today = LocalDate.now()
     // 6 fixed rows of 7; first column = firstDow(P8 日历设置,默认周一).
     val firstOfMonth = month.atDay(1)
     val leadingBlanks = (firstOfMonth.dayOfWeek.value - firstDow.value + 7) % 7

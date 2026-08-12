@@ -290,6 +290,10 @@
     <string name="reminder_empty">No events today or tomorrow</string>
     <!-- P8: calendar settings page -->
     <string name="calendar_settings_title">Calendar settings</string>
+    <string name="calendar_settings_timezone_mode">Fuseau horaire d’affichage</string>
+    <string name="calendar_settings_fixed_timezone">Fuseau horaire fixe</string>
+    <string name="calendar_timezone_auto">Automatique (appareil)</string>
+    <string name="calendar_timezone_fixed">Fixe sur tous les appareils</string>
     <string name="calendar_sharing_title">Partage du calendrier</string>
     <string name="calendar_sharing_manage">Gérer</string>
     <string name="calendar_sharing_org_default">Valeur par défaut de l’organisation</string>
@@ -325,6 +329,8 @@
     <string name="calendar_create_title">Nouvel événement</string>
     <string name="calendar_field_title_hint">Titre de l\'événement</string>
     <string name="calendar_field_start">Début</string>
+    <string name="calendar_field_timezone">Fuseau horaire de l’événement</string>
+    <string name="calendar_all_day_timezone_hint">Les dates sur la journée restent identiques dans les autres fuseaux.</string>
     <string name="calendar_field_end">Fin</string>
     <string name="calendar_field_all_day">Journée entière</string>
     <string name="calendar_field_reminder">Rappel</string>

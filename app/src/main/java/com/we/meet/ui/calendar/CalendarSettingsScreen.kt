@@ -35,6 +35,7 @@ import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.settings.CALENDAR_WEEK_VISIBLE_DAYS_RANGE
 import com.we.meet.data.settings.CalendarWeekStart
+import com.we.meet.data.settings.CalendarTimezoneMode
 import com.we.meet.data.settings.TimeRangeMode
 import com.we.meet.data.settings.WORKING_HOURS_STEP_MIN
 import com.we.meet.data.settings.isValidWorkingHours
@@ -64,7 +65,13 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
     val workingHours by store.workingHours.collectAsStateWithLifecycle()
     val calendarTimeRangeMode by store.calendarTimeRangeMode.collectAsStateWithLifecycle()
     val meetingRoomTimeRangeMode by store.meetingRoomTimeRangeMode.collectAsStateWithLifecycle()
+    val calendarTimezoneMode by store.calendarTimezoneMode.collectAsStateWithLifecycle()
+    val calendarFixedTimezone by store.calendarFixedTimezone.collectAsStateWithLifecycle()
     var showSharing by remember { mutableStateOf(false) }
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        store.synchronizeCalendarPreferences()
+    }
 
     val locale = Locale.getDefault()
     val dowLabel: (CalendarWeekStart) -> String = { ws ->
@@ -91,6 +98,35 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
                 TextButton(onClick = { showSharing = true }) {
                     Text(stringResource(R.string.calendar_sharing_manage))
                 }
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            SettingDropdownRow(
+                label = stringResource(R.string.calendar_settings_timezone_mode),
+                current = stringResource(
+                    if (calendarTimezoneMode == CalendarTimezoneMode.AUTO) {
+                        R.string.calendar_timezone_auto
+                    } else {
+                        R.string.calendar_timezone_fixed
+                    },
+                ),
+                options = listOf(
+                    stringResource(R.string.calendar_timezone_auto) to {
+                        store.setCalendarTimezoneMode(CalendarTimezoneMode.AUTO)
+                    },
+                    stringResource(R.string.calendar_timezone_fixed) to {
+                        store.setCalendarTimezoneMode(CalendarTimezoneMode.FIXED)
+                    },
+                ),
+            )
+            if (calendarTimezoneMode == CalendarTimezoneMode.FIXED) {
+                SettingDropdownRow(
+                    label = stringResource(R.string.calendar_settings_fixed_timezone),
+                    current = calendarFixedTimezone,
+                    options = calendarTimezoneOptions(calendarFixedTimezone).map { timezone ->
+                        timezone to { store.setCalendarFixedTimezone(timezone) }
+                    },
+                )
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
