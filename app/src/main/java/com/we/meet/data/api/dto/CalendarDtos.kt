@@ -55,6 +55,72 @@ data class EventOrganizerDto(
 )
 
 @JsonClass(generateAdapter = true)
+data class CalendarOrganizationDto(
+    val id: String = "",
+    val name: String = "",
+)
+
+@JsonClass(generateAdapter = true)
+data class CalendarPersonDto(
+    val id: String = "",
+    @Json(name = "full_name") val fullName: String? = null,
+    @Json(name = "short_name") val shortName: String? = null,
+    @Json(name = "avatar_url") val avatarUrl: String? = null,
+    val organization: CalendarOrganizationDto? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class PersonalCalendarDto(
+    val id: String = "",
+    val owner: CalendarPersonDto = CalendarPersonDto(),
+    val organization: CalendarOrganizationDto = CalendarOrganizationDto(),
+    @Json(name = "organization_default_access")
+    val organizationDefaultAccess: String = "free_busy",
+    @Json(name = "effective_permission") val effectivePermission: String = "none",
+    val subscribed: Boolean = false,
+)
+
+@JsonClass(generateAdapter = true)
+data class CalendarAccessGrantDto(
+    val id: String = "",
+    @Json(name = "calendar_id") val calendarId: String = "",
+    val grantee: CalendarPersonDto = CalendarPersonDto(),
+    val permission: String = "free_busy",
+    val external: Boolean = false,
+)
+
+@JsonClass(generateAdapter = true)
+data class CalendarSubscriptionDto(
+    val id: String = "",
+    @Json(name = "calendar_id") val calendarId: String = "",
+    val owner: CalendarPersonDto = CalendarPersonDto(),
+    val permission: String = "free_busy",
+    val enabled: Boolean = true,
+    val color: String = "",
+)
+
+@JsonClass(generateAdapter = true)
+data class UpdatePersonalCalendarRequest(
+    @Json(name = "organization_default_access") val organizationDefaultAccess: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class SaveCalendarGrantRequest(
+    @Json(name = "grantee_user_id") val granteeUserId: String,
+    val permission: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class UpdateCalendarGrantRequest(val permission: String)
+
+@JsonClass(generateAdapter = true)
+data class SubscribeCalendarRequest(
+    @Json(name = "owner_user_id") val ownerUserId: String,
+    val enabled: Boolean = true,
+    val color: String = "",
+)
+
+@JsonClass(generateAdapter = true)
 data class CalendarEventDto(
     val id: String,
     val title: String = "",
@@ -150,6 +216,8 @@ data class UpdateEventRequest(
     @Json(name = "attendee_ids") val attendeeIds: List<String>? = null,
     @Json(name = "attendee_entries") val attendeeEntries: List<AttendeeEntryRequest>? = null,
     val visibility: String,
+    /** Distinguishes an intentional default selection from a legacy client's omitted concept. */
+    @Json(name = "visibility_explicit") val visibilityExplicit: Boolean = true,
     /**
      * P2-M2 重复子场次的编辑范围:one|following|all。单次/主事件传 null——
      * 后端 `get('edit_scope') or ''` 会把 null 当缺省(主事件缺省=全部)。

@@ -1,13 +1,20 @@
 package com.we.meet.data.api
 
 import com.we.meet.data.api.dto.CalendarEventDto
+import com.we.meet.data.api.dto.CalendarAccessGrantDto
+import com.we.meet.data.api.dto.CalendarSubscriptionDto
 import com.we.meet.data.api.dto.CreateEventRequest
 import com.we.meet.data.api.dto.FreeBusyResponseDto
 import com.we.meet.data.api.dto.PagedCalendarEventsDto
+import com.we.meet.data.api.dto.PersonalCalendarDto
 import com.we.meet.data.api.dto.RescheduleEventRequest
 import com.we.meet.data.api.dto.RsvpRequest
 import com.we.meet.data.api.dto.RsvpResponseDto
 import com.we.meet.data.api.dto.UpdateEventRequest
+import com.we.meet.data.api.dto.SaveCalendarGrantRequest
+import com.we.meet.data.api.dto.SubscribeCalendarRequest
+import com.we.meet.data.api.dto.UpdateCalendarGrantRequest
+import com.we.meet.data.api.dto.UpdatePersonalCalendarRequest
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -22,6 +29,50 @@ import retrofit2.http.Query
  * `scheduled_at = start_at` and grants every attendee access.
  */
 interface CalendarApi {
+
+    @GET("api/v1.0/personal-calendars/mine/")
+    suspend fun getMyCalendar(): PersonalCalendarDto
+
+    @PATCH("api/v1.0/personal-calendars/{id}/")
+    suspend fun updatePersonalCalendar(
+        @Path("id") id: String,
+        @Body body: UpdatePersonalCalendarRequest,
+    ): PersonalCalendarDto
+
+    @GET("api/v1.0/personal-calendars/{id}/events/")
+    suspend fun listPersonalCalendarEvents(
+        @Path("id") id: String,
+        @Query("start") start: String? = null,
+        @Query("end") end: String? = null,
+    ): List<CalendarEventDto>
+
+    @GET("api/v1.0/calendar-access-grants/")
+    suspend fun listCalendarGrants(): List<CalendarAccessGrantDto>
+
+    @POST("api/v1.0/calendar-access-grants/")
+    suspend fun saveCalendarGrant(
+        @Body body: SaveCalendarGrantRequest,
+    ): CalendarAccessGrantDto
+
+    @PATCH("api/v1.0/calendar-access-grants/{id}/")
+    suspend fun updateCalendarGrant(
+        @Path("id") id: String,
+        @Body body: UpdateCalendarGrantRequest,
+    ): CalendarAccessGrantDto
+
+    @DELETE("api/v1.0/calendar-access-grants/{id}/")
+    suspend fun deleteCalendarGrant(@Path("id") id: String)
+
+    @GET("api/v1.0/calendar-subscriptions/")
+    suspend fun listCalendarSubscriptions(): List<CalendarSubscriptionDto>
+
+    @POST("api/v1.0/calendar-subscriptions/")
+    suspend fun subscribeCalendar(
+        @Body body: SubscribeCalendarRequest,
+    ): CalendarSubscriptionDto
+
+    @DELETE("api/v1.0/calendar-subscriptions/{id}/")
+    suspend fun unsubscribeCalendar(@Path("id") id: String)
 
     @GET("api/v1.0/calendar-events/")
     suspend fun listEvents(

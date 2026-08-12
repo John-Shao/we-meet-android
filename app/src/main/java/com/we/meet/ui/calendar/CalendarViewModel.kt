@@ -52,6 +52,7 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
 
     private val apiClient = (app as WeMeetApp).apiClient
     private val calendarApi = apiClient.calendarApi
+    private val busyTitle = app.getString(com.we.meet.R.string.calendar_busy)
 
     private val _ui = MutableStateFlow(CalendarUiState(loading = true))
     val ui: StateFlow<CalendarUiState> = _ui.asStateFlow()
@@ -120,7 +121,9 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
             _ui.update { it.copy(loading = it.eventsByDay.isEmpty(), error = false) }
             runCatching { fetchWindow(_ui.value) }
                 .onSuccess { events ->
-                    val parsed = events.mapNotNull { it.toParsed() }
+                    val parsed = events.mapNotNull { event ->
+                        (if (event.detailsRedacted) event.copy(title = busyTitle) else event).toParsed()
+                    }
                     _ui.update {
                         it.copy(eventsByDay = bucketByDay(parsed), loading = false)
                     }
@@ -185,7 +188,26 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
             if (res.next == null) break
             page++
         }
+        // Subscriptions are a display projection, not participation. Failure of
+        // one shared calendar must not hide the caller's own calendar.
+        val subscriptions = runCatching { calendarApi.listCalendarSubscriptions() }
+            .getOrDefault(emptyList())
+            .filter { it.enabled && it.permission != "none" }
+        subscriptions.forEach { subscription ->
+            val shared = runCatching {
+                calendarApi.listPersonalCalendarEvents(
+                    id = subscription.calendarId,
+                    start = startIso,
+                    end = endIso,
+                )
+            }.getOrDefault(emptyList())
+            all += shared
+        }
         return all
+            .groupBy { it.id }
+            .mapNotNull { (_, copies) ->
+                copies.firstOrNull { !it.detailsRedacted } ?: copies.firstOrNull()
+            }
     }
 
     private companion object {
