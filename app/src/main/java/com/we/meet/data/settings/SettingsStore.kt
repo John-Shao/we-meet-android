@@ -5,6 +5,7 @@ import android.util.Log
 import com.we.meet.data.api.CalendarApi
 import com.we.meet.data.api.dto.CalendarPreferenceDto
 import io.livekit.android.room.track.VideoCodec
+import java.security.MessageDigest
 import java.time.ZoneId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -74,7 +75,10 @@ fun isValidWorkingHours(startMin: Int, endMin: Int): Boolean {
         duration in WORKING_HOURS_MIN_DURATION_MIN..WORKING_HOURS_MAX_DURATION_MIN
 }
 
-class SettingsStore(context: Context) {
+class SettingsStore(
+    context: Context,
+    private val calendarAccountKeyProvider: () -> String? = { null },
+) {
 
     private val prefs = context.applicationContext
         .getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)
@@ -84,6 +88,7 @@ class SettingsStore(context: Context) {
     @Volatile private var localCalendarGeneration =
         if (prefs.getBoolean(KEY_CALENDAR_PREFERENCE_DIRTY, false)) 1L else 0L
     @Volatile private var syncedCalendarGeneration = 0L
+    @Volatile private var calendarAccountGeneration = 0L
 
     private val _videoCodec = MutableStateFlow(loadVideoCodec())
 
@@ -123,6 +128,7 @@ class SettingsStore(context: Context) {
     val imReminderEntry: StateFlow<Boolean> = _imReminderEntry.asStateFlow()
 
     fun setImReminderEntry(enabled: Boolean) {
+        if (!activateCalendarAccount()) return
         prefs.edit().putBoolean(KEY_IM_REMINDER_ENTRY, enabled).apply()
         _imReminderEntry.value = enabled
     }
@@ -135,6 +141,7 @@ class SettingsStore(context: Context) {
     val calendarWeekStart: StateFlow<CalendarWeekStart> = _calendarWeekStart.asStateFlow()
 
     fun setCalendarWeekStart(value: CalendarWeekStart) {
+        if (!activateCalendarAccount()) return
         prefs.edit().putString(KEY_CALENDAR_WEEK_START, value.name).apply()
         _calendarWeekStart.value = value
         calendarPreferenceChanged()
@@ -148,6 +155,7 @@ class SettingsStore(context: Context) {
     val calendarDefaultDurationMin: StateFlow<Int> = _calendarDefaultDurationMin.asStateFlow()
 
     fun setCalendarDefaultDurationMin(minutes: Int) {
+        if (!activateCalendarAccount()) return
         prefs.edit().putInt(KEY_CALENDAR_DEFAULT_DURATION, minutes).apply()
         _calendarDefaultDurationMin.value = minutes
         calendarPreferenceChanged()
@@ -161,6 +169,7 @@ class SettingsStore(context: Context) {
     val calendarDefaultReminderMin: StateFlow<Int> = _calendarDefaultReminderMin.asStateFlow()
 
     fun setCalendarDefaultReminderMin(minutes: Int) {
+        if (!activateCalendarAccount()) return
         prefs.edit().putInt(KEY_CALENDAR_DEFAULT_REMINDER, minutes).apply()
         _calendarDefaultReminderMin.value = minutes
         calendarPreferenceChanged()
@@ -174,6 +183,7 @@ class SettingsStore(context: Context) {
     val calendarDimPast: StateFlow<Boolean> = _calendarDimPast.asStateFlow()
 
     fun setCalendarDimPast(enabled: Boolean) {
+        if (!activateCalendarAccount()) return
         prefs.edit().putBoolean(KEY_CALENDAR_DIM_PAST, enabled).apply()
         _calendarDimPast.value = enabled
         calendarPreferenceChanged()
@@ -189,6 +199,7 @@ class SettingsStore(context: Context) {
     val calendarShowWeekend: StateFlow<Boolean> = _calendarShowWeekend.asStateFlow()
 
     fun setCalendarShowWeekend(enabled: Boolean) {
+        if (!activateCalendarAccount()) return
         prefs.edit().putBoolean(KEY_CALENDAR_SHOW_WEEKEND, enabled).apply()
         _calendarShowWeekend.value = enabled
         calendarPreferenceChanged()
@@ -209,6 +220,7 @@ class SettingsStore(context: Context) {
     val calendarWeekVisibleDays: StateFlow<Int> = _calendarWeekVisibleDays.asStateFlow()
 
     fun setCalendarWeekVisibleDays(days: Int) {
+        if (!activateCalendarAccount()) return
         val safe = days.coerceIn(CALENDAR_WEEK_VISIBLE_DAYS_RANGE)
         prefs.edit().putInt(KEY_CALENDAR_WEEK_VISIBLE_DAYS, safe).apply()
         _calendarWeekVisibleDays.value = safe
@@ -222,6 +234,7 @@ class SettingsStore(context: Context) {
     /** Persist both endpoints in one edit so observers never see a mixed pair. */
     fun setWorkingHours(startMin: Int, endMin: Int): Boolean {
         if (!isValidWorkingHours(startMin, endMin)) return false
+        if (!activateCalendarAccount()) return false
         prefs.edit()
             .putInt(KEY_WORKING_HOURS_START, startMin)
             .putInt(KEY_WORKING_HOURS_END, endMin)
@@ -245,6 +258,7 @@ class SettingsStore(context: Context) {
         _calendarTimeRangeMode.asStateFlow()
 
     fun setCalendarTimeRangeMode(mode: TimeRangeMode) {
+        if (!activateCalendarAccount()) return
         prefs.edit().putString(KEY_CALENDAR_TIME_RANGE_MODE, mode.name).apply()
         _calendarTimeRangeMode.value = mode
         calendarPreferenceChanged()
@@ -257,6 +271,7 @@ class SettingsStore(context: Context) {
         _meetingRoomTimeRangeMode.asStateFlow()
 
     fun setMeetingRoomTimeRangeMode(mode: TimeRangeMode) {
+        if (!activateCalendarAccount()) return
         prefs.edit().putString(KEY_MEETING_ROOM_TIME_RANGE_MODE, mode.name).apply()
         _meetingRoomTimeRangeMode.value = mode
         calendarPreferenceChanged()
@@ -272,6 +287,7 @@ class SettingsStore(context: Context) {
     val calendarFixedTimezone: StateFlow<String> = _calendarFixedTimezone.asStateFlow()
 
     fun setCalendarTimezoneMode(mode: CalendarTimezoneMode) {
+        if (!activateCalendarAccount()) return
         prefs.edit().putString(KEY_CALENDAR_TIMEZONE_MODE, mode.name).apply()
         _calendarTimezoneMode.value = mode
         calendarPreferenceChanged()
@@ -279,6 +295,7 @@ class SettingsStore(context: Context) {
 
     fun setCalendarFixedTimezone(value: String): Boolean {
         val zone = runCatching { ZoneId.of(value) }.getOrNull() ?: return false
+        if (!activateCalendarAccount()) return false
         prefs.edit().putString(KEY_CALENDAR_FIXED_TIMEZONE, zone.id).apply()
         _calendarFixedTimezone.value = zone.id
         calendarPreferenceChanged()
@@ -300,20 +317,57 @@ class SettingsStore(context: Context) {
 
     /** Retry on calendar/settings entry after an anonymous or offline app start. */
     fun synchronizeCalendarPreferences() {
+        if (!activateCalendarAccount()) return
         preferenceScope.launch { synchronizeCalendarPreferencesNow() }
     }
 
     private fun calendarPreferenceChanged() {
+        if (!activateCalendarAccount()) return
         prefs.edit().putBoolean(KEY_CALENDAR_PREFERENCE_DIRTY, true).apply()
         localCalendarGeneration += 1
         synchronizeCalendarPreferences()
     }
 
+    /**
+     * Calendar preferences belong to an account, while codec/theme preferences
+     * remain device-wide.  A new account must never inherit the previous
+     * account's offline cache before its server copy has loaded.
+     */
+    private fun activateCalendarAccount(): Boolean {
+        val accountKey = calendarAccountKeyProvider()?.trim()?.takeIf { it.isNotEmpty() }
+            ?.let(::calendarAccountCacheKey) ?: return false
+        synchronized(this) {
+            if (prefs.getString(KEY_CALENDAR_CACHE_ACCOUNT, null) == accountKey) return true
+            val editor = prefs.edit()
+            CALENDAR_ACCOUNT_KEYS.forEach(editor::remove)
+            editor.putString(KEY_CALENDAR_CACHE_ACCOUNT, accountKey).commit()
+
+            _imReminderEntry.value = true
+            _calendarWeekStart.value = CalendarWeekStart.MONDAY
+            _calendarDefaultDurationMin.value = 60
+            _calendarDefaultReminderMin.value = 10
+            _calendarDimPast.value = true
+            _calendarShowWeekend.value = false
+            _calendarWeekVisibleDays.value = CALENDAR_WEEK_VISIBLE_DAYS_DEFAULT
+            _workingHours.value = WorkingHours()
+            _calendarTimeRangeMode.value = TimeRangeMode.WORK
+            _meetingRoomTimeRangeMode.value = TimeRangeMode.WORK
+            _calendarTimezoneMode.value = CalendarTimezoneMode.AUTO
+            _calendarFixedTimezone.value = ZoneId.systemDefault().id
+            localCalendarGeneration = 0L
+            syncedCalendarGeneration = 0L
+            calendarAccountGeneration += 1
+        }
+        return true
+    }
+
     private suspend fun synchronizeCalendarPreferencesNow() {
         val api = calendarApi ?: return
+        val accountGeneration = calendarAccountGeneration
         preferenceMutex.withLock {
             try {
                 val remote = api.getCalendarPreference()
+                if (accountGeneration != calendarAccountGeneration) return@withLock
                 val dirty = prefs.getBoolean(KEY_CALENDAR_PREFERENCE_DIRTY, false)
                 val baseRevision = prefs.getInt(KEY_CALENDAR_PREFERENCE_REVISION, -1)
                 val changedLocally = localCalendarGeneration > syncedCalendarGeneration
@@ -321,7 +375,7 @@ class SettingsStore(context: Context) {
                     !remote.initialized ||
                     ((dirty || changedLocally) && baseRevision == remote.revision)
                 ) {
-                    pushCalendarPreference(api, remote.revision)
+                    pushCalendarPreference(api, remote.revision, accountGeneration)
                 } else {
                     applyCalendarPreference(remote)
                     syncedCalendarGeneration = localCalendarGeneration
@@ -329,7 +383,7 @@ class SettingsStore(context: Context) {
             } catch (error: Exception) {
                 if (error is HttpException && error.code() == 409) {
                     val latest = runCatching { api.getCalendarPreference() }.getOrNull()
-                    if (latest != null) {
+                    if (latest != null && accountGeneration == calendarAccountGeneration) {
                         applyCalendarPreference(latest)
                         syncedCalendarGeneration = localCalendarGeneration
                         return@withLock
@@ -340,9 +394,14 @@ class SettingsStore(context: Context) {
         }
     }
 
-    private suspend fun pushCalendarPreference(api: CalendarApi, expectedRevision: Int) {
+    private suspend fun pushCalendarPreference(
+        api: CalendarApi,
+        expectedRevision: Int,
+        accountGeneration: Long,
+    ) {
         val sentGeneration = localCalendarGeneration
         val saved = api.updateCalendarPreference(calendarPreferenceJson(expectedRevision))
+        if (accountGeneration != calendarAccountGeneration) return
         syncedCalendarGeneration = sentGeneration
         if (localCalendarGeneration == sentGeneration) {
             applyCalendarPreference(saved)
@@ -428,6 +487,11 @@ class SettingsStore(context: Context) {
             ?: ZoneId.systemDefault().id
     }
 
+    private fun calendarAccountCacheKey(value: String): String =
+        MessageDigest.getInstance("SHA-256")
+            .digest(value.toByteArray(Charsets.UTF_8))
+            .joinToString("") { byte -> "%02x".format(byte) }
+
     private companion object {
         const val FILE_NAME = "jusi_meet_settings"
         const val KEY_VIDEO_CODEC = "video_codec"
@@ -447,8 +511,26 @@ class SettingsStore(context: Context) {
         const val KEY_CALENDAR_FIXED_TIMEZONE = "calendar_fixed_timezone"
         const val KEY_CALENDAR_PREFERENCE_REVISION = "calendar_preference_revision"
         const val KEY_CALENDAR_PREFERENCE_DIRTY = "calendar_preference_dirty"
+        const val KEY_CALENDAR_CACHE_ACCOUNT = "calendar_cache_account"
         const val TAG = "SettingsStore"
         val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
+        val CALENDAR_ACCOUNT_KEYS = arrayOf(
+            KEY_IM_REMINDER_ENTRY,
+            KEY_CALENDAR_WEEK_START,
+            KEY_CALENDAR_DEFAULT_DURATION,
+            KEY_CALENDAR_DEFAULT_REMINDER,
+            KEY_CALENDAR_DIM_PAST,
+            KEY_CALENDAR_SHOW_WEEKEND,
+            KEY_CALENDAR_WEEK_VISIBLE_DAYS,
+            KEY_WORKING_HOURS_START,
+            KEY_WORKING_HOURS_END,
+            KEY_CALENDAR_TIME_RANGE_MODE,
+            KEY_MEETING_ROOM_TIME_RANGE_MODE,
+            KEY_CALENDAR_TIMEZONE_MODE,
+            KEY_CALENDAR_FIXED_TIMEZONE,
+            KEY_CALENDAR_PREFERENCE_REVISION,
+            KEY_CALENDAR_PREFERENCE_DIRTY,
+        )
     }
 }
 

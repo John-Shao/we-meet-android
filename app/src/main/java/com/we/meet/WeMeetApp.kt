@@ -109,7 +109,10 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
         roomAiRepository = RoomAiRepository(apiClient.okHttp)
         qrLoginRepository = QrLoginRepository(apiClient.qrLoginApi)
         historyStore = HistoryStore(this)
-        settingsStore = SettingsStore(this).also {
+        settingsStore = SettingsStore(this) {
+            tokenStore.phone?.takeIf { it.isNotBlank() }
+                ?: tokenStore.userId?.takeIf { it.isNotBlank() }
+        }.also {
             it.bindCalendarApi(apiClient.calendarApi)
         }
         directoryRepository = DirectoryRepository(DirectoryNetwork.directoryApi(this))
