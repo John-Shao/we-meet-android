@@ -461,7 +461,10 @@ private fun EventBody(
     val dateFmt = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")
     val dayFmt = DateTimeFormatter.ofPattern("yyyy/MM/dd")
     val displayTitle = if (event.detailsRedacted) {
-        stringResource(R.string.calendar_private_event)
+        stringResource(
+            if (event.visibility == "private") R.string.calendar_private_event
+            else R.string.calendar_busy,
+        )
     } else {
         event.title
     }
@@ -492,7 +495,10 @@ private fun EventBody(
         Spacer(Modifier.height(Dimens.SpaceS))
         if (event.detailsRedacted) {
             Text(
-                text = stringResource(R.string.event_private_redacted),
+                text = stringResource(
+                    if (event.visibility == "private") R.string.event_private_redacted
+                    else R.string.event_busy_redacted,
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = Dimens.SpaceS),

@@ -82,6 +82,7 @@ import retrofit2.HttpException
 
 private val dateFmt = DateTimeFormatter.ofPattern("yyyy/MM/dd")
 private val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
+private val EVENT_VISIBILITIES = listOf("default", "public", "private")
 
 /**
  * Event form (route `create_event?epochDay=&eventId=`). Create mode when
@@ -150,7 +151,7 @@ fun CreateEventScreen(
     var repeatUntil by remember { mutableStateOf<LocalDate?>(null) }
     var attendees by remember { mutableStateOf<List<PickedMember>>(emptyList()) }
     var attendeeRoles by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
-    var privateEvent by remember { mutableStateOf(false) }
+    var visibility by remember { mutableStateOf("default") }
     // P8:编辑态标记重复日程(加载详情时置位)——重复日程不开放参与者编辑。
     var editIsRecurring by remember { mutableStateOf(false) }
 
@@ -181,7 +182,7 @@ fun CreateEventScreen(
     val isDirty = !isEdit && (
         title.isNotBlank() || description.isNotBlank() ||
             attendees.isNotEmpty() ||
-            privateEvent || repeat.isNotEmpty() || meetingRoom != null
+            visibility != "default" || repeat.isNotEmpty() || meetingRoom != null
     )
     val handleClose: () -> Unit = { if (isDirty) showDiscardConfirm = true else onClose() }
 
@@ -238,7 +239,7 @@ fun CreateEventScreen(
                 val parseZone = if (e.allDay) eventZone else zone
                 title = e.title
                 description = e.description
-                privateEvent = e.visibility == "private"
+                visibility = e.visibility.takeIf { it in EVENT_VISIBILITIES } ?: "default"
                 allDay = e.allDay
                 val startLdt = OffsetDateTime.parse(e.startAt).atZoneSameInstant(parseZone).toLocalDateTime()
                 val endLdt = OffsetDateTime.parse(e.endAt).atZoneSameInstant(parseZone).toLocalDateTime()
@@ -375,7 +376,8 @@ fun CreateEventScreen(
                             reminders = reminderMinutes?.let { listOf(it) } ?: emptyList(),
                             // P1-8:结构化参与者携带 required/optional 和外部邮箱。
                             attendeeEntries = if (editIsRecurring) null else attendeeEntries,
-                            visibility = if (privateEvent) "private" else "default",
+                            visibility = visibility,
+                            visibilityExplicit = true,
                             editScope = editScope,
                             // P9:全天不允许带房间;"" = 释放(不能用 null,
                             // Moshi 会把它丢掉,后端就当没提过这个字段)。
@@ -395,7 +397,7 @@ fun CreateEventScreen(
                             reminders = reminderMinutes?.let { listOf(it) } ?: emptyList(),
                             attendeeEntries = attendeeEntries,
                             description = description.trim(),
-                            visibility = if (privateEvent) "private" else "default",
+                            visibility = visibility,
                             timezone = zone.id,
                             recurrence = composeRRule(repeat, repeatUntil),
                             sourceConversationId = sourceConversationId,
@@ -523,29 +525,10 @@ fun CreateEventScreen(
                 HorizontalDivider()
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = Dimens.SpaceM),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.calendar_private_event),
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                    Text(
-                        text = stringResource(R.string.calendar_private_event_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Switch(
-                    checked = privateEvent,
-                    onCheckedChange = { privateEvent = it },
-                )
-            }
+            EventVisibilityRow(
+                visibility = visibility,
+                onSelect = { visibility = it },
+            )
             HorizontalDivider()
 
             // P8 编辑增删参与者:创建态 + 非重复日程编辑态(加载完成后)展示;
@@ -1110,6 +1093,70 @@ private fun ReminderDropdown(selectedMinutes: Int?, onSelect: (Int?) -> Unit) {
                         text = { Text(reminderLabel(minutes), softWrap = false) },
                         onClick = {
                             onSelect(minutes)
+                            expanded = false
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EventVisibilityRow(visibility: String, onSelect: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val labelRes = when (visibility) {
+        "public" -> R.string.calendar_visibility_public
+        "private" -> R.string.calendar_visibility_private
+        else -> R.string.calendar_visibility_default
+    }
+    val hintRes = when (visibility) {
+        "public" -> R.string.calendar_visibility_public_hint
+        "private" -> R.string.calendar_visibility_private_hint
+        else -> R.string.calendar_visibility_default_hint
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = Dimens.SpaceM),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.calendar_visibility_label),
+                style = MaterialTheme.typography.labelLarge,
+            )
+            Text(
+                text = stringResource(hintRes),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+            TextButton(
+                onClick = { expanded = true },
+                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable),
+            ) {
+                Text(stringResource(labelRes), softWrap = false)
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            }
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                matchTextFieldWidth = false,
+            ) {
+                EVENT_VISIBILITIES.forEach { value ->
+                    val itemLabel = when (value) {
+                        "public" -> R.string.calendar_visibility_public
+                        "private" -> R.string.calendar_visibility_private
+                        else -> R.string.calendar_visibility_default
+                    }
+                    DropdownMenuItem(
+                        text = { Text(stringResource(itemLabel), softWrap = false) },
+                        onClick = {
+                            onSelect(value)
                             expanded = false
                         },
                     )
