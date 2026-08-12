@@ -1,5 +1,6 @@
 package com.we.meet.ui.calendar
 
+import android.util.Patterns
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -61,6 +62,7 @@ import com.we.meet.WeMeetApp
 import com.we.meet.core.directory.ui.ContactPicker
 import com.we.meet.core.directory.ui.ContactPickerMode
 import com.we.meet.core.directory.ui.PickedMember
+import com.we.meet.data.api.dto.AttendeeEntryRequest
 import com.we.meet.data.api.dto.CreateEventRequest
 import com.we.meet.data.api.dto.MeetingRoomBriefDto
 import com.we.meet.data.api.dto.UpdateEventRequest
@@ -81,6 +83,11 @@ import retrofit2.HttpException
 
 private val dateFmt = DateTimeFormatter.ofPattern("yyyy/MM/dd")
 private val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
+
+private data class ExternalAttendeeDraft(
+    val email: String,
+    val role: String = "required",
+)
 
 /**
  * Event form (route `create_event?epochDay=&eventId=`). Create mode when
@@ -148,6 +155,12 @@ fun CreateEventScreen(
     var repeat by remember { mutableStateOf("") }
     var repeatUntil by remember { mutableStateOf<LocalDate?>(null) }
     var attendees by remember { mutableStateOf<List<PickedMember>>(emptyList()) }
+    var attendeeRoles by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var externalAttendees by remember {
+        mutableStateOf<List<ExternalAttendeeDraft>>(emptyList())
+    }
+    var externalEmail by remember { mutableStateOf("") }
+    var privateEvent by remember { mutableStateOf(false) }
     // P8:编辑态标记重复日程(加载详情时置位)——重复日程不开放参与者编辑。
     var editIsRecurring by remember { mutableStateOf(false) }
 
@@ -177,7 +190,8 @@ fun CreateEventScreen(
     // meaningful "dirty" check would need an initial snapshot — out of scope.)
     val isDirty = !isEdit && (
         title.isNotBlank() || description.isNotBlank() ||
-            attendees.isNotEmpty() || repeat.isNotEmpty() || meetingRoom != null
+            attendees.isNotEmpty() || externalAttendees.isNotEmpty() ||
+            privateEvent || repeat.isNotEmpty() || meetingRoom != null
     )
     val handleClose: () -> Unit = { if (isDirty) showDiscardConfirm = true else onClose() }
 
@@ -198,6 +212,7 @@ fun CreateEventScreen(
             }
         }
         attendees = picked
+        attendeeRoles = picked.associate { it.userId to "required" }
         if (picked.size < prefillAttendeeIds.distinct().size) {
             android.widget.Toast.makeText(
                 context,
@@ -233,6 +248,7 @@ fun CreateEventScreen(
                 val parseZone = if (e.allDay) eventZone else zone
                 title = e.title
                 description = e.description
+                privateEvent = e.visibility == "private"
                 allDay = e.allDay
                 val startLdt = OffsetDateTime.parse(e.startAt).atZoneSameInstant(parseZone).toLocalDateTime()
                 val endLdt = OffsetDateTime.parse(e.endAt).atZoneSameInstant(parseZone).toLocalDateTime()
@@ -256,6 +272,18 @@ fun CreateEventScreen(
                         displayName = a.fullName ?: a.email ?: "?",
                         email = a.email,
                         avatarUrl = null,
+                    )
+                }
+                attendeeRoles = e.attendees.mapNotNull { a ->
+                    val uid = a.id ?: return@mapNotNull null
+                    if (a.role == "organizer") return@mapNotNull null
+                    uid to if (a.role == "optional") "optional" else "required"
+                }.toMap()
+                externalAttendees = e.attendees.mapNotNull { a ->
+                    if (a.id != null || a.email.isNullOrBlank()) return@mapNotNull null
+                    ExternalAttendeeDraft(
+                        email = a.email.lowercase(),
+                        role = if (a.role == "optional") "optional" else "required",
                     )
                 }
                 loaded = true
@@ -346,6 +374,17 @@ fun CreateEventScreen(
         errorRes = null
         scope.launch {
             runCatching {
+                val attendeeEntries = attendees.map { attendee ->
+                    AttendeeEntryRequest(
+                        userId = attendee.userId,
+                        role = attendeeRoles[attendee.userId] ?: "required",
+                    )
+                } + externalAttendees.map { attendee ->
+                    AttendeeEntryRequest(
+                        email = attendee.email,
+                        role = attendee.role,
+                    )
+                }
                 if (isEdit) {
                     app.apiClient.calendarApi.updateEvent(
                         editEventId!!,
@@ -356,9 +395,9 @@ fun CreateEventScreen(
                             endAt = isoUtc(endInstant),
                             allDay = allDay,
                             reminders = reminderMinutes?.let { listOf(it) } ?: emptyList(),
-                            // P8:非重复日程全量同步参与者;重复日程不传(null)。
-                            attendeeIds = if (editIsRecurring) null
-                            else attendees.map { it.userId },
+                            // P1-8:结构化参与者携带 required/optional 和外部邮箱。
+                            attendeeEntries = if (editIsRecurring) null else attendeeEntries,
+                            visibility = if (privateEvent) "private" else "default",
                             editScope = editScope,
                             // P9:全天不允许带房间;"" = 释放(不能用 null,
                             // Moshi 会把它丢掉,后端就当没提过这个字段)。
@@ -376,8 +415,9 @@ fun CreateEventScreen(
                             endAt = isoUtc(endInstant),
                             allDay = allDay,
                             reminders = reminderMinutes?.let { listOf(it) } ?: emptyList(),
-                            attendeeIds = attendees.map { it.userId },
+                            attendeeEntries = attendeeEntries,
                             description = description.trim(),
+                            visibility = if (privateEvent) "private" else "default",
                             timezone = zone.id,
                             recurrence = composeRRule(repeat, repeatUntil),
                             sourceConversationId = sourceConversationId,
@@ -505,6 +545,31 @@ fun CreateEventScreen(
                 HorizontalDivider()
             }
 
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = Dimens.SpaceM),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.calendar_private_event),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    Text(
+                        text = stringResource(R.string.calendar_private_event_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = privateEvent,
+                    onCheckedChange = { privateEvent = it },
+                )
+            }
+            HorizontalDivider()
+
             // P8 编辑增删参与者:创建态 + 非重复日程编辑态(加载完成后)展示;
             // 重复日程编辑不展示(服务端三选路径剔除 attendee_ids)。
             if (!isEdit || (loaded && !editIsRecurring)) {
@@ -519,7 +584,7 @@ fun CreateEventScreen(
                     Text(
                         text = stringResource(
                             R.string.calendar_field_attendees_count,
-                            attendees.size,
+                            attendees.size + externalAttendees.size,
                         ),
                         style = MaterialTheme.typography.labelLarge,
                         modifier = Modifier.weight(1f),
@@ -570,8 +635,30 @@ fun CreateEventScreen(
                                 else MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
+                        TextButton(
+                            onClick = {
+                                val next = attendeeRoles.toMutableMap()
+                                next[picked.userId] = if (
+                                    next[picked.userId] == "optional"
+                                ) "required" else "optional"
+                                attendeeRoles = next
+                            },
+                        ) {
+                            Text(
+                                stringResource(
+                                    if (attendeeRoles[picked.userId] == "optional") {
+                                        R.string.calendar_attendee_optional
+                                    } else {
+                                        R.string.calendar_attendee_required
+                                    },
+                                ),
+                            )
+                        }
                         IconButton(
-                            onClick = { attendees = attendees - picked },
+                            onClick = {
+                                attendees = attendees - picked
+                                attendeeRoles = attendeeRoles - picked.userId
+                            },
                             modifier = Modifier.size(Dimens.IconButtonCompact),
                         ) {
                             Icon(
@@ -582,6 +669,91 @@ fun CreateEventScreen(
                                 ),
                                 modifier = Modifier.size(Dimens.IconTiny),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = Dimens.SpaceXs),
+                ) {
+                    OutlinedTextField(
+                        value = externalEmail,
+                        onValueChange = { externalEmail = it },
+                        label = { Text(stringResource(R.string.calendar_external_email)) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    val normalizedEmail = externalEmail.trim().lowercase()
+                    TextButton(
+                        enabled = Patterns.EMAIL_ADDRESS.matcher(normalizedEmail).matches(),
+                        onClick = {
+                            if (externalAttendees.none { it.email == normalizedEmail }) {
+                                externalAttendees = externalAttendees +
+                                    ExternalAttendeeDraft(normalizedEmail)
+                            }
+                            externalEmail = ""
+                        },
+                    ) {
+                        Text(stringResource(R.string.calendar_external_add))
+                    }
+                }
+                externalAttendees.forEach { external ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = Dimens.SpaceXxs),
+                    ) {
+                        Text(
+                            text = external.email,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            onClick = {
+                                externalAttendees = externalAttendees.map {
+                                    if (it.email == external.email) {
+                                        it.copy(
+                                            role = if (it.role == "optional") {
+                                                "required"
+                                            } else {
+                                                "optional"
+                                            },
+                                        )
+                                    } else {
+                                        it
+                                    }
+                                }
+                            },
+                        ) {
+                            Text(
+                                stringResource(
+                                    if (external.role == "optional") {
+                                        R.string.calendar_attendee_optional
+                                    } else {
+                                        R.string.calendar_attendee_required
+                                    },
+                                ),
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                externalAttendees = externalAttendees - external
+                            },
+                            modifier = Modifier.size(Dimens.IconButtonCompact),
+                        ) {
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = stringResource(
+                                    R.string.calendar_attendee_remove,
+                                    external.email,
+                                ),
+                                modifier = Modifier.size(Dimens.IconTiny),
                             )
                         }
                     }
@@ -740,7 +912,12 @@ fun CreateEventScreen(
             mode = ContactPickerMode.Multi,
             excludeUserIds = attendees.map { it.userId }.toSet(),
             onConfirm = { picked ->
-                attendees = (attendees + picked).distinctBy { it.userId }
+                val newAttendees = picked.filter { candidate ->
+                    attendees.none { it.userId == candidate.userId }
+                }
+                attendees = attendees + newAttendees
+                attendeeRoles = attendeeRoles +
+                    newAttendees.associate { it.userId to "required" }
                 showPicker = false
             },
             onDismiss = { showPicker = false },
@@ -755,7 +932,7 @@ fun CreateEventScreen(
             endIso = isoUtc(end.atZone(zone).toInstant()),
             excludeEventId = editEventId,
             // 组织者自己也占一个位子。
-            seedCapacity = attendees.size + 1,
+            seedCapacity = attendees.size + externalAttendees.size + 1,
             workingStartMin = workingHours.startMin,
             workingEndMin = workingHours.endMin,
             onConfirm = { room ->

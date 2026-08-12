@@ -320,6 +320,13 @@
     <string name="calendar_reminder_days">%1$d Tage vorher</string>
     <string name="calendar_field_attendees">Teilnehmer</string>
     <string name="calendar_add_attendees">Teilnehmer hinzufügen</string>
+    <string name="calendar_attendee_required">Erforderlich</string>
+    <string name="calendar_attendee_optional">Optional</string>
+    <string name="calendar_external_email">E-Mail eines externen Teilnehmers</string>
+    <string name="calendar_external_add">Hinzufügen</string>
+    <string name="calendar_private_event">Privater Termin</string>
+    <string name="calendar_private_event_hint">Nichtteilnehmer sehen nur die Belegungszeit, keine Details oder Einwahlinformationen</string>
+    <string name="event_private_redacted">Sie nehmen nicht teil; die Termindetails sind ausgeblendet.</string>
     <string name="calendar_field_description_hint">Beschreibung (optional)</string>
     <string name="calendar_action_create">Erstellen</string>
     <string name="calendar_error_end_before_start">Das Ende muss nach dem Beginn liegen</string>
@@ -327,6 +334,7 @@
     <string name="event_detail_title">Termindetails</string>
     <string name="event_organizer">Organisator</string>
     <string name="event_attendees_count">Teilnehmer (%1$d)</string>
+    <string name="event_attendee_optional">Optional</string>
     <string name="event_rsvp_accept">Zusagen</string>
     <string name="event_rsvp_tentative">Vielleicht</string>
     <string name="event_rsvp_decline">Absagen</string>

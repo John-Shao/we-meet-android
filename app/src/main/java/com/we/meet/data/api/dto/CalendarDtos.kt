@@ -22,6 +22,14 @@ data class EventAttendeeDto(
     val role: String? = null,
 )
 
+@JsonClass(generateAdapter = true)
+data class AttendeeEntryRequest(
+    @Json(name = "user_id") val userId: String? = null,
+    val email: String? = null,
+    /** required | optional */
+    val role: String = "required",
+)
+
 /** P8 忙闲:一个 busy 区间(ISO 8601 UTC,已按窗口裁剪、重叠合并)。 */
 @JsonClass(generateAdapter = true)
 data class BusyIntervalDto(
@@ -59,6 +67,7 @@ data class CalendarEventDto(
     @Json(name = "all_day") val allDay: Boolean = false,
     val status: String = "",
     val visibility: String = "",
+    @Json(name = "details_redacted") val detailsRedacted: Boolean = false,
     /** Minutes-before offsets. */
     val reminders: List<Int> = emptyList(),
     val organizer: EventOrganizerDto? = null,
@@ -101,8 +110,10 @@ data class CreateEventRequest(
     @Json(name = "end_at") val endAt: String,
     @Json(name = "all_day") val allDay: Boolean = false,
     val reminders: List<Int> = emptyList(),
-    @Json(name = "attendee_ids") val attendeeIds: List<String> = emptyList(),
+    @Json(name = "attendee_ids") val attendeeIds: List<String>? = null,
+    @Json(name = "attendee_entries") val attendeeEntries: List<AttendeeEntryRequest>? = null,
     val description: String = "",
+    val visibility: String = "default",
     val timezone: String,
     /** P2-M3 重复日程:RRULE 串(UNTIL 用浮动本地时刻),空=单次。 */
     val recurrence: String = "",
@@ -137,6 +148,8 @@ data class UpdateEventRequest(
     @Json(name = "all_day") val allDay: Boolean,
     val reminders: List<Int>,
     @Json(name = "attendee_ids") val attendeeIds: List<String>? = null,
+    @Json(name = "attendee_entries") val attendeeEntries: List<AttendeeEntryRequest>? = null,
+    val visibility: String,
     /**
      * P2-M2 重复子场次的编辑范围:one|following|all。单次/主事件传 null——
      * 后端 `get('edit_scope') or ''` 会把 null 当缺省(主事件缺省=全部)。

@@ -47,6 +47,12 @@ internal fun EventCardBubble(
     onOpen: () -> Unit,
 ) {
     val inactive = content.kind == "cancelled" || content.kind == "removed"
+    val isPrivate = content.visibility == "private"
+    val displayTitle = if (isPrivate) {
+        stringResource(R.string.im_event_card_private)
+    } else {
+        content.title.ifBlank { stringResource(R.string.im_preview_event) }
+    }
     val badge = when (content.kind) {
         "invited" -> stringResource(R.string.im_event_card_invited)
         "time_changed" -> stringResource(R.string.im_event_card_time_changed)
@@ -130,9 +136,7 @@ internal fun EventCardBubble(
                     )
                     Spacer(Modifier.width(Dimens.SpaceXs))
                     Text(
-                        text = content.title.ifBlank {
-                            stringResource(R.string.im_preview_event)
-                        },
+                        text = displayTitle,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         maxLines = 1,
@@ -198,7 +202,7 @@ internal fun EventCardBubble(
                         modifier = Modifier.padding(top = if (oldTimeText != null) Dimens.SpaceNone else Dimens.SpaceXs),
                     )
                 }
-                if (content.attendeeCount > 0 || content.organizerName.isNotBlank()) {
+                if (!isPrivate && (content.attendeeCount > 0 || content.organizerName.isNotBlank())) {
                     Text(
                         text = stringResource(
                             R.string.im_event_card_meta,

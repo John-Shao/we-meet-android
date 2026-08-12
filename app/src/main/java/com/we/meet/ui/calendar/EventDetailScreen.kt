@@ -252,8 +252,8 @@ fun EventDetailScreen(
                 title = stringResource(R.string.event_detail_title),
                 onBack = onBack,
                 actions = {
-                    // 分享不限组织者:任何能看到该日程的人都能转发卡片(对标飞书)。
-                    if (ui.event != null) {
+                    // 普通日程不限组织者；私密日程不提供转发入口。
+                    if (ui.event != null && ui.event?.visibility != "private") {
                         IconButton(onClick = { showShare = true }) {
                             Icon(
                                 Icons.Filled.Share,
@@ -460,6 +460,11 @@ private fun EventBody(
     val parsed = parsedFull?.ui
     val dateFmt = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")
     val dayFmt = DateTimeFormatter.ofPattern("yyyy/MM/dd")
+    val displayTitle = if (event.detailsRedacted) {
+        stringResource(R.string.calendar_private_event)
+    } else {
+        event.title
+    }
 
     Column(
         modifier = Modifier
@@ -470,7 +475,7 @@ private fun EventBody(
         Spacer(Modifier.height(Dimens.IconTiny))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = event.title,
+                text = displayTitle,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
                 textDecoration = if (parsed?.cancelled == true) TextDecoration.LineThrough else null,
@@ -485,6 +490,14 @@ private fun EventBody(
             }
         }
         Spacer(Modifier.height(Dimens.SpaceS))
+        if (event.detailsRedacted) {
+            Text(
+                text = stringResource(R.string.event_private_redacted),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = Dimens.SpaceS),
+            )
+        }
         if (parsed != null) {
             Text(
                 text = if (parsed.allDay) {
@@ -578,7 +591,7 @@ private fun EventBody(
 
         // RSVP — only rendered when the backend gave the caller an attendee row
         // (`my_rsvp` non-null); the organizer's attendance is implied.
-        if (event.myRsvp != null) {
+        if (event.myRsvp != null && !ui.canManage) {
             Spacer(Modifier.height(Dimens.IconSmall))
             val options = listOf(
                 "accepted" to stringResource(R.string.event_rsvp_accept),
@@ -644,6 +657,14 @@ private fun EventBody(
                         text = stringResource(R.string.event_organizer),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = Dimens.SpaceS),
+                    )
+                }
+                if (attendee.role == "optional") {
+                    Text(
+                        text = stringResource(R.string.event_attendee_optional),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = Dimens.SpaceS),
                     )
                 }

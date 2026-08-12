@@ -346,6 +346,13 @@
     <string name="calendar_reminder_days">%1$d days before</string>
     <string name="calendar_field_attendees">Attendees</string>
     <string name="calendar_add_attendees">Add attendees</string>
+    <string name="calendar_attendee_required">Required</string>
+    <string name="calendar_attendee_optional">Optional</string>
+    <string name="calendar_external_email">External attendee email</string>
+    <string name="calendar_external_add">Add</string>
+    <string name="calendar_private_event">Private event</string>
+    <string name="calendar_private_event_hint">Non-attendees can see only the busy time, not details or joining information</string>
+    <string name="event_private_redacted">You are not an attendee, so the event details are hidden.</string>
     <string name="calendar_field_description_hint">Description (optional)</string>
     <string name="calendar_action_create">Create</string>
     <string name="calendar_error_end_before_start">End time must be after the start time</string>
@@ -353,6 +360,7 @@
     <string name="event_detail_title">Event details</string>
     <string name="event_organizer">Organizer</string>
     <string name="event_attendees_count">Attendees (%1$d)</string>
+    <string name="event_attendee_optional">Optional</string>
     <string name="event_rsvp_accept">Accept</string>
     <string name="event_rsvp_tentative">Maybe</string>
     <string name="event_rsvp_decline">Decline</string>

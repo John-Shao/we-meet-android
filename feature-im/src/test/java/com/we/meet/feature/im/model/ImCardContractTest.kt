@@ -66,6 +66,15 @@ class ImCardContractTest {
     }
 
     @Test
+    fun `parses a redacted private card`() {
+        val card = parse("event-card", "event_card_private") as MessageContent.EventCard
+        assertEquals("private", card.visibility)
+        assertEquals("", card.title)
+        assertEquals(0, card.attendeeCount)
+        assertEquals("", card.organizerName)
+    }
+
+    @Test
     fun `parses invitation and removal cards`() {
         val invited = parse("event-card", "event_card_invited") as MessageContent.EventCard
         val removed = parse("event-card", "event_card_removed") as MessageContent.EventCard
@@ -174,6 +183,7 @@ class ImCardContractTest {
         val byType = mapOf(
             "event-card" to listOf(
                 "event_card_created",
+                "event_card_private",
                 "event_card_invited",
                 "event_card_time_changed",
                 "event_card_attendees_changed",

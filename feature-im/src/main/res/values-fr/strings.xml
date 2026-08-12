@@ -246,6 +246,7 @@
     <string name="im_event_card_meta">%1$d attendees · Organizer %2$s</string>
     <string name="im_event_card_view">View details</string>
     <string name="im_event_card_all_day">All day</string>
+    <string name="im_event_card_private">Événement privé</string>
     <string name="im_event_card_invited">Vous êtes invité</string>
     <string name="im_event_card_time_changed">Rescheduled</string>
     <string name="im_event_card_attendees_changed">Attendees changed</string>

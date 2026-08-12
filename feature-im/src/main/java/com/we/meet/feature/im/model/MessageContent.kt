@@ -87,6 +87,8 @@ sealed interface MessageContent {
         val allDay: Boolean = false,
         val attendeeCount: Int = 0,
         val organizerName: String = "",
+        /** private cards sent to a source conversation intentionally omit event details. */
+        val visibility: String = "default",
         /** created | invited | time_changed | attendees_changed | removed | rsvp_changed | cancelled */
         val kind: String = "created",
         /**
@@ -231,6 +233,9 @@ object MessageContentParser {
                 allDay = it.optBoolean("all_day", false),
                 attendeeCount = it.optInt("attendee_count", 0),
                 organizerName = it.optString("organizer_name"),
+                visibility = it.optString("visibility", "default")
+                    .takeIf { visibility -> visibility == "private" }
+                    ?: "default",
                 kind = it.optString("kind", "created"),
                 oldStartIso = it.optString("old_start"),
                 oldEndIso = it.optString("old_end"),

@@ -320,6 +320,13 @@
     <string name="calendar_reminder_days">%1$d dagen van tevoren</string>
     <string name="calendar_field_attendees">Deelnemers</string>
     <string name="calendar_add_attendees">Deelnemers toevoegen</string>
+    <string name="calendar_attendee_required">Verplicht</string>
+    <string name="calendar_attendee_optional">Optioneel</string>
+    <string name="calendar_external_email">E-mailadres externe deelnemer</string>
+    <string name="calendar_external_add">Toevoegen</string>
+    <string name="calendar_private_event">Privéafspraak</string>
+    <string name="calendar_private_event_hint">Niet-deelnemers zien alleen de bezette tijd, zonder details of deelnamelink</string>
+    <string name="event_private_redacted">Je bent geen deelnemer; de afspraakdetails zijn verborgen.</string>
     <string name="calendar_field_description_hint">Beschrijving (optioneel)</string>
     <string name="calendar_action_create">Aanmaken</string>
     <string name="calendar_error_end_before_start">Het einde moet na het begin liggen</string>
@@ -327,6 +334,7 @@
     <string name="event_detail_title">Afspraakdetails</string>
     <string name="event_organizer">Organisator</string>
     <string name="event_attendees_count">Deelnemers (%1$d)</string>
+    <string name="event_attendee_optional">Optioneel</string>
     <string name="event_rsvp_accept">Accepteren</string>
     <string name="event_rsvp_tentative">Misschien</string>
     <string name="event_rsvp_decline">Afwijzen</string>

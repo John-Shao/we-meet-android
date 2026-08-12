@@ -346,6 +346,13 @@
     <string name="calendar_reminder_days">提前 %1$d 天</string>
     <string name="calendar_field_attendees">参与人</string>
     <string name="calendar_add_attendees">添加参与者</string>
+    <string name="calendar_attendee_required">必选</string>
+    <string name="calendar_attendee_optional">可选</string>
+    <string name="calendar_external_email">外部参与者邮箱</string>
+    <string name="calendar_external_add">添加</string>
+    <string name="calendar_private_event">私密日程</string>
+    <string name="calendar_private_event_hint">非参与者只能看到忙碌时间，无法查看详情和入会信息</string>
+    <string name="event_private_redacted">你不是该日程的参与者，详细信息已隐藏。</string>
     <string name="calendar_field_description_hint">描述（选填）</string>
     <string name="calendar_action_create">创建</string>
     <string name="calendar_error_end_before_start">结束时间必须晚于开始时间</string>
@@ -353,6 +360,7 @@
     <string name="event_detail_title">日程详情</string>
     <string name="event_organizer">组织者</string>
     <string name="event_attendees_count">参与人 (%1$d)</string>
+    <string name="event_attendee_optional">可选</string>
     <string name="event_rsvp_accept">接受</string>
     <string name="event_rsvp_tentative">待定</string>
     <string name="event_rsvp_decline">拒绝</string>

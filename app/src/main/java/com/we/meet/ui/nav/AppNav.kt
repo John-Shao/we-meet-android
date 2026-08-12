@@ -1052,12 +1052,16 @@ fun AppNav() {
                         put("v", 1)
                         put("kind", "created")
                         put("event_id", dto.id)
-                        put("title", dto.title)
+                        put("title", if (dto.visibility == "private") "" else dto.title)
                         put("start", dto.startAt)
                         put("end", dto.endAt)
                         put("all_day", dto.allDay)
-                        put("attendee_count", dto.attendees.size)
-                        put("organizer_name", dto.organizer?.fullName ?: "")
+                        put("attendee_count", if (dto.visibility == "private") 0 else dto.attendees.size)
+                        put(
+                            "organizer_name",
+                            if (dto.visibility == "private") "" else dto.organizer?.fullName ?: "",
+                        )
+                        if (dto.visibility == "private") put("visibility", "private")
                     }.toString()
                     // 会话级 scope 发送:导航条目随 onClose pop 销毁,不能用它的 scope。
                     ImSession.get(app).sendMessageAsync(srcCid, body, "event-card")
