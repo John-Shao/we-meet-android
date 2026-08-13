@@ -6,15 +6,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -92,7 +91,7 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Dimens.ScreenPadding),
         ) {
-            UnifiedCalendarManagementSection()
+            SettingsSectionHeader(stringResource(R.string.calendar_settings_group_timezone))
             SettingDropdownRow(
                 label = stringResource(R.string.calendar_settings_timezone_mode),
                 current = stringResource(
@@ -122,14 +121,6 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            SettingRow(label = stringResource(R.string.calendar_settings_reminder_entry)) {
-                Switch(
-                    checked = reminderEntry,
-                    onCheckedChange = { store.setImReminderEntry(it) },
-                )
-            }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
             SettingDropdownRow(
                 label = stringResource(R.string.calendar_settings_week_start),
                 current = dowLabel(weekStart),
@@ -139,39 +130,7 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            SettingRow(label = stringResource(R.string.calendar_settings_show_weekend)) {
-                Switch(
-                    checked = showWeekend,
-                    onCheckedChange = { store.setCalendarShowWeekend(it) },
-                )
-            }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-            // 与上一条是两件事:上面决定周视图「有几列」(5 / 7),这条决定
-            // 「一屏铺几列」——列数比它少时铺满不滚。
-            SettingDropdownRow(
-                label = stringResource(R.string.calendar_settings_week_visible_days),
-                current = stringResource(
-                    R.string.calendar_settings_week_days_value, weekVisibleDays,
-                ),
-                options = CALENDAR_WEEK_VISIBLE_DAYS_RANGE.map { days ->
-                    val label =
-                        stringResource(R.string.calendar_settings_week_days_value, days)
-                    label to { store.setCalendarWeekVisibleDays(days) }
-                },
-            )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-            SettingDropdownRow(
-                label = stringResource(R.string.calendar_settings_default_duration),
-                current = stringResource(R.string.calendar_settings_duration_minutes, durationMin),
-                options = listOf(30, 60, 90).map { min ->
-                    val label = stringResource(R.string.calendar_settings_duration_minutes, min)
-                    label to { store.setCalendarDefaultDurationMin(min) }
-                },
-            )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
+            SettingsSectionHeader(stringResource(R.string.calendar_settings_group_working_hours))
             WorkingTimeDropdownRow(
                 label = stringResource(R.string.calendar_settings_working_start),
                 currentMin = workingHours.startMin,
@@ -193,6 +152,39 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = Dimens.SpaceS),
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            SettingsSectionHeader(stringResource(R.string.calendar_settings_group_defaults))
+            SettingDropdownRow(
+                label = stringResource(R.string.calendar_settings_default_duration),
+                current = stringResource(R.string.calendar_settings_duration_minutes, durationMin),
+                options = listOf(30, 60, 90).map { min ->
+                    val label = stringResource(R.string.calendar_settings_duration_minutes, min)
+                    label to { store.setCalendarDefaultDurationMin(min) }
+                },
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            SettingsSectionHeader(stringResource(R.string.calendar_settings_group_display))
+            SettingRow(label = stringResource(R.string.calendar_settings_show_weekend)) {
+                Switch(
+                    checked = showWeekend,
+                    onCheckedChange = { store.setCalendarShowWeekend(it) },
+                )
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            // 上一条决定周视图有 5/7 列；这一条决定一屏铺几列。
+            SettingDropdownRow(
+                label = stringResource(R.string.calendar_settings_week_visible_days),
+                current = stringResource(
+                    R.string.calendar_settings_week_days_value, weekVisibleDays,
+                ),
+                options = CALENDAR_WEEK_VISIBLE_DAYS_RANGE.map { days ->
+                    val label = stringResource(R.string.calendar_settings_week_days_value, days)
+                    label to { store.setCalendarWeekVisibleDays(days) }
+                },
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
@@ -236,6 +228,23 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
+            SettingRow(label = stringResource(R.string.calendar_settings_dim_past)) {
+                Switch(
+                    checked = dimPast,
+                    onCheckedChange = { store.setCalendarDimPast(it) },
+                )
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            SettingsSectionHeader(stringResource(R.string.calendar_settings_group_reminders))
+            SettingRow(label = stringResource(R.string.calendar_settings_reminder_entry)) {
+                Switch(
+                    checked = reminderEntry,
+                    onCheckedChange = { store.setImReminderEntry(it) },
+                )
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
             SettingDropdownRow(
                 label = stringResource(R.string.calendar_settings_default_reminder),
                 current = reminderLabel(reminderMin.takeIf { it >= 0 }),
@@ -243,14 +252,6 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
                     reminderLabel(min) to { store.setCalendarDefaultReminderMin(min ?: -1) }
                 },
             )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-            SettingRow(label = stringResource(R.string.calendar_settings_dim_past)) {
-                Switch(
-                    checked = dimPast,
-                    onCheckedChange = { store.setCalendarDimPast(it) },
-                )
-            }
         }
     }
 
@@ -269,42 +270,44 @@ private fun WorkingTimeDropdownRow(
     onSelect: (Int) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    SettingRow(label = label) {
-        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-            TextButton(
-                onClick = { expanded = true },
-                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable),
-            ) {
-                Text(formatMinuteOfDay(currentMin))
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-            }
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                matchTextFieldWidth = false,
-            ) {
-                options.forEach { minute ->
-                    DropdownMenuItem(
-                        text = { Text(formatMinuteOfDay(minute), softWrap = false) },
-                        enabled = enabled(minute),
-                        onClick = {
-                            onSelect(minute)
-                            expanded = false
-                        },
-                    )
-                }
+    SettingRow(label = label, onClick = { expanded = true }) {
+        Text(formatMinuteOfDay(currentMin), color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+    if (expanded) {
+        ModalBottomSheet(onDismissRequest = { expanded = false }) {
+            Text(
+                label,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+            )
+            options.forEach { minute ->
+                ListItem(
+                    headlineContent = { Text(formatMinuteOfDay(minute), softWrap = false) },
+                    trailingContent = {
+                        if (minute == currentMin) Text("✓", color = MaterialTheme.colorScheme.primary)
+                    },
+                    modifier = Modifier.clickable(enabled = enabled(minute)) {
+                        onSelect(minute)
+                        expanded = false
+                    },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun SettingRow(label: String, trailing: @Composable () -> Unit) {
+private fun SettingRow(
+    label: String,
+    onClick: (() -> Unit)? = null,
+    trailing: @Composable () -> Unit,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(vertical = Dimens.SpaceS),
     ) {
         Text(label, style = MaterialTheme.typography.bodyLarge)
@@ -320,31 +323,38 @@ private fun SettingDropdownRow(
     options: List<Pair<String, () -> Unit>>,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    SettingRow(label = label) {
-        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-            TextButton(
-                onClick = { expanded = true },
-                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable),
-            ) {
-                Text(current)
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-            }
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                // 锚点是窄按钮，菜单需按内容自适应宽度，避免选项文字折行
-                matchTextFieldWidth = false,
-            ) {
-                options.forEach { (text, select) ->
-                    DropdownMenuItem(
-                        text = { Text(text, softWrap = false) },
-                        onClick = {
-                            select()
-                            expanded = false
-                        },
-                    )
-                }
+    SettingRow(label = label, onClick = { expanded = true }) {
+        Text(current, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+    if (expanded) {
+        ModalBottomSheet(onDismissRequest = { expanded = false }) {
+            Text(
+                label,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+            )
+            options.forEach { (text, select) ->
+                ListItem(
+                    headlineContent = { Text(text, softWrap = false) },
+                    trailingContent = {
+                        if (text == current) Text("✓", color = MaterialTheme.colorScheme.primary)
+                    },
+                    modifier = Modifier.clickable {
+                        select()
+                        expanded = false
+                    },
+                )
             }
         }
     }
+}
+
+@Composable
+private fun SettingsSectionHeader(title: String) {
+    Text(
+        title,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(top = Dimens.SpaceXl, bottom = Dimens.SpaceXs),
+    )
 }

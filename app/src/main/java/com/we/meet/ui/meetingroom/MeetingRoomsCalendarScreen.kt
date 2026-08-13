@@ -423,7 +423,7 @@ private fun MeetingRoomOverview(
             onSelect = { page ->
                 if (page == CalendarPrimaryPage.CALENDAR) onShowCalendar()
             },
-            onOpenSettings = onOpenSettings,
+            onOpenManagement = onOpenSettings,
         )
         RoomDateToolbar(
             date = ui.selectedDate,

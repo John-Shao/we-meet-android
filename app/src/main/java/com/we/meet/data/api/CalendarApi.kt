@@ -36,6 +36,11 @@ interface CalendarApi {
     @GET("api/v1.0/calendars/")
     suspend fun listCalendars(): List<com.we.meet.data.api.dto.UnifiedCalendarDto>
 
+    @GET("api/v1.0/calendars/{id}/")
+    suspend fun getCalendar(
+        @Path("id") id: String,
+    ): com.we.meet.data.api.dto.UnifiedCalendarDto
+
     @POST("api/v1.0/calendars/")
     suspend fun createCalendar(@Body body: com.we.meet.data.api.dto.CreateCalendarRequest): com.we.meet.data.api.dto.UnifiedCalendarDto
 

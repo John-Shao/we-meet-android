@@ -66,6 +66,20 @@ enum class CalendarTimezoneMode {
     }
 }
 
+/** Calendar root view. This is intentionally local-only: it is a navigation
+ * preference, not part of the cross-device calendar rendering contract. */
+enum class CalendarDisplayMode {
+    AGENDA,
+    DAY,
+    MULTI_DAY,
+    MONTH;
+
+    companion object {
+        fun fromKey(key: String?): CalendarDisplayMode =
+            entries.firstOrNull { it.name == key } ?: AGENDA
+    }
+}
+
 fun isValidWorkingHours(startMin: Int, endMin: Int): Boolean {
     val duration = endMin - startMin
     return startMin in 0 until 24 * 60 &&
@@ -226,6 +240,18 @@ class SettingsStore(
         _calendarWeekVisibleDays.value = safe
     }
 
+    private val _calendarDisplayMode = MutableStateFlow(
+        CalendarDisplayMode.fromKey(prefs.getString(KEY_CALENDAR_DISPLAY_MODE, null)),
+    )
+    val calendarDisplayMode: StateFlow<CalendarDisplayMode> =
+        _calendarDisplayMode.asStateFlow()
+
+    fun setCalendarDisplayMode(mode: CalendarDisplayMode) {
+        if (!activateCalendarAccount()) return
+        prefs.edit().putString(KEY_CALENDAR_DISPLAY_MODE, mode.name).apply()
+        _calendarDisplayMode.value = mode
+    }
+
     private val _workingHours = MutableStateFlow(loadWorkingHours())
 
     /** User-local working window shared by calendar, free/busy and meeting rooms. */
@@ -349,6 +375,7 @@ class SettingsStore(
             _calendarDimPast.value = true
             _calendarShowWeekend.value = false
             _calendarWeekVisibleDays.value = CALENDAR_WEEK_VISIBLE_DAYS_DEFAULT
+            _calendarDisplayMode.value = CalendarDisplayMode.AGENDA
             _workingHours.value = WorkingHours()
             _calendarTimeRangeMode.value = TimeRangeMode.WORK
             _meetingRoomTimeRangeMode.value = TimeRangeMode.WORK
@@ -503,6 +530,7 @@ class SettingsStore(
         const val KEY_CALENDAR_DIM_PAST = "calendar_dim_past"
         const val KEY_CALENDAR_SHOW_WEEKEND = "calendar_show_weekend"
         const val KEY_CALENDAR_WEEK_VISIBLE_DAYS = "calendar_week_visible_days"
+        const val KEY_CALENDAR_DISPLAY_MODE = "calendar_display_mode"
         const val KEY_WORKING_HOURS_START = "calendar_working_hours_start"
         const val KEY_WORKING_HOURS_END = "calendar_working_hours_end"
         const val KEY_CALENDAR_TIME_RANGE_MODE = "calendar_time_range_mode"
@@ -522,6 +550,7 @@ class SettingsStore(
             KEY_CALENDAR_DIM_PAST,
             KEY_CALENDAR_SHOW_WEEKEND,
             KEY_CALENDAR_WEEK_VISIBLE_DAYS,
+            KEY_CALENDAR_DISPLAY_MODE,
             KEY_WORKING_HOURS_START,
             KEY_WORKING_HOURS_END,
             KEY_CALENDAR_TIME_RANGE_MODE,

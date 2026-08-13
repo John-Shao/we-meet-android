@@ -1,14 +1,16 @@
 package com.we.meet.ui.calendar
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -16,8 +18,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -29,57 +29,57 @@ import com.we.meet.ui.theme.Dimens
 
 enum class CalendarPrimaryPage { CALENDAR, MEETING_ROOMS }
 
+/** Feishu-like page tabs translated to Material: text tabs with a thin active indicator. */
 @Composable
 fun CalendarPrimaryToolbar(
     current: CalendarPrimaryPage,
     onSelect: (CalendarPrimaryPage) -> Unit,
-    onOpenSettings: () -> Unit,
+    onOpenManagement: () -> Unit,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = Dimens.SpaceM, end = Dimens.SpaceXs, top = Dimens.SpaceS),
-    ) {
+    Column {
         Row(
-            modifier = Modifier
-                .background(
-                    MaterialTheme.colorScheme.surfaceVariant,
-                    RoundedCornerShape(Dimens.CornerS),
-                )
-                .padding(Dimens.SpaceXxs),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceS),
         ) {
             CalendarPrimaryPage.entries.forEach { page ->
                 val selected = current == page
-                Text(
-                    text = stringResource(
-                        if (page == CalendarPrimaryPage.CALENDAR) R.string.tab_calendar
-                        else R.string.meeting_rooms_title,
-                    ),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (selected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(Dimens.CornerXs))
-                        .background(
-                            if (selected) MaterialTheme.colorScheme.surface else Color.Transparent,
-                        )
                         .semantics {
                             role = Role.Tab
                             this.selected = selected
                         }
                         .clickable { onSelect(page) }
-                        .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs),
+                        .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = stringResource(
+                                if (page == CalendarPrimaryPage.CALENDAR) R.string.tab_calendar
+                                else R.string.meeting_rooms_title,
+                            ),
+                            color = if (selected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        )
+                        Spacer(Modifier.height(Dimens.SpaceXs))
+                        HorizontalDivider(
+                            thickness = Dimens.BorderEmphasis,
+                            color = if (selected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.surface,
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = onOpenManagement) {
+                Icon(
+                    Icons.Filled.CalendarMonth,
+                    contentDescription = stringResource(R.string.calendar_manage_open),
                 )
             }
         }
-        Spacer(Modifier.weight(1f))
-        IconButton(onClick = onOpenSettings) {
-            Icon(
-                Icons.Filled.Settings,
-                contentDescription = stringResource(R.string.calendar_settings_title),
-            )
-        }
+        HorizontalDivider()
     }
 }

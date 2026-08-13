@@ -23,6 +23,8 @@ data class EventUi(
     val canEdit: Boolean = false,
     /** 主事件(带 RRULE)或子场次:改期涉及三选语义,拖动一律不开放。 */
     val recurring: Boolean = false,
+    /** Viewer-selected color of the calendar projection used to display this event. */
+    val calendarColor: String? = null,
     /**
      * 这条日程设的提前量(分钟)。消息列表「日程提醒」的倒计时角标按它算 ——
      * 见 `reminder/ReminderModels.countdownWindowMinutes`。
@@ -59,7 +61,10 @@ data class EventUi(
 data class ParsedEvent(val ui: EventUi, val zone: ZoneId)
 
 /** Parse a DTO into display-zone times; null when required values are absent/bad. */
-fun CalendarEventDto.toParsed(displayZone: ZoneId = ZoneId.systemDefault()): ParsedEvent? {
+fun CalendarEventDto.toParsed(
+    displayZone: ZoneId = ZoneId.systemDefault(),
+    calendarColor: String? = null,
+): ParsedEvent? {
     val eventZone = runCatching { ZoneId.of(timezone) }.getOrDefault(displayZone)
     val canonicalStartDate = startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
     val canonicalEndDate = endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
@@ -89,6 +94,7 @@ fun CalendarEventDto.toParsed(displayZone: ZoneId = ZoneId.systemDefault()): Par
             organizerId = organizer?.id?.takeIf { it.isNotBlank() },
             canEdit = canEdit,
             recurring = isRecurring,
+            calendarColor = calendarColor,
             reminders = reminders,
             startDate = canonicalStartDate,
             endDateExclusive = canonicalEndDate,

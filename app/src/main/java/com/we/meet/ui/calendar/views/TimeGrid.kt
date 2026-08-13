@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.IntOffset
 import com.we.meet.ui.calendar.EventUi
 import com.we.meet.ui.calendar.RsvpVisual
 import com.we.meet.ui.calendar.rsvpAccentColor
+import com.we.meet.ui.calendar.parseCalendarColor
 import com.we.meet.ui.calendar.rsvpBlockBackground
 import com.we.meet.ui.calendar.rsvpTextColor
 import com.we.meet.ui.calendar.rsvpVisualOf
@@ -98,6 +99,8 @@ data class TimeBlock(
     val dimmed: Boolean = false,
     /** 我的表态(`my_rsvp`);忙闲块传 null。见 [rsvpVisualOf]。 */
     val rsvp: String? = null,
+    /** Calendar projection color; null for free/busy blocks. */
+    val calendarColor: String? = null,
     /**
      * 允许长按拖动改期(整块移位)。仅「我组织的、非重复、当日内起止」的日程
      * 为 true —— 重复日程涉及三选语义,忙闲/他人日程无权改。
@@ -245,6 +248,7 @@ fun EventUi.toTimeBlockOrNull(
         faded = cancelled,
         dimmed = dimPastNow != null && end.isBefore(dimPastNow),
         rsvp = myRsvp,
+        calendarColor = calendarColor,
         // 跨天的块被裁过(s/e 不是真实起止),拖动会把另一半算错 → 不开放。
         movable = canEdit &&
             !recurring && !cancelled &&
@@ -874,6 +878,8 @@ fun TimelineScaffold(
                                 val visual = rsvpVisualOf(b.rsvp)
                                 val declined = visual == RsvpVisual.DECLINED
                                 val blockBg = bgOf.getValue(visual)
+                                val calendarAccent =
+                                    parseCalendarColor(b.calendarColor) ?: accentOf.getValue(visual)
                                 // 正在被拖走的块:原位留一层虚影,落点画预览。
                                 val ghost = movePreview?.key == b.key
                                 /**
@@ -917,7 +923,7 @@ fun TimelineScaffold(
                                         .then(
                                             if (b.hatched) {
                                                 Modifier.hatchedOutline(
-                                                    accentOf.getValue(visual),
+                                                    calendarAccent,
                                                 )
                                             } else Modifier,
                                         )
@@ -937,7 +943,7 @@ fun TimelineScaffold(
                                                 modifier = Modifier
                                                     .width(Dimens.Calendar.BlockAccentBarWidth)
                                                     .fillMaxHeight()
-                                                    .background(accentOf.getValue(visual)),
+                                                    .background(calendarAccent),
                                             )
                                             val short =
                                                 b.endMin - b.startMin <= SHORT_BLOCK_MIN

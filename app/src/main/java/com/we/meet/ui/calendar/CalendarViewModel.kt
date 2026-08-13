@@ -9,6 +9,7 @@ import com.we.meet.data.api.dto.CalendarEventDto
 import com.we.meet.data.api.dto.RescheduleEventRequest
 import com.we.meet.data.api.dto.CalendarSubscriptionRequest
 import com.we.meet.data.api.dto.UnifiedCalendarDto
+import com.we.meet.data.settings.CalendarDisplayMode
 import com.we.meet.ui.calendar.views.CalendarViewMode
 import java.time.LocalDate
 import java.time.YearMonth
@@ -65,6 +66,7 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
         CalendarUiState(
             monthAnchor = YearMonth.from(initialToday),
             selectedDate = initialToday,
+            viewMode = settingsStore.calendarDisplayMode.value.toViewMode(),
             loading = true,
         ),
     )
@@ -77,6 +79,10 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
     init {
         settingsStore.synchronizeCalendarPreferences()
         refresh()
+        viewModelScope.launch {
+            settingsStore.calendarDisplayMode
+                .collect { preference -> applyViewMode(preference.toViewMode()) }
+        }
         viewModelScope.launch {
             combine(
                 settingsStore.calendarTimezoneMode,
@@ -160,9 +166,10 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
             }
                 .onSuccess { (calendars, events, _) ->
                     val zone = settingsStore.calendarZoneId()
+                    val colors = calendars.associate { it.id to it.color }
                     val parsed = events.mapNotNull { event ->
                         (if (event.detailsRedacted) event.copy(title = busyTitle) else event)
-                            .toParsed(zone)
+                            .toParsed(zone, event.displayCalendarId?.let(colors::get))
                     }
                     _ui.update {
                         it.copy(
@@ -180,7 +187,13 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setViewMode(mode: CalendarViewMode) {
+        settingsStore.setCalendarDisplayMode(mode.toPreference())
+        applyViewMode(mode)
+    }
+
+    private fun applyViewMode(mode: CalendarViewMode) {
         val old = _ui.value.viewMode
+        if (old == mode) return
         _ui.update { it.copy(viewMode = mode) }
         // 日程视图窗口(一年)与其余视图(±1 月)不同,进出时重取。
         if ((mode == CalendarViewMode.AGENDA) != (old == CalendarViewMode.AGENDA)) refresh()
@@ -272,4 +285,18 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
         /** 一年窗口的翻页上限放宽一档。 */
         const val MAX_PAGES_AGENDA = 10
     }
+}
+
+private fun CalendarDisplayMode.toViewMode(): CalendarViewMode = when (this) {
+    CalendarDisplayMode.AGENDA -> CalendarViewMode.AGENDA
+    CalendarDisplayMode.DAY -> CalendarViewMode.DAY
+    CalendarDisplayMode.MULTI_DAY -> CalendarViewMode.WEEK
+    CalendarDisplayMode.MONTH -> CalendarViewMode.MONTH
+}
+
+private fun CalendarViewMode.toPreference(): CalendarDisplayMode = when (this) {
+    CalendarViewMode.AGENDA -> CalendarDisplayMode.AGENDA
+    CalendarViewMode.DAY -> CalendarDisplayMode.DAY
+    CalendarViewMode.WEEK -> CalendarDisplayMode.MULTI_DAY
+    CalendarViewMode.MONTH -> CalendarDisplayMode.MONTH
 }

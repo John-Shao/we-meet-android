@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -27,6 +26,9 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +37,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -68,13 +71,16 @@ import com.we.meet.ui.calendar.views.draftSlotAt
 import com.we.meet.ui.calendar.views.weekColumnDays
 import com.we.meet.ui.meetingroom.MeetingRoomsCalendarScreen
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
 /** 日历 tab — month grid + selected-day agenda + create FAB. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarTabScreen(
     onEventClick: (eventId: String) -> Unit,
@@ -85,7 +91,7 @@ fun CalendarTabScreen(
         (startEpochSecond: Long, endEpochSecond: Long, meetingRoomId: String) -> Unit
     )? = null,
     /** P8 日历设置页入口(header 齿轮)。 */
-    onOpenSettings: () -> Unit = {},
+    onOpenManagement: () -> Unit = {},
 ) {
     val vm: CalendarViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
@@ -101,7 +107,7 @@ fun CalendarTabScreen(
     if (primaryPage == CalendarPrimaryPage.MEETING_ROOMS) {
         MeetingRoomsCalendarScreen(
             onShowCalendar = { primaryPage = CalendarPrimaryPage.CALENDAR },
-            onOpenSettings = onOpenSettings,
+            onOpenSettings = onOpenManagement,
             onCreateEvent = onCreateEvent,
             onCreateEventInRoom = { start, end, roomId ->
                 val callback = onCreateEventInRoom
@@ -183,6 +189,7 @@ fun CalendarTabScreen(
     // 拖动改期失败:VM 已回滚,这里只提示。会议室在新时段被占(409)是最常见
     // 的一种,单独给文案 —— 通用「改期失败」看不出是撞了会议室。
     val snackbarHostState = remember { SnackbarHostState() }
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
     val moveFailedText = stringResource(R.string.calendar_move_failed)
     val roomConflictText = stringResource(R.string.calendar_move_room_conflict)
     LaunchedEffect(Unit) {
@@ -196,14 +203,9 @@ fun CalendarTabScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // 对齐 Web:顶部分段切换器(日/周/月/日程)+ ‹ 今天 › + 按视图标题;
-            // ‹ › 语义随视图:日/日程=±1 天,周=±7 天,月=±1 月。
+            // 首页只保留年月跳转、日期翻页和日历/会议室主 Tab；视图切换位于管理页。
             CalendarHeader(
                 ui = ui,
-                today = LocalDate.now(calendarZone),
-                firstDow = firstDow,
-                showWeekend = showWeekend,
-                onSelectMode = { vm.setViewMode(it) },
                 onPrev = {
                     when (ui.viewMode) {
                         CalendarViewMode.DAY,
@@ -223,13 +225,14 @@ fun CalendarTabScreen(
                     }
                 },
                 onToday = { vm.goToToday() },
+                onPickDate = { showDatePicker = true },
                 onShowMeetingRooms = {
                     clearPicks()
                     primaryPage = CalendarPrimaryPage.MEETING_ROOMS
                 },
                 // 头部齿轮 = 日历表外的点击 → 顺手收手(切视图/切日期由上面的
                 // LaunchedEffect 清)。
-                onOpenSettings = { clearPicks(); onOpenSettings() },
+                onOpenManagement = { clearPicks(); onOpenManagement() },
             )
 
             val outsideCount = if (calendarTimeRangeMode == TimeRangeMode.WORK) {
@@ -385,6 +388,28 @@ fun CalendarTabScreen(
                 .padding(bottom = Dimens.SpaceM),
         )
     }
+    if (showDatePicker) {
+        val picker = rememberDatePickerState(
+            initialSelectedDateMillis = ui.selectedDate
+                .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    picker.selectedDateMillis?.let { millis ->
+                        vm.selectDate(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
+                    }
+                    showDatePicker = false
+                }) { Text(stringResource(R.string.calendar_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text(stringResource(R.string.calendar_cancel))
+                }
+            },
+        ) { DatePicker(picker) }
+    }
 }
 
 /** 月视图分支 = 原有月历网格 + 选中日列表(原样保留)。 */
@@ -439,42 +464,37 @@ private fun MonthViewBody(
     }
 }
 
-/**
- * 对齐 Web 日历的头部:
- * 第一行 = 日/周/月/日程 分段切换器(等宽,替代原底部滑窗)+ 设置齿轮;
- * 第二行 = ‹ 今天 › + 按视图格式化的标题(不加粗;日视图看今天时带蓝色
- * 「今天」后缀;日程视图 = 锚点起一年的闭区间)。
- */
+/** 飞书式首页头部：年月快速跳转、前后日期控制、主页面 Tab 与管理入口。 */
 @Composable
 private fun CalendarHeader(
     ui: CalendarUiState,
-    today: LocalDate,
-    firstDow: DayOfWeek,
-    showWeekend: Boolean,
-    onSelectMode: (CalendarViewMode) -> Unit,
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onToday: () -> Unit,
+    onPickDate: () -> Unit,
     onShowMeetingRooms: () -> Unit,
-    onOpenSettings: () -> Unit,
+    onOpenManagement: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        CalendarPrimaryToolbar(
-            current = CalendarPrimaryPage.CALENDAR,
-            onSelect = { page ->
-                if (page == CalendarPrimaryPage.MEETING_ROOMS) onShowMeetingRooms()
-            },
-            onOpenSettings = onOpenSettings,
-        )
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = Dimens.SpaceM, end = Dimens.SpaceXs, top = Dimens.SpaceS),
+                .padding(start = Dimens.SpaceS, end = Dimens.SpaceXs),
         ) {
-            ViewModeSwitcher(current = ui.viewMode, onSelect = onSelectMode)
-        }
-        val (prevCd, nextCd) = when (ui.viewMode) {
+            TextButton(onClick = onPickDate) {
+                Text(
+                    text = stringResource(
+                        R.string.calendar_month_year,
+                        ui.monthAnchor.monthValue,
+                        ui.monthAnchor.year,
+                    ),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Spacer(Modifier.weight(1f))
+            val (prevCd, nextCd) = when (ui.viewMode) {
             CalendarViewMode.DAY, CalendarViewMode.AGENDA ->
                 R.string.calendar_prev_day to R.string.calendar_next_day
             CalendarViewMode.WEEK ->
@@ -482,12 +502,6 @@ private fun CalendarHeader(
             CalendarViewMode.MONTH ->
                 R.string.calendar_prev_month to R.string.calendar_next_month
         }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Dimens.SpaceXs),
-        ) {
             IconButton(onClick = onPrev) {
                 Icon(
                     Icons.AutoMirrored.Filled.KeyboardArrowLeft,
@@ -501,23 +515,14 @@ private fun CalendarHeader(
                     contentDescription = stringResource(nextCd),
                 )
             }
-            Spacer(Modifier.width(Dimens.SpaceXs))
-            Text(
-                text = headerTitle(ui, firstDow, showWeekend),
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (ui.viewMode == CalendarViewMode.DAY && ui.selectedDate == today) {
-                Spacer(Modifier.width(Dimens.SpaceXs))
-                Text(
-                    text = stringResource(R.string.calendar_today),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
         }
+        CalendarPrimaryToolbar(
+            current = CalendarPrimaryPage.CALENDAR,
+            onSelect = { page ->
+                if (page == CalendarPrimaryPage.MEETING_ROOMS) onShowMeetingRooms()
+            },
+            onOpenManagement = onOpenManagement,
+        )
     }
 }
 
@@ -544,95 +549,6 @@ private fun calendarOutsideWorkingHoursCount(
             val endsOutside = event.end.hour * 60 + event.end.minute > workingEndMin
             crossesDay || startsOutside || endsOutside
         }
-}
-
-@Composable
-private fun ViewModeSwitcher(
-    current: CalendarViewMode,
-    onSelect: (CalendarViewMode) -> Unit,
-) {
-    // 顺序对齐 Web VIEW_ORDER:日、周、月、日程。
-    val order = listOf(
-        CalendarViewMode.DAY,
-        CalendarViewMode.WEEK,
-        CalendarViewMode.MONTH,
-        CalendarViewMode.AGENDA,
-    )
-    Row(
-        modifier = Modifier
-            .background(
-                MaterialTheme.colorScheme.surfaceVariant,
-                RoundedCornerShape(Dimens.CornerS),
-            )
-            .padding(Dimens.SpaceXxs),
-    ) {
-        order.forEach { mode ->
-            val selected = mode == current
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(Dimens.CornerS))
-                    .background(
-                        if (selected) MaterialTheme.colorScheme.surface
-                        else Color.Transparent,
-                    )
-                    .clickable { onSelect(mode) }
-                    .widthIn(min = Dimens.Calendar.TimeLabelWidth)
-                    .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
-            ) {
-                Text(
-                    text = stringResource(mode.labelRes),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (selected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                )
-            }
-        }
-    }
-}
-
-// 日期一律走数字化 ISO(yyyy-MM-dd 系),跨语言一致、窄屏不易换行;星期名
-// 仍按 locale 本地化(getDisplayName)。
-private val ISO_DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-private val ISO_MONTH: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
-private val ISO_MONTH_DAY: DateTimeFormatter = DateTimeFormatter.ofPattern("MM-dd")
-private val ISO_DAY: DateTimeFormatter = DateTimeFormatter.ofPattern("dd")
-
-/** 按视图格式化标题(日/周/月/日程一律 yyyy-MM-dd 数字格式)。 */
-@Composable
-private fun headerTitle(ui: CalendarUiState, firstDow: DayOfWeek, showWeekend: Boolean): String {
-    val locale = Locale.getDefault()
-    return when (ui.viewMode) {
-        CalendarViewMode.DAY ->
-            ui.selectedDate.format(ISO_DATE) + " " +
-                ui.selectedDate.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
-
-        CalendarViewMode.WEEK -> {
-            // 与周视图列同源:关周末时区间收口到周五,和实际列一致。
-            val cols = weekColumnDays(ui.selectedDate, firstDow, showWeekend)
-            weekRangeTitle(cols.first(), cols.last())
-        }
-
-        CalendarViewMode.MONTH -> ui.monthAnchor.format(ISO_MONTH)
-
-        // 日程视图:终点恒为锚点+1年,展示区间冗余且窄屏易换行,收敛成
-        // 「2026-07-23 起一年」(与列表日期分组头同格式)。
-        CalendarViewMode.AGENDA -> stringResource(
-            R.string.calendar_agenda_anchor_year,
-            ui.selectedDate.format(ISO_DATE),
-        )
-    }
-}
-
-/** 周区间标题:起点全量 yyyy-MM-dd,终点同月省到 dd、同年省到 MM-dd,跨年全量。 */
-private fun weekRangeTitle(start: LocalDate, end: LocalDate): String {
-    val endFmt = when {
-        start.year == end.year && start.month == end.month -> ISO_DAY
-        start.year == end.year -> ISO_MONTH_DAY
-        else -> ISO_DATE
-    }
-    return "${start.format(ISO_DATE)} - ${end.format(endFmt)}"
 }
 
 @Composable
@@ -718,8 +634,13 @@ private fun MonthGrid(
                                     .padding(bottom = Dimens.BorderThin)
                                     .size(Dimens.Calendar.EventDotSize)
                                     .background(
-                                        color = if (isSelected) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.tertiary,
+                                        color = if (isSelected) {
+                                            MaterialTheme.colorScheme.onPrimary
+                                        } else {
+                                            eventsByDay[date]?.firstNotNullOfOrNull {
+                                                parseCalendarColor(it.calendarColor)
+                                            } ?: MaterialTheme.colorScheme.tertiary
+                                        },
                                         shape = CircleShape,
                                     ),
                             )
@@ -768,7 +689,9 @@ internal fun AgendaCard(
             modifier = Modifier
                 .width(Dimens.Calendar.RsvpAccentBarWidth)
                 .fillMaxHeight()
-                .background(rsvpAccentColor(visual)),
+                .background(
+                    parseCalendarColor(event.calendarColor) ?: rsvpAccentColor(visual),
+                ),
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,

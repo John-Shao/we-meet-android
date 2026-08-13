@@ -58,6 +58,10 @@ import com.we.meet.feature.im.ui.newchat.AddMembersScreen
 import com.we.meet.feature.im.ui.newchat.NewChatScreen
 import com.we.meet.feature.im.ui.search.MessageSearchScreen
 import com.we.meet.ui.calendar.CreateEventScreen
+import com.we.meet.ui.calendar.CalendarDiscoverScreen
+import com.we.meet.ui.calendar.CalendarEditorScreen
+import com.we.meet.ui.calendar.CalendarManagementScreen
+import com.we.meet.ui.calendar.CalendarOwnerShareScreen
 import com.we.meet.ui.calendar.CalendarShareScreen
 import com.we.meet.ui.calendar.EventDetailScreen
 import com.we.meet.ui.calendar.FreeBusyCompareScreen
@@ -163,6 +167,13 @@ object Routes {
     const val REMINDERS = "reminders"
     /** P8 日历设置页(列表提醒开关/周起始/默认时长/默认提醒)。 */
     const val CALENDAR_SETTINGS = "calendar_settings"
+    const val CALENDAR_MANAGEMENT = "calendar_management"
+    const val CALENDAR_DISCOVER = "calendar_discover"
+    const val CALENDAR_CREATE = "calendar_create"
+    private const val CALENDAR_EDIT_BASE = "calendar_edit"
+    const val CALENDAR_EDIT = "$CALENDAR_EDIT_BASE/{calendarId}"
+    private const val CALENDAR_OWNER_SHARE_BASE = "calendar_owner_share"
+    const val CALENDAR_OWNER_SHARE = "$CALENDAR_OWNER_SHARE_BASE/{calendarId}"
     const val CALENDAR_SHARE = "calendar_share/{token}"
     const val CREATE_EVENT =
         "create_event?epochDay={epochDay}&eventId={eventId}&editScope={editScope}" +
@@ -221,6 +232,12 @@ object Routes {
 
     fun calendarShare(token: String): String =
         "calendar_share/${URLEncoder.encode(token, StandardCharsets.UTF_8.name())}"
+
+    fun calendarEdit(calendarId: String): String =
+        "$CALENDAR_EDIT_BASE/${URLEncoder.encode(calendarId, StandardCharsets.UTF_8.name())}"
+
+    fun calendarOwnerShare(calendarId: String): String =
+        "$CALENDAR_OWNER_SHARE_BASE/${URLEncoder.encode(calendarId, StandardCharsets.UTF_8.name())}"
 
     fun createEvent(epochDay: Long): String = "create_event?epochDay=$epochDay"
 
@@ -556,8 +573,9 @@ fun AppNav() {
                 },
                 // P8「在消息列表提醒日程」:置顶入口 → 日程提醒页。
                 onOpenReminders = { navController.navigate(Routes.REMINDERS) },
-                // P8:日历 tab 齿轮 → 日历设置页。
-                onOpenCalendarSettings = { navController.navigate(Routes.CALENDAR_SETTINGS) },
+                onOpenCalendarManagement = {
+                    navController.navigate(Routes.CALENDAR_MANAGEMENT)
+                },
             )
         }
 
@@ -975,6 +993,50 @@ fun AppNav() {
         // P8 日历设置页:日历 tab 齿轮点入。
         composable(Routes.CALENDAR_SETTINGS) {
             com.we.meet.ui.calendar.CalendarSettingsScreen(
+                onBack = rememberOnceOnly(safePop),
+            )
+        }
+
+        composable(Routes.CALENDAR_MANAGEMENT) {
+            CalendarManagementScreen(
+                onBack = rememberOnceOnly(safePop),
+                onSubscribe = { navController.navigate(Routes.CALENDAR_DISCOVER) },
+                onCreate = { navController.navigate(Routes.CALENDAR_CREATE) },
+                onEdit = { id -> navController.navigate(Routes.calendarEdit(id)) },
+                onShare = { id -> navController.navigate(Routes.calendarOwnerShare(id)) },
+                onOpenSettings = { navController.navigate(Routes.CALENDAR_SETTINGS) },
+            )
+        }
+
+        composable(Routes.CALENDAR_DISCOVER) {
+            CalendarDiscoverScreen(onBack = rememberOnceOnly(safePop))
+        }
+
+        composable(Routes.CALENDAR_CREATE) {
+            CalendarEditorScreen(
+                calendarId = null,
+                onBack = rememberOnceOnly(safePop),
+                onDone = rememberOnceOnly(safePop),
+            )
+        }
+
+        composable(
+            route = Routes.CALENDAR_EDIT,
+            arguments = listOf(navArgument("calendarId") { type = NavType.StringType }),
+        ) { entry ->
+            CalendarEditorScreen(
+                calendarId = Routes.decode(entry.arguments?.getString("calendarId").orEmpty()),
+                onBack = rememberOnceOnly(safePop),
+                onDone = rememberOnceOnly(safePop),
+            )
+        }
+
+        composable(
+            route = Routes.CALENDAR_OWNER_SHARE,
+            arguments = listOf(navArgument("calendarId") { type = NavType.StringType }),
+        ) { entry ->
+            CalendarOwnerShareScreen(
+                calendarId = Routes.decode(entry.arguments?.getString("calendarId").orEmpty()),
                 onBack = rememberOnceOnly(safePop),
             )
         }

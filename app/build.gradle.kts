@@ -51,6 +51,7 @@ android {
         targetSdk = 34
         versionCode = 2
         versionName = "0.2.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Surface config to BuildConfig.
         buildConfigField("String", "WE_MEET_BASE_URL", "\"$baseUrl\"")
@@ -180,4 +181,9 @@ dependencies {
     // 必须和 Web / 服务端三处对齐,而「对齐」这种事只有测试守得住。
     // 先例:feature-im 的 build.gradle.kts。
     testImplementation(libs.junit)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
