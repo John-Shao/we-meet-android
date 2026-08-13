@@ -317,9 +317,6 @@
     <string name="calendar_settings_default_reminder">Default reminder</string>
     <string name="calendar_settings_duration_minutes">%1$d min</string>
     <string name="calendar_settings_dim_past">Dim past events</string>
-    <string name="calendar_settings_show_weekend">Show weekends</string>
-    <string name="calendar_settings_week_visible_days">Tage pro Bildschirm (Wochenansicht)</string>
-    <string name="calendar_settings_week_days_value">%1$d Tage</string>
     <string name="calendar_draft_add">Neuer Termin</string>
     <string name="calendar_move_failed">Termin konnte nicht verschoben werden</string>
     <string name="calendar_move_room_conflict">Besprechungsraum ist dann belegt — Verschieben zurückgenommen</string>

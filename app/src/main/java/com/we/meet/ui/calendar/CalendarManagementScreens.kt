@@ -113,7 +113,6 @@ fun CalendarManagementScreen(
     val app = LocalContext.current.applicationContext as WeMeetApp
     val vm: CalendarManagementViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
-    val weekDays by app.settingsStore.calendarWeekVisibleDays.collectAsStateWithLifecycle()
     val displayMode by app.settingsStore.calendarDisplayMode.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val errorText = stringResource(R.string.calendar_operation_failed)
@@ -155,7 +154,6 @@ fun CalendarManagementScreen(
         Column(Modifier.fillMaxSize().padding(padding)) {
             CalendarModeStrip(
                 current = displayMode,
-                visibleDays = weekDays,
                 onSelect = { mode ->
                     app.settingsStore.setCalendarDisplayMode(mode)
                     onBack()
@@ -260,13 +258,12 @@ fun CalendarManagementScreen(
 @Composable
 private fun CalendarModeStrip(
     current: CalendarDisplayMode,
-    visibleDays: Int,
     onSelect: (CalendarDisplayMode) -> Unit,
 ) {
     val entries = listOf(
         Triple(CalendarDisplayMode.AGENDA, Icons.AutoMirrored.Filled.EventNote, stringResource(R.string.calendar_view_agenda)),
         Triple(CalendarDisplayMode.DAY, Icons.Filled.ViewDay, stringResource(R.string.calendar_view_day)),
-        Triple(CalendarDisplayMode.MULTI_DAY, Icons.Filled.ViewWeek, stringResource(R.string.calendar_view_multi_days, visibleDays)),
+        Triple(CalendarDisplayMode.MULTI_DAY, Icons.Filled.ViewWeek, stringResource(R.string.calendar_view_multi_days, 3)),
         Triple(CalendarDisplayMode.MONTH, Icons.Filled.CalendarMonth, stringResource(R.string.calendar_view_month)),
     )
     Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceS)) {

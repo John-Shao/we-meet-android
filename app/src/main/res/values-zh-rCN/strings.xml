@@ -282,8 +282,8 @@
     <!-- 对齐 Web 日历:翻页箭头语义(日期一律走代码里的数字化 ISO 格式) -->
     <string name="calendar_prev_day">前一天</string>
     <string name="calendar_next_day">后一天</string>
-    <string name="calendar_prev_week">上周</string>
-    <string name="calendar_next_week">下周</string>
+    <string name="calendar_prev_week">前 3 天</string>
+    <string name="calendar_next_week">后 3 天</string>
     <string name="calendar_prev_month">上个月</string>
     <string name="calendar_next_month">下个月</string>
     <string name="calendar_agenda_anchor_year">%1$s 起一年</string>
@@ -348,10 +348,7 @@
     <string name="calendar_settings_default_reminder">默认提醒时间</string>
     <string name="calendar_settings_duration_minutes">%1$d 分钟</string>
     <string name="calendar_settings_dim_past">降低已结束日程的亮度</string>
-    <string name="calendar_settings_show_weekend">显示周末</string>
     <!-- 周视图一屏铺几天(3~7,默认 3);列数比它少时铺满不滚 -->
-    <string name="calendar_settings_week_visible_days">周视图一屏显示</string>
-    <string name="calendar_settings_week_days_value">%1$d 天</string>
     <!-- 日/周视图:点空白落预选时段,再点一次才建日程 -->
     <string name="calendar_draft_add">添加日程</string>
     <!-- 长按拖动日程改期失败时提示 -->

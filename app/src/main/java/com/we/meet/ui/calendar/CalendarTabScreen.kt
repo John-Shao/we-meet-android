@@ -77,9 +77,10 @@ import com.we.meet.ui.calendar.views.AgendaView
 import com.we.meet.ui.calendar.views.CalendarViewMode
 import com.we.meet.ui.calendar.views.DayTimelineView
 import com.we.meet.ui.calendar.views.DraftSlot
-import com.we.meet.ui.calendar.views.WeekTimelineView
+import com.we.meet.ui.calendar.views.ThreeDayTimelineView
 import com.we.meet.ui.calendar.views.draftSlotAt
 import com.we.meet.ui.calendar.views.horizontalDateSwipe
+import com.we.meet.ui.calendar.views.threeDayColumnDays
 import com.we.meet.ui.calendar.views.weekColumnDays
 import com.we.meet.ui.meetingroom.MeetingRoomsCalendarScreen
 import java.time.DayOfWeek
@@ -139,11 +140,6 @@ fun CalendarTabScreen(
     // P8 日历设置:降低已结束日程的亮度(开关关闭 → null,不降)。
     val dimPast by app.settingsStore.calendarDimPast.collectAsStateWithLifecycle()
     val dimPastNow = if (dimPast) java.time.ZonedDateTime.now(calendarZone) else null
-    // P8 日历设置:周视图是否显示周末(App 默认关 → 聚焦工作周;Web 默认开)。
-    val showWeekend by app.settingsStore.calendarShowWeekend.collectAsStateWithLifecycle()
-    // 日历设置:周视图一屏铺几天(默认 4;比列数多则铺满不滚)。
-    val weekVisibleDays by app.settingsStore.calendarWeekVisibleDays
-        .collectAsStateWithLifecycle()
     // 新建日程默认时长:点空白落预选块时的初始长度(与表单默认一致)。
     val defaultDurationMin by app.settingsStore.calendarDefaultDurationMin
         .collectAsStateWithLifecycle()
@@ -226,7 +222,7 @@ fun CalendarTabScreen(
                         CalendarViewMode.DAY,
                         CalendarViewMode.AGENDA,
                         -> vm.selectDate(ui.selectedDate.minusDays(1))
-                        CalendarViewMode.WEEK -> vm.selectDate(ui.selectedDate.minusDays(7))
+                        CalendarViewMode.WEEK -> vm.selectDate(ui.selectedDate.minusDays(3))
                         CalendarViewMode.MONTH -> vm.selectDate(shiftedMonthDate(ui.selectedDate, -1))
                     }
                 },
@@ -235,7 +231,7 @@ fun CalendarTabScreen(
                         CalendarViewMode.DAY,
                         CalendarViewMode.AGENDA,
                         -> vm.selectDate(ui.selectedDate.plusDays(1))
-                        CalendarViewMode.WEEK -> vm.selectDate(ui.selectedDate.plusDays(7))
+                        CalendarViewMode.WEEK -> vm.selectDate(ui.selectedDate.plusDays(3))
                         CalendarViewMode.MONTH -> vm.selectDate(shiftedMonthDate(ui.selectedDate, 1))
                     }
                 },
@@ -253,8 +249,6 @@ fun CalendarTabScreen(
             val outsideCount = if (calendarTimeRangeMode == TimeRangeMode.WORK) {
                 calendarOutsideWorkingHoursCount(
                     ui = ui,
-                    firstDow = firstDow,
-                    showWeekend = showWeekend,
                     workingStartMin = workingHours.startMin,
                     workingEndMin = workingHours.endMin,
                 )
@@ -348,7 +342,7 @@ fun CalendarTabScreen(
                         )
                     }
 
-                    CalendarViewMode.WEEK -> WeekTimelineView(
+                    CalendarViewMode.WEEK -> ThreeDayTimelineView(
                         anchorDate = ui.selectedDate,
                         eventsByDay = ui.eventsByDay,
                         onEventClick = { id -> clearPicks(); onEventClick(id) },
@@ -369,9 +363,6 @@ fun CalendarTabScreen(
                         workingStartMin = workingHours.startMin,
                         workingEndMin = workingHours.endMin,
                         zoneId = calendarZone,
-                        firstDayOfWeek = firstDow,
-                        showWeekend = showWeekend,
-                        visibleDays = weekVisibleDays,
                         dimPastNow = dimPastNow,
                         draft = draft,
                         draftLabel = draftLabel,
@@ -584,14 +575,12 @@ private fun CalendarHeader(
 /** Counts timed events that cross the configured working-hours boundary. */
 private fun calendarOutsideWorkingHoursCount(
     ui: CalendarUiState,
-    firstDow: DayOfWeek,
-    showWeekend: Boolean,
     workingStartMin: Int,
     workingEndMin: Int,
 ): Int {
     val dates = when (ui.viewMode) {
         CalendarViewMode.DAY -> listOf(ui.selectedDate)
-        CalendarViewMode.WEEK -> weekColumnDays(ui.selectedDate, firstDow, showWeekend)
+        CalendarViewMode.WEEK -> threeDayColumnDays(ui.selectedDate)
         else -> emptyList()
     }
     if (dates.isEmpty()) return 0
@@ -616,7 +605,7 @@ private fun CalendarDayStrip(
     onSelectDate: (LocalDate) -> Unit,
 ) {
     val days = remember(selectedDate, firstDayOfWeek) {
-        weekColumnDays(selectedDate, firstDayOfWeek, showWeekend = true)
+        weekColumnDays(selectedDate, firstDayOfWeek)
     }
     Row(modifier = Modifier.fillMaxWidth()) {
         days.forEach { date ->

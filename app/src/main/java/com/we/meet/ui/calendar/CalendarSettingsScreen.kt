@@ -32,7 +32,6 @@ import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.WeMeetApp
-import com.we.meet.data.settings.CALENDAR_WEEK_VISIBLE_DAYS_RANGE
 import com.we.meet.data.settings.CalendarWeekStart
 import com.we.meet.data.settings.CalendarTimezoneMode
 import com.we.meet.data.settings.TimeRangeMode
@@ -59,8 +58,6 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
     val durationMin by store.calendarDefaultDurationMin.collectAsStateWithLifecycle()
     val reminderMin by store.calendarDefaultReminderMin.collectAsStateWithLifecycle()
     val dimPast by store.calendarDimPast.collectAsStateWithLifecycle()
-    val showWeekend by store.calendarShowWeekend.collectAsStateWithLifecycle()
-    val weekVisibleDays by store.calendarWeekVisibleDays.collectAsStateWithLifecycle()
     val workingHours by store.workingHours.collectAsStateWithLifecycle()
     val calendarTimeRangeMode by store.calendarTimeRangeMode.collectAsStateWithLifecycle()
     val meetingRoomTimeRangeMode by store.meetingRoomTimeRangeMode.collectAsStateWithLifecycle()
@@ -167,27 +164,6 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
             SettingsSectionHeader(stringResource(R.string.calendar_settings_group_display))
-            SettingRow(label = stringResource(R.string.calendar_settings_show_weekend)) {
-                Switch(
-                    checked = showWeekend,
-                    onCheckedChange = { store.setCalendarShowWeekend(it) },
-                )
-            }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-            // 上一条决定周视图有 5/7 列；这一条决定一屏铺几列。
-            SettingDropdownRow(
-                label = stringResource(R.string.calendar_settings_week_visible_days),
-                current = stringResource(
-                    R.string.calendar_settings_week_days_value, weekVisibleDays,
-                ),
-                options = CALENDAR_WEEK_VISIBLE_DAYS_RANGE.map { days ->
-                    val label = stringResource(R.string.calendar_settings_week_days_value, days)
-                    label to { store.setCalendarWeekVisibleDays(days) }
-                },
-            )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
             SettingDropdownRow(
                 label = stringResource(R.string.calendar_settings_calendar_time_range),
                 current = stringResource(

@@ -281,7 +281,7 @@ data class CalendarPreferenceDto(
     @Json(name = "default_duration_minutes") val defaultDurationMinutes: Int = 60,
     @Json(name = "default_reminder_minutes") val defaultReminderMinutes: Int? = 10,
     @Json(name = "dim_past") val dimPast: Boolean = true,
-    @Json(name = "show_weekend") val showWeekend: Boolean = false,
+    @Json(name = "show_weekend") val showWeekend: Boolean = true,
     @Json(name = "working_start_minutes") val workingStartMinutes: Int = 9 * 60,
     @Json(name = "working_end_minutes") val workingEndMinutes: Int = 18 * 60,
     @Json(name = "calendar_time_range") val calendarTimeRange: String = "work",

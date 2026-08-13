@@ -21,7 +21,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTextStyles
-import com.we.meet.data.settings.CALENDAR_WEEK_VISIBLE_DAYS_DEFAULT
 import com.we.meet.ui.calendar.EventUi
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -32,32 +31,31 @@ import java.util.Locale
 
 /**
  * 周视图要显示的列(单一数据源:周视图列 + 头部区间标题共用)。从 anchor 往前
- * 找最近的 [firstDayOfWeek] 作本周首日铺满 7 天;[showWeekend] 关闭时滤掉周六
- * 周日,恒剩周一~周五(与首日无关,对齐 Google 工作周)。
+ * 找最近的 [firstDayOfWeek] 作本周首日并铺满 7 天。供日视图顶部日期条使用；
+ * 周末始终包含在内。
  */
 fun weekColumnDays(
     anchorDate: LocalDate,
     firstDayOfWeek: DayOfWeek,
-    showWeekend: Boolean,
 ): List<LocalDate> {
     val weekStart = anchorDate.minusDays(
         ((anchorDate.dayOfWeek.value - firstDayOfWeek.value + 7) % 7).toLong(),
     )
-    val week = (0..6).map { weekStart.plusDays(it.toLong()) }
-    return if (showWeekend) week
-    else week.filter {
-        it.dayOfWeek != DayOfWeek.SATURDAY && it.dayOfWeek != DayOfWeek.SUNDAY
-    }
+    return (0..6).map { weekStart.plusDays(it.toLong()) }
 }
 
+const val THREE_DAY_VIEW_DAYS = 3
+
+/** Three consecutive calendar days starting at the selected date. */
+fun threeDayColumnDays(anchorDate: LocalDate): List<LocalDate> =
+    (0 until THREE_DAY_VIEW_DAYS).map { anchorDate.plusDays(it.toLong()) }
+
 /**
- * P8 周视图(飞书「三日」按团队约定改为 7 列周):顶部星期条(今日高亮圆点,
- * 点某天切到该日)+ 时间轴,红线只画在今天列。翻周走 header 的 ‹ ›(±7 天),
- * 不引入 Pager(见 P8 设计:降低状态同步面)。周末开关关闭时收敛为 5 列工作周。
- * 一屏只铺 [visibleDays] 天(日历设置项),其余横滑(列头与网格同步滚)。
+ * 固定三日视图：从选中日期起连续显示三天，周末不跳过。三列恰好铺满屏幕，
+ * 不产生水平滚动范围；时间轴只保留纵向滚动。
  */
 @Composable
-fun WeekTimelineView(
+fun ThreeDayTimelineView(
     anchorDate: LocalDate,
     eventsByDay: Map<LocalDate, List<EventUi>>,
     onEventClick: (String) -> Unit,
@@ -68,12 +66,6 @@ fun WeekTimelineView(
     workingStartMin: Int = 9 * 60,
     workingEndMin: Int = 18 * 60,
     zoneId: ZoneId = ZoneId.systemDefault(),
-    /** P8 日历设置:每周的第一天(默认周一,保持既有行为)。 */
-    firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
-    /** P8 日历设置:显示周末(默认 true;关闭 → 只列周一~周五 5 列)。 */
-    showWeekend: Boolean = true,
-    /** 日历设置:一屏铺几天(3~7);列数比它少时铺满不滚。 */
-    visibleDays: Int = CALENDAR_WEEK_VISIBLE_DAYS_DEFAULT,
     /** P8「降低已结束日程的亮度」:非空时,结束早于该时刻的块降透明度。 */
     dimPastNow: java.time.ZonedDateTime? = null,
     /** 当前预选时段(只在它所属日期落在本周列里时才画)。 */
@@ -92,8 +84,8 @@ fun WeekTimelineView(
     onRailTap: (() -> Unit)? = null,
 ) {
     val today = LocalDate.now(zoneId)
-    val days = remember(anchorDate, firstDayOfWeek, showWeekend) {
-        weekColumnDays(anchorDate, firstDayOfWeek, showWeekend)
+    val days = remember(anchorDate) {
+        threeDayColumnDays(anchorDate)
     }
     val columns = remember(days, eventsByDay, dimPastNow, selfUserId) {
         days.map { date ->
@@ -109,12 +101,6 @@ fun WeekTimelineView(
         val offset = (8 * 60).coerceIn(visibleStartMin, visibleEndMin) - visibleStartMin
         scrollState.scrollTo(with(density) { (hourHeight * (offset / 60f)).toPx() }.toInt())
     }
-    // 一屏只铺 VISIBLE_DAYS 天,横滚到让今天(不在本周则锚点)可见。
-    val revealIndex = remember(days) {
-        days.indexOf(today).takeIf { it >= 0 }
-            ?: days.indexOf(anchorDate).coerceAtLeast(0)
-    }
-
     TimelineScaffold(
         modifier = Modifier.fillMaxSize(),
         columns = columns,
@@ -130,7 +116,7 @@ fun WeekTimelineView(
         nowLineInColumn = { i -> days[i] == today },
         onBlockTap = { _, key -> onEventClick(key) },
         onSlotTap = { col, minute -> onSlotTap(days[col], minute) },
-        // 草稿的日期 ↔ 列索引换算(不在本周的列里就不画)。
+        // 草稿的日期 ↔ 列索引换算(不在当前三天里就不画)。
         draft = draft?.let { d ->
             days.indexOf(d.date).takeIf { it >= 0 }
                 ?.let { DraftSelection(it, d.startMin, d.endMin) }
@@ -154,12 +140,10 @@ fun WeekTimelineView(
         onRailTap = onRailTap,
         // 列窄,块内只显标题(时刻由位置 + 左侧刻度读取,点块看详情)。
         compactBlocks = true,
-        // 一屏铺几天走日历设置(默认 3,对齐飞书「三日」)。比它多的天数横滑
-        // 看;拖块跨列改日期不受影响。
-        visibleColumnCount = visibleDays,
-        revealColumnIndex = revealIndex,
+        // 三列与视口等宽；列数不超过可见列数，因此不会出现水平滚动。
+        visibleColumnCount = THREE_DAY_VIEW_DAYS,
         railHeader = { CalendarTimeZoneHeader(anchorDate, zoneId) },
-        // 星期条随网格横滚锁定同步(飞书样式):放进 scaffold 的列头槽。
+        // 日期条与时间网格使用相同列宽。
         columnHeader = { i ->
             WeekDayHeader(
                 date = days[i],

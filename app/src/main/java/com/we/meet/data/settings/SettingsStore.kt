@@ -29,12 +29,6 @@ import retrofit2.HttpException
  * the whole app via [StateFlow], so screens that observe the setting (e.g.
  * Settings, RoomViewModel) stay in sync without polling SharedPreferences.
  */
-/** 周视图「一屏显示几天」的可选范围(设置页选项与存储钳制共用同一处)。 */
-val CALENDAR_WEEK_VISIBLE_DAYS_RANGE = 3..7
-
-/** 默认 3 天(对齐飞书「三日」视图):窄屏上列宽约 105dp,块内标题读得清。 */
-const val CALENDAR_WEEK_VISIBLE_DAYS_DEFAULT = 3
-
 const val WORKING_HOURS_STEP_MIN = 30
 const val WORKING_HOURS_DEFAULT_START_MIN = 9 * 60
 const val WORKING_HOURS_DEFAULT_END_MIN = 18 * 60
@@ -203,43 +197,6 @@ class SettingsStore(
         calendarPreferenceChanged()
     }
 
-    private val _calendarShowWeekend = MutableStateFlow(
-        prefs.getBoolean(KEY_CALENDAR_SHOW_WEEKEND, false),
-    )
-
-    /** P8 日历设置:周视图是否显示周末。**App 默认关**(小屏聚焦周一~周五工作
-     *  周;Web 大屏默认开,刻意按端差异化)。对标 Google/飞书「显示周末」;仅作用
-     *  于周视图列,不影响其它视图。 */
-    val calendarShowWeekend: StateFlow<Boolean> = _calendarShowWeekend.asStateFlow()
-
-    fun setCalendarShowWeekend(enabled: Boolean) {
-        if (!activateCalendarAccount()) return
-        prefs.edit().putBoolean(KEY_CALENDAR_SHOW_WEEKEND, enabled).apply()
-        _calendarShowWeekend.value = enabled
-        calendarPreferenceChanged()
-    }
-
-    private val _calendarWeekVisibleDays = MutableStateFlow(
-        prefs.getInt(KEY_CALENDAR_WEEK_VISIBLE_DAYS, CALENDAR_WEEK_VISIBLE_DAYS_DEFAULT)
-            .coerceIn(CALENDAR_WEEK_VISIBLE_DAYS_RANGE),
-    )
-
-    /**
-     * 周视图一屏铺几天(3~7,默认 3 = 飞书「三日」)。屏幕窄 / 想看清标题就
-     * 调小,想一眼看全一周就调到 7;比一屏列数多的天数横滑看。仅作用于周视图。
-     *
-     * 与 [calendarShowWeekend] 是两件事:那个决定「有几列」(5 或 7),这个决定
-     * 「一屏铺几列」——列数比它少时铺满不滚。
-     */
-    val calendarWeekVisibleDays: StateFlow<Int> = _calendarWeekVisibleDays.asStateFlow()
-
-    fun setCalendarWeekVisibleDays(days: Int) {
-        if (!activateCalendarAccount()) return
-        val safe = days.coerceIn(CALENDAR_WEEK_VISIBLE_DAYS_RANGE)
-        prefs.edit().putInt(KEY_CALENDAR_WEEK_VISIBLE_DAYS, safe).apply()
-        _calendarWeekVisibleDays.value = safe
-    }
-
     private val _calendarDisplayMode = MutableStateFlow(
         CalendarDisplayMode.fromKey(prefs.getString(KEY_CALENDAR_DISPLAY_MODE, null)),
     )
@@ -373,8 +330,6 @@ class SettingsStore(
             _calendarDefaultDurationMin.value = 60
             _calendarDefaultReminderMin.value = 10
             _calendarDimPast.value = true
-            _calendarShowWeekend.value = false
-            _calendarWeekVisibleDays.value = CALENDAR_WEEK_VISIBLE_DAYS_DEFAULT
             _calendarDisplayMode.value = CalendarDisplayMode.AGENDA
             _workingHours.value = WorkingHours()
             _calendarTimeRangeMode.value = TimeRangeMode.WORK
@@ -463,7 +418,6 @@ class SettingsStore(
             .putInt(KEY_CALENDAR_DEFAULT_DURATION, value.defaultDurationMinutes)
             .putInt(KEY_CALENDAR_DEFAULT_REMINDER, reminder)
             .putBoolean(KEY_CALENDAR_DIM_PAST, value.dimPast)
-            .putBoolean(KEY_CALENDAR_SHOW_WEEKEND, value.showWeekend)
             .putInt(KEY_WORKING_HOURS_START, value.workingStartMinutes)
             .putInt(KEY_WORKING_HOURS_END, value.workingEndMinutes)
             .putString(KEY_CALENDAR_TIME_RANGE_MODE, calendarRange.name)
@@ -477,7 +431,6 @@ class SettingsStore(
         _calendarDefaultDurationMin.value = value.defaultDurationMinutes
         _calendarDefaultReminderMin.value = reminder
         _calendarDimPast.value = value.dimPast
-        _calendarShowWeekend.value = value.showWeekend
         _workingHours.value = WorkingHours(value.workingStartMinutes, value.workingEndMinutes)
         _calendarTimeRangeMode.value = calendarRange
         _meetingRoomTimeRangeMode.value = roomsRange
@@ -500,7 +453,9 @@ class SettingsStore(
             _calendarDefaultReminderMin.value.takeIf { it >= 0 } ?: JSONObject.NULL,
         )
         put("dim_past", _calendarDimPast.value)
-        put("show_weekend", _calendarShowWeekend.value)
+        // The fixed three-day view always includes weekends. Keep this legacy
+        // server field for wire compatibility while removing the client option.
+        put("show_weekend", true)
         put("working_start_minutes", _workingHours.value.startMin)
         put("working_end_minutes", _workingHours.value.endMin)
         put("calendar_time_range", _calendarTimeRangeMode.value.name.lowercase())
@@ -528,8 +483,6 @@ class SettingsStore(
         const val KEY_CALENDAR_DEFAULT_DURATION = "calendar_default_duration"
         const val KEY_CALENDAR_DEFAULT_REMINDER = "calendar_default_reminder"
         const val KEY_CALENDAR_DIM_PAST = "calendar_dim_past"
-        const val KEY_CALENDAR_SHOW_WEEKEND = "calendar_show_weekend"
-        const val KEY_CALENDAR_WEEK_VISIBLE_DAYS = "calendar_week_visible_days"
         const val KEY_CALENDAR_DISPLAY_MODE = "calendar_display_mode"
         const val KEY_WORKING_HOURS_START = "calendar_working_hours_start"
         const val KEY_WORKING_HOURS_END = "calendar_working_hours_end"
@@ -548,8 +501,6 @@ class SettingsStore(
             KEY_CALENDAR_DEFAULT_DURATION,
             KEY_CALENDAR_DEFAULT_REMINDER,
             KEY_CALENDAR_DIM_PAST,
-            KEY_CALENDAR_SHOW_WEEKEND,
-            KEY_CALENDAR_WEEK_VISIBLE_DAYS,
             KEY_CALENDAR_DISPLAY_MODE,
             KEY_WORKING_HOURS_START,
             KEY_WORKING_HOURS_END,

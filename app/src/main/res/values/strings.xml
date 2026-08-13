@@ -282,8 +282,8 @@
     <!-- Web-aligned calendar header: nav semantics (dates use numeric ISO in code) -->
     <string name="calendar_prev_day">Previous day</string>
     <string name="calendar_next_day">Next day</string>
-    <string name="calendar_prev_week">Previous week</string>
-    <string name="calendar_next_week">Next week</string>
+    <string name="calendar_prev_week">Previous 3 days</string>
+    <string name="calendar_next_week">Next 3 days</string>
     <string name="calendar_prev_month">Previous month</string>
     <string name="calendar_next_month">Next month</string>
     <string name="calendar_agenda_anchor_year">%1$s · 1 year</string>
@@ -348,10 +348,7 @@
     <string name="calendar_settings_default_reminder">Default reminder</string>
     <string name="calendar_settings_duration_minutes">%1$d min</string>
     <string name="calendar_settings_dim_past">Dim past events</string>
-    <string name="calendar_settings_show_weekend">Show weekends</string>
     <!-- How many days the week view fits on screen (3–7, default 3); fewer columns than this = no scroll -->
-    <string name="calendar_settings_week_visible_days">Days per screen (week view)</string>
-    <string name="calendar_settings_week_days_value">%1$d days</string>
     <!-- Day/week timeline: tap an empty slot to pre-select a range, tap it again to create -->
     <string name="calendar_draft_add">New event</string>
     <!-- Long-press-drag an event to reschedule it; shown when the PATCH fails -->
