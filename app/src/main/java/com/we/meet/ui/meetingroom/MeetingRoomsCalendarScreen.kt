@@ -113,6 +113,8 @@ internal fun BookingBounds.canMoveInRange(rangeStart: Int, rangeEnd: Int): Boole
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MeetingRoomsCalendarScreen(
+    selectedDate: LocalDate,
+    onSelectedDateChange: (LocalDate) -> Unit,
     onShowCalendar: () -> Unit,
     onOpenSettings: () -> Unit,
     onCreateEvent: (epochDay: Long) -> Unit,
@@ -130,6 +132,14 @@ fun MeetingRoomsCalendarScreen(
     val rangeStart = if (rangeMode == TimeRangeMode.WORK) workingHours.startMin else 0
     val rangeEnd = if (rangeMode == TimeRangeMode.WORK) workingHours.endMin else 24 * 60
     val zone = ZoneId.systemDefault()
+
+    LaunchedEffect(selectedDate) {
+        if (ui.selectedDate != selectedDate) vm.setDate(selectedDate)
+    }
+    val selectDate: (LocalDate) -> Unit = { date ->
+        vm.setDate(date)
+        onSelectedDateChange(date)
+    }
 
     var selectedRoomId by rememberSaveable { mutableStateOf<String?>(null) }
     var draft by remember { mutableStateOf<DraftSelection?>(null) }
@@ -247,7 +257,7 @@ fun MeetingRoomsCalendarScreen(
                 },
                 onShowCalendar = onShowCalendar,
                 onOpenSettings = onOpenSettings,
-                onSelectDate = vm::setDate,
+                onSelectDate = selectDate,
                 onOpenFilter = { filterSection = it },
                 onRefresh = vm::refresh,
                 onShowFullDay = {
@@ -269,7 +279,7 @@ fun MeetingRoomsCalendarScreen(
                 draftConflict = draftConflict,
                 conflictMessage = conflictMessage,
                 onBack = { selectedRoomId = null },
-                onSelectDate = vm::setDate,
+                onSelectDate = selectDate,
                 onOpenRoomInfo = { roomInfoOpen = true },
                 onDraftAdjust = { draft = it },
                 onSlotTap = { minute ->
@@ -418,18 +428,19 @@ private fun MeetingRoomOverview(
     onOpenRoom: (String) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
+        RoomDateToolbar(
+            date = ui.selectedDate,
+            onSelectDate = onSelectDate,
+            onPrevious = { onSelectDate(ui.selectedDate.minusDays(1)) },
+            onToday = { onSelectDate(LocalDate.now()) },
+            onNext = { onSelectDate(ui.selectedDate.plusDays(1)) },
+        )
         CalendarPrimaryToolbar(
             current = CalendarPrimaryPage.MEETING_ROOMS,
             onSelect = { page ->
                 if (page == CalendarPrimaryPage.CALENDAR) onShowCalendar()
             },
             onOpenManagement = onOpenSettings,
-        )
-        RoomDateToolbar(
-            date = ui.selectedDate,
-            onPrevious = { onSelectDate(ui.selectedDate.minusDays(1)) },
-            onToday = { onSelectDate(LocalDate.now()) },
-            onNext = { onSelectDate(ui.selectedDate.plusDays(1)) },
         )
         MeetingRoomWeekStrip(
             selectedDate = ui.selectedDate,
@@ -667,19 +678,35 @@ private fun RoomScheduleToolbar(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RoomDateToolbar(
     date: LocalDate,
+    onSelectDate: (LocalDate) -> Unit,
     onPrevious: () -> Unit,
     onToday: () -> Unit,
     onNext: () -> Unit,
 ) {
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.SpaceXs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        TextButton(onClick = { showDatePicker = true }) {
+            Text(
+                text = stringResource(
+                    R.string.calendar_month_year,
+                    date.monthValue,
+                    date.year,
+                ),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+            )
+        }
+        Spacer(Modifier.weight(1f))
         IconButton(onClick = onPrevious) {
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowLeft,
@@ -693,12 +720,23 @@ private fun RoomDateToolbar(
                 contentDescription = stringResource(R.string.calendar_next_day),
             )
         }
-        Text(
-            DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-                .withLocale(Locale.getDefault())
-                .format(date),
-            style = MaterialTheme.typography.titleMedium,
-        )
+    }
+    if (showDatePicker) {
+        val picker = rememberDatePickerState(initialSelectedDateMillis = datePickerMillis(date))
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    picker.selectedDateMillis?.let { onSelectDate(datePickerDate(it)) }
+                    showDatePicker = false
+                }) { Text(stringResource(android.R.string.ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        ) { DatePicker(state = picker) }
     }
 }
 

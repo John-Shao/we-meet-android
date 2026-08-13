@@ -1,5 +1,12 @@
 package com.we.meet.ui.calendar
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +37,7 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +51,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -50,6 +59,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,6 +79,7 @@ import com.we.meet.ui.calendar.views.DayTimelineView
 import com.we.meet.ui.calendar.views.DraftSlot
 import com.we.meet.ui.calendar.views.WeekTimelineView
 import com.we.meet.ui.calendar.views.draftSlotAt
+import com.we.meet.ui.calendar.views.horizontalDateSwipe
 import com.we.meet.ui.calendar.views.weekColumnDays
 import com.we.meet.ui.meetingroom.MeetingRoomsCalendarScreen
 import java.time.DayOfWeek
@@ -92,6 +104,7 @@ fun CalendarTabScreen(
     )? = null,
     /** P8 日历设置页入口(header 齿轮)。 */
     onOpenManagement: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
 ) {
     val vm: CalendarViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
@@ -106,8 +119,10 @@ fun CalendarTabScreen(
     var primaryPage by rememberSaveable { mutableStateOf(CalendarPrimaryPage.CALENDAR) }
     if (primaryPage == CalendarPrimaryPage.MEETING_ROOMS) {
         MeetingRoomsCalendarScreen(
+            selectedDate = ui.selectedDate,
+            onSelectedDateChange = vm::selectDate,
             onShowCalendar = { primaryPage = CalendarPrimaryPage.CALENDAR },
-            onOpenSettings = onOpenManagement,
+            onOpenSettings = onOpenSettings,
             onCreateEvent = onCreateEvent,
             onCreateEventInRoom = { start, end, roomId ->
                 val callback = onCreateEventInRoom
@@ -212,7 +227,7 @@ fun CalendarTabScreen(
                         CalendarViewMode.AGENDA,
                         -> vm.selectDate(ui.selectedDate.minusDays(1))
                         CalendarViewMode.WEEK -> vm.selectDate(ui.selectedDate.minusDays(7))
-                        else -> vm.goToMonth(ui.monthAnchor.minusMonths(1))
+                        CalendarViewMode.MONTH -> vm.selectDate(shiftedMonthDate(ui.selectedDate, -1))
                     }
                 },
                 onNext = {
@@ -221,7 +236,7 @@ fun CalendarTabScreen(
                         CalendarViewMode.AGENDA,
                         -> vm.selectDate(ui.selectedDate.plusDays(1))
                         CalendarViewMode.WEEK -> vm.selectDate(ui.selectedDate.plusDays(7))
-                        else -> vm.goToMonth(ui.monthAnchor.plusMonths(1))
+                        CalendarViewMode.MONTH -> vm.selectDate(shiftedMonthDate(ui.selectedDate, 1))
                     }
                 },
                 onToday = { vm.goToToday() },
@@ -289,39 +304,49 @@ fun CalendarTabScreen(
                         today = LocalDate.now(calendarZone),
                     )
 
-                    CalendarViewMode.DAY -> DayTimelineView(
-                        date = ui.selectedDate,
-                        events = ui.eventsByDay[ui.selectedDate].orEmpty(),
-                        onEventClick = { id -> clearPicks(); onEventClick(id) },
-                        // 点其他空白位置直接移动预选块；点预选块本身才确认新建。
-                        onSlotTap = { minute ->
-                            selectedEventId = null
-                            draft = draftSlotAt(
-                                ui.selectedDate,
-                                minute,
-                                defaultDurationMin,
-                                visibleStartMin,
-                                visibleEndMin,
-                            )
-                        },
-                        visibleStartMin = visibleStartMin,
-                        visibleEndMin = visibleEndMin,
-                        workingStartMin = workingHours.startMin,
-                        workingEndMin = workingHours.endMin,
-                        zoneId = calendarZone,
-                        dimPastNow = dimPastNow,
-                        draft = draft,
-                        draftLabel = draftLabel,
-                        onDraftAdjust = { draft = it },
-                        onDraftConfirm = confirmDraft,
-                        selfUserId = ui.selfUserId,
-                        onEventMove = { id, d, s, e -> vm.moveEvent(id, d, s, e) },
-                        onRailTap = clearPicks,
-                        selectedEventId = selectedEventId,
-                        // 长按选中一条日程时,顺手撤掉预选框(同时只留一个操作对象)。
-                        onEventSelect = { id -> draft = null; selectedEventId = id },
-                        onDateSwipe = vm::selectDate,
-                    )
+                    CalendarViewMode.DAY -> Column {
+                        CalendarDayStrip(
+                            selectedDate = ui.selectedDate,
+                            eventsByDay = ui.eventsByDay,
+                            firstDayOfWeek = firstDow,
+                            today = LocalDate.now(calendarZone),
+                            onSelectDate = vm::selectDate,
+                        )
+                        DayTimelineView(
+                            date = ui.selectedDate,
+                            events = ui.eventsByDay[ui.selectedDate].orEmpty(),
+                            onEventClick = { id -> clearPicks(); onEventClick(id) },
+                            // 点其他空白位置直接移动预选块；点预选块本身才确认新建。
+                            onSlotTap = { minute ->
+                                selectedEventId = null
+                                draft = draftSlotAt(
+                                    ui.selectedDate,
+                                    minute,
+                                    defaultDurationMin,
+                                    visibleStartMin,
+                                    visibleEndMin,
+                                )
+                            },
+                            modifier = Modifier.weight(1f),
+                            visibleStartMin = visibleStartMin,
+                            visibleEndMin = visibleEndMin,
+                            workingStartMin = workingHours.startMin,
+                            workingEndMin = workingHours.endMin,
+                            zoneId = calendarZone,
+                            dimPastNow = dimPastNow,
+                            draft = draft,
+                            draftLabel = draftLabel,
+                            onDraftAdjust = { draft = it },
+                            onDraftConfirm = confirmDraft,
+                            selfUserId = ui.selfUserId,
+                            onEventMove = { id, d, s, e -> vm.moveEvent(id, d, s, e) },
+                            onRailTap = clearPicks,
+                            selectedEventId = selectedEventId,
+                            // 长按选中一条日程时,顺手撤掉预选框(同时只留一个操作对象)。
+                            onEventSelect = { id -> draft = null; selectedEventId = id },
+                            onDateSwipe = vm::selectDate,
+                        )
+                    }
 
                     CalendarViewMode.WEEK -> WeekTimelineView(
                         anchorDate = ui.selectedDate,
@@ -366,6 +391,9 @@ fun CalendarTabScreen(
                         today = LocalDate.now(calendarZone),
                         onSelect = { vm.selectDate(it) },
                         onEventClick = onEventClick,
+                        onMonthSwipe = { delta ->
+                            vm.selectDate(shiftedMonthDate(ui.selectedDate, delta))
+                        },
                     )
                 }
             }
@@ -414,23 +442,49 @@ fun CalendarTabScreen(
 
 /** 月视图分支 = 原有月历网格 + 选中日列表(原样保留)。 */
 @Composable
-private fun MonthViewBody(
+internal fun MonthViewBody(
     ui: CalendarUiState,
     firstDow: DayOfWeek,
     dimPastNow: java.time.ZonedDateTime?,
     today: LocalDate,
     onSelect: (LocalDate) -> Unit,
     onEventClick: (String) -> Unit,
+    onMonthSwipe: (Long) -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        MonthGrid(
-            month = ui.monthAnchor,
-            selected = ui.selectedDate,
-            eventsByDay = ui.eventsByDay,
-            firstDow = firstDow,
-            today = today,
-            onSelect = onSelect,
-        )
+    val density = LocalDensity.current
+    val swipeThresholdPx = with(density) { Dimens.MinTouchTarget.toPx() }
+    val onMonthSwipeNow = rememberUpdatedState(onMonthSwipe)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .testTag("calendar-month-content")
+            .horizontalDateSwipe(
+                enabled = true,
+                gestureKey = ui.monthAnchor,
+                thresholdPx = swipeThresholdPx,
+            ) { monthDelta -> onMonthSwipeNow.value(monthDelta) },
+    ) {
+        AnimatedContent(
+            targetState = ui.monthAnchor,
+            transitionSpec = {
+                val direction = if (targetState.isAfter(initialState)) 1 else -1
+                (slideInHorizontally(tween(180)) { direction * it } + fadeIn(tween(180)))
+                    .togetherWith(
+                        slideOutHorizontally(tween(180)) { -direction * it } +
+                            fadeOut(tween(180)),
+                    )
+            },
+            label = "calendar-month",
+        ) { month ->
+            MonthGrid(
+                month = month,
+                selected = ui.selectedDate,
+                eventsByDay = ui.eventsByDay,
+                firstDow = firstDow,
+                today = today,
+                onSelect = onSelect,
+            )
+        }
         when {
             ui.selectedDayEvents.isEmpty() -> Box(
                 Modifier.fillMaxSize(),
@@ -489,7 +543,7 @@ private fun CalendarHeader(
                         ui.monthAnchor.monthValue,
                         ui.monthAnchor.year,
                     ),
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                 )
             }
@@ -549,6 +603,80 @@ private fun calendarOutsideWorkingHoursCount(
             val endsOutside = event.end.hour * 60 + event.end.minute > workingEndMin
             crossesDay || startsOutside || endsOutside
         }
+}
+
+/** Compact week context for day view; keeps the selected date visible while swiping days. */
+@Composable
+private fun CalendarDayStrip(
+    selectedDate: LocalDate,
+    eventsByDay: Map<LocalDate, List<EventUi>>,
+    firstDayOfWeek: DayOfWeek,
+    today: LocalDate,
+    onSelectDate: (LocalDate) -> Unit,
+) {
+    val days = remember(selectedDate, firstDayOfWeek) {
+        weekColumnDays(selectedDate, firstDayOfWeek, showWeekend = true)
+    }
+    Row(modifier = Modifier.fillMaxWidth()) {
+        days.forEach { date ->
+            val selected = date == selectedDate
+            val isToday = date == today
+            val hasEvents = eventsByDay[date]?.isNotEmpty() == true
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onSelectDate(date) }
+                    .padding(vertical = Dimens.SpaceXs),
+            ) {
+                Text(
+                    text = date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (selected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(Dimens.Calendar.WeekDotSize)
+                        .background(
+                            color = when {
+                                selected -> MaterialTheme.colorScheme.primary
+                                isToday -> MaterialTheme.colorScheme.primaryContainer
+                                else -> Color.Transparent
+                            },
+                            shape = CircleShape,
+                        ),
+                ) {
+                    Text(
+                        text = date.dayOfMonth.toString(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = when {
+                            selected -> MaterialTheme.colorScheme.onPrimary
+                            isToday -> MaterialTheme.colorScheme.onPrimaryContainer
+                            else -> MaterialTheme.colorScheme.onSurface
+                        },
+                    )
+                    if (hasEvents) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = Dimens.BorderThin)
+                                .size(Dimens.Calendar.EventDotSize)
+                                .background(
+                                    color = if (selected) MaterialTheme.colorScheme.onPrimary
+                                    else eventsByDay[date]?.firstNotNullOfOrNull {
+                                        parseCalendarColor(it.calendarColor)
+                                    } ?: MaterialTheme.colorScheme.tertiary,
+                                    shape = CircleShape,
+                                ),
+                        )
+                    }
+                }
+            }
+        }
+    }
+    HorizontalDivider()
 }
 
 @Composable

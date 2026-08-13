@@ -38,6 +38,7 @@ fun DayTimelineView(
     events: List<EventUi>,
     onEventClick: (String) -> Unit,
     onSlotTap: (minuteOfDay: Int) -> Unit,
+    modifier: Modifier = Modifier,
     visibleStartMin: Int = 0,
     visibleEndMin: Int = 24 * 60,
     workingStartMin: Int = 9 * 60,
@@ -83,7 +84,7 @@ fun DayTimelineView(
     }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .horizontalDateSwipe(
                 enabled = onDateSwipe != null && selectedEventId == null,

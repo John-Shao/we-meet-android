@@ -1,9 +1,18 @@
 package com.we.meet.ui.calendar
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
 import com.we.meet.ui.theme.WeMeetTheme
+import com.we.meet.ui.calendar.views.CalendarViewMode
+import com.we.meet.ui.meetingroom.MeetingRoomWeekStrip
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.YearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -31,5 +40,92 @@ class CalendarManagementUiTest {
 
         composeRule.onNodeWithTag("calendar-color-$target").performClick()
         composeRule.runOnIdle { assertEquals(target, selected) }
+    }
+
+    @Test
+    fun homeToolbarKeepsPrimaryTabsAndManagementVisible() {
+        var selected: CalendarPrimaryPage? = null
+        composeRule.setContent {
+            WeMeetTheme {
+                CalendarPrimaryToolbar(
+                    current = CalendarPrimaryPage.CALENDAR,
+                    onSelect = { selected = it },
+                    onOpenManagement = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("calendar-primary-calendar").assertIsDisplayed()
+        composeRule.onNodeWithTag("calendar-primary-meeting_rooms").assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("calendar-manage").assertIsDisplayed()
+        composeRule.runOnIdle { assertEquals(CalendarPrimaryPage.MEETING_ROOMS, selected) }
+    }
+
+    @Test
+    fun meetingRoomToolbarReplacesManagementWithCalendarSettings() {
+        var settingsOpened = false
+        composeRule.setContent {
+            WeMeetTheme {
+                CalendarPrimaryToolbar(
+                    current = CalendarPrimaryPage.MEETING_ROOMS,
+                    onSelect = {},
+                    onOpenManagement = { settingsOpened = true },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("calendar-manage").assertDoesNotExist()
+        composeRule.onNodeWithTag("calendar-settings").assertIsDisplayed().performClick()
+        composeRule.runOnIdle { assertEquals(true, settingsOpened) }
+    }
+
+    @Test
+    fun monthViewSwipeLeftRequestsNextMonth() {
+        var monthDelta: Long? = null
+        val date = LocalDate.of(2026, 8, 13)
+        composeRule.setContent {
+            WeMeetTheme {
+                MonthViewBody(
+                    ui = CalendarUiState(
+                        selectedDate = date,
+                        monthAnchor = YearMonth.from(date),
+                        viewMode = CalendarViewMode.MONTH,
+                        loading = false,
+                    ),
+                    firstDow = DayOfWeek.MONDAY,
+                    dimPastNow = null,
+                    today = date,
+                    onSelect = {},
+                    onEventClick = {},
+                    onMonthSwipe = { monthDelta = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("calendar-month-content").performTouchInput { swipeLeft() }
+        composeRule.runOnIdle { assertEquals(1L, monthDelta) }
+    }
+
+    @Test
+    fun meetingRoomWeekStripSwipesByWholeWeeks() {
+        val selectedDate = LocalDate.of(2026, 8, 13)
+        var changedDate: LocalDate? = null
+        composeRule.setContent {
+            WeMeetTheme {
+                MeetingRoomWeekStrip(
+                    selectedDate = selectedDate,
+                    firstDayOfWeek = DayOfWeek.MONDAY,
+                    onSelectDate = { changedDate = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("meeting-room-week-strip")
+            .performTouchInput { swipeLeft() }
+        composeRule.runOnIdle { assertEquals(selectedDate.plusWeeks(1), changedDate) }
+
+        composeRule.onNodeWithTag("meeting-room-week-strip")
+            .performTouchInput { swipeRight() }
+        composeRule.runOnIdle { assertEquals(selectedDate.minusWeeks(1), changedDate) }
     }
 }

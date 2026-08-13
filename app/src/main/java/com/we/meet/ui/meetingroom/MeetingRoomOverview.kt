@@ -31,6 +31,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -41,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.R
 import com.we.meet.data.api.dto.MeetingRoomTimelineEntryDto
+import com.we.meet.ui.calendar.views.horizontalDateSwipe
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 import java.time.DayOfWeek
@@ -113,9 +116,16 @@ internal fun MeetingRoomWeekStrip(
 ) {
     val offset = (selectedDate.dayOfWeek.value - firstDayOfWeek.value + 7) % 7
     val firstDate = selectedDate.minusDays(offset.toLong())
+    val swipeThresholdPx = with(LocalDensity.current) { Dimens.MinTouchTarget.toPx() }
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag("meeting-room-week-strip")
+            .horizontalDateSwipe(
+                enabled = true,
+                gestureKey = firstDate,
+                thresholdPx = swipeThresholdPx,
+            ) { weekDelta -> onSelectDate(selectedDate.plusWeeks(weekDelta)) }
             .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {

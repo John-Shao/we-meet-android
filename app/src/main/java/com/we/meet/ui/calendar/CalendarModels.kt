@@ -6,6 +6,10 @@ import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
+/** Moves calendar selection by whole months and clamps invalid month-end dates. */
+internal fun shiftedMonthDate(date: LocalDate, monthDelta: Long): LocalDate =
+    date.plusMonths(monthDelta)
+
 /** One event projected into the effective calendar display timezone. */
 data class EventUi(
     val id: String,

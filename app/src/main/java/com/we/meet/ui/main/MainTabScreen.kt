@@ -19,12 +19,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.EventNote
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.filled.ViewDay
+import androidx.compose.material.icons.filled.ViewWeek
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Contacts
 import androidx.compose.material.icons.outlined.Description
@@ -60,6 +62,7 @@ import com.we.meet.ui.theme.WeMeetTextStyles
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.WeMeetApp
+import com.we.meet.data.settings.CalendarDisplayMode
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.ui.chat.ForwardCreateGroupFlow
 import com.we.meet.feature.im.ui.chat.ForwardPicker
@@ -103,6 +106,13 @@ private data class TabItem(
     val content: @Composable () -> Unit,
 )
 
+internal fun calendarTabIcon(mode: CalendarDisplayMode): ImageVector = when (mode) {
+    CalendarDisplayMode.AGENDA -> Icons.AutoMirrored.Filled.EventNote
+    CalendarDisplayMode.DAY -> Icons.Filled.ViewDay
+    CalendarDisplayMode.MULTI_DAY -> Icons.Filled.ViewWeek
+    CalendarDisplayMode.MONTH -> Icons.Filled.CalendarMonth
+}
+
 @Composable
 fun MainTabScreen(
     onCreateMeeting: () -> Unit,
@@ -138,6 +148,8 @@ fun MainTabScreen(
     onOpenReminders: () -> Unit,
     /** 日历主页进入日历管理中心。 */
     onOpenCalendarManagement: () -> Unit,
+    /** 会议室页进入全局日历偏好设置。 */
+    onOpenCalendarSettings: () -> Unit,
 ) {
     // Default to the Messages tab.
     var selectedTab by rememberSaveable { mutableIntStateOf(MainTab.Messages.ordinal) }
@@ -204,6 +216,7 @@ fun MainTabScreen(
     val reminderEnabled by app.settingsStore.imReminderEntry.collectAsStateWithLifecycle()
     val calendarTimezoneMode by app.settingsStore.calendarTimezoneMode.collectAsStateWithLifecycle()
     val calendarFixedTimezone by app.settingsStore.calendarFixedTimezone.collectAsStateWithLifecycle()
+    val calendarDisplayMode by app.settingsStore.calendarDisplayMode.collectAsStateWithLifecycle()
     val calendarZone = remember(calendarTimezoneMode, calendarFixedTimezone) {
         app.settingsStore.calendarZoneId()
     }
@@ -317,13 +330,18 @@ fun MainTabScreen(
                 },
             )
         },
-        TabItem(R.string.tab_calendar, Icons.Filled.CalendarMonth, Icons.Outlined.CalendarMonth) {
+        TabItem(
+            R.string.tab_calendar,
+            calendarTabIcon(calendarDisplayMode),
+            calendarTabIcon(calendarDisplayMode),
+        ) {
             CalendarTabScreen(
                 onEventClick = onEventClick,
                 onCreateEvent = onCreateEvent,
                 onCreateEventAt = onCreateEventAt,
                 onCreateEventInRoom = onCreateEventInRoom,
                 onOpenManagement = onOpenCalendarManagement,
+                onOpenSettings = onOpenCalendarSettings,
             )
         },
         TabItem(R.string.tab_meeting, Icons.Filled.Videocam, Icons.Outlined.Videocam) {

@@ -576,6 +576,9 @@ fun AppNav() {
                 onOpenCalendarManagement = {
                     navController.navigate(Routes.CALENDAR_MANAGEMENT)
                 },
+                onOpenCalendarSettings = {
+                    navController.navigate(Routes.CALENDAR_SETTINGS)
+                },
             )
         }
 

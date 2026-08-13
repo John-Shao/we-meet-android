@@ -9,6 +9,18 @@ import org.junit.Test
 
 class CalendarModelsTest {
     @Test
+    fun `month navigation preserves the day or clamps to month end`() {
+        assertEquals(
+            LocalDate.of(2026, 2, 28),
+            shiftedMonthDate(LocalDate.of(2026, 1, 31), 1),
+        )
+        assertEquals(
+            LocalDate.of(2026, 7, 13),
+            shiftedMonthDate(LocalDate.of(2026, 8, 13), -1),
+        )
+    }
+
+    @Test
     fun `canonical all-day dates do not shift across display timezones`() {
         val dto = CalendarEventDto(
             id = "all-day",
