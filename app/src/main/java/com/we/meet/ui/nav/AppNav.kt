@@ -414,16 +414,6 @@ fun AppNav() {
         }
     }
 
-    LaunchedEffect(Unit) {
-        app.pendingExternalCalendar.collect { pending ->
-            if (!pending) return@collect
-            app.pendingExternalCalendar.value = false
-            if (app.tokenStore.isLoggedIn()) {
-                navController.navigate(Routes.CALENDAR_SETTINGS) { launchSingleTop = true }
-            }
-        }
-    }
-
     // P1 一对一通话: watch the IM call machine and drive navigation.
     //   Idle → Outgoing/Incoming: push the full-screen call UI.
     //   EnterRoom event: jump into the LiveKit room (audio call → cam off),

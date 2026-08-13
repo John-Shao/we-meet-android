@@ -5,7 +5,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +22,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -68,10 +66,6 @@ import com.we.meet.data.api.dto.CalendarExportRequest
 import com.we.meet.data.api.dto.CalendarMemberRequest
 import com.we.meet.data.api.dto.CalendarSubscriptionRequest
 import com.we.meet.data.api.dto.CreateCalendarRequest
-import com.we.meet.data.api.dto.ExternalAuthorizeRequest
-import com.we.meet.data.api.dto.ExternalCalendarAccountDto
-import com.we.meet.data.api.dto.ProviderCalendarDto
-import com.we.meet.data.api.dto.SelectProviderCalendarsRequest
 import com.we.meet.data.api.dto.UnifiedCalendarDto
 import com.we.meet.data.api.dto.UpdateCalendarRequest
 import com.we.meet.feature.im.ImSession
@@ -86,8 +80,6 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import retrofit2.HttpException
 
-private enum class ManagementDialog { ADD, EXTERNAL }
-
 /** Mobile counterpart of the Web calendar sidebar and its action menus. */
 @Composable
 fun UnifiedCalendarManagementSection() {
@@ -99,7 +91,7 @@ fun UnifiedCalendarManagementSection() {
     var error by remember { mutableStateOf(false) }
     var unavailable by remember { mutableStateOf(false) }
     var reload by remember { mutableStateOf(0) }
-    var dialog by remember { mutableStateOf<ManagementDialog?>(null) }
+    var addOpen by remember { mutableStateOf(false) }
     var settings by remember { mutableStateOf<UnifiedCalendarDto?>(null) }
     var sharing by remember { mutableStateOf<UnifiedCalendarDto?>(null) }
     var exporting by remember { mutableStateOf<UnifiedCalendarDto?>(null) }
@@ -123,16 +115,15 @@ fun UnifiedCalendarManagementSection() {
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.calendar_management_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-            TextButton(onClick = { dialog = ManagementDialog.ADD }) { Text(stringResource(R.string.calendar_add)) }
+            TextButton(onClick = { addOpen = true }) { Text(stringResource(R.string.calendar_add)) }
         }
         when {
             loading -> CircularProgressIndicator(modifier = Modifier.size(Dimens.IconSmall))
             error && calendars.isEmpty() -> TextButton(onClick = { reload++ }) { Text(stringResource(R.string.calendar_load_failed_retry)) }
             else -> {
                 val groups = listOf(
-                    stringResource(R.string.calendar_group_managed) to calendars.filter { it.capabilities.canManage && it.kind != "external" },
-                    stringResource(R.string.calendar_group_subscribed) to calendars.filter { !it.capabilities.canManage && it.kind != "external" },
-                    stringResource(R.string.calendar_group_external) to calendars.filter { it.kind == "external" },
+                    stringResource(R.string.calendar_group_managed) to calendars.filter { it.capabilities.canManage },
+                    stringResource(R.string.calendar_group_subscribed) to calendars.filter { !it.capabilities.canManage },
                 )
                 groups.forEach { (title, rows) ->
                     if (rows.isNotEmpty()) {
@@ -167,17 +158,11 @@ fun UnifiedCalendarManagementSection() {
                 }
             }
         }
-        OutlinedButton(onClick = { dialog = ManagementDialog.EXTERNAL }) {
-            Text(stringResource(R.string.calendar_manage_external))
-        }
         HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.SpaceS))
     }
 
-    if (dialog == ManagementDialog.ADD) {
-        AddCalendarDialog(onDismiss = { dialog = null }, onChanged = { reload++ })
-    }
-    if (dialog == ManagementDialog.EXTERNAL) {
-        ExternalCalendarsDialog(onDismiss = { dialog = null }, onChanged = { reload++ })
+    if (addOpen) {
+        AddCalendarDialog(onDismiss = { addOpen = false }, onChanged = { reload++ })
     }
     settings?.let { calendar ->
         UnifiedCalendarSettingsDialog(calendar, { settings = null }) { reload++ }
@@ -490,55 +475,6 @@ private fun CalendarExportDialog(calendar: UnifiedCalendarDto, onDismiss: () -> 
     )
 }
 
-@Composable
-private fun ExternalCalendarsDialog(onDismiss: () -> Unit, onChanged: () -> Unit) {
-    val context = LocalContext.current
-    val app = context.applicationContext as WeMeetApp
-    val api = app.apiClient.calendarApi
-    val scope = rememberCoroutineScope()
-    var accounts by remember { mutableStateOf(emptyList<ExternalCalendarAccountDto>()) }
-    var selecting by remember { mutableStateOf<ExternalCalendarAccountDto?>(null) }
-    var reload by remember { mutableStateOf(0) }
-    var error by remember { mutableStateOf(false) }
-    LaunchedEffect(reload) { accounts = runCatching { api.listExternalCalendarAccounts() }.getOrDefault(emptyList()) }
-    FullCalendarDialog(stringResource(R.string.calendar_external_title), onDismiss) {
-        Text(stringResource(R.string.calendar_external_supported))
-        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-            listOf("google" to "Google", "microsoft" to "Microsoft").forEach { (provider, label) ->
-                Button(onClick = {
-                    scope.launch {
-                        runCatching { api.authorizeExternalCalendar(ExternalAuthorizeRequest(provider)) }
-                            .onSuccess { CustomTabsIntent.Builder().build().launchUrl(context, android.net.Uri.parse(it.authorizationUrl)) }
-                            .onFailure { error = true }
-                    }
-                }) { Text(stringResource(R.string.calendar_external_add_provider, label)) }
-            }
-        }
-        accounts.forEach { account ->
-            Text("${account.email} · ${account.status}", fontWeight = FontWeight.SemiBold)
-            account.bindings.forEach { Text("${it.name} · ${it.syncStatus}${it.errorCode.takeIf(String::isNotBlank)?.let { code -> " ($code)" }.orEmpty()}") }
-            Row {
-                TextButton(onClick = { selecting = account }) { Text(stringResource(R.string.calendar_external_select)) }
-                TextButton(onClick = { scope.launch { runCatching { api.syncExternalCalendar(account.id) }.onSuccess { reload++ } } }) { Text(stringResource(R.string.calendar_external_sync)) }
-                TextButton(onClick = {
-                    scope.launch {
-                        runCatching { api.disconnectExternalCalendar(account.id) }
-                            .onSuccess { reload++; onChanged() }.onFailure { error = true }
-                    }
-                }) { Text(stringResource(R.string.calendar_external_disconnect)) }
-            }
-        }
-        if (error) Text(stringResource(R.string.calendar_external_operation_failed), color = MaterialTheme.colorScheme.error)
-    }
-    selecting?.let { account ->
-        ProviderCalendarSelectionDialog(
-            account = account,
-            onDismiss = { selecting = null },
-            onSaved = { selecting = null; reload++; onChanged() },
-        )
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CalendarDateField(label: String, value: String, onPick: (String) -> Unit) {
@@ -561,67 +497,6 @@ private fun CalendarDateField(label: String, value: String, onPick: (String) -> 
             },
             dismissButton = { TextButton(onClick = { show = false }) { Text(stringResource(R.string.calendar_cancel)) } },
         ) { DatePicker(state) }
-    }
-}
-
-@Composable
-private fun ProviderCalendarSelectionDialog(
-    account: ExternalCalendarAccountDto,
-    onDismiss: () -> Unit,
-    onSaved: () -> Unit,
-) {
-    val api = (LocalContext.current.applicationContext as WeMeetApp).apiClient.calendarApi
-    val scope = rememberCoroutineScope()
-    var calendars by remember(account.id) { mutableStateOf<List<ProviderCalendarDto>>(emptyList()) }
-    var selected by remember(account.id) { mutableStateOf<Set<String>>(emptySet()) }
-    var loading by remember(account.id) { mutableStateOf(true) }
-    var error by remember(account.id) { mutableStateOf(false) }
-    LaunchedEffect(account.id) {
-        runCatching { api.listProviderCalendars(account.id) }
-            .onSuccess { result ->
-                calendars = result
-                val hasSavedSelection = result.any(ProviderCalendarDto::selected)
-                selected = result.filter { it.selected || (!hasSavedSelection && it.primary) }
-                    .mapTo(mutableSetOf()) { it.id }
-            }
-            .onFailure { error = true }
-        loading = false
-    }
-    FullCalendarDialog(stringResource(R.string.calendar_external_choose_sync), onDismiss) {
-        when {
-            loading -> CircularProgressIndicator()
-            error -> Text(stringResource(R.string.calendar_external_load_failed), color = MaterialTheme.colorScheme.error)
-            else -> calendars.forEach { item ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().clickable {
-                        selected = if (item.id in selected) selected - item.id else selected + item.id
-                    },
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Checkbox(
-                        checked = item.id in selected,
-                        onCheckedChange = { checked ->
-                            selected = if (checked) selected + item.id else selected - item.id
-                        },
-                    )
-                    Text(item.name + if (item.primary) stringResource(R.string.calendar_primary_suffix) else "")
-                }
-            }
-        }
-        Button(
-            enabled = !loading && !error && selected.isNotEmpty(),
-            onClick = {
-                scope.launch {
-                    runCatching {
-                        api.selectProviderCalendars(
-                            account.id,
-                            SelectProviderCalendarsRequest(selected.toList()),
-                        )
-                    }.onSuccess { onSaved() }.onFailure { error = true }
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(stringResource(R.string.calendar_external_save_sync)) }
     }
 }
 

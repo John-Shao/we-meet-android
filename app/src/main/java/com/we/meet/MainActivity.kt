@@ -139,10 +139,6 @@ class MainActivity : AppCompatActivity() {
             (application as? WeMeetApp)?.pendingCalendarShareToken?.value = segments[2]
             return
         }
-        if (segments.firstOrNull() == "calendar" && uri.getQueryParameter("external") == "connected") {
-            (application as? WeMeetApp)?.pendingExternalCalendar?.value = true
-            return
-        }
         val slug = uri.pathSegments?.firstOrNull()?.takeIf {
             DEEP_LINK_SLUG_REGEX.matches(it)
         } ?: return

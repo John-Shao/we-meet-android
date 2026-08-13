@@ -162,7 +162,6 @@ data class CalendarEventDto(
     @Json(name = "display_calendar_id") val displayCalendarId: String? = null,
     @Json(name = "can_edit") val canEdit: Boolean = false,
     @Json(name = "can_delete") val canDelete: Boolean = false,
-    @Json(name = "sync_status") val syncStatus: String = "local",
     val location: String = "",
     @Json(name = "attachment_names") val attachmentNames: List<String> = emptyList(),
 ) {
@@ -378,41 +377,3 @@ data class CalendarExportJobDto(
     @Json(name = "download_url") val downloadUrl: String? = null,
     @Json(name = "error_detail") val errorDetail: String = "",
 )
-
-@JsonClass(generateAdapter = true)
-data class ExternalCalendarBindingDto(
-    val id: String = "",
-    @Json(name = "calendar_id") val calendarId: String = "",
-    @Json(name = "remote_calendar_id") val remoteCalendarId: String = "",
-    val name: String = "",
-    @Json(name = "is_primary") val isPrimary: Boolean = false,
-    @Json(name = "sync_status") val syncStatus: String = "pending",
-    @Json(name = "error_code") val errorCode: String = "",
-)
-
-@JsonClass(generateAdapter = true)
-data class ExternalCalendarAccountDto(
-    val id: String = "",
-    val provider: String = "",
-    val email: String = "",
-    val status: String = "active",
-    @Json(name = "error_code") val errorCode: String = "",
-    val bindings: List<ExternalCalendarBindingDto> = emptyList(),
-)
-
-@JsonClass(generateAdapter = true)
-data class ExternalAuthorizeRequest(val provider: String)
-
-@JsonClass(generateAdapter = true)
-data class ExternalAuthorizeDto(@Json(name = "authorization_url") val authorizationUrl: String = "")
-
-@JsonClass(generateAdapter = true)
-data class ProviderCalendarDto(
-    val id: String = "",
-    val name: String = "",
-    val primary: Boolean = false,
-    val selected: Boolean = false,
-)
-
-@JsonClass(generateAdapter = true)
-data class SelectProviderCalendarsRequest(@Json(name = "calendar_ids") val calendarIds: List<String>)

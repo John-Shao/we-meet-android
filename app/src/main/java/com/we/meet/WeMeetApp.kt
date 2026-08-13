@@ -81,9 +81,6 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
     /** Calendar subscription App Link / QR payload waiting for Compose navigation. */
     val pendingCalendarShareToken: MutableStateFlow<String?> = MutableStateFlow(null)
 
-    /** OAuth callback returns to /calendar and reopens third-party management. */
-    val pendingExternalCalendar: MutableStateFlow<Boolean> = MutableStateFlow(false)
-
     /**
      * True while MainActivity is started (visible). Set from its
      * onStart/onStop. The call-push receiver uses this to decide whether a

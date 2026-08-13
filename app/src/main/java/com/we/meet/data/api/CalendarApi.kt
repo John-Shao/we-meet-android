@@ -103,29 +103,6 @@ interface CalendarApi {
         @Body body: com.we.meet.data.api.dto.CalendarExportRequest,
     ): com.we.meet.data.api.dto.CalendarExportJobDto
 
-    @GET("api/v1.0/external-calendar-accounts/")
-    suspend fun listExternalCalendarAccounts(): List<com.we.meet.data.api.dto.ExternalCalendarAccountDto>
-
-    @POST("api/v1.0/external-calendar-accounts/authorize/")
-    suspend fun authorizeExternalCalendar(
-        @Body body: com.we.meet.data.api.dto.ExternalAuthorizeRequest,
-    ): com.we.meet.data.api.dto.ExternalAuthorizeDto
-
-    @GET("api/v1.0/external-calendar-accounts/{id}/calendars/")
-    suspend fun listProviderCalendars(@Path("id") id: String): List<com.we.meet.data.api.dto.ProviderCalendarDto>
-
-    @POST("api/v1.0/external-calendar-accounts/{id}/calendars/")
-    suspend fun selectProviderCalendars(
-        @Path("id") id: String,
-        @Body body: com.we.meet.data.api.dto.SelectProviderCalendarsRequest,
-    ): com.we.meet.data.api.dto.ExternalCalendarAccountDto
-
-    @POST("api/v1.0/external-calendar-accounts/{id}/sync/")
-    suspend fun syncExternalCalendar(@Path("id") id: String)
-
-    @DELETE("api/v1.0/external-calendar-accounts/{id}/")
-    suspend fun disconnectExternalCalendar(@Path("id") id: String)
-
     @GET("api/v1.0/calendar-preferences/me/")
     suspend fun getCalendarPreference(): CalendarPreferenceDto
 

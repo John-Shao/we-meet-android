@@ -696,8 +696,6 @@
     <string name="calendar_load_failed_retry">加载失败，重试</string>
     <string name="calendar_group_managed">我管理的</string>
     <string name="calendar_group_subscribed">我订阅的</string>
-    <string name="calendar_group_external">第三方日历</string>
-    <string name="calendar_manage_external">管理第三方日历</string>
     <string name="calendar_show_only">仅显示</string>
     <string name="calendar_settings_action">设置</string>
     <string name="calendar_share_action">分享</string>
@@ -738,17 +736,6 @@
     <string name="calendar_confirm">确定</string>
     <string name="calendar_close">关闭</string>
     <string name="calendar_cancel">取消</string>
-    <string name="calendar_external_title">第三方日历</string>
-    <string name="calendar_external_supported">支持 Google Calendar 和 Microsoft 365、Outlook.com、Hotmail</string>
-    <string name="calendar_external_add_provider">添加 %1$s</string>
-    <string name="calendar_external_select">选择日历</string>
-    <string name="calendar_external_sync">同步</string>
-    <string name="calendar_external_disconnect">断开连接</string>
-    <string name="calendar_external_operation_failed">第三方日历操作失败</string>
-    <string name="calendar_external_choose_sync">选择要同步的日历</string>
-    <string name="calendar_external_load_failed">加载第三方日历失败</string>
-    <string name="calendar_primary_suffix">（主日历）</string>
-    <string name="calendar_external_save_sync">保存并同步</string>
     <string name="calendar_access_private">私密</string>
     <string name="calendar_access_free_busy">游客</string>
     <string name="calendar_access_reader">订阅者</string>
