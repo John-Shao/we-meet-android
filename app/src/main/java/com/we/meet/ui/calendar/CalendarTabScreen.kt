@@ -572,6 +572,7 @@ private fun CalendarHeader(
         }
         CalendarPrimaryToolbar(
             current = CalendarPrimaryPage.CALENDAR,
+            calendarViewMode = ui.viewMode,
             onSelect = { page ->
                 if (page == CalendarPrimaryPage.MEETING_ROOMS) onShowMeetingRooms()
             },

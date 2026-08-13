@@ -1,15 +1,17 @@
 package com.we.meet.ui.calendar
 
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
-import com.we.meet.ui.theme.WeMeetTheme
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.we.meet.ui.calendar.views.CalendarViewMode
 import com.we.meet.ui.meetingroom.MeetingRoomWeekStrip
+import com.we.meet.ui.theme.WeMeetTheme
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -17,7 +19,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import androidx.test.ext.junit.runners.AndroidJUnit4
 
 @RunWith(AndroidJUnit4::class)
 class CalendarManagementUiTest {
@@ -77,6 +78,29 @@ class CalendarManagementUiTest {
         composeRule.onNodeWithTag("calendar-manage").assertDoesNotExist()
         composeRule.onNodeWithTag("calendar-settings").assertIsDisplayed().performClick()
         composeRule.runOnIdle { assertEquals(true, settingsOpened) }
+    }
+
+    @Test
+    fun calendarManagementIconFollowsViewMode() {
+        val mode = mutableStateOf(CalendarViewMode.AGENDA)
+        composeRule.setContent {
+            WeMeetTheme {
+                CalendarPrimaryToolbar(
+                    current = CalendarPrimaryPage.CALENDAR,
+                    calendarViewMode = mode.value,
+                    onSelect = {},
+                    onOpenManagement = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("calendar-manage-icon-agenda").assertIsDisplayed()
+        composeRule.runOnIdle { mode.value = CalendarViewMode.DAY }
+        composeRule.onNodeWithTag("calendar-manage-icon-day").assertIsDisplayed()
+        composeRule.runOnIdle { mode.value = CalendarViewMode.WEEK }
+        composeRule.onNodeWithTag("calendar-manage-icon-week").assertIsDisplayed()
+        composeRule.runOnIdle { mode.value = CalendarViewMode.MONTH }
+        composeRule.onNodeWithTag("calendar-manage-icon-month").assertIsDisplayed()
     }
 
     @Test
