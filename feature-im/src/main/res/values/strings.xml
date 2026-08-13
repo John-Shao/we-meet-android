@@ -394,4 +394,8 @@ Limits: 100 requests per minute and 5 per second per bot, bodies up to 20 KB. Se
     <string name="im_emoji_system">System emoji</string>
     <string name="im_emoji_enterprise">Enterprise emoji</string>
     <string name="im_draft_preview">[Draft] %1$s</string>
+    <string name="im_calendar_owner">Owner: %1$s</string>
+    <string name="im_calendar_subscribers">%1$d subscribers · Tap to subscribe</string>
+    <string name="im_preview_calendar">[Calendar]</string>
+    <string name="im_preview_calendar_named">[Calendar] %1$s</string>
 </resources>

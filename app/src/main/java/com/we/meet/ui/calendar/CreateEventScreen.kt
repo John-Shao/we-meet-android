@@ -65,6 +65,7 @@ import com.we.meet.data.api.dto.AttendeeEntryRequest
 import com.we.meet.data.api.dto.CreateEventRequest
 import com.we.meet.data.api.dto.MeetingRoomBriefDto
 import com.we.meet.data.api.dto.UpdateEventRequest
+import com.we.meet.data.api.dto.UnifiedCalendarDto
 import com.we.meet.ui.meetingroom.MeetingRoomPicker
 import com.we.meet.ui.meetingroom.compactMeetingRoomPathLabel
 import com.we.meet.ui.meetingroom.meetingRoomTitle
@@ -157,6 +158,8 @@ fun CreateEventScreen(
     var attendees by remember { mutableStateOf<List<PickedMember>>(emptyList()) }
     var attendeeRoles by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var visibility by remember { mutableStateOf("default") }
+    var writableCalendars by remember { mutableStateOf<List<UnifiedCalendarDto>>(emptyList()) }
+    var targetCalendarId by remember { mutableStateOf("") }
     var eventTimezone by remember { mutableStateOf(calendarZone.id) }
     // P8:编辑态标记重复日程(加载详情时置位)——重复日程不开放参与者编辑。
     var editIsRecurring by remember { mutableStateOf(false) }
@@ -250,6 +253,7 @@ fun CreateEventScreen(
                 title = e.title
                 description = e.description
                 visibility = e.visibility.takeIf { it in EVENT_VISIBILITIES } ?: "default"
+                targetCalendarId = e.displayCalendarId.orEmpty()
                 allDay = e.allDay
                 eventTimezone = eventZone.id
                 val startLdt = if (e.allDay && e.startDate != null) {
@@ -296,6 +300,13 @@ fun CreateEventScreen(
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
         selfId = runCatching { app.apiClient.userApi.getMe() }.getOrNull()?.id
+        writableCalendars = runCatching { app.apiClient.calendarApi.listCalendars() }
+            .getOrDefault(emptyList())
+            .filter { it.capabilities.canWrite }
+        if (!isEdit && targetCalendarId.isBlank()) {
+            targetCalendarId = writableCalendars.firstOrNull { it.enabled }?.id
+                ?: writableCalendars.firstOrNull()?.id.orEmpty()
+        }
     }
 
     val showFreeBusy = !allDay
@@ -426,6 +437,7 @@ fun CreateEventScreen(
                             // P9:全天日程 M1 不支持订会议室(服务端也会 400)。
                             meetingRoomId = if (allDay) null else meetingRoom?.id,
                             withVideoMeeting = withVideo,
+                            calendarId = targetCalendarId.takeIf { it.isNotBlank() },
                         )
                     )
                 }
@@ -524,6 +536,15 @@ fun CreateEventScreen(
                 allDay = allDay,
                 onChange = { end = it },
             )
+
+            if (!isEdit && writableCalendars.isNotEmpty()) {
+                TargetCalendarDropdown(
+                    calendars = writableCalendars,
+                    selectedId = targetCalendarId,
+                    onSelect = { targetCalendarId = it },
+                )
+                HorizontalDivider()
+            }
             TimezoneDropdown(
                 selected = eventTimezone,
                 onSelect = { eventTimezone = it },
@@ -1135,6 +1156,42 @@ private fun ReminderDropdown(selectedMinutes: Int?, onSelect: (Int?) -> Unit) {
                         },
                     )
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TargetCalendarDropdown(
+    calendars: List<UnifiedCalendarDto>,
+    selectedId: String,
+    onSelect: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selected = calendars.firstOrNull { it.id == selectedId } ?: calendars.first()
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
+    ) {
+        OutlinedTextField(
+            value = selected.displayName,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(stringResource(R.string.calendar_target)) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            calendars.forEach { calendar ->
+                DropdownMenuItem(
+                    text = { Text(calendar.displayName) },
+                    onClick = {
+                        onSelect(calendar.id)
+                        expanded = false
+                    },
+                )
             }
         }
     }

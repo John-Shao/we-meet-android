@@ -262,6 +262,7 @@ fun MessageBubble(
                 is MessageContent.MeetingCard -> MeetingCardBubble(
                     content, onLongPress,
                 ) { onJoinMeeting?.invoke(content.slug) }
+                is MessageContent.CalendarCard -> CalendarCardBubble(content, onLongPress)
                 is MessageContent.RichCard -> RichCardBubble(
                     body = content.body,
                     resolved = cardResolved,

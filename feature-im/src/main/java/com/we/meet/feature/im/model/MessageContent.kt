@@ -138,6 +138,16 @@ sealed interface MessageContent {
         val roomId: String = "",
     ) : MessageContent
 
+    /** Calendar subscription invitation; fields are a static v1 snapshot. */
+    data class CalendarCard(
+        val calendarId: String,
+        val name: String,
+        val ownerName: String = "",
+        val description: String = "",
+        val subscriberCount: Int = 0,
+        val subscribeUrl: String,
+    ) : MessageContent
+
     /**
      * 群机器人经 webhook 发来的富文本 — content_type `rich-text`。协议与解析
      * 都在 [RichText.kt];这里只是 sealed 分支,让 MessageBubble 的 when 穷尽。
@@ -285,6 +295,16 @@ object MessageContentParser {
                 status = if (it.optString("status") == "scheduled") "scheduled" else "ongoing",
                 scheduledAtIso = it.optString("scheduled_at"),
                 roomId = it.optString("room_id"),
+            )
+        }
+        "calendar-card" -> parseJson(contentType, body) {
+            MessageContent.CalendarCard(
+                calendarId = it.getString("calendar_id"),
+                name = it.getString("name"),
+                ownerName = it.optString("owner_name"),
+                description = it.optString("description"),
+                subscriberCount = it.optInt("subscriber_count", 0),
+                subscribeUrl = it.getString("subscribe_url"),
             )
         }
         else -> MessageContent.Unsupported(contentType, body)

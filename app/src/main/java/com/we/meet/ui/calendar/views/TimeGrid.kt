@@ -246,7 +246,7 @@ fun EventUi.toTimeBlockOrNull(
         dimmed = dimPastNow != null && end.isBefore(dimPastNow),
         rsvp = myRsvp,
         // 跨天的块被裁过(s/e 不是真实起止),拖动会把另一半算错 → 不开放。
-        movable = selfUserId != null && organizerId == selfUserId &&
+        movable = canEdit &&
             !recurring && !cancelled &&
             startDate == date && endDate == date,
     )

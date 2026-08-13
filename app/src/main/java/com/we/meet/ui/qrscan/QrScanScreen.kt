@@ -71,7 +71,9 @@ fun QrScanScreen(onDone: (QrScanResult) -> Unit) {
             // User pressed back in the scanner before reading anything.
             onDone(QrScanResult.Cancelled)
         } else {
-            vm.onScanned(text)
+            val token = calendarShareToken(text)
+            if (token != null) onDone(QrScanResult.CalendarSubscription(token))
+            else vm.onScanned(text)
         }
     }
 
@@ -289,4 +291,18 @@ sealed class QrScanResult {
     object Confirmed : QrScanResult()
     object Cancelled : QrScanResult()
     data class Error(val reason: ErrorReason) : QrScanResult()
+    data class CalendarSubscription(val token: String) : QrScanResult()
+}
+
+internal fun calendarShareToken(value: String): String? {
+    val uri = runCatching { android.net.Uri.parse(value) }.getOrNull() ?: return null
+    val segments = uri.pathSegments.orEmpty()
+    return if (
+        uri.scheme in setOf("http", "https") && segments.size >= 3 &&
+        segments[0] == "calendar" && segments[1] == "subscribe"
+    ) {
+        segments[2].takeIf { it.isNotBlank() }
+    } else {
+        null
+    }
 }

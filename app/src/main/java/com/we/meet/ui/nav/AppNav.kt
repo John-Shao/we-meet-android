@@ -58,6 +58,7 @@ import com.we.meet.feature.im.ui.newchat.AddMembersScreen
 import com.we.meet.feature.im.ui.newchat.NewChatScreen
 import com.we.meet.feature.im.ui.search.MessageSearchScreen
 import com.we.meet.ui.calendar.CreateEventScreen
+import com.we.meet.ui.calendar.CalendarShareScreen
 import com.we.meet.ui.calendar.EventDetailScreen
 import com.we.meet.ui.calendar.FreeBusyCompareScreen
 import com.we.meet.ui.contacts.MemberDetailScreen
@@ -162,6 +163,7 @@ object Routes {
     const val REMINDERS = "reminders"
     /** P8 日历设置页(列表提醒开关/周起始/默认时长/默认提醒)。 */
     const val CALENDAR_SETTINGS = "calendar_settings"
+    const val CALENDAR_SHARE = "calendar_share/{token}"
     const val CREATE_EVENT =
         "create_event?epochDay={epochDay}&eventId={eventId}&editScope={editScope}" +
             "&startSec={startSec}&endSec={endSec}&attendeeIds={attendeeIds}&srcCid={srcCid}" +
@@ -216,6 +218,9 @@ object Routes {
 
     fun eventDetail(eventId: String): String =
         "$EVENT_DETAIL_BASE/${URLEncoder.encode(eventId, StandardCharsets.UTF_8.name())}"
+
+    fun calendarShare(token: String): String =
+        "calendar_share/${URLEncoder.encode(token, StandardCharsets.UTF_8.name())}"
 
     fun createEvent(epochDay: Long): String = "create_event?epochDay=$epochDay"
 
@@ -396,6 +401,25 @@ fun AppNav() {
             navController.navigate(Routes.imChat(cid)) {
                 launchSingleTop = true
                 popUpTo(Routes.HOME)
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        app.pendingCalendarShareToken.collect { token ->
+            if (token.isNullOrBlank()) return@collect
+            app.pendingCalendarShareToken.value = null
+            if (!app.tokenStore.isLoggedIn()) return@collect
+            navController.navigate(Routes.calendarShare(token)) { launchSingleTop = true }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        app.pendingExternalCalendar.collect { pending ->
+            if (!pending) return@collect
+            app.pendingExternalCalendar.value = false
+            if (app.tokenStore.isLoggedIn()) {
+                navController.navigate(Routes.CALENDAR_SETTINGS) { launchSingleTop = true }
             }
         }
     }
@@ -966,6 +990,19 @@ fun AppNav() {
         }
 
         composable(
+            route = Routes.CALENDAR_SHARE,
+            arguments = listOf(navArgument("token") { type = NavType.StringType }),
+        ) { entry ->
+            CalendarShareScreen(
+                token = Routes.decode(entry.arguments?.getString("token").orEmpty()),
+                onBack = rememberOnceOnly(safePop),
+                onSubscribed = {
+                    navController.popBackStack(Routes.HOME, inclusive = false)
+                },
+            )
+        }
+
+        composable(
             route = Routes.EVENT_DETAIL,
             arguments = listOf(navArgument("eventId") { type = NavType.StringType }),
         ) { entry ->
@@ -1113,12 +1150,15 @@ fun AppNav() {
         composable(Routes.QR_SCAN) {
             val onceClose = rememberOnceOnly(safePop)
             QrScanScreen(
-                onDone = { _: QrScanResult ->
-                    // Confirmed / Cancelled / Error all just return to home —
-                    // the web side surfaces the confirmation, and on this
-                    // device the toast/screenshot of state isn't worth a
-                    // dedicated success page for v1.
-                    onceClose()
+                onDone = { result: QrScanResult ->
+                    if (result is QrScanResult.CalendarSubscription) {
+                        navController.navigate(Routes.calendarShare(result.token)) {
+                            popUpTo(Routes.QR_SCAN) { inclusive = true }
+                        }
+                    } else {
+                        // Login QR terminal states return to the previous page.
+                        onceClose()
+                    }
                 },
             )
         }

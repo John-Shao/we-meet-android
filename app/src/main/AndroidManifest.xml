@@ -67,6 +67,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Calendar subscription QR/App Links and external OAuth return. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="${WE_MEET_APP_LINK_HOST}" />
+                <data android:pathPrefix="/calendar" />
+            </intent-filter>
+
             <!--
                 App Links for meeting join URLs. Backend generates only
                 8-digit numeric slugs; the wildcard "." (any single
@@ -90,7 +100,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" />
                 <data android:scheme="http" />
-                <data android:host="meet.we-meet.online" />
+                <data android:host="${WE_MEET_APP_LINK_HOST}" />
                 <data android:pathPattern="/........" />
             </intent-filter>
 

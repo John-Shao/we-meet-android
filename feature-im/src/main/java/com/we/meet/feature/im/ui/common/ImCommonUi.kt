@@ -113,6 +113,7 @@ fun previewText(contentType: String?, body: String?): String {
         "event-card" -> return stringResource(R.string.im_preview_event)
         "doc-card" -> return stringResource(R.string.im_preview_doc)
         "meeting-card" -> return stringResource(R.string.im_preview_meeting)
+        "calendar-card" -> return stringResource(R.string.im_preview_calendar)
         // 富文本同理:预览 body 会被截断,但服务端在 body 里带了 `plain` 投影,
         // 截断的 plain 仍然是人话。解析不出来才退固定文案。
         "rich-text" -> return RichTextParser.preview(body)
@@ -147,6 +148,7 @@ fun previewText(contentType: String?, body: String?): String {
         is MessageContent.EventCard -> stringResource(R.string.im_preview_event)
         is MessageContent.DocCard -> stringResource(R.string.im_preview_doc)
         is MessageContent.MeetingCard -> stringResource(R.string.im_preview_meeting)
+        is MessageContent.CalendarCard -> stringResource(R.string.im_preview_calendar_named, content.name)
         is MessageContent.PhoneViewed -> stringResource(R.string.im_phone_viewed_preview)
         is MessageContent.Unsupported -> stringResource(R.string.im_preview_unsupported)
     }

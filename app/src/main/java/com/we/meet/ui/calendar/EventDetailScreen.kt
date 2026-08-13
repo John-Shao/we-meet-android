@@ -138,7 +138,7 @@ class EventDetailViewModel(
                             event = e,
                             loading = false,
                             error = false,
-                            canManage = selfUserId != null && e.organizer?.id == selfUserId,
+                            canManage = e.canEdit || e.canDelete,
                         )
                     }
                     loadSummaryIfEnded(e)

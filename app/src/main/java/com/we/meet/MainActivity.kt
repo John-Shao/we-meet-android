@@ -134,6 +134,15 @@ class MainActivity : AppCompatActivity() {
             CallNotifier.cancel(this, seed.callId)
             return
         }
+        val segments = uri.pathSegments.orEmpty()
+        if (segments.size >= 3 && segments[0] == "calendar" && segments[1] == "subscribe") {
+            (application as? WeMeetApp)?.pendingCalendarShareToken?.value = segments[2]
+            return
+        }
+        if (segments.firstOrNull() == "calendar" && uri.getQueryParameter("external") == "connected") {
+            (application as? WeMeetApp)?.pendingExternalCalendar?.value = true
+            return
+        }
         val slug = uri.pathSegments?.firstOrNull()?.takeIf {
             DEEP_LINK_SLUG_REGEX.matches(it)
         } ?: return

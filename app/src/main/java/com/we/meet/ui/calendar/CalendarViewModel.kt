@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.CalendarEventDto
 import com.we.meet.data.api.dto.RescheduleEventRequest
+import com.we.meet.data.api.dto.CalendarSubscriptionRequest
+import com.we.meet.data.api.dto.UnifiedCalendarDto
 import com.we.meet.ui.calendar.views.CalendarViewMode
 import java.time.LocalDate
 import java.time.YearMonth
@@ -35,6 +37,7 @@ data class CalendarUiState(
     val error: Boolean = false,
     /** 我的 uuid(拉一次):日/周视图据此判定哪些块可长按拖动改期。 */
     val selfUserId: String? = null,
+    val calendars: List<UnifiedCalendarDto> = emptyList(),
 ) {
     val selectedDayEvents: List<EventUi> get() = eventsByDay[selectedDate].orEmpty()
 }
@@ -142,15 +145,31 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
     fun refresh() {
         viewModelScope.launch {
             _ui.update { it.copy(loading = it.eventsByDay.isEmpty(), error = false) }
-            runCatching { fetchWindow(_ui.value) }
-                .onSuccess { events ->
+            runCatching {
+                val calendarResult = runCatching { calendarApi.listCalendars() }
+                val calendars = calendarResult.getOrDefault(emptyList())
+                Triple(
+                    calendars,
+                    fetchWindow(
+                        _ui.value,
+                        calendars,
+                        applyCalendarFilter = calendarResult.isSuccess,
+                    ),
+                    calendarResult.isSuccess,
+                )
+            }
+                .onSuccess { (calendars, events, _) ->
                     val zone = settingsStore.calendarZoneId()
                     val parsed = events.mapNotNull { event ->
                         (if (event.detailsRedacted) event.copy(title = busyTitle) else event)
                             .toParsed(zone)
                     }
                     _ui.update {
-                        it.copy(eventsByDay = bucketByDay(parsed), loading = false)
+                        it.copy(
+                            eventsByDay = bucketByDay(parsed),
+                            calendars = calendars,
+                            loading = false,
+                        )
                     }
                 }
                 .onFailure { e ->
@@ -194,7 +213,11 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Fetch only the events overlapping the visible window, server-side
      *  (?start&end):日程视图 = 锚点日期起一年(对齐 Web),其余 = 焦点月 ±1。 */
-    private suspend fun fetchWindow(state: CalendarUiState): List<CalendarEventDto> {
+    private suspend fun fetchWindow(
+        state: CalendarUiState,
+        calendars: List<UnifiedCalendarDto>,
+        applyCalendarFilter: Boolean = true,
+    ): List<CalendarEventDto> {
         val zone = settingsStore.calendarZoneId()
         val agenda = state.viewMode == CalendarViewMode.AGENDA
         val start =
@@ -220,28 +243,27 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
             if (res.next == null) break
             page++
         }
-        // Subscriptions are a display projection, not participation. Failure of
-        // one shared calendar must not hide the caller's own calendar.
-        val subscriptions = runCatching { calendarApi.listCalendarSubscriptions() }
-            .getOrDefault(emptyList())
-            .filter { it.enabled && it.permission != "none" }
-        subscriptions.forEach { subscription ->
-            val shared = runCatching {
-                calendarApi.listPersonalCalendarEvents(
-                    id = subscription.calendarId,
-                    start = startIso,
-                    end = endIso,
-                    dateStart = start.toLocalDate().toString(),
-                    dateEnd = end.toLocalDate().toString(),
-                )
-            }.getOrDefault(emptyList())
-            all += shared
-        }
+        val enabledIds = calendars.filter { it.enabled }.mapTo(mutableSetOf()) { it.id }
         return all
+            .filter { event ->
+                !applyCalendarFilter ||
+                    event.displayCalendarId == null || event.displayCalendarId in enabledIds
+            }
             .groupBy { it.id }
             .mapNotNull { (_, copies) ->
                 copies.firstOrNull { !it.detailsRedacted } ?: copies.firstOrNull()
             }
+    }
+
+    fun setCalendarEnabled(calendar: UnifiedCalendarDto, enabled: Boolean) {
+        viewModelScope.launch {
+            runCatching {
+                calendarApi.updateCalendarSubscription(
+                    calendar.id,
+                    CalendarSubscriptionRequest(enabled = enabled, color = calendar.color),
+                )
+            }.onSuccess { refresh() }
+        }
     }
 
     private companion object {

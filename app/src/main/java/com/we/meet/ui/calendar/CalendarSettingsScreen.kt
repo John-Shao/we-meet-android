@@ -67,8 +67,6 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
     val meetingRoomTimeRangeMode by store.meetingRoomTimeRangeMode.collectAsStateWithLifecycle()
     val calendarTimezoneMode by store.calendarTimezoneMode.collectAsStateWithLifecycle()
     val calendarFixedTimezone by store.calendarFixedTimezone.collectAsStateWithLifecycle()
-    var showSharing by remember { mutableStateOf(false) }
-
     androidx.compose.runtime.LaunchedEffect(Unit) {
         store.synchronizeCalendarPreferences()
     }
@@ -94,13 +92,7 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Dimens.ScreenPadding),
         ) {
-            SettingRow(label = stringResource(R.string.calendar_sharing_title)) {
-                TextButton(onClick = { showSharing = true }) {
-                    Text(stringResource(R.string.calendar_sharing_manage))
-                }
-            }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
+            UnifiedCalendarManagementSection()
             SettingDropdownRow(
                 label = stringResource(R.string.calendar_settings_timezone_mode),
                 current = stringResource(
@@ -262,9 +254,6 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
         }
     }
 
-    if (showSharing) {
-        CalendarSharingDialog(onDismiss = { showSharing = false })
-    }
 }
 
 private fun formatMinuteOfDay(minute: Int): String =

@@ -1,3 +1,4 @@
+import java.net.URI
 import java.util.Properties
 
 plugins {
@@ -17,6 +18,7 @@ fun cfg(key: String, default: String = ""): String =
         ?: default
 
 val baseUrl = cfg("WE_MEET_BASE_URL", "https://meet.we-meet.online")
+val appLinkHost = URI(baseUrl).host ?: "meet.we-meet.online"
 val keycloakUrl = cfg("WE_MEET_KEYCLOAK_URL", "https://id.we-meet.online")
 val livekitOverride = cfg("WE_MEET_LIVEKIT_URL_OVERRIDE", "")
 val jusiImBaseUrl = cfg("JUSI_IM_BASE_URL", "https://im.we-meet.online")
@@ -67,6 +69,7 @@ android {
         manifestPlaceholders["GETUI_APPID"] = getuiAppId
         manifestPlaceholders["GETUI_APPKEY"] = getuiAppKey
         manifestPlaceholders["GETUI_APPSECRET"] = getuiAppSecret
+        manifestPlaceholders["WE_MEET_APP_LINK_HOST"] = appLinkHost
     }
 
     buildTypes {
@@ -113,6 +116,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.browser)
 
     // Compose (BOM)
     implementation(platform(libs.androidx.compose.bom))

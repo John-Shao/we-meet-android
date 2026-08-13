@@ -383,4 +383,8 @@
     <string name="im_emoji_system">系统表情</string>
     <string name="im_emoji_enterprise">企业表情</string>
     <string name="im_draft_preview">[草稿] %1$s</string>
+    <string name="im_calendar_owner">所有者：%1$s</string>
+    <string name="im_calendar_subscribers">%1$d 人已订阅 · 点击订阅</string>
+    <string name="im_preview_calendar">[日历]</string>
+    <string name="im_preview_calendar_named">[日历] %1$s</string>
 </resources>

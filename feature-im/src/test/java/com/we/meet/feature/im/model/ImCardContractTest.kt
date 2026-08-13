@@ -162,6 +162,23 @@ class ImCardContractTest {
         assertTrue(card.url.contains("/docs/"))
     }
 
+    // --- calendar-card ------------------------------------------------------
+
+    @Test
+    fun `parses a calendar subscription card`() {
+        val card = parse("calendar-card", "calendar_card")
+        assertTrue(card is MessageContent.CalendarCard)
+        card as MessageContent.CalendarCard
+        assertEquals("55555555-5555-4555-8555-555555555555", card.calendarId)
+        assertEquals("Project launch", card.name)
+        assertEquals("Alice", card.ownerName)
+        assertEquals(12, card.subscriberCount)
+        assertEquals(
+            "https://meet.example.com/calendar/subscribe/signed-token",
+            card.subscribeUrl,
+        )
+    }
+
     // --- meeting-card --------------------------------------------------------
 
     @Test
@@ -205,6 +222,7 @@ class ImCardContractTest {
                 "event_card_recurrence_cancelled",
             ),
             "doc-card" to listOf("doc_card"),
+            "calendar-card" to listOf("calendar_card"),
             "meeting-card" to listOf("meeting_card_ongoing", "meeting_card_scheduled"),
             "rich-text" to listOf("rich_text_simple", "rich_text_full"),
             "rich-card" to listOf(

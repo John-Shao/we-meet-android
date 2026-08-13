@@ -158,6 +158,13 @@ data class CalendarEventDto(
     // 避免无 edit_scope 的请求被后端静默按「全部/仅此次」处理。
     val recurrence: String = "",
     @Json(name = "recurrence_parent") val recurrenceParent: String? = null,
+    @Json(name = "calendar_ids") val calendarIds: List<String> = emptyList(),
+    @Json(name = "display_calendar_id") val displayCalendarId: String? = null,
+    @Json(name = "can_edit") val canEdit: Boolean = false,
+    @Json(name = "can_delete") val canDelete: Boolean = false,
+    @Json(name = "sync_status") val syncStatus: String = "local",
+    val location: String = "",
+    @Json(name = "attachment_names") val attachmentNames: List<String> = emptyList(),
 ) {
     /** 主事件(带 RRULE)或已物化的子场次——两者的编辑/删除都受三选语义影响。 */
     val isRecurring: Boolean
@@ -201,6 +208,7 @@ data class CreateEventRequest(
      * 服务端按缺省 = 开处理(与改动前一致)。
      */
     @Json(name = "with_video_meeting") val withVideoMeeting: Boolean? = null,
+    @Json(name = "calendar_id") val calendarId: String? = null,
 )
 
 /**
@@ -282,3 +290,129 @@ data class CalendarPreferenceDto(
     val initialized: Boolean = false,
     val revision: Int = 0,
 )
+
+/** Unified P0-P3 calendar domain. Roles: none/free_busy/details/writer/admin. */
+@JsonClass(generateAdapter = true)
+data class CalendarCapabilitiesDto(
+    @Json(name = "can_write") val canWrite: Boolean = false,
+    @Json(name = "can_manage") val canManage: Boolean = false,
+    @Json(name = "can_share") val canShare: Boolean = false,
+    @Json(name = "can_export") val canExport: Boolean = false,
+    @Json(name = "can_delete") val canDelete: Boolean = false,
+)
+
+@JsonClass(generateAdapter = true)
+data class CalendarRoomDto(val id: String = "", val name: String = "", val code: String = "")
+
+@JsonClass(generateAdapter = true)
+data class UnifiedCalendarDto(
+    val id: String = "",
+    /** primary | shared | resource | external */
+    val kind: String = "primary",
+    val name: String = "",
+    @Json(name = "display_name") val displayName: String = "",
+    val description: String = "",
+    val owner: CalendarPersonDto? = null,
+    val organization: CalendarOrganizationDto = CalendarOrganizationDto(),
+    @Json(name = "meeting_room") val meetingRoom: CalendarRoomDto? = null,
+    @Json(name = "organization_default_access") val organizationDefaultAccess: String = "none",
+    @Json(name = "external_default_access") val externalDefaultAccess: String = "none",
+    @Json(name = "effective_role") val effectiveRole: String = "none",
+    @Json(name = "effective_permission") val effectivePermission: String = "none",
+    val subscribed: Boolean = false,
+    val enabled: Boolean = false,
+    val color: String = "#3370ff",
+    @Json(name = "subscriber_count") val subscriberCount: Int = 0,
+    val capabilities: CalendarCapabilitiesDto = CalendarCapabilitiesDto(),
+    @Json(name = "deleted_at") val deletedAt: String? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class CalendarMemberRequest(@Json(name = "user_id") val userId: String, val role: String)
+
+@JsonClass(generateAdapter = true)
+data class CalendarMemberDto(
+    val id: String = "",
+    val user: CalendarPersonDto = CalendarPersonDto(),
+    val role: String = "details",
+    val external: Boolean = false,
+)
+
+@JsonClass(generateAdapter = true)
+data class CreateCalendarRequest(
+    val name: String,
+    val description: String = "",
+    val color: String = "#3370ff",
+    @Json(name = "organization_default_access") val organizationDefaultAccess: String = "details",
+    val members: List<CalendarMemberRequest> = emptyList(),
+)
+
+@JsonClass(generateAdapter = true)
+data class UpdateCalendarRequest(
+    val name: String? = null,
+    val description: String? = null,
+    @Json(name = "organization_default_access") val organizationDefaultAccess: String? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class CalendarSubscriptionRequest(val enabled: Boolean = true, val color: String = "#3370ff")
+
+@JsonClass(generateAdapter = true)
+data class CalendarShareLinkDto(val token: String = "", val url: String = "")
+
+@JsonClass(generateAdapter = true)
+data class CalendarExportRequest(
+    val range: String,
+    val start: String? = null,
+    val end: String? = null,
+    val timezone: String? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class CalendarExportJobDto(
+    val id: String = "",
+    @Json(name = "calendar_id") val calendarId: String = "",
+    val status: String = "queued",
+    @Json(name = "row_count") val rowCount: Int = 0,
+    @Json(name = "document_url") val documentUrl: String? = null,
+    @Json(name = "download_url") val downloadUrl: String? = null,
+    @Json(name = "error_detail") val errorDetail: String = "",
+)
+
+@JsonClass(generateAdapter = true)
+data class ExternalCalendarBindingDto(
+    val id: String = "",
+    @Json(name = "calendar_id") val calendarId: String = "",
+    @Json(name = "remote_calendar_id") val remoteCalendarId: String = "",
+    val name: String = "",
+    @Json(name = "is_primary") val isPrimary: Boolean = false,
+    @Json(name = "sync_status") val syncStatus: String = "pending",
+    @Json(name = "error_code") val errorCode: String = "",
+)
+
+@JsonClass(generateAdapter = true)
+data class ExternalCalendarAccountDto(
+    val id: String = "",
+    val provider: String = "",
+    val email: String = "",
+    val status: String = "active",
+    @Json(name = "error_code") val errorCode: String = "",
+    val bindings: List<ExternalCalendarBindingDto> = emptyList(),
+)
+
+@JsonClass(generateAdapter = true)
+data class ExternalAuthorizeRequest(val provider: String)
+
+@JsonClass(generateAdapter = true)
+data class ExternalAuthorizeDto(@Json(name = "authorization_url") val authorizationUrl: String = "")
+
+@JsonClass(generateAdapter = true)
+data class ProviderCalendarDto(
+    val id: String = "",
+    val name: String = "",
+    val primary: Boolean = false,
+    val selected: Boolean = false,
+)
+
+@JsonClass(generateAdapter = true)
+data class SelectProviderCalendarsRequest(@Json(name = "calendar_ids") val calendarIds: List<String>)

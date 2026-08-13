@@ -23,6 +23,7 @@ import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.PUT
 import okhttp3.RequestBody
 
 /**
@@ -31,6 +32,99 @@ import okhttp3.RequestBody
  * `scheduled_at = start_at` and grants every attendee access.
  */
 interface CalendarApi {
+
+    @GET("api/v1.0/calendars/")
+    suspend fun listCalendars(): List<com.we.meet.data.api.dto.UnifiedCalendarDto>
+
+    @POST("api/v1.0/calendars/")
+    suspend fun createCalendar(@Body body: com.we.meet.data.api.dto.CreateCalendarRequest): com.we.meet.data.api.dto.UnifiedCalendarDto
+
+    @GET("api/v1.0/calendars/discover/")
+    suspend fun discoverCalendars(
+        @Query("type") type: String,
+        @Query("q") query: String = "",
+    ): List<com.we.meet.data.api.dto.UnifiedCalendarDto>
+
+    @PATCH("api/v1.0/calendars/{id}/")
+    suspend fun updateCalendar(
+        @Path("id") id: String,
+        @Body body: com.we.meet.data.api.dto.UpdateCalendarRequest,
+    ): com.we.meet.data.api.dto.UnifiedCalendarDto
+
+    @DELETE("api/v1.0/calendars/{id}/")
+    suspend fun deleteCalendar(@Path("id") id: String)
+
+    @POST("api/v1.0/calendars/{id}/restore/")
+    suspend fun restoreCalendar(@Path("id") id: String): com.we.meet.data.api.dto.UnifiedCalendarDto
+
+    @PUT("api/v1.0/calendars/{id}/subscription/")
+    suspend fun updateCalendarSubscription(
+        @Path("id") id: String,
+        @Body body: com.we.meet.data.api.dto.CalendarSubscriptionRequest,
+    ): com.we.meet.data.api.dto.UnifiedCalendarDto
+
+    @DELETE("api/v1.0/calendars/{id}/subscription/")
+    suspend fun deleteCalendarSubscription(@Path("id") id: String)
+
+    @GET("api/v1.0/calendars/{id}/members/")
+    suspend fun listCalendarMembers(@Path("id") id: String): List<com.we.meet.data.api.dto.CalendarMemberDto>
+
+    @POST("api/v1.0/calendars/{id}/members/")
+    suspend fun addCalendarMember(
+        @Path("id") id: String,
+        @Body body: com.we.meet.data.api.dto.CalendarMemberRequest,
+    ): com.we.meet.data.api.dto.CalendarMemberDto
+
+    @PATCH("api/v1.0/calendars/{id}/members/{memberId}/")
+    suspend fun updateCalendarMember(
+        @Path("id") id: String,
+        @Path("memberId") memberId: String,
+        @Body body: Map<String, String>,
+    ): com.we.meet.data.api.dto.CalendarMemberDto
+
+    @DELETE("api/v1.0/calendars/{id}/members/{memberId}/")
+    suspend fun deleteCalendarMember(@Path("id") id: String, @Path("memberId") memberId: String)
+
+    @GET("api/v1.0/calendars/{id}/share-link/")
+    suspend fun getCalendarShareLink(@Path("id") id: String): com.we.meet.data.api.dto.CalendarShareLinkDto
+
+    @POST("api/v1.0/calendars/{id}/share-link/")
+    suspend fun resetCalendarShareLink(@Path("id") id: String): com.we.meet.data.api.dto.CalendarShareLinkDto
+
+    @GET("api/v1.0/calendar-share/{token}/")
+    suspend fun previewCalendarShare(@Path(value = "token", encoded = true) token: String): com.we.meet.data.api.dto.UnifiedCalendarDto
+
+    @POST("api/v1.0/calendar-share/{token}/")
+    suspend fun subscribeCalendarShare(@Path(value = "token", encoded = true) token: String): com.we.meet.data.api.dto.UnifiedCalendarDto
+
+    @POST("api/v1.0/calendars/{id}/exports/")
+    suspend fun createCalendarExport(
+        @Path("id") id: String,
+        @Body body: com.we.meet.data.api.dto.CalendarExportRequest,
+    ): com.we.meet.data.api.dto.CalendarExportJobDto
+
+    @GET("api/v1.0/external-calendar-accounts/")
+    suspend fun listExternalCalendarAccounts(): List<com.we.meet.data.api.dto.ExternalCalendarAccountDto>
+
+    @POST("api/v1.0/external-calendar-accounts/authorize/")
+    suspend fun authorizeExternalCalendar(
+        @Body body: com.we.meet.data.api.dto.ExternalAuthorizeRequest,
+    ): com.we.meet.data.api.dto.ExternalAuthorizeDto
+
+    @GET("api/v1.0/external-calendar-accounts/{id}/calendars/")
+    suspend fun listProviderCalendars(@Path("id") id: String): List<com.we.meet.data.api.dto.ProviderCalendarDto>
+
+    @POST("api/v1.0/external-calendar-accounts/{id}/calendars/")
+    suspend fun selectProviderCalendars(
+        @Path("id") id: String,
+        @Body body: com.we.meet.data.api.dto.SelectProviderCalendarsRequest,
+    ): com.we.meet.data.api.dto.ExternalCalendarAccountDto
+
+    @POST("api/v1.0/external-calendar-accounts/{id}/sync/")
+    suspend fun syncExternalCalendar(@Path("id") id: String)
+
+    @DELETE("api/v1.0/external-calendar-accounts/{id}/")
+    suspend fun disconnectExternalCalendar(@Path("id") id: String)
 
     @GET("api/v1.0/calendar-preferences/me/")
     suspend fun getCalendarPreference(): CalendarPreferenceDto

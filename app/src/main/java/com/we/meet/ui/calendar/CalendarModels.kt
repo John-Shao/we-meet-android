@@ -19,6 +19,8 @@ data class EventUi(
     val cancelled: Boolean,
     /** 组织者 uuid —— 拖动改期只对「我组织的」开放(后端也只让组织者改)。 */
     val organizerId: String? = null,
+    /** Effective server-side permission, including shared-calendar writers. */
+    val canEdit: Boolean = false,
     /** 主事件(带 RRULE)或子场次:改期涉及三选语义,拖动一律不开放。 */
     val recurring: Boolean = false,
     /**
@@ -85,6 +87,7 @@ fun CalendarEventDto.toParsed(displayZone: ZoneId = ZoneId.systemDefault()): Par
             organizerName = organizer?.fullName,
             cancelled = status.equals("cancelled", ignoreCase = true),
             organizerId = organizer?.id?.takeIf { it.isNotBlank() },
+            canEdit = canEdit,
             recurring = isRecurring,
             reminders = reminders,
             startDate = canonicalStartDate,
