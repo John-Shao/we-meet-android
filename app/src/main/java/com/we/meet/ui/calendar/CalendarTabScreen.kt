@@ -593,8 +593,12 @@ private fun MonthGrid(
     val leadingBlanks = (firstOfMonth.dayOfWeek.value - firstDow.value + 7) % 7
     val gridStart = firstOfMonth.minusDays(leadingBlanks.toLong())
 
-    Column(modifier = Modifier.padding(horizontal = Dimens.SpaceS)) {
-        Row(modifier = Modifier.fillMaxWidth()) {
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceS),
+        ) {
             (0L..6L).map(firstDow::plus).forEach { dow ->
                 Text(
                     text = dow.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
@@ -605,8 +609,13 @@ private fun MonthGrid(
                 )
             }
         }
+        HorizontalDivider()
         repeat(6) { week ->
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.SpaceS),
+            ) {
                 repeat(7) { dayIndex ->
                     val date = gridStart.plusDays((week * 7 + dayIndex).toLong())
                     val inMonth = YearMonth.from(date) == month
