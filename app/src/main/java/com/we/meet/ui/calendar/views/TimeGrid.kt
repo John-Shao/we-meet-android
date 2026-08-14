@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -168,6 +169,24 @@ internal fun timelineNeedsHorizontalScroll(
 ): Boolean =
     (visibleColumnCount != null && visibleColumnCount < columnCount) ||
         minColumnWidthExceeded
+
+/**
+ * Measures a wide child at [contentWidthPx], reports only the bounded viewport width, and places
+ * the child at [offsetPx]. This keeps buffered calendar columns aligned without a ScrollState.
+ */
+private fun Modifier.fixedHorizontalViewport(
+    contentWidthPx: Int,
+    offsetPx: () -> Float,
+): Modifier = layout { measurable, constraints ->
+    val measuredWidth = contentWidthPx.coerceAtLeast(constraints.minWidth)
+    val placeable = measurable.measure(
+        constraints.copy(minWidth = measuredWidth, maxWidth = measuredWidth),
+    )
+    val viewportWidth = if (constraints.hasBoundedWidth) constraints.maxWidth else measuredWidth
+    layout(viewportWidth, placeable.height) {
+        placeable.placeRelative(-offsetPx().roundToInt(), 0)
+    }
+}
 
 /** 预选块拖拽的吸附粒度(分钟) —— 与飞书一致取 15。 */
 const val DRAFT_SNAP_MIN = 15
@@ -357,6 +376,11 @@ fun TimelineScaffold(
     /** 非空时一屏恰好铺 [visibleColumnCount] 列。只有实际列数更多时，列头与
      *  网格才挂载横向滚动节点；列数未超出时保持纯固定宽度布局。 */
     visibleColumnCount: Int? = null,
+    /**
+     * Optional pixel offset into [columns] for externally driven paging. When set, the header
+     * and grid are clipped and translated together without exposing free horizontal scrolling.
+     */
+    horizontalContentOffsetPx: (() -> Float)? = null,
     /** 非空时初次布局横滚到让该列可见。 */
     revealColumnIndex: Int? = null,
     /** 预选时段草稿(点空白后出现);为空 = 无草稿。见 [DraftSelection]。 */
@@ -447,6 +471,8 @@ fun TimelineScaffold(
             visibleColumnCount = visibleColumnCount,
             minColumnWidthExceeded = minColumnWidth != null && equalSplit < minColumnWidth,
         )
+        val usesNativeHorizontalScroll =
+            horizontallyScrollable && horizontalContentOffsetPx == null
         val hourHeightPx = with(density) { hourHeight.toPx() }
         val colWidthPx = with(density) { colWidth.toPx() }
         // 网格视口宽(不含左侧刻度列):忙闲页选段的抓手贴它的左右缘定位。
@@ -457,7 +483,7 @@ fun TimelineScaffold(
 
         // 初次布局(及列宽变化时)横滚到让 revealColumnIndex 列落在可见区内:
         // 若它在前 vc 列内则回到最左,否则滚到把它作为最右可见列。
-        if (horizontallyScrollable && revealColumnIndex != null) {
+        if (usesNativeHorizontalScroll && revealColumnIndex != null) {
             LaunchedEffect(revealColumnIndex, n, colWidthPx, visibleColumnCount) {
                 val vc = visibleColumnCount ?: n
                 val target = (revealColumnIndex - (vc - 1)).coerceAtLeast(0) * colWidthPx
@@ -477,16 +503,33 @@ fun TimelineScaffold(
                         railHeader?.invoke()
                     }
                     if (columnHeader != null) {
-                        Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .then(
-                                    if (horizontallyScrollable) Modifier.horizontalScroll(hScroll)
-                                    else Modifier,
-                                ),
-                        ) {
-                            for (i in 0 until n) {
-                                Box(modifier = Modifier.width(colWidth)) { columnHeader(i) }
+                        if (horizontalContentOffsetPx != null) {
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clipToBounds()
+                                    .fixedHorizontalViewport(
+                                        contentWidthPx = (colWidthPx * n).roundToInt(),
+                                        offsetPx = horizontalContentOffsetPx,
+                                    ),
+                            ) {
+                                for (i in 0 until n) {
+                                    Box(modifier = Modifier.width(colWidth)) { columnHeader(i) }
+                                }
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .then(
+                                        if (usesNativeHorizontalScroll) {
+                                            Modifier.horizontalScroll(hScroll)
+                                        } else Modifier,
+                                    ),
+                            ) {
+                                for (i in 0 until n) {
+                                    Box(modifier = Modifier.width(colWidth)) { columnHeader(i) }
+                                }
                             }
                         }
                     } else {
@@ -526,14 +569,22 @@ fun TimelineScaffold(
                 Box(
                     modifier = Modifier
                         .weight(1f)
+                        .clipToBounds()
                         .then(
-                            if (horizontallyScrollable) Modifier.horizontalScroll(hScroll)
+                            if (usesNativeHorizontalScroll) Modifier.horizontalScroll(hScroll)
                             else Modifier,
                         ),
                 ) {
                     Box(
                         modifier = Modifier
-                            .width(contentWidth)
+                            .then(
+                                if (horizontalContentOffsetPx != null) {
+                                    Modifier.fixedHorizontalViewport(
+                                        contentWidthPx = (colWidthPx * n).roundToInt(),
+                                        offsetPx = horizontalContentOffsetPx,
+                                    )
+                                } else Modifier.width(contentWidth),
+                            )
                             .height(hourHeight * (rangeMinutes / 60f))
                             // 拖拽四条路径,统一在这里命中派发:
                             // ① 预选块的上下手柄 = 改起止;② 预选块本体 = 整块移位;
@@ -598,7 +649,8 @@ fun TimelineScaffold(
                                     val sel = selectionNow.value
                                     val selAdjust = selAdjustNow.value
                                     if (sel != null && selAdjust != null) {
-                                        val viewportLeft = hScroll.value.toFloat()
+                                        val viewportLeft = horizontalContentOffsetPx?.invoke()
+                                            ?: hScroll.value.toFloat()
                                         val selTopY = minuteYPx(sel.startMin)
                                         val selBotY = minuteYPx(sel.endMin)
                                         val topAt = Offset(
@@ -1208,7 +1260,9 @@ fun TimelineScaffold(
                                     // offset {} 在布局阶段读 hScroll,滚动时不触发重组。
                                     modifier = Modifier.offset {
                                         IntOffset(
-                                            (hScroll.value + availablePx - insetPx -
+                                            ((horizontalContentOffsetPx?.invoke()
+                                                ?: hScroll.value.toFloat()) +
+                                                availablePx - insetPx -
                                                 handlePx / 2).roundToInt(),
                                             (topPx - handlePx / 2).roundToInt(),
                                         )
@@ -1218,7 +1272,9 @@ fun TimelineScaffold(
                                     accent = selAccent,
                                     modifier = Modifier.offset {
                                         IntOffset(
-                                            (hScroll.value + insetPx - handlePx / 2)
+                                            ((horizontalContentOffsetPx?.invoke()
+                                                ?: hScroll.value.toFloat()) +
+                                                insetPx - handlePx / 2)
                                                 .roundToInt(),
                                             (botPx - handlePx / 2).roundToInt(),
                                         )

@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlin.math.abs
+import kotlin.math.ceil
 
 /**
  * Observes horizontal swipes before timeline children consume pointer events.
@@ -15,8 +16,9 @@ internal fun Modifier.horizontalDateSwipe(
     enabled: Boolean,
     gestureKey: Any?,
     thresholdPx: Float,
+    pageDayCount: Int = 1,
     onSwipe: (dayDelta: Long) -> Unit,
-): Modifier = pointerInput(gestureKey, enabled, thresholdPx) {
+): Modifier = pointerInput(gestureKey, enabled, thresholdPx, pageDayCount) {
     if (!enabled) return@pointerInput
     awaitEachGesture {
         val down = awaitFirstDown(
@@ -49,15 +51,32 @@ internal fun Modifier.horizontalDateSwipe(
             if (!change.pressed) break
         }
         if (horizontalSwipe) {
-            dateSwipeDayDelta(horizontalDistance, thresholdPx)?.let(onSwipe)
+            dateSwipeDayDelta(
+                horizontalDistancePx = horizontalDistance,
+                thresholdPx = thresholdPx,
+                viewportWidthPx = size.width.toFloat(),
+                pageDayCount = pageDayCount,
+            )?.let(onSwipe)
         }
     }
 }
 
-internal fun dateSwipeDayDelta(horizontalDistancePx: Float, thresholdPx: Float): Long? = when {
-    abs(horizontalDistancePx) < thresholdPx -> null
-    horizontalDistancePx < 0 -> 1L
-    else -> -1L
+internal fun dateSwipeDayDelta(
+    horizontalDistancePx: Float,
+    thresholdPx: Float,
+    viewportWidthPx: Float = 0f,
+    pageDayCount: Int = 1,
+): Long? {
+    if (abs(horizontalDistancePx) < thresholdPx) return null
+    val maxSteps = pageDayCount.coerceAtLeast(1)
+    val steps = if (viewportWidthPx > 0f && maxSteps > 1) {
+        ceil(abs(horizontalDistancePx) / viewportWidthPx * maxSteps)
+            .toLong()
+            .coerceIn(1L, maxSteps.toLong())
+    } else {
+        1L
+    }
+    return if (horizontalDistancePx < 0) steps else -steps
 }
 
 internal fun isHorizontalDateSwipe(

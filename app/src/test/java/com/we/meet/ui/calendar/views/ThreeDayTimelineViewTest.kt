@@ -19,6 +19,25 @@ class ThreeDayTimelineViewTest {
     }
 
     @Test
+    fun pagerBufferKeepsPreviousCurrentAndNextThreeDaysContiguous() {
+        val anchor = LocalDate.of(2026, 8, 14)
+        val days = threeDayPagerDays(anchor)
+
+        assertEquals(9, days.size)
+        assertEquals(anchor.minusDays(3), days.first())
+        assertEquals(anchor, days[3])
+        assertEquals(anchor.plusDays(5), days.last())
+    }
+
+    @Test
+    fun horizontalDragUsesOneDayMinimumAndThreeDayMaximum() {
+        assertEquals(1L, dateSwipeDayDelta(-90f, 48f, 360f, THREE_DAY_VIEW_DAYS))
+        assertEquals(2L, dateSwipeDayDelta(-180f, 48f, 360f, THREE_DAY_VIEW_DAYS))
+        assertEquals(3L, dateSwipeDayDelta(-300f, 48f, 360f, THREE_DAY_VIEW_DAYS))
+        assertEquals(-3L, dateSwipeDayDelta(300f, 48f, 360f, THREE_DAY_VIEW_DAYS))
+    }
+
+    @Test
     fun dayStripWeekAlwaysContainsAllSevenDays() {
         val sunday = LocalDate.of(2026, 8, 16)
         val days = weekColumnDays(sunday, DayOfWeek.MONDAY)

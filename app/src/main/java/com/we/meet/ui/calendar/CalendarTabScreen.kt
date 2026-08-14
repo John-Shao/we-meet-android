@@ -376,6 +376,7 @@ fun CalendarTabScreen(
                         onRailTap = clearPicks,
                         selectedEventId = selectedEventId,
                         onEventSelect = { id -> draft = null; selectedEventId = id },
+                        onDateSwipe = vm::selectDate,
                     )
 
                     CalendarViewMode.MONTH -> MonthViewBody(
