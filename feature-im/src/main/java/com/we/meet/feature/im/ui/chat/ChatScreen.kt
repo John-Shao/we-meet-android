@@ -162,6 +162,7 @@ fun ChatScreen(
     val scope = rememberCoroutineScope()
     val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
     var lightboxKey by remember { mutableStateOf<String?>(null) }
+    var dismissInputMenusSignal by remember(cid) { mutableStateOf(0) }
     var showReceipts by remember { mutableStateOf(false) }
     // Long-press target for the action menu; and the message being replied to.
     var actionTarget by remember { mutableStateOf<com.jusi.lightim.Message?>(null) }
@@ -420,6 +421,7 @@ fun ChatScreen(
                                 val event = awaitPointerEvent(PointerEventPass.Initial)
                                 if (event.type == PointerEventType.Press) {
                                     chatFocusManager.clearFocus()
+                                    dismissInputMenusSignal += 1
                                 }
                             }
                         }
@@ -582,6 +584,7 @@ fun ChatScreen(
             } else
             MessageInputBar(
                 conversationKey = cid,
+                dismissMenusSignal = dismissInputMenusSignal,
                 canSend = connection == ConnectionState.CONNECTED,
                 sentTick = ui.sentTick,
                 initialDraft = ui.draftText,
@@ -922,6 +925,7 @@ private enum class InputPanel { None, Emoji, Plus }
 @Composable
 private fun MessageInputBar(
     conversationKey: String,
+    dismissMenusSignal: Int,
     canSend: Boolean,
     sentTick: Int,
     initialDraft: String,
@@ -988,6 +992,9 @@ private fun MessageInputBar(
 
     var commandIndex by remember { mutableStateOf(0) }
     var commandMenuDismissed by remember(conversationKey) { mutableStateOf(true) }
+    LaunchedEffect(dismissMenusSignal) {
+        if (dismissMenusSignal > 0) commandMenuDismissed = true
+    }
     val commandRegistry = listOf(
         ImInputCommand(
             "schedule",
@@ -1155,7 +1162,6 @@ private fun MessageInputBar(
                                     }
                                     .onFocusChanged {
                                         inputFocused = it.isFocused
-                                        commandMenuDismissed = !it.isFocused
                                         // 点击输入框拉起键盘时,自动收起已展开的表情/「+」
                                         // 面板(二者互斥);inputFocused=true 使工具栏不隐藏。
                                         if (it.isFocused) panel = InputPanel.None
@@ -1204,7 +1210,7 @@ private fun MessageInputBar(
                     Spacer(Modifier.weight(1f))
                     Button(
                         onClick = { onSend(text) },
-                        enabled = canSend && text.isNotBlank(),
+                        enabled = canSend && text.isNotBlank() && commands.isEmpty(),
                         contentPadding = PaddingValues(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceXs),
                         modifier = Modifier.height(Dimens.AvatarS),
                     ) { Text(stringResource(R.string.im_input_send)) }
