@@ -307,13 +307,13 @@ fun CalendarTabScreen(
                         )
                         DayTimelineView(
                             date = ui.selectedDate,
-                            events = ui.eventsByDay[ui.selectedDate].orEmpty(),
+                            eventsByDay = ui.eventsByDay,
                             onEventClick = { id -> clearPicks(); onEventClick(id) },
                             // 点其他空白位置直接移动预选块；点预选块本身才确认新建。
-                            onSlotTap = { minute ->
+                            onSlotTap = { date, minute ->
                                 selectedEventId = null
                                 draft = draftSlotAt(
-                                    ui.selectedDate,
+                                    date,
                                     minute,
                                     defaultDurationMin,
                                     visibleStartMin,

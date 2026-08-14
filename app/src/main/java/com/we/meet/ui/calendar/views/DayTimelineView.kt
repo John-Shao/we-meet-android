@@ -1,165 +1,326 @@
 package com.we.meet.ui.calendar.views
 
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.ui.calendar.EventUi
+import com.we.meet.ui.theme.Dimens
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import kotlin.math.abs
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+
+const val DAY_VIEW_TEST_TAG = "calendar-day-view"
+private const val DAY_VIEW_SETTLE_MILLIS = 180
+
+/** Previous, current, and next day used by the fixed one-day viewport. */
+fun dayPagerDays(anchorDate: LocalDate): List<LocalDate> =
+    (-1..1).map { anchorDate.plusDays(it.toLong()) }
 
 /**
- * P8 日视图:全天条(chips)+ 单列时间轴。点日程块进详情,点空白先落一个
- * 「预选时段」([draft],飞书交互:拖上下手柄改起止,再点一次才进创建表单)。
+ * Day timeline with interactive horizontal paging. The hour rail remains fixed while the
+ * buffered day columns follow the pointer, then snap back or settle on the adjacent day.
  */
 @Composable
 fun DayTimelineView(
     date: LocalDate,
-    events: List<EventUi>,
+    eventsByDay: Map<LocalDate, List<EventUi>>,
     onEventClick: (String) -> Unit,
-    onSlotTap: (minuteOfDay: Int) -> Unit,
+    onSlotTap: (date: LocalDate, minuteOfDay: Int) -> Unit,
     modifier: Modifier = Modifier,
     visibleStartMin: Int = 0,
     visibleEndMin: Int = 24 * 60,
     workingStartMin: Int = 9 * 60,
     workingEndMin: Int = 18 * 60,
     zoneId: ZoneId = ZoneId.systemDefault(),
-    /** P8「降低已结束日程的亮度」:非空时,结束早于该时刻的块降透明度。 */
+    /** Non-null dims timed events that ended before this instant. */
     dimPastNow: java.time.ZonedDateTime? = null,
-    /** 当前预选时段(仅当它就是 [date] 当天时才画)。 */
+    /** The draft is drawn only when its date is in the buffered date window. */
     draft: DraftSlot? = null,
     draftLabel: String? = null,
     onDraftAdjust: ((DraftSlot) -> Unit)? = null,
     onDraftConfirm: ((DraftSlot) -> Unit)? = null,
-    /** 我的 uuid:我组织的非重复日程可长按拖动改期(null = 全都不可拖)。 */
+    /** Current user's UUID; eligible non-recurring events can be long-pressed and moved. */
     selfUserId: String? = null,
-    /** 改期落点(整块移位 / 拖抓手改时长;日视图不跨列,日期恒为 [date])。 */
+    /** Reschedule target. A buffered column maps back to its calendar date. */
     onEventMove: ((eventId: String, date: LocalDate, startMin: Int, endMin: Int) -> Unit)? = null,
-    /** 长按选中的日程 id:出上下抓手,可直接拖移 / 改时长。 */
+    /** Selected event keeps drag priority over date paging. */
     selectedEventId: String? = null,
     onEventSelect: ((eventId: String) -> Unit)? = null,
-    /** Swipe horizontally to navigate days; a selected event keeps drag priority. */
     onDateSwipe: ((LocalDate) -> Unit)? = null,
-    /** 点左侧时刻刻度列 = 点在操作对象以外 → 收手。 */
     onRailTap: (() -> Unit)? = null,
 ) {
-    val blocks = remember(date, events, dimPastNow, selfUserId) {
-        events.mapNotNull { it.toTimeBlockOrNull(date, dimPastNow, selfUserId) }
+    val today = LocalDate.now(zoneId)
+    var renderedDate by remember { mutableStateOf(date) }
+    var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+    var resetOffsetAfterRecompose by remember { mutableStateOf(false) }
+    var settling by remember { mutableStateOf(false) }
+    var settleJob by remember { mutableStateOf<Job?>(null) }
+    val settleScope = rememberCoroutineScope()
+    val pagingEnabled = onDateSwipe != null && selectedEventId == null
+    val gestureEnabled = pagingEnabled && !settling
+    val onDateSwipeNow = rememberUpdatedState(onDateSwipe)
+
+    if (resetOffsetAfterRecompose) {
+        SideEffect {
+            // Wait until the new buffered dates are laid out before returning the viewport
+            // to its center page; otherwise the old day can briefly flash back into view.
+            dragOffsetPx = 0f
+            resetOffsetAfterRecompose = false
+        }
     }
-    val allDayEvents = remember(date, events) { events.filter { it.allDay } }
-    val isToday = date == LocalDate.now(zoneId)
+    LaunchedEffect(date) {
+        if (date != renderedDate) {
+            settleJob?.cancel()
+            settling = false
+            renderedDate = date
+            resetOffsetAfterRecompose = true
+        }
+    }
+    LaunchedEffect(pagingEnabled) {
+        if (!pagingEnabled) {
+            settleJob?.cancel()
+            settling = false
+            dragOffsetPx = 0f
+        }
+    }
+
+    val days = remember(renderedDate) { dayPagerDays(renderedDate) }
+    val columns = remember(days, eventsByDay, dimPastNow, selfUserId) {
+        days.map { day ->
+            eventsByDay[day].orEmpty()
+                .mapNotNull { it.toTimeBlockOrNull(day, dimPastNow, selfUserId) }
+        }
+    }
+    val allDayEvents = remember(days, eventsByDay) {
+        days.map { day -> eventsByDay[day].orEmpty().filter { it.allDay } }
+    }
 
     val hourHeight = Dimens.Calendar.HourHeight
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
     val dateSwipeThresholdPx = with(density) { Dimens.MinTouchTarget.toPx() }
-    val onDateSwipeNow = rememberUpdatedState(onDateSwipe)
-    // 首帧滚到 08:00(今天则当前时刻上方一点)。
-    // Only choose an initial vertical position when the view enters composition or
-    // its visible range changes. Paging dates must preserve the user's scroll position.
+    // Date paging shares one vertical timeline, so changing the day must not reset its position.
     LaunchedEffect(visibleStartMin, visibleEndMin) {
+        val isToday = renderedDate == today
         val anchorMinute = if (isToday) {
-            (LocalTime.now(zoneId).hour * 60 + LocalTime.now(zoneId).minute - 60)
-        } else 8 * 60
-        val offset = (anchorMinute.coerceIn(visibleStartMin, visibleEndMin) - visibleStartMin)
+            LocalTime.now(zoneId).let { it.hour * 60 + it.minute - 60 }
+        } else {
+            8 * 60
+        }
+        val offset = anchorMinute.coerceIn(visibleStartMin, visibleEndMin) - visibleStartMin
         scrollState.scrollTo(with(density) { (hourHeight * (offset / 60f)).toPx() }.toInt())
     }
 
-    Column(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .horizontalDateSwipe(
-                enabled = onDateSwipe != null && selectedEventId == null,
-                gestureKey = date,
-                thresholdPx = dateSwipeThresholdPx,
-            ) { dayDelta ->
-                onDateSwipeNow.value?.invoke(date.plusDays(dayDelta))
-            },
+            .testTag(DAY_VIEW_TEST_TAG)
+            .clipToBounds(),
     ) {
-        if (allDayEvents.isNotEmpty()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = HOUR_RAIL_WIDTH,
-                        end = Dimens.SpaceS,
-                        top = Dimens.SpaceXs,
-                        bottom = Dimens.SpaceXs,
-                    ),
-            ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    allDayEvents.forEach { event ->
-                        Text(
-                            text = "${stringResource(R.string.calendar_all_day)} · ${event.title}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = Dimens.Calendar.ChipInset)
-                                .background(
-                                    MaterialTheme.colorScheme.primaryContainer,
-                                    RoundedCornerShape(Dimens.CornerXs),
-                                )
-                                .clickable { onEventClick(event.id) }
-                                .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXxs),
+        val pageWidthPx = with(density) {
+            (maxWidth - HOUR_RAIL_WIDTH).coerceAtLeast(Dimens.MinTouchTarget).toPx()
+        }
+        val gestureModifier = Modifier.pointerInput(
+            renderedDate,
+            gestureEnabled,
+            pageWidthPx,
+            dateSwipeThresholdPx,
+        ) {
+            if (!gestureEnabled) return@pointerInput
+            awaitEachGesture {
+                val down = awaitFirstDown(
+                    requireUnconsumed = false,
+                    pass = PointerEventPass.Initial,
+                )
+                var horizontalDistance = 0f
+                var verticalDistance = 0f
+                var directionLocked = false
+                var horizontalDrag = false
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                    val delta = change.position - change.previousPosition
+                    horizontalDistance += delta.x
+                    verticalDistance += delta.y
+                    if (!directionLocked &&
+                        (abs(horizontalDistance) > viewConfiguration.touchSlop ||
+                            abs(verticalDistance) > viewConfiguration.touchSlop)
+                    ) {
+                        directionLocked = true
+                        horizontalDrag = isHorizontalDateSwipe(
+                            horizontalDistance,
+                            verticalDistance,
+                            viewConfiguration.touchSlop,
                         )
+                    }
+                    if (horizontalDrag) {
+                        change.consume()
+                        dragOffsetPx = horizontalDistance.coerceIn(-pageWidthPx, pageWidthPx)
+                    }
+                    if (!change.pressed) break
+                }
+                if (!horizontalDrag) return@awaitEachGesture
+
+                val dayDelta = dateSwipeDayDelta(
+                    horizontalDistancePx = horizontalDistance,
+                    thresholdPx = dateSwipeThresholdPx,
+                )
+                val targetOffset = dayDelta?.let { -it * pageWidthPx } ?: 0f
+                val gestureDate = renderedDate
+                settleJob?.cancel()
+                settleJob = settleScope.launch {
+                    settling = true
+                    try {
+                        animate(
+                            initialValue = dragOffsetPx,
+                            targetValue = targetOffset,
+                            animationSpec = tween(DAY_VIEW_SETTLE_MILLIS),
+                        ) { value, _ -> dragOffsetPx = value }
+                        if (dayDelta != null) {
+                            val nextDate = gestureDate.plusDays(dayDelta)
+                            renderedDate = nextDate
+                            resetOffsetAfterRecompose = true
+                            onDateSwipeNow.value?.invoke(nextDate)
+                        } else {
+                            dragOffsetPx = 0f
+                        }
+                    } finally {
+                        settling = false
                     }
                 }
             }
         }
-        Spacer(Modifier.width(Dimens.SpaceNone))
+
         TimelineScaffold(
-            columns = listOf(blocks),
+            modifier = Modifier.fillMaxSize().then(gestureModifier),
+            columns = columns,
             hourHeight = hourHeight,
             scrollState = scrollState,
             visibleStartMin = visibleStartMin,
             visibleEndMin = visibleEndMin,
             workingStartMin = workingStartMin,
             workingEndMin = workingEndMin,
-            nowMinute = if (isToday) {
+            nowMinute = if (days.contains(today)) {
                 LocalTime.now(zoneId).let { it.hour * 60 + it.minute }
-            } else null,
+            } else {
+                null
+            },
+            nowLineInColumn = { index -> days[index] == today },
             onBlockTap = { _, key -> onEventClick(key) },
-            onSlotTap = { _, minute -> onSlotTap(minute) },
-            // 日视图只有一列:同日的草稿投到 col 0,回调再补回日期。
-            draft = draft?.takeIf { it.date == date }
-                ?.let { DraftSelection(0, it.startMin, it.endMin) },
+            onSlotTap = { index, minute -> onSlotTap(days[index], minute) },
+            draft = draft?.let { value ->
+                days.indexOf(value.date).takeIf { it >= 0 }
+                    ?.let { DraftSelection(it, value.startMin, value.endMin) }
+            },
             draftLabel = draftLabel,
-            onDraftAdjust = onDraftAdjust?.let { cb ->
-                { sel: DraftSelection -> cb(DraftSlot(date, sel.startMin, sel.endMin)) }
+            onDraftAdjust = onDraftAdjust?.let { callback ->
+                { selection: DraftSelection ->
+                    callback(
+                        DraftSlot(
+                            days[selection.colIndex],
+                            selection.startMin,
+                            selection.endMin,
+                        ),
+                    )
+                }
             },
-            onDraftConfirm = onDraftConfirm?.let { cb ->
-                { sel: DraftSelection -> cb(DraftSlot(date, sel.startMin, sel.endMin)) }
+            onDraftConfirm = onDraftConfirm?.let { callback ->
+                { selection: DraftSelection ->
+                    callback(
+                        DraftSlot(
+                            days[selection.colIndex],
+                            selection.startMin,
+                            selection.endMin,
+                        ),
+                    )
+                }
             },
-            onBlockMove = onEventMove?.let { cb ->
-                { _: Int, key: String, s: Int, e: Int -> cb(key, date, s, e) }
+            onBlockMove = onEventMove?.let { callback ->
+                { index: Int, key: String, start: Int, end: Int ->
+                    callback(key, days[index], start, end)
+                }
             },
             selectedBlockKey = selectedEventId,
             onBlockSelect = onEventSelect,
             onRailTap = onRailTap,
-            contentKey = date,
+            visibleColumnCount = 1,
+            horizontalContentOffsetPx = { pageWidthPx - dragOffsetPx },
+            contentKey = renderedDate,
+            columnHeader = { index ->
+                DayAllDayEvents(
+                    events = allDayEvents[index],
+                    onEventClick = onEventClick,
+                )
+            },
         )
+    }
+}
+
+@Composable
+private fun DayAllDayEvents(
+    events: List<EventUi>,
+    onEventClick: (String) -> Unit,
+) {
+    if (events.isEmpty()) return
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = Dimens.SpaceS,
+                vertical = Dimens.SpaceXs,
+            ),
+    ) {
+        events.forEach { event ->
+            Text(
+                text = "${stringResource(R.string.calendar_all_day)} · ${event.title}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = Dimens.Calendar.ChipInset)
+                    .background(
+                        MaterialTheme.colorScheme.primaryContainer,
+                        RoundedCornerShape(Dimens.CornerXs),
+                    )
+                    .clickable { onEventClick(event.id) }
+                    .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXxs),
+            )
+        }
     }
 }

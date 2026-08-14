@@ -6,7 +6,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
@@ -145,11 +144,10 @@ class ThreeDayTimelineUiTest {
                 Box(Modifier.size(width = 360.dp, height = 640.dp)) {
                     DayTimelineView(
                         date = currentDate,
-                        events = emptyList(),
+                        eventsByDay = emptyMap(),
                         onEventClick = {},
-                        onSlotTap = {},
+                        onSlotTap = { _, _ -> },
                         onDateSwipe = { currentDate = it },
-                        modifier = Modifier.testTag(DAY_VIEW_TEST_TAG),
                     )
                 }
             }
@@ -171,6 +169,29 @@ class ThreeDayTimelineUiTest {
         assertEquals(beforePaging, verticalScrollPosition(), 1f)
     }
 
+    @Test
+    fun dayViewUsesFixedHorizontalViewport() {
+        composeRule.setContent {
+            WeMeetTheme {
+                Box(Modifier.size(width = 360.dp, height = 640.dp)) {
+                    DayTimelineView(
+                        date = LocalDate.of(2026, 8, 14),
+                        eventsByDay = emptyMap(),
+                        onEventClick = {},
+                        onSlotTap = { _, _ -> },
+                        visibleStartMin = 8 * 60,
+                        visibleEndMin = 12 * 60,
+                    )
+                }
+            }
+        }
+
+        composeRule.onAllNodes(
+            SemanticsMatcher.keyIsDefined(SemanticsProperties.HorizontalScrollAxisRange),
+            useUnmergedTree = true,
+        ).assertCountEquals(0)
+    }
+
     private fun scrollTimelineTowardEnd() {
         repeat(4) {
             composeRule.onAllNodes(
@@ -187,8 +208,4 @@ class ThreeDayTimelineUiTest {
     ).onFirst().fetchSemanticsNode()
         .config[SemanticsProperties.VerticalScrollAxisRange]
         .value()
-
-    private companion object {
-        const val DAY_VIEW_TEST_TAG = "calendar-day-view-test"
-    }
 }
