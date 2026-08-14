@@ -3,7 +3,9 @@ package com.we.meet.ui.docs
 import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -76,7 +78,9 @@ fun DocsViewerScreen(url: String, onClose: () -> Unit) {
         androidx.compose.foundation.layout.Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .consumeWindowInsets(padding)
+                .imePadding(),
         ) {
             AndroidView(
                 factory = { webView },

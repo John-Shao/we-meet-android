@@ -22,6 +22,7 @@ import androidx.activity.compose.BackHandler
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -508,7 +509,11 @@ fun DocsTabScreen(webView: WebView) {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    // MainActivity is edge-to-edge, so adjustResize exposes the keyboard as an
+    // IME inset instead of shrinking this Compose-hosted WebView for us. Resize
+    // the host explicitly; Chromium can then scroll the focused editor block
+    // into the visible viewport instead of leaving the caret under the keyboard.
+    Box(modifier = Modifier.fillMaxSize().imePadding()) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = {
