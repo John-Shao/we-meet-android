@@ -67,78 +67,94 @@ internal fun CalendarWeekDateStrip(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         days.forEach { date ->
-            val selected = date == selectedDate
-            val isToday = date == today
-            val indicatorColor = eventIndicatorColor(date)
-            val dateDescription = DateTimeFormatter
-                .ofLocalizedDate(FormatStyle.FULL)
-                .withLocale(Locale.getDefault())
-                .format(date)
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(Dimens.CornerS))
-                    .clickable { onSelectDate(date) }
-                    .semantics {
-                        role = Role.Button
-                        contentDescription = dateDescription
-                    }
-                    .padding(vertical = Dimens.SpaceXs),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = date.dayOfWeek.getDisplayName(
-                        TextStyle.NARROW_STANDALONE,
-                        Locale.getDefault(),
-                    ),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (selected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
+            CalendarDateCell(
+                date = date,
+                selected = date == selectedDate,
+                isToday = date == today,
+                indicatorColor = eventIndicatorColor(date),
+                onClick = { onSelectDate(date) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+/** Date cell shared by the seven-day strip and the fixed three-day timeline header. */
+@Composable
+internal fun CalendarDateCell(
+    date: LocalDate,
+    selected: Boolean,
+    isToday: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    indicatorColor: Color? = null,
+) {
+    val dateDescription = DateTimeFormatter
+        .ofLocalizedDate(FormatStyle.FULL)
+        .withLocale(Locale.getDefault())
+        .format(date)
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(Dimens.CornerS))
+            .clickable(onClick = onClick)
+            .semantics {
+                role = Role.Button
+                contentDescription = dateDescription
+            }
+            .padding(vertical = Dimens.SpaceXs),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = date.dayOfWeek.getDisplayName(
+                TextStyle.NARROW_STANDALONE,
+                Locale.getDefault(),
+            ),
+            style = MaterialTheme.typography.labelSmall,
+            color = if (selected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        )
+        Box(
+            modifier = Modifier
+                .padding(top = Dimens.SpaceXxs)
+                .size(Dimens.Calendar.DateCellSize)
+                .clip(CircleShape)
+                .background(
+                    when {
+                        selected -> MaterialTheme.colorScheme.primary
+                        isToday -> MaterialTheme.colorScheme.primaryContainer
+                        else -> Color.Transparent
                     },
-                )
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = date.dayOfMonth.toString(),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                color = when {
+                    selected -> MaterialTheme.colorScheme.onPrimary
+                    isToday -> MaterialTheme.colorScheme.onPrimaryContainer
+                    else -> MaterialTheme.colorScheme.onSurface
+                },
+            )
+            if (indicatorColor != null) {
                 Box(
                     modifier = Modifier
-                        .padding(top = Dimens.SpaceXxs)
-                        .size(Dimens.Calendar.DateCellSize)
-                        .clip(CircleShape)
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = Dimens.BorderThin)
+                        .size(Dimens.Calendar.EventDotSize)
                         .background(
-                            when {
-                                selected -> MaterialTheme.colorScheme.primary
-                                isToday -> MaterialTheme.colorScheme.primaryContainer
-                                else -> Color.Transparent
+                            color = if (selected) {
+                                MaterialTheme.colorScheme.onPrimary
+                            } else {
+                                indicatorColor
                             },
+                            shape = CircleShape,
                         ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = date.dayOfMonth.toString(),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                        color = when {
-                            selected -> MaterialTheme.colorScheme.onPrimary
-                            isToday -> MaterialTheme.colorScheme.onPrimaryContainer
-                            else -> MaterialTheme.colorScheme.onSurface
-                        },
-                    )
-                    if (indicatorColor != null) {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = Dimens.BorderThin)
-                                .size(Dimens.Calendar.EventDotSize)
-                                .background(
-                                    color = if (selected) {
-                                        MaterialTheme.colorScheme.onPrimary
-                                    } else {
-                                        indicatorColor
-                                    },
-                                    shape = CircleShape,
-                                ),
-                        )
-                    }
-                }
+                )
             }
         }
     }

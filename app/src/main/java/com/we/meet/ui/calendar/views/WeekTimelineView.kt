@@ -2,21 +2,15 @@ package com.we.meet.ui.calendar.views
 
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,23 +20,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.style.TextAlign
 import com.we.meet.ui.theme.Dimens
-import com.we.meet.ui.theme.WeMeetTextStyles
 import com.we.meet.ui.calendar.EventUi
+import com.we.meet.ui.calendar.parseCalendarColor
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
-import java.time.format.TextStyle
-import java.util.Locale
 import kotlin.math.abs
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -277,13 +267,19 @@ fun ThreeDayTimelineView(
             compactBlocks = true,
             visibleColumnCount = THREE_DAY_VIEW_DAYS,
             horizontalContentOffsetPx = { pageWidthPx - dragOffsetPx },
-            railHeader = { CalendarTimeZoneHeader(renderedAnchor, zoneId) },
             columnHeader = { i ->
+                val date = days[i]
                 WeekDayHeader(
-                    date = days[i],
-                    isToday = days[i] == today,
-                    isAnchor = days[i] == renderedAnchor,
-                    onClick = { onDayClick(days[i]) },
+                    date = date,
+                    isToday = date == today,
+                    isAnchor = date == renderedAnchor,
+                    indicatorColor = eventsByDay[date]
+                        ?.takeIf { it.isNotEmpty() }
+                        ?.firstNotNullOfOrNull { parseCalendarColor(it.calendarColor) }
+                        ?: MaterialTheme.colorScheme.tertiary.takeIf {
+                            eventsByDay[date]?.isNotEmpty() == true
+                        },
+                    onClick = { onDayClick(date) },
                 )
             },
         )
@@ -296,43 +292,18 @@ private fun WeekDayHeader(
     date: LocalDate,
     isToday: Boolean,
     isAnchor: Boolean,
+    indicatorColor: androidx.compose.ui.graphics.Color?,
     onClick: () -> Unit,
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
+    CalendarDateCell(
+        date = date,
+        selected = isAnchor,
+        isToday = isToday,
+        indicatorColor = indicatorColor,
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .testTag(threeDayHeaderTestTag(date))
-            .clickable(onClick = onClick)
             .padding(vertical = Dimens.SpaceXs),
-    ) {
-        Text(
-            text = date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
-            style = WeMeetTextStyles.LabelTiny,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(Dimens.Calendar.WeekDotSize)
-                .background(
-                    color = when {
-                        isToday -> MaterialTheme.colorScheme.primary
-                        isAnchor -> MaterialTheme.colorScheme.primaryContainer
-                        else -> androidx.compose.ui.graphics.Color.Transparent
-                    },
-                    shape = CircleShape,
-                ),
-        ) {
-            Text(
-                text = date.dayOfMonth.toString(),
-                style = MaterialTheme.typography.bodySmall,
-                color = when {
-                    isToday -> MaterialTheme.colorScheme.onPrimary
-                    else -> MaterialTheme.colorScheme.onSurface
-                },
-            )
-        }
-    }
+    )
 }
