@@ -1,6 +1,7 @@
 package com.we.meet.ui.meetingroom
 
 import com.we.meet.data.api.dto.MeetingRoomNodeDto
+import com.we.meet.data.api.dto.MeetingRoomTimelineEntryDto
 import com.we.meet.data.api.dto.RoomBookingDto
 import java.time.Duration
 import java.time.LocalDate
@@ -11,6 +12,21 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MeetingRoomTimelineMathTest {
+
+    @Test
+    fun dateChangeKeepsRoomIdentityButClearsPreviousDayBookings() {
+        val room = MeetingRoomTimelineEntryDto(
+            id = "room-1",
+            name = "Focus room",
+            bookings = listOf(RoomBookingDto(id = "booking-1")),
+        )
+
+        val cleared = clearBookingsForDateChange(listOf(room)).single()
+
+        assertEquals(room.id, cleared.id)
+        assertEquals(room.name, cleared.name)
+        assertTrue(cleared.bookings.isEmpty())
+    }
 
     @Test
     fun usesAdjacentLocalMidnightsAcrossDst() {

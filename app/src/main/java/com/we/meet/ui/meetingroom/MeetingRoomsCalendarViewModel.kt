@@ -102,7 +102,7 @@ class MeetingRoomsCalendarViewModel(
         _ui.update {
             it.copy(
                 selectedDate = date,
-                rooms = emptyList(),
+                rooms = clearBookingsForDateChange(it.rooms),
                 loading = true,
                 error = false,
                 tooManyRooms = false,
@@ -265,6 +265,13 @@ class MeetingRoomsCalendarViewModel(
         const val KEY_CAPACITY = "meeting_room_capacity"
         const val KEY_FACILITIES = "meeting_room_facilities"
     }
+}
+
+/** Keep room identity stable while a new day loads, without showing stale bookings. */
+internal fun clearBookingsForDateChange(
+    rooms: List<MeetingRoomTimelineEntryDto>,
+): List<MeetingRoomTimelineEntryDto> = rooms.map { room ->
+    if (room.bookings.isEmpty()) room else room.copy(bookings = emptyList())
 }
 
 internal fun localDayUtcBounds(date: LocalDate, zone: ZoneId): Pair<Instant, Instant> =

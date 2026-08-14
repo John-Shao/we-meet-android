@@ -280,6 +280,7 @@ fun MeetingRoomsCalendarScreen(
             MeetingRoomSchedule(
                 room = selectedRoom,
                 date = ui.selectedDate,
+                loading = ui.loading,
                 blocks = selectedBlocks,
                 rangeStart = rangeStart,
                 rangeEnd = rangeEnd,
@@ -516,6 +517,7 @@ private fun MeetingRoomOverview(
 private fun MeetingRoomSchedule(
     room: MeetingRoomTimelineEntryDto,
     date: LocalDate,
+    loading: Boolean,
     blocks: List<TimeBlock>,
     rangeStart: Int,
     rangeEnd: Int,
@@ -587,6 +589,9 @@ private fun MeetingRoomSchedule(
                 onBlockSelect = onBlockSelect,
                 onRailTap = onRailTap,
             )
+            if (loading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
             RoomInfoDock(
                 room = room,
                 onClick = onOpenRoomInfo,
