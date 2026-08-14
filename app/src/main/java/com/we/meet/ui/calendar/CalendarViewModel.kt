@@ -32,7 +32,7 @@ data class CalendarUiState(
     val selectedDate: LocalDate = LocalDate.now(),
     /** P8:日程(默认)/日/三日/月 四视图;日程视图窗口 = 锚点起一年(对齐
      * Web),其余视图恒焦点月 ±1 月。 */
-    val viewMode: CalendarViewMode = CalendarViewMode.AGENDA,
+    val viewMode: CalendarViewMode = CalendarViewMode.WEEK,
     val eventsByDay: Map<LocalDate, List<EventUi>> = emptyMap(),
     val loading: Boolean = false,
     val error: Boolean = false,

@@ -94,10 +94,10 @@ class CalendarManagementModelsTest {
     }
 
     @Test
-    fun displayModeUsesAgendaForUnknownStoredValue() {
+    fun displayModeUsesThreeDayForUnknownStoredValue() {
         assertEquals(CalendarDisplayMode.MONTH, CalendarDisplayMode.fromKey("MONTH"))
-        assertEquals(CalendarDisplayMode.AGENDA, CalendarDisplayMode.fromKey("legacy"))
-        assertEquals(CalendarDisplayMode.AGENDA, CalendarDisplayMode.fromKey(null))
+        assertEquals(CalendarDisplayMode.MULTI_DAY, CalendarDisplayMode.fromKey("legacy"))
+        assertEquals(CalendarDisplayMode.MULTI_DAY, CalendarDisplayMode.fromKey(null))
         CalendarDisplayMode.entries.forEach { mode ->
             assertEquals(mode, CalendarDisplayMode.fromKey(mode.name))
         }

@@ -70,7 +70,7 @@ enum class CalendarDisplayMode {
 
     companion object {
         fun fromKey(key: String?): CalendarDisplayMode =
-            entries.firstOrNull { it.name == key } ?: AGENDA
+            entries.firstOrNull { it.name == key } ?: MULTI_DAY
     }
 }
 
@@ -330,7 +330,7 @@ class SettingsStore(
             _calendarDefaultDurationMin.value = 60
             _calendarDefaultReminderMin.value = 10
             _calendarDimPast.value = true
-            _calendarDisplayMode.value = CalendarDisplayMode.AGENDA
+            _calendarDisplayMode.value = CalendarDisplayMode.MULTI_DAY
             _workingHours.value = WorkingHours()
             _calendarTimeRangeMode.value = TimeRangeMode.WORK
             _meetingRoomTimeRangeMode.value = TimeRangeMode.WORK
