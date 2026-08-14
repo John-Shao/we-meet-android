@@ -279,13 +279,6 @@
     <string name="calendar_view_week">Week</string>
     <string name="calendar_view_month">Month</string>
     <string name="calendar_week_range">Week %1$d, %2$s - %3$s</string>
-    <!-- Web-aligned calendar header: nav semantics (dates use numeric ISO in code) -->
-    <string name="calendar_prev_day">Previous day</string>
-    <string name="calendar_next_day">Next day</string>
-    <string name="calendar_prev_week">Previous 3 days</string>
-    <string name="calendar_next_week">Next 3 days</string>
-    <string name="calendar_prev_month">Previous month</string>
-    <string name="calendar_next_month">Next month</string>
     <string name="calendar_agenda_anchor_year">%1$s · 1 year</string>
     <string name="calendar_agenda_empty_today">No events</string>
     <string name="calendar_agenda_load_prev">Load previous month</string>

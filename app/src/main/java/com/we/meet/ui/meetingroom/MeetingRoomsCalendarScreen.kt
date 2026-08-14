@@ -24,8 +24,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ExpandLess
@@ -431,9 +429,7 @@ private fun MeetingRoomOverview(
         RoomDateToolbar(
             date = ui.selectedDate,
             onSelectDate = onSelectDate,
-            onPrevious = { onSelectDate(ui.selectedDate.minusDays(1)) },
             onToday = { onSelectDate(LocalDate.now()) },
-            onNext = { onSelectDate(ui.selectedDate.plusDays(1)) },
         )
         CalendarPrimaryToolbar(
             current = CalendarPrimaryPage.MEETING_ROOMS,
@@ -683,15 +679,13 @@ private fun RoomScheduleToolbar(
 private fun RoomDateToolbar(
     date: LocalDate,
     onSelectDate: (LocalDate) -> Unit,
-    onPrevious: () -> Unit,
     onToday: () -> Unit,
-    onNext: () -> Unit,
 ) {
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Dimens.SpaceXs),
+            .padding(start = Dimens.SpaceS, end = Dimens.SpaceXs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TextButton(onClick = { showDatePicker = true }) {
@@ -707,19 +701,7 @@ private fun RoomDateToolbar(
             )
         }
         Spacer(Modifier.weight(1f))
-        IconButton(onClick = onPrevious) {
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                contentDescription = stringResource(R.string.calendar_prev_day),
-            )
-        }
         TextButton(onClick = onToday) { Text(stringResource(R.string.calendar_today)) }
-        IconButton(onClick = onNext) {
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = stringResource(R.string.calendar_next_day),
-            )
-        }
     }
     if (showDatePicker) {
         val picker = rememberDatePickerState(initialSelectedDateMillis = datePickerMillis(date))

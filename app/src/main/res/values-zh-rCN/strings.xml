@@ -279,13 +279,6 @@
     <string name="calendar_view_week">周</string>
     <string name="calendar_view_month">月</string>
     <string name="calendar_week_range">第%1$d周,%2$s - %3$s</string>
-    <!-- 对齐 Web 日历:翻页箭头语义(日期一律走代码里的数字化 ISO 格式) -->
-    <string name="calendar_prev_day">前一天</string>
-    <string name="calendar_next_day">后一天</string>
-    <string name="calendar_prev_week">前 3 天</string>
-    <string name="calendar_next_week">后 3 天</string>
-    <string name="calendar_prev_month">上个月</string>
-    <string name="calendar_next_month">下个月</string>
     <string name="calendar_agenda_anchor_year">%1$s 起一年</string>
     <string name="calendar_agenda_empty_today">暂无日程安排</string>
     <string name="calendar_agenda_load_prev">加载上一月</string>

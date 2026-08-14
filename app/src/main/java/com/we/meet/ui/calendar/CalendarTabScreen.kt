@@ -28,8 +28,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -77,7 +75,6 @@ import com.we.meet.ui.calendar.views.AgendaView
 import com.we.meet.ui.calendar.views.CalendarViewMode
 import com.we.meet.ui.calendar.views.DayTimelineView
 import com.we.meet.ui.calendar.views.DraftSlot
-import com.we.meet.ui.calendar.views.THREE_DAY_VIEW_DAYS
 import com.we.meet.ui.calendar.views.ThreeDayTimelineView
 import com.we.meet.ui.calendar.views.draftSlotAt
 import com.we.meet.ui.calendar.views.horizontalDateSwipe
@@ -215,29 +212,9 @@ fun CalendarTabScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // 首页只保留年月跳转、日期翻页和日历/会议室主 Tab；视图切换位于管理页。
+            // 首页只保留年月跳转、今天和日历/会议室主 Tab；视图切换位于管理页。
             CalendarHeader(
                 ui = ui,
-                onPrev = {
-                    when (ui.viewMode) {
-                        CalendarViewMode.DAY,
-                        CalendarViewMode.AGENDA,
-                        -> vm.selectDate(ui.selectedDate.minusDays(1))
-                        CalendarViewMode.WEEK ->
-                            vm.selectDate(ui.selectedDate.minusDays(THREE_DAY_VIEW_DAYS.toLong()))
-                        CalendarViewMode.MONTH -> vm.selectDate(shiftedMonthDate(ui.selectedDate, -1))
-                    }
-                },
-                onNext = {
-                    when (ui.viewMode) {
-                        CalendarViewMode.DAY,
-                        CalendarViewMode.AGENDA,
-                        -> vm.selectDate(ui.selectedDate.plusDays(1))
-                        CalendarViewMode.WEEK ->
-                            vm.selectDate(ui.selectedDate.plusDays(THREE_DAY_VIEW_DAYS.toLong()))
-                        CalendarViewMode.MONTH -> vm.selectDate(shiftedMonthDate(ui.selectedDate, 1))
-                    }
-                },
                 onToday = { vm.goToToday() },
                 onPickDate = { showDatePicker = true },
                 onShowMeetingRooms = {
@@ -513,12 +490,10 @@ internal fun MonthViewBody(
     }
 }
 
-/** 飞书式首页头部：年月快速跳转、前后日期控制、主页面 Tab 与管理入口。 */
+/** 飞书式首页头部：年月快速跳转、回到今天、主页面 Tab 与管理入口。 */
 @Composable
 private fun CalendarHeader(
     ui: CalendarUiState,
-    onPrev: () -> Unit,
-    onNext: () -> Unit,
     onToday: () -> Unit,
     onPickDate: () -> Unit,
     onShowMeetingRooms: () -> Unit,
@@ -543,27 +518,7 @@ private fun CalendarHeader(
                 )
             }
             Spacer(Modifier.weight(1f))
-            val (prevCd, nextCd) = when (ui.viewMode) {
-            CalendarViewMode.DAY, CalendarViewMode.AGENDA ->
-                R.string.calendar_prev_day to R.string.calendar_next_day
-            CalendarViewMode.WEEK ->
-                R.string.calendar_prev_week to R.string.calendar_next_week
-            CalendarViewMode.MONTH ->
-                R.string.calendar_prev_month to R.string.calendar_next_month
-        }
-            IconButton(onClick = onPrev) {
-                Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                    contentDescription = stringResource(prevCd),
-                )
-            }
             TextButton(onClick = onToday) { Text(stringResource(R.string.calendar_today)) }
-            IconButton(onClick = onNext) {
-                Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = stringResource(nextCd),
-                )
-            }
         }
         CalendarPrimaryToolbar(
             current = CalendarPrimaryPage.CALENDAR,
