@@ -498,6 +498,7 @@ private fun MeetingRoomOverview(
                     text = stringResource(R.string.meeting_room_empty),
                 )
                 else -> MeetingRoomOverviewList(
+                    date = ui.selectedDate,
                     rooms = ui.rooms,
                     bookingBounds = bookingBounds,
                     visibleStartMin = rangeStart,
@@ -588,6 +589,7 @@ private fun MeetingRoomSchedule(
                 selectedBlockKey = selectedBlockKey,
                 onBlockSelect = onBlockSelect,
                 onRailTap = onRailTap,
+                contentKey = date,
             )
             if (loading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))

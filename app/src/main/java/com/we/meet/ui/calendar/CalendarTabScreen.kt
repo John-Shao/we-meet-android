@@ -45,7 +45,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -445,16 +447,27 @@ internal fun MonthViewBody(
     val onMonthSwipeNow = rememberUpdatedState(onMonthSwipe)
     var renderedMonth by remember { mutableStateOf(ui.monthAnchor) }
     var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+    var resetOffsetAfterRecompose by remember { mutableStateOf(false) }
     var settling by remember { mutableStateOf(false) }
     var settleJob by remember { mutableStateOf<Job?>(null) }
     val settleScope = rememberCoroutineScope()
+
+    if (resetOffsetAfterRecompose) {
+        SideEffect {
+            // Keep the outgoing page at its settled offset until the new month has
+            // actually been composed. Resetting this layout-phase value earlier can
+            // draw the old page at x = 0 for one frame.
+            dragOffsetPx = 0f
+            resetOffsetAfterRecompose = false
+        }
+    }
 
     LaunchedEffect(ui.monthAnchor) {
         if (ui.monthAnchor != renderedMonth) {
             settleJob?.cancel()
             settling = false
             renderedMonth = ui.monthAnchor
-            dragOffsetPx = 0f
+            resetOffsetAfterRecompose = true
         }
     }
 
@@ -521,7 +534,7 @@ internal fun MonthViewBody(
                         if (monthDelta != null) {
                             val nextMonth = gestureMonth.plusMonths(monthDelta)
                             renderedMonth = nextMonth
-                            dragOffsetPx = 0f
+                            resetOffsetAfterRecompose = true
                             onMonthSwipeNow.value(monthDelta)
                         } else {
                             dragOffsetPx = 0f
@@ -552,24 +565,26 @@ internal fun MonthViewBody(
                     .clipToBounds(),
             ) {
                 months.forEachIndexed { index, month ->
-                    MonthGrid(
-                        month = month,
-                        selected = ui.selectedDate,
-                        eventsByDay = ui.eventsByDay,
-                        firstDow = firstDow,
-                        today = today,
-                        onSelect = onSelect,
-                        modifier = Modifier
-                            .width(pageWidth)
-                            .offset {
-                                androidx.compose.ui.unit.IntOffset(
-                                    x = ((index - 1) * pageWidthPx + dragOffsetPx)
-                                        .roundToInt(),
-                                    y = 0,
-                                )
-                            }
-                            .testTag(monthPageTestTag(month)),
-                    )
+                    key(month) {
+                        MonthGrid(
+                            month = month,
+                            selected = ui.selectedDate,
+                            eventsByDay = ui.eventsByDay,
+                            firstDow = firstDow,
+                            today = today,
+                            onSelect = onSelect,
+                            modifier = Modifier
+                                .width(pageWidth)
+                                .offset {
+                                    androidx.compose.ui.unit.IntOffset(
+                                        x = ((index - 1) * pageWidthPx + dragOffsetPx)
+                                            .roundToInt(),
+                                        y = 0,
+                                    )
+                                }
+                                .testTag(monthPageTestTag(month)),
+                        )
+                    }
                 }
             }
             when {
@@ -592,7 +607,10 @@ internal fun MonthViewBody(
                         bottom = Dimens.Calendar.FabClearance,
                     ),
                 ) {
-                    items(ui.selectedDayEvents, key = { it.id }) { event ->
+                    items(
+                        ui.selectedDayEvents,
+                        key = { event -> "${ui.selectedDate}:${event.id}" },
+                    ) { event ->
                         AgendaCard(
                             event = event,
                             onClick = { onEventClick(event.id) },

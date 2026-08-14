@@ -30,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -381,6 +382,11 @@ fun TimelineScaffold(
      * and grid are clipped and translated together without exposing free horizontal scrolling.
      */
     horizontalContentOffsetPx: (() -> Float)? = null,
+    /**
+     * Identity of the rendered date window. Changing it disposes event block nodes
+     * instead of reusing retained draw state for a different day.
+     */
+    contentKey: Any? = null,
     /** 非空时初次布局横滚到让该列可见。 */
     revealColumnIndex: Int? = null,
     /** 预选时段草稿(点空白后出现);为空 = 无草稿。见 [DraftSelection]。 */
@@ -937,6 +943,7 @@ fun TimelineScaffold(
                             }
                             blocks.filter { it.startMin < rangeEnd && it.endMin > rangeStart }
                                 .forEach { b ->
+                                key(contentKey, i, b.key, b.startMin, b.endMin) {
                                 val clippedStart = maxOf(b.startMin, rangeStart)
                                 val clippedEnd = minOf(b.endMin, rangeEnd)
                                 val top = minuteY(clippedStart)
@@ -1071,6 +1078,7 @@ fun TimelineScaffold(
                                             ),
                                         )
                                     }
+                                }
                                 }
                             }
                         }

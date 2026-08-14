@@ -157,6 +157,7 @@ fun DayTimelineView(
             selectedBlockKey = selectedEventId,
             onBlockSelect = onEventSelect,
             onRailTap = onRailTap,
+            contentKey = date,
         )
     }
 }

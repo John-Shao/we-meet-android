@@ -22,7 +22,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -88,18 +90,28 @@ internal fun CalendarWeekDateStrip(
 
     var renderedDate by remember { mutableStateOf(selectedDate) }
     var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+    var resetOffsetAfterRecompose by remember { mutableStateOf(false) }
     var settling by remember { mutableStateOf(false) }
     var settleJob by remember { mutableStateOf<Job?>(null) }
     val settleScope = rememberCoroutineScope()
     val onWeekSwipeNow = rememberUpdatedState(onWeekSwipe)
     val swipeThresholdPx = with(LocalDensity.current) { Dimens.MinTouchTarget.toPx() }
 
+    if (resetOffsetAfterRecompose) {
+        SideEffect {
+            // The page offset is consumed during layout. Reset it only after the
+            // new week pages are composed so an outgoing page cannot flash at x = 0.
+            dragOffsetPx = 0f
+            resetOffsetAfterRecompose = false
+        }
+    }
+
     LaunchedEffect(selectedDate) {
         if (selectedDate != renderedDate) {
             settleJob?.cancel()
             settling = false
             renderedDate = selectedDate
-            dragOffsetPx = 0f
+            resetOffsetAfterRecompose = true
         }
     }
 
@@ -169,7 +181,7 @@ internal fun CalendarWeekDateStrip(
                         ) { value, _ -> dragOffsetPx = value }
                         if (weekDelta != null) {
                             renderedDate = gestureDate.plusWeeks(weekDelta)
-                            dragOffsetPx = 0f
+                            resetOffsetAfterRecompose = true
                             onWeekSwipeNow.value(weekDelta)
                         } else {
                             dragOffsetPx = 0f
@@ -194,23 +206,25 @@ internal fun CalendarWeekDateStrip(
                 .then(gestureModifier),
         ) {
             pageDates.forEachIndexed { index, pageDate ->
-                CalendarWeekDateStripPage(
-                    selectedDate = pageDate,
-                    firstDayOfWeek = firstDayOfWeek,
-                    onSelectDate = onSelectDate,
-                    today = today,
-                    eventIndicatorColor = eventIndicatorColor,
-                    modifier = Modifier
-                        .width(pageWidth)
-                        .offset {
-                            androidx.compose.ui.unit.IntOffset(
-                                x = ((index - 1) * pageWidthPx + dragOffsetPx)
-                                    .roundToInt(),
-                                y = 0,
-                            )
-                        }
-                        .testTag(calendarWeekPageTestTag(pageDate)),
-                )
+                key(pageDate) {
+                    CalendarWeekDateStripPage(
+                        selectedDate = pageDate,
+                        firstDayOfWeek = firstDayOfWeek,
+                        onSelectDate = onSelectDate,
+                        today = today,
+                        eventIndicatorColor = eventIndicatorColor,
+                        modifier = Modifier
+                            .width(pageWidth)
+                            .offset {
+                                androidx.compose.ui.unit.IntOffset(
+                                    x = ((index - 1) * pageWidthPx + dragOffsetPx)
+                                        .roundToInt(),
+                                    y = 0,
+                                )
+                            }
+                            .testTag(calendarWeekPageTestTag(pageDate)),
+                    )
+                }
             }
         }
     }

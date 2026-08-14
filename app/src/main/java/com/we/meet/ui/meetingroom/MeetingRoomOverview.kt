@@ -26,6 +26,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -190,6 +191,7 @@ internal fun MeetingRoomFilterBar(
 
 @Composable
 internal fun MeetingRoomOverviewList(
+    date: LocalDate,
     rooms: List<MeetingRoomTimelineEntryDto>,
     bookingBounds: Map<String, List<BookingBounds>>,
     visibleStartMin: Int,
@@ -206,6 +208,7 @@ internal fun MeetingRoomOverviewList(
     ) {
         items(rooms, key = { it.id }) { room ->
             MeetingRoomOverviewItem(
+                date = date,
                 room = room,
                 bounds = bookingBounds[room.id].orEmpty(),
                 visibleStartMin = visibleStartMin,
@@ -225,6 +228,7 @@ internal fun MeetingRoomOverviewList(
 
 @Composable
 private fun MeetingRoomOverviewItem(
+    date: LocalDate,
     room: MeetingRoomTimelineEntryDto,
     bounds: List<BookingBounds>,
     visibleStartMin: Int,
@@ -273,15 +277,17 @@ private fun MeetingRoomOverviewItem(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        CompactAvailabilityStrip(
-            bounds = bounds,
-            visibleStartMin = visibleStartMin,
-            visibleEndMin = visibleEndMin,
-            workingStartMin = workingStartMin,
-            workingEndMin = workingEndMin,
-            nowMinute = nowMinute,
-            modifier = Modifier.padding(top = Dimens.SpaceS),
-        )
+        key(date) {
+            CompactAvailabilityStrip(
+                bounds = bounds,
+                visibleStartMin = visibleStartMin,
+                visibleEndMin = visibleEndMin,
+                workingStartMin = workingStartMin,
+                workingEndMin = workingEndMin,
+                nowMinute = nowMinute,
+                modifier = Modifier.padding(top = Dimens.SpaceS),
+            )
+        }
     }
 }
 

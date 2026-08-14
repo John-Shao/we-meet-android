@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -105,18 +106,28 @@ fun ThreeDayTimelineView(
     val today = LocalDate.now(zoneId)
     var renderedAnchor by remember { mutableStateOf(anchorDate) }
     var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+    var resetOffsetAfterRecompose by remember { mutableStateOf(false) }
     var settling by remember { mutableStateOf(false) }
     var settleJob by remember { mutableStateOf<Job?>(null) }
     val settleScope = rememberCoroutineScope()
     val pagingEnabled = onDateSwipe != null && selectedEventId == null
     val gestureEnabled = pagingEnabled && !settling
     val onDateSwipeNow = rememberUpdatedState(onDateSwipe)
+    if (resetOffsetAfterRecompose) {
+        SideEffect {
+            // The offset is read during layout. Delay its reset until the new
+            // buffered dates have been composed, otherwise the old blocks can
+            // briefly return to their pre-swipe positions.
+            dragOffsetPx = 0f
+            resetOffsetAfterRecompose = false
+        }
+    }
     LaunchedEffect(anchorDate) {
         if (anchorDate != renderedAnchor) {
             settleJob?.cancel()
             settling = false
             renderedAnchor = anchorDate
-            dragOffsetPx = 0f
+            resetOffsetAfterRecompose = true
         }
     }
     LaunchedEffect(pagingEnabled) {
@@ -215,7 +226,7 @@ fun ThreeDayTimelineView(
                         if (dayDelta != null) {
                             val nextAnchor = gestureAnchor.plusDays(dayDelta)
                             renderedAnchor = nextAnchor
-                            dragOffsetPx = 0f
+                            resetOffsetAfterRecompose = true
                             onDateSwipeNow.value?.invoke(nextAnchor)
                         } else {
                             dragOffsetPx = 0f
@@ -267,6 +278,7 @@ fun ThreeDayTimelineView(
             compactBlocks = true,
             visibleColumnCount = THREE_DAY_VIEW_DAYS,
             horizontalContentOffsetPx = { pageWidthPx - dragOffsetPx },
+            contentKey = renderedAnchor,
             columnHeader = { i ->
                 val date = days[i]
                 WeekDayHeader(
