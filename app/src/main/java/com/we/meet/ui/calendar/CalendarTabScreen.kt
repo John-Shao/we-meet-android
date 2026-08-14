@@ -73,13 +73,13 @@ import com.we.meet.data.settings.CalendarWeekStart
 import com.we.meet.data.settings.TimeRangeMode
 import com.we.meet.ui.calendar.views.AgendaView
 import com.we.meet.ui.calendar.views.CalendarViewMode
+import com.we.meet.ui.calendar.views.CalendarWeekDateStrip
 import com.we.meet.ui.calendar.views.DayTimelineView
 import com.we.meet.ui.calendar.views.DraftSlot
 import com.we.meet.ui.calendar.views.ThreeDayTimelineView
 import com.we.meet.ui.calendar.views.draftSlotAt
 import com.we.meet.ui.calendar.views.horizontalDateSwipe
 import com.we.meet.ui.calendar.views.threeDayColumnDays
-import com.we.meet.ui.calendar.views.weekColumnDays
 import com.we.meet.ui.meetingroom.MeetingRoomsCalendarScreen
 import java.time.DayOfWeek
 import java.time.Instant
@@ -563,68 +563,19 @@ private fun CalendarDayStrip(
     today: LocalDate,
     onSelectDate: (LocalDate) -> Unit,
 ) {
-    val days = remember(selectedDate, firstDayOfWeek) {
-        weekColumnDays(selectedDate, firstDayOfWeek)
-    }
-    Row(modifier = Modifier.fillMaxWidth()) {
-        days.forEach { date ->
-            val selected = date == selectedDate
-            val isToday = date == today
-            val hasEvents = eventsByDay[date]?.isNotEmpty() == true
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable { onSelectDate(date) }
-                    .padding(vertical = Dimens.SpaceXs),
-            ) {
-                Text(
-                    text = date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (selected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(Dimens.Calendar.WeekDotSize)
-                        .background(
-                            color = when {
-                                selected -> MaterialTheme.colorScheme.primary
-                                isToday -> MaterialTheme.colorScheme.primaryContainer
-                                else -> Color.Transparent
-                            },
-                            shape = CircleShape,
-                        ),
-                ) {
-                    Text(
-                        text = date.dayOfMonth.toString(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = when {
-                            selected -> MaterialTheme.colorScheme.onPrimary
-                            isToday -> MaterialTheme.colorScheme.onPrimaryContainer
-                            else -> MaterialTheme.colorScheme.onSurface
-                        },
-                    )
-                    if (hasEvents) {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = Dimens.BorderThin)
-                                .size(Dimens.Calendar.EventDotSize)
-                                .background(
-                                    color = if (selected) MaterialTheme.colorScheme.onPrimary
-                                    else eventsByDay[date]?.firstNotNullOfOrNull {
-                                        parseCalendarColor(it.calendarColor)
-                                    } ?: MaterialTheme.colorScheme.tertiary,
-                                    shape = CircleShape,
-                                ),
-                        )
-                    }
-                }
-            }
-        }
-    }
+    val fallbackIndicator = MaterialTheme.colorScheme.tertiary
+    CalendarWeekDateStrip(
+        selectedDate = selectedDate,
+        firstDayOfWeek = firstDayOfWeek,
+        onSelectDate = onSelectDate,
+        today = today,
+        eventIndicatorColor = { date ->
+            eventsByDay[date]
+                ?.takeIf { it.isNotEmpty() }
+                ?.firstNotNullOfOrNull { parseCalendarColor(it.calendarColor) }
+                ?: fallbackIndicator.takeIf { eventsByDay[date]?.isNotEmpty() == true }
+        },
+    )
     HorizontalDivider()
 }
 

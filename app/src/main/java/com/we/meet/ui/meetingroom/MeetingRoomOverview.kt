@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -30,8 +29,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -43,13 +40,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.R
 import com.we.meet.data.api.dto.MeetingRoomTimelineEntryDto
-import com.we.meet.ui.calendar.views.horizontalDateSwipe
+import com.we.meet.ui.calendar.views.CalendarWeekDateStrip
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.format.TextStyle
-import java.util.Locale
 
 internal enum class RoomFilterSection {
     LOCATION,
@@ -114,80 +109,15 @@ internal fun MeetingRoomWeekStrip(
     firstDayOfWeek: DayOfWeek,
     onSelectDate: (LocalDate) -> Unit,
 ) {
-    val offset = (selectedDate.dayOfWeek.value - firstDayOfWeek.value + 7) % 7
-    val firstDate = selectedDate.minusDays(offset.toLong())
-    val swipeThresholdPx = with(LocalDensity.current) { Dimens.MinTouchTarget.toPx() }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag("meeting-room-week-strip")
-            .horizontalDateSwipe(
-                enabled = true,
-                gestureKey = firstDate,
-                thresholdPx = swipeThresholdPx,
-            ) { weekDelta -> onSelectDate(selectedDate.plusWeeks(weekDelta)) }
-            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        repeat(7) { offset ->
-            val date = firstDate.plusDays(offset.toLong())
-            val selected = date == selectedDate
-            val dateDescription = java.time.format.DateTimeFormatter
-                .ofLocalizedDate(java.time.format.FormatStyle.FULL)
-                .withLocale(Locale.getDefault())
-                .format(date)
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(Dimens.CornerS))
-                    .clickable { onSelectDate(date) }
-                    .semantics {
-                        role = Role.Button
-                        contentDescription = dateDescription
-                    }
-                    .padding(vertical = Dimens.SpaceXs),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = date.dayOfWeek.getDisplayName(
-                        TextStyle.NARROW_STANDALONE,
-                        Locale.getDefault(),
-                    ),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (selected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                )
-                Box(
-                    modifier = Modifier
-                        .padding(top = Dimens.SpaceXxs)
-                        .size(Dimens.Calendar.DateCellSize)
-                        .clip(CircleShape)
-                        .background(
-                            if (selected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                Color.Transparent
-                            },
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = date.dayOfMonth.toString(),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                        color = if (selected) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
-                    )
-                }
-            }
-        }
-    }
+    CalendarWeekDateStrip(
+        selectedDate = selectedDate,
+        firstDayOfWeek = firstDayOfWeek,
+        onSelectDate = onSelectDate,
+        onWeekSwipe = { weekDelta ->
+            onSelectDate(selectedDate.plusWeeks(weekDelta))
+        },
+        modifier = Modifier.testTag("meeting-room-week-strip"),
+    )
 }
 
 @Composable
