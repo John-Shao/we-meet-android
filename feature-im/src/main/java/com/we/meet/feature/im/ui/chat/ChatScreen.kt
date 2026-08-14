@@ -117,6 +117,9 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 
 /** Full-screen chat thread (no bottom tab bar) — app-level route `im_chat/{cid}`. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -155,6 +158,7 @@ fun ChatScreen(
     val directoryVersion by vm.directoryVersion.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
+    val chatFocusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
     val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
     var lightboxKey by remember { mutableStateOf<String?>(null) }
@@ -407,7 +411,20 @@ fun ChatScreen(
                 )
             }
 
-            Box(modifier = Modifier.weight(1f)) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .pointerInput(cid) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                if (event.type == PointerEventType.Press) {
+                                    chatFocusManager.clearFocus()
+                                }
+                            }
+                        }
+                    },
+            ) {
                 if (ui.messages.isEmpty() && ui.pending.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
@@ -564,6 +581,7 @@ fun ChatScreen(
                 )
             } else
             MessageInputBar(
+                conversationKey = cid,
                 canSend = connection == ConnectionState.CONNECTED,
                 sentTick = ui.sentTick,
                 initialDraft = ui.draftText,
@@ -903,6 +921,7 @@ private enum class InputPanel { None, Emoji, Plus }
  */
 @Composable
 private fun MessageInputBar(
+    conversationKey: String,
     canSend: Boolean,
     sentTick: Int,
     initialDraft: String,
@@ -968,6 +987,7 @@ private fun MessageInputBar(
     }
 
     var commandIndex by remember { mutableStateOf(0) }
+    var commandMenuDismissed by remember(conversationKey) { mutableStateOf(true) }
     val commandRegistry = listOf(
         ImInputCommand(
             "schedule",
@@ -1014,8 +1034,12 @@ private fun MessageInputBar(
             Icons.Filled.VideoCall,
         ),
     )
-    val commands = remember(text, commandRegistry) { matchInputCommands(text, commandRegistry) }
+    val matchedCommands = remember(text, commandRegistry) {
+        matchInputCommands(text, commandRegistry)
+    }
+    val commands = if (commandMenuDismissed) emptyList() else matchedCommands
     fun executeCommand(command: ImInputCommand) {
+        commandMenuDismissed = true
         field = TextFieldValue("")
         onDraftChange("")
         when (command.id) {
@@ -1024,6 +1048,9 @@ private fun MessageInputBar(
             "voice-call", "voice-meeting" -> onVoice()
             "video-call", "video-meeting" -> onMeeting()
         }
+    }
+    androidx.activity.compose.BackHandler(enabled = commands.isNotEmpty()) {
+        commandMenuDismissed = true
     }
 
     Column {
@@ -1105,6 +1132,7 @@ private fun MessageInputBar(
                                     else TextFieldValue(value.text.take(4000), TextRange(4000))
                                     onDraftChange(field.text)
                                     commandIndex = 0
+                                    commandMenuDismissed = false
                                 },
                                 enabled = canSend,
                                 maxLines = if (expanded) 5 else 1,
@@ -1121,12 +1149,13 @@ private fun MessageInputBar(
                                             Key.DirectionDown -> { commandIndex = (commandIndex + 1) % commands.size; true }
                                             Key.DirectionUp -> { commandIndex = (commandIndex - 1 + commands.size) % commands.size; true }
                                             Key.Enter -> { executeCommand(commands[commandIndex.coerceAtMost(commands.lastIndex)]); true }
-                                            Key.Escape -> { field = TextFieldValue(field.text.removePrefix("/")); onDraftChange(field.text); true }
+                                            Key.Escape -> { commandMenuDismissed = true; true }
                                             else -> false
                                         }
                                     }
                                     .onFocusChanged {
                                         inputFocused = it.isFocused
+                                        commandMenuDismissed = !it.isFocused
                                         // 点击输入框拉起键盘时,自动收起已展开的表情/「+」
                                         // 面板(二者互斥);inputFocused=true 使工具栏不隐藏。
                                         if (it.isFocused) panel = InputPanel.None
