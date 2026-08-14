@@ -75,7 +75,9 @@ fun DayTimelineView(
     val dateSwipeThresholdPx = with(density) { Dimens.MinTouchTarget.toPx() }
     val onDateSwipeNow = rememberUpdatedState(onDateSwipe)
     // 首帧滚到 08:00(今天则当前时刻上方一点)。
-    LaunchedEffect(date, visibleStartMin, visibleEndMin) {
+    // Only choose an initial vertical position when the view enters composition or
+    // its visible range changes. Paging dates must preserve the user's scroll position.
+    LaunchedEffect(visibleStartMin, visibleEndMin) {
         val anchorMinute = if (isToday) {
             (LocalTime.now(zoneId).hour * 60 + LocalTime.now(zoneId).minute - 60)
         } else 8 * 60

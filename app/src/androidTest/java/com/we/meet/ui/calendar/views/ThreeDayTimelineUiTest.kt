@@ -6,14 +6,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.we.meet.ui.theme.WeMeetTheme
@@ -96,5 +99,96 @@ class ThreeDayTimelineUiTest {
 
         composeRule.onNodeWithTag(THREE_DAY_VIEW_TEST_TAG).performTouchInput { swipeRight() }
         composeRule.runOnIdle { assertEquals(anchor, changedDate) }
+    }
+
+    @Test
+    fun threeDayPagingKeepsVerticalScrollPosition() {
+        val anchor = LocalDate.of(2026, 8, 14)
+        var currentAnchor by mutableStateOf(anchor)
+        composeRule.setContent {
+            WeMeetTheme {
+                Box(Modifier.size(width = 360.dp, height = 640.dp)) {
+                    ThreeDayTimelineView(
+                        anchorDate = currentAnchor,
+                        eventsByDay = emptyMap(),
+                        onEventClick = {},
+                        onDayClick = {},
+                        onSlotTap = { _, _ -> },
+                        onDateSwipe = { currentAnchor = it },
+                    )
+                }
+            }
+        }
+
+        scrollTimelineTowardEnd()
+        val beforePaging = verticalScrollPosition()
+
+        composeRule.onNodeWithTag(THREE_DAY_VIEW_TEST_TAG)
+            .performTouchInput { swipeRight() }
+
+        composeRule.runOnIdle { assertEquals(anchor.minusDays(3), currentAnchor) }
+        assertEquals(beforePaging, verticalScrollPosition(), 1f)
+
+        composeRule.onNodeWithTag(THREE_DAY_VIEW_TEST_TAG)
+            .performTouchInput { swipeLeft() }
+
+        composeRule.runOnIdle { assertEquals(anchor, currentAnchor) }
+        assertEquals(beforePaging, verticalScrollPosition(), 1f)
+    }
+
+    @Test
+    fun dayPagingKeepsVerticalScrollPosition() {
+        val date = LocalDate.of(2026, 8, 14)
+        var currentDate by mutableStateOf(date)
+        composeRule.setContent {
+            WeMeetTheme {
+                Box(Modifier.size(width = 360.dp, height = 640.dp)) {
+                    DayTimelineView(
+                        date = currentDate,
+                        events = emptyList(),
+                        onEventClick = {},
+                        onSlotTap = {},
+                        onDateSwipe = { currentDate = it },
+                        modifier = Modifier.testTag(DAY_VIEW_TEST_TAG),
+                    )
+                }
+            }
+        }
+
+        scrollTimelineTowardEnd()
+        val beforePaging = verticalScrollPosition()
+
+        composeRule.onNodeWithTag(DAY_VIEW_TEST_TAG)
+            .performTouchInput { swipeLeft() }
+
+        composeRule.runOnIdle { assertEquals(date.plusDays(1), currentDate) }
+        assertEquals(beforePaging, verticalScrollPosition(), 1f)
+
+        composeRule.onNodeWithTag(DAY_VIEW_TEST_TAG)
+            .performTouchInput { swipeRight() }
+
+        composeRule.runOnIdle { assertEquals(date, currentDate) }
+        assertEquals(beforePaging, verticalScrollPosition(), 1f)
+    }
+
+    private fun scrollTimelineTowardEnd() {
+        repeat(4) {
+            composeRule.onAllNodes(
+                SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange),
+                useUnmergedTree = true,
+            ).onFirst().performTouchInput { swipeUp() }
+        }
+        composeRule.waitForIdle()
+    }
+
+    private fun verticalScrollPosition(): Float = composeRule.onAllNodes(
+        SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange),
+        useUnmergedTree = true,
+    ).onFirst().fetchSemanticsNode()
+        .config[SemanticsProperties.VerticalScrollAxisRange]
+        .value()
+
+    private companion object {
+        const val DAY_VIEW_TEST_TAG = "calendar-day-view-test"
     }
 }

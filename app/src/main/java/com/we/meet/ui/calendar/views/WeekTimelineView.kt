@@ -149,7 +149,9 @@ fun ThreeDayTimelineView(
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
     val dateSwipeThresholdPx = with(density) { Dimens.MinTouchTarget.toPx() }
-    LaunchedEffect(renderedAnchor, visibleStartMin, visibleEndMin) {
+    // The three-day pager shares one vertical timeline. Changing the horizontal
+    // date window must not jump that timeline back to 08:00.
+    LaunchedEffect(visibleStartMin, visibleEndMin) {
         val offset = (8 * 60).coerceIn(visibleStartMin, visibleEndMin) - visibleStartMin
         scrollState.scrollTo(with(density) { (hourHeight * (offset / 60f)).toPx() }.toInt())
     }
