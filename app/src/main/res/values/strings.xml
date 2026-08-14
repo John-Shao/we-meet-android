@@ -268,6 +268,7 @@
     <!-- Calendar (日历) -->
     <string name="calendar_title">Calendar</string>
     <string name="calendar_today">Today</string>
+    <string name="calendar_has_events">Has events</string>
     <string name="calendar_no_events">No events on this day</string>
     <string name="calendar_all_day">All day</string>
     <string name="calendar_load_error">Failed to load events</string>

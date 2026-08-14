@@ -2,11 +2,16 @@ package com.we.meet.ui.calendar
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -250,23 +255,33 @@ private fun WorkingTimeDropdownRow(
         Text(formatMinuteOfDay(currentMin), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
     if (expanded) {
+        val selectedIndex = options.indexOf(currentMin).coerceAtLeast(0)
+        val listState = rememberLazyListState(
+            initialFirstVisibleItemIndex = (selectedIndex - 2).coerceAtLeast(0),
+        )
         ModalBottomSheet(onDismissRequest = { expanded = false }) {
             Text(
                 label,
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             )
-            options.forEach { minute ->
-                ListItem(
-                    headlineContent = { Text(formatMinuteOfDay(minute), softWrap = false) },
-                    trailingContent = {
-                        if (minute == currentMin) Text("✓", color = MaterialTheme.colorScheme.primary)
-                    },
-                    modifier = Modifier.clickable(enabled = enabled(minute)) {
-                        onSelect(minute)
-                        expanded = false
-                    },
-                )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxWidth().heightIn(max = Dimens.SheetContentMaxHeight),
+                contentPadding = PaddingValues(bottom = Dimens.SpaceXl),
+            ) {
+                items(options) { minute ->
+                    ListItem(
+                        headlineContent = { Text(formatMinuteOfDay(minute), softWrap = false) },
+                        trailingContent = {
+                            if (minute == currentMin) Text("✓", color = MaterialTheme.colorScheme.primary)
+                        },
+                        modifier = Modifier.clickable(enabled = enabled(minute)) {
+                            onSelect(minute)
+                            expanded = false
+                        },
+                    )
+                }
             }
         }
     }
@@ -303,23 +318,33 @@ private fun SettingDropdownRow(
         Text(current, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
     if (expanded) {
+        val selectedIndex = options.indexOfFirst { it.first == current }.coerceAtLeast(0)
+        val listState = rememberLazyListState(
+            initialFirstVisibleItemIndex = (selectedIndex - 2).coerceAtLeast(0),
+        )
         ModalBottomSheet(onDismissRequest = { expanded = false }) {
             Text(
                 label,
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             )
-            options.forEach { (text, select) ->
-                ListItem(
-                    headlineContent = { Text(text, softWrap = false) },
-                    trailingContent = {
-                        if (text == current) Text("✓", color = MaterialTheme.colorScheme.primary)
-                    },
-                    modifier = Modifier.clickable {
-                        select()
-                        expanded = false
-                    },
-                )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxWidth().heightIn(max = Dimens.SheetContentMaxHeight),
+                contentPadding = PaddingValues(bottom = Dimens.SpaceXl),
+            ) {
+                items(options) { (text, select) ->
+                    ListItem(
+                        headlineContent = { Text(text, softWrap = false) },
+                        trailingContent = {
+                            if (text == current) Text("✓", color = MaterialTheme.colorScheme.primary)
+                        },
+                        modifier = Modifier.clickable {
+                            select()
+                            expanded = false
+                        },
+                    )
+                }
             }
         }
     }

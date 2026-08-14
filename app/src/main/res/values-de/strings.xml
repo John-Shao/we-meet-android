@@ -245,6 +245,7 @@
     <!-- Calendar -->
     <string name="calendar_title">Kalender</string>
     <string name="calendar_today">Heute</string>
+    <string name="calendar_has_events">Termine vorhanden</string>
     <string name="calendar_no_events">Keine Termine an diesem Tag</string>
     <string name="calendar_all_day">Ganztägig</string>
     <string name="calendar_load_error">Termine konnten nicht geladen werden</string>

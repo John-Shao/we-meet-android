@@ -15,15 +15,12 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
@@ -49,7 +46,6 @@ private data class RoomTimelineRequest(
     val refreshToken: Int = 0,
 )
 
-@OptIn(FlowPreview::class)
 class MeetingRoomsCalendarViewModel(
     app: Application,
     private val savedStateHandle: SavedStateHandle,
@@ -58,9 +54,10 @@ class MeetingRoomsCalendarViewModel(
     private val apiClient = (app as WeMeetApp).apiClient
     private val api = apiClient.meetingRoomApi
     private val calendarApi = apiClient.calendarApi
+    private val settingsStore = (app as WeMeetApp).settingsStore
     private val initialDate = savedStateHandle.get<Long>(KEY_DATE)
         ?.let(LocalDate::ofEpochDay)
-        ?: LocalDate.now()
+        ?: LocalDate.now(settingsStore.calendarZoneId())
     private val initialFacilities = savedStateHandle.get<String>(KEY_FACILITIES)
         .orEmpty()
         .split(',')
@@ -95,16 +92,22 @@ class MeetingRoomsCalendarViewModel(
             _ui.update { it.copy(nodes = nodes, facilities = facilities) }
         }
         viewModelScope.launch {
-            requests
-                .debounce(300)
-                .distinctUntilChanged()
-                .collectLatest(::loadTimeline)
+            requests.collectLatest(::loadTimeline)
         }
     }
 
     fun setDate(date: LocalDate) {
+        if (_ui.value.selectedDate == date) return
         savedStateHandle[KEY_DATE] = date.toEpochDay()
-        _ui.update { it.copy(selectedDate = date) }
+        _ui.update {
+            it.copy(
+                selectedDate = date,
+                rooms = emptyList(),
+                loading = true,
+                error = false,
+                tooManyRooms = false,
+            )
+        }
         requests.update { it.copy(date = date) }
     }
 
@@ -169,7 +172,7 @@ class MeetingRoomsCalendarViewModel(
         val eventId = booking.eventId ?: return
         if (!booking.canMove) return
 
-        val zone = ZoneId.systemDefault()
+        val zone = settingsStore.calendarZoneId()
         val newStart = date.atStartOfDay(zone).plusMinutes(startMin.toLong()).toInstant()
         val newEnd = date.atStartOfDay(zone).plusMinutes(endMin.toLong()).toInstant()
         val startAt = DateTimeFormatter.ISO_INSTANT.format(newStart)
@@ -217,7 +220,7 @@ class MeetingRoomsCalendarViewModel(
 
     private suspend fun loadTimeline(request: RoomTimelineRequest) {
         _ui.update { it.copy(loading = true, error = false, tooManyRooms = false) }
-        val zone = ZoneId.systemDefault()
+        val zone = settingsStore.calendarZoneId()
         val (start, end) = localDayUtcBounds(request.date, zone)
         try {
             val timeline = api.timeline(
@@ -227,6 +230,7 @@ class MeetingRoomsCalendarViewModel(
                 capacityMin = request.capacityMin,
                 facilities = request.facilityIds.takeIf { it.isNotEmpty() }?.joinToString(","),
             )
+            if (requests.value != request) return
             _ui.update {
                 it.copy(
                     rooms = timeline.results,
@@ -238,6 +242,7 @@ class MeetingRoomsCalendarViewModel(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Throwable) {
+            if (requests.value != request) return
             val tooMany = error is HttpException && error.code() == 400 &&
                 error.response()?.errorBody()?.string().orEmpty().contains(
                     "too many rooms",

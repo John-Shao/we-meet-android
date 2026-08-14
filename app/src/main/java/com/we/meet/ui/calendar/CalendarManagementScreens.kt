@@ -72,6 +72,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -99,6 +103,7 @@ import com.we.meet.ui.theme.Dimens
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,7 +121,10 @@ fun CalendarManagementScreen(
     val ui by vm.ui.collectAsStateWithLifecycle()
     val displayMode by app.settingsStore.calendarDisplayMode.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     val errorText = stringResource(R.string.calendar_operation_failed)
+    val exportSubmittedText = stringResource(R.string.calendar_export_submitted)
+    val exportFailedText = stringResource(R.string.calendar_export_submit_failed)
     var showAdd by rememberSaveable { mutableStateOf(false) }
     var actionTarget by remember { mutableStateOf<UnifiedCalendarDto?>(null) }
     var colorTarget by remember { mutableStateOf<UnifiedCalendarDto?>(null) }
@@ -252,12 +260,22 @@ fun CalendarManagementScreen(
         )
     }
     exportTarget?.let { calendar ->
-        CalendarExportDialog(calendar = calendar, onDismiss = { exportTarget = null })
+        CalendarExportDialog(
+            calendar = calendar,
+            onDismiss = { exportTarget = null },
+            onSubmitted = {
+                exportTarget = null
+                scope.launch { snackbar.showSnackbar(exportSubmittedText) }
+            },
+            onFailed = {
+                scope.launch { snackbar.showSnackbar(exportFailedText) }
+            },
+        )
     }
 }
 
 @Composable
-private fun CalendarModeStrip(
+internal fun CalendarModeStrip(
     current: CalendarDisplayMode,
     onSelect: (CalendarDisplayMode) -> Unit,
 ) {
@@ -279,7 +297,12 @@ private fun CalendarModeStrip(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(Dimens.CornerS))
+                    .testTag("calendar-mode-${mode.name}")
                     .clickable { onSelect(mode) }
+                    .semantics {
+                        role = Role.Tab
+                        this.selected = selected
+                    }
                     .padding(vertical = Dimens.SpaceS),
             ) {
                 Icon(
@@ -875,7 +898,12 @@ private fun ChoiceSheet(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CalendarExportDialog(calendar: UnifiedCalendarDto, onDismiss: () -> Unit) {
+private fun CalendarExportDialog(
+    calendar: UnifiedCalendarDto,
+    onDismiss: () -> Unit,
+    onSubmitted: () -> Unit,
+    onFailed: () -> Unit,
+) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val scope = rememberCoroutineScope()
     var range by rememberSaveable { mutableStateOf("week") }
@@ -916,7 +944,7 @@ private fun CalendarExportDialog(calendar: UnifiedCalendarDto, onDismiss: () -> 
                 onClick = {
                     submitting = true
                     scope.launch {
-                        runCatching {
+                        try {
                             app.apiClient.calendarApi.createCalendarExport(
                                 calendar.id,
                                 CalendarExportRequest(
@@ -926,9 +954,14 @@ private fun CalendarExportDialog(calendar: UnifiedCalendarDto, onDismiss: () -> 
                                     timezone = app.settingsStore.calendarZoneId().id,
                                 ),
                             )
+                            submitting = false
+                            onSubmitted()
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (failure: Throwable) {
+                            submitting = false
+                            onFailed()
                         }
-                        submitting = false
-                        onDismiss()
                     }
                 },
             ) { Text(stringResource(if (submitting) R.string.calendar_busy_saving else R.string.calendar_confirm)) }

@@ -245,6 +245,7 @@
     <!-- Calendar -->
     <string name="calendar_title">Agenda</string>
     <string name="calendar_today">Vandaag</string>
+    <string name="calendar_has_events">Heeft afspraken</string>
     <string name="calendar_no_events">Geen afspraken op deze dag</string>
     <string name="calendar_all_day">Hele dag</string>
     <string name="calendar_load_error">Afspraken laden mislukt</string>

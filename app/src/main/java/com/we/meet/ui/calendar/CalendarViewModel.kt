@@ -15,6 +15,8 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -75,6 +77,8 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
     /** 拖动改期失败 —— 屏幕订阅后按原因弹对应 Snackbar。 */
     private val _moveFailed = MutableSharedFlow<MoveFailure>(extraBufferCapacity = 1)
     val moveFailed: SharedFlow<MoveFailure> = _moveFailed.asSharedFlow()
+    private var refreshJob: Job? = null
+    private var refreshGeneration = 0L
 
     init {
         settingsStore.synchronizeCalendarPreferences()
@@ -149,40 +153,45 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun refresh() {
-        viewModelScope.launch {
+        val generation = ++refreshGeneration
+        refreshJob?.cancel()
+        refreshJob = viewModelScope.launch {
             _ui.update { it.copy(loading = it.eventsByDay.isEmpty(), error = false) }
-            runCatching {
-                val calendarResult = runCatching { calendarApi.listCalendars() }
+            try {
+                val calendarResult = try {
+                    Result.success(calendarApi.listCalendars())
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Throwable) {
+                    Result.failure(failure)
+                }
                 val calendars = calendarResult.getOrDefault(emptyList())
-                Triple(
+                val events = fetchWindow(
+                    _ui.value,
                     calendars,
-                    fetchWindow(
-                        _ui.value,
-                        calendars,
-                        applyCalendarFilter = calendarResult.isSuccess,
-                    ),
-                    calendarResult.isSuccess,
+                    applyCalendarFilter = calendarResult.isSuccess,
                 )
+                val zone = settingsStore.calendarZoneId()
+                val colors = calendars.associate { it.id to it.color }
+                val parsed = events.mapNotNull { event ->
+                    (if (event.detailsRedacted) event.copy(title = busyTitle) else event)
+                        .toParsed(zone, event.displayCalendarId?.let(colors::get))
+                }
+                if (generation != refreshGeneration) return@launch
+                _ui.update {
+                    it.copy(
+                        eventsByDay = bucketByDay(parsed),
+                        calendars = calendars,
+                        loading = false,
+                    )
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Throwable) {
+                if (generation != refreshGeneration) return@launch
+                Log.w(TAG, "calendar load failed", failure)
+                _ui.update { it.copy(loading = false, error = true) }
             }
-                .onSuccess { (calendars, events, _) ->
-                    val zone = settingsStore.calendarZoneId()
-                    val colors = calendars.associate { it.id to it.color }
-                    val parsed = events.mapNotNull { event ->
-                        (if (event.detailsRedacted) event.copy(title = busyTitle) else event)
-                            .toParsed(zone, event.displayCalendarId?.let(colors::get))
-                    }
-                    _ui.update {
-                        it.copy(
-                            eventsByDay = bucketByDay(parsed),
-                            calendars = calendars,
-                            loading = false,
-                        )
-                    }
-                }
-                .onFailure { e ->
-                    Log.w(TAG, "calendar load failed", e)
-                    _ui.update { it.copy(loading = false, error = true) }
-                }
         }
     }
 

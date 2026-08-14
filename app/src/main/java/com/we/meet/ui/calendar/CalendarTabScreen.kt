@@ -64,6 +64,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -91,6 +96,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.abs
@@ -703,6 +709,11 @@ private fun MonthGrid(
     val firstOfMonth = month.atDay(1)
     val leadingBlanks = (firstOfMonth.dayOfWeek.value - firstDow.value + 7) % 7
     val gridStart = firstOfMonth.minusDays(leadingBlanks.toLong())
+    val dateFormatter = remember {
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(Locale.getDefault())
+    }
+    val todayDescription = stringResource(R.string.calendar_today)
+    val eventsDescription = stringResource(R.string.calendar_has_events)
 
     Column(modifier = modifier) {
         Row(
@@ -733,6 +744,11 @@ private fun MonthGrid(
                     val isSelected = date == selected
                     val isToday = date == today
                     val hasEvents = eventsByDay[date]?.isNotEmpty() == true
+                    val dateDescription = buildList {
+                        add(dateFormatter.format(date))
+                        if (isToday) add(todayDescription)
+                        if (hasEvents) add(eventsDescription)
+                    }.joinToString(", ")
 
                     Box(
                         contentAlignment = Alignment.Center,
@@ -740,7 +756,13 @@ private fun MonthGrid(
                             .weight(1f)
                             .aspectRatio(1.1f)
                             .padding(Dimens.SpaceXxs)
-                            .clickable { onSelect(date) },
+                            .testTag(calendarMonthDateCellTestTag(date))
+                            .clickable { onSelect(date) }
+                            .semantics {
+                                role = Role.Button
+                                contentDescription = dateDescription
+                                this.selected = isSelected
+                            },
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -799,6 +821,9 @@ private fun MonthGrid(
         }
     }
 }
+
+internal fun calendarMonthDateCellTestTag(date: LocalDate): String =
+    "calendar-month-date-$date"
 
 @Composable
 internal fun AgendaCard(

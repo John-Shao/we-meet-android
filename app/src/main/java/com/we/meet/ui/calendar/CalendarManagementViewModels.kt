@@ -13,6 +13,7 @@ import com.we.meet.data.api.dto.CalendarSubscriptionRequest
 import com.we.meet.data.api.dto.CreateCalendarRequest
 import com.we.meet.data.api.dto.UnifiedCalendarDto
 import com.we.meet.data.api.dto.UpdateCalendarRequest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -283,14 +284,17 @@ class CalendarDiscoverViewModel(app: Application) : AndroidViewModel(app) {
             if (!immediate) delay(CALENDAR_DISCOVER_DEBOUNCE_MS)
             val snapshot = _ui.value
             _ui.update { it.copy(loading = true, error = false) }
-            runCatching {
-                api.discoverCalendars(snapshot.tab.apiValue, snapshot.query.trim())
-            }.onSuccess { rows ->
+            try {
+                val rows = api.discoverCalendars(snapshot.tab.apiValue, snapshot.query.trim())
                 if (_ui.value.tab == snapshot.tab && _ui.value.query == snapshot.query) {
                     _ui.update { it.copy(rows = rows, loading = false) }
                 }
-            }.onFailure { failure ->
-                _ui.update { it.copy(loading = false, error = true) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Throwable) {
+                if (_ui.value.tab == snapshot.tab && _ui.value.query == snapshot.query) {
+                    _ui.update { it.copy(loading = false, error = true) }
+                }
             }
         }
     }

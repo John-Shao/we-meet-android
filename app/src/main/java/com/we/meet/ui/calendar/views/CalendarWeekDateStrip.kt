@@ -38,11 +38,14 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -254,10 +257,17 @@ internal fun CalendarDateCell(
     modifier: Modifier = Modifier,
     indicatorColor: Color? = null,
 ) {
-    val dateDescription = DateTimeFormatter
+    val localizedDate = DateTimeFormatter
         .ofLocalizedDate(FormatStyle.FULL)
         .withLocale(Locale.getDefault())
         .format(date)
+    val todayDescription = stringResource(R.string.calendar_today)
+    val eventsDescription = stringResource(R.string.calendar_has_events)
+    val dateDescription = buildList {
+        add(localizedDate)
+        if (isToday) add(todayDescription)
+        if (indicatorColor != null) add(eventsDescription)
+    }.joinToString(", ")
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(Dimens.CornerS))
@@ -265,6 +275,7 @@ internal fun CalendarDateCell(
             .semantics {
                 role = Role.Button
                 contentDescription = dateDescription
+                this.selected = selected
             }
             .padding(vertical = Dimens.SpaceXs),
         horizontalAlignment = Alignment.CenterHorizontally,

@@ -127,12 +127,24 @@ fun MeetingRoomsCalendarScreen(
     val defaultDurationMin by app.settingsStore.calendarDefaultDurationMin
         .collectAsStateWithLifecycle()
     val calendarWeekStart by app.settingsStore.calendarWeekStart.collectAsStateWithLifecycle()
+    val calendarTimezoneMode by app.settingsStore.calendarTimezoneMode.collectAsStateWithLifecycle()
+    val calendarFixedTimezone by app.settingsStore.calendarFixedTimezone.collectAsStateWithLifecycle()
     val rangeStart = if (rangeMode == TimeRangeMode.WORK) workingHours.startMin else 0
     val rangeEnd = if (rangeMode == TimeRangeMode.WORK) workingHours.endMin else 24 * 60
-    val zone = ZoneId.systemDefault()
+    val zone = remember(calendarTimezoneMode, calendarFixedTimezone) {
+        app.settingsStore.calendarZoneId()
+    }
+    val today = LocalDate.now(zone)
+    var observedZone by remember { mutableStateOf(zone) }
 
     LaunchedEffect(selectedDate) {
         if (ui.selectedDate != selectedDate) vm.setDate(selectedDate)
+    }
+    LaunchedEffect(zone) {
+        if (zone != observedZone) {
+            observedZone = zone
+            vm.refresh()
+        }
     }
     val selectDate: (LocalDate) -> Unit = { date ->
         vm.setDate(date)
@@ -230,8 +242,8 @@ fun MeetingRoomsCalendarScreen(
     } else {
         0
     }
-    val nowMinute = if (ui.selectedDate == LocalDate.now()) {
-        LocalTime.now().let { it.hour * 60 + it.minute }
+    val nowMinute = if (ui.selectedDate == today) {
+        LocalTime.now(zone).let { it.hour * 60 + it.minute }
             .takeIf { it in rangeStart until rangeEnd }
     } else {
         null
@@ -248,6 +260,7 @@ fun MeetingRoomsCalendarScreen(
                 workingEnd = workingHours.endMin,
                 nowMinute = nowMinute,
                 outsideCount = outsideCount,
+                today = today,
                 firstDayOfWeek = if (calendarWeekStart == CalendarWeekStart.SUNDAY) {
                     DayOfWeek.SUNDAY
                 } else {
@@ -273,6 +286,7 @@ fun MeetingRoomsCalendarScreen(
                 workingStart = workingHours.startMin,
                 workingEnd = workingHours.endMin,
                 nowMinute = nowMinute,
+                zone = zone,
                 draft = draft,
                 draftConflict = draftConflict,
                 conflictMessage = conflictMessage,
@@ -416,6 +430,7 @@ private fun MeetingRoomOverview(
     workingEnd: Int,
     nowMinute: Int?,
     outsideCount: Int,
+    today: LocalDate,
     firstDayOfWeek: DayOfWeek,
     onShowCalendar: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -429,7 +444,7 @@ private fun MeetingRoomOverview(
         RoomDateToolbar(
             date = ui.selectedDate,
             onSelectDate = onSelectDate,
-            onToday = { onSelectDate(LocalDate.now()) },
+            onToday = { onSelectDate(today) },
         )
         CalendarPrimaryToolbar(
             current = CalendarPrimaryPage.MEETING_ROOMS,
@@ -442,6 +457,7 @@ private fun MeetingRoomOverview(
             selectedDate = ui.selectedDate,
             firstDayOfWeek = firstDayOfWeek,
             onSelectDate = onSelectDate,
+            today = today,
         )
         MeetingRoomFilterBar(
             ui = ui,
@@ -506,6 +522,7 @@ private fun MeetingRoomSchedule(
     workingStart: Int,
     workingEnd: Int,
     nowMinute: Int?,
+    zone: ZoneId,
     draft: DraftSelection?,
     draftConflict: Boolean,
     conflictMessage: String,
@@ -528,6 +545,7 @@ private fun MeetingRoomSchedule(
     Column(modifier = Modifier.fillMaxSize()) {
         RoomScheduleToolbar(
             date = date,
+            zone = zone,
             onBack = onBack,
             onSelectDate = onSelectDate,
         )
@@ -582,11 +600,12 @@ private fun MeetingRoomSchedule(
 @Composable
 private fun RoomScheduleToolbar(
     date: LocalDate,
+    zone: ZoneId,
     onBack: () -> Unit,
     onSelectDate: (LocalDate) -> Unit,
 ) {
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
-    val today = LocalDate.now()
+    val today = LocalDate.now(zone)
     val dateFormatter = remember {
         DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
             .withLocale(Locale.getDefault())

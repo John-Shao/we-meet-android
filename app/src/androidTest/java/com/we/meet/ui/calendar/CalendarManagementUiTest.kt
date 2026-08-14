@@ -1,7 +1,13 @@
 package com.we.meet.ui.calendar
 
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -9,6 +15,10 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.we.meet.R
+import com.we.meet.data.settings.CalendarDisplayMode
+import com.we.meet.ui.calendar.views.CalendarDateCell
 import com.we.meet.ui.calendar.views.CalendarViewMode
 import com.we.meet.ui.calendar.views.calendarWeekPageTestTag
 import com.we.meet.ui.meetingroom.MeetingRoomWeekStrip
@@ -16,6 +26,9 @@ import com.we.meet.ui.theme.WeMeetTheme
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -95,13 +108,61 @@ class CalendarManagementUiTest {
             }
         }
 
-        composeRule.onNodeWithTag("calendar-manage-icon-agenda").assertIsDisplayed()
+        composeRule.onNodeWithTag("calendar-manage-icon-agenda", useUnmergedTree = true).assertExists()
         composeRule.runOnIdle { mode.value = CalendarViewMode.DAY }
-        composeRule.onNodeWithTag("calendar-manage-icon-day").assertIsDisplayed()
+        composeRule.onNodeWithTag("calendar-manage-icon-day", useUnmergedTree = true).assertExists()
         composeRule.runOnIdle { mode.value = CalendarViewMode.WEEK }
-        composeRule.onNodeWithTag("calendar-manage-icon-week").assertIsDisplayed()
+        composeRule.onNodeWithTag("calendar-manage-icon-week", useUnmergedTree = true).assertExists()
         composeRule.runOnIdle { mode.value = CalendarViewMode.MONTH }
-        composeRule.onNodeWithTag("calendar-manage-icon-month").assertIsDisplayed()
+        composeRule.onNodeWithTag("calendar-manage-icon-month", useUnmergedTree = true).assertExists()
+    }
+
+    @Test
+    fun managementViewModesExposeSelectedTabSemantics() {
+        val mode = mutableStateOf(CalendarDisplayMode.DAY)
+        composeRule.setContent {
+            WeMeetTheme {
+                CalendarModeStrip(
+                    current = mode.value,
+                    onSelect = { mode.value = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("calendar-mode-DAY").assertIsSelected()
+        composeRule.onNodeWithTag("calendar-mode-MONTH").assertIsNotSelected().performClick()
+        composeRule.onNodeWithTag("calendar-mode-MONTH").assertIsSelected()
+    }
+
+    @Test
+    fun dateCellAnnouncesFullDateTodayAndEvents() {
+        val date = LocalDate.of(2026, 8, 14)
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val localizedDate = DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)
+            .withLocale(Locale.getDefault())
+            .format(date)
+        val expectedDescription = listOf(
+            localizedDate,
+            context.getString(R.string.calendar_today),
+            context.getString(R.string.calendar_has_events),
+        ).joinToString(", ")
+
+        composeRule.setContent {
+            WeMeetTheme {
+                CalendarDateCell(
+                    date = date,
+                    selected = true,
+                    isToday = true,
+                    indicatorColor = Color.Blue,
+                    onClick = {},
+                    modifier = Modifier.testTag("accessible-calendar-date"),
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("accessible-calendar-date")
+            .assertIsSelected()
+            .assertContentDescriptionEquals(expectedDescription)
     }
 
     @Test
@@ -129,6 +190,7 @@ class CalendarManagementUiTest {
 
         composeRule.onNodeWithTag(monthPageTestTag(YearMonth.of(2026, 8)))
             .assertIsDisplayed()
+        composeRule.onNodeWithTag(calendarMonthDateCellTestTag(date)).assertIsSelected()
         composeRule.onNodeWithTag("calendar-month-content").performTouchInput { swipeLeft() }
         composeRule.runOnIdle { assertEquals(1L, monthDelta) }
         composeRule.onNodeWithTag(monthPageTestTag(YearMonth.of(2026, 9)))
