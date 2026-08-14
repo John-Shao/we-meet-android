@@ -108,11 +108,13 @@ internal fun MeetingRoomWeekStrip(
     selectedDate: LocalDate,
     firstDayOfWeek: DayOfWeek,
     onSelectDate: (LocalDate) -> Unit,
+    today: LocalDate = LocalDate.now(),
 ) {
     CalendarWeekDateStrip(
         selectedDate = selectedDate,
         firstDayOfWeek = firstDayOfWeek,
         onSelectDate = onSelectDate,
+        today = today,
         onWeekSwipe = { weekDelta ->
             onSelectDate(selectedDate.plusWeeks(weekDelta))
         },
