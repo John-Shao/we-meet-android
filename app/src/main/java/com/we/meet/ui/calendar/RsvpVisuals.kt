@@ -13,7 +13,7 @@ import com.we.meet.ui.theme.WeMeetTheme
  * - [TENTATIVE] 待定 = 琥珀
  * - [DECLINED] 拒绝 = 灰,额外加标题删除线(退到背景里但仍占位)
  *
- * 日/周视图的竖条、月/日程卡片的左色条共用这一组,四个视图一套语言。
+ * 日/三日视图的竖条、月/日程卡片的左色条共用这一组,四个视图一套语言。
  */
 enum class RsvpVisual { ACCEPTED, NEEDS_ACTION, TENTATIVE, DECLINED }
 

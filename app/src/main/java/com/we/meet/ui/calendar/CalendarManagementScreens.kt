@@ -94,6 +94,7 @@ import com.we.meet.ui.components.WeMeetEmptyState
 import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.calendar.views.THREE_DAY_VIEW_DAYS
 import com.we.meet.ui.theme.Dimens
 import java.time.Instant
 import java.time.LocalDate
@@ -263,7 +264,11 @@ private fun CalendarModeStrip(
     val entries = listOf(
         Triple(CalendarDisplayMode.AGENDA, Icons.AutoMirrored.Filled.EventNote, stringResource(R.string.calendar_view_agenda)),
         Triple(CalendarDisplayMode.DAY, Icons.Filled.ViewDay, stringResource(R.string.calendar_view_day)),
-        Triple(CalendarDisplayMode.MULTI_DAY, Icons.Filled.ViewWeek, stringResource(R.string.calendar_view_multi_days, 3)),
+        Triple(
+            CalendarDisplayMode.MULTI_DAY,
+            Icons.Filled.ViewWeek,
+            stringResource(R.string.calendar_view_multi_days, THREE_DAY_VIEW_DAYS),
+        ),
         Triple(CalendarDisplayMode.MONTH, Icons.Filled.CalendarMonth, stringResource(R.string.calendar_view_month)),
     )
     Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceS)) {

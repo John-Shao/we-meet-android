@@ -43,7 +43,7 @@ private fun minutesInto(dayStart: ZonedDateTime, iso: String): Int? =
 /**
  * 会议室占用时间轴 —— 纵向时间 × 横向会议室(P9 M1.5)。
  *
- * 方向与 Web 相反是**刻意的**:竖屏天然适合纵向时间轴,也与 App 既有的日/周
+ * 方向与 Web 相反是**刻意的**:竖屏天然适合纵向时间轴,也与 App 既有的日/三日
  * 视图一致。为对齐 Web 把它掰成横向反而会和旁边的日历格格不入。
  *
  * 复用 [TimelineScaffold] —— N 列资源轴、列头与网格共享横滚、24h 格线、当前

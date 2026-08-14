@@ -30,13 +30,13 @@ import retrofit2.HttpException
 data class CalendarUiState(
     val monthAnchor: YearMonth = YearMonth.now(),
     val selectedDate: LocalDate = LocalDate.now(),
-    /** P8:日程(默认)/日/周/月 四视图;日程视图窗口 = 锚点起一年(对齐
+    /** P8:日程(默认)/日/三日/月 四视图;日程视图窗口 = 锚点起一年(对齐
      * Web),其余视图恒焦点月 ±1 月。 */
     val viewMode: CalendarViewMode = CalendarViewMode.AGENDA,
     val eventsByDay: Map<LocalDate, List<EventUi>> = emptyMap(),
     val loading: Boolean = false,
     val error: Boolean = false,
-    /** 我的 uuid(拉一次):日/周视图据此判定哪些块可长按拖动改期。 */
+    /** 我的 uuid(拉一次):日/三日视图据此判定哪些块可长按拖动改期。 */
     val selfUserId: String? = null,
     val calendars: List<UnifiedCalendarDto> = emptyList(),
 ) {

@@ -74,13 +74,13 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
- * P8 纵向时间轴的共用积木:日视图(1 列)/周视图(7 列)/忙闲对比页(一人一列)
+ * P8 纵向时间轴的共用积木:日视图(1 列)/三日视图(3 列)/忙闲对比页(一人一列)
  * 共享同一份实现 —— Canvas 画格线 + offset 摆块 + verticalScroll,整格
  * pointerInput 命中(块 → onBlockTap,空白 → onSlotTap)。
  *
  * P8-UX 修正(对齐飞书):传 [minColumnWidth] 时列宽弹性但有下限,列多时
  * **列头 + 网格整体横向滚动**(共享同一 hScroll);列头由 [columnHeader]
- * 渲染在网格上方并与列严格对齐。不传时保持等分布局(日/周视图不变)。
+ * 渲染在网格上方并与列严格对齐。不传时保持等分布局(日/三日视图不变)。
  */
 
 /** 一个已裁剪到当日 [0,1440) 分钟制的渲染块(日程或忙碌区间通用)。 */
@@ -109,7 +109,7 @@ data class TimeBlock(
     /**
      * 斜纹 + 虚线框(飞书同款「还没定下来」的观感)。忙闲页给「对方尚未回复
      * 我这场会」的块用 —— 这类冲突是软的,与已接受的实心块要能一眼分开。
-     * 日/周视图不传:那里未回复走的是四色里的紫,不改既有观感。
+     * 日/三日视图不传:那里未回复走的是四色里的紫,不改既有观感。
      */
     val hatched: Boolean = false,
 )
@@ -150,16 +150,24 @@ private fun Modifier.centerOnAnchorY(): Modifier = layout { measurable, constrai
 data class TimeSelection(val startMin: Int, val endMin: Int)
 
 /**
- * 日/周视图的「预选时段」草稿(对齐飞书):点空白先落一个预选块,拖上下边界
+ * 日/三日视图的「预选时段」草稿(对齐飞书):点空白先落一个预选块,拖上下边界
  * 手柄改起止,**再次点这个块**才进创建日程表单。[colIndex] = 所在列(日视图恒 0)。
  */
 data class DraftSelection(val colIndex: Int, val startMin: Int, val endMin: Int)
 
 /**
- * 屏级的预选时段(带日期):日视图/周视图共用同一份状态,列索引在各视图内部
+ * 屏级的预选时段(带日期):日视图/三日视图共用同一份状态,列索引在各视图内部
  * 换算。起止为当日分钟制 [0,1440]。
  */
 data class DraftSlot(val date: LocalDate, val startMin: Int, val endMin: Int)
+
+internal fun timelineNeedsHorizontalScroll(
+    columnCount: Int,
+    visibleColumnCount: Int?,
+    minColumnWidthExceeded: Boolean,
+): Boolean =
+    (visibleColumnCount != null && visibleColumnCount < columnCount) ||
+        minColumnWidthExceeded
 
 /** 预选块拖拽的吸附粒度(分钟) —— 与飞书一致取 15。 */
 const val DRAFT_SNAP_MIN = 15
@@ -194,7 +202,7 @@ private fun snapMinuteAt(
 
 /**
  * 在 [date] 的 [minuteOfDay] 处落一个 [durationMin] 长的预选块:起点向下吸附到
- * 30 分钟格,越过当日末尾则整体前移(保时长)。日/周视图点空白时共用。
+ * 30 分钟格,越过当日末尾则整体前移(保时长)。日/三日视图点空白时共用。
  */
 fun draftSlotAt(date: LocalDate, minuteOfDay: Int, durationMin: Int): DraftSlot {
     val dur = durationMin.coerceIn(DRAFT_MIN_DURATION, 24 * 60)
@@ -343,13 +351,13 @@ fun TimelineScaffold(
     /** Fixed content above the hour rail, such as the device timezone label. */
     railHeader: (@Composable () -> Unit)? = null,
     columnHeader: (@Composable (colIndex: Int) -> Unit)? = null,
-    /** 窄列(周视图 7 列)块内只显标题,不显时间 —— 时刻由纵向位置 + 左侧刻度
-     *  传达(对齐飞书/Google 周视图);日视图单宽列仍标题 + 时间。 */
+    /** 窄列(三日视图等多列布局)块内只显标题,不显时间 —— 时刻由纵向位置 +
+     *  左侧刻度传达;日视图单宽列仍标题 + 时间。 */
     compactBlocks: Boolean = false,
-    /** 非空时一屏恰好铺 [visibleColumnCount] 列,列更多则(连同列头)整体横滚
-     *  —— 周视图显示周末时 7 天但一屏 5 列,滑动看余下两天。 */
+    /** 非空时一屏恰好铺 [visibleColumnCount] 列。只有实际列数更多时，列头与
+     *  网格才挂载横向滚动节点；列数未超出时保持纯固定宽度布局。 */
     visibleColumnCount: Int? = null,
-    /** 非空时初次布局横滚到让该列可见(周视图默认「今天」可见)。 */
+    /** 非空时初次布局横滚到让该列可见。 */
     revealColumnIndex: Int? = null,
     /** 预选时段草稿(点空白后出现);为空 = 无草稿。见 [DraftSelection]。 */
     draft: DraftSelection? = null,
@@ -362,7 +370,7 @@ fun TimelineScaffold(
     onDraftConfirm: ((DraftSelection) -> Unit)? = null,
     /**
      * 日程块改期落点(松手时回调,仅 [TimeBlock.movable] 的块参与):整块移位
-     * 保时长、拖抓手只改一头,跨列 = 改日期(周视图)。两条路径同一个回调 ——
+     * 保时长、拖抓手只改一头,跨列 = 改日期(多日视图)。两条路径同一个回调 ——
      * 语义都是「这块的新起止」。
      */
     onBlockMove: (
@@ -404,7 +412,7 @@ fun TimelineScaffold(
     val hourLabelTopInset = with(density) {
         WeMeetTextStyles.LabelTiny.lineHeight.toDp() / 2
     }
-    // 列头与网格共享一个横向 ScrollState → 严格同步滚动(飞书样式)。
+    // 内容超出视口时，列头与网格共享一个横向 ScrollState → 严格同步滚动。
     val hScroll = rememberScrollState()
     // 草稿相关的最新值用 rememberUpdatedState 兜住:pointerInput 的 key 不能带
     // draft —— 拖动中每帧都会更新它,重启 key 会把正在进行的手势掐断。
@@ -434,6 +442,11 @@ fun TimelineScaffold(
             else -> equalSplit
         }
         val contentWidth = colWidth * n
+        val horizontallyScrollable = timelineNeedsHorizontalScroll(
+            columnCount = n,
+            visibleColumnCount = visibleColumnCount,
+            minColumnWidthExceeded = minColumnWidth != null && equalSplit < minColumnWidth,
+        )
         val hourHeightPx = with(density) { hourHeight.toPx() }
         val colWidthPx = with(density) { colWidth.toPx() }
         // 网格视口宽(不含左侧刻度列):忙闲页选段的抓手贴它的左右缘定位。
@@ -444,7 +457,7 @@ fun TimelineScaffold(
 
         // 初次布局(及列宽变化时)横滚到让 revealColumnIndex 列落在可见区内:
         // 若它在前 vc 列内则回到最左,否则滚到把它作为最右可见列。
-        if (revealColumnIndex != null) {
+        if (horizontallyScrollable && revealColumnIndex != null) {
             LaunchedEffect(revealColumnIndex, n, colWidthPx, visibleColumnCount) {
                 val vc = visibleColumnCount ?: n
                 val target = (revealColumnIndex - (vc - 1)).coerceAtLeast(0) * colWidthPx
@@ -467,7 +480,10 @@ fun TimelineScaffold(
                         Row(
                             modifier = Modifier
                                 .weight(1f)
-                                .horizontalScroll(hScroll),
+                                .then(
+                                    if (horizontallyScrollable) Modifier.horizontalScroll(hScroll)
+                                    else Modifier,
+                                ),
                         ) {
                             for (i in 0 until n) {
                                 Box(modifier = Modifier.width(colWidth)) { columnHeader(i) }
@@ -510,7 +526,10 @@ fun TimelineScaffold(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .horizontalScroll(hScroll),
+                        .then(
+                            if (horizontallyScrollable) Modifier.horizontalScroll(hScroll)
+                            else Modifier,
+                        ),
                 ) {
                     Box(
                         modifier = Modifier
@@ -721,7 +740,7 @@ fun TimelineScaffold(
                                     if (!takeOver) return@awaitEachGesture
 
                                     // 整块移位:保时长,起点跟手(按 15 分钟吸附),
-                                    // 横向跨列 = 改日期(周视图)。
+                                    // 横向跨列 = 改日期(多日视图)。
                                     val origStart =
                                         if (onDraftBody) d!!.startMin else block!!.startMin
                                     val origEnd =
@@ -1177,7 +1196,7 @@ fun TimelineScaffold(
                                         } else Modifier,
                                     ),
                             )
-                            // 上下抓手(与预选框同款):贴视口右上 / 左下,横滚也在视野内
+                            // 上下抓手(与预选框同款):贴视口右上 / 左下,滚动也在视野内
                             // —— 选段横贯所有列,贴内容边缘的话人多时会滚出屏幕。
                             if (onSelectionAdjust != null) {
                                 val handlePx = with(density) { DRAFT_HANDLE_SIZE.toPx() }

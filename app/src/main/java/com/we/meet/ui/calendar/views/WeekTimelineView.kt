@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTextStyles
@@ -30,9 +31,8 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /**
- * 周视图要显示的列(单一数据源:周视图列 + 头部区间标题共用)。从 anchor 往前
- * 找最近的 [firstDayOfWeek] 作本周首日并铺满 7 天。供日视图顶部日期条使用；
- * 周末始终包含在内。
+ * 日视图顶部日期条使用的完整周。从 anchor 往前找最近的 [firstDayOfWeek]
+ * 作本周首日并铺满 7 天；周末始终包含在内。
  */
 fun weekColumnDays(
     anchorDate: LocalDate,
@@ -45,6 +45,9 @@ fun weekColumnDays(
 }
 
 const val THREE_DAY_VIEW_DAYS = 3
+const val THREE_DAY_VIEW_TEST_TAG = "calendar-three-day-view"
+
+fun threeDayHeaderTestTag(date: LocalDate): String = "calendar-three-day-header-$date"
 
 /** Three consecutive calendar days starting at the selected date. */
 fun threeDayColumnDays(anchorDate: LocalDate): List<LocalDate> =
@@ -68,7 +71,7 @@ fun ThreeDayTimelineView(
     zoneId: ZoneId = ZoneId.systemDefault(),
     /** P8「降低已结束日程的亮度」:非空时,结束早于该时刻的块降透明度。 */
     dimPastNow: java.time.ZonedDateTime? = null,
-    /** 当前预选时段(只在它所属日期落在本周列里时才画)。 */
+    /** 当前预选时段(只在它所属日期落在当前三列里时才画)。 */
     draft: DraftSlot? = null,
     draftLabel: String? = null,
     onDraftAdjust: ((DraftSlot) -> Unit)? = null,
@@ -102,7 +105,7 @@ fun ThreeDayTimelineView(
         scrollState.scrollTo(with(density) { (hourHeight * (offset / 60f)).toPx() }.toInt())
     }
     TimelineScaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().testTag(THREE_DAY_VIEW_TEST_TAG),
         columns = columns,
         hourHeight = hourHeight,
         scrollState = scrollState,
@@ -167,6 +170,7 @@ private fun WeekDayHeader(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxWidth()
+            .testTag(threeDayHeaderTestTag(date))
             .clickable(onClick = onClick)
             .padding(vertical = Dimens.SpaceXs),
     ) {

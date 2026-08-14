@@ -77,6 +77,7 @@ import com.we.meet.ui.calendar.views.AgendaView
 import com.we.meet.ui.calendar.views.CalendarViewMode
 import com.we.meet.ui.calendar.views.DayTimelineView
 import com.we.meet.ui.calendar.views.DraftSlot
+import com.we.meet.ui.calendar.views.THREE_DAY_VIEW_DAYS
 import com.we.meet.ui.calendar.views.ThreeDayTimelineView
 import com.we.meet.ui.calendar.views.draftSlotAt
 import com.we.meet.ui.calendar.views.horizontalDateSwipe
@@ -110,7 +111,7 @@ fun CalendarTabScreen(
     val vm: CalendarViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
 
-    // P8 日历设置:每周的第一天(月网格/周视图跟随,默认周一)。
+    // P8 日历设置:每周的第一天(月网格/日视图日期条跟随,默认周一)。
     val app = LocalContext.current.applicationContext as WeMeetApp
     val calendarTimezoneMode by app.settingsStore.calendarTimezoneMode.collectAsStateWithLifecycle()
     val calendarFixedTimezone by app.settingsStore.calendarFixedTimezone.collectAsStateWithLifecycle()
@@ -153,7 +154,7 @@ fun CalendarTabScreen(
         workingHours.endMin
     } else 24 * 60
 
-    // 对齐飞书:日/周视图点空白先落「预选时段」,拖上下手柄改起止,**再点一次**
+    // 对齐飞书:日/三日视图点空白先落「预选时段」,拖上下手柄改起止,**再点一次**
     // 这个块才进创建表单 —— 误触不会直接弹表单。切视图/切日期即作废。
     var draft by remember { mutableStateOf<DraftSlot?>(null) }
     // 已建日程的选中态(长按进入):出上下抓手,可整块拖移 / 拖抓手改时长。
@@ -222,7 +223,8 @@ fun CalendarTabScreen(
                         CalendarViewMode.DAY,
                         CalendarViewMode.AGENDA,
                         -> vm.selectDate(ui.selectedDate.minusDays(1))
-                        CalendarViewMode.WEEK -> vm.selectDate(ui.selectedDate.minusDays(3))
+                        CalendarViewMode.WEEK ->
+                            vm.selectDate(ui.selectedDate.minusDays(THREE_DAY_VIEW_DAYS.toLong()))
                         CalendarViewMode.MONTH -> vm.selectDate(shiftedMonthDate(ui.selectedDate, -1))
                     }
                 },
@@ -231,7 +233,8 @@ fun CalendarTabScreen(
                         CalendarViewMode.DAY,
                         CalendarViewMode.AGENDA,
                         -> vm.selectDate(ui.selectedDate.plusDays(1))
-                        CalendarViewMode.WEEK -> vm.selectDate(ui.selectedDate.plusDays(3))
+                        CalendarViewMode.WEEK ->
+                            vm.selectDate(ui.selectedDate.plusDays(THREE_DAY_VIEW_DAYS.toLong()))
                         CalendarViewMode.MONTH -> vm.selectDate(shiftedMonthDate(ui.selectedDate, 1))
                     }
                 },
@@ -779,7 +782,7 @@ internal fun AgendaCard(
 ) {
     val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
     val dimmed = dimPastNow != null && event.end.isBefore(dimPastNow)
-    // 表态四态四色(接受=蓝 / 未反馈=紫 / 待定=琥珀 / 拒绝=灰),与日/周视图
+    // 表态四态四色(接受=蓝 / 未反馈=紫 / 待定=琥珀 / 拒绝=灰),与日/三日视图
     // 的竖条同一组色值;拒绝再加删除线,口径一致。
     val visual = rsvpVisualOf(event.myRsvp)
     val declined = visual == RsvpVisual.DECLINED
