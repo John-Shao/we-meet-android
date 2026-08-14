@@ -10,6 +10,7 @@ import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.we.meet.ui.calendar.views.CalendarViewMode
+import com.we.meet.ui.calendar.views.calendarWeekPageTestTag
 import com.we.meet.ui.meetingroom.MeetingRoomWeekStrip
 import com.we.meet.ui.theme.WeMeetTheme
 import java.time.DayOfWeek
@@ -143,23 +144,31 @@ class CalendarManagementUiTest {
     @Test
     fun meetingRoomWeekStripSwipesByWholeWeeks() {
         val selectedDate = LocalDate.of(2026, 8, 13)
+        val currentDate = mutableStateOf(selectedDate)
         var changedDate: LocalDate? = null
         composeRule.setContent {
             WeMeetTheme {
                 MeetingRoomWeekStrip(
-                    selectedDate = selectedDate,
+                    selectedDate = currentDate.value,
                     firstDayOfWeek = DayOfWeek.MONDAY,
-                    onSelectDate = { changedDate = it },
+                    onSelectDate = {
+                        changedDate = it
+                        currentDate.value = it
+                    },
                 )
             }
         }
 
+        composeRule.onNodeWithTag(calendarWeekPageTestTag(selectedDate)).assertIsDisplayed()
         composeRule.onNodeWithTag("meeting-room-week-strip")
             .performTouchInput { swipeLeft() }
         composeRule.runOnIdle { assertEquals(selectedDate.plusWeeks(1), changedDate) }
+        composeRule.onNodeWithTag(calendarWeekPageTestTag(selectedDate.plusWeeks(1)))
+            .assertIsDisplayed()
 
         composeRule.onNodeWithTag("meeting-room-week-strip")
             .performTouchInput { swipeRight() }
-        composeRule.runOnIdle { assertEquals(selectedDate.minusWeeks(1), changedDate) }
+        composeRule.runOnIdle { assertEquals(selectedDate, changedDate) }
+        composeRule.onNodeWithTag(calendarWeekPageTestTag(selectedDate)).assertIsDisplayed()
     }
 }
