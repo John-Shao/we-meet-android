@@ -126,8 +126,18 @@ class CalendarManagementUiTest {
             }
         }
 
+        composeRule.onNodeWithTag(monthPageTestTag(YearMonth.of(2026, 8)))
+            .assertIsDisplayed()
         composeRule.onNodeWithTag("calendar-month-content").performTouchInput { swipeLeft() }
         composeRule.runOnIdle { assertEquals(1L, monthDelta) }
+        composeRule.onNodeWithTag(monthPageTestTag(YearMonth.of(2026, 9)))
+            .assertIsDisplayed()
+
+        composeRule.runOnIdle { monthDelta = null }
+        composeRule.onNodeWithTag("calendar-month-content").performTouchInput { swipeRight() }
+        composeRule.runOnIdle { assertEquals(-1L, monthDelta) }
+        composeRule.onNodeWithTag(monthPageTestTag(YearMonth.of(2026, 8)))
+            .assertIsDisplayed()
     }
 
     @Test

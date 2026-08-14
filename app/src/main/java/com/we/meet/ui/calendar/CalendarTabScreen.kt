@@ -1,16 +1,14 @@
 package com.we.meet.ui.calendar
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -47,15 +46,20 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -78,7 +82,7 @@ import com.we.meet.ui.calendar.views.DayTimelineView
 import com.we.meet.ui.calendar.views.DraftSlot
 import com.we.meet.ui.calendar.views.ThreeDayTimelineView
 import com.we.meet.ui.calendar.views.draftSlotAt
-import com.we.meet.ui.calendar.views.horizontalDateSwipe
+import com.we.meet.ui.calendar.views.isHorizontalDateSwipe
 import com.we.meet.ui.calendar.views.threeDayColumnDays
 import com.we.meet.ui.meetingroom.MeetingRoomsCalendarScreen
 import java.time.DayOfWeek
@@ -89,6 +93,13 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.roundToInt
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+
+private const val MONTH_PAGER_SETTLE_MILLIS = 180
+internal fun monthPageTestTag(month: YearMonth): String = "calendar-month-page-$month"
 
 /** 日历 tab — month grid + selected-day agenda + create FAB. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -426,64 +437,163 @@ internal fun MonthViewBody(
     val density = LocalDensity.current
     val swipeThresholdPx = with(density) { Dimens.MinTouchTarget.toPx() }
     val onMonthSwipeNow = rememberUpdatedState(onMonthSwipe)
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .testTag("calendar-month-content")
-            .horizontalDateSwipe(
-                enabled = true,
-                gestureKey = ui.monthAnchor,
-                thresholdPx = swipeThresholdPx,
-            ) { monthDelta -> onMonthSwipeNow.value(monthDelta) },
-    ) {
-        AnimatedContent(
-            targetState = ui.monthAnchor,
-            transitionSpec = {
-                val direction = if (targetState.isAfter(initialState)) 1 else -1
-                (slideInHorizontally(tween(180)) { direction * it } + fadeIn(tween(180)))
-                    .togetherWith(
-                        slideOutHorizontally(tween(180)) { -direction * it } +
-                            fadeOut(tween(180)),
-                    )
-            },
-            label = "calendar-month",
-        ) { month ->
-            MonthGrid(
-                month = month,
-                selected = ui.selectedDate,
-                eventsByDay = ui.eventsByDay,
-                firstDow = firstDow,
-                today = today,
-                onSelect = onSelect,
+    var renderedMonth by remember { mutableStateOf(ui.monthAnchor) }
+    var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+    var settling by remember { mutableStateOf(false) }
+    var settleJob by remember { mutableStateOf<Job?>(null) }
+    val settleScope = rememberCoroutineScope()
+
+    LaunchedEffect(ui.monthAnchor) {
+        if (ui.monthAnchor != renderedMonth) {
+            settleJob?.cancel()
+            settling = false
+            renderedMonth = ui.monthAnchor
+            dragOffsetPx = 0f
+        }
+    }
+
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val pageWidth = maxWidth
+        val pageWidthPx = with(density) { pageWidth.toPx() }
+        val gestureModifier = Modifier.pointerInput(
+            renderedMonth,
+            settling,
+            pageWidthPx,
+            swipeThresholdPx,
+        ) {
+            if (settling) return@pointerInput
+            awaitEachGesture {
+                val down = awaitFirstDown(
+                    requireUnconsumed = false,
+                    pass = PointerEventPass.Initial,
+                )
+                var horizontalDistance = 0f
+                var verticalDistance = 0f
+                var directionLocked = false
+                var horizontalDrag = false
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                    val delta = change.position - change.previousPosition
+                    horizontalDistance += delta.x
+                    verticalDistance += delta.y
+                    if (!directionLocked &&
+                        (abs(horizontalDistance) > viewConfiguration.touchSlop ||
+                            abs(verticalDistance) > viewConfiguration.touchSlop)
+                    ) {
+                        directionLocked = true
+                        horizontalDrag = isHorizontalDateSwipe(
+                            horizontalDistance,
+                            verticalDistance,
+                            viewConfiguration.touchSlop,
+                        )
+                    }
+                    if (horizontalDrag) {
+                        change.consume()
+                        dragOffsetPx = horizontalDistance.coerceIn(-pageWidthPx, pageWidthPx)
+                    }
+                    if (!change.pressed) break
+                }
+                if (!horizontalDrag) return@awaitEachGesture
+
+                val monthDelta = when {
+                    abs(horizontalDistance) < swipeThresholdPx -> null
+                    horizontalDistance < 0f -> 1L
+                    else -> -1L
+                }
+                val targetOffset = monthDelta?.let { -it * pageWidthPx } ?: 0f
+                val gestureMonth = renderedMonth
+                settleJob?.cancel()
+                settleJob = settleScope.launch {
+                    settling = true
+                    try {
+                        animate(
+                            initialValue = dragOffsetPx,
+                            targetValue = targetOffset,
+                            animationSpec = tween(MONTH_PAGER_SETTLE_MILLIS),
+                        ) { value, _ -> dragOffsetPx = value }
+                        if (monthDelta != null) {
+                            val nextMonth = gestureMonth.plusMonths(monthDelta)
+                            renderedMonth = nextMonth
+                            dragOffsetPx = 0f
+                            onMonthSwipeNow.value(monthDelta)
+                        } else {
+                            dragOffsetPx = 0f
+                        }
+                    } finally {
+                        settling = false
+                    }
+                }
+            }
+        }
+        val months = remember(renderedMonth) {
+            listOf(
+                renderedMonth.minusMonths(1),
+                renderedMonth,
+                renderedMonth.plusMonths(1),
             )
         }
-        when {
-            ui.selectedDayEvents.isEmpty() -> Box(
-                Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    stringResource(R.string.calendar_no_events),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
 
-            else -> LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    start = Dimens.ScreenPadding,
-                    end = Dimens.ScreenPadding,
-                    top = Dimens.SpaceS,
-                    bottom = Dimens.Calendar.FabClearance,
-                ),
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag("calendar-month-content")
+                .then(gestureModifier),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clipToBounds(),
             ) {
-                items(ui.selectedDayEvents, key = { it.id }) { event ->
-                    AgendaCard(
-                        event = event,
-                        onClick = { onEventClick(event.id) },
-                        dimPastNow = dimPastNow,
+                months.forEachIndexed { index, month ->
+                    MonthGrid(
+                        month = month,
+                        selected = ui.selectedDate,
+                        eventsByDay = ui.eventsByDay,
+                        firstDow = firstDow,
+                        today = today,
+                        onSelect = onSelect,
+                        modifier = Modifier
+                            .width(pageWidth)
+                            .offset {
+                                androidx.compose.ui.unit.IntOffset(
+                                    x = ((index - 1) * pageWidthPx + dragOffsetPx)
+                                        .roundToInt(),
+                                    y = 0,
+                                )
+                            }
+                            .testTag(monthPageTestTag(month)),
                     )
-                    Spacer(Modifier.height(Dimens.SpaceS))
+                }
+            }
+            when {
+                ui.selectedDayEvents.isEmpty() -> Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        stringResource(R.string.calendar_no_events),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        start = Dimens.ScreenPadding,
+                        end = Dimens.ScreenPadding,
+                        top = Dimens.SpaceS,
+                        bottom = Dimens.Calendar.FabClearance,
+                    ),
+                ) {
+                    items(ui.selectedDayEvents, key = { it.id }) { event ->
+                        AgendaCard(
+                            event = event,
+                            onClick = { onEventClick(event.id) },
+                            dimPastNow = dimPastNow,
+                        )
+                        Spacer(Modifier.height(Dimens.SpaceS))
+                    }
                 }
             }
         }
@@ -587,13 +697,14 @@ private fun MonthGrid(
     firstDow: DayOfWeek,
     today: LocalDate,
     onSelect: (LocalDate) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     // 6 fixed rows of 7; first column = firstDow(P8 日历设置,默认周一).
     val firstOfMonth = month.atDay(1)
     val leadingBlanks = (firstOfMonth.dayOfWeek.value - firstDow.value + 7) % 7
     val gridStart = firstOfMonth.minusDays(leadingBlanks.toLong())
 
-    Column {
+    Column(modifier = modifier) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
