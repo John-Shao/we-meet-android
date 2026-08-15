@@ -155,6 +155,8 @@ fun CreateEventScreen(
     // P2-M3 重复日程(创建限定;编辑重复规则属三选语义,App 端 M3 不做)。
     var repeat by remember { mutableStateOf("") }
     var repeatUntil by remember { mutableStateOf<LocalDate?>(null) }
+    // 组织者是参与者列表中的固定成员，但不放进 attendee_entries，避免后端重复。
+    var organizer by remember { mutableStateOf<PickedMember?>(null) }
     var attendees by remember { mutableStateOf<List<PickedMember>>(emptyList()) }
     var attendeeRoles by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var visibility by remember { mutableStateOf("default") }
@@ -215,8 +217,9 @@ fun CreateEventScreen(
                 )
             }
         }
-        attendees = picked
-        attendeeRoles = picked.associate { it.userId to "required" }
+        val ordinaryAttendees = picked.filterNot { it.userId == organizer?.userId }
+        attendees = ordinaryAttendees
+        attendeeRoles = ordinaryAttendees.associate { it.userId to "required" }
         if (picked.size < prefillAttendeeIds.distinct().size) {
             android.widget.Toast.makeText(
                 context,
@@ -273,14 +276,30 @@ fun CreateEventScreen(
                 // 历史多值数据(Web 旧版多选留下的)里生效的是最大那条 —— 取 max
                 // 而不是 first,免得编辑时把实际会响的那条改掉。
                 reminderMinutes = e.reminders.maxOrNull()
-                // P8 编辑增删参与者:预填既有参与者(组织者恒在,不进列表);
+                // 组织者在 UI 中固定展示；普通参与者继续使用可编辑列表和提交载荷。
                 // 重复日程不放开(服务端三选路径剔除 attendee_ids)。
                 editIsRecurring = e.isRecurring
                 withVideo = e.room != null
                 meetingRoom = e.meetingRoom
+                val organizerAttendee = e.attendees.firstOrNull {
+                    it.role == "organizer" || it.id == e.organizer?.id
+                }
+                val organizerId = e.organizer?.id?.takeIf { it.isNotBlank() }
+                    ?: organizerAttendee?.id
+                organizer = organizerId?.let { id ->
+                    PickedMember(
+                        userId = id,
+                        displayName = e.organizer?.fullName
+                            ?: organizerAttendee?.fullName
+                            ?: organizerAttendee?.email
+                            ?: "?",
+                        email = organizerAttendee?.email,
+                        avatarUrl = null,
+                    )
+                }
                 attendees = e.attendees.mapNotNull { a ->
                     val uid = a.id ?: return@mapNotNull null
-                    if (a.role == "organizer") return@mapNotNull null
+                    if (a.role == "organizer" || uid == organizerId) return@mapNotNull null
                     PickedMember(
                         userId = uid,
                         displayName = a.fullName ?: a.email ?: "?",
@@ -299,7 +318,18 @@ fun CreateEventScreen(
     }
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
-        selfId = runCatching { app.apiClient.userApi.getMe() }.getOrNull()?.id
+        val me = runCatching { app.apiClient.userApi.getMe() }.getOrNull()
+        selfId = me?.id
+        if (!isEdit && me != null) {
+            organizer = PickedMember(
+                userId = me.id,
+                displayName = me.full_name ?: me.short_name ?: me.email ?: "?",
+                email = me.email,
+                avatarUrl = me.avatar_url.takeIf { it.isNotBlank() },
+            )
+            attendees = attendees.filterNot { it.userId == me.id }
+            attendeeRoles = attendeeRoles - me.id
+        }
         writableCalendars = runCatching { app.apiClient.calendarApi.listCalendars() }
             .getOrDefault(emptyList())
             .filter { it.capabilities.canWrite }
@@ -310,8 +340,19 @@ fun CreateEventScreen(
     }
 
     val showFreeBusy = !allDay
-    androidx.compose.runtime.LaunchedEffect(start, end, allDay, attendees, selfId) {
-        if (allDay || attendees.isEmpty()) {
+    androidx.compose.runtime.LaunchedEffect(
+        start,
+        end,
+        allDay,
+        attendees,
+        organizer?.userId,
+        selfId,
+    ) {
+        val ids = (
+            attendees.map { it.userId } +
+                listOfNotNull(organizer?.userId, selfId)
+            ).distinct()
+        if (allDay || ids.isEmpty()) {
             busyIds = emptySet()
             selfBusy = false
             return@LaunchedEffect
@@ -322,7 +363,6 @@ fun CreateEventScreen(
         // 窗口取所选开始时刻当天,与 Web 一致(端点限制 ≤31 天)。
         val dayStart = start.toLocalDate().atStartOfDay(zone).toInstant()
         val dayEnd = start.toLocalDate().plusDays(1).atStartOfDay(zone).toInstant()
-        val ids = (attendees.map { it.userId } + listOfNotNull(selfId)).distinct()
         runCatching {
             app.apiClient.calendarApi.freeBusy(
                 attendeeIds = ids.joinToString(","),
@@ -339,7 +379,10 @@ fun CreateEventScreen(
                 }
             }.map { it.userId }.toSet()
             busyIds = conflicting
-            selfBusy = selfId != null && conflicting.contains(selfId)
+            selfBusy = selfId != null &&
+                selfId != organizer?.userId &&
+                attendees.none { it.userId == selfId } &&
+                conflicting.contains(selfId)
         }.onFailure {
             // 忙闲拿不到不该挡住建日程:静默降级成「都不显示忙」。
             busyIds = emptySet()
@@ -386,12 +429,14 @@ fun CreateEventScreen(
         errorRes = null
         scope.launch {
             runCatching {
-                val attendeeEntries = attendees.map { attendee ->
-                    AttendeeEntryRequest(
-                        userId = attendee.userId,
-                        role = attendeeRoles[attendee.userId] ?: "required",
-                    )
-                }
+                val attendeeEntries = attendees
+                    .filterNot { it.userId == organizer?.userId }
+                    .map { attendee ->
+                        AttendeeEntryRequest(
+                            userId = attendee.userId,
+                            role = attendeeRoles[attendee.userId] ?: "required",
+                        )
+                    }
                 if (isEdit) {
                     app.apiClient.calendarApi.updateEvent(
                         editEventId!!,
@@ -600,7 +645,7 @@ fun CreateEventScreen(
                     Text(
                         text = stringResource(
                             R.string.calendar_field_attendees_count,
-                            attendees.size,
+                            attendees.size + if (organizer != null) 1 else 0,
                         ),
                         style = MaterialTheme.typography.labelLarge,
                         modifier = Modifier.weight(1f),
@@ -609,87 +654,35 @@ fun CreateEventScreen(
                         Text(stringResource(R.string.calendar_add_attendees))
                     }
                 }
-                attendees.forEach { picked ->
-                    val isBusy = busyIds.contains(picked.userId)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = Dimens.SpaceXxs)
-                            .clip(RoundedCornerShape(Dimens.CornerS))
-                            .background(
-                                if (isBusy) MaterialTheme.colorScheme.errorContainer
-                                else MaterialTheme.colorScheme.surfaceVariant,
-                            )
-                            .padding(start = Dimens.SpaceS, top = Dimens.SpaceXs, bottom = Dimens.SpaceXs),
-                    ) {
-                        MemberAvatar(
-                            name = picked.displayName,
-                            url = picked.avatarUrl,
-                            cacheKey = "avatar:${picked.userId}",
-                            size = Dimens.AvatarXs,
-                        )
-                        Text(
-                            text = picked.displayName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (isBusy) MaterialTheme.colorScheme.error
-                            else MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = Dimens.SpaceS),
-                        )
-                        if (showFreeBusy) {
-                            Text(
-                                text = stringResource(
-                                    if (isBusy) R.string.freebusy_busy
-                                    else R.string.freebusy_free,
-                                ),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (isBusy) MaterialTheme.colorScheme.error
-                                else MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        TextButton(
-                            onClick = {
-                                val next = attendeeRoles.toMutableMap()
-                                next[picked.userId] = if (
-                                    next[picked.userId] == "optional"
-                                ) "required" else "optional"
-                                attendeeRoles = next
-                            },
-                        ) {
-                            Text(
-                                stringResource(
-                                    if (attendeeRoles[picked.userId] == "optional") {
-                                        R.string.calendar_attendee_optional
-                                    } else {
-                                        R.string.calendar_attendee_required
-                                    },
-                                ),
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                attendees = attendees - picked
-                                attendeeRoles = attendeeRoles - picked.userId
-                            },
-                            modifier = Modifier.size(Dimens.IconButtonCompact),
-                        ) {
-                            Icon(
-                                Icons.Filled.Close,
-                                contentDescription = stringResource(
-                                    R.string.calendar_attendee_remove,
-                                    picked.displayName,
-                                ),
-                                modifier = Modifier.size(Dimens.IconTiny),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
+                organizer?.let { picked ->
+                    CalendarAttendeeRow(
+                        picked = picked,
+                        isBusy = busyIds.contains(picked.userId),
+                        showFreeBusy = showFreeBusy,
+                        isOrganizer = true,
+                    )
                 }
-                // 发起人自己不在参与人列表里,但「我这个点也有事」同样该提醒。
+                attendees.forEach { picked ->
+                    CalendarAttendeeRow(
+                        picked = picked,
+                        isBusy = busyIds.contains(picked.userId),
+                        showFreeBusy = showFreeBusy,
+                        isOrganizer = false,
+                        isOptional = attendeeRoles[picked.userId] == "optional",
+                        onRoleToggle = {
+                            val next = attendeeRoles.toMutableMap()
+                            next[picked.userId] = if (
+                                next[picked.userId] == "optional"
+                            ) "required" else "optional"
+                            attendeeRoles = next
+                        },
+                        onRemove = {
+                            attendees = attendees - picked
+                            attendeeRoles = attendeeRoles - picked.userId
+                        },
+                    )
+                }
+                // 当前用户不在参与者列表中时，仍提示其自身冲突。
                 if (showFreeBusy && selfBusy) {
                     Text(
                         text = stringResource(R.string.freebusy_self_busy),
@@ -842,10 +835,13 @@ fun CreateEventScreen(
             deps = app,
             mode = ContactPickerMode.Multi,
             includeExternal = true,
-            excludeUserIds = attendees.map { it.userId }.toSet(),
+            excludeUserIds = (
+                attendees.map { it.userId } + listOfNotNull(organizer?.userId)
+                ).toSet(),
             onConfirm = { picked ->
                 val newAttendees = picked.filter { candidate ->
-                    attendees.none { it.userId == candidate.userId }
+                    candidate.userId != organizer?.userId &&
+                        attendees.none { it.userId == candidate.userId }
                 }
                 attendees = attendees + newAttendees
                 attendeeRoles = attendeeRoles +
@@ -894,6 +890,89 @@ fun CreateEventScreen(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun CalendarAttendeeRow(
+    picked: PickedMember,
+    isBusy: Boolean,
+    showFreeBusy: Boolean,
+    isOrganizer: Boolean,
+    isOptional: Boolean = false,
+    onRoleToggle: (() -> Unit)? = null,
+    onRemove: (() -> Unit)? = null,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = Dimens.SpaceXxs)
+            .clip(RoundedCornerShape(Dimens.CornerS))
+            .background(
+                if (isBusy) MaterialTheme.colorScheme.errorContainer
+                else MaterialTheme.colorScheme.surfaceVariant,
+            )
+            .padding(start = Dimens.SpaceS, top = Dimens.SpaceXs, bottom = Dimens.SpaceXs),
+    ) {
+        MemberAvatar(
+            name = picked.displayName,
+            url = picked.avatarUrl,
+            cacheKey = "avatar:${picked.userId}",
+            size = Dimens.AvatarXs,
+        )
+        Text(
+            text = picked.displayName,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (isBusy) MaterialTheme.colorScheme.error
+            else MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = Dimens.SpaceS),
+        )
+        if (showFreeBusy) {
+            Text(
+                text = stringResource(
+                    if (isBusy) R.string.freebusy_busy else R.string.freebusy_free,
+                ),
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isBusy) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (isOrganizer) {
+            Text(
+                text = stringResource(R.string.event_organizer),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = Dimens.SpaceM),
+            )
+        } else {
+            TextButton(onClick = { onRoleToggle?.invoke() }) {
+                Text(
+                    stringResource(
+                        if (isOptional) R.string.calendar_attendee_optional
+                        else R.string.calendar_attendee_required,
+                    ),
+                )
+            }
+            IconButton(
+                onClick = { onRemove?.invoke() },
+                modifier = Modifier.size(Dimens.IconButtonCompact),
+            ) {
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = stringResource(
+                        R.string.calendar_attendee_remove,
+                        picked.displayName,
+                    ),
+                    modifier = Modifier.size(Dimens.IconTiny),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 
