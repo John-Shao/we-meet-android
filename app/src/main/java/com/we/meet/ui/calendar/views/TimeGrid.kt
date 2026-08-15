@@ -1092,22 +1092,28 @@ fun TimelineScaffold(
                                         },
                                 ) {
                                     if (b.label != null) {
-                                        Row {
+                                        Row(modifier = Modifier.fillMaxSize()) {
                                             Box(
                                                 modifier = Modifier
                                                     .width(Dimens.Calendar.BlockAccentBarWidth)
                                                     .fillMaxHeight()
                                                     .background(calendarAccent),
                                             )
-                                            val short =
-                                                b.endMin - b.startMin <= SHORT_BLOCK_MIN
+                                            val durationMinutes = b.endMin - b.startMin
+                                            val short = durationMinutes <= SHORT_BLOCK_MIN
+                                            val glyphOnly =
+                                                durationMinutes <= DRAFT_SNAP_MIN || compactBlocks
                                             // 窄列(compactBlocks)不显时间;短块仅一行,
                                             // 长块标题可占两行,把腾出的行留给标题。
                                             val showTime = !compactBlocks && b.timeLabel != null
-                                            Column(
-                                                modifier = Modifier.padding(
-                                                    horizontal = Dimens.SpaceXxs, vertical = Dimens.BorderThin,
-                                                ),
+                                            Box(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .fillMaxHeight()
+                                                    .padding(
+                                                        horizontal = Dimens.SpaceXxs,
+                                                        vertical = Dimens.BorderThin,
+                                                    ),
                                             ) {
                                                 val fg = if (declined) {
                                                     rsvpTextColor(RsvpVisual.DECLINED)
@@ -1119,12 +1125,17 @@ fun TimelineScaffold(
                                                     if (b.faded || declined) {
                                                         TextDecoration.LineThrough
                                                     } else null
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    RsvpStatusBadge(
-                                                        visual = visual,
-                                                        compact = true,
-                                                    )
-                                                    Spacer(Modifier.width(Dimens.SpaceXxs))
+                                                Column(
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .padding(
+                                                            end = if (glyphOnly) {
+                                                                Dimens.SpaceL
+                                                            } else {
+                                                                Dimens.SpaceXl
+                                                            },
+                                                        ),
+                                                ) {
                                                     Text(
                                                         text = if (short && showTime) {
                                                             "${b.label}$titleTimeSep${b.timeLabel}"
@@ -1134,19 +1145,27 @@ fun TimelineScaffold(
                                                         maxLines = if (short) 1 else 2,
                                                         overflow = TextOverflow.Ellipsis,
                                                         textDecoration = strike,
-                                                        modifier = Modifier.weight(1f),
                                                     )
+                                                    if (!short && showTime) {
+                                                        Text(
+                                                            text = b.timeLabel!!,
+                                                            style = WeMeetTextStyles.LabelMicro,
+                                                            color = fg.copy(alpha = 0.8f),
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis,
+                                                            textDecoration = strike,
+                                                        )
+                                                    }
                                                 }
-                                                if (!short && showTime) {
-                                                    Text(
-                                                        text = b.timeLabel!!,
-                                                        style = WeMeetTextStyles.LabelMicro,
-                                                        color = fg.copy(alpha = 0.8f),
-                                                        maxLines = 1,
-                                                        overflow = TextOverflow.Ellipsis,
-                                                        textDecoration = strike,
-                                                    )
-                                                }
+                                                RsvpStatusBadge(
+                                                    visual = visual,
+                                                    compact = true,
+                                                    glyphOnly = glyphOnly,
+                                                    modifier = Modifier.align(
+                                                        if (short) Alignment.CenterEnd
+                                                        else Alignment.BottomEnd,
+                                                    ),
+                                                )
                                             }
                                         }
                                     } else if (b.timeLabel != null &&

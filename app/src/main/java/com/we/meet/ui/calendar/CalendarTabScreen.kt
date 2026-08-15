@@ -896,57 +896,65 @@ internal fun AgendaCard(
                         ?: MaterialTheme.colorScheme.primary,
                 ),
         )
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        Box(
             modifier = Modifier
                 .weight(1f)
                 .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceM),
         ) {
-            Column(modifier = Modifier.width(Dimens.Calendar.TimeLabelWidth)) {
-                if (event.allDay) {
-                    Text(
-                        text = stringResource(R.string.calendar_all_day),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                } else {
-                    Text(
-                        text = event.start.format(timeFmt),
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                    Text(
-                        text = event.end.format(timeFmt),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = Dimens.SpaceXl),
+            ) {
+                Column(modifier = Modifier.width(Dimens.Calendar.TimeLabelWidth)) {
+                    if (event.allDay) {
+                        Text(
+                            text = stringResource(R.string.calendar_all_day),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    } else {
+                        Text(
+                            text = event.start.format(timeFmt),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        Text(
+                            text = event.end.format(timeFmt),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-            }
-            Spacer(Modifier.width(Dimens.SpaceM))
-            RsvpStatusBadge(visual = visual)
-            Spacer(Modifier.width(Dimens.SpaceXs))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = event.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = if (declined) {
-                        rsvpTextColor(RsvpVisual.DECLINED)
-                    } else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textDecoration = if (event.cancelled || declined) {
-                        androidx.compose.ui.text.style.TextDecoration.LineThrough
-                    } else null,
-                )
-                event.organizerName?.takeIf { it.isNotBlank() }?.let { organizer ->
+                Spacer(Modifier.width(Dimens.SpaceM))
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = organizer,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = event.title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = if (declined) {
+                            rsvpTextColor(RsvpVisual.DECLINED)
+                        } else MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textDecoration = if (event.cancelled || declined) {
+                            androidx.compose.ui.text.style.TextDecoration.LineThrough
+                        } else null,
                     )
+                    event.organizerName?.takeIf { it.isNotBlank() }?.let { organizer ->
+                        Text(
+                            text = organizer,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
                 }
             }
+            RsvpStatusBadge(
+                visual = visual,
+                modifier = Modifier.align(Alignment.BottomEnd),
+            )
         }
     }
 }

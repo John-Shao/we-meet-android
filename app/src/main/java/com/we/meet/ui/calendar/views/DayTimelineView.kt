@@ -341,8 +341,6 @@ private fun DayAllDayEvents(
                         .background(calendarAccent),
                 )
                 Spacer(Modifier.width(Dimens.SpaceXs))
-                RsvpStatusBadge(visual = visual, compact = true)
-                Spacer(Modifier.width(Dimens.SpaceXxs))
                 Text(
                     text = "${stringResource(R.string.calendar_all_day)} · ${event.title}",
                     style = MaterialTheme.typography.labelMedium,
@@ -360,8 +358,10 @@ private fun DayAllDayEvents(
                     },
                     modifier = Modifier
                         .weight(1f)
-                        .padding(end = Dimens.SpaceS, top = Dimens.SpaceXxs, bottom = Dimens.SpaceXxs),
+                        .padding(end = Dimens.SpaceXs, top = Dimens.SpaceXxs, bottom = Dimens.SpaceXxs),
                 )
+                RsvpStatusBadge(visual = visual, compact = true)
+                Spacer(Modifier.width(Dimens.SpaceXs))
             }
         }
     }

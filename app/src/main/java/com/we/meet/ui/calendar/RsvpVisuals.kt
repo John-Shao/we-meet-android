@@ -76,6 +76,7 @@ fun RsvpStatusBadge(
     visual: RsvpVisual,
     modifier: Modifier = Modifier,
     compact: Boolean = false,
+    glyphOnly: Boolean = false,
 ) {
     val accent = rsvpAccentColor(visual)
     val label = rsvpStatusLabel(visual)
@@ -89,12 +90,22 @@ fun RsvpStatusBadge(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .size(
-                if (compact) Dimens.Calendar.RsvpBadgeCompactSize
-                else Dimens.Calendar.RsvpBadgeSize,
+                when {
+                    glyphOnly -> Dimens.Calendar.RsvpGlyphSize
+                    compact -> Dimens.Calendar.RsvpBadgeCompactSize
+                    else -> Dimens.Calendar.RsvpBadgeSize
+                },
             )
             .clip(CircleShape)
-            .background(accent.copy(alpha = if (WeMeetTheme.isDark) 0.22f else 0.10f))
-            .border(Dimens.BorderThin, accent.copy(alpha = 0.72f), CircleShape)
+            .then(
+                if (glyphOnly) {
+                    Modifier
+                } else {
+                    Modifier
+                        .background(accent.copy(alpha = if (WeMeetTheme.isDark) 0.22f else 0.10f))
+                        .border(Dimens.BorderThin, accent.copy(alpha = 0.72f), CircleShape)
+                },
+            )
             .semantics { contentDescription = label },
     ) {
         Text(
