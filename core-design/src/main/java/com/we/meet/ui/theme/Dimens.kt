@@ -43,23 +43,6 @@ object Dimens {
     /** 底部弹层顶部标题栏的高度(消息、AI 等各 sheet 共用)。 */
     val SheetHeaderHeight = 40.dp
 
-    /**
-     * 密集列表行里被压小的图标按钮。
-     *
-     * 32dp 低于 [MinTouchTarget],但**不是合规缺陷** —— WCAG 2.2 AA 的
-     * SC 2.5.8 门槛是 24×24,32 过得去;48dp 是 Material 自己的建议,44×44
-     * 是 WCAG **AAA**(SC 2.5.5)。所以这是「没达到我们自订的更严标准」,
-     * 不是「上架卡点」,别按 P0 排。
-     *
-     * 修的方向是热区回到 48dp 而视觉图标保持小
-     * (`IconButton(Modifier.size(MinTouchTarget))` + 小 Icon),会让列表行变高,
-     * 属于布局改动。真要修先修**误触代价高**的那处(CreateEventScreen 里删除
-     * 参会人的 ✕),而不是按数量铺开。
-     *
-     * 新代码不要用它。
-     */
-    val IconButtonCompact = 32.dp
-
     // ---- Icons ----
     /** 徽标/角标内的小图标(画面块上的麦克风、举手)。 */
     val IconTiny = 16.dp
@@ -151,8 +134,8 @@ object Dimens {
      * 生效」,不是为了对齐栅格。
      */
     object Room {
-        /** 顶部/底部工具栏的图标按钮边长。 */
-        val ToolbarIconButton = 40.dp
+        /** 顶部/底部工具栏的图标按钮边长；功能性热区遵循 Material 48dp。 */
+        val ToolbarIconButton = 48.dp
         /** 顶栏高度,参与工具栏收起动画的位移计算。 */
         val TopToolbarHeight = 56.dp
         /** 底栏高度,同上。比顶栏高 2dp 是为了容纳按钮下方的文字标签。 */

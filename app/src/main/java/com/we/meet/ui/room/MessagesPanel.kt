@@ -279,7 +279,7 @@ private fun InputBar(onSend: (String) -> Unit) {
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Send,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.room_message_send),
                 tint = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
             )
         }

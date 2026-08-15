@@ -18,13 +18,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -49,6 +47,8 @@ import com.we.meet.feature.im.R
 import com.we.meet.feature.im.ui.common.ErrorBanner
 import com.we.meet.feature.im.vm.GroupInfoEvent
 import com.we.meet.feature.im.vm.GroupInfoViewModel
+import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.components.DestructiveConfirmDialog
 
 /** Group management — roster, rename, add/remove, transfer, clear, leave. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -92,13 +92,9 @@ fun GroupInfoScreen(
 
     Scaffold(
         topBar = {
-            androidx.compose.material3.TopAppBar(
-                title = { Text(stringResource(R.string.im_settings_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
+            WeMeetTopBar(
+                title = stringResource(R.string.im_settings_title),
+                onBack = onBack,
             )
         },
     ) { padding ->
@@ -397,47 +393,33 @@ fun GroupInfoScreen(
     }
 
     if (confirmClear) {
-        AlertDialog(
-            onDismissRequest = { confirmClear = false },
-            title = { Text(stringResource(R.string.im_group_clear_history)) },
-            text = { Text(stringResource(R.string.im_group_clear_confirm)) },
-            confirmButton = {
-                TextButton(onClick = { vm.clearHistory(); confirmClear = false }) {
-                    Text(stringResource(R.string.im_action_confirm))
-                }
+        DestructiveConfirmDialog(
+            title = stringResource(R.string.im_group_clear_history),
+            message = stringResource(R.string.im_group_clear_confirm),
+            confirmLabel = stringResource(R.string.im_group_clear_history),
+            dismissLabel = stringResource(R.string.im_action_cancel),
+            onConfirm = {
+                vm.clearHistory()
+                confirmClear = false
             },
-            dismissButton = {
-                TextButton(onClick = { confirmClear = false }) {
-                    Text(stringResource(R.string.im_action_cancel))
-                }
-            },
+            onDismiss = { confirmClear = false },
         )
     }
 
     if (confirmLeave) {
-        AlertDialog(
-            onDismissRequest = { confirmLeave = false },
-            title = {
-                Text(stringResource(R.string.im_confirm_leave_title))
+        DestructiveConfirmDialog(
+            title = stringResource(R.string.im_confirm_leave_title),
+            message = stringResource(
+                if (ui.isOwner) R.string.im_confirm_leave_owner_message
+                else R.string.im_confirm_leave_message,
+            ),
+            confirmLabel = stringResource(R.string.im_menu_leave),
+            dismissLabel = stringResource(R.string.im_action_cancel),
+            onConfirm = {
+                vm.leaveGroup()
+                confirmLeave = false
             },
-            text = {
-                Text(
-                    stringResource(
-                        if (ui.isOwner) R.string.im_confirm_leave_owner_message
-                        else R.string.im_confirm_leave_message
-                    )
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { vm.leaveGroup(); confirmLeave = false }) {
-                    Text(stringResource(R.string.im_action_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmLeave = false }) {
-                    Text(stringResource(R.string.im_action_cancel))
-                }
-            },
+            onDismiss = { confirmLeave = false },
         )
     }
 }

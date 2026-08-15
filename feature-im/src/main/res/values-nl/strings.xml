@@ -21,6 +21,7 @@
     <string name="im_open_profile">Profiel openen</string>
     <string name="im_search">Zoeken</string>
     <string name="im_search_hint">Gesprekken zoeken</string>
+    <string name="im_search_clear">Zoekopdracht wissen</string>
     <string name="im_search_no_results">Geen overeenkomende gesprekken</string>
     <string name="im_more">Meer</string>
     <string name="im_menu_scan_login">Scannen om in te loggen</string>

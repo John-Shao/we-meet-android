@@ -62,6 +62,7 @@ import com.we.meet.feature.im.call.CallInfo
 import com.we.meet.feature.im.call.CallState
 import com.we.meet.feature.im.data.GroupTile
 import com.we.meet.feature.im.ui.common.GroupAvatar
+import com.we.meet.design.R as DesignR
 
 /**
  * P1 一对一通话 — the single full-screen call route. Renders per CallController
@@ -266,7 +267,10 @@ private fun CallScaffold(
                     .padding(Dimens.SpaceXs)
                     .align(Alignment.TopStart),
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(DesignR.string.cd_back),
+                )
             }
         }
         Column(

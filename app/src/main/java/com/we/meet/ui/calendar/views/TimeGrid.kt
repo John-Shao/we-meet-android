@@ -55,6 +55,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -68,6 +76,7 @@ import com.we.meet.ui.calendar.parseCalendarColor
 import com.we.meet.ui.calendar.rsvpBlockBackground
 import com.we.meet.ui.calendar.rsvpTextColor
 import com.we.meet.ui.calendar.rsvpVisualOf
+import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTextStyles
 import com.we.meet.ui.theme.WeMeetTheme
@@ -438,6 +447,12 @@ fun TimelineScaffold(
     val bgOf = RsvpVisual.entries.associateWith { rsvpBlockBackground(it) }
     // 短块「标题,时间」分隔符:中文全角逗号(对齐 Web),其他语言半角。
     val titleTimeSep = if (Locale.getDefault().language == "zh") "，" else ", "
+    val busyA11yLabel = stringResource(R.string.freebusy_busy)
+    val openBlockA11yLabel = stringResource(R.string.calendar_a11y_open_event)
+    val moveEarlierA11yLabel = stringResource(R.string.calendar_a11y_move_earlier)
+    val moveLaterA11yLabel = stringResource(R.string.calendar_a11y_move_later)
+    val extendA11yLabel = stringResource(R.string.calendar_a11y_extend)
+    val shortenA11yLabel = stringResource(R.string.calendar_a11y_shorten)
     val density = LocalDensity.current
     val hourLabelTopInset = with(density) {
         WeMeetTextStyles.LabelTiny.lineHeight.toDp() / 2
@@ -976,6 +991,57 @@ fun TimelineScaffold(
                                 val fillDim = if (b.dimmed) 0.5f else 1f
                                 // 长按选中态:主色描边提示「这块现在可拖」。
                                 val picked = b.key == selectedBlockKey && b.movable
+                                val blockDescription = listOf(
+                                    b.label ?: busyA11yLabel,
+                                    b.timeLabel ?: "${fmtMin(b.startMin)} – ${fmtMin(b.endMin)}",
+                                ).joinToString(titleTimeSep)
+                                val blockMove = onBlockMove
+                                val accessibilityActions = if (b.movable && blockMove != null) {
+                                    buildList {
+                                        if (b.startMin - DRAFT_SNAP_MIN >= rangeStart) {
+                                            add(CustomAccessibilityAction(moveEarlierA11yLabel) {
+                                                blockMove(
+                                                    i,
+                                                    b.key,
+                                                    b.startMin - DRAFT_SNAP_MIN,
+                                                    b.endMin - DRAFT_SNAP_MIN,
+                                                )
+                                                true
+                                            })
+                                        }
+                                        if (b.endMin + DRAFT_SNAP_MIN <= rangeEnd) {
+                                            add(CustomAccessibilityAction(moveLaterA11yLabel) {
+                                                blockMove(
+                                                    i,
+                                                    b.key,
+                                                    b.startMin + DRAFT_SNAP_MIN,
+                                                    b.endMin + DRAFT_SNAP_MIN,
+                                                )
+                                                true
+                                            })
+                                            add(CustomAccessibilityAction(extendA11yLabel) {
+                                                blockMove(
+                                                    i,
+                                                    b.key,
+                                                    b.startMin,
+                                                    b.endMin + DRAFT_SNAP_MIN,
+                                                )
+                                                true
+                                            })
+                                        }
+                                        if (b.endMin - b.startMin > DRAFT_SNAP_MIN) {
+                                            add(CustomAccessibilityAction(shortenA11yLabel) {
+                                                blockMove(
+                                                    i,
+                                                    b.key,
+                                                    b.startMin,
+                                                    b.endMin - DRAFT_SNAP_MIN,
+                                                )
+                                                true
+                                            })
+                                        }
+                                    }
+                                } else emptyList()
                                 Box(
                                     modifier = Modifier
                                         .offset(x = colWidth * i, y = top)
@@ -1013,7 +1079,18 @@ fun TimelineScaffold(
                                                     RoundedCornerShape(Dimens.CornerXs),
                                                 )
                                             } else Modifier,
-                                        ),
+                                        )
+                                        .clearAndSetSemantics {
+                                            contentDescription = blockDescription
+                                            if (onBlockTap != null) {
+                                                role = Role.Button
+                                                onClick(label = openBlockA11yLabel) {
+                                                    onBlockTap(i, b.key)
+                                                    true
+                                                }
+                                            }
+                                            customActions = accessibilityActions
+                                        },
                                 ) {
                                     if (b.label != null) {
                                         Row {

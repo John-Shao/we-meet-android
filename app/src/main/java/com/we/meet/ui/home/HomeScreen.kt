@@ -23,9 +23,14 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.WeMeetApp
 import com.we.meet.R
+import com.we.meet.design.R as DesignR
 
 @Composable
 fun HomeScreen(
@@ -60,6 +66,21 @@ fun HomeScreen(
     val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(app))
     val history by homeViewModel.history.collectAsStateWithLifecycle()
     val scheduledMeetings by homeViewModel.scheduledMeetings.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val refreshFailedText = stringResource(DesignR.string.common_load_error)
+    val retryText = stringResource(DesignR.string.common_retry)
+
+    LaunchedEffect(homeViewModel) {
+        homeViewModel.refreshFailures.collect {
+            val result = snackbarHostState.showSnackbar(
+                message = refreshFailedText,
+                actionLabel = retryText,
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                homeViewModel.refreshRemoteRooms()
+            }
+        }
+    }
 
     // Refresh the server-side rooms list whenever Home becomes visible
     // again — covers returning from a meeting, the room-end flow, or a
@@ -73,7 +94,8 @@ fun HomeScreen(
     // Header (top bar + action zone + band) stays pinned; only the
     // meeting lists below scroll when the user swipes up. Same Feishu /
     // WeChat-style "fixed action shelf + scrolling timeline" layout.
-    Column(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
         // Top bar: tab title on the left, meeting-settings gear on the right.
         // (Scan-QR lives in the 消息 header's "more" menu; profile/app settings
         // stay behind the 消息 avatar — only meeting-scoped settings are here.)
@@ -177,6 +199,13 @@ fun HomeScreen(
                 onEntryClick = { entry -> onHistoryClick(entry.roomId) },
             )
         }
+        }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(Dimens.SpaceM),
+        )
     }
 }
 

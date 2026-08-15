@@ -3,7 +3,6 @@ package com.we.meet.ui.nav
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -37,6 +36,7 @@ import androidx.navigation.navArgument
 import com.we.meet.WeMeetApp
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.data.auth.SessionState
 import com.we.meet.feature.assistant.aicall.ui.AssistantCallScreen
 import com.we.meet.feature.im.ImSession
@@ -1501,16 +1501,9 @@ fun AppNav() {
 private fun AiHubRoute(onBack: () -> Unit, onOpenAssistantCall: () -> Unit) {
     androidx.compose.material3.Scaffold(
         topBar = {
-            androidx.compose.material3.TopAppBar(
-                title = { Text(stringResource(R.string.tab_ai)) },
-                navigationIcon = {
-                    androidx.compose.material3.IconButton(onClick = onBack) {
-                        androidx.compose.material3.Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null,
-                        )
-                    }
-                },
+            WeMeetTopBar(
+                title = stringResource(R.string.tab_ai),
+                onBack = onBack,
             )
         },
     ) { padding ->

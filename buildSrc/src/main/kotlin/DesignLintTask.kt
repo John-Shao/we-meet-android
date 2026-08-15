@@ -176,7 +176,18 @@ abstract class DesignLintTask : DefaultTask() {
         val RAW_COLOR = Regex("\\bColor\\(0[xX]")
         val RAW_FONT = Regex("\\b(fontSize|lineHeight)\\s*=\\s*[0-9]+(\\.[0-9]+)?\\.sp")
         val RAW_DIMEN = Regex("\\b[0-9]+(\\.[0-9]+)?\\.dp\\b")
-        val RAW_TOPBAR = Regex("(?<![A-Za-z0-9_.])TopAppBar\\s*\\(")
+        // 词边界会同时命中 `TopAppBar(` 与全限定的
+        // `androidx.compose.material3.TopAppBar(`，不能让换一种 import 写法成为后门。
+        val RAW_TOPBAR = Regex("\\bTopAppBar\\s*\\(")
+        val ICON_BUTTON_NULL_DESCRIPTION = Regex(
+            "\\bIconButton\\s*\\([\\s\\S]{0,500}?\\)\\s*\\{[^}]{0,500}?" +
+                "contentDescription\\s*=\\s*null",
+        )
+        val UNDERSIZED_ICON_BUTTON = Regex(
+            "\\bIconButton\\s*\\((?:(?!\\)\\s*\\{)[\\s\\S]){0,300}?" +
+                "\\.size\\(Dimens\\." +
+                "(?:IconButtonCompact|IconTiny|IconSmall|IconMedium|IconLarge)\\)",
+        )
 
         // ---- 文字/图标色必须取前景槽位 ------------------------------------
         //
@@ -361,6 +372,16 @@ abstract class DesignLintTask : DefaultTask() {
                 locate = { lines -> dropdownWidthMisuseLines(lines) },
             ) { _, _, _, lines -> dropdownWidthMisuseLines(lines).size },
             Rule(
+                "icon-button-description",
+                "functional IconButton icons need a non-null contentDescription -- spec 5.1",
+                locate = { lines -> regexHitLines(lines, ICON_BUTTON_NULL_DESCRIPTION) },
+            ) { _, code, _, _ -> ICON_BUTTON_NULL_DESCRIPTION.findAll(code).count() },
+            Rule(
+                "icon-button-touch-target",
+                "IconButton touch targets must use Dimens.MinTouchTarget (48dp) -- spec 5.2",
+                locate = { lines -> regexHitLines(lines, UNDERSIZED_ICON_BUTTON) },
+            ) { _, code, _, _ -> UNDERSIZED_ICON_BUTTON.findAll(code).count() },
+            Rule(
                 "cjk-literal",
                 "move the string into strings.xml, or mark // i18n-exempt -- spec 4",
             ) { _, _, literals, _ ->
@@ -371,6 +392,13 @@ abstract class DesignLintTask : DefaultTask() {
                 }
             },
         )
+
+        fun regexHitLines(lines: List<String>, regex: Regex): List<Int> {
+            val code = lines.joinToString("\n")
+            return regex.findAll(code).map { match ->
+                code.take(match.range.first).count { it == '\n' } + 1
+            }.toList()
+        }
 
         /**
          * 数这个文件里「拿面色当文字色」的处数。

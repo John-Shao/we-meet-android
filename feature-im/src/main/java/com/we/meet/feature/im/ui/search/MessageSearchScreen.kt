@@ -52,6 +52,7 @@ import com.we.meet.feature.im.data.GroupTile
 import com.we.meet.feature.im.data.ImSearchItem
 import com.we.meet.feature.im.ui.common.GroupAvatar
 import com.we.meet.feature.im.ui.common.previewText
+import com.we.meet.design.R as DesignR
 import java.text.DateFormat
 import java.util.Date
 import kotlinx.coroutines.delay
@@ -335,13 +336,19 @@ fun MessageSearchScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(DesignR.string.cd_back),
+                        )
                     }
                 },
                 actions = {
                     if (query.isNotEmpty()) {
                         IconButton(onClick = { query = "" }) {
-                            Icon(Icons.Filled.Close, contentDescription = null)
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = stringResource(R.string.im_search_clear),
+                            )
                         }
                     }
                 },

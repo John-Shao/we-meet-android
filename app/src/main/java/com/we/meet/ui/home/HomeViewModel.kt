@@ -13,9 +13,11 @@ import com.we.meet.data.history.HistoryEntry
 import com.we.meet.data.history.HistoryStore
 import com.we.meet.data.repository.RoomRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -35,6 +37,8 @@ class HomeViewModel(
 
     /** Server-side rooms the user is a member of. Refreshed on demand. */
     private val _remoteRooms = MutableStateFlow<List<RoomDto>>(emptyList())
+    private val _refreshFailures = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val refreshFailures: SharedFlow<Unit> = _refreshFailures.asSharedFlow()
 
     /**
      * Local + remote rooms merged by slug. Local wins for participant
@@ -89,6 +93,8 @@ class HomeViewModel(
         viewModelScope.launch {
             roomRepository.fetchMyRooms().onSuccess { rooms ->
                 _remoteRooms.value = rooms.filterNot { it.isAiSession() }
+            }.onFailure {
+                _refreshFailures.tryEmit(Unit)
             }
         }
     }

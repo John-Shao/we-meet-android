@@ -111,6 +111,7 @@
     <string name="room_host_ended_ack_countdown">OK (%1$ds)</string>
     <string name="room_messages_title">Messages</string>
     <string name="room_message_input_hint">Send a message…</string>
+    <string name="room_message_send">Send message</string>
     <string name="room_message_empty">No messages yet</string>
     <string name="room_message_host_tag">Host</string>
     <string name="room_rename_self">Rename me</string>
@@ -618,6 +619,11 @@
     <string name="calendar_field_attendees_count">Attendees (%1$d selected)</string>
     <string name="calendar_attendee_remove">Remove %1$s</string>
     <string name="freebusy_busy">Busy</string>
+    <string name="calendar_a11y_open_event">Open event</string>
+    <string name="calendar_a11y_move_earlier">Move 15 minutes earlier</string>
+    <string name="calendar_a11y_move_later">Move 15 minutes later</string>
+    <string name="calendar_a11y_extend">Extend by 15 minutes</string>
+    <string name="calendar_a11y_shorten">Shorten by 15 minutes</string>
     <string name="freebusy_free">Free</string>
     <string name="freebusy_self_busy">You have another event at this time</string>
     <string name="meeting_room_remove">Remove room</string>

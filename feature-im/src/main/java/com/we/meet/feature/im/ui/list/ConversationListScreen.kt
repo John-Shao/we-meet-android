@@ -47,7 +47,6 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VideoCall
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -81,6 +80,7 @@ import com.we.meet.feature.im.ui.common.ConnectionStatusBar
 import com.we.meet.feature.im.ui.common.ErrorBanner
 import com.we.meet.feature.im.ui.common.GroupAvatar
 import com.we.meet.feature.im.ui.common.previewText
+import com.we.meet.ui.components.DestructiveConfirmDialog
 import com.we.meet.feature.im.vm.ConversationListViewModel
 import com.we.meet.feature.im.vm.ConversationRowUi
 import kotlinx.coroutines.delay
@@ -349,48 +349,34 @@ fun ConversationListScreen(
 
     // 删除会话(软隐藏):私聊 + 群聊通用。文案已说明「仅对你隐藏,新消息会重现」。
     confirmHide?.let { row ->
-        AlertDialog(
-            onDismissRequest = { confirmHide = null },
-            title = { Text(stringResource(R.string.im_confirm_delete_title)) },
-            text = { Text(stringResource(R.string.im_confirm_delete_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    vm.hideConversation(row)
-                    confirmHide = null
-                }) { Text(stringResource(R.string.im_action_confirm)) }
+        DestructiveConfirmDialog(
+            title = stringResource(R.string.im_confirm_delete_title),
+            message = stringResource(R.string.im_confirm_delete_message),
+            confirmLabel = stringResource(R.string.im_menu_delete),
+            dismissLabel = stringResource(R.string.im_action_cancel),
+            onConfirm = {
+                vm.hideConversation(row)
+                confirmHide = null
             },
-            dismissButton = {
-                TextButton(onClick = { confirmHide = null }) {
-                    Text(stringResource(R.string.im_action_cancel))
-                }
-            },
+            onDismiss = { confirmHide = null },
         )
     }
 
     // 退出群聊(退群):仅群聊;群主退群时提示自动转让/解散。
     confirmLeave?.let { row ->
-        AlertDialog(
-            onDismissRequest = { confirmLeave = null },
-            title = { Text(stringResource(R.string.im_confirm_leave_title)) },
-            text = {
-                Text(
-                    stringResource(
-                        if (row.isOwner) R.string.im_confirm_leave_owner_message
-                        else R.string.im_confirm_leave_message
-                    )
-                )
+        DestructiveConfirmDialog(
+            title = stringResource(R.string.im_confirm_leave_title),
+            message = stringResource(
+                if (row.isOwner) R.string.im_confirm_leave_owner_message
+                else R.string.im_confirm_leave_message,
+            ),
+            confirmLabel = stringResource(R.string.im_menu_leave),
+            dismissLabel = stringResource(R.string.im_action_cancel),
+            onConfirm = {
+                vm.deleteOrLeave(row)
+                confirmLeave = null
             },
-            confirmButton = {
-                TextButton(onClick = {
-                    vm.deleteOrLeave(row)
-                    confirmLeave = null
-                }) { Text(stringResource(R.string.im_action_confirm)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmLeave = null }) {
-                    Text(stringResource(R.string.im_action_cancel))
-                }
-            },
+            onDismiss = { confirmLeave = null },
         )
     }
 }

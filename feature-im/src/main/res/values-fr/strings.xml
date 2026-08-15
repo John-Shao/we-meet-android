@@ -21,6 +21,7 @@
     <string name="im_open_profile">Ouvrir le profil</string>
     <string name="im_search">Rechercher</string>
     <string name="im_search_hint">Rechercher des conversations</string>
+    <string name="im_search_clear">Effacer la recherche</string>
     <string name="im_search_no_results">Aucune conversation correspondante</string>
     <string name="im_more">Plus</string>
     <string name="im_menu_scan_login">Scanner pour se connecter</string>

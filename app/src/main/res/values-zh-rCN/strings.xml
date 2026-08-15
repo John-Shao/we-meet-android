@@ -111,6 +111,7 @@
     <string name="room_host_ended_ack_countdown">我知道了（%1$d 秒）</string>
     <string name="room_messages_title">会中消息</string>
     <string name="room_message_input_hint">发送会中消息</string>
+    <string name="room_message_send">发送消息</string>
     <string name="room_message_empty">暂无消息</string>
     <string name="room_message_host_tag">主持人</string>
     <string name="room_rename_self">修改我的昵称</string>
@@ -618,6 +619,11 @@
     <string name="calendar_field_attendees_count">参与者 (已选 %1$d 人)</string>
     <string name="calendar_attendee_remove">移除 %1$s</string>
     <string name="freebusy_busy">忙</string>
+    <string name="calendar_a11y_open_event">打开日程</string>
+    <string name="calendar_a11y_move_earlier">提前 15 分钟</string>
+    <string name="calendar_a11y_move_later">延后 15 分钟</string>
+    <string name="calendar_a11y_extend">延长 15 分钟</string>
+    <string name="calendar_a11y_shorten">缩短 15 分钟</string>
     <string name="freebusy_free">闲</string>
     <string name="freebusy_self_busy">你在该时段有其他日程</string>
     <string name="meeting_room_remove">移除会议室</string>

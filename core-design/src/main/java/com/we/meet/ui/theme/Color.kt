@@ -78,12 +78,12 @@ val LightRsvpDeclinedText = Color(0xFF6B7280)
  * 1.98:1(深)——「弱化」过头成了「几乎看不见」。日期是有信息的文字,不是
  * 装饰:用户会拿它对齐周次、点上月末那几天。
  *
- * 现在取到 3.05:1 / 3.33:1 —— 仍比本月的正文弱一大截(那边 15:1 以上),
- * 弱化的意图保住了,但读得出。这里**不按 4.5:1 要求**:这几个数字是
- * 刻意降级的辅助信息,不是正文;3:1 是我们自订的下限。
+ * 非本月日期仍然可以点击，也承担跨月对齐的信息，因此按普通文字的 4.5:1
+ * 门槛处理，不能用“辅助信息”规避 WCAG。现在两套分别为 4.72:1 / 5.46:1；
+ * 视觉层级靠与主文字的亮度差保留，不靠把文字压到不可读。
  */
-val LightCalendarOutOfMonthDay = Color(0xFF968F9D)
-val DarkCalendarOutOfMonthDay = Color(0xFF6B6675)
+val LightCalendarOutOfMonthDay = Color(0xFF766F7D)
+val DarkCalendarOutOfMonthDay = Color(0xFF8F8999)
 
 val LightCalendarNowLine = Color(0xFFEF4444)
 val LightCalendarConflict = Color(0xFFDC2626)

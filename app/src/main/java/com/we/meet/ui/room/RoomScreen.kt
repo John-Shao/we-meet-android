@@ -1661,7 +1661,7 @@ private fun ParticipantsSheet(
                         if (p.isLocal) {
                             IconButton(
                                 onClick = onRenameSelfClick,
-                                modifier = Modifier.size(Dimens.IconButtonCompact),
+                                modifier = Modifier.size(Dimens.MinTouchTarget),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
@@ -1772,7 +1772,7 @@ private fun SuggestedParticipantRow(
                 )
                 IconButton(
                     onClick = { onCancel(invite.callId) },
-                    modifier = Modifier.size(Dimens.IconButtonCompact),
+                    modifier = Modifier.size(Dimens.MinTouchTarget),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
@@ -1886,7 +1886,7 @@ private fun ParticipantHostMenu(
     Box {
         IconButton(
             onClick = { menuOpen = true },
-            modifier = Modifier.size(Dimens.IconButtonCompact),
+            modifier = Modifier.size(Dimens.MinTouchTarget),
         ) {
             Icon(
                 imageVector = Icons.Default.MoreVert,

@@ -2,23 +2,16 @@ package com.we.meet.ui.main
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChatBubble
@@ -34,8 +27,12 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
@@ -55,9 +52,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.we.meet.ui.theme.WeMeetTextStyles
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.WeMeetApp
@@ -503,74 +498,31 @@ private fun CompactTabBar(
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface),
-    ) {
-        HorizontalDivider(thickness = Dimens.DividerThin, color = MaterialTheme.colorScheme.outlineVariant)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(top = Dimens.SpaceXs, bottom = Dimens.SpaceXs),
-            horizontalArrangement = Arrangement.SpaceAround,
-        ) {
-            tabs.forEachIndexed { index, tab ->
-                val selected = selectedTab == index
-                val color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = Dimens.IconIllustration)
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() },
-                        ) { onTabSelected(index) },
-                ) {
-                    Box {
+    NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+        tabs.forEachIndexed { index, tab ->
+            val selected = selectedTab == index
+            NavigationBarItem(
+                selected = selected,
+                onClick = { onTabSelected(index) },
+                icon = {
+                    BadgedBox(
+                        badge = {
+                            if (tab.badgeCount > 0) {
+                                Badge {
+                                    Text(if (tab.badgeCount > 99) "99+" else tab.badgeCount.toString())
+                                }
+                            }
+                        },
+                    ) {
                         Icon(
                             imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
-                            contentDescription = stringResource(tab.labelRes),
-                            tint = color,
-                            modifier = Modifier.size(Dimens.IconLarge),
+                            contentDescription = null,
                         )
-                        if (tab.badgeCount > 0) {
-                            TabBadge(
-                                count = tab.badgeCount,
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .offset(x = Dimens.SpaceS, y = (-4).dp),
-                            )
-                        }
                     }
-                    Spacer(Modifier.height(Dimens.SpaceXxs))
-                    Text(
-                        text = stringResource(tab.labelRes),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = color,
-                    )
-                }
-            }
+                },
+                label = { Text(stringResource(tab.labelRes)) },
+                alwaysShowLabel = true,
+            )
         }
-    }
-}
-
-@Composable
-private fun TabBadge(count: Long, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.error, CircleShape)
-            .padding(horizontal = Dimens.SpaceXs),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = if (count > 99) "99+" else count.toString(),
-            color = MaterialTheme.colorScheme.onError,
-            style = WeMeetTextStyles.LabelTiny,
-        )
     }
 }

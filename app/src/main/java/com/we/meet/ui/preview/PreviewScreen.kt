@@ -435,7 +435,7 @@ fun PreviewScreen(
  * out inside the reserved space, vertically centred with 8dp margin on
  * top and bottom.
  */
-private val BannerContentHeight = Dimens.SpaceXxl
+private val BannerContentHeight = Dimens.MinTouchTarget
 private val BannerSlotHeight = BannerContentHeight + Dimens.SpaceL
 
 @Composable
@@ -483,7 +483,7 @@ private fun ErrorBanner(
                     )
                     IconButton(
                         onClick = onDismiss,
-                        modifier = Modifier.size(Dimens.IconMedium),
+                        modifier = Modifier.size(Dimens.MinTouchTarget),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,

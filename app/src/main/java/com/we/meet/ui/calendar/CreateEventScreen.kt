@@ -960,7 +960,7 @@ private fun CalendarAttendeeRow(
             }
             IconButton(
                 onClick = { onRemove?.invoke() },
-                modifier = Modifier.size(Dimens.IconButtonCompact),
+                modifier = Modifier.size(Dimens.MinTouchTarget),
             ) {
                 Icon(
                     Icons.Filled.Close,

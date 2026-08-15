@@ -1097,7 +1097,7 @@ private fun MessageInputBar(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = onClearReply, modifier = Modifier.size(Dimens.IconLarge)) {
+                IconButton(onClick = onClearReply, modifier = Modifier.size(Dimens.MinTouchTarget)) {
                     Icon(
                         Icons.Filled.Close,
                         contentDescription = stringResource(R.string.im_reply_cancel),

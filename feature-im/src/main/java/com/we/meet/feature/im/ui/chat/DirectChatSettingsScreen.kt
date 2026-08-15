@@ -15,13 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -45,6 +42,8 @@ import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.ui.common.ErrorBanner
 import com.we.meet.feature.im.vm.DirectChatSettingsViewModel
+import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.components.DestructiveConfirmDialog
 
 /**
  * Direct (1-on-1) chat settings — mirrors Web DirectSettingsPanel.
@@ -74,13 +73,9 @@ fun DirectChatSettingsScreen(
 
     Scaffold(
         topBar = {
-            androidx.compose.material3.TopAppBar(
-                title = { Text(stringResource(R.string.im_settings_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
+            WeMeetTopBar(
+                title = stringResource(R.string.im_settings_title),
+                onBack = onBack,
             )
         },
     ) { padding ->
@@ -213,20 +208,16 @@ fun DirectChatSettingsScreen(
     }
 
     if (confirmClear) {
-        AlertDialog(
-            onDismissRequest = { confirmClear = false },
-            title = { Text(stringResource(R.string.im_group_clear_history)) },
-            text = { Text(stringResource(R.string.im_group_clear_confirm)) },
-            confirmButton = {
-                TextButton(onClick = { vm.clearHistory(); confirmClear = false }) {
-                    Text(stringResource(R.string.im_action_confirm))
-                }
+        DestructiveConfirmDialog(
+            title = stringResource(R.string.im_group_clear_history),
+            message = stringResource(R.string.im_group_clear_confirm),
+            confirmLabel = stringResource(R.string.im_group_clear_history),
+            dismissLabel = stringResource(R.string.im_action_cancel),
+            onConfirm = {
+                vm.clearHistory()
+                confirmClear = false
             },
-            dismissButton = {
-                TextButton(onClick = { confirmClear = false }) {
-                    Text(stringResource(R.string.im_action_cancel))
-                }
-            },
+            onDismiss = { confirmClear = false },
         )
     }
 }

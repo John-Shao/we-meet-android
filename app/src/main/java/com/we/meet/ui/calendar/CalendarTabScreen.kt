@@ -40,6 +40,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -220,12 +221,23 @@ fun CalendarTabScreen(
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
     val moveFailedText = stringResource(R.string.calendar_move_failed)
     val roomConflictText = stringResource(R.string.calendar_move_room_conflict)
+    val loadFailedText = stringResource(R.string.calendar_load_error)
+    val retryText = stringResource(R.string.calendar_retry)
     LaunchedEffect(Unit) {
         vm.moveFailed.collect { reason ->
             snackbarHostState.showSnackbar(
                 if (reason == MoveFailure.ROOM_CONFLICT) roomConflictText
                 else moveFailedText,
             )
+        }
+    }
+    LaunchedEffect(ui.error, ui.eventsByDay.isNotEmpty()) {
+        if (ui.error && ui.eventsByDay.isNotEmpty()) {
+            val result = snackbarHostState.showSnackbar(
+                message = loadFailedText,
+                actionLabel = retryText,
+            )
+            if (result == SnackbarResult.ActionPerformed) vm.refresh()
         }
     }
 
@@ -274,7 +286,7 @@ fun CalendarTabScreen(
                     CircularProgressIndicator()
                 }
 
-                ui.error -> Column(
+                ui.error && ui.eventsByDay.isEmpty() -> Column(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {

@@ -444,13 +444,19 @@ fun FreeBusyCompareScreen(
                     .padding(horizontal = Dimens.SpaceS),
             ) {
                 IconButton(onClick = { day = day.minusDays(1) }) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null)
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                        contentDescription = stringResource(R.string.cd_prev),
+                    )
                 }
                 TextButton(onClick = { day = LocalDate.now(zone) }) {
                     Text(stringResource(R.string.calendar_today))
                 }
                 IconButton(onClick = { day = day.plusDays(1) }) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = stringResource(R.string.cd_next),
+                    )
                 }
                 Spacer(Modifier.width(Dimens.SpaceXs))
                 Text(

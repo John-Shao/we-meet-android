@@ -38,6 +38,7 @@ import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.ui.common.ErrorBanner
 import com.we.meet.feature.im.vm.GroupInfoViewModel
+import com.we.meet.ui.components.DestructiveConfirmDialog
 import com.we.meet.feature.im.vm.GroupMemberUi
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
@@ -202,20 +203,16 @@ fun GroupMembersScreen(
     }
 
     removeTarget?.let { member ->
-        AlertDialog(
-            onDismissRequest = { removeTarget = null },
-            title = { Text(stringResource(R.string.im_group_remove_member)) },
-            text = { Text(stringResource(R.string.im_group_remove_confirm, member.displayName)) },
-            confirmButton = {
-                TextButton(onClick = { vm.removeMember(member); removeTarget = null }) {
-                    Text(stringResource(R.string.im_action_confirm))
-                }
+        DestructiveConfirmDialog(
+            title = stringResource(R.string.im_group_remove_member),
+            message = stringResource(R.string.im_group_remove_confirm, member.displayName),
+            confirmLabel = stringResource(R.string.im_group_remove_member),
+            dismissLabel = stringResource(R.string.im_action_cancel),
+            onConfirm = {
+                vm.removeMember(member)
+                removeTarget = null
             },
-            dismissButton = {
-                TextButton(onClick = { removeTarget = null }) {
-                    Text(stringResource(R.string.im_action_cancel))
-                }
-            },
+            onDismiss = { removeTarget = null },
         )
     }
 
@@ -226,7 +223,7 @@ fun GroupMembersScreen(
             text = { Text(stringResource(R.string.im_group_transfer_confirm, member.displayName)) },
             confirmButton = {
                 TextButton(onClick = { vm.transferOwner(member); transferTarget = null }) {
-                    Text(stringResource(R.string.im_action_confirm))
+                    Text(stringResource(R.string.im_group_transfer_owner))
                 }
             },
             dismissButton = {

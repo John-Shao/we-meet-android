@@ -21,6 +21,7 @@
     <string name="im_open_profile">Profil öffnen</string>
     <string name="im_search">Suchen</string>
     <string name="im_search_hint">Unterhaltungen durchsuchen</string>
+    <string name="im_search_clear">Suche löschen</string>
     <string name="im_search_no_results">Keine passenden Unterhaltungen</string>
     <string name="im_more">Mehr</string>
     <string name="im_menu_scan_login">Zum Anmelden scannen</string>
