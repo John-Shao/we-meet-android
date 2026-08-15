@@ -85,6 +85,7 @@ import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.core.directory.ui.ContactPicker
 import com.we.meet.core.directory.ui.ContactPickerMode
+import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.core.directory.ui.PickedMember
 import com.we.meet.data.api.dto.CalendarExportRequest
 import com.we.meet.data.api.dto.CalendarMemberDto
@@ -529,14 +530,17 @@ fun CalendarDiscoverScreen(onBack: () -> Unit) {
                             meetingRoomScheduleTitle(it.node?.name, it.code, it.name)
                                 .ifBlank { calendar.displayName }
                         } ?: calendar.displayName
-                        val supportingText = room?.let {
-                            meetingRoomMetadata(
-                                capacityLabel = it.capacity.takeIf { capacity -> capacity > 0 }?.let { capacity ->
+                        val supportingText = when {
+                            room != null -> meetingRoomMetadata(
+                                capacityLabel = room.capacity.takeIf { capacity -> capacity > 0 }?.let { capacity ->
                                     stringResource(R.string.meeting_room_capacity_people, capacity)
                                 },
-                                facilityNames = it.facilities.map { facility -> facility.name },
+                                facilityNames = room.facilities.map { facility -> facility.name },
                             ).takeIf(String::isNotBlank)
-                        } ?: calendar.owner?.fullName
+                            ui.tab == CalendarDiscoverTab.CONTACTS ->
+                                contactCalendarSupportingText(calendar)
+                            else -> calendar.owner?.fullName
+                        }
                         ListItem(
                             headlineContent = {
                                 Text(headline, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -544,10 +548,20 @@ fun CalendarDiscoverScreen(onBack: () -> Unit) {
                             supportingContent = supportingText?.let { text ->
                                 { Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                             },
-                            leadingContent = if (showCalendarDiscoveryAvatar(ui.tab)) {
-                                { CalendarAvatar(calendar.displayName, calendar.color) }
-                            } else {
-                                null
+                            leadingContent = when {
+                                !showCalendarDiscoveryAvatar(ui.tab) -> null
+                                ui.tab == CalendarDiscoverTab.CONTACTS -> {
+                                    {
+                                        MemberAvatar(
+                                            name = headline,
+                                            url = calendar.owner?.avatarUrl,
+                                            cacheKey = "avatar:${calendar.owner?.id ?: calendar.id}",
+                                        )
+                                    }
+                                }
+                                else -> {
+                                    { CalendarAvatar(calendar.displayName, calendar.color) }
+                                }
                             },
                             trailingContent = {
                                 OutlinedButton(

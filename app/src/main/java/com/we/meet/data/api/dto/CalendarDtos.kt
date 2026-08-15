@@ -66,6 +66,8 @@ data class CalendarPersonDto(
     @Json(name = "full_name") val fullName: String? = null,
     @Json(name = "short_name") val shortName: String? = null,
     @Json(name = "avatar_url") val avatarUrl: String? = null,
+    val title: String? = null,
+    val department: CalendarOrganizationDto? = null,
     val organization: CalendarOrganizationDto? = null,
 )
 

@@ -1,6 +1,8 @@
 package com.we.meet.ui.calendar
 
 import com.we.meet.data.api.dto.CalendarCapabilitiesDto
+import com.we.meet.data.api.dto.CalendarOrganizationDto
+import com.we.meet.data.api.dto.CalendarPersonDto
 import com.we.meet.data.api.dto.CalendarRoomDto
 import com.we.meet.data.api.dto.MeetingRoomNodeRefDto
 import com.we.meet.data.api.dto.UnifiedCalendarDto
@@ -101,6 +103,27 @@ class CalendarManagementModelsTest {
         assertEquals(false, showCalendarDiscoveryAvatar(CalendarDiscoverTab.ROOMS))
         assertEquals(true, showCalendarDiscoveryAvatar(CalendarDiscoverTab.CONTACTS))
         assertEquals(true, showCalendarDiscoveryAvatar(CalendarDiscoverTab.PUBLIC))
+    }
+
+    @Test
+    fun contactCalendarUsesDirectoryProfileAsSupportingText() {
+        val calendar = UnifiedCalendarDto(
+            displayName = "Ting",
+            owner = CalendarPersonDto(
+                id = "user-ting",
+                fullName = "Ting",
+                title = "Designer",
+                department = CalendarOrganizationDto(
+                    id = "department-product",
+                    name = "Product",
+                ),
+            ),
+        )
+
+        assertEquals(
+            "Designer · Product",
+            contactCalendarSupportingText(calendar),
+        )
     }
 
     @Test

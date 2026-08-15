@@ -227,6 +227,12 @@ enum class CalendarDiscoverTab(val apiValue: String) {
 internal fun showCalendarDiscoveryAvatar(tab: CalendarDiscoverTab): Boolean =
     tab != CalendarDiscoverTab.ROOMS
 
+internal fun contactCalendarSupportingText(calendar: UnifiedCalendarDto): String? =
+    listOfNotNull(
+        calendar.owner?.title?.trim()?.takeIf(String::isNotEmpty),
+        calendar.owner?.department?.name?.trim()?.takeIf(String::isNotEmpty),
+    ).joinToString(" · ").takeIf(String::isNotEmpty)
+
 data class CalendarDiscoverUiState(
     val tab: CalendarDiscoverTab = CalendarDiscoverTab.CONTACTS,
     val query: String = "",
