@@ -1,6 +1,7 @@
 package com.we.meet.ui.meetingroom
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -8,9 +9,12 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -49,16 +53,23 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -80,10 +91,13 @@ import com.we.meet.ui.calendar.CalendarPrimaryPage
 import com.we.meet.ui.calendar.CalendarPrimaryToolbar
 import com.we.meet.ui.calendar.MoveFailure
 import com.we.meet.ui.calendar.views.DraftSelection
+import com.we.meet.ui.calendar.views.HOUR_RAIL_WIDTH
 import com.we.meet.ui.calendar.views.TimeBlock
 import com.we.meet.ui.calendar.views.TimelineScaffold
+import com.we.meet.ui.calendar.views.dateSwipeDayDelta
+import com.we.meet.ui.calendar.views.dayPagerDays
 import com.we.meet.ui.calendar.views.draftSlotAt
-import com.we.meet.ui.calendar.views.horizontalDateSwipe
+import com.we.meet.ui.calendar.views.isHorizontalDateSwipe
 import com.we.meet.ui.theme.Dimens
 import java.time.DayOfWeek
 import java.time.Instant
@@ -94,9 +108,13 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
+import kotlin.math.abs
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 private val CAPACITY_FILTERS = listOf(2, 4, 6, 10, 20, 50)
+internal const val MEETING_ROOM_SCHEDULE_TEST_TAG = "meeting-room-schedule-timeline"
+private const val MEETING_ROOM_SCHEDULE_SETTLE_MILLIS = 180
 
 internal data class BookingBounds(
     val booking: RoomBookingDto,
@@ -107,6 +125,25 @@ internal data class BookingBounds(
 
 internal fun BookingBounds.canMoveInRange(rangeStart: Int, rangeEnd: Int): Boolean =
     booking.canMove && withinSingleDay && startMin >= rangeStart && endMin <= rangeEnd
+
+internal fun meetingRoomScheduleBlocks(
+    date: LocalDate,
+    zone: ZoneId,
+    room: MeetingRoomTimelineEntryDto,
+    rangeStart: Int,
+    rangeEnd: Int,
+): List<TimeBlock> = room.bookings.mapNotNull { booking ->
+    bookingBounds(date, zone, booking)?.let { bounds ->
+        TimeBlock(
+            startMin = bounds.startMin,
+            endMin = bounds.endMin,
+            label = booking.title,
+            timeLabel = "${formatMinute(bounds.startMin)}–${formatMinute(bounds.endMin)}",
+            key = booking.id,
+            movable = bounds.canMoveInRange(rangeStart, rangeEnd),
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -172,16 +209,31 @@ fun MeetingRoomsCalendarScreen(
     }
     val selectedRoom = ui.rooms.firstOrNull { it.id == selectedRoomId }
     val selectedBounds = selectedRoomId?.let { bookingBounds[it].orEmpty() }.orEmpty()
-    val selectedBlocks = remember(selectedRoom, selectedBounds, rangeStart, rangeEnd) {
-        selectedBounds.map { bounds ->
-            TimeBlock(
-                startMin = bounds.startMin,
-                endMin = bounds.endMin,
-                label = bounds.booking.title,
-                timeLabel = "${formatMinute(bounds.startMin)}–${formatMinute(bounds.endMin)}",
-                key = bounds.booking.id,
-                movable = bounds.canMoveInRange(rangeStart, rangeEnd),
-            )
+    val selectedBlocks = remember(selectedRoom, ui.selectedDate, zone, rangeStart, rangeEnd) {
+        selectedRoom?.let { room ->
+            meetingRoomScheduleBlocks(ui.selectedDate, zone, room, rangeStart, rangeEnd)
+        }.orEmpty()
+    }
+    val selectedBlocksByDate = remember(
+        selectedRoomId,
+        selectedBlocks,
+        ui.roomsByDate,
+        ui.selectedDate,
+        zone,
+        rangeStart,
+        rangeEnd,
+    ) {
+        adjacentRoomDates(ui.selectedDate).associateWith { date ->
+            if (date == ui.selectedDate) {
+                selectedBlocks
+            } else {
+                ui.roomsByDate[date]
+                    ?.firstOrNull { it.id == selectedRoomId }
+                    ?.let { room ->
+                        meetingRoomScheduleBlocks(date, zone, room, rangeStart, rangeEnd)
+                    }
+                    .orEmpty()
+            }
         }
     }
     val draftConflict = draft?.let { selected ->
@@ -218,6 +270,19 @@ fun MeetingRoomsCalendarScreen(
     LaunchedEffect(ui.rooms.map { it.id }, ui.loading, ui.error) {
         if (!ui.loading && !ui.error && selectedRoomId != null && selectedRoom == null) {
             selectedRoomId = null
+        }
+    }
+    LaunchedEffect(
+        selectedRoomId,
+        ui.selectedDate,
+        ui.nodeId,
+        ui.capacityMin,
+        ui.facilityIds,
+        ui.loading,
+        ui.error,
+    ) {
+        if (selectedRoomId != null && !ui.loading && !ui.error) {
+            vm.prefetchAdjacentDates()
         }
     }
     LifecycleResumeEffect(Unit) {
@@ -281,12 +346,11 @@ fun MeetingRoomsCalendarScreen(
                 room = selectedRoom,
                 date = ui.selectedDate,
                 loading = ui.loading,
-                blocks = selectedBlocks,
+                blocksByDate = selectedBlocksByDate,
                 rangeStart = rangeStart,
                 rangeEnd = rangeEnd,
                 workingStart = workingHours.startMin,
                 workingEnd = workingHours.endMin,
-                nowMinute = nowMinute,
                 zone = zone,
                 draft = draft,
                 draftConflict = draftConflict,
@@ -295,11 +359,11 @@ fun MeetingRoomsCalendarScreen(
                 onSelectDate = selectDate,
                 onOpenRoomInfo = { roomInfoOpen = true },
                 onDraftAdjust = { draft = it },
-                onSlotTap = { minute ->
+                onSlotTap = { date, minute ->
                     detail = null
                     selectedBookingId = null
                     val slot = draftSlotAt(
-                        ui.selectedDate,
+                        date,
                         minute,
                         defaultDurationMin,
                         rangeStart,
@@ -337,8 +401,8 @@ fun MeetingRoomsCalendarScreen(
                     detail = null
                     selectedBookingId = key
                 },
-                onBlockMove = { key, startMin, endMin ->
-                    vm.moveBooking(key, ui.selectedDate, startMin, endMin)
+                onBlockMove = { key, date, startMin, endMin ->
+                    vm.moveBooking(key, date, startMin, endMin)
                 },
                 onRailTap = {
                     draft = null
@@ -515,16 +579,15 @@ private fun MeetingRoomOverview(
 }
 
 @Composable
-private fun MeetingRoomSchedule(
+internal fun MeetingRoomSchedule(
     room: MeetingRoomTimelineEntryDto,
     date: LocalDate,
     loading: Boolean,
-    blocks: List<TimeBlock>,
+    blocksByDate: Map<LocalDate, List<TimeBlock>>,
     rangeStart: Int,
     rangeEnd: Int,
     workingStart: Int,
     workingEnd: Int,
-    nowMinute: Int?,
     zone: ZoneId,
     draft: DraftSelection?,
     draftConflict: Boolean,
@@ -533,18 +596,61 @@ private fun MeetingRoomSchedule(
     onSelectDate: (LocalDate) -> Unit,
     onOpenRoomInfo: () -> Unit,
     onDraftAdjust: (DraftSelection) -> Unit,
-    onSlotTap: (Int) -> Unit,
+    onSlotTap: (date: LocalDate, minute: Int) -> Unit,
     onDraftConfirm: (DraftSelection) -> Unit,
     onBlockTap: (String) -> Unit,
     selectedBlockKey: String?,
     onBlockSelect: (String) -> Unit,
-    onBlockMove: (key: String, startMin: Int, endMin: Int) -> Unit,
+    onBlockMove: (key: String, date: LocalDate, startMin: Int, endMin: Int) -> Unit,
     onRailTap: () -> Unit,
 ) {
-    // A draft owns vertical move/resize gestures only; horizontal swipes still
-    // navigate dates. A selected event keeps exclusive control for rescheduling.
-    val dateSwipeEnabled = selectedBlockKey == null
-    val swipeThresholdPx = with(LocalDensity.current) { Dimens.MinTouchTarget.toPx() }
+    var renderedDate by remember { mutableStateOf(date) }
+    var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+    var resetOffsetAfterRecompose by remember { mutableStateOf(false) }
+    var settling by remember { mutableStateOf(false) }
+    var settleJob by remember { mutableStateOf<Job?>(null) }
+    val settleScope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
+    val pagingEnabled = selectedBlockKey == null
+    val gestureEnabled = pagingEnabled && !settling
+    val onSelectDateNow = rememberUpdatedState(onSelectDate)
+    val density = LocalDensity.current
+    val swipeThresholdPx = with(density) { Dimens.MinTouchTarget.toPx() }
+
+    if (resetOffsetAfterRecompose) {
+        SideEffect {
+            dragOffsetPx = 0f
+            resetOffsetAfterRecompose = false
+        }
+    }
+    LaunchedEffect(date) {
+        if (date != renderedDate) {
+            settleJob?.cancel()
+            settling = false
+            renderedDate = date
+            resetOffsetAfterRecompose = true
+        }
+    }
+    LaunchedEffect(pagingEnabled) {
+        if (!pagingEnabled) {
+            settleJob?.cancel()
+            settling = false
+            dragOffsetPx = 0f
+        }
+    }
+
+    val days = remember(renderedDate) { dayPagerDays(renderedDate) }
+    val columns = remember(days, blocksByDate) {
+        days.map { day -> blocksByDate[day].orEmpty() }
+    }
+    val today = LocalDate.now(zone)
+    val nowMinute = if (today in days) {
+        LocalTime.now(zone).let { it.hour * 60 + it.minute }
+            .takeIf { it in rangeStart until rangeEnd }
+    } else {
+        null
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         RoomScheduleToolbar(
             date = date,
@@ -552,44 +658,122 @@ private fun MeetingRoomSchedule(
             onBack = onBack,
             onSelectDate = onSelectDate,
         )
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .horizontalDateSwipe(
-                    enabled = dateSwipeEnabled,
-                    gestureKey = date,
-                    thresholdPx = swipeThresholdPx,
-                ) { dayDelta -> onSelectDate(date.plusDays(dayDelta)) },
+                .testTag(MEETING_ROOM_SCHEDULE_TEST_TAG)
+                .clipToBounds(),
         ) {
+            val pageWidthPx = with(density) {
+                (maxWidth - HOUR_RAIL_WIDTH).coerceAtLeast(Dimens.MinTouchTarget).toPx()
+            }
+            val gestureModifier = Modifier.pointerInput(
+                renderedDate,
+                gestureEnabled,
+                pageWidthPx,
+                swipeThresholdPx,
+            ) {
+                if (!gestureEnabled) return@pointerInput
+                awaitEachGesture {
+                    val down = awaitFirstDown(
+                        requireUnconsumed = false,
+                        pass = PointerEventPass.Initial,
+                    )
+                    var horizontalDistance = 0f
+                    var verticalDistance = 0f
+                    var directionLocked = false
+                    var horizontalDrag = false
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        val delta = change.position - change.previousPosition
+                        horizontalDistance += delta.x
+                        verticalDistance += delta.y
+                        if (!directionLocked &&
+                            (abs(horizontalDistance) > viewConfiguration.touchSlop ||
+                                abs(verticalDistance) > viewConfiguration.touchSlop)
+                        ) {
+                            directionLocked = true
+                            horizontalDrag = isHorizontalDateSwipe(
+                                horizontalDistance,
+                                verticalDistance,
+                                viewConfiguration.touchSlop,
+                            )
+                        }
+                        if (horizontalDrag) {
+                            change.consume()
+                            dragOffsetPx = horizontalDistance.coerceIn(-pageWidthPx, pageWidthPx)
+                        }
+                        if (!change.pressed) break
+                    }
+                    if (!horizontalDrag) return@awaitEachGesture
+
+                    val dayDelta = dateSwipeDayDelta(
+                        horizontalDistancePx = horizontalDistance,
+                        thresholdPx = swipeThresholdPx,
+                    )
+                    val targetOffset = dayDelta?.let { -it * pageWidthPx } ?: 0f
+                    val gestureDate = renderedDate
+                    settleJob?.cancel()
+                    settleJob = settleScope.launch {
+                        settling = true
+                        try {
+                            animate(
+                                initialValue = dragOffsetPx,
+                                targetValue = targetOffset,
+                                animationSpec = tween(MEETING_ROOM_SCHEDULE_SETTLE_MILLIS),
+                            ) { value, _ -> dragOffsetPx = value }
+                            if (dayDelta != null) {
+                                val nextDate = gestureDate.plusDays(dayDelta)
+                                renderedDate = nextDate
+                                resetOffsetAfterRecompose = true
+                                onSelectDateNow.value(nextDate)
+                            } else {
+                                dragOffsetPx = 0f
+                            }
+                        } finally {
+                            settling = false
+                        }
+                    }
+                }
+            }
+            val renderedDraft = draft?.let { value ->
+                days.indexOf(date).takeIf { it >= 0 }
+                    ?.let { index -> value.copy(colIndex = index) }
+            }
+
             TimelineScaffold(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(bottom = Dimens.Calendar.FabClearance)
                     .semantics {
                         if (draftConflict) stateDescription = conflictMessage
-                    },
-                columns = listOf(blocks),
-                scrollState = rememberScrollState(),
+                    }
+                    .then(gestureModifier),
+                columns = columns,
+                scrollState = scrollState,
                 visibleStartMin = rangeStart,
                 visibleEndMin = rangeEnd,
                 workingStartMin = workingStart,
                 workingEndMin = workingEnd,
                 nowMinute = nowMinute,
+                nowLineInColumn = { index -> days[index] == today },
                 visibleColumnCount = 1,
-                draft = draft,
+                draft = renderedDraft,
                 draftConflict = draftConflict,
                 draftLabel = stringResource(R.string.calendar_draft_add),
-                onDraftAdjust = onDraftAdjust,
-                onDraftConfirm = onDraftConfirm,
-                onSlotTap = { _, minute -> onSlotTap(minute) },
+                onDraftAdjust = { value -> onDraftAdjust(value.copy(colIndex = 0)) },
+                onDraftConfirm = { value -> onDraftConfirm(value.copy(colIndex = 0)) },
+                onSlotTap = { index, minute -> onSlotTap(days[index], minute) },
                 onBlockTap = { _, key -> onBlockTap(key) },
-                onBlockMove = { _, key, startMin, endMin ->
-                    onBlockMove(key, startMin, endMin)
+                onBlockMove = { index, key, startMin, endMin ->
+                    onBlockMove(key, days[index], startMin, endMin)
                 },
                 selectedBlockKey = selectedBlockKey,
                 onBlockSelect = onBlockSelect,
                 onRailTap = onRailTap,
-                contentKey = date,
+                horizontalContentOffsetPx = { pageWidthPx - dragOffsetPx },
+                contentKey = renderedDate,
             )
             if (loading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))

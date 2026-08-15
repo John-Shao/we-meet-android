@@ -14,6 +14,45 @@ import org.junit.Test
 class MeetingRoomTimelineMathTest {
 
     @Test
+    fun adjacentDateCacheKeepsOnlyThePagerWindow() {
+        val date = LocalDate.of(2026, 8, 15)
+        val room = MeetingRoomTimelineEntryDto(id = "room-1")
+        val cache = (-2L..2L).associate { offset ->
+            date.plusDays(offset) to listOf(room.copy(id = "room-$offset"))
+        }
+
+        val retained = retainRoomDateWindow(cache, date)
+
+        assertEquals(adjacentRoomDates(date), retained.keys)
+        assertEquals(3, retained.size)
+    }
+
+    @Test
+    fun scheduleBlocksAreProjectedForTheirBufferedDate() {
+        val date = LocalDate.of(2026, 8, 15)
+        val room = MeetingRoomTimelineEntryDto(
+            id = "room-1",
+            bookings = listOf(
+                RoomBookingDto(
+                    id = "booking-1",
+                    start = "2026-08-15T10:00:00Z",
+                    end = "2026-08-15T11:00:00Z",
+                ),
+            ),
+        )
+
+        val blocks = meetingRoomScheduleBlocks(date, ZoneId.of("UTC"), room, 0, 24 * 60)
+
+        assertEquals(1, blocks.size)
+        assertEquals(10 * 60, blocks.single().startMin)
+        assertEquals(11 * 60, blocks.single().endMin)
+        assertTrue(
+            meetingRoomScheduleBlocks(date.plusDays(1), ZoneId.of("UTC"), room, 0, 24 * 60)
+                .isEmpty(),
+        )
+    }
+
+    @Test
     fun dateChangeKeepsRoomIdentityButClearsPreviousDayBookings() {
         val room = MeetingRoomTimelineEntryDto(
             id = "room-1",

@@ -15,6 +15,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +34,7 @@ data class MeetingRoomsCalendarUiState(
     val nodes: List<MeetingRoomNodeDto> = emptyList(),
     val facilities: List<MeetingRoomFacilityDto> = emptyList(),
     val rooms: List<MeetingRoomTimelineEntryDto> = emptyList(),
+    val roomsByDate: Map<LocalDate, List<MeetingRoomTimelineEntryDto>> = emptyMap(),
     val loading: Boolean = true,
     val error: Boolean = false,
     val tooManyRooms: Boolean = false,
@@ -75,6 +77,7 @@ class MeetingRoomsCalendarViewModel(
     val ui: StateFlow<MeetingRoomsCalendarUiState> = _ui.asStateFlow()
     private val _moveFailed = MutableSharedFlow<MoveFailure>(extraBufferCapacity = 1)
     val moveFailed = _moveFailed.asSharedFlow()
+    private val prefetchJobs = mutableMapOf<LocalDate, Job>()
 
     private val requests = MutableStateFlow(
         RoomTimelineRequest(
@@ -100,10 +103,13 @@ class MeetingRoomsCalendarViewModel(
         if (_ui.value.selectedDate == date) return
         savedStateHandle[KEY_DATE] = date.toEpochDay()
         _ui.update {
+            val retained = retainRoomDateWindow(it.roomsByDate, date)
+            val cachedRooms = retained[date]
             it.copy(
                 selectedDate = date,
-                rooms = clearBookingsForDateChange(it.rooms),
-                loading = true,
+                rooms = cachedRooms ?: clearBookingsForDateChange(it.rooms),
+                roomsByDate = retained,
+                loading = cachedRooms == null,
                 error = false,
                 tooManyRooms = false,
             )
@@ -112,33 +118,45 @@ class MeetingRoomsCalendarViewModel(
     }
 
     fun setNode(nodeId: String?) {
+        cancelPrefetches()
         savedStateHandle[KEY_NODE] = nodeId
-        _ui.update { it.copy(nodeId = nodeId) }
+        _ui.update { it.copy(nodeId = nodeId, roomsByDate = emptyMap()) }
         requests.update { it.copy(nodeId = nodeId) }
     }
 
     fun setCapacity(capacityMin: Int?) {
+        cancelPrefetches()
         savedStateHandle[KEY_CAPACITY] = capacityMin ?: -1
-        _ui.update { it.copy(capacityMin = capacityMin) }
+        _ui.update { it.copy(capacityMin = capacityMin, roomsByDate = emptyMap()) }
         requests.update { it.copy(capacityMin = capacityMin) }
     }
 
     fun toggleFacility(id: String) {
+        cancelPrefetches()
         val next = _ui.value.facilityIds.let { if (id in it) it - id else it + id }
         savedStateHandle[KEY_FACILITIES] = next.sorted().joinToString(",")
-        _ui.update { it.copy(facilityIds = next) }
+        _ui.update { it.copy(facilityIds = next, roomsByDate = emptyMap()) }
         requests.update { it.copy(facilityIds = next) }
     }
 
     fun clearFilters() {
+        cancelPrefetches()
         savedStateHandle[KEY_NODE] = null
         savedStateHandle[KEY_CAPACITY] = -1
         savedStateHandle[KEY_FACILITIES] = ""
-        _ui.update { it.copy(nodeId = null, capacityMin = null, facilityIds = emptySet()) }
+        _ui.update {
+            it.copy(
+                nodeId = null,
+                capacityMin = null,
+                facilityIds = emptySet(),
+                roomsByDate = emptyMap(),
+            )
+        }
         requests.update { it.copy(nodeId = null, capacityMin = null, facilityIds = emptySet()) }
     }
 
     fun applyFilters(nodeId: String?, capacityMin: Int?, facilityIds: Set<String>) {
+        cancelPrefetches()
         savedStateHandle[KEY_NODE] = nodeId
         savedStateHandle[KEY_CAPACITY] = capacityMin ?: -1
         savedStateHandle[KEY_FACILITIES] = facilityIds.sorted().joinToString(",")
@@ -147,6 +165,7 @@ class MeetingRoomsCalendarViewModel(
                 nodeId = nodeId,
                 capacityMin = capacityMin,
                 facilityIds = facilityIds,
+                roomsByDate = emptyMap(),
             )
         }
         requests.update {
@@ -159,7 +178,41 @@ class MeetingRoomsCalendarViewModel(
     }
 
     fun refresh() {
+        cancelPrefetches()
+        _ui.update { it.copy(roomsByDate = emptyMap()) }
         requests.update { it.copy(refreshToken = it.refreshToken + 1) }
+    }
+
+    /** Warm the two pages next to the selected date for interactive schedule paging. */
+    fun prefetchAdjacentDates() {
+        val currentRequest = requests.value
+        listOf(currentRequest.date.minusDays(1), currentRequest.date.plusDays(1)).forEach { date ->
+            if (_ui.value.roomsByDate.containsKey(date) || prefetchJobs.containsKey(date)) return@forEach
+            val request = currentRequest.copy(date = date)
+            val job = viewModelScope.launch {
+                try {
+                    val timeline = fetchTimeline(request)
+                    if (!request.hasSameScopeAs(requests.value)) return@launch
+                    _ui.update { state ->
+                        if (date !in adjacentRoomDates(state.selectedDate)) return@update state
+                        state.copy(
+                            roomsByDate = retainRoomDateWindow(
+                                state.roomsByDate + (date to timeline),
+                                state.selectedDate,
+                            ),
+                        )
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Throwable) {
+                    // Adjacent pages are an optimization; the selected-day load owns errors.
+                }
+            }
+            prefetchJobs[date] = job
+            job.invokeOnCompletion {
+                if (prefetchJobs[date] === job) prefetchJobs.remove(date)
+            }
+        }
     }
 
     /** Move or resize an organizer-owned room booking, matching the calendar grid. */
@@ -219,21 +272,25 @@ class MeetingRoomsCalendarViewModel(
     }
 
     private suspend fun loadTimeline(request: RoomTimelineRequest) {
-        _ui.update { it.copy(loading = true, error = false, tooManyRooms = false) }
-        val zone = settingsStore.calendarZoneId()
-        val (start, end) = localDayUtcBounds(request.date, zone)
-        try {
-            val timeline = api.timeline(
-                start = DateTimeFormatter.ISO_INSTANT.format(start),
-                end = DateTimeFormatter.ISO_INSTANT.format(end),
-                node = request.nodeId,
-                capacityMin = request.capacityMin,
-                facilities = request.facilityIds.takeIf { it.isNotEmpty() }?.joinToString(","),
+        val cachedRooms = _ui.value.roomsByDate[request.date]
+        _ui.update {
+            it.copy(
+                rooms = cachedRooms ?: it.rooms,
+                loading = cachedRooms == null,
+                error = false,
+                tooManyRooms = false,
             )
+        }
+        try {
+            val timeline = fetchTimeline(request)
             if (requests.value != request) return
             _ui.update {
                 it.copy(
-                    rooms = timeline.results,
+                    rooms = timeline,
+                    roomsByDate = retainRoomDateWindow(
+                        it.roomsByDate + (request.date to timeline),
+                        request.date,
+                    ),
                     loading = false,
                     error = false,
                     tooManyRooms = false,
@@ -250,13 +307,32 @@ class MeetingRoomsCalendarViewModel(
                 )
             _ui.update {
                 it.copy(
-                    rooms = emptyList(),
+                    rooms = cachedRooms ?: emptyList(),
                     loading = false,
-                    error = !tooMany,
-                    tooManyRooms = tooMany,
+                    error = cachedRooms == null && !tooMany,
+                    tooManyRooms = cachedRooms == null && tooMany,
                 )
             }
         }
+    }
+
+    private suspend fun fetchTimeline(
+        request: RoomTimelineRequest,
+    ): List<MeetingRoomTimelineEntryDto> {
+        val zone = settingsStore.calendarZoneId()
+        val (start, end) = localDayUtcBounds(request.date, zone)
+        return api.timeline(
+            start = DateTimeFormatter.ISO_INSTANT.format(start),
+            end = DateTimeFormatter.ISO_INSTANT.format(end),
+            node = request.nodeId,
+            capacityMin = request.capacityMin,
+            facilities = request.facilityIds.takeIf { it.isNotEmpty() }?.joinToString(","),
+        ).results
+    }
+
+    private fun cancelPrefetches() {
+        prefetchJobs.values.toList().forEach(Job::cancel)
+        prefetchJobs.clear()
     }
 
     private companion object {
@@ -266,6 +342,24 @@ class MeetingRoomsCalendarViewModel(
         const val KEY_FACILITIES = "meeting_room_facilities"
     }
 }
+
+private fun RoomTimelineRequest.hasSameScopeAs(other: RoomTimelineRequest): Boolean =
+    nodeId == other.nodeId &&
+        capacityMin == other.capacityMin &&
+        facilityIds == other.facilityIds &&
+        refreshToken == other.refreshToken
+
+internal fun adjacentRoomDates(anchorDate: LocalDate): Set<LocalDate> = setOf(
+    anchorDate.minusDays(1),
+    anchorDate,
+    anchorDate.plusDays(1),
+)
+
+internal fun retainRoomDateWindow(
+    cache: Map<LocalDate, List<MeetingRoomTimelineEntryDto>>,
+    anchorDate: LocalDate,
+): Map<LocalDate, List<MeetingRoomTimelineEntryDto>> =
+    cache.filterKeys { it in adjacentRoomDates(anchorDate) }
 
 /** Keep room identity stable while a new day loads, without showing stale bookings. */
 internal fun clearBookingsForDateChange(
