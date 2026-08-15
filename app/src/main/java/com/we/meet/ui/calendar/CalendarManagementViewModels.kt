@@ -230,7 +230,7 @@ data class CalendarDiscoverUiState(
     val rows: List<UnifiedCalendarDto> = emptyList(),
     val loading: Boolean = true,
     val error: Boolean = false,
-    val subscribingIds: Set<String> = emptySet(),
+    val subscriptionBusyIds: Set<String> = emptySet(),
 )
 
 class CalendarDiscoverViewModel(app: Application) : AndroidViewModel(app) {
@@ -254,25 +254,38 @@ class CalendarDiscoverViewModel(app: Application) : AndroidViewModel(app) {
 
     fun retry() = scheduleSearch(immediate = true)
 
-    fun subscribe(calendar: UnifiedCalendarDto) {
-        if (calendar.id in _ui.value.subscribingIds || calendar.subscribed) return
-        _ui.update { it.copy(subscribingIds = it.subscribingIds + calendar.id, error = false) }
+    fun toggleSubscription(calendar: UnifiedCalendarDto) {
+        if (calendar.id in _ui.value.subscriptionBusyIds) return
+        _ui.update {
+            it.copy(
+                subscriptionBusyIds = it.subscriptionBusyIds + calendar.id,
+                error = false,
+            )
+        }
         viewModelScope.launch {
             runCatching {
-                api.updateCalendarSubscription(
-                    calendar.id,
-                    CalendarSubscriptionRequest(enabled = true, color = calendar.color),
-                )
+                if (calendar.subscribed) {
+                    api.deleteCalendarSubscription(calendar.id)
+                    calendar.withoutSubscription()
+                } else {
+                    api.updateCalendarSubscription(
+                        calendar.id,
+                        CalendarSubscriptionRequest(enabled = true, color = calendar.color),
+                    )
+                }
             }.onSuccess { saved ->
                 _ui.update {
                     it.copy(
                         rows = it.rows.map { row -> if (row.id == saved.id) saved else row },
-                        subscribingIds = it.subscribingIds - calendar.id,
+                        subscriptionBusyIds = it.subscriptionBusyIds - calendar.id,
                     )
                 }
             }.onFailure {
                 _ui.update { state ->
-                    state.copy(subscribingIds = state.subscribingIds - calendar.id, error = true)
+                    state.copy(
+                        subscriptionBusyIds = state.subscriptionBusyIds - calendar.id,
+                        error = true,
+                    )
                 }
             }
         }
@@ -301,6 +314,9 @@ class CalendarDiscoverViewModel(app: Application) : AndroidViewModel(app) {
 }
 
 internal const val CALENDAR_DISCOVER_DEBOUNCE_MS = 250L
+
+internal fun UnifiedCalendarDto.withoutSubscription(): UnifiedCalendarDto =
+    copy(subscribed = false, enabled = false)
 
 data class CalendarEditorUiState(
     val calendar: UnifiedCalendarDto? = null,

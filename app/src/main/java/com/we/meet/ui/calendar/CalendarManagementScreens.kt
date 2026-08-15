@@ -539,15 +539,15 @@ fun CalendarDiscoverScreen(onBack: () -> Unit) {
                             leadingContent = { CalendarAvatar(calendar.displayName, calendar.color) },
                             trailingContent = {
                                 OutlinedButton(
-                                    enabled = !calendar.subscribed && calendar.id !in ui.subscribingIds,
-                                    onClick = { vm.subscribe(calendar) },
+                                    enabled = calendar.id !in ui.subscriptionBusyIds,
+                                    onClick = { vm.toggleSubscription(calendar) },
                                 ) {
-                                    if (calendar.id in ui.subscribingIds) {
+                                    if (calendar.id in ui.subscriptionBusyIds) {
                                         CircularProgressIndicator(modifier = Modifier.size(Dimens.IconSmall))
                                     } else {
                                         Text(
                                             stringResource(
-                                                if (calendar.subscribed) R.string.calendar_subscribed
+                                                if (calendar.subscribed) R.string.calendar_unsubscribe
                                                 else R.string.calendar_subscribe,
                                             ),
                                         )

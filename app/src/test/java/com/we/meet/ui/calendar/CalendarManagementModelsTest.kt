@@ -78,6 +78,20 @@ class CalendarManagementModelsTest {
     }
 
     @Test
+    fun discoveryUnsubscribeClearsSubscriptionAndVisibility() {
+        val subscribed = UnifiedCalendarDto(
+            id = "room-calendar",
+            subscribed = true,
+            enabled = true,
+        )
+
+        val unsubscribed = subscribed.withoutSubscription()
+
+        assertEquals(false, unsubscribed.subscribed)
+        assertEquals(false, unsubscribed.enabled)
+    }
+
+    @Test
     fun optimisticFailureRestoresSnapshotAndRequestsVisibleError() {
         val snapshot = listOf(UnifiedCalendarDto(id = "server", enabled = true))
         val optimistic = CalendarManagementUiState(
