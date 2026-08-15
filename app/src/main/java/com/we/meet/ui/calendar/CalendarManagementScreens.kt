@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ViewDay
 import androidx.compose.material.icons.filled.ViewWeek
@@ -728,6 +727,8 @@ fun CalendarEditorScreen(calendarId: String?, onBack: () -> Unit, onDone: () -> 
                         ui.members.forEach { member ->
                             MemberRow(
                                 name = member.user.fullName ?: member.user.shortName ?: member.user.id,
+                                avatarUrl = member.user.avatarUrl,
+                                avatarCacheKey = "avatar:${member.user.id}",
                                 role = roleLabel(member.role),
                                 onRole = { roleTarget = member },
                                 onRemove = { vm.removeMember(member) },
@@ -736,6 +737,8 @@ fun CalendarEditorScreen(calendarId: String?, onBack: () -> Unit, onDone: () -> 
                         pendingMembers.forEach { member ->
                             MemberRow(
                                 name = member.displayName,
+                                avatarUrl = member.avatarUrl,
+                                avatarCacheKey = "avatar:${member.userId}",
                                 role = roleLabel("details"),
                                 onRole = null,
                                 onRemove = { pendingMembers = pendingMembers.filterNot { it.userId == member.userId } },
@@ -870,12 +873,18 @@ private fun CalendarColorDot(value: String) {
 @Composable
 private fun MemberRow(
     name: String,
+    avatarUrl: String?,
+    avatarCacheKey: String,
     role: String,
     onRole: (() -> Unit)?,
     onRemove: () -> Unit,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Icon(Icons.Filled.Person, contentDescription = null)
+        MemberAvatar(
+            name = name,
+            url = avatarUrl,
+            cacheKey = avatarCacheKey,
+        )
         Text(
             name,
             modifier = Modifier.weight(1f).padding(start = Dimens.SpaceS),
