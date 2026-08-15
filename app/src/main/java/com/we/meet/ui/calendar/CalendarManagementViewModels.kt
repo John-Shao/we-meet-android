@@ -224,6 +224,9 @@ enum class CalendarDiscoverTab(val apiValue: String) {
     PUBLIC("public"),
 }
 
+internal fun showCalendarDiscoveryAvatar(tab: CalendarDiscoverTab): Boolean =
+    tab != CalendarDiscoverTab.ROOMS
+
 data class CalendarDiscoverUiState(
     val tab: CalendarDiscoverTab = CalendarDiscoverTab.CONTACTS,
     val query: String = "",

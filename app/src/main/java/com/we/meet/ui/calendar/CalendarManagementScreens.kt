@@ -207,9 +207,10 @@ fun CalendarManagementScreen(
         }
     }
     actionTarget?.let { calendar ->
+        val displayName = calendarManagementDisplayName(calendar)
         ModalBottomSheet(onDismissRequest = { actionTarget = null }) {
             Text(
-                calendar.displayName,
+                displayName,
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             )
@@ -325,6 +326,12 @@ internal fun CalendarModeStrip(
     }
 }
 
+internal fun calendarManagementDisplayName(calendar: UnifiedCalendarDto): String =
+    calendar.meetingRoom?.let { room ->
+        meetingRoomScheduleTitle(room.node?.name, room.code, room.name)
+            .ifBlank { calendar.displayName }
+    } ?: calendar.displayName
+
 @Composable
 private fun CalendarManagementList(
     calendars: List<UnifiedCalendarDto>,
@@ -357,9 +364,10 @@ private fun CalendarManagementList(
                     )
                 }
                 items(rows, key = { it.id }) { calendar ->
+                    val displayName = calendarManagementDisplayName(calendar)
                     ListItem(
                         headlineContent = {
-                            Text(calendar.displayName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(displayName, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         },
                         supportingContent = calendar.owner?.fullName?.takeIf { it.isNotBlank() }?.let { owner ->
                             { Text(owner, maxLines = 1, overflow = TextOverflow.Ellipsis) }
@@ -380,7 +388,7 @@ private fun CalendarManagementList(
                                 IconButton(onClick = { onMore(calendar) }) {
                                     Icon(
                                         Icons.Filled.MoreHoriz,
-                                        stringResource(R.string.calendar_manage_more, calendar.displayName),
+                                        stringResource(R.string.calendar_manage_more, displayName),
                                     )
                                 }
                             }
@@ -536,7 +544,11 @@ fun CalendarDiscoverScreen(onBack: () -> Unit) {
                             supportingContent = supportingText?.let { text ->
                                 { Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                             },
-                            leadingContent = { CalendarAvatar(calendar.displayName, calendar.color) },
+                            leadingContent = if (showCalendarDiscoveryAvatar(ui.tab)) {
+                                { CalendarAvatar(calendar.displayName, calendar.color) }
+                            } else {
+                                null
+                            },
                             trailingContent = {
                                 OutlinedButton(
                                     enabled = calendar.id !in ui.subscriptionBusyIds,
