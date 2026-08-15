@@ -76,6 +76,18 @@ internal fun meetingRoomScheduleTitle(
     ).joinToString("-")
 }
 
+internal fun meetingRoomMetadata(
+    capacityLabel: String?,
+    facilityNames: List<String>,
+): String = listOfNotNull(
+    capacityLabel?.trim()?.takeIf { it.isNotEmpty() },
+    facilityNames
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+        .joinToString(" · ")
+        .takeIf { it.isNotEmpty() },
+).joinToString(" · ")
+
 internal fun compactMeetingRoomPathLabel(pathLabel: String?): String =
     pathLabel.orEmpty()
         .split("·")
@@ -254,13 +266,12 @@ private fun MeetingRoomOverviewItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                val facilities = room.facilities.joinToString(" · ") { it.name }
-                val metadata = listOfNotNull(
-                    room.capacity.takeIf { it > 0 }?.let {
+                val metadata = meetingRoomMetadata(
+                    capacityLabel = room.capacity.takeIf { it > 0 }?.let {
                         stringResource(R.string.meeting_room_capacity_people, it)
                     },
-                    facilities.takeIf { it.isNotBlank() },
-                ).joinToString(" · ")
+                    facilityNames = room.facilities.map { it.name },
+                )
                 if (metadata.isNotBlank()) {
                     Text(
                         text = metadata,

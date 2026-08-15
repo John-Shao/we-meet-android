@@ -140,6 +140,24 @@ class MeetingRoomTimelineMathTest {
     }
 
     @Test
+    fun meetingRoomMetadataUsesCapacityAndFacilities() {
+        assertEquals(
+            "100 people · TV · Whiteboard",
+            meetingRoomMetadata(
+                capacityLabel = "100 people",
+                facilityNames = listOf("TV", "Whiteboard"),
+            ),
+        )
+        assertEquals(
+            "Whiteboard",
+            meetingRoomMetadata(
+                capacityLabel = null,
+                facilityNames = listOf("", " Whiteboard "),
+            ),
+        )
+    }
+
+    @Test
     fun compactMeetingRoomPathOmitsCountryAndCity() {
         assertEquals(
             "Tech Park-Tower 2-Floor 6",

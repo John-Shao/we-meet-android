@@ -99,6 +99,8 @@ import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.calendar.views.THREE_DAY_VIEW_DAYS
+import com.we.meet.ui.meetingroom.meetingRoomMetadata
+import com.we.meet.ui.meetingroom.meetingRoomScheduleTitle
 import com.we.meet.ui.theme.Dimens
 import java.time.Instant
 import java.time.LocalDate
@@ -514,13 +516,26 @@ fun CalendarDiscoverScreen(onBack: () -> Unit) {
                 )
                 else -> LazyColumn(Modifier.fillMaxSize()) {
                     items(ui.rows, key = { it.id }) { calendar ->
+                        val room = calendar.meetingRoom
+                        val headline = room?.let {
+                            meetingRoomScheduleTitle(it.node?.name, it.code, it.name)
+                                .ifBlank { calendar.displayName }
+                        } ?: calendar.displayName
+                        val supportingText = room?.let {
+                            meetingRoomMetadata(
+                                capacityLabel = it.capacity.takeIf { capacity -> capacity > 0 }?.let { capacity ->
+                                    stringResource(R.string.meeting_room_capacity_people, capacity)
+                                },
+                                facilityNames = it.facilities.map { facility -> facility.name },
+                            ).takeIf(String::isNotBlank)
+                        } ?: calendar.owner?.fullName
                         ListItem(
                             headlineContent = {
-                                Text(calendar.displayName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(headline, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             },
-                            supportingContent = calendar.meetingRoom?.code?.takeIf { it.isNotBlank() }?.let { code ->
-                                { Text(stringResource(R.string.calendar_room_code, code)) }
-                            } ?: calendar.owner?.fullName?.let { owner -> { Text(owner) } },
+                            supportingContent = supportingText?.let { text ->
+                                { Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                            },
                             leadingContent = { CalendarAvatar(calendar.displayName, calendar.color) },
                             trailingContent = {
                                 OutlinedButton(

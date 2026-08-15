@@ -46,4 +46,40 @@ class CalendarSharingDtosTest {
         assertEquals("Alice", dto.owner.fullName)
         assertEquals("free_busy", dto.permission)
     }
+
+    @Test
+    fun `resource calendar keeps room summary fields`() {
+        val json = """
+            {
+              "id":"calendar-room-1",
+              "kind":"resource",
+              "display_name":"Overlook",
+              "meeting_room":{
+                "id":"room-1",
+                "name":"Overlook",
+                "code":"1602",
+                "floor":"16F",
+                "capacity":100,
+                "node":{"id":"building-1","name":"Tencent Tower"},
+                "path_label":"Shenzhen · Tencent Tower · 16F",
+                "timezone":"Asia/Shanghai",
+                "facilities":[
+                  {"id":"facility-tv","name":"TV","code":"tv"},
+                  {"id":"facility-board","name":"Whiteboard","code":"whiteboard"}
+                ],
+                "is_active":true,
+                "requires_approval":false
+              }
+            }
+        """.trimIndent()
+
+        val dto = moshi.adapter(UnifiedCalendarDto::class.java).fromJson(json)!!
+        val room = dto.meetingRoom!!
+
+        assertEquals("1602", room.code)
+        assertEquals("Overlook", room.name)
+        assertEquals(100, room.capacity)
+        assertEquals("Tencent Tower", room.node?.name)
+        assertEquals(listOf("TV", "Whiteboard"), room.facilities.map { it.name })
+    }
 }
