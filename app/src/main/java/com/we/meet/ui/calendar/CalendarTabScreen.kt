@@ -889,7 +889,7 @@ internal fun AgendaCard(
     ) {
         Box(
             modifier = Modifier
-                .width(Dimens.Calendar.RsvpAccentBarWidth)
+                .width(Dimens.Calendar.AgendaAccentBarWidth)
                 .fillMaxHeight()
                 .background(
                     parseCalendarColor(event.calendarColor)

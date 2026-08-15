@@ -1101,8 +1101,6 @@ fun TimelineScaffold(
                                             )
                                             val durationMinutes = b.endMin - b.startMin
                                             val short = durationMinutes <= SHORT_BLOCK_MIN
-                                            val glyphOnly =
-                                                durationMinutes <= DRAFT_SNAP_MIN || compactBlocks
                                             // 窄列(compactBlocks)不显时间;短块仅一行,
                                             // 长块标题可占两行,把腾出的行留给标题。
                                             val showTime = !compactBlocks && b.timeLabel != null
@@ -1129,11 +1127,7 @@ fun TimelineScaffold(
                                                     modifier = Modifier
                                                         .fillMaxSize()
                                                         .padding(
-                                                            end = if (glyphOnly) {
-                                                                Dimens.SpaceL
-                                                            } else {
-                                                                Dimens.SpaceXl
-                                                            },
+                                                            end = Dimens.SpaceL,
                                                         ),
                                                 ) {
                                                     Text(
@@ -1159,8 +1153,6 @@ fun TimelineScaffold(
                                                 }
                                                 RsvpStatusBadge(
                                                     visual = visual,
-                                                    compact = true,
-                                                    glyphOnly = glyphOnly,
                                                     modifier = Modifier.align(
                                                         if (short) Alignment.CenterEnd
                                                         else Alignment.BottomEnd,

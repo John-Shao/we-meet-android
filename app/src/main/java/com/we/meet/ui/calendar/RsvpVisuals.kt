@@ -1,16 +1,12 @@
 package com.we.meet.ui.calendar
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -35,19 +31,7 @@ fun rsvpVisualOf(myRsvp: String?): RsvpVisual = when (myRsvp) {
     else -> RsvpVisual.ACCEPTED
 }
 
-/** 档位对应的小徽标强调色。 */
-@Composable
-@ReadOnlyComposable
-fun rsvpAccentColor(visual: RsvpVisual): Color = with(WeMeetTheme.extras.rsvp) {
-    when (visual) {
-        RsvpVisual.ACCEPTED -> accepted
-        RsvpVisual.NEEDS_ACTION -> needsAction
-        RsvpVisual.TENTATIVE -> tentative
-        RsvpVisual.DECLINED -> declined
-    }
-}
-
-/** 档位对应的小徽标文字色;拒绝标题也复用灰色。 */
+/** 档位对应的 glyph 颜色;拒绝标题也复用灰色。 */
 @Composable
 @ReadOnlyComposable
 fun rsvpTextColor(visual: RsvpVisual): Color = with(WeMeetTheme.extras.rsvp) {
@@ -70,15 +54,12 @@ fun rsvpStatusLabel(visual: RsvpVisual): String = stringResource(
     },
 )
 
-/** RSVP 图形徽标;glyph + contentDescription 保证状态不依赖色觉。 */
+/** App 日历统一使用无圆圈底的 RSVP glyph;contentDescription 补足文字语义。 */
 @Composable
 fun RsvpStatusBadge(
     visual: RsvpVisual,
     modifier: Modifier = Modifier,
-    compact: Boolean = false,
-    glyphOnly: Boolean = false,
 ) {
-    val accent = rsvpAccentColor(visual)
     val label = rsvpStatusLabel(visual)
     val glyph = when (visual) {
         RsvpVisual.ACCEPTED -> "✓"
@@ -89,23 +70,7 @@ fun RsvpStatusBadge(
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .size(
-                when {
-                    glyphOnly -> Dimens.Calendar.RsvpGlyphSize
-                    compact -> Dimens.Calendar.RsvpBadgeCompactSize
-                    else -> Dimens.Calendar.RsvpBadgeSize
-                },
-            )
-            .clip(CircleShape)
-            .then(
-                if (glyphOnly) {
-                    Modifier
-                } else {
-                    Modifier
-                        .background(accent.copy(alpha = if (WeMeetTheme.isDark) 0.22f else 0.10f))
-                        .border(Dimens.BorderThin, accent.copy(alpha = 0.72f), CircleShape)
-                },
-            )
+            .size(Dimens.Calendar.RsvpGlyphSize)
             .semantics { contentDescription = label },
     ) {
         Text(
