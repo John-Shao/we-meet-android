@@ -71,9 +71,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import com.we.meet.ui.calendar.EventUi
 import com.we.meet.ui.calendar.RsvpVisual
-import com.we.meet.ui.calendar.rsvpAccentColor
+import com.we.meet.ui.calendar.RsvpStatusBadge
 import com.we.meet.ui.calendar.parseCalendarColor
-import com.we.meet.ui.calendar.rsvpBlockBackground
+import com.we.meet.ui.calendar.rsvpStatusLabel
 import com.we.meet.ui.calendar.rsvpTextColor
 import com.we.meet.ui.calendar.rsvpVisualOf
 import com.we.meet.R
@@ -440,11 +440,9 @@ fun TimelineScaffold(
     val gridLine = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
     val offWorkShade = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.03f)
     val busyColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f)
-    // 表态四态四色(见 RsvpVisuals):竖条 = 强调色、块底 = 同色低透明、
-    // 文字 = 同色深档;忙闲块(label == null)不参与,仍用中性 busyColor。
-    val accentOf = RsvpVisual.entries.associateWith { rsvpAccentColor(it) }
-    val textOf = RsvpVisual.entries.associateWith { rsvpTextColor(it) }
-    val bgOf = RsvpVisual.entries.associateWith { rsvpBlockBackground(it) }
+    // 色相只表示日历/用户归属;RSVP 由图形徽标表示。忙闲块(label == null)
+    // 没有日历归属,继续使用中性 busyColor。
+    val calendarFillAlpha = if (WeMeetTheme.isDark) 0.24f else 0.14f
     // 短块「标题,时间」分隔符:中文全角逗号(对齐 Web),其他语言半角。
     val titleTimeSep = if (Locale.getDefault().language == "zh") "，" else ", "
     val busyA11yLabel = stringResource(R.string.freebusy_busy)
@@ -965,14 +963,14 @@ fun TimelineScaffold(
                                 val blockHeight =
                                     (hourHeight * ((clippedEnd - clippedStart) / 60f))
                                         .coerceAtLeast(Dimens.Calendar.BlockMinHeight)
-                                // 对齐 Web/飞书:左侧实心竖条 + 同色系浅底;短块
+                                // 对齐 Web:左侧归属色竖条 + 同色系浅底;短块
                                 // (≤45min)时间并入标题行,长块标题行+时间行。
-                                // 竖条/底/字的颜色按表态四档取(拒绝档额外删除线)。
+                                // RSVP 使用 ✓/…/?/× 徽标,拒绝额外保留删除线。
                                 val visual = rsvpVisualOf(b.rsvp)
                                 val declined = visual == RsvpVisual.DECLINED
-                                val blockBg = bgOf.getValue(visual)
                                 val calendarAccent =
-                                    parseCalendarColor(b.calendarColor) ?: accentOf.getValue(visual)
+                                    parseCalendarColor(b.calendarColor)
+                                        ?: MaterialTheme.colorScheme.primary
                                 // 正在被拖走的块:原位留一层虚影,落点画预览。
                                 val ghost = movePreview?.key == b.key
                                 /**
@@ -985,16 +983,16 @@ fun TimelineScaffold(
                                  *
                                  * 改成只把填充压淡后,块整体退到背景里,而标题保持原色 ——
                                  * 底离文字更远了,对比度反而升到 6.8:1 / 8.0:1。
-                                 * 强调色条不跟着压:它是表态状态的唯一载体,而且只有 3dp
-                                 * 宽,占不了视觉重量。
+                                 * 归属色条不跟着压,确保不同日历仍可辨识。
                                  */
                                 val fillDim = if (b.dimmed) 0.5f else 1f
                                 // 长按选中态:主色描边提示「这块现在可拖」。
                                 val picked = b.key == selectedBlockKey && b.movable
-                                val blockDescription = listOf(
-                                    b.label ?: busyA11yLabel,
-                                    b.timeLabel ?: "${fmtMin(b.startMin)} – ${fmtMin(b.endMin)}",
-                                ).joinToString(titleTimeSep)
+                                val blockDescription = buildList {
+                                    add(b.label ?: busyA11yLabel)
+                                    add(b.timeLabel ?: "${fmtMin(b.startMin)} – ${fmtMin(b.endMin)}")
+                                    if (b.label != null) add(rsvpStatusLabel(visual))
+                                }.joinToString(titleTimeSep)
                                 val blockMove = onBlockMove
                                 val accessibilityActions = if (b.movable && blockMove != null) {
                                     buildList {
@@ -1056,10 +1054,11 @@ fun TimelineScaffold(
                                                 b.label == null -> busyColor.copy(
                                                     alpha = busyColor.alpha * fillDim,
                                                 )
-                                                b.hatched -> blockBg.copy(alpha = 0.35f * fillDim)
-                                                b.faded -> blockBg.copy(alpha = 0.45f * fillDim)
-                                                else -> blockBg.copy(
-                                                    alpha = blockBg.alpha * fillDim,
+                                                b.faded -> calendarAccent.copy(
+                                                    alpha = calendarFillAlpha * 0.45f * fillDim,
+                                                )
+                                                else -> calendarAccent.copy(
+                                                    alpha = calendarFillAlpha * fillDim,
                                                 )
                                             },
                                         )
@@ -1110,22 +1109,34 @@ fun TimelineScaffold(
                                                     horizontal = Dimens.SpaceXxs, vertical = Dimens.BorderThin,
                                                 ),
                                             ) {
-                                                val fg = textOf.getValue(visual)
+                                                val fg = if (declined) {
+                                                    rsvpTextColor(RsvpVisual.DECLINED)
+                                                } else {
+                                                    MaterialTheme.colorScheme.onSurface
+                                                }
                                                 // 拒绝与取消同样划掉:两者都是「这场我不去」。
                                                 val strike =
                                                     if (b.faded || declined) {
                                                         TextDecoration.LineThrough
                                                     } else null
-                                                Text(
-                                                    text = if (short && showTime) {
-                                                        "${b.label}$titleTimeSep${b.timeLabel}"
-                                                    } else b.label,
-                                                    style = WeMeetTextStyles.LabelTiny,
-                                                    color = fg,
-                                                    maxLines = if (short) 1 else 2,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    textDecoration = strike,
-                                                )
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    RsvpStatusBadge(
+                                                        visual = visual,
+                                                        compact = true,
+                                                    )
+                                                    Spacer(Modifier.width(Dimens.SpaceXxs))
+                                                    Text(
+                                                        text = if (short && showTime) {
+                                                            "${b.label}$titleTimeSep${b.timeLabel}"
+                                                        } else b.label,
+                                                        style = WeMeetTextStyles.LabelTiny,
+                                                        color = fg,
+                                                        maxLines = if (short) 1 else 2,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                        textDecoration = strike,
+                                                        modifier = Modifier.weight(1f),
+                                                    )
+                                                }
                                                 if (!short && showTime) {
                                                     Text(
                                                         text = b.timeLabel!!,

@@ -8,9 +8,15 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -25,17 +31,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.R
 import com.we.meet.ui.calendar.EventUi
+import com.we.meet.ui.calendar.RsvpStatusBadge
+import com.we.meet.ui.calendar.RsvpVisual
+import com.we.meet.ui.calendar.parseCalendarColor
+import com.we.meet.ui.calendar.rsvpTextColor
+import com.we.meet.ui.calendar.rsvpVisualOf
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
@@ -305,22 +320,49 @@ private fun DayAllDayEvents(
             ),
     ) {
         events.forEach { event ->
-            Text(
-                text = "${stringResource(R.string.calendar_all_day)} · ${event.title}",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            val visual = rsvpVisualOf(event.myRsvp)
+            val declined = visual == RsvpVisual.DECLINED
+            val calendarAccent = parseCalendarColor(event.calendarColor)
+                ?: MaterialTheme.colorScheme.primary
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
                     .padding(vertical = Dimens.Calendar.ChipInset)
-                    .background(
-                        MaterialTheme.colorScheme.primaryContainer,
-                        RoundedCornerShape(Dimens.CornerXs),
-                    )
+                    .clip(RoundedCornerShape(Dimens.CornerXs))
+                    .background(calendarAccent.copy(alpha = if (WeMeetTheme.isDark) 0.24f else 0.14f))
                     .clickable { onEventClick(event.id) }
-                    .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXxs),
-            )
+            ) {
+                androidx.compose.foundation.layout.Box(
+                    modifier = Modifier
+                        .width(Dimens.Calendar.BlockAccentBarWidth)
+                        .fillMaxHeight()
+                        .background(calendarAccent),
+                )
+                Spacer(Modifier.width(Dimens.SpaceXs))
+                RsvpStatusBadge(visual = visual, compact = true)
+                Spacer(Modifier.width(Dimens.SpaceXxs))
+                Text(
+                    text = "${stringResource(R.string.calendar_all_day)} · ${event.title}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (declined) {
+                        rsvpTextColor(RsvpVisual.DECLINED)
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textDecoration = if (event.cancelled || declined) {
+                        TextDecoration.LineThrough
+                    } else {
+                        null
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = Dimens.SpaceS, top = Dimens.SpaceXxs, bottom = Dimens.SpaceXxs),
+                )
+            }
         }
     }
 }

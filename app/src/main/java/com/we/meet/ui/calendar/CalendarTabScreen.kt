@@ -864,8 +864,7 @@ internal fun AgendaCard(
 ) {
     val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
     val dimmed = dimPastNow != null && event.end.isBefore(dimPastNow)
-    // 表态四态四色(接受=蓝 / 未反馈=紫 / 待定=琥珀 / 拒绝=灰),与日/三日视图
-    // 的竖条同一组色值;拒绝再加删除线,口径一致。
+    // 色条表示日历归属,回复状态由 ✓/…/?/× 徽标表示;拒绝再加删除线。
     val visual = rsvpVisualOf(event.myRsvp)
     val declined = visual == RsvpVisual.DECLINED
     Row(
@@ -893,7 +892,8 @@ internal fun AgendaCard(
                 .width(Dimens.Calendar.RsvpAccentBarWidth)
                 .fillMaxHeight()
                 .background(
-                    parseCalendarColor(event.calendarColor) ?: rsvpAccentColor(visual),
+                    parseCalendarColor(event.calendarColor)
+                        ?: MaterialTheme.colorScheme.primary,
                 ),
         )
         Row(
@@ -922,6 +922,8 @@ internal fun AgendaCard(
                 }
             }
             Spacer(Modifier.width(Dimens.SpaceM))
+            RsvpStatusBadge(visual = visual)
+            Spacer(Modifier.width(Dimens.SpaceXs))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = event.title,

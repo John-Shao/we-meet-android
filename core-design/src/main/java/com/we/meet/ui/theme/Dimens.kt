@@ -249,6 +249,9 @@ object Dimens {
         val EventDotSize = 4.dp
         /** 议程行左侧那条表示表态的竖色条。 */
         val RsvpAccentBarWidth = 4.dp
+        /** RSVP 状态徽标直径；紧凑尺寸用于时间网格，常规尺寸用于议程等宽松布局。 */
+        val RsvpBadgeCompactSize = 14.dp
+        val RsvpBadgeSize = 16.dp
         /** 议程行左侧时间列的宽度,要放得下「全天」和「23:59」。 */
         val TimeLabelWidth = 52.dp
         /** 忙闲对比里压在头像右上角的冲突红点,及其与头像隔开的描边环。 */
