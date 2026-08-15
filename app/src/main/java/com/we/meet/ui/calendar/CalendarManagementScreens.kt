@@ -99,6 +99,8 @@ import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.calendar.views.THREE_DAY_VIEW_DAYS
+import com.we.meet.ui.meetingroom.meetingRoomMetadata
+import com.we.meet.ui.meetingroom.meetingRoomScheduleTitle
 import com.we.meet.ui.theme.Dimens
 import java.time.Instant
 import java.time.LocalDate
@@ -205,9 +207,10 @@ fun CalendarManagementScreen(
         }
     }
     actionTarget?.let { calendar ->
+        val displayName = calendarManagementDisplayName(calendar)
         ModalBottomSheet(onDismissRequest = { actionTarget = null }) {
             Text(
-                calendar.displayName,
+                displayName,
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             )
@@ -323,6 +326,12 @@ internal fun CalendarModeStrip(
     }
 }
 
+internal fun calendarManagementDisplayName(calendar: UnifiedCalendarDto): String =
+    calendar.meetingRoom?.let { room ->
+        meetingRoomScheduleTitle(room.node?.name, room.code, room.name)
+            .ifBlank { calendar.displayName }
+    } ?: calendar.displayName
+
 @Composable
 private fun CalendarManagementList(
     calendars: List<UnifiedCalendarDto>,
@@ -355,9 +364,10 @@ private fun CalendarManagementList(
                     )
                 }
                 items(rows, key = { it.id }) { calendar ->
+                    val displayName = calendarManagementDisplayName(calendar)
                     ListItem(
                         headlineContent = {
-                            Text(calendar.displayName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(displayName, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         },
                         supportingContent = calendar.owner?.fullName?.takeIf { it.isNotBlank() }?.let { owner ->
                             { Text(owner, maxLines = 1, overflow = TextOverflow.Ellipsis) }
@@ -378,7 +388,7 @@ private fun CalendarManagementList(
                                 IconButton(onClick = { onMore(calendar) }) {
                                     Icon(
                                         Icons.Filled.MoreHoriz,
-                                        stringResource(R.string.calendar_manage_more, calendar.displayName),
+                                        stringResource(R.string.calendar_manage_more, displayName),
                                     )
                                 }
                             }
@@ -514,25 +524,42 @@ fun CalendarDiscoverScreen(onBack: () -> Unit) {
                 )
                 else -> LazyColumn(Modifier.fillMaxSize()) {
                     items(ui.rows, key = { it.id }) { calendar ->
+                        val room = calendar.meetingRoom
+                        val headline = room?.let {
+                            meetingRoomScheduleTitle(it.node?.name, it.code, it.name)
+                                .ifBlank { calendar.displayName }
+                        } ?: calendar.displayName
+                        val supportingText = room?.let {
+                            meetingRoomMetadata(
+                                capacityLabel = it.capacity.takeIf { capacity -> capacity > 0 }?.let { capacity ->
+                                    stringResource(R.string.meeting_room_capacity_people, capacity)
+                                },
+                                facilityNames = it.facilities.map { facility -> facility.name },
+                            ).takeIf(String::isNotBlank)
+                        } ?: calendar.owner?.fullName
                         ListItem(
                             headlineContent = {
-                                Text(calendar.displayName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(headline, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             },
-                            supportingContent = calendar.meetingRoom?.code?.takeIf { it.isNotBlank() }?.let { code ->
-                                { Text(stringResource(R.string.calendar_room_code, code)) }
-                            } ?: calendar.owner?.fullName?.let { owner -> { Text(owner) } },
-                            leadingContent = { CalendarAvatar(calendar.displayName, calendar.color) },
+                            supportingContent = supportingText?.let { text ->
+                                { Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                            },
+                            leadingContent = if (showCalendarDiscoveryAvatar(ui.tab)) {
+                                { CalendarAvatar(calendar.displayName, calendar.color) }
+                            } else {
+                                null
+                            },
                             trailingContent = {
                                 OutlinedButton(
-                                    enabled = !calendar.subscribed && calendar.id !in ui.subscribingIds,
-                                    onClick = { vm.subscribe(calendar) },
+                                    enabled = calendar.id !in ui.subscriptionBusyIds,
+                                    onClick = { vm.toggleSubscription(calendar) },
                                 ) {
-                                    if (calendar.id in ui.subscribingIds) {
+                                    if (calendar.id in ui.subscriptionBusyIds) {
                                         CircularProgressIndicator(modifier = Modifier.size(Dimens.IconSmall))
                                     } else {
                                         Text(
                                             stringResource(
-                                                if (calendar.subscribed) R.string.calendar_subscribed
+                                                if (calendar.subscribed) R.string.calendar_unsubscribe
                                                 else R.string.calendar_subscribe,
                                             ),
                                         )

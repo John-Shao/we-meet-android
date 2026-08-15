@@ -247,12 +247,9 @@ object Dimens {
         val DateCellSize = 34.dp
         /** 月视图日期下方「这天有日程」的小圆点。 */
         val EventDotSize = 4.dp
-        /** 议程行左侧那条表示表态的竖色条。 */
-        val RsvpAccentBarWidth = 4.dp
-        /** RSVP 状态徽标直径；紧凑尺寸用于时间网格，常规尺寸用于议程等宽松布局。 */
-        val RsvpBadgeCompactSize = 14.dp
-        val RsvpBadgeSize = 16.dp
-        /** 极小日程块只显示 RSVP glyph 时的占位尺寸。 */
+        /** 议程行左侧表示日历归属的竖色条。 */
+        val AgendaAccentBarWidth = 4.dp
+        /** App 日历 RSVP glyph 的占位尺寸。 */
         val RsvpGlyphSize = 12.dp
         /** 议程行左侧时间列的宽度,要放得下「全天」和「23:59」。 */
         val TimeLabelWidth = 52.dp

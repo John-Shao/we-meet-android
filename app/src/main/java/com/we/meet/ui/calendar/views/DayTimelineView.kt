@@ -360,7 +360,7 @@ private fun DayAllDayEvents(
                         .weight(1f)
                         .padding(end = Dimens.SpaceXs, top = Dimens.SpaceXxs, bottom = Dimens.SpaceXxs),
                 )
-                RsvpStatusBadge(visual = visual, compact = true)
+                RsvpStatusBadge(visual = visual)
                 Spacer(Modifier.width(Dimens.SpaceXs))
             }
         }

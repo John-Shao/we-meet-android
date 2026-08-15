@@ -1,6 +1,8 @@
 package com.we.meet.ui.calendar
 
 import com.we.meet.data.api.dto.CalendarCapabilitiesDto
+import com.we.meet.data.api.dto.CalendarRoomDto
+import com.we.meet.data.api.dto.MeetingRoomNodeRefDto
 import com.we.meet.data.api.dto.UnifiedCalendarDto
 import com.we.meet.data.settings.CalendarDisplayMode
 import org.junit.Assert.assertEquals
@@ -67,6 +69,23 @@ class CalendarManagementModelsTest {
     }
 
     @Test
+    fun meetingRoomCalendarNameIncludesItsBuilding() {
+        val calendar = UnifiedCalendarDto(
+            displayName = "1203",
+            meetingRoom = CalendarRoomDto(
+                id = "room-1203",
+                code = "1203",
+                node = MeetingRoomNodeRefDto(
+                    id = "building-lenovo",
+                    name = "联想大厦",
+                ),
+            ),
+        )
+
+        assertEquals("联想大厦-1203", calendarManagementDisplayName(calendar))
+    }
+
+    @Test
     fun calendarFormRejectsBlankNames() {
         assertEquals(false, isCalendarFormValid("  "))
         assertEquals(true, isCalendarFormValid(" Product launches "))
@@ -75,6 +94,27 @@ class CalendarManagementModelsTest {
     @Test
     fun discoverySearchUsesRequestedDebounce() {
         assertEquals(250L, CALENDAR_DISCOVER_DEBOUNCE_MS)
+    }
+
+    @Test
+    fun meetingRoomDiscoveryDoesNotShowAvatars() {
+        assertEquals(false, showCalendarDiscoveryAvatar(CalendarDiscoverTab.ROOMS))
+        assertEquals(true, showCalendarDiscoveryAvatar(CalendarDiscoverTab.CONTACTS))
+        assertEquals(true, showCalendarDiscoveryAvatar(CalendarDiscoverTab.PUBLIC))
+    }
+
+    @Test
+    fun discoveryUnsubscribeClearsSubscriptionAndVisibility() {
+        val subscribed = UnifiedCalendarDto(
+            id = "room-calendar",
+            subscribed = true,
+            enabled = true,
+        )
+
+        val unsubscribed = subscribed.withoutSubscription()
+
+        assertEquals(false, unsubscribed.subscribed)
+        assertEquals(false, unsubscribed.enabled)
     }
 
     @Test

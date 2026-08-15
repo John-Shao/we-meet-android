@@ -301,7 +301,20 @@ data class CalendarCapabilitiesDto(
 )
 
 @JsonClass(generateAdapter = true)
-data class CalendarRoomDto(val id: String = "", val name: String = "", val code: String = "")
+data class CalendarRoomDto(
+    val id: String = "",
+    val name: String = "",
+    val code: String = "",
+    val floor: String = "",
+    val capacity: Int = 0,
+    val description: String = "",
+    val node: MeetingRoomNodeRefDto? = null,
+    @Json(name = "path_label") val pathLabel: String? = null,
+    val timezone: String? = null,
+    val facilities: List<MeetingRoomFacilityDto> = emptyList(),
+    @Json(name = "is_active") val isActive: Boolean = true,
+    @Json(name = "requires_approval") val requiresApproval: Boolean = false,
+)
 
 @JsonClass(generateAdapter = true)
 data class UnifiedCalendarDto(
