@@ -33,6 +33,7 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
@@ -522,6 +523,9 @@ private fun CompactTabBar(
                 },
                 label = { Text(stringResource(tab.labelRes)) },
                 alwaysShowLabel = true,
+                colors = NavigationBarItemDefaults.colors(
+                    indicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
             )
         }
     }
