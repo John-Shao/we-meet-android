@@ -73,6 +73,8 @@ data class PickedMember(
 fun ContactPicker(
     deps: DirectoryDeps,
     mode: ContactPickerMode,
+    /** False while the host is submitting the selection; blocks duplicate actions. */
+    enabled: Boolean = true,
     excludeSelf: Boolean = true,
     excludeUserIds: Set<String> = emptySet(),
     /** Multi 模式下预勾选的 userId(如从直聊「新建群聊」带入对端);加载到即选中一次。 */
@@ -141,7 +143,10 @@ fun ContactPicker(
             }
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    ModalBottomSheet(
+        onDismissRequest = { if (enabled) onDismiss() },
+        sheetState = sheetState,
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -151,6 +156,7 @@ fun ContactPicker(
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
+                enabled = enabled,
                 placeholder = { Text(stringResource(R.string.picker_search_hint)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
@@ -167,6 +173,7 @@ fun ContactPicker(
                         InputChip(
                             selected = true,
                             onClick = { selected.value = selected.value - picked.userId },
+                            enabled = enabled,
                             label = { Text(picked.displayName, maxLines = 1) },
                         )
                     }
@@ -189,7 +196,11 @@ fun ContactPicker(
                             stringResource(R.string.picker_load_error),
                             color = MaterialTheme.colorScheme.error,
                         )
-                        Button(onClick = { reloadTick++ }, modifier = Modifier.padding(top = Dimens.SpaceS)) {
+                        Button(
+                            onClick = { reloadTick++ },
+                            enabled = enabled,
+                            modifier = Modifier.padding(top = Dimens.SpaceS),
+                        ) {
                             Text(stringResource(R.string.picker_retry))
                         }
                     }
@@ -210,6 +221,7 @@ fun ContactPicker(
                                 member = member,
                                 mode = mode,
                                 checked = member.id in selected.value,
+                                enabled = enabled,
                                 onClick = {
                                     val picked = member.toPicked()
                                     if (mode == ContactPickerMode.Single) {
@@ -234,7 +246,7 @@ fun ContactPicker(
             if (mode == ContactPickerMode.Multi) {
                 Button(
                     onClick = { onConfirm(selected.value.values.toList()) },
-                    enabled = selected.value.isNotEmpty(),
+                    enabled = enabled && selected.value.isNotEmpty(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = Dimens.SpaceM),
@@ -253,13 +265,14 @@ private fun MemberRow(
     member: MemberDto,
     mode: ContactPickerMode,
     checked: Boolean,
+    enabled: Boolean,
     onClick: () -> Unit,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(vertical = Dimens.SpaceS),
     ) {
         MemberAvatar(
@@ -295,7 +308,11 @@ private fun MemberRow(
         }
         if (mode == ContactPickerMode.Multi) {
             Spacer(Modifier.width(Dimens.SpaceS))
-            Checkbox(checked = checked, onCheckedChange = { onClick() })
+            Checkbox(
+                checked = checked,
+                onCheckedChange = { onClick() },
+                enabled = enabled,
+            )
         }
     }
 }

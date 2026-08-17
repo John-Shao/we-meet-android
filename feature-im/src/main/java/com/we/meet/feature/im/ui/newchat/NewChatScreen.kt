@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.newchat
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
@@ -40,12 +41,12 @@ fun NewChatScreen(
     val session = remember(deps) { ImSession.get(deps) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val creationGuard = remember { ConversationCreationGuard() }
 
     var pickedForGroup by remember { mutableStateOf<List<PickedMember>?>(null) }
     var creating by remember { mutableStateOf(false) }
 
     fun fail(e: Throwable) {
-        creating = false
         Toast.makeText(
             context,
             "${context.getString(R.string.im_create_chat_failed)}: " +
@@ -54,23 +55,41 @@ fun NewChatScreen(
         ).show()
     }
 
+    fun submit(create: suspend () -> String) {
+        if (!creationGuard.tryStart()) return
+        creating = true
+        scope.launch {
+            try {
+                runConversationCreation(
+                    create = create,
+                    refresh = { session.conversations.refresh() },
+                    onReady = onChatReady,
+                    onFailure = ::fail,
+                    onRefreshFailure = { error ->
+                        Log.w("NewChatScreen", "conversation refresh failed", error)
+                    },
+                )
+            } finally {
+                creationGuard.finish()
+                creating = false
+            }
+        }
+    }
+
     if (pickedForGroup == null) {
         ContactPicker(
             deps = deps,
             mode = ContactPickerMode.Multi,
+            enabled = !creating,
             preselectUserIds = setOfNotNull(preselectUserId),
             onConfirm = { picked ->
                 when {
                     picked.isEmpty() -> onCancel()
                     picked.size == 1 -> {
-                        creating = true
-                        scope.launch {
-                            runCatching { session.bridge.createDirectByUserId(picked.first().userId) }
-                                .onSuccess { res ->
-                                    session.conversations.refresh()
-                                    onChatReady(res.cid)
-                                }
-                                .onFailure(::fail)
+                        submit {
+                            session.bridge
+                                .createDirectByUserId(picked.first().userId)
+                                .cid
                         }
                     }
                     else -> pickedForGroup = picked
@@ -86,7 +105,7 @@ fun NewChatScreen(
             mutableStateOf(picked.take(3).joinToString("、") { it.displayName }.take(40))
         }
         AlertDialog(
-            onDismissRequest = { pickedForGroup = null },
+            onDismissRequest = { if (!creating) pickedForGroup = null },
             title = { Text(stringResource(R.string.im_new_group_title)) },
             text = {
                 OutlinedTextField(
@@ -100,16 +119,10 @@ fun NewChatScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        creating = true
-                        scope.launch {
-                            runCatching {
-                                session.bridge.createGroup(picked.map { it.userId }, name.trim())
-                            }
-                                .onSuccess { res ->
-                                    session.conversations.refresh()
-                                    onChatReady(res.cid)
-                                }
-                                .onFailure(::fail)
+                        submit {
+                            session.bridge
+                                .createGroup(picked.map { it.userId }, name.trim())
+                                .cid
                         }
                     },
                     enabled = name.trim().isNotEmpty() && !creating,
