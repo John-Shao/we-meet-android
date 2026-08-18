@@ -267,6 +267,7 @@ fun MessageBubble(
                     body = content.body,
                     resolved = cardResolved,
                     onClickButton = onCardButton,
+                    onOpenDoc = onOpenDoc,
                 )
                 is MessageContent.RichText -> RichTextBubble(
                     body = content.body,

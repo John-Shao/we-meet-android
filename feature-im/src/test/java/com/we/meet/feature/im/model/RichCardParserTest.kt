@@ -130,6 +130,20 @@ class RichCardParserTest {
     }
 
     @Test
+    fun `a doc button carries the internal document locator`() {
+        val raw = """
+            {"v":1,"blocks":[{"type":"actions","resolve":"each","buttons":[
+              {"id":"open-doc","text":"查看文档","style":"primary","action":"doc",
+               "doc_id":"doc-123","url":"https://docs.example.test/docs/doc-123/"}]}]}
+        """.trimIndent()
+        val button = (RichCardParser.parse(raw)!!.blocks.single() as CardBlock.Actions)
+            .buttons.single()
+        assertEquals(CardButtonAction.DOC, button.action)
+        assertEquals("doc-123", button.docId)
+        assertEquals("https://docs.example.test/docs/doc-123/", button.url)
+    }
+
+    @Test
     fun `an unknown theme falls back to neutral`() {
         val raw = """{"v":1,"header":{"title":"t","theme":"chartreuse"},"blocks":[{"type":"divider"}]}"""
         assertEquals(CardTheme.NEUTRAL, RichCardParser.parse(raw)!!.headerTheme)

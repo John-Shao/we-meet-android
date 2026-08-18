@@ -37,7 +37,7 @@ sealed interface CardSpan {
 
 enum class CardButtonStyle { DEFAULT, PRIMARY, DANGER }
 
-enum class CardButtonAction { URL, CALLBACK }
+enum class CardButtonAction { URL, CALLBACK, DOC }
 
 data class CardButton(
     val id: String,
@@ -46,6 +46,7 @@ data class CardButton(
     val action: CardButtonAction,
     /** 只有 [CardButtonAction.URL] 才有。 */
     val url: String = "",
+    val docId: String = "",
 )
 
 data class CardField(val label: String, val value: String)
@@ -199,6 +200,15 @@ object RichCardParser {
                 }
             }
             "callback" -> CardButton(id, text, style, CardButtonAction.CALLBACK)
+            "doc" -> {
+                val docId = o.optString("doc_id")
+                val url = o.optString("url")
+                if (docId.isNotEmpty() && RichTextParser.isWebUrl(url)) {
+                    CardButton(id, text, style, CardButtonAction.DOC, url, docId)
+                } else {
+                    null
+                }
+            }
             // 认不出的动作类型不渲染 —— 点了没反应的按钮比没有按钮更糟。
             else -> null
         }

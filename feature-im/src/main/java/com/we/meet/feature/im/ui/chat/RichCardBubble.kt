@@ -84,6 +84,7 @@ fun RichCardBubble(
     resolved: Map<String, CardResolution> = emptyMap(),
     /** 点一个 callback 按钮。null = 按钮渲染成禁用态(引用/转发的场景)。 */
     onClickButton: ((String) -> Unit)? = null,
+    onOpenDoc: ((String) -> Unit)? = null,
 ) {
     Column(
         modifier = modifier
@@ -166,7 +167,9 @@ fun RichCardBubble(
                                 horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
                                 verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
                             ) {
-                                block.buttons.forEach { CardButtonView(it, onClickButton) }
+                                block.buttons.forEach {
+                                    CardButtonView(it, onClickButton, onOpenDoc)
+                                }
                             }
                         }
                     }
@@ -213,7 +216,11 @@ private fun SpansText(spans: List<CardSpan>) {
 }
 
 @Composable
-private fun CardButtonView(button: CardButton, onClickButton: ((String) -> Unit)?) {
+private fun CardButtonView(
+    button: CardButton,
+    onClickButton: ((String) -> Unit)?,
+    onOpenDoc: ((String) -> Unit)?,
+) {
     val uriHandler = LocalUriHandler.current
     val tint = when (button.style) {
         CardButtonStyle.PRIMARY -> MaterialTheme.colorScheme.primary
@@ -222,12 +229,19 @@ private fun CardButtonView(button: CardButton, onClickButton: ((String) -> Unit)
     }
     // 没有 onClickButton 的场合(引用、转发预览)callback 按钮渲染成禁用态
     // —— 一个明摆着不能点的按钮,比一个点了没反应的按钮诚实。
-    val clickable = button.action == CardButtonAction.URL || onClickButton != null
+    val clickable = when (button.action) {
+        CardButtonAction.URL -> true
+        CardButtonAction.DOC -> onOpenDoc != null && button.url.isNotBlank()
+        CardButtonAction.CALLBACK -> onClickButton != null
+    }
     OutlinedButton(
         enabled = clickable,
         onClick = {
-            if (button.action == CardButtonAction.URL) uriHandler.openUri(button.url)
-            else onClickButton?.invoke(button.id)
+            when (button.action) {
+                CardButtonAction.URL -> uriHandler.openUri(button.url)
+                CardButtonAction.DOC -> onOpenDoc?.invoke(button.url)
+                CardButtonAction.CALLBACK -> onClickButton?.invoke(button.id)
+            }
         },
     ) {
         Text(text = button.text, color = tint, style = MaterialTheme.typography.labelLarge)
