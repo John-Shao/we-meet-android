@@ -292,7 +292,7 @@
     <string name="im_my_groups_member_count">%1$d leden</string>
     <string name="im_my_groups_empty">Je bent nog niet aangesloten bij een groep</string>
     <string name="im_my_groups_no_match">Geen overeenkomende groepen</string>
-    <string name="im_departed_suffix">" (vertrokken)"</string>
+    <string name="im_departed_suffix">\" (vertrokken)\"</string>
     <string name="im_departed_chip">Vertrokken</string>
     <string name="im_departed_hint">Deze persoon heeft de organisatie verlaten</string>
     <string name="im_preview_emoji">[Emoji]</string>

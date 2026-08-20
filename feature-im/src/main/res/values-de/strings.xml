@@ -292,7 +292,7 @@
     <string name="im_my_groups_member_count">%1$d Mitglieder</string>
     <string name="im_my_groups_empty">Du bist noch keiner Gruppe beigetreten</string>
     <string name="im_my_groups_no_match">Keine passenden Gruppen</string>
-    <string name="im_departed_suffix">" (verlassen)"</string>
+    <string name="im_departed_suffix">\" (verlassen)\"</string>
     <string name="im_departed_chip">Verlassen</string>
     <string name="im_departed_hint">Diese Person hat die Organisation verlassen</string>
     <string name="im_preview_emoji">[Emoji]</string>
@@ -364,7 +364,7 @@
     <string name="im_bots_callback_reason_blocked">Diese Adresse ist nicht zulässig</string>
     <string name="im_bots_help_body">POSTe JSON an die Webhook-URL eines Bots und die Nachricht erscheint unter diesem Namen in der Gruppe. Das Anfrageformat entspricht den benutzerdefinierten Feishu-Bots, daher benötigt ein bestehendes Skript nur eine neue URL.
 
-Textkörper als Klartext: {"msg_type":"text","content":{"text":"Build abgeschlossen"}}
+Textkörper als Klartext: {\"msg_type\":\"text\",\"content\":{\"text\":\"Build abgeschlossen\"}}
 
 Signatur (optional): sign = base64(hmac_sha256(key = timestamp + newline + secret, data = empty)). Sowohl timestamp als auch sign stehen im JSON-Body, nicht in den Headern.
 

@@ -280,15 +280,15 @@
     <string name="freebusy_selected_count">Sélectionné : %1$d</string>
     <string name="freebusy_confirm">OK</string>
     <string name="freebusy_search_members">Rechercher des membres</string>
-    <string name="calendar_prefill_attendee_failed">Certains participants n'ont pas pu être ajoutés</string>
+    <string name="calendar_prefill_attendee_failed">Certains participants n\'ont pas pu être ajoutés</string>
     <!-- P8: reminder entry in message list -->
-    <string name="reminder_title">Rappels d'événements</string>
+    <string name="reminder_title">Rappels d\'événements</string>
     <string name="reminder_today">Programme du jour</string>
     <string name="reminder_tomorrow">Programme de demain</string>
     <string name="reminder_now">Maintenant</string>
     <string name="reminder_in_minutes">dans %1$d min</string>
     <string name="reminder_join">Rejoindre la réunion</string>
-    <string name="reminder_empty">Aucun événement aujourd'hui ni demain</string>
+    <string name="reminder_empty">Aucun événement aujourd\'hui ni demain</string>
     <!-- P8: calendar settings page -->
     <string name="calendar_settings_title">Paramètres du calendrier</string>
     <string name="calendar_settings_timezone_mode">Fuseau horaire d’affichage</string>
@@ -312,7 +312,7 @@
     <string name="calendar_sharing_save_failed">Impossible d’enregistrer cette autorisation</string>
     <string name="action_close">Fermer</string>
     <string name="action_remove">Supprimer</string>
-    <string name="calendar_settings_reminder_entry">Afficher le rappel d'événement dans la liste des messages</string>
+    <string name="calendar_settings_reminder_entry">Afficher le rappel d\'événement dans la liste des messages</string>
     <string name="calendar_settings_week_start">Premier jour de la semaine</string>
     <string name="calendar_settings_default_duration">Durée par défaut des événements</string>
     <string name="calendar_settings_default_reminder">Rappel par défaut</string>
@@ -419,9 +419,9 @@
     <string name="session_expired_action">Se reconnecter</string>
     <string name="ok">OK</string>
     <string name="cancel">Annuler</string>
-    <string name="calendar_edit_title">"Modifier l'événement"</string>
+    <string name="calendar_edit_title">\"Modifier l\'événement\"</string>
     <string name="calendar_action_save">Enregistrer</string>
-    <string name="event_update_failed">"Échec de l'enregistrement"</string>
+    <string name="event_update_failed">\"Échec de l\'enregistrement\"</string>
     <string name="event_action_edit">Modifier</string>
     <string name="event_action_delete">Supprimer</string>
     <string name="event_action_share">Partager</string>
@@ -461,7 +461,7 @@
     <string name="approval_progress">%1$d/%2$d approuvé</string>
     <string name="approval_urge">Relancer</string>
     <string name="approval_urged">Relance envoyée — l\'approbateur actuel a été rappelé.</string>
-    <string name="approval_needs_assignment_hint">"L'approbateur n'a pas pu être résolu automatiquement. Demandez à un admin de corriger la structure."</string>
+    <string name="approval_needs_assignment_hint">\"L\'approbateur n\'a pas pu être résolu automatiquement. Demandez à un admin de corriger la structure.\"</string>
     <string name="approval_comment_hint">Commentaire (facultatif)</string>
     <string name="approval_act_approve">Approuver</string>
     <string name="approval_act_reject">Rejeter</string>
@@ -472,7 +472,7 @@
     <string name="approval_form_template">Modèle</string>
     <string name="approval_form_submit">Envoyer</string>
     <string name="approval_no_templates">Aucun modèle disponible</string>
-    <string name="approval_submit_failed">"Échec de l'envoi"</string>
+    <string name="approval_submit_failed">\"Échec de l\'envoi\"</string>
     <string name="profile_approval_entry">Approbations</string>
     <string name="room_more_invite_members">Inviter des membres</string>
 
