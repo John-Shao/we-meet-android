@@ -431,6 +431,12 @@
     <string name="event_summary_pending">wordt gegenereerd…</string>
     <string name="event_summary_view">Notulen bekijken</string>
     <string name="event_action_more">Meer</string>
+    <string name="event_action_transfer">Afspraak overdragen</string>
+    <string name="event_transfer_title">Afspraak overdragen</string>
+    <string name="event_transfer_target">Deze afspraak overdragen aan %1$s</string>
+    <string name="event_transfer_keep_original">Oorspronkelijke organisator als deelnemer behouden</string>
+    <string name="event_transfer_failed">Afspraak overdragen mislukt</string>
+    <string name="common_confirm">Bevestigen</string>
     <string name="event_delete_confirm">Deze afspraak verwijderen?</string>
     <string name="event_edit_scope_title">Terugkerende afspraak bewerken</string>
     <string name="event_delete_scope_title">Terugkerende afspraak verwijderen</string>

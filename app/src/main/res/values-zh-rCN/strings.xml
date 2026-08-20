@@ -465,6 +465,12 @@
     <string name="event_summary_pending">生成中…</string>
     <string name="event_summary_view">查看纪要</string>
     <string name="event_action_more">更多</string>
+    <string name="event_action_transfer">转让日程</string>
+    <string name="event_transfer_title">转让日程</string>
+    <string name="event_transfer_target">将日程转让给 %1$s</string>
+    <string name="event_transfer_keep_original">将原组织者保留在此日程</string>
+    <string name="event_transfer_failed">转让日程失败</string>
+    <string name="common_confirm">确定</string>
     <string name="event_delete_confirm">确定删除该日程？</string>
     <string name="event_delete_series_confirm">这是重复日程，删除将移除整个系列（所有场次），确定继续？</string>
     <string name="event_edit_scope_title">编辑重复日程</string>

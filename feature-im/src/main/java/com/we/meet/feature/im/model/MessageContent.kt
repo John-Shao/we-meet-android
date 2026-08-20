@@ -91,7 +91,7 @@ sealed interface MessageContent {
         val organizerName: String = "",
         /** private cards sent to a source conversation intentionally omit event details. */
         val visibility: String = "default",
-        /** created | invited | time_changed | attendees_changed | removed | rsvp_changed | cancelled */
+        /** created | invited | time_changed | attendees_changed | organizer_changed | removed | rsvp_changed | cancelled */
         val kind: String = "created",
         /**
          * kind=time_changed 时的**改期前**时间窗。后端一直在发这两个键,App 端

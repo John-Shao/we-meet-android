@@ -465,6 +465,12 @@
     <string name="event_summary_pending">generating…</string>
     <string name="event_summary_view">View notes</string>
     <string name="event_action_more">More</string>
+    <string name="event_action_transfer">Transfer event</string>
+    <string name="event_transfer_title">Transfer event</string>
+    <string name="event_transfer_target">Transfer this event to %1$s</string>
+    <string name="event_transfer_keep_original">Keep the original organizer in this event</string>
+    <string name="event_transfer_failed">Failed to transfer event</string>
+    <string name="common_confirm">Confirm</string>
     <string name="event_delete_confirm">Delete this event?</string>
     <string name="event_delete_series_confirm">This is a recurring event. Deleting it removes the entire series (all occurrences). Continue?</string>
     <string name="event_edit_scope_title">Edit recurring event</string>

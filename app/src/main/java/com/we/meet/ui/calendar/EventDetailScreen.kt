@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -76,6 +77,10 @@ import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.CalendarEventDto
 import com.we.meet.data.api.dto.RsvpRequest
 import com.we.meet.data.api.dto.SummaryDto
+import com.we.meet.data.api.dto.TransferEventRequest
+import com.we.meet.core.directory.ui.ContactPicker
+import com.we.meet.core.directory.ui.ContactPickerMode
+import com.we.meet.core.directory.ui.PickedMember
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.ui.chat.ForwardCreateGroupFlow
 import com.we.meet.feature.im.ui.chat.ForwardPicker
@@ -98,8 +103,12 @@ data class EventDetailUiState(
     val rsvpError: Boolean = false,
     /** Caller is the organizer → may edit/delete. */
     val canManage: Boolean = false,
+    /** Strictly the current organizer; shared-calendar writers cannot transfer. */
+    val canTransfer: Boolean = false,
     val deleting: Boolean = false,
     val deleteError: Boolean = false,
+    val transferring: Boolean = false,
+    val transferError: Boolean = false,
     /**
      * 会后纪要(阶段 2:日程详情覆盖「会前预约 → 会后纪要」全生命周期)。
      * 仅「已结束 + 有房间」时才拉,未来日程不平白打一次 404;拿不到就是 null,
@@ -139,6 +148,7 @@ class EventDetailViewModel(
                             loading = false,
                             error = false,
                             canManage = e.canEdit || e.canDelete,
+                            canTransfer = selfUserId != null && e.organizer?.id == selfUserId,
                         )
                     }
                     loadSummaryIfEnded(e)
@@ -179,6 +189,29 @@ class EventDetailViewModel(
 
     fun consumeDeleteError() {
         _ui.update { it.copy(deleteError = false) }
+    }
+
+    fun transfer(newOrganizerId: String, keepOriginalOrganizer: Boolean, onDone: () -> Unit) {
+        if (_ui.value.transferring || !_ui.value.canTransfer) return
+        _ui.update { it.copy(transferring = true, transferError = false) }
+        viewModelScope.launch {
+            runCatching {
+                api.transferEvent(
+                    eventId,
+                    TransferEventRequest(newOrganizerId, keepOriginalOrganizer),
+                )
+            }
+                .onSuccess { onDone() }
+                .onFailure {
+                    _ui.update { state ->
+                        state.copy(transferring = false, transferError = true)
+                    }
+                }
+        }
+    }
+
+    fun consumeTransferError() {
+        _ui.update { it.copy(transferError = false) }
     }
 
     /** Optimistic RSVP; revert + flag on failure. */
@@ -228,6 +261,9 @@ fun EventDetailScreen(
     var showShare by remember { mutableStateOf(false) }
     var showShareGroup by remember { mutableStateOf(false) }
     var showMore by remember { mutableStateOf(false) }
+    var showTransferPicker by remember { mutableStateOf(false) }
+    var transferCandidate by remember { mutableStateOf<PickedMember?>(null) }
+    var keepOriginalOrganizer by remember { mutableStateOf(true) }
     val imSession = remember { ImSession.get(app) }
 
     // Re-fetch on resume so an edit made on the edit screen shows on return.
@@ -238,10 +274,17 @@ fun EventDetailScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteFailedMsg = stringResource(R.string.event_delete_failed)
+    val transferFailedMsg = stringResource(R.string.event_transfer_failed)
     LaunchedEffect(ui.deleteError) {
         if (ui.deleteError) {
             snackbarHostState.showSnackbar(deleteFailedMsg)
             vm.consumeDeleteError()
+        }
+    }
+    LaunchedEffect(ui.transferError) {
+        if (ui.transferError) {
+            snackbarHostState.showSnackbar(transferFailedMsg)
+            vm.consumeTransferError()
         }
     }
 
@@ -279,7 +322,7 @@ fun EventDetailScreen(
                         // 删除收进「更多」(对标飞书),避免高危操作与常用操作并排。
                         Box {
                             IconButton(
-                                enabled = !ui.deleting,
+                                enabled = !ui.deleting && !ui.transferring,
                                 onClick = { showMore = true },
                             ) {
                                 Icon(
@@ -291,6 +334,15 @@ fun EventDetailScreen(
                                 expanded = showMore,
                                 onDismissRequest = { showMore = false },
                             ) {
+                                if (ui.canTransfer) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.event_action_transfer)) },
+                                        onClick = {
+                                            showMore = false
+                                            showTransferPicker = true
+                                        },
+                                    )
+                                }
                                 DropdownMenuItem(
                                     text = {
                                         Text(
@@ -386,6 +438,66 @@ fun EventDetailScreen(
                 },
             )
         }
+        if (showTransferPicker) {
+            ContactPicker(
+                deps = app,
+                mode = ContactPickerMode.Single,
+                includeExternal = false,
+                excludeUserIds = setOfNotNull(ui.event?.organizer?.id),
+                onConfirm = { picked ->
+                    transferCandidate = picked.firstOrNull()
+                    keepOriginalOrganizer = true
+                    showTransferPicker = false
+                },
+                onDismiss = { showTransferPicker = false },
+            )
+        }
+        transferCandidate?.let { candidate ->
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { transferCandidate = null },
+                title = { Text(stringResource(R.string.event_transfer_title)) },
+                text = {
+                    Column {
+                        Text(
+                            stringResource(
+                                R.string.event_transfer_target,
+                                candidate.displayName,
+                            ),
+                        )
+                        Spacer(Modifier.height(Dimens.SpaceS))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable {
+                                keepOriginalOrganizer = !keepOriginalOrganizer
+                            },
+                        ) {
+                            Checkbox(
+                                checked = keepOriginalOrganizer,
+                                onCheckedChange = { keepOriginalOrganizer = it },
+                            )
+                            Text(stringResource(R.string.event_transfer_keep_original))
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        enabled = !ui.transferring,
+                        onClick = {
+                            vm.transfer(
+                                candidate.userId,
+                                keepOriginalOrganizer,
+                                onDone = onBack,
+                            )
+                        },
+                    ) { Text(stringResource(R.string.common_confirm)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { transferCandidate = null }) {
+                        Text(stringResource(R.string.common_cancel))
+                    }
+                },
+            )
+        }
         if (editScopeAsk) {
             EventScopeDialog(
                 title = stringResource(R.string.event_edit_scope_title),
@@ -435,7 +547,7 @@ fun EventDetailScreen(
                 )
             }
             // 删除进行中:半透明遮罩 + 转圈,拦截交互避免二次触发。
-            if (ui.deleting) {
+            if (ui.deleting || ui.transferring) {
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier

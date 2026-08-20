@@ -121,6 +121,14 @@ class ImCardContractTest {
     }
 
     @Test
+    fun `parses an organizer transfer card`() {
+        val card = parse("event-card", "event_card_organizer_changed") as MessageContent.EventCard
+        assertEquals("organizer_changed", card.kind)
+        assertEquals("李四", card.organizerName)
+        assertEquals("all", card.recurrenceScope)
+    }
+
+    @Test
     fun `parses a cancelled card`() {
         val card = parse("event-card", "event_card_cancelled") as MessageContent.EventCard
         assertEquals("cancelled", card.kind)
@@ -215,6 +223,7 @@ class ImCardContractTest {
                 "event_card_invited",
                 "event_card_time_changed",
                 "event_card_attendees_changed",
+                "event_card_organizer_changed",
                 "event_card_removed",
                 "event_card_rsvp_changed",
                 "event_card_cancelled",

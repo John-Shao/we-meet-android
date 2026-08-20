@@ -251,6 +251,7 @@
     <string name="im_event_card_invited">Du bist eingeladen</string>
     <string name="im_event_card_time_changed">Verschoben</string>
     <string name="im_event_card_attendees_changed">Teilnehmer geändert</string>
+    <string name="im_event_card_organizer_changed">Organisator geändert</string>
     <string name="im_event_card_removed">Du wurdest entfernt</string>
     <string name="im_event_card_rsvp_changed">Antwort aktualisiert</string>
     <string name="im_event_card_rsvp_reply">%1$s: %2$s</string>

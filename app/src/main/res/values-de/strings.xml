@@ -431,6 +431,12 @@
     <string name="event_summary_pending">wird erstellt…</string>
     <string name="event_summary_view">Protokoll ansehen</string>
     <string name="event_action_more">Mehr</string>
+    <string name="event_action_transfer">Termin übertragen</string>
+    <string name="event_transfer_title">Termin übertragen</string>
+    <string name="event_transfer_target">Diesen Termin an %1$s übertragen</string>
+    <string name="event_transfer_keep_original">Bisherige organisierende Person als Teilnehmer behalten</string>
+    <string name="event_transfer_failed">Termin konnte nicht übertragen werden</string>
+    <string name="common_confirm">Bestätigen</string>
     <string name="event_delete_confirm">Diesen Termin löschen?</string>
     <string name="event_edit_scope_title">Wiederkehrenden Termin bearbeiten</string>
     <string name="event_delete_scope_title">Wiederkehrenden Termin löschen</string>

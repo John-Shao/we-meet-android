@@ -289,6 +289,7 @@
     <string name="im_event_card_invited">You\'re invited</string>
     <string name="im_event_card_time_changed">Rescheduled</string>
     <string name="im_event_card_attendees_changed">Attendees changed</string>
+    <string name="im_event_card_organizer_changed">Organizer changed</string>
     <string name="im_event_card_removed">You were removed</string>
     <string name="im_event_card_rsvp_changed">Response updated</string>
     <string name="im_event_card_rsvp_reply">%1$s: %2$s</string>

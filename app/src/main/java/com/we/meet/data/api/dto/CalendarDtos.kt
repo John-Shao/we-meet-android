@@ -265,6 +265,12 @@ data class RescheduleEventRequest(
 )
 
 @JsonClass(generateAdapter = true)
+data class TransferEventRequest(
+    @Json(name = "new_organizer_id") val newOrganizerId: String,
+    @Json(name = "keep_original_organizer") val keepOriginalOrganizer: Boolean = true,
+)
+
+@JsonClass(generateAdapter = true)
 data class RsvpRequest(val status: String)
 
 /**

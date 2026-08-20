@@ -251,6 +251,7 @@
     <string name="im_event_card_invited">Je bent uitgenodigd</string>
     <string name="im_event_card_time_changed">Verplaatst</string>
     <string name="im_event_card_attendees_changed">Deelnemers gewijzigd</string>
+    <string name="im_event_card_organizer_changed">Organisator gewijzigd</string>
     <string name="im_event_card_removed">Je bent verwijderd</string>
     <string name="im_event_card_rsvp_changed">Reactie bijgewerkt</string>
     <string name="im_event_card_rsvp_reply">%1$s: %2$s</string>

@@ -12,6 +12,7 @@ import com.we.meet.data.api.dto.RescheduleEventRequest
 import com.we.meet.data.api.dto.RsvpRequest
 import com.we.meet.data.api.dto.RsvpResponseDto
 import com.we.meet.data.api.dto.UpdateEventRequest
+import com.we.meet.data.api.dto.TransferEventRequest
 import com.we.meet.data.api.dto.SaveCalendarGrantRequest
 import com.we.meet.data.api.dto.SubscribeCalendarRequest
 import com.we.meet.data.api.dto.UpdateCalendarGrantRequest
@@ -214,6 +215,13 @@ interface CalendarApi {
     suspend fun rescheduleEvent(
         @Path("id") id: String,
         @Body body: RescheduleEventRequest,
+    ): CalendarEventDto
+
+    /** Organizer-only, immediate ownership transfer; recurring events transfer as a series. */
+    @POST("api/v1.0/calendar-events/{id}/transfer/")
+    suspend fun transferEvent(
+        @Path("id") id: String,
+        @Body body: TransferEventRequest,
     ): CalendarEventDto
 
     /**

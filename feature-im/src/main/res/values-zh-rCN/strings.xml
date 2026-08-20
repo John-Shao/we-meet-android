@@ -279,6 +279,7 @@
     <string name="im_event_card_invited">邀请你参加</string>
     <string name="im_event_card_time_changed">已改期</string>
     <string name="im_event_card_attendees_changed">参会人变更</string>
+    <string name="im_event_card_organizer_changed">组织者已变更</string>
     <string name="im_event_card_removed">已将你移出</string>
     <string name="im_event_card_rsvp_changed">回复已更新</string>
     <string name="im_event_card_rsvp_reply">%1$s：%2$s</string>

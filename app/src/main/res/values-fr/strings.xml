@@ -431,6 +431,12 @@
     <string name="event_summary_pending">génération…</string>
     <string name="event_summary_view">Voir le compte rendu</string>
     <string name="event_action_more">Plus</string>
+    <string name="event_action_transfer">Transférer l’événement</string>
+    <string name="event_transfer_title">Transférer l’événement</string>
+    <string name="event_transfer_target">Transférer cet événement à %1$s</string>
+    <string name="event_transfer_keep_original">Conserver l’organisateur initial dans cet événement</string>
+    <string name="event_transfer_failed">Échec du transfert de l’événement</string>
+    <string name="common_confirm">Confirmer</string>
     <string name="event_delete_confirm">Supprimer cet événement ?</string>
     <string name="event_edit_scope_title">Modifier l\'événement récurrent</string>
     <string name="event_delete_scope_title">Supprimer l\'événement récurrent</string>

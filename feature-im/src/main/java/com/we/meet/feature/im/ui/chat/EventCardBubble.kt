@@ -58,6 +58,7 @@ internal fun EventCardBubble(
         "invited" -> stringResource(R.string.im_event_card_invited)
         "time_changed" -> stringResource(R.string.im_event_card_time_changed)
         "attendees_changed" -> stringResource(R.string.im_event_card_attendees_changed)
+        "organizer_changed" -> stringResource(R.string.im_event_card_organizer_changed)
         "removed" -> stringResource(R.string.im_event_card_removed)
         "rsvp_changed" -> stringResource(R.string.im_event_card_rsvp_changed)
         "cancelled" -> stringResource(R.string.im_event_card_cancelled)
