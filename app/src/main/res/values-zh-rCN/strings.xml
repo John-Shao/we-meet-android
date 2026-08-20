@@ -466,6 +466,7 @@
     <string name="event_summary_view">查看纪要</string>
     <string name="event_action_more">更多</string>
     <string name="event_action_transfer">转让日程</string>
+    <string name="event_action_copy">创建副本</string>
     <string name="event_transfer_title">转让日程</string>
     <string name="event_transfer_target">将日程转让给 %1$s</string>
     <string name="event_transfer_keep_original">将原组织者保留在此日程</string>

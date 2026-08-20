@@ -176,7 +176,8 @@ object Routes {
     const val CALENDAR_OWNER_SHARE = "$CALENDAR_OWNER_SHARE_BASE/{calendarId}"
     const val CALENDAR_SHARE = "calendar_share/{token}"
     const val CREATE_EVENT =
-        "create_event?epochDay={epochDay}&eventId={eventId}&editScope={editScope}" +
+        "create_event?epochDay={epochDay}&eventId={eventId}&copyEventId={copyEventId}" +
+            "&editScope={editScope}" +
             "&startSec={startSec}&endSec={endSec}&attendeeIds={attendeeIds}&srcCid={srcCid}" +
             "&meetingRoomId={meetingRoomId}"
     /** P8 忙闲对比页:ids=逗号分隔 we-meet uuid;title=页标题;srcCid=回发日程卡片的会话。 */
@@ -269,6 +270,9 @@ object Routes {
         // P2-M2 重复子场次:携带编辑范围(one/following/all),单次/主事件不带。
         return if (editScope != null) "$base&editScope=$editScope" else base
     }
+
+    fun copyEvent(eventId: String): String =
+        "create_event?copyEventId=${URLEncoder.encode(eventId, StandardCharsets.UTF_8.name())}"
 
     private const val WAITING_ROOM_BASE = "waiting_room"
     const val WAITING_ROOM = "$WAITING_ROOM_BASE/{idOrSlug}/{name}/{mic}/{cam}"
@@ -1067,6 +1071,7 @@ fun AppNav() {
                 onBack = rememberOnceOnly(safePop),
                 onJoinSlug = { slug -> navController.navigate(Routes.joinPreview(slug)) },
                 onEdit = { id, scope -> navController.navigate(Routes.editEvent(id, scope)) },
+                onCopy = { id -> navController.navigate(Routes.copyEvent(id)) },
                 // 会后纪要入口 → 会议详情页(完整纪要/待办/转录在那里渲染)。
                 onOpenSummary = { roomId ->
                     navController.navigate(Routes.historyDetail(roomId))
@@ -1082,6 +1087,11 @@ fun AppNav() {
                     defaultValue = -1L
                 },
                 navArgument("eventId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("copyEventId") {
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null
@@ -1122,6 +1132,8 @@ fun AppNav() {
                 initialEpochDay = entry.arguments?.getLong("epochDay")?.takeIf { it >= 0 },
                 onClose = rememberOnceOnly(safePop),
                 editEventId = entry.arguments?.getString("eventId")
+                    ?.let { Routes.decode(it) },
+                copyEventId = entry.arguments?.getString("copyEventId")
                     ?.let { Routes.decode(it) },
                 editScope = entry.arguments?.getString("editScope"),
                 initialStartEpochSecond = entry.arguments?.getLong("startSec")

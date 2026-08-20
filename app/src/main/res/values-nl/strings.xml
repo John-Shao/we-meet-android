@@ -432,6 +432,7 @@
     <string name="event_summary_view">Notulen bekijken</string>
     <string name="event_action_more">Meer</string>
     <string name="event_action_transfer">Afspraak overdragen</string>
+    <string name="event_action_copy">Kopie maken</string>
     <string name="event_transfer_title">Afspraak overdragen</string>
     <string name="event_transfer_target">Deze afspraak overdragen aan %1$s</string>
     <string name="event_transfer_keep_original">Oorspronkelijke organisator als deelnemer behouden</string>

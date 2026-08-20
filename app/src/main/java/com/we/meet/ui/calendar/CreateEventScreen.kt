@@ -98,6 +98,8 @@ fun CreateEventScreen(
     initialEpochDay: Long?,
     onClose: () -> Unit,
     editEventId: String? = null,
+    /** Source event used only to prefill a new independent event. */
+    copyEventId: String? = null,
     /** P2-M2 重复子场次编辑范围(one/following/all);单次/主事件为 null。 */
     editScope: String? = null,
     /** P8 忙闲页预填:精确起止时刻(epoch 秒,免时区串扰);优先于 epochDay。 */
@@ -121,6 +123,8 @@ fun CreateEventScreen(
     }
     val scope = rememberCoroutineScope()
     val isEdit = editEventId != null
+    val isCopy = copyEventId != null
+    val sourceEventId = editEventId ?: copyEventId
 
     val initialDate = initialEpochDay?.let(LocalDate::ofEpochDay) ?: LocalDate.now(calendarZone)
     val zoneNow = calendarZone
@@ -145,6 +149,8 @@ fun CreateEventScreen(
 
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    var copiedLocation by remember { mutableStateOf("") }
+    var copiedAttachmentNames by remember { mutableStateOf<List<String>>(emptyList()) }
     var allDay by remember { mutableStateOf(false) }
     var start by remember { mutableStateOf(defaultStart) }
     var end by remember { mutableStateOf(defaultEnd) }
@@ -183,8 +189,8 @@ fun CreateEventScreen(
     var roomConflict by remember { mutableStateOf(false) }
     var submitting by remember { mutableStateOf(false) }
     var errorRes by remember { mutableStateOf<Int?>(null) }
-    // Edit mode starts not-ready until the event loads.
-    var loaded by remember { mutableStateOf(!isEdit) }
+    // Edit and copy modes start not-ready until the source event loads.
+    var loaded by remember { mutableStateOf(sourceEventId == null) }
     var showDiscardConfirm by remember { mutableStateOf(false) }
 
     androidx.compose.runtime.LaunchedEffect(calendarZone.id, isEdit) {
@@ -206,7 +212,7 @@ fun CreateEventScreen(
     // P8:预填参与者 —— 逐个目录补全(并发),失败的 id 静默丢弃并提示一次。
     val context = LocalContext.current
     androidx.compose.runtime.LaunchedEffect(prefillAttendeeIds) {
-        if (isEdit || prefillAttendeeIds.isEmpty()) return@LaunchedEffect
+        if (isEdit || isCopy || prefillAttendeeIds.isEmpty()) return@LaunchedEffect
         val picked = prefillAttendeeIds.distinct().mapNotNull { id ->
             app.directoryRepository.getMember(id).getOrNull()?.let { m ->
                 PickedMember(
@@ -230,7 +236,7 @@ fun CreateEventScreen(
     }
 
     androidx.compose.runtime.LaunchedEffect(initialMeetingRoomId, isEdit) {
-        if (isEdit || initialMeetingRoomId.isNullOrBlank()) return@LaunchedEffect
+        if (isEdit || isCopy || initialMeetingRoomId.isNullOrBlank()) return@LaunchedEffect
         runCatching { app.apiClient.meetingRoomApi.getRoom(initialMeetingRoomId) }
             .onSuccess { meetingRoom = it.toBrief() }
             .onFailure {
@@ -242,10 +248,15 @@ fun CreateEventScreen(
             }
     }
 
-    androidx.compose.runtime.LaunchedEffect(editEventId) {
-        if (editEventId == null) return@LaunchedEffect
-        runCatching { app.apiClient.calendarApi.getEvent(editEventId) }
+    androidx.compose.runtime.LaunchedEffect(sourceEventId) {
+        if (sourceEventId == null) return@LaunchedEffect
+        runCatching { app.apiClient.calendarApi.getEvent(sourceEventId) }
             .onSuccess { e ->
+                if (isCopy && e.detailsRedacted) {
+                    errorRes = R.string.event_load_error
+                    loaded = true
+                    return@onSuccess
+                }
                 val zone = calendarZone
                 // All-day events are anchored to their AUTHORED zone's midnight;
                 // parse them in that zone (device-TZ parsing shifts the shown day
@@ -255,6 +266,8 @@ fun CreateEventScreen(
                 val parseZone = eventZone
                 title = e.title
                 description = e.description
+                copiedLocation = if (isCopy) e.location else ""
+                copiedAttachmentNames = if (isCopy) e.attachmentNames else emptyList()
                 visibility = e.visibility.takeIf { it in EVENT_VISIBILITIES } ?: "default"
                 targetCalendarId = e.displayCalendarId.orEmpty()
                 allDay = e.allDay
@@ -278,40 +291,74 @@ fun CreateEventScreen(
                 reminderMinutes = e.reminders.maxOrNull()
                 // 组织者在 UI 中固定展示；普通参与者继续使用可编辑列表和提交载荷。
                 // 重复日程不放开(服务端三选路径剔除 attendee_ids)。
-                editIsRecurring = e.isRecurring
+                editIsRecurring = isEdit && e.isRecurring
                 withVideo = e.room != null
-                meetingRoom = e.meetingRoom
+                meetingRoom = if (isEdit) e.meetingRoom else null
                 val organizerAttendee = e.attendees.firstOrNull {
                     it.role == "organizer" || it.id == e.organizer?.id
                 }
                 val organizerId = e.organizer?.id?.takeIf { it.isNotBlank() }
                     ?: organizerAttendee?.id
-                organizer = organizerId?.let { id ->
-                    PickedMember(
-                        userId = id,
-                        displayName = e.organizer?.fullName
-                            ?: organizerAttendee?.fullName
-                            ?: organizerAttendee?.email
-                            ?: "?",
-                        email = organizerAttendee?.email,
-                        avatarUrl = null,
-                    )
+                if (isEdit) {
+                    organizer = organizerId?.let { id ->
+                        PickedMember(
+                            userId = id,
+                            displayName = e.organizer?.fullName
+                                ?: organizerAttendee?.fullName
+                                ?: organizerAttendee?.email
+                                ?: "?",
+                            email = organizerAttendee?.email,
+                            avatarUrl = null,
+                        )
+                    }
+                    attendees = e.attendees.mapNotNull { a ->
+                        val uid = a.id ?: return@mapNotNull null
+                        if (a.role == "organizer" || uid == organizerId) return@mapNotNull null
+                        PickedMember(
+                            userId = uid,
+                            displayName = a.fullName ?: a.email ?: "?",
+                            email = a.email,
+                            avatarUrl = null,
+                        )
+                    }
+                    attendeeRoles = e.attendees.mapNotNull { a ->
+                        val uid = a.id ?: return@mapNotNull null
+                        if (a.role == "organizer") return@mapNotNull null
+                        uid to if (a.role == "optional") "optional" else "required"
+                    }.toMap()
+                } else {
+                    val copied = buildList<Pair<String, PickedMember>> {
+                        e.attendees.forEach { attendee ->
+                            val uid = attendee.id ?: return@forEach
+                            add(
+                                uid to PickedMember(
+                                    userId = uid,
+                                    displayName = attendee.fullName ?: attendee.email ?: "?",
+                                    email = attendee.email,
+                                    avatarUrl = null,
+                                ),
+                            )
+                        }
+                        organizerId?.let { id ->
+                            if (none { entry -> entry.first == id }) {
+                                add(
+                                    id to PickedMember(
+                                        userId = id,
+                                        displayName = e.organizer?.fullName ?: "?",
+                                        email = organizerAttendee?.email,
+                                        avatarUrl = null,
+                                    ),
+                                )
+                            }
+                        }
+                    }.distinctBy { (uid, _) -> uid }
+                        .filterNot { (uid, _) -> uid == selfId }
+                    attendees = copied.map { (_, member) -> member }
+                    attendeeRoles = copied.associate { (uid, _) ->
+                        val sourceRole = e.attendees.firstOrNull { it.id == uid }?.role
+                        uid to if (sourceRole == "optional") "optional" else "required"
+                    }
                 }
-                attendees = e.attendees.mapNotNull { a ->
-                    val uid = a.id ?: return@mapNotNull null
-                    if (a.role == "organizer" || uid == organizerId) return@mapNotNull null
-                    PickedMember(
-                        userId = uid,
-                        displayName = a.fullName ?: a.email ?: "?",
-                        email = a.email,
-                        avatarUrl = null,
-                    )
-                }
-                attendeeRoles = e.attendees.mapNotNull { a ->
-                    val uid = a.id ?: return@mapNotNull null
-                    if (a.role == "organizer") return@mapNotNull null
-                    uid to if (a.role == "optional") "optional" else "required"
-                }.toMap()
                 loaded = true
             }
             .onFailure { errorRes = R.string.event_load_error; loaded = true }
@@ -333,9 +380,20 @@ fun CreateEventScreen(
         writableCalendars = runCatching { app.apiClient.calendarApi.listCalendars() }
             .getOrDefault(emptyList())
             .filter { it.capabilities.canWrite }
-        if (!isEdit && targetCalendarId.isBlank()) {
+        if (!isEdit) {
+            val sourceIsWritable = writableCalendars.any { it.id == targetCalendarId }
+            if (!sourceIsWritable) {
+                targetCalendarId = writableCalendars.firstOrNull { it.enabled }?.id
+                    ?: writableCalendars.firstOrNull()?.id.orEmpty()
+            }
+        }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(writableCalendars, loaded, isEdit) {
+        if (isEdit || !loaded || writableCalendars.isEmpty()) return@LaunchedEffect
+        if (writableCalendars.none { it.id == targetCalendarId }) {
             targetCalendarId = writableCalendars.firstOrNull { it.enabled }?.id
-                ?: writableCalendars.firstOrNull()?.id.orEmpty()
+                ?: writableCalendars.first().id
         }
     }
 
@@ -475,6 +533,8 @@ fun CreateEventScreen(
                             reminders = reminderMinutes?.let { listOf(it) } ?: emptyList(),
                             attendeeEntries = attendeeEntries,
                             description = description.trim(),
+                            location = copiedLocation,
+                            attachmentNames = copiedAttachmentNames,
                             visibility = visibility,
                             timezone = zone.id,
                             recurrence = composeRRule(repeat, repeatUntil),

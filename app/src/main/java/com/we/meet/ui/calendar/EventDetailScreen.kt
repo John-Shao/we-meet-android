@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
@@ -242,6 +243,7 @@ fun EventDetailScreen(
     onJoinSlug: (slug: String) -> Unit,
     /** [scope] = one/following/all(重复子场次)或 null(单次/主事件)。 */
     onEdit: (eventId: String, scope: String?) -> Unit,
+    onCopy: (eventId: String) -> Unit,
     /** 会后纪要入口 → 会议详情页(完整纪要/待办/转录在那里渲染)。 */
     onOpenSummary: (roomId: String) -> Unit = {},
 ) {
@@ -334,6 +336,16 @@ fun EventDetailScreen(
                                 expanded = showMore,
                                 onDismissRequest = { showMore = false },
                             ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.event_action_copy)) },
+                                    leadingIcon = {
+                                        Icon(Icons.Filled.ContentCopy, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        showMore = false
+                                        onCopy(eventId)
+                                    },
+                                )
                                 if (ui.canTransfer) {
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.event_action_transfer)) },
@@ -360,6 +372,31 @@ fun EventDetailScreen(
                                     onClick = {
                                         showMore = false
                                         if (isOccurrence) deleteScopeAsk = true else confirmDelete = true
+                                    },
+                                )
+                            }
+                        }
+                    }
+                    if (!ui.canManage && ui.event?.detailsRedacted == false) {
+                        Box {
+                            IconButton(onClick = { showMore = true }) {
+                                Icon(
+                                    Icons.Filled.MoreVert,
+                                    contentDescription = stringResource(R.string.event_action_more),
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showMore,
+                                onDismissRequest = { showMore = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.event_action_copy)) },
+                                    leadingIcon = {
+                                        Icon(Icons.Filled.ContentCopy, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        showMore = false
+                                        onCopy(eventId)
                                     },
                                 )
                             }

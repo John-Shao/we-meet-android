@@ -192,6 +192,8 @@ data class CreateEventRequest(
     @Json(name = "attendee_ids") val attendeeIds: List<String>? = null,
     @Json(name = "attendee_entries") val attendeeEntries: List<AttendeeEntryRequest>? = null,
     val description: String = "",
+    val location: String = "",
+    @Json(name = "attachment_names") val attachmentNames: List<String> = emptyList(),
     val visibility: String = "default",
     val timezone: String,
     /** P2-M3 重复日程:RRULE 串(UNTIL 用浮动本地时刻),空=单次。 */

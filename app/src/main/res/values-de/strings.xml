@@ -432,6 +432,7 @@
     <string name="event_summary_view">Protokoll ansehen</string>
     <string name="event_action_more">Mehr</string>
     <string name="event_action_transfer">Termin übertragen</string>
+    <string name="event_action_copy">Kopie erstellen</string>
     <string name="event_transfer_title">Termin übertragen</string>
     <string name="event_transfer_target">Diesen Termin an %1$s übertragen</string>
     <string name="event_transfer_keep_original">Bisherige organisierende Person als Teilnehmer behalten</string>

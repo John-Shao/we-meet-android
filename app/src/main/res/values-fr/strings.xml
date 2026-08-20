@@ -432,6 +432,7 @@
     <string name="event_summary_view">Voir le compte rendu</string>
     <string name="event_action_more">Plus</string>
     <string name="event_action_transfer">Transférer l’événement</string>
+    <string name="event_action_copy">Créer une copie</string>
     <string name="event_transfer_title">Transférer l’événement</string>
     <string name="event_transfer_target">Transférer cet événement à %1$s</string>
     <string name="event_transfer_keep_original">Conserver l’organisateur initial dans cet événement</string>

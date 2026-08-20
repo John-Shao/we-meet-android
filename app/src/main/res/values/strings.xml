@@ -466,6 +466,7 @@
     <string name="event_summary_view">View notes</string>
     <string name="event_action_more">More</string>
     <string name="event_action_transfer">Transfer event</string>
+    <string name="event_action_copy">Create copy</string>
     <string name="event_transfer_title">Transfer event</string>
     <string name="event_transfer_target">Transfer this event to %1$s</string>
     <string name="event_transfer_keep_original">Keep the original organizer in this event</string>
