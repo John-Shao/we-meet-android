@@ -144,6 +144,9 @@ fun InviteSheet(
                     modifier = Modifier
                         .size(Dimens.Room.QrSize)
                         .clip(RoundedCornerShape(Dimens.CornerS))
+                        // design-exempt: 二维码的静区必须是**真白**,不能跟随主题。
+                        // 扫码依赖码点与底的高对比,深色模式下换成深底会直接扫不出来
+                        // —— 这里的白是功能性的,不是配色,所以不收进 token。
                         .background(Color.White)
                         .padding(Dimens.SpaceS),
                 )
@@ -154,7 +157,7 @@ fun InviteSheet(
                     modifier = Modifier
                         .size(Dimens.Room.QrSize)
                         .clip(RoundedCornerShape(Dimens.CornerS))
-                        .background(Color.LightGray),
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                 )
             }
 

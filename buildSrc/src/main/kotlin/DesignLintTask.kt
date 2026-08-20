@@ -55,7 +55,7 @@ abstract class DesignLintTask : DefaultTask() {
                     val n = rule.count("/$rel", parsed.code, parsed.literals, parsed.lines)
                     if (n > 0) {
                         current["${rule.id}|$rel"] = n
-                        rule.locate?.let { where["${rule.id}|$rel"] = it(parsed.lines) }
+                        rule.locate?.let { where["${rule.id}|$rel"] = it(parsed.code, parsed.lines) }
                     }
                 }
             }
@@ -154,8 +154,11 @@ abstract class DesignLintTask : DefaultTask() {
          *
          * 只有「一处一行」的规则给得出 —— 给得出就给:基线只记数量,回归时光说
          * 「这个文件从 0 变成 4」而不说是哪四行,改的人得自己再 grep 一遍。
+         *
+         * 同时拿到挖空注释后的 `code` 和原始 `lines`:前者用来匹配(注释里出现
+         * `Color.White` 是家常便饭),后者用来读豁免标记。
          */
-        val locate: ((lines: List<String>) -> List<Int>)? = null,
+        val locate: ((code: String, lines: List<String>) -> List<Int>)? = null,
         /** 返回该文件的违规数。path 形如 "/app/src/main/java/…"。 */
         val count: (
             path: String,
@@ -173,7 +176,31 @@ abstract class DesignLintTask : DefaultTask() {
         // - 而 `androidx.compose.ui.graphics.Color(0x…)` 这种全限定写法前面
         //   是点号,有词边界,**必须**匹配。用 `(?<![A-Za-z0-9_.])` 会把它一起
         //   放过去,等于给规则开了个后门。
-        val RAW_COLOR = Regex("\\bColor\\(0[xX]")
+        //
+        // 通道形式 `Color(red = …, green = …)` 也算 —— 它和 `Color(0x…)` 一样是
+        // 在调用处凭空造一个色值,只是换了个拼法。真正需要它的地方(运行时解析
+        // 服务端下发的色值)写 `// design-exempt: 理由` 放过。
+        val RAW_COLOR = Regex("\\bColor\\(\\s*(?:0[xX]|red\\s*=)")
+
+        /**
+         * Compose 预定义色常量 —— 和 `Color(0xFF…)` 一样是硬编码色值。
+         *
+         * 这条是补漏:立规矩时只盯了构造器形式,于是 `Color.White` 全仓 60 多处
+         * 一路畅通,其中两处踩中了本仓库已记录四次的那类 bug —— 白字压在中间调
+         * 的底上不算对比度(人物头像首字母 6 个底色全部不过 4.5:1,最低 2.53:1)。
+         * Color.kt 里「原先这里写死 `Color.White`,压在橙上只有 2.39:1」那段
+         * 说明就是同一个坑,当时是靠人眼走查抓到的,规则没跟上。
+         *
+         * 除了对比度,这些常量还有个硬毛病:**没有深浅色对应物**。写死白就是
+         * 两套主题都白,而 token 是成对的。
+         *
+         * 有意**不含** `Transparent` / `Unspecified` —— 那两个的语义是「不上色」,
+         * 不是某个具体颜色,拿 token 替不了(全仓 24 处,替了纯属噪音)。
+         */
+        val RAW_COLOR_NAMED = Regex(
+            "\\bColor\\.(?:White|Black|Gray|LightGray|DarkGray|" +
+                "Red|Green|Blue|Yellow|Cyan|Magenta)\\b",
+        )
         val RAW_FONT = Regex("\\b(fontSize|lineHeight)\\s*=\\s*[0-9]+(\\.[0-9]+)?\\.sp")
         val RAW_DIMEN = Regex("\\b[0-9]+(\\.[0-9]+)?\\.dp\\b")
         // 词边界会同时命中 `TopAppBar(` 与全限定的
@@ -334,7 +361,18 @@ abstract class DesignLintTask : DefaultTask() {
             Rule(
                 "raw-color",
                 "use MaterialTheme.colorScheme / WeMeetTheme.extras -- spec 1.1",
-            ) { p, code, _, _ -> if (isTheme(p)) 0 else RAW_COLOR.findAll(code).count() },
+                locate = { code, lines -> rawColorLines(code, lines, RAW_COLOR) },
+            ) { p, code, _, lines ->
+                if (isTheme(p)) 0 else rawColorLines(code, lines, RAW_COLOR).size
+            },
+            Rule(
+                "raw-color-named",
+                "Color.White/Black/Gray/... is a hardcoded colour with no dark-mode " +
+                    "counterpart -- use a token (Transparent/Unspecified are fine) -- spec 1.1",
+                locate = { code, lines -> rawColorLines(code, lines, RAW_COLOR_NAMED) },
+            ) { p, code, _, lines ->
+                if (isTheme(p)) 0 else rawColorLines(code, lines, RAW_COLOR_NAMED).size
+            },
             Rule(
                 "raw-font-size",
                 "use MaterialTheme.typography -- spec 1.2",
@@ -361,7 +399,7 @@ abstract class DesignLintTask : DefaultTask() {
                 "text-color-slot",
                 "text/icon color must be an on-* slot (or primary/error accent), " +
                     "not a surface/container/outline slot -- spec 1.1",
-                locate = { lines -> textColorMisuseLines(lines) },
+                locate = { _, lines -> textColorMisuseLines(lines) },
             ) { p, _, _, lines ->
                 if (isTheme(p)) 0 else textColorMisuseLines(lines).size
             },
@@ -369,17 +407,17 @@ abstract class DesignLintTask : DefaultTask() {
                 "dropdown-menu-width",
                 "ExposedDropdownMenu on a non-TextField anchor must pass " +
                     "matchTextFieldWidth explicitly, else options wrap -- spec 2.3",
-                locate = { lines -> dropdownWidthMisuseLines(lines) },
+                locate = { _, lines -> dropdownWidthMisuseLines(lines) },
             ) { _, _, _, lines -> dropdownWidthMisuseLines(lines).size },
             Rule(
                 "icon-button-description",
                 "functional IconButton icons need a non-null contentDescription -- spec 5.1",
-                locate = { lines -> regexHitLines(lines, ICON_BUTTON_NULL_DESCRIPTION) },
+                locate = { _, lines -> regexHitLines(lines, ICON_BUTTON_NULL_DESCRIPTION) },
             ) { _, code, _, _ -> ICON_BUTTON_NULL_DESCRIPTION.findAll(code).count() },
             Rule(
                 "icon-button-touch-target",
                 "IconButton touch targets must use Dimens.MinTouchTarget (48dp) -- spec 5.2",
-                locate = { lines -> regexHitLines(lines, UNDERSIZED_ICON_BUTTON) },
+                locate = { _, lines -> regexHitLines(lines, UNDERSIZED_ICON_BUTTON) },
             ) { _, code, _, _ -> UNDERSIZED_ICON_BUTTON.findAll(code).count() },
             Rule(
                 "cjk-literal",
@@ -398,6 +436,32 @@ abstract class DesignLintTask : DefaultTask() {
             return regex.findAll(code).map { match ->
                 code.take(match.range.first).count { it == '\n' } + 1
             }.toList()
+        }
+
+        /**
+         * 数这个文件里的硬编码色值,并给出行号。
+         *
+         * 两份行表都要用,各管一件事:
+         * - **匹配**看挖空注释后的 `code` —— 本仓库注释是中文写的,里面出现
+         *   `Color(0xFF…)`、`Color.White` 是家常便饭(Color.kt 第 97 行整段
+         *   都在讲「原先这里写死 `Color.White`」),拿原始行匹配全是误报;
+         * - **豁免**看原始 `lines` —— `// design-exempt:` 写在注释里,而注释
+         *   在 `code` 里已经被挖空了,读不到。
+         *
+         * 两者行号一一对应:`parse()` 挖空时保留了换行。
+         *
+         * 逐行而不是整份文件匹配,是为了给得出行号、也为了让 `design-exempt`
+         * 能精确豁免某一行,而不是整个文件。代价是跨行写法(`Color(\n 0xFF…)`)
+         * 数不到 —— 实际不存在这种写法,不值得为它上解析器。
+         */
+        fun rawColorLines(code: String, lines: List<String>, regex: Regex): List<Int> {
+            val codeLines = code.split("\n")
+            val hits = mutableListOf<Int>()
+            codeLines.forEachIndexed { i, codeLine ->
+                val n = regex.findAll(codeLine).count()
+                if (n > 0 && !isExempt(lines, i)) repeat(n) { hits += i + 1 }
+            }
+            return hits
         }
 
         /**

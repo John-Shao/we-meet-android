@@ -1,6 +1,7 @@
 package com.we.meet.core.directory.ui
 
 import com.we.meet.ui.theme.AvatarFallbackPalette
+import com.we.meet.ui.theme.AvatarOnFallback
 import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -88,8 +89,11 @@ fun MemberAvatar(
         } else {
             Text(
                 text = name.firstOrNull()?.uppercase() ?: "?",
-                color = Color.White,
-                fontSize = (size.value * 0.42f).sp,
+                color = AvatarOnFallback,
+                // 字号跟着头像边长走,但不许跌破 11sp 的可读下限(规范 §1.2/§5.2)
+                // —— `Dimens.AvatarXs`(24dp)按比例只有 10.08sp,是这条的唯一
+                // 触发者(CreateEventScreen 的已选参会人小胶囊)。
+                fontSize = (size.value * 0.42f).coerceAtLeast(11f).sp,
                 fontWeight = FontWeight.Medium,
             )
         }

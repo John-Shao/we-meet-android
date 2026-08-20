@@ -220,7 +220,18 @@ val ImConnOfflineBg = Color(0xFFEDEDED)
 val ImConnOfflineFg = Color(0xFF444444)
 
 /** 群头像无图时的底色调色板。与人物头像的 [AvatarFallbackPalette] 分开 ——
- *  群和人在列表里混排,配色不同才好一眼区分。 */
+ *  群和人在列表里混排,配色不同才好一眼区分。
+ *
+ *  ⚠️ **已知欠账:这一组配白字有 3 档不过 4.5:1** —— `EA580C` 3.56:1、
+ *  `16A34A` 3.30:1、`0891B2` 3.68:1(`2563EB` 5.17 / `7C3AED` 5.70 /
+ *  `DB2777` 4.60 通过)。和 [AvatarFallbackPalette] 是同一类问题,但**没有**
+ *  跟着一起修,因为这六个值在 Web 侧还有三份拷贝(`features/contacts/
+ *  components/MemberAvatar.tsx`、`features/im/components/Avatar.tsx`、
+ *  `features/im/components/GroupAvatar.tsx`),且 Web 也是白字 —— 单改 App
+ *  会让两端分叉。要修得连 Web 一起,顺带把那三份合并成一份。
+ *
+ *  压深到刚好过线的值算好了:`CD4D0B` / `12883D` / `07819F`。
+ */
 val GroupAvatarPalette = listOf(
     Color(0xFF2563EB), Color(0xFF7C3AED), Color(0xFFDB2777),
     Color(0xFFEA580C), Color(0xFF16A34A), Color(0xFF0891B2),
@@ -300,15 +311,51 @@ val AiCallSphereGradient = listOf(
  *
  * 同一个人必须永远同色 —— 取色靠 `floorMod(name.hashCode(), size)`,所以**这个
  * 列表的顺序和长度都不能随便改**:改了等于全公司的头像颜色重新洗牌。
+ * 改**值**是安全的(同一个人仍然落在同一个色位,只是那个色位换了个深浅)。
+ *
+ * ⚠️ 这一组配 [AvatarOnFallback] 使用,值是按「白字过 4.5:1」反推出来的,
+ * 不是随手挑的。改值之前先算对比度,数字见 [AvatarOnFallback]。
+ *
+ * 与 Web 无关联:Web 的人物头像走 `GroupAvatarPalette` 那六色(见
+ * [GroupAvatarPalette] 的说明),这一组是 App 独有的,改它不需要两端同步。
  */
 val AvatarFallbackPalette = listOf(
-    Color(0xFF5B8DEF),
-    Color(0xFF7C6FE0),
-    Color(0xFF43A88A),
-    Color(0xFFE0876F),
-    Color(0xFFD46A9C),
-    Color(0xFF6FA8DC),
+    Color(0xFF3270EB),
+    Color(0xFF7365DE),
+    Color(0xFF34836B),
+    Color(0xFFCB4E2C),
+    Color(0xFFC94583),
+    Color(0xFF2E7ABF),
 )
+
+/**
+ * 压在 [AvatarFallbackPalette] 上的首字母色。
+ *
+ * 首字母是**文字**,门槛是 SC 1.4.3 的 4.5:1,不是图标那档 3:1 —— 在会话列表
+ * 里名字就在旁边,看着像装饰,但参会人画面块、忙闲对比的列头那些地方头像是
+ * **单独出现**的,那时它是唯一的身份线索。按文字处理。
+ *
+ * 原先调用处直接写 `Color.White`,压在原来那套偏亮的底色上全部不过:
+ *
+ * | 原底色 | 白字 | |
+ * |---|---|---|
+ * | `6FA8DC` | 2.53:1 | ❌ |
+ * | `E0876F` | 2.67:1 | ❌ |
+ * | `43A88A` | 2.91:1 | ❌ |
+ * | `5B8DEF` | 3.23:1 | ❌ |
+ * | `D46A9C` | 3.31:1 | ❌ |
+ * | `7C6FE0` | 4.03:1 | ❌ |
+ *
+ * **6/6 全不过。** 修法上选了「压深底色」而不是「改用深色前景」:后者保不住
+ * 「彩色底 + 白首字母」这个视觉语言,而且实算下来 `7C6FE0` 配 `1A1C1E` 只有
+ * 4.24:1,仍然不过,不是干净解。压深后六档实测 4.51 / 4.52 / 4.56 / 4.50 /
+ * 4.50 / 4.51,亮度只降了 2%~18%,色相饱和度未动。
+ *
+ * 余量很薄(最低 4.50:1),所以**这一对里任何一个值动了都要重算**。取值时
+ * 注意 hex 量化:二分算出的浮点值转成整数 hex 后可能掉到 4.5 以下(绿那档
+ * `35846C` 就是 4.498:1),必须拿最终 hex 复算,别拿中间值交差。
+ */
+val AvatarOnFallback = Color(0xFFFFFFFF)
 
 /**
  * 会中(RoomScreen)专用色。

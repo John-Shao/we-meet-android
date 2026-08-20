@@ -23,6 +23,9 @@ fun parseCalendarColor(value: String?): Color? {
     val normalized = value?.trim()?.removePrefix("#") ?: return null
     if (normalized.length != 6) return null
     val rgb = normalized.toLongOrNull(16) ?: return null
+    // design-exempt: 这不是在调用处凭空写一个色值,而是把**服务端下发的**日历
+    // 颜色解析成 Color(上面已校验长度与进制,非法输入返回 null)。token 化在
+    // 这里无从谈起 —— 值是运行时才知道的。
     return Color(
         red = ((rgb shr 16) and 0xff).toFloat() / 255f,
         green = ((rgb shr 8) and 0xff).toFloat() / 255f,

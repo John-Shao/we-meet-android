@@ -1,2 +1,20 @@
 # 设计规范违规基线 —— 由 ./gradlew checkDesignTokens -Pdesign.baseline 生成
 # 格式: 规则|文件路径|数量。数字只许降不许升,详见 docs/设计规范.md
+raw-color-named|app/src/main/java/com/we/meet/ui/contacts/MemberDetailScreen.kt|1
+raw-color-named|app/src/main/java/com/we/meet/ui/profile/AvatarCropDialog.kt|9
+raw-color-named|app/src/main/java/com/we/meet/ui/profile/ProfileScreen.kt|3
+raw-color-named|app/src/main/java/com/we/meet/ui/room/MessagesPanel.kt|1
+raw-color-named|app/src/main/java/com/we/meet/ui/room/ParticipantTile.kt|8
+raw-color-named|app/src/main/java/com/we/meet/ui/room/PipLayout.kt|1
+raw-color-named|app/src/main/java/com/we/meet/ui/room/RoomScreen.kt|17
+raw-color-named|app/src/main/java/com/we/meet/ui/room/SubtitleOverlay.kt|1
+raw-color-named|app/src/main/java/com/we/meet/ui/room/VideoLayout.kt|3
+raw-color-named|feature-assistant/src/main/java/com/we/meet/feature/assistant/aicall/ui/AssistantCallScreen.kt|4
+raw-color-named|feature-assistant/src/main/java/com/we/meet/feature/assistant/aicall/ui/components/AnimatedSphere.kt|1
+raw-color-named|feature-assistant/src/main/java/com/we/meet/feature/assistant/aicall/ui/components/BottomControls.kt|1
+raw-color-named|feature-im/src/main/java/com/we/meet/feature/im/ui/bot/BotAvatar.kt|1
+raw-color-named|feature-im/src/main/java/com/we/meet/feature/im/ui/call/CallScreen.kt|1
+raw-color-named|feature-im/src/main/java/com/we/meet/feature/im/ui/call/MinimalVideoCallScreen.kt|5
+raw-color-named|feature-im/src/main/java/com/we/meet/feature/im/ui/call/MinimalVoiceCallScreen.kt|1
+raw-color-named|feature-im/src/main/java/com/we/meet/feature/im/ui/chat/ImageLightbox.kt|3
+raw-color-named|feature-im/src/main/java/com/we/meet/feature/im/ui/common/GroupAvatar.kt|1
