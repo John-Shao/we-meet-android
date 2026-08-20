@@ -793,4 +793,7 @@
     <string name="calendar_choose_date">Choisir une date</string>
     <string name="calendar_month_year">%1$d/%2$d</string>
     <string name="calendar_busy_saving">Enregistrement…</string>
+    <string name="waiting_no_token">L’hôte a approuvé votre demande, mais les informations de connexion sont manquantes. Veuillez réessayer.</string>
+    <string name="web_login_network_error">Erreur réseau</string>
+    <string name="web_login_invalid_callback">Rappel de connexion invalide</string>
 </resources>

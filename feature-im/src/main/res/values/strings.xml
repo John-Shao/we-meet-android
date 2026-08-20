@@ -399,4 +399,8 @@ Limits: 100 requests per minute and 5 per second per bot, bodies up to 20 KB. Se
     <string name="im_calendar_subscribers">%1$d subscribers · Tap to subscribe</string>
     <string name="im_preview_calendar">[Calendar]</string>
     <string name="im_preview_calendar_named">[Calendar] %1$s</string>
+    <string name="im_search_ai_network_error">Network error — please check your connection and try again.</string>
+    <string name="im_search_ai_http_error">Request failed (HTTP %1$d). Please try again.</string>
+    <string name="im_search_ai_empty_body">The AI service returned an empty response. Please try again.</string>
+    <string name="im_search_ai_server_error">The AI service failed. Please try again.</string>
 </resources>

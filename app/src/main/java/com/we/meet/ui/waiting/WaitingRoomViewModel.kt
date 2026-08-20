@@ -5,9 +5,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.RequestEntryResponse
 import com.we.meet.data.repository.RoomRepository
+import com.we.meet.util.toUserMessage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -76,7 +78,7 @@ class WaitingRoomViewModel(
                         _state.update {
                             it.copy(
                                 phase = WaitingRoomUiState.Phase.Error,
-                                errorMessage = error.message,
+                                errorMessage = error.toUserMessage(getApplication()),
                             )
                         }
                     }
@@ -96,7 +98,7 @@ class WaitingRoomViewModel(
                     _state.update {
                         it.copy(
                             phase = WaitingRoomUiState.Phase.Error,
-                            errorMessage = "Server accepted but returned no token",
+                            errorMessage = getApplication<Application>().getString(R.string.waiting_no_token),
                         )
                     }
                 } else {

@@ -95,7 +95,7 @@ private data class AskUiState(
     val citationsUsed: List<Int> = emptyList(),
     val degraded: Boolean = false,
     val sources: Map<String, String> = emptyMap(),
-    val error: String? = null,
+    val error: AskEvent.Failure? = null,
 )
 
 /**
@@ -164,13 +164,16 @@ fun MessageSearchScreen(
                             degraded = event.degraded,
                         )
                         is AskEvent.Failure -> ask = ask.copy(
-                            status = "done", error = event.message,
+                            status = "done", error = event,
                         )
                     }
                 }
             }.onFailure { e ->
                 if (e !is kotlinx.coroutines.CancellationException) {
-                    ask = ask.copy(status = "done", error = e.message ?: "error")
+                    ask = ask.copy(
+                        status = "done",
+                        error = AskEvent.Failure(AskEvent.Failure.Code.NETWORK),
+                    )
                 }
             }
             if (ask.status == "asking") ask = ask.copy(status = "done")
@@ -644,10 +647,16 @@ private fun AiAskPanel(
                 item(key = "err") {
                     Text(
                         // 429 = 限流(10/min 突发或日 quota),专属文案。
-                        text = if (err.contains("429")) {
-                            stringResource(R.string.im_search_ai_quota)
-                        } else {
-                            stringResource(R.string.im_search_ai_error, err)
+                        text = when {
+                            err.code == AskEvent.Failure.Code.HTTP && err.httpStatus == 429 ->
+                                stringResource(R.string.im_search_ai_quota)
+                            err.code == AskEvent.Failure.Code.NETWORK ->
+                                stringResource(R.string.im_search_ai_network_error)
+                            err.code == AskEvent.Failure.Code.HTTP ->
+                                stringResource(R.string.im_search_ai_http_error, err.httpStatus)
+                            err.code == AskEvent.Failure.Code.EMPTY_BODY ->
+                                stringResource(R.string.im_search_ai_empty_body)
+                            else -> stringResource(R.string.im_search_ai_server_error)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,

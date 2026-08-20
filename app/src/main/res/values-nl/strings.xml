@@ -793,4 +793,7 @@
     <string name="calendar_choose_date">Datum kiezen</string>
     <string name="calendar_month_year">%1$d/%2$d</string>
     <string name="calendar_busy_saving">Opslaan…</string>
+    <string name="waiting_no_token">De host heeft je verzoek goedgekeurd, maar de verbindingsgegevens ontbreken. Probeer het opnieuw.</string>
+    <string name="web_login_network_error">Netwerkfout</string>
+    <string name="web_login_invalid_callback">Ongeldige aanmeld-callback</string>
 </resources>

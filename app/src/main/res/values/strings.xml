@@ -801,4 +801,7 @@
     <string name="calendar_choose_date">Choose date</string>
     <string name="calendar_month_year">%2$d/%1$d</string>
     <string name="calendar_busy_saving">Saving…</string>
+    <string name="waiting_no_token">The host approved your request, but the connection details are missing. Please try again.</string>
+    <string name="web_login_network_error">Network error</string>
+    <string name="web_login_invalid_callback">Invalid sign-in callback</string>
 </resources>

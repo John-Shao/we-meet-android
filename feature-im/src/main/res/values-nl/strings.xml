@@ -380,4 +380,8 @@ Limieten: 100 verzoeken per minuut en 5 per seconde per bot, hoofdteksten tot 20
     <string name="im_calendar_subscribers">%1$d abonnees · Tik om te abonneren</string>
     <string name="im_preview_calendar">[Agenda]</string>
     <string name="im_preview_calendar_named">[Agenda] %1$s</string>
+    <string name="im_search_ai_network_error">Netwerkfout — controleer je verbinding en probeer het opnieuw.</string>
+    <string name="im_search_ai_http_error">Verzoek mislukt (HTTP %1$d). Probeer het opnieuw.</string>
+    <string name="im_search_ai_empty_body">De AI-service gaf een leeg antwoord. Probeer het opnieuw.</string>
+    <string name="im_search_ai_server_error">De AI-service is mislukt. Probeer het opnieuw.</string>
 </resources>

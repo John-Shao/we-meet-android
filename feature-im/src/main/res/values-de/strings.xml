@@ -380,4 +380,8 @@ Grenzwerte: 100 Anfragen pro Minute und 5 pro Sekunde pro Bot, Nachrichtenkörpe
     <string name="im_calendar_subscribers">%1$d Abonnenten · Zum Abonnieren tippen</string>
     <string name="im_preview_calendar">[Kalender]</string>
     <string name="im_preview_calendar_named">[Kalender] %1$s</string>
+    <string name="im_search_ai_network_error">Netzwerkfehler — bitte prüfe deine Verbindung und versuche es erneut.</string>
+    <string name="im_search_ai_http_error">Anfrage fehlgeschlagen (HTTP %1$d). Bitte erneut versuchen.</string>
+    <string name="im_search_ai_empty_body">Der KI-Dienst hat eine leere Antwort geliefert. Bitte erneut versuchen.</string>
+    <string name="im_search_ai_server_error">Der KI-Dienst ist fehlgeschlagen. Bitte erneut versuchen.</string>
 </resources>

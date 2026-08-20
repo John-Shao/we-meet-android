@@ -54,6 +54,7 @@ import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.auth.KeycloakOidc
 import com.we.meet.ui.theme.WeMeetTheme
+import com.we.meet.util.toUserMessage
 import kotlinx.coroutines.launch
 
 /**
@@ -198,7 +199,8 @@ fun WebLoginScreen(onLoggedIn: () -> Unit) {
                             ) {
                                 if (request?.isForMainFrame == true) {
                                     loading = false
-                                    error = err?.description?.toString() ?: "network error"
+                                    error = err?.description?.toString()
+                                        ?: app.getString(R.string.web_login_network_error)
                                 }
                             }
 
@@ -209,7 +211,7 @@ fun WebLoginScreen(onLoggedIn: () -> Unit) {
                                 if (kcError != null || code.isNullOrBlank() ||
                                     returnedState != authState
                                 ) {
-                                    error = kcError ?: "invalid callback"
+                                    error = kcError ?: app.getString(R.string.web_login_invalid_callback)
                                     return
                                 }
                                 if (exchanging) return
@@ -224,7 +226,7 @@ fun WebLoginScreen(onLoggedIn: () -> Unit) {
                                         }
                                         .onFailure { e ->
                                             exchanging = false
-                                            error = e.message ?: "token exchange failed"
+                                            error = e.toUserMessage(app)
                                         }
                                 }
                             }

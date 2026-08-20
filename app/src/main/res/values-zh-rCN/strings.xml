@@ -801,4 +801,7 @@
     <string name="calendar_choose_date">选择日期</string>
     <string name="calendar_month_year">%2$d年%1$d月</string>
     <string name="calendar_busy_saving">正在保存…</string>
+    <string name="waiting_no_token">主持人已同意你加入，但连接信息缺失，请重试。</string>
+    <string name="web_login_network_error">网络异常</string>
+    <string name="web_login_invalid_callback">登录回调无效</string>
 </resources>

@@ -793,4 +793,7 @@
     <string name="calendar_choose_date">Datum auswählen</string>
     <string name="calendar_month_year">%1$d/%2$d</string>
     <string name="calendar_busy_saving">Wird gespeichert…</string>
+    <string name="waiting_no_token">Der Host hat deine Anfrage genehmigt, aber die Verbindungsdaten fehlen. Bitte versuche es erneut.</string>
+    <string name="web_login_network_error">Netzwerkfehler</string>
+    <string name="web_login_invalid_callback">Ungültiger Anmelde-Callback</string>
 </resources>

@@ -37,5 +37,12 @@ sealed interface AskEvent {
         val degraded: Boolean,
     ) : AskEvent
 
-    data class Failure(val message: String) : AskEvent
+    data class Failure(
+        /** NETWORK | HTTP | EMPTY_BODY | SERVER */
+        val code: Code,
+        /** HTTP status code; meaningful only when [code] is [Code.HTTP]. */
+        val httpStatus: Int = 0,
+    ) : AskEvent {
+        enum class Code { NETWORK, HTTP, EMPTY_BODY, SERVER }
+    }
 }

@@ -46,19 +46,19 @@ fun globalAskStream(
 
     call.enqueue(object : Callback {
         override fun onFailure(call: Call, e: IOException) {
-            trySend(AskEvent.Failure(e.message ?: "network error"))
+            trySend(AskEvent.Failure(AskEvent.Failure.Code.NETWORK))
             close()
         }
 
         override fun onResponse(call: Call, response: Response) {
             response.use { resp ->
                 if (!resp.isSuccessful) {
-                    trySend(AskEvent.Failure("HTTP ${resp.code}"))
+                    trySend(AskEvent.Failure(AskEvent.Failure.Code.HTTP, httpStatus = resp.code))
                     close()
                     return
                 }
                 val source = resp.body?.source() ?: run {
-                    trySend(AskEvent.Failure("empty body"))
+                    trySend(AskEvent.Failure(AskEvent.Failure.Code.EMPTY_BODY))
                     close()
                     return
                 }
@@ -118,7 +118,7 @@ private fun parseEvent(payload: String): AskEvent? = runCatching {
             }
             AskEvent.Done(used, obj.optBoolean("degraded", false))
         }
-        "error" -> AskEvent.Failure(obj.optString("message", "error"))
+        "error" -> AskEvent.Failure(AskEvent.Failure.Code.SERVER)
         else -> null
     }
 }.getOrNull()

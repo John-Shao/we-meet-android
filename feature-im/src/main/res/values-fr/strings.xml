@@ -380,4 +380,8 @@ Limites : 100 requêtes par minute et 5 par seconde par robot, corps limités à
     <string name="im_calendar_subscribers">%1$d abonnés · Touchez pour vous abonner</string>
     <string name="im_preview_calendar">[Calendrier]</string>
     <string name="im_preview_calendar_named">[Calendrier] %1$s</string>
+    <string name="im_search_ai_network_error">Erreur réseau — vérifiez votre connexion puis réessayez.</string>
+    <string name="im_search_ai_http_error">Échec de la requête (HTTP %1$d). Veuillez réessayer.</string>
+    <string name="im_search_ai_empty_body">Le service IA a renvoyé une réponse vide. Veuillez réessayer.</string>
+    <string name="im_search_ai_server_error">Le service IA a échoué. Veuillez réessayer.</string>
 </resources>

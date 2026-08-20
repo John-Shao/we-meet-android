@@ -1391,7 +1391,7 @@ class RoomViewModel(
                     list.map { m ->
                         if (m.id == assistantId) m.copy(
                             done = true,
-                            error = e.message ?: "AI request failed",
+                            error = e.toUserMessage(getApplication()),
                         ) else m
                     }
                 }
