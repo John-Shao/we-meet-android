@@ -5,4 +5,5 @@
     <string name="picker_load_error">Mitglieder konnten nicht geladen werden</string>
     <string name="picker_retry">Erneut versuchen</string>
     <string name="picker_confirm_count">Bestätigen (%1$d)</string>
+    <string name="picker_external_tag">Externer Kontakt</string>
 </resources>

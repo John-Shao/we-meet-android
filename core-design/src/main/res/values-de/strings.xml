@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  只放共享组件自己要用的文案。业务文案留在各模块的 strings.xml —— 这里塞得越多,
+  越容易变成第二个「什么都往里丢」的公共资源文件。
+-->
+<resources>
+    <string name="common_retry">Erneut versuchen</string>
+    <string name="common_load_error">Konnte nicht geladen werden. Bitte Verbindung prüfen und erneut versuchen.</string>
+
+    <!-- 无障碍(TalkBack)内容描述 -->
+    <string name="cd_back">Zurück</string>
+    <string name="cd_close">Schließen</string>
+</resources>

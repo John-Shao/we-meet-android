@@ -5,4 +5,5 @@
     <string name="picker_load_error">Leden laden mislukt</string>
     <string name="picker_retry">Opnieuw proberen</string>
     <string name="picker_confirm_count">Bevestigen (%1$d)</string>
+    <string name="picker_external_tag">Extern contact</string>
 </resources>

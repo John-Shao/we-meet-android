@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  默认(英文)文案,中文在 values-zh-rCN/。
+
+  这个模块原先把中文直接写在 values/ 且没有 values-zh-rCN —— 等于英文界面
+  下也只显示中文。本次一并归位,与 app / core-directory 的做法对齐。
+-->
+<resources>
+    <string name="assistant_error_network">Erreur réseau. Vérifiez votre connexion et réessayez.</string>
+    <string name="assistant_error_unknown">Une erreur est survenue. Veuillez réessayer.</string>
+    <string name="assistant_error_auth_expired">Votre session a expiré. Veuillez vous reconnecter.</string>
+    <string name="assistant_error_too_many_requests">Trop de requêtes. Veuillez réessayer dans un instant.</string>
+    <string name="assistant_error_server">Erreur du serveur. Veuillez réessayer plus tard.</string>
+
+    <!-- 通话页 -->
+    <string name="assistant_title">Assistant AI</string>
+    <string name="assistant_ai_generated">Généré par AI</string>
+    <string name="assistant_need_mic_camera">Les autorisations du microphone et de la caméra sont requises</string>
+    <string name="assistant_need_camera">L'autorisation de la caméra est requise</string>
+    <string name="assistant_tap_to_start_voice">Touchez pour démarrer un appel vocal</string>
+    <string name="assistant_tap_to_start_video">Touchez pour démarrer un appel vidéo</string>
+    <string name="assistant_speak_or_interrupt">Parlez, ou touchez pour interrompre</string>
+    <string name="assistant_listening">À l'écoute</string>
+    <string name="assistant_call_ended">Appel terminé</string>
+    <string name="assistant_disconnected_ended">Déconnecté — l'appel est terminé</string>
+    <string name="assistant_config_loading">Les paramètres AI sont encore en cours de chargement. Veuillez réessayer dans un instant.</string>
+
+    <!-- 连接进度 -->
+    <string name="assistant_step_creating_room">Création de la salle</string>
+    <string name="assistant_step_joining">Connexion</string>
+    <string name="assistant_step_publishing">Préparation de l'audio et de la vidéo</string>
+    <string name="assistant_step_starting_agent">Démarrage de l'assistant AI</string>
+    <string name="assistant_step_waiting_agent">En attente de l'arrivée de l'AI</string>
+    <string name="assistant_step_switching_mode">Changement de mode</string>
+
+    <!-- 设置面板 -->
+    <string name="assistant_voice_call">Appel vocal</string>
+    <string name="assistant_video_call">Appel vidéo</string>
+    <string name="assistant_section_model">Modèle</string>
+    <string name="assistant_section_voice">Voix</string>
+    <string name="assistant_section_prompt">Invite</string>
+    <string name="assistant_prompt_default">Par défaut</string>
+    <string name="assistant_no_model">Aucun modèle disponible</string>
+
+    <!-- 无障碍(TalkBack)内容描述 -->
+    <string name="assistant_cd_back">Retour</string>
+    <string name="assistant_cd_settings">Paramètres</string>
+    <string name="assistant_cd_switch_camera">Changer de caméra</string>
+    <string name="assistant_cd_mute">Couper le micro</string>
+    <string name="assistant_cd_unmute">Réactiver le micro</string>
+    <string name="assistant_cd_hang_up">Raccrocher</string>
+    <string name="assistant_cd_start_call">Démarrer l'appel</string>
+    <string name="assistant_cd_toggle_video">Basculer le mode vidéo</string>
+</resources>

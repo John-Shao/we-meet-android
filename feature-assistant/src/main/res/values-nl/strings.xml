@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  默认(英文)文案,中文在 values-zh-rCN/。
+
+  这个模块原先把中文直接写在 values/ 且没有 values-zh-rCN —— 等于英文界面
+  下也只显示中文。本次一并归位,与 app / core-directory 的做法对齐。
+-->
+<resources>
+    <string name="assistant_error_network">Netwerkfout. Controleer je verbinding en probeer opnieuw.</string>
+    <string name="assistant_error_unknown">Er ging iets mis. Probeer opnieuw.</string>
+    <string name="assistant_error_auth_expired">Je sessie is verlopen. Meld je opnieuw aan.</string>
+    <string name="assistant_error_too_many_requests">Te veel verzoeken. Probeer het zo opnieuw.</string>
+    <string name="assistant_error_server">Serverfout. Probeer het later opnieuw.</string>
+
+    <!-- 通话页 -->
+    <string name="assistant_title">AI-assistent</string>
+    <string name="assistant_ai_generated">Gegenereerd door AI</string>
+    <string name="assistant_need_mic_camera">Microfoon- en cameratoestemming zijn vereist</string>
+    <string name="assistant_need_camera">Cameratoestemming is vereist</string>
+    <string name="assistant_tap_to_start_voice">Tik om een spraakoproep te starten</string>
+    <string name="assistant_tap_to_start_video">Tik om een video-oproep te starten</string>
+    <string name="assistant_speak_or_interrupt">Spreek, of tik om te onderbreken</string>
+    <string name="assistant_listening">Luistert</string>
+    <string name="assistant_call_ended">Oproep beëindigd</string>
+    <string name="assistant_disconnected_ended">Verbinding verbroken — de oproep is beëindigd</string>
+    <string name="assistant_config_loading">AI-instellingen worden nog geladen. Probeer het zo opnieuw.</string>
+
+    <!-- 连接进度 -->
+    <string name="assistant_step_creating_room">Vergadering aanmaken</string>
+    <string name="assistant_step_joining">Verbinden</string>
+    <string name="assistant_step_publishing">Audio en video voorbereiden</string>
+    <string name="assistant_step_starting_agent">AI-assistent starten</string>
+    <string name="assistant_step_waiting_agent">Wachten tot de AI deelneemt</string>
+    <string name="assistant_step_switching_mode">Modus wisselen</string>
+
+    <!-- 设置面板 -->
+    <string name="assistant_voice_call">Spraakoproep</string>
+    <string name="assistant_video_call">Video-oproep</string>
+    <string name="assistant_section_model">Model</string>
+    <string name="assistant_section_voice">Stem</string>
+    <string name="assistant_section_prompt">Prompt</string>
+    <string name="assistant_prompt_default">Standaard</string>
+    <string name="assistant_no_model">Geen model beschikbaar</string>
+
+    <!-- 无障碍(TalkBack)内容描述 -->
+    <string name="assistant_cd_back">Terug</string>
+    <string name="assistant_cd_settings">Instellingen</string>
+    <string name="assistant_cd_switch_camera">Camera wisselen</string>
+    <string name="assistant_cd_mute">Dempen</string>
+    <string name="assistant_cd_unmute">Dempen opheffen</string>
+    <string name="assistant_cd_hang_up">Ophangen</string>
+    <string name="assistant_cd_start_call">Oproep starten</string>
+    <string name="assistant_cd_toggle_video">Videomodus wisselen</string>
+</resources>

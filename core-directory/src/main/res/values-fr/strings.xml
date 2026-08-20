@@ -5,4 +5,5 @@
     <string name="picker_load_error">Échec du chargement des membres</string>
     <string name="picker_retry">Réessayer</string>
     <string name="picker_confirm_count">Confirmer (%1$d)</string>
+    <string name="picker_external_tag">Contact externe</string>
 </resources>
