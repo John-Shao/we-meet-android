@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.QuestionMark
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -349,6 +350,9 @@ fun EventDetailScreen(
                                 if (ui.canTransfer) {
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.event_action_transfer)) },
+                                        leadingIcon = {
+                                            Icon(Icons.Filled.SwapHoriz, contentDescription = null)
+                                        },
                                         onClick = {
                                             showMore = false
                                             showTransferPicker = true
