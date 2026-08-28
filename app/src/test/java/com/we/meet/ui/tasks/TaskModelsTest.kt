@@ -72,4 +72,12 @@ class TaskModelsTest {
             tasks.visibleFor(TaskView.Standalone, TaskFilter()).map(TaskItem::id),
         )
     }
+
+    @Test
+    fun taskDateRangeLabelPreservesStartAndDueDates() {
+        assertEquals("2026-08-28 – 2026-08-31", taskDateRangeLabel("2026-08-28", "2026-08-31"))
+        assertEquals("2026-08-28", taskDateRangeLabel("2026-08-28", "2026-08-28"))
+        assertEquals("2026-08-31", taskDateRangeLabel(null, "2026-08-31"))
+        assertEquals("—", taskDateRangeLabel(null, null))
+    }
 }

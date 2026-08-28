@@ -238,6 +238,7 @@ class TaskViewModel(
     fun createTask(
         title: String,
         description: String,
+        startDate: String?,
         dueDate: String?,
         taskListId: String?,
         groupId: String?,
@@ -254,6 +255,7 @@ class TaskViewModel(
                 description = description,
                 assigneeIds = assigneeIds ?: selfUserId?.let(::listOf),
                 followerIds = followerIds,
+                startDate = startDate,
                 dueDate = dueDate,
                 priority = priority.takeUnless { it == TaskPriority.None }?.name?.lowercase(),
                 taskListId = taskListId,
@@ -340,12 +342,35 @@ class TaskViewModel(
         )
     }
 
-    fun updateDueDate(item: TaskItem, dueDate: String) {
+    fun updateSchedule(item: TaskItem, startDate: String?, dueDate: String?) {
         if (!item.canEdit) return
-        updateTask(
-            item,
-            PatchTaskRequest(dueDate = dueDate, recurrenceScope = "one"),
-        )
+        if (item.startDate == startDate && item.dueDate == dueDate) return
+        if (startDate != null && dueDate != null && startDate > dueDate) return
+        if (item.id in _ui.value.mutatingIds) return
+        _ui.update { it.copy(mutatingIds = it.mutatingIds + item.id, failure = null) }
+        viewModelScope.launch {
+            repository.updateSchedule(item.id, startDate, dueDate).fold(
+                onSuccess = { updated ->
+                    val confirmed = updated.toItem()
+                    _ui.update {
+                        it.copy(
+                            tasks = it.tasks.replace(item.id, confirmed),
+                            searchResults = it.searchResults.replace(item.id, confirmed),
+                            detail = it.detail?.replace(item.id, confirmed),
+                            mutatingIds = it.mutatingIds - item.id,
+                        )
+                    }
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(
+                            mutatingIds = it.mutatingIds - item.id,
+                            failure = TaskFailure.Save,
+                        )
+                    }
+                },
+            )
+        }
     }
 
     fun updatePriority(item: TaskItem, priority: TaskPriority) {
@@ -612,6 +637,7 @@ class TaskViewModel(
                 description = "",
                 assigneeIds = selfUserId?.let(::listOf),
                 followerIds = null,
+                startDate = null,
                 dueDate = null,
                 priority = null,
                 taskListId = parent.listId,
@@ -1386,7 +1412,7 @@ private fun TaskDto.toItem(): TaskItem {
         title = title,
         description = description,
         assignee = people.joinToString { it.displayName }.ifBlank { creator.displayName },
-        dueLabel = dueDate ?: startDate ?: "—",
+        dueLabel = taskDateRangeLabel(startDate, dueDate),
         listId = taskList?.id,
         listName = taskList?.name ?: "—",
         section = group?.name ?: taskList?.name ?: "—",
@@ -1497,3 +1523,10 @@ private fun TaskDetailItem.replace(id: String, replacement: TaskItem): TaskDetai
     task = if (task?.id == id) replacement else task,
     subtasks = subtasks.replace(id, replacement),
 )
+
+internal fun taskDateRangeLabel(startDate: String?, dueDate: String?): String = when {
+    startDate != null && dueDate != null && startDate != dueDate -> "$startDate – $dueDate"
+    dueDate != null -> dueDate
+    startDate != null -> startDate
+    else -> "—"
+}

@@ -352,6 +352,7 @@
     <string name="task_group_name_hint">Gruppenname</string>
     <string name="task_confirm">Bestätigen</string>
     <string name="task_cancel">Abbrechen</string>
+    <string name="task_clear_dates">Datumsangaben löschen</string>
     <string name="task_rename">Umbenennen</string>
     <string name="task_new_group_above">Gruppe darüber erstellen</string>
     <string name="task_new_group_below">Gruppe darunter erstellen</string>

@@ -24,4 +24,23 @@ class TaskRepositoryPayloadTest {
         assertNull(fields["task_list_id"])
         assertNull(fields["group_id"])
     }
+
+    @Test
+    fun schedulePatchSerializesDateRangeAndRecurrenceScope() {
+        val fields = taskSchedulePatchFields("2026-08-28", "2026-08-31")
+
+        assertEquals("2026-08-28", fields["start_date"])
+        assertEquals("2026-08-31", fields["due_date"])
+        assertEquals("one", fields["recurrence_scope"])
+    }
+
+    @Test
+    fun emptyScheduleExplicitlyClearsBothDates() {
+        val fields = taskSchedulePatchFields(null, null)
+
+        assertTrue(fields.containsKey("start_date"))
+        assertTrue(fields.containsKey("due_date"))
+        assertNull(fields["start_date"])
+        assertNull(fields["due_date"])
+    }
 }

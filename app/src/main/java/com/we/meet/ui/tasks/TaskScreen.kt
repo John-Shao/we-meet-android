@@ -94,7 +94,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -118,7 +118,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
-import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -174,6 +174,7 @@ private data class TaskDeleteRequest(
 private data class TaskCreateInput(
     val title: String,
     val description: String,
+    val startDate: String?,
     val dueDate: String?,
     val taskListId: String?,
     val groupId: String?,
@@ -328,6 +329,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                     vm.createTask(
                         title = input.title,
                         description = input.description,
+                        startDate = input.startDate,
                         dueDate = input.dueDate,
                         taskListId = input.taskListId,
                         groupId = input.groupId,
@@ -810,11 +812,13 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
         )
     }
     dueDateTarget?.let { task ->
-        TaskDueDateDialog(
-            initialDate = task.dueDate,
+        TaskDateRangeDialog(
+            initialStartDate = task.startDate,
+            initialDueDate = task.dueDate,
+            allowClear = true,
             onDismiss = { dueDateTarget = null },
-            onConfirm = { date ->
-                vm.updateDueDate(task, date)
+            onConfirm = { startDate, dueDate ->
+                vm.updateSchedule(task, startDate, dueDate)
                 dueDateTarget = null
             },
         )
@@ -1648,7 +1652,8 @@ private fun CreateTaskPage(
 ) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var dueDate by remember { mutableStateOf(LocalDate.now().toString()) }
+    var startDate by remember { mutableStateOf<String?>(LocalDate.now().toString()) }
+    var dueDate by remember { mutableStateOf<String?>(LocalDate.now().toString()) }
     var selectedListId by remember(taskLists) { mutableStateOf(taskLists.firstOrNull()?.id) }
     var selectedGroupId by remember { mutableStateOf<String?>(null) }
     var selectedAssignees by remember { mutableStateOf<List<PickedMember>?>(null) }
@@ -1660,6 +1665,7 @@ private fun CreateTaskPage(
     var showFollowerPicker by remember { mutableStateOf(false) }
     var showPriorityPicker by remember { mutableStateOf(false) }
     var showSubtaskDialog by remember { mutableStateOf(false) }
+    var showDateRangePicker by remember { mutableStateOf(false) }
     val attachmentPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
     ) { uri -> attachmentUri = uri }
@@ -1677,8 +1683,13 @@ private fun CreateTaskPage(
     val attachmentLabel = attachmentUri?.let {
         contentDisplayName(app.contentResolver, it)
     } ?: stringResource(R.string.task_priority_none)
-    val dueLabel = if (dueDate == LocalDate.now().toString()) stringResource(R.string.task_today)
-    else stringResource(R.string.task_tomorrow)
+    val today = LocalDate.now().toString()
+    val tomorrow = LocalDate.now().plusDays(1).toString()
+    val scheduleLabel = when {
+        startDate == today && dueDate == today -> stringResource(R.string.task_today)
+        startDate == tomorrow && dueDate == tomorrow -> stringResource(R.string.task_tomorrow)
+        else -> taskDateRangeLabel(startDate, dueDate)
+    }
 
     Scaffold(
         topBar = { TaskPageTopBar(stringResource(R.string.task_create), onClose) },
@@ -1690,6 +1701,7 @@ private fun CreateTaskPage(
                             TaskCreateInput(
                                 title = title.trim(),
                                 description = description.trim(),
+                                startDate = startDate,
                                 dueDate = dueDate,
                                 taskListId = selectedListId,
                                 groupId = selectedGroupId,
@@ -1741,9 +1753,8 @@ private fun CreateTaskPage(
                         assigneeLabel,
                     ) { showAssigneePicker = true }
                     HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
-                    FormValueRow(Icons.Outlined.CalendarMonth, R.string.task_due_time, dueLabel) {
-                        dueDate = if (dueDate == LocalDate.now().toString()) LocalDate.now().plusDays(1).toString()
-                        else LocalDate.now().toString()
+                    FormValueRow(Icons.Outlined.CalendarMonth, R.string.task_due_time, scheduleLabel) {
+                        showDateRangePicker = true
                     }
                     HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
                     FormValueRow(
@@ -1778,8 +1789,22 @@ private fun CreateTaskPage(
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                    AssistChip(onClick = { dueDate = LocalDate.now().toString() }, label = { Text(stringResource(R.string.task_today)) }, leadingIcon = { Icon(Icons.Outlined.CalendarMonth, null, Modifier.size(Dimens.IconSmall)) })
-                    AssistChip(onClick = { dueDate = LocalDate.now().plusDays(1).toString() }, label = { Text(stringResource(R.string.task_tomorrow)) }, leadingIcon = { Icon(Icons.Outlined.Alarm, null, Modifier.size(Dimens.IconSmall)) })
+                    AssistChip(
+                        onClick = {
+                            startDate = today
+                            dueDate = today
+                        },
+                        label = { Text(stringResource(R.string.task_today)) },
+                        leadingIcon = { Icon(Icons.Outlined.CalendarMonth, null, Modifier.size(Dimens.IconSmall)) },
+                    )
+                    AssistChip(
+                        onClick = {
+                            startDate = tomorrow
+                            dueDate = tomorrow
+                        },
+                        label = { Text(stringResource(R.string.task_tomorrow)) },
+                        leadingIcon = { Icon(Icons.Outlined.Alarm, null, Modifier.size(Dimens.IconSmall)) },
+                    )
                 }
             }
             item {
@@ -1804,6 +1829,20 @@ private fun CreateTaskPage(
                 }
             }
         }
+    }
+
+    if (showDateRangePicker) {
+        TaskDateRangeDialog(
+            initialStartDate = startDate,
+            initialDueDate = dueDate,
+            allowClear = false,
+            onDismiss = { showDateRangePicker = false },
+            onConfirm = { selectedStartDate, selectedDueDate ->
+                startDate = selectedStartDate
+                dueDate = selectedDueDate
+                showDateRangePicker = false
+            },
+        )
     }
 
     if (showAssigneePicker) {
@@ -2589,39 +2628,57 @@ private fun EditTaskContentDialog(
 }
 
 @Composable
-private fun TaskDueDateDialog(
-    initialDate: String?,
+private fun TaskDateRangeDialog(
+    initialStartDate: String?,
+    initialDueDate: String?,
+    allowClear: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit,
+    onConfirm: (String?, String?) -> Unit,
 ) {
-    val initialMillis = runCatching {
-        LocalDate.parse(initialDate).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli()
-    }.getOrNull()
-    val state = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+    val effectiveStartDate = initialStartDate ?: initialDueDate
+    val initialStartMillis = effectiveStartDate.toUtcDateMillis()
+    val initialDueMillis = initialDueDate.toUtcDateMillis()
+    val state = rememberDateRangePickerState(
+        initialSelectedStartDateMillis = initialStartMillis,
+        initialSelectedEndDateMillis = initialDueMillis?.takeIf { it != initialStartMillis },
+    )
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(
                 onClick = {
-                    state.selectedDateMillis?.let { millis ->
-                        onConfirm(
-                            Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
-                                .toString(),
-                        )
+                    state.selectedStartDateMillis?.let { startMillis ->
+                        val startDate = startMillis.toUtcDateString()
+                        val dueDate = (state.selectedEndDateMillis ?: startMillis).toUtcDateString()
+                        onConfirm(startDate, dueDate)
                     }
                 },
-                enabled = state.selectedDateMillis != null,
+                enabled = state.selectedStartDateMillis != null,
             ) {
                 Text(stringResource(R.string.task_confirm))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.task_cancel)) }
+            Row {
+                if (allowClear) {
+                    TextButton(onClick = { onConfirm(null, null) }) {
+                        Text(stringResource(R.string.task_clear_dates))
+                    }
+                }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.task_cancel)) }
+            }
         },
     ) {
-        DatePicker(state = state)
+        DateRangePicker(state = state, showModeToggle = false)
     }
 }
+
+private fun String?.toUtcDateMillis(): Long? = runCatching {
+    LocalDate.parse(this).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli()
+}.getOrNull()
+
+private fun Long.toUtcDateString(): String =
+    Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate().toString()
 
 @Composable
 private fun TaskPlacementSheet(

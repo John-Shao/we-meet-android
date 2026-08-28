@@ -191,6 +191,7 @@ class TaskRepository(
         description: String,
         assigneeIds: List<String>?,
         followerIds: List<String>?,
+        startDate: String?,
         dueDate: String?,
         priority: String?,
         taskListId: String?,
@@ -202,6 +203,7 @@ class TaskRepository(
                 CreateTaskRequest(
                     title = title,
                     description = description,
+                    startDate = startDate,
                     assigneeIds = assigneeIds?.takeIf { it.isNotEmpty() },
                     followerIds = followerIds?.takeIf { it.isNotEmpty() },
                     dueDate = dueDate,
@@ -286,6 +288,20 @@ class TaskRepository(
             api.moveTask(
                 taskId,
                 taskPlacementPatchJson(taskListId, groupId)
+                    .toRequestBody("application/json".toMediaType()),
+            )
+        }
+    }
+
+    suspend fun updateSchedule(
+        taskId: String,
+        startDate: String?,
+        dueDate: String?,
+    ): Result<TaskDto> = runCatching {
+        withContext(Dispatchers.IO) {
+            api.moveTask(
+                taskId,
+                taskSchedulePatchJson(startDate, dueDate)
                     .toRequestBody("application/json".toMediaType()),
             )
         }
@@ -589,6 +605,20 @@ internal fun taskPlacementPatchFields(taskListId: String?, groupId: String?): Ma
 internal fun taskPlacementPatchJson(taskListId: String?, groupId: String?): String =
     JSONObject().apply {
         taskPlacementPatchFields(taskListId, groupId).forEach { (key, value) ->
+            put(key, value ?: JSONObject.NULL)
+        }
+    }.toString()
+
+internal fun taskSchedulePatchFields(startDate: String?, dueDate: String?): Map<String, String?> =
+    linkedMapOf(
+        "start_date" to startDate,
+        "due_date" to dueDate,
+        "recurrence_scope" to "one",
+    )
+
+internal fun taskSchedulePatchJson(startDate: String?, dueDate: String?): String =
+    JSONObject().apply {
+        taskSchedulePatchFields(startDate, dueDate).forEach { (key, value) ->
             put(key, value ?: JSONObject.NULL)
         }
     }.toString()
