@@ -367,6 +367,40 @@ class TaskViewModel(
         )
     }
 
+    fun updatePlacement(item: TaskItem, taskListId: String?, groupId: String?) {
+        if (!item.canEdit || item.id in _ui.value.mutatingIds ||
+            (item.listId == taskListId && item.groupId == groupId)
+        ) {
+            return
+        }
+        _ui.update { it.copy(mutatingIds = it.mutatingIds + item.id, failure = null) }
+        viewModelScope.launch {
+            repository.updatePlacement(item.id, taskListId, groupId).fold(
+                onSuccess = { updated ->
+                    val confirmed = updated.toItem()
+                    _ui.update {
+                        it.copy(
+                            tasks = it.tasks.replace(item.id, confirmed),
+                            searchResults = it.searchResults.replace(item.id, confirmed),
+                            detail = it.detail?.replace(item.id, confirmed),
+                            mutatingIds = it.mutatingIds - item.id,
+                        )
+                    }
+                    refreshNavigation()
+                    loadDetail(item.id)
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(
+                            mutatingIds = it.mutatingIds - item.id,
+                            failure = TaskFailure.Save,
+                        )
+                    }
+                },
+            )
+        }
+    }
+
     private fun updateTask(item: TaskItem, patch: PatchTaskRequest) {
         if (item.id in _ui.value.mutatingIds) return
         _ui.update { it.copy(mutatingIds = it.mutatingIds + item.id, failure = null) }

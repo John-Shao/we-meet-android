@@ -179,6 +179,12 @@ private data class TaskCreateInput(
     val attachmentUri: Uri?,
 )
 
+private data class TaskPlacementOption(
+    val taskListId: String?,
+    val groupId: String?,
+    val label: String,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskScreen(ownerName: String, app: WeMeetApp) {
@@ -206,6 +212,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     var editContentTarget by remember { mutableStateOf<TaskItem?>(null) }
     var dueDateTarget by remember { mutableStateOf<TaskItem?>(null) }
     var priorityTarget by remember { mutableStateOf<TaskItem?>(null) }
+    var placementTarget by remember { mutableStateOf<TaskItem?>(null) }
     var recurrenceTarget by remember { mutableStateOf<TaskItem?>(null) }
     var parentPickerTarget by remember { mutableStateOf<TaskItem?>(null) }
     var pendingParentMove by remember { mutableStateOf<TaskParentMove?>(null) }
@@ -359,6 +366,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                     onEditContent = { editContentTarget = task },
                     onEditDueDate = { dueDateTarget = task },
                     onEditPriority = { priorityTarget = task },
+                    onEditPlacement = { placementTarget = task },
                     canManageRecurrence = task.recurrence?.canManage
                         ?: (task.creatorId == app.tokenStore.userId),
                     onEditRecurrence = { recurrenceTarget = task },
@@ -796,6 +804,18 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             onSelect = { priority ->
                 vm.updatePriority(task, priority)
                 priorityTarget = null
+            },
+        )
+    }
+    placementTarget?.let { task ->
+        TaskPlacementSheet(
+            task = task,
+            taskLists = ui.taskLists.filter(TaskListItem::canCreateTasks),
+            saving = task.id in ui.mutatingIds,
+            onDismiss = { placementTarget = null },
+            onSelect = { taskListId, groupId ->
+                vm.updatePlacement(task, taskListId, groupId)
+                placementTarget = null
             },
         )
     }
@@ -1830,6 +1850,7 @@ private fun TaskDetailPage(
     onEditContent: () -> Unit,
     onEditDueDate: () -> Unit,
     onEditPriority: () -> Unit,
+    onEditPlacement: () -> Unit,
     canManageRecurrence: Boolean,
     onEditRecurrence: () -> Unit,
     canEditParent: Boolean,
@@ -1948,7 +1969,12 @@ private fun TaskDetailPage(
                         task.dueLabel,
                         onEditDueDate.takeIf { task.canEdit },
                     )
-                    FormValueRow(Icons.AutoMirrored.Outlined.ListAlt, R.string.task_list, task.listName)
+                    FormValueRow(
+                        Icons.AutoMirrored.Outlined.ListAlt,
+                        R.string.task_list,
+                        task.listName.ifBlank { stringResource(R.string.task_standalone) },
+                        onEditPlacement.takeIf { task.canEdit },
+                    )
                     FormValueRow(
                         Icons.Outlined.Flag,
                         R.string.task_priority,
@@ -2572,6 +2598,67 @@ private fun TaskDueDateDialog(
         },
     ) {
         DatePicker(state = state)
+    }
+}
+
+@Composable
+private fun TaskPlacementSheet(
+    task: TaskItem,
+    taskLists: List<TaskListItem>,
+    saving: Boolean,
+    onDismiss: () -> Unit,
+    onSelect: (taskListId: String?, groupId: String?) -> Unit,
+) {
+    val standaloneLabel = stringResource(R.string.task_standalone)
+    val options = buildList {
+        add(TaskPlacementOption(null, null, standaloneLabel))
+        taskLists.forEach { list ->
+            add(TaskPlacementOption(list.id, null, list.name))
+            list.groups.sortedBy(TaskGroupItem::sortOrder).forEach { group ->
+                add(TaskPlacementOption(list.id, group.id, "${list.name} · ${group.name}"))
+            }
+        }
+    }
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.fillMaxWidth().padding(bottom = Dimens.SpaceXl)) {
+            Text(
+                stringResource(R.string.task_list),
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            if (saving) LinearProgressIndicator(Modifier.fillMaxWidth())
+            LazyColumn(Modifier.fillMaxWidth().heightIn(max = Dimens.SheetContentMaxHeight)) {
+                items(
+                    items = options,
+                    key = { "${it.taskListId.orEmpty()}:${it.groupId.orEmpty()}" },
+                ) { option ->
+                    val selected = task.listId == option.taskListId &&
+                        task.groupId == option.groupId
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .clickable(enabled = !saving && !selected) {
+                                onSelect(option.taskListId, option.groupId)
+                            }
+                            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceL),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            if (option.taskListId == null) Icons.Outlined.FolderOpen
+                            else Icons.AutoMirrored.Outlined.ListAlt,
+                            null,
+                            tint = if (selected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.width(Dimens.SpaceM))
+                        Text(option.label, modifier = Modifier.weight(1f))
+                        if (selected) {
+                            Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

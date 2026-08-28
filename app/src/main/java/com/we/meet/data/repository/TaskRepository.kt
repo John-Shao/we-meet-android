@@ -276,6 +276,20 @@ class TaskRepository(
         }
     }
 
+    suspend fun updatePlacement(
+        taskId: String,
+        taskListId: String?,
+        groupId: String?,
+    ): Result<TaskDto> = runCatching {
+        withContext(Dispatchers.IO) {
+            api.moveTask(
+                taskId,
+                taskPlacementPatchJson(taskListId, groupId)
+                    .toRequestBody("application/json".toMediaType()),
+            )
+        }
+    }
+
     suspend fun addFollowers(taskId: String, userIds: List<String>): Result<TaskDto> =
         runCatching {
             withContext(Dispatchers.IO) {
@@ -560,3 +574,17 @@ internal suspend fun collectTaskPages(
     } while (hasNextPage && pageNumber <= maxPages && tasks.size < maxResults)
     return tasks.values.toList()
 }
+
+internal fun taskPlacementPatchFields(taskListId: String?, groupId: String?): Map<String, String?> =
+    linkedMapOf(
+        "task_list_id" to taskListId,
+        "group_id" to groupId?.takeIf { taskListId != null },
+        "recurrence_scope" to "one",
+    )
+
+internal fun taskPlacementPatchJson(taskListId: String?, groupId: String?): String =
+    JSONObject().apply {
+        taskPlacementPatchFields(taskListId, groupId).forEach { (key, value) ->
+            put(key, value ?: JSONObject.NULL)
+        }
+    }.toString()
