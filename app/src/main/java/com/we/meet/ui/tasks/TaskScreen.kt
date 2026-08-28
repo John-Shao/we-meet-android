@@ -80,6 +80,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -101,6 +103,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -125,9 +128,13 @@ import com.we.meet.WeMeetApp
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.ui.chat.ForwardCreateGroupFlow
 import com.we.meet.feature.im.ui.chat.ForwardPicker
+import com.we.meet.core.directory.ui.ContactPicker
+import com.we.meet.core.directory.ui.ContactPickerMode
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 import java.time.LocalDate
+import java.time.Instant
+import java.time.ZoneOffset
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -151,6 +158,11 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     var renameListTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var deleteGroupTarget by remember { mutableStateOf<TaskListGroupItem?>(null) }
     var deleteListTarget by remember { mutableStateOf<TaskListItem?>(null) }
+    var editContentTarget by remember { mutableStateOf<TaskItem?>(null) }
+    var dueDateTarget by remember { mutableStateOf<TaskItem?>(null) }
+    var priorityTarget by remember { mutableStateOf<TaskItem?>(null) }
+    var assigneeTarget by remember { mutableStateOf<TaskItem?>(null) }
+    var followerTarget by remember { mutableStateOf<TaskItem?>(null) }
     var showNewSubtask by remember { mutableStateOf(false) }
     var shareTarget by remember { mutableStateOf<TaskItem?>(null) }
     var showShareGroup by remember { mutableStateOf(false) }
@@ -242,6 +254,12 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                     },
                     onAddSubtask = { showNewSubtask = true },
                     onToggleSubtask = vm::toggleCompleted,
+                    onEditContent = { editContentTarget = task },
+                    onEditDueDate = { dueDateTarget = task },
+                    onEditPriority = { priorityTarget = task },
+                    onEditAssignees = { assigneeTarget = task },
+                    onAddFollowers = { followerTarget = task },
+                    onRemoveFollower = { follower -> vm.removeFollower(task, follower.id) },
                     onAddAttachment = { attachmentPicker.launch(arrayOf("*/*")) },
                     onDeleteAttachment = { attachment ->
                         vm.deleteAttachment(task.id, attachment.id)
@@ -414,6 +432,65 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 vm.deleteTaskList(list)
                 deleteListTarget = null
             },
+        )
+    }
+    editContentTarget?.let { task ->
+        EditTaskContentDialog(
+            task = task,
+            saving = task.id in ui.mutatingIds,
+            onDismiss = { editContentTarget = null },
+            onConfirm = { title, description ->
+                vm.updateContent(task, title, description)
+                editContentTarget = null
+            },
+        )
+    }
+    dueDateTarget?.let { task ->
+        TaskDueDateDialog(
+            initialDate = task.dueDate,
+            onDismiss = { dueDateTarget = null },
+            onConfirm = { date ->
+                vm.updateDueDate(task, date)
+                dueDateTarget = null
+            },
+        )
+    }
+    priorityTarget?.let { task ->
+        TaskPrioritySheet(
+            selected = task.priority,
+            onDismiss = { priorityTarget = null },
+            onSelect = { priority ->
+                vm.updatePriority(task, priority)
+                priorityTarget = null
+            },
+        )
+    }
+    assigneeTarget?.let { task ->
+        ContactPicker(
+            deps = app,
+            mode = ContactPickerMode.Multi,
+            enabled = task.id !in ui.mutatingIds,
+            excludeSelf = false,
+            preselectUserIds = task.assignees.mapTo(mutableSetOf()) { it.id },
+            onConfirm = { picked ->
+                vm.updateAssignees(task, picked.map { it.userId })
+                assigneeTarget = null
+            },
+            onDismiss = { assigneeTarget = null },
+        )
+    }
+    followerTarget?.let { task ->
+        ContactPicker(
+            deps = app,
+            mode = ContactPickerMode.Multi,
+            enabled = task.id !in ui.mutatingIds,
+            excludeSelf = false,
+            excludeUserIds = task.followers.mapTo(mutableSetOf()) { it.id },
+            onConfirm = { picked ->
+                vm.addFollowers(task, picked.map { it.userId })
+                followerTarget = null
+            },
+            onDismiss = { followerTarget = null },
         )
     }
     if (showNewSubtask && selectedTask != null) {
@@ -1120,6 +1197,12 @@ private fun TaskDetailPage(
     onSendComment: (TaskItem, String, () -> Unit) -> Unit,
     onAddSubtask: () -> Unit,
     onToggleSubtask: (TaskItem) -> Unit,
+    onEditContent: () -> Unit,
+    onEditDueDate: () -> Unit,
+    onEditPriority: () -> Unit,
+    onEditAssignees: () -> Unit,
+    onAddFollowers: () -> Unit,
+    onRemoveFollower: (TaskPersonItem) -> Unit,
     onAddAttachment: () -> Unit,
     onDeleteAttachment: (TaskAttachmentItem) -> Unit,
     onShare: () -> Unit,
@@ -1192,22 +1275,48 @@ private fun TaskDetailPage(
                         if (task.status == TaskStatus.Done) Icon(Icons.Filled.Check, null, tint = WeMeetTheme.extras.status.onSuccessContainer, modifier = Modifier.size(Dimens.IconSmall))
                     }
                     Spacer(Modifier.width(Dimens.SpaceM))
-                    Text(task.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text(
+                        task.title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.then(
+                            if (task.canEdit) Modifier.clickable(onClick = onEditContent)
+                            else Modifier,
+                        ),
+                    )
                 }
             }
             item {
                 Text(
                     task.description.ifBlank { stringResource(R.string.task_description_hint) },
                     color = if (task.description.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(start = Dimens.SpaceXxxl),
+                    modifier = Modifier.padding(start = Dimens.SpaceXxxl).then(
+                        if (task.canEdit) Modifier.clickable(onClick = onEditContent)
+                        else Modifier,
+                    ),
                 )
             }
             item {
                 TaskFormCard {
-                    FormValueRow(Icons.Outlined.PersonOutline, R.string.task_assignee, task.assignee)
-                    FormValueRow(Icons.Outlined.CalendarMonth, R.string.task_due_time, task.dueLabel)
+                    FormValueRow(
+                        Icons.Outlined.PersonOutline,
+                        R.string.task_assignee,
+                        task.assignee,
+                        onEditAssignees.takeIf { task.canEdit },
+                    )
+                    FormValueRow(
+                        Icons.Outlined.CalendarMonth,
+                        R.string.task_due_time,
+                        task.dueLabel,
+                        onEditDueDate.takeIf { task.canEdit },
+                    )
                     FormValueRow(Icons.AutoMirrored.Outlined.ListAlt, R.string.task_list, task.listName)
-                    FormValueRow(Icons.Outlined.Flag, R.string.task_priority, priorityText(task.priority))
+                    FormValueRow(
+                        Icons.Outlined.Flag,
+                        R.string.task_priority,
+                        priorityText(task.priority),
+                        onEditPriority.takeIf { task.canEdit },
+                    )
                 }
             }
             item {
@@ -1280,23 +1389,56 @@ private fun TaskDetailPage(
             }
             item {
                 DetailSectionTitle(R.string.task_followers, null)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Avatar(task.assignee, Dimens.AvatarS)
-                    Spacer(Modifier.width(Dimens.SpaceM))
-                    Text(task.assignee)
-                    Spacer(Modifier.weight(1f))
-                    TextButton(onClick = { onToggleFollow(task) }) {
-                        Text(if (task.followed) stringResource(R.string.task_unfollow) else stringResource(R.string.task_follow))
+                task.followers.forEach { follower ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Avatar(follower.name, Dimens.AvatarS)
+                        Spacer(Modifier.width(Dimens.SpaceM))
+                        Text(follower.name, modifier = Modifier.weight(1f))
+                        if (task.canManageFollowers) {
+                            IconButton(onClick = { onRemoveFollower(follower) }) {
+                                Icon(
+                                    Icons.Filled.DeleteOutline,
+                                    stringResource(R.string.task_remove_follower),
+                                )
+                            }
+                        }
                     }
+                }
+                if (task.canManageFollowers) {
+                    OutlinedButton(onClick = onAddFollowers, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Filled.Add, null)
+                        Spacer(Modifier.width(Dimens.SpaceS))
+                        Text(stringResource(R.string.task_add_follower))
+                    }
+                }
+                TextButton(onClick = { onToggleFollow(task) }) {
+                    Text(
+                        if (task.followed) stringResource(R.string.task_unfollow)
+                        else stringResource(R.string.task_follow),
+                    )
                 }
             }
             item {
                 DetailSectionTitle(R.string.task_activity, null)
-                Text(
-                    stringResource(R.string.task_created_activity, task.assignee),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                detail?.activities.orEmpty().forEach { activity ->
+                    Column(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS)) {
+                        Text(
+                            activityText(activity),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        if (activity.createdAt.isNotBlank()) {
+                            Text(
+                                activity.createdAt.take(16).replace('T', ' '),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                }
             }
             if (!detail?.comments.isNullOrEmpty()) {
                 item { DetailSectionTitle(R.string.task_comments, detail?.comments?.size.toString()) }
@@ -1498,6 +1640,132 @@ private fun priorityText(priority: TaskPriority): String = when (priority) {
     TaskPriority.Medium -> stringResource(R.string.task_priority_medium)
     TaskPriority.High -> stringResource(R.string.task_priority_high)
     TaskPriority.Urgent -> stringResource(R.string.task_priority_urgent)
+}
+
+@Composable
+private fun activityText(activity: TaskActivityItem): String {
+    val actor = activity.actor.ifBlank { stringResource(R.string.task_unknown_actor) }
+    val resource = when (activity.event) {
+        "created" -> R.string.task_activity_created
+        "dates_changed" -> R.string.task_activity_dates
+        "assignee_changed" -> R.string.task_activity_assignee
+        "status_changed" -> R.string.task_activity_status
+        "priority_changed" -> R.string.task_activity_priority
+        "placement_changed" -> R.string.task_activity_placement
+        "attachment_removed" -> R.string.task_activity_attachment
+        else -> R.string.task_activity_updated
+    }
+    return stringResource(resource, actor)
+}
+
+@Composable
+private fun EditTaskContentDialog(
+    task: TaskItem,
+    saving: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String, String) -> Unit,
+) {
+    var title by remember(task.id) { mutableStateOf(task.title) }
+    var description by remember(task.id) { mutableStateOf(task.description) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.task_edit_details)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text(stringResource(R.string.task_title_field)) },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text(stringResource(R.string.task_description_field)) },
+                    minLines = 3,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(title, description) },
+                enabled = title.isNotBlank() && !saving &&
+                    (title.trim() != task.title || description.trim() != task.description),
+            ) {
+                Text(stringResource(R.string.task_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !saving) {
+                Text(stringResource(R.string.task_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun TaskDueDateDialog(
+    initialDate: String?,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    val initialMillis = runCatching {
+        LocalDate.parse(initialDate).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli()
+    }.getOrNull()
+    val state = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    state.selectedDateMillis?.let { millis ->
+                        onConfirm(
+                            Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+                                .toString(),
+                        )
+                    }
+                },
+                enabled = state.selectedDateMillis != null,
+            ) {
+                Text(stringResource(R.string.task_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.task_cancel)) }
+        },
+    ) {
+        DatePicker(state = state)
+    }
+}
+
+@Composable
+private fun TaskPrioritySheet(
+    selected: TaskPriority,
+    onDismiss: () -> Unit,
+    onSelect: (TaskPriority) -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.fillMaxWidth().padding(bottom = Dimens.SpaceXl)) {
+            Text(
+                stringResource(R.string.task_priority),
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            TaskPriority.entries.filterNot { it == TaskPriority.None }.forEach { priority ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().clickable { onSelect(priority) }
+                        .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceL),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(priorityText(priority), modifier = Modifier.weight(1f))
+                    if (priority == selected) {
+                        Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

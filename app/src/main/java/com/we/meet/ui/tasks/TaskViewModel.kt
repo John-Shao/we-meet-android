@@ -8,6 +8,7 @@ import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.TaskDto
 import com.we.meet.data.api.dto.TaskListDto
 import com.we.meet.data.api.dto.TaskListGroupDto
+import com.we.meet.data.api.dto.PatchTaskRequest
 import com.we.meet.data.repository.TaskRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -138,6 +139,14 @@ class TaskViewModel(
                                         uploader = attachment.uploader?.displayName.orEmpty(),
                                     )
                                 },
+                                activities = detail.activities.map { activity ->
+                                    TaskActivityItem(
+                                        id = activity.id,
+                                        actor = activity.actor?.displayName.orEmpty(),
+                                        event = activity.event,
+                                        createdAt = activity.createdAt,
+                                    )
+                                },
                             ),
                         )
                     }
@@ -191,6 +200,132 @@ class TaskViewModel(
         val following = !item.followed
         mutateOptimistically(item, item.copy(followed = following)) {
             repository.setFollowing(item.id, following)
+        }
+    }
+
+    fun updateContent(item: TaskItem, title: String, description: String) {
+        if (!item.canEdit || title.isBlank()) return
+        updateTask(
+            item,
+            PatchTaskRequest(
+                title = title.trim(),
+                description = description.trim(),
+                recurrenceScope = "one",
+            ),
+        )
+    }
+
+    fun updateDueDate(item: TaskItem, dueDate: String) {
+        if (!item.canEdit) return
+        updateTask(
+            item,
+            PatchTaskRequest(dueDate = dueDate, recurrenceScope = "one"),
+        )
+    }
+
+    fun updatePriority(item: TaskItem, priority: TaskPriority) {
+        if (!item.canEdit || priority == TaskPriority.None) return
+        updateTask(
+            item,
+            PatchTaskRequest(
+                priority = priority.name.lowercase(),
+                recurrenceScope = "one",
+            ),
+        )
+    }
+
+    fun updateAssignees(item: TaskItem, userIds: List<String>) {
+        if (!item.canEdit || userIds.isEmpty()) return
+        updateTask(
+            item,
+            PatchTaskRequest(assigneeIds = userIds, recurrenceScope = "one"),
+        )
+    }
+
+    private fun updateTask(item: TaskItem, patch: PatchTaskRequest) {
+        if (item.id in _ui.value.mutatingIds) return
+        _ui.update { it.copy(mutatingIds = it.mutatingIds + item.id, failure = null) }
+        viewModelScope.launch {
+            repository.updateTask(item.id, patch).fold(
+                onSuccess = { updated ->
+                    val confirmed = updated.toItem()
+                    _ui.update {
+                        it.copy(
+                            tasks = it.tasks.replace(item.id, confirmed),
+                            searchResults = it.searchResults.replace(item.id, confirmed),
+                            mutatingIds = it.mutatingIds - item.id,
+                        )
+                    }
+                    loadDetail(item.id)
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(
+                            mutatingIds = it.mutatingIds - item.id,
+                            failure = TaskFailure.Save,
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    fun addFollowers(item: TaskItem, userIds: List<String>) {
+        if (!item.canManageFollowers || userIds.isEmpty() || item.id in _ui.value.mutatingIds) {
+            return
+        }
+        _ui.update { it.copy(mutatingIds = it.mutatingIds + item.id, failure = null) }
+        viewModelScope.launch {
+            repository.addFollowers(item.id, userIds).fold(
+                onSuccess = { updated ->
+                    val confirmed = updated.toItem()
+                    _ui.update {
+                        it.copy(
+                            tasks = it.tasks.replace(item.id, confirmed),
+                            searchResults = it.searchResults.replace(item.id, confirmed),
+                            mutatingIds = it.mutatingIds - item.id,
+                        )
+                    }
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(
+                            mutatingIds = it.mutatingIds - item.id,
+                            failure = TaskFailure.Save,
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    fun removeFollower(item: TaskItem, followerId: String) {
+        if (!item.canManageFollowers || item.id in _ui.value.mutatingIds) return
+        _ui.update { it.copy(mutatingIds = it.mutatingIds + item.id, failure = null) }
+        viewModelScope.launch {
+            repository.removeFollower(item.id, followerId).fold(
+                onSuccess = {
+                    val updated = item.copy(
+                        followers = item.followers.filterNot { it.id == followerId },
+                        followed = item.followed && followerId != selfUserId,
+                    )
+                    _ui.update {
+                        it.copy(
+                            tasks = it.tasks.replace(item.id, updated),
+                            searchResults = it.searchResults.replace(item.id, updated),
+                            mutatingIds = it.mutatingIds - item.id,
+                        )
+                    }
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(
+                            mutatingIds = it.mutatingIds - item.id,
+                            failure = TaskFailure.Save,
+                        )
+                    }
+                },
+            )
         }
     }
 
@@ -594,6 +729,16 @@ private fun TaskDto.toItem(): TaskItem {
         canComment = canComment,
         canManageAttachments = canManageAttachments,
         canCreateSubtasks = canCreateSubtasks,
+        canEdit = canEdit,
+        canManageFollowers = canManageFollowers,
+        assignees = people.map { person ->
+            TaskPersonItem(person.id, person.displayName, person.avatarUrl)
+        },
+        followers = followers.map { person ->
+            TaskPersonItem(person.id, person.displayName, person.avatarUrl)
+        },
+        startDate = startDate,
+        dueDate = dueDate,
     )
 }
 

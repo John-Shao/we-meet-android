@@ -5,6 +5,7 @@ import com.we.meet.data.api.dto.CreateTaskListGroupRequest
 import com.we.meet.data.api.dto.CreateTaskListRequest
 import com.we.meet.data.api.dto.CreateTaskAttachmentRequest
 import com.we.meet.data.api.dto.CreateTaskRequest
+import com.we.meet.data.api.dto.AddTaskFollowersRequest
 import com.we.meet.data.api.dto.CreateFileRequest
 import com.we.meet.data.api.dto.FileUploadDto
 import com.we.meet.data.api.dto.PagedTasksDto
@@ -17,6 +18,7 @@ import com.we.meet.data.api.dto.TaskListDto
 import com.we.meet.data.api.dto.TaskListGroupDto
 import com.we.meet.data.api.dto.TaskSubtreeImpactDto
 import com.we.meet.data.api.dto.TaskAttachmentDto
+import com.we.meet.data.api.dto.TaskActivityDto
 import com.we.meet.data.api.dto.ShareTaskRequest
 import com.we.meet.data.api.dto.ShareTaskResponse
 import retrofit2.http.Body
@@ -61,6 +63,21 @@ interface TaskApi {
 
     @DELETE("api/v1.0/tasks/{id}/follow/")
     suspend fun unfollowTask(@Path("id") id: String): TaskDto
+
+    @GET("api/v1.0/tasks/{id}/activities/")
+    suspend fun listActivities(@Path("id") id: String): List<TaskActivityDto>
+
+    @POST("api/v1.0/tasks/{id}/followers/")
+    suspend fun addFollowers(
+        @Path("id") id: String,
+        @Body body: AddTaskFollowersRequest,
+    ): TaskDto
+
+    @DELETE("api/v1.0/tasks/{id}/followers/{followerId}/")
+    suspend fun removeFollower(
+        @Path("id") id: String,
+        @Path("followerId") followerId: String,
+    )
 
     @GET("api/v1.0/tasks/{id}/comments/")
     suspend fun listComments(@Path("id") id: String): List<TaskCommentDto>

@@ -122,4 +122,57 @@ class TaskDtosTest {
         assertTrue(json.contains("\"list_group_id\":\"group-1\""))
         assertTrue(json.contains("\"name\":\"Mobile\""))
     }
+
+    @Test
+    fun detailCollaborationResponsesMapFollowersAndActivity() {
+        val taskJson = """
+            {
+              "id":"task-1",
+              "title":"Ship Android tasks",
+              "creator":{"id":"user-1","full_name":"Alex"},
+              "assignees":[{"id":"user-2","full_name":"Bo"}],
+              "followers":[{"id":"user-3","full_name":"Casey"}],
+              "can_edit":true,
+              "can_manage_followers":true
+            }
+        """.trimIndent()
+        val activityJson = """
+            {
+              "id":"activity-1",
+              "actor":{"id":"user-1","full_name":"Alex"},
+              "event":"priority_changed",
+              "changes":{"priority":{"before":"low","after":"high"}},
+              "created_at":"2026-08-28T09:30:00Z"
+            }
+        """.trimIndent()
+
+        val task = moshi.adapter(TaskDto::class.java).fromJson(taskJson)!!
+        val activity = moshi.adapter(TaskActivityDto::class.java).fromJson(activityJson)!!
+
+        assertEquals("Casey", task.followers.single().displayName)
+        assertTrue(task.canEdit)
+        assertTrue(task.canManageFollowers)
+        assertEquals("priority_changed", activity.event)
+        assertEquals("Alex", activity.actor?.displayName)
+    }
+
+    @Test
+    fun taskPatchAndFollowerRequestsUseBackendFieldNames() {
+        val patchJson = moshi.adapter(PatchTaskRequest::class.java).toJson(
+            PatchTaskRequest(
+                dueDate = "2026-09-01",
+                priority = "high",
+                assigneeIds = listOf("user-2"),
+                recurrenceScope = "one",
+            ),
+        )
+        val followerJson = moshi.adapter(AddTaskFollowersRequest::class.java).toJson(
+            AddTaskFollowersRequest(listOf("user-3")),
+        )
+
+        assertTrue(patchJson.contains("\"due_date\":\"2026-09-01\""))
+        assertTrue(patchJson.contains("\"assignee_ids\":[\"user-2\"]"))
+        assertTrue(patchJson.contains("\"recurrence_scope\":\"one\""))
+        assertTrue(followerJson.contains("\"follower_ids\":[\"user-3\"]"))
+    }
 }

@@ -132,8 +132,12 @@ data class PatchTaskRequest(
     val title: String? = null,
     val description: String? = null,
     val status: String? = null,
+    @Json(name = "start_date") val startDate: String? = null,
     @Json(name = "due_date") val dueDate: String? = null,
+    val priority: String? = null,
+    @Json(name = "assignee_ids") val assigneeIds: List<String>? = null,
     @Json(name = "task_list_id") val taskListId: String? = null,
+    @Json(name = "recurrence_scope") val recurrenceScope: String? = null,
 )
 
 @JsonClass(generateAdapter = true)
@@ -151,6 +155,19 @@ data class TaskCommentDto(
 
 @JsonClass(generateAdapter = true)
 data class CreateTaskCommentRequest(val content: String)
+
+@JsonClass(generateAdapter = true)
+data class TaskActivityDto(
+    val id: String,
+    val actor: TaskUserDto? = null,
+    val event: String,
+    @Json(name = "created_at") val createdAt: String = "",
+)
+
+@JsonClass(generateAdapter = true)
+data class AddTaskFollowersRequest(
+    @Json(name = "follower_ids") val followerIds: List<String>,
+)
 
 @JsonClass(generateAdapter = true)
 data class CreateTaskListGroupRequest(val name: String)

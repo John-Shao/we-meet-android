@@ -5,6 +5,7 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import com.we.meet.data.api.TaskApi
 import com.we.meet.data.api.dto.CreateFileRequest
+import com.we.meet.data.api.dto.AddTaskFollowersRequest
 import com.we.meet.data.api.dto.CreateTaskAttachmentRequest
 import com.we.meet.data.api.dto.CreateTaskCommentRequest
 import com.we.meet.data.api.dto.CreateTaskListGroupRequest
@@ -16,6 +17,7 @@ import com.we.meet.data.api.dto.PatchTaskListRequest
 import com.we.meet.data.api.dto.TaskCommentDto
 import com.we.meet.data.api.dto.TaskDto
 import com.we.meet.data.api.dto.TaskAttachmentDto
+import com.we.meet.data.api.dto.TaskActivityDto
 import com.we.meet.data.api.dto.TaskListDto
 import com.we.meet.data.api.dto.TaskListGroupDto
 import kotlinx.coroutines.Dispatchers
@@ -43,6 +45,7 @@ class TaskRepository(
         val subtasks: List<TaskDto>,
         val comments: List<TaskCommentDto>,
         val attachments: List<TaskAttachmentDto>,
+        val activities: List<TaskActivityDto>,
     )
 
     suspend fun loadNavigation(): Result<Navigation> = runCatching {
@@ -74,6 +77,7 @@ class TaskRepository(
                 subtasks = api.listSubtasks(taskId),
                 comments = api.listComments(taskId),
                 attachments = api.listAttachments(taskId),
+                activities = api.listActivities(taskId),
             )
         }
     }
@@ -116,6 +120,22 @@ class TaskRepository(
                 if (following) api.followTask(taskId) else api.unfollowTask(taskId)
             }
         }
+
+    suspend fun updateTask(taskId: String, patch: PatchTaskRequest): Result<TaskDto> =
+        runCatching {
+            withContext(Dispatchers.IO) { api.patchTask(taskId, patch) }
+        }
+
+    suspend fun addFollowers(taskId: String, userIds: List<String>): Result<TaskDto> =
+        runCatching {
+            withContext(Dispatchers.IO) {
+                api.addFollowers(taskId, AddTaskFollowersRequest(userIds))
+            }
+        }
+
+    suspend fun removeFollower(taskId: String, userId: String): Result<Unit> = runCatching {
+        withContext(Dispatchers.IO) { api.removeFollower(taskId, userId) }
+    }
 
     suspend fun deleteTask(taskId: String): Result<Unit> = runCatching {
         withContext(Dispatchers.IO) {

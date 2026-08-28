@@ -6,6 +6,12 @@ enum class TaskStatus { Todo, Done }
 
 enum class TaskPriority { None, Low, Medium, High, Urgent }
 
+data class TaskPersonItem(
+    val id: String,
+    val name: String,
+    val avatarUrl: String = "",
+)
+
 data class TaskItem(
     val id: String,
     val title: String,
@@ -25,6 +31,12 @@ data class TaskItem(
     val canComment: Boolean = false,
     val canManageAttachments: Boolean = false,
     val canCreateSubtasks: Boolean = false,
+    val canEdit: Boolean = false,
+    val canManageFollowers: Boolean = false,
+    val assignees: List<TaskPersonItem> = emptyList(),
+    val followers: List<TaskPersonItem> = emptyList(),
+    val startDate: String? = null,
+    val dueDate: String? = null,
 )
 
 data class TaskCommentItem(
@@ -41,11 +53,19 @@ data class TaskAttachmentItem(
     val uploader: String = "",
 )
 
+data class TaskActivityItem(
+    val id: String,
+    val actor: String,
+    val event: String,
+    val createdAt: String,
+)
+
 data class TaskDetailItem(
     val taskId: String,
     val subtasks: List<TaskItem> = emptyList(),
     val comments: List<TaskCommentItem> = emptyList(),
     val attachments: List<TaskAttachmentItem> = emptyList(),
+    val activities: List<TaskActivityItem> = emptyList(),
     val loading: Boolean = false,
     val uploadingAttachment: Boolean = false,
 )
