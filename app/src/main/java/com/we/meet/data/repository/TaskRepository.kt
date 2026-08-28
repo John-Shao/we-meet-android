@@ -179,9 +179,12 @@ class TaskRepository(
     suspend fun createTask(
         title: String,
         description: String,
-        assigneeId: String?,
+        assigneeIds: List<String>?,
+        followerIds: List<String>?,
         dueDate: String?,
+        priority: String?,
         taskListId: String?,
+        groupId: String?,
         parentId: String? = null,
     ): Result<TaskDto> = runCatching {
         withContext(Dispatchers.IO) {
@@ -189,9 +192,12 @@ class TaskRepository(
                 CreateTaskRequest(
                     title = title,
                     description = description,
-                    assigneeIds = assigneeId?.let(::listOf),
+                    assigneeIds = assigneeIds?.takeIf { it.isNotEmpty() },
+                    followerIds = followerIds?.takeIf { it.isNotEmpty() },
                     dueDate = dueDate,
+                    priority = priority,
                     taskListId = taskListId,
+                    groupId = groupId,
                     parentId = parentId,
                 ),
             )

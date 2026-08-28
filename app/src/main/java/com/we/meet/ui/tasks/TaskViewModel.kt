@@ -240,12 +240,25 @@ class TaskViewModel(
         description: String,
         dueDate: String?,
         taskListId: String?,
+        groupId: String?,
+        assigneeIds: List<String>?,
+        followerIds: List<String>,
+        priority: TaskPriority,
         onCreated: (TaskItem) -> Unit,
     ) {
         if (_ui.value.creating) return
         _ui.update { it.copy(creating = true, failure = null) }
         viewModelScope.launch {
-            repository.createTask(title, description, selfUserId, dueDate, taskListId).fold(
+            repository.createTask(
+                title = title,
+                description = description,
+                assigneeIds = assigneeIds ?: selfUserId?.let(::listOf),
+                followerIds = followerIds,
+                dueDate = dueDate,
+                priority = priority.takeUnless { it == TaskPriority.None }?.name?.lowercase(),
+                taskListId = taskListId,
+                groupId = groupId.takeIf { taskListId != null },
+            ).fold(
                 onSuccess = { dto ->
                     val item = dto.toItem()
                     _ui.update { it.copy(creating = false, tasks = listOf(item) + it.tasks) }
@@ -541,9 +554,12 @@ class TaskViewModel(
             repository.createTask(
                 title = title.trim(),
                 description = "",
-                assigneeId = selfUserId,
+                assigneeIds = selfUserId?.let(::listOf),
+                followerIds = null,
                 dueDate = null,
+                priority = null,
                 taskListId = parent.listId,
+                groupId = parent.groupId,
                 parentId = parent.id,
             ).fold(
                 onSuccess = { created ->

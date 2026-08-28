@@ -143,6 +143,7 @@ import com.we.meet.feature.im.ui.chat.ForwardCreateGroupFlow
 import com.we.meet.feature.im.ui.chat.ForwardPicker
 import com.we.meet.core.directory.ui.ContactPicker
 import com.we.meet.core.directory.ui.ContactPickerMode
+import com.we.meet.core.directory.ui.PickedMember
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 import java.time.LocalDate
@@ -161,6 +162,17 @@ private data class TaskParentMove(
     val task: TaskItem,
     val parentId: String?,
     val subtreeNodeCount: Int,
+)
+
+private data class TaskCreateInput(
+    val title: String,
+    val description: String,
+    val dueDate: String?,
+    val taskListId: String?,
+    val groupId: String?,
+    val assigneeIds: List<String>?,
+    val followerIds: List<String>,
+    val priority: TaskPriority,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -289,12 +301,23 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             )
 
             TaskPage.Create -> CreateTaskPage(
+                app = app,
                 owner = owner,
+                selfUserId = app.tokenStore.userId,
                 taskLists = ui.taskLists.filter(TaskListItem::canCreateTasks),
                 creating = ui.creating,
                 onClose = { page = TaskPage.List },
-                onCreate = { title, description, dueDate, listId ->
-                    vm.createTask(title, description, dueDate, listId) { created ->
+                onCreate = { input ->
+                    vm.createTask(
+                        title = input.title,
+                        description = input.description,
+                        dueDate = input.dueDate,
+                        taskListId = input.taskListId,
+                        groupId = input.groupId,
+                        assigneeIds = input.assigneeIds,
+                        followerIds = input.followerIds,
+                        priority = input.priority,
+                    ) { created ->
                         selectedTaskId = created.id
                         detailBackStack = listOf(created)
                         page = TaskPage.Detail
@@ -1567,17 +1590,36 @@ private fun DrawerGroup(
 
 @Composable
 private fun CreateTaskPage(
+    app: WeMeetApp,
     owner: String,
+    selfUserId: String?,
     taskLists: List<TaskListItem>,
     creating: Boolean,
     onClose: () -> Unit,
-    onCreate: (String, String, String?, String?) -> Unit,
+    onCreate: (TaskCreateInput) -> Unit,
 ) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var dueDate by remember { mutableStateOf(LocalDate.now().toString()) }
     var selectedListId by remember(taskLists) { mutableStateOf(taskLists.firstOrNull()?.id) }
+    var selectedGroupId by remember { mutableStateOf<String?>(null) }
+    var selectedAssignees by remember { mutableStateOf<List<PickedMember>?>(null) }
+    var selectedFollowers by remember { mutableStateOf<List<PickedMember>>(emptyList()) }
+    var selectedPriority by remember { mutableStateOf(TaskPriority.Medium) }
+    var showAssigneePicker by remember { mutableStateOf(false) }
+    var showFollowerPicker by remember { mutableStateOf(false) }
+    var showPriorityPicker by remember { mutableStateOf(false) }
     val selectedList = taskLists.firstOrNull { it.id == selectedListId }
+    val selectedGroup = selectedList?.groups?.firstOrNull { it.id == selectedGroupId }
+    val listChoices = listOf<String?>(null) + taskLists.map(TaskListItem::id)
+    val assigneeLabel = selectedAssignees
+        ?.joinToString { it.displayName }
+        ?.takeIf(String::isNotBlank)
+        ?: owner
+    val followerLabel = selectedFollowers
+        .joinToString { it.displayName }
+        .takeIf(String::isNotBlank)
+        ?: stringResource(R.string.task_priority_none)
     val dueLabel = if (dueDate == LocalDate.now().toString()) stringResource(R.string.task_today)
     else stringResource(R.string.task_tomorrow)
 
@@ -1586,7 +1628,20 @@ private fun CreateTaskPage(
         bottomBar = {
             Surface(shadowElevation = Dimens.SpaceS) {
                 Button(
-                    onClick = { onCreate(title.trim(), description.trim(), dueDate, selectedListId) },
+                    onClick = {
+                        onCreate(
+                            TaskCreateInput(
+                                title = title.trim(),
+                                description = description.trim(),
+                                dueDate = dueDate,
+                                taskListId = selectedListId,
+                                groupId = selectedGroupId,
+                                assigneeIds = selectedAssignees?.map(PickedMember::userId),
+                                followerIds = selectedFollowers.map(PickedMember::userId),
+                                priority = selectedPriority,
+                            ),
+                        )
+                    },
                     enabled = title.isNotBlank() && !creating,
                     modifier = Modifier.fillMaxWidth().navigationBarsPadding()
                         .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM).height(Dimens.ButtonHeight),
@@ -1621,7 +1676,11 @@ private fun CreateTaskPage(
             }
             item {
                 TaskFormCard {
-                    FormValueRow(Icons.Outlined.PersonOutline, R.string.task_assignee, owner)
+                    FormValueRow(
+                        Icons.Outlined.PersonOutline,
+                        R.string.task_assignee,
+                        assigneeLabel,
+                    ) { showAssigneePicker = true }
                     HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
                     FormValueRow(Icons.Outlined.CalendarMonth, R.string.task_due_time, dueLabel) {
                         dueDate = if (dueDate == LocalDate.now().toString()) LocalDate.now().plusDays(1).toString()
@@ -1633,9 +1692,29 @@ private fun CreateTaskPage(
                         R.string.task_add_to_list,
                         selectedList?.name ?: stringResource(R.string.task_ungrouped),
                     ) {
-                        val current = taskLists.indexOfFirst { it.id == selectedListId }
-                        selectedListId = taskLists.getOrNull((current + 1).mod(taskLists.size.coerceAtLeast(1)))?.id
+                        val current = listChoices.indexOf(selectedListId).coerceAtLeast(0)
+                        selectedListId = listChoices[(current + 1) % listChoices.size]
+                        selectedGroupId = null
                     }
+                    if (selectedList?.groups?.isNotEmpty() == true) {
+                        HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                        FormValueRow(
+                            Icons.Outlined.Checklist,
+                            R.string.task_grouping,
+                            selectedGroup?.name ?: stringResource(R.string.task_ungrouped),
+                        ) {
+                            val groupChoices = listOf<String?>(null) +
+                                selectedList.groups.map(TaskGroupItem::id)
+                            val current = groupChoices.indexOf(selectedGroupId).coerceAtLeast(0)
+                            selectedGroupId = groupChoices[(current + 1) % groupChoices.size]
+                        }
+                    }
+                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    FormValueRow(
+                        Icons.Outlined.Flag,
+                        R.string.task_priority,
+                        priorityText(selectedPriority),
+                    ) { showPriorityPicker = true }
                 }
             }
             item {
@@ -1648,10 +1727,54 @@ private fun CreateTaskPage(
                 TaskFormCard {
                     ActionRow(Icons.Outlined.AccountTree, R.string.task_add_subtask)
                     ActionRow(Icons.Outlined.AttachFile, R.string.task_add_attachment)
-                    ActionRow(Icons.Outlined.BookmarkBorder, R.string.task_add_follower)
+                    FormValueRow(
+                        Icons.Outlined.BookmarkBorder,
+                        R.string.task_followers,
+                        followerLabel,
+                    ) { showFollowerPicker = true }
                 }
             }
         }
+    }
+
+    if (showAssigneePicker) {
+        ContactPicker(
+            deps = app,
+            mode = ContactPickerMode.Multi,
+            enabled = !creating,
+            excludeSelf = false,
+            preselectUserIds = selectedAssignees?.mapTo(mutableSetOf(), PickedMember::userId)
+                ?: setOfNotNull(selfUserId),
+            onConfirm = { picked ->
+                selectedAssignees = picked.takeIf { it.isNotEmpty() }
+                showAssigneePicker = false
+            },
+            onDismiss = { showAssigneePicker = false },
+        )
+    }
+    if (showFollowerPicker) {
+        ContactPicker(
+            deps = app,
+            mode = ContactPickerMode.Multi,
+            enabled = !creating,
+            excludeSelf = false,
+            preselectUserIds = selectedFollowers.mapTo(mutableSetOf(), PickedMember::userId),
+            onConfirm = { picked ->
+                selectedFollowers = picked
+                showFollowerPicker = false
+            },
+            onDismiss = { showFollowerPicker = false },
+        )
+    }
+    if (showPriorityPicker) {
+        TaskPrioritySheet(
+            selected = selectedPriority,
+            onDismiss = { showPriorityPicker = false },
+            onSelect = {
+                selectedPriority = it
+                showPriorityPicker = false
+            },
+        )
     }
 }
 

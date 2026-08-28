@@ -93,6 +93,7 @@ class TaskDtosTest {
                 description = "Check the release",
                 startDate = "2026-08-28",
                 assigneeIds = listOf("user-1", "user-2"),
+                followerIds = listOf("user-3"),
                 dueDate = "2026-08-30",
                 priority = "high",
                 taskListId = "list-1",
@@ -102,6 +103,7 @@ class TaskDtosTest {
 
         assertTrue(json.contains("\"start_date\":\"2026-08-28\""))
         assertTrue(json.contains("\"assignee_ids\":[\"user-1\",\"user-2\"]"))
+        assertTrue(json.contains("\"follower_ids\":[\"user-3\"]"))
         assertTrue(json.contains("\"priority\":\"high\""))
         assertTrue(json.contains("\"task_list_id\":\"list-1\""))
         assertTrue(json.contains("\"group_id\":\"group-1\""))
