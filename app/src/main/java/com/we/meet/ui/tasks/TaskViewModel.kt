@@ -704,21 +704,29 @@ class TaskViewModel(
         }
     }
 
-    fun setRecurrence(item: TaskItem, frequency: TaskRecurrenceFrequency?) {
+    fun setRecurrence(item: TaskItem, settings: TaskRecurrenceSettings?) {
         val canManage = item.recurrence?.canManage ?: (item.creatorId == selfUserId)
         if (!canManage || item.parentId != null || item.id in _ui.value.mutatingIds) return
-        if (frequency == null && item.recurrence?.active != true) return
+        if (settings == null && item.recurrence?.active != true) return
+        if (settings != null && (
+                settings.interval !in 1..365 ||
+                    settings.endDate != null && settings.maxOccurrences != null ||
+                    settings.maxOccurrences != null && settings.maxOccurrences !in 1..1000
+                )
+        ) {
+            return
+        }
         _ui.update { it.copy(mutatingIds = it.mutatingIds + item.id, failure = null) }
         viewModelScope.launch {
-            val request = if (frequency == null) {
+            val request = if (settings == null) {
                 repository.stopRecurrence(item.id)
             } else {
                 repository.setRecurrence(
                     taskId = item.id,
-                    frequency = frequency.apiValue,
-                    interval = item.recurrence?.interval ?: 1,
-                    endDate = item.recurrence?.endDate,
-                    maxOccurrences = item.recurrence?.maxOccurrences,
+                    frequency = settings.frequency.apiValue,
+                    interval = settings.interval,
+                    endDate = settings.endDate,
+                    maxOccurrences = settings.maxOccurrences,
                 )
             }
             request.fold(

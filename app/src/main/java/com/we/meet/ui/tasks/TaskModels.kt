@@ -20,6 +20,13 @@ enum class TaskRecurrenceFrequency(val apiValue: String) {
     Monthly("monthly"),
 }
 
+data class TaskRecurrenceSettings(
+    val frequency: TaskRecurrenceFrequency,
+    val interval: Int = 1,
+    val endDate: String? = null,
+    val maxOccurrences: Int? = null,
+)
+
 data class TaskRecurrenceItem(
     val frequency: TaskRecurrenceFrequency,
     val interval: Int = 1,

@@ -44,6 +44,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -95,6 +96,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -119,6 +121,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.rememberDateRangePickerState
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -135,6 +138,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.R
@@ -155,6 +159,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 private enum class TaskPage { List, Create, Detail, Search, Settings }
+
+private enum class TaskRecurrenceEndMode { Never, Date, Count }
 
 private data class TaskGroupInsertion(val list: TaskListItem, val index: Int)
 
@@ -850,8 +856,12 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             task = task,
             saving = task.id in ui.mutatingIds,
             onDismiss = { recurrenceTarget = null },
-            onSelect = { frequency ->
-                vm.setRecurrence(task, frequency)
+            onSave = { settings ->
+                vm.setRecurrence(task, settings)
+                recurrenceTarget = null
+            },
+            onStop = {
+                vm.setRecurrence(task, null)
                 recurrenceTarget = null
             },
         )
@@ -2681,6 +2691,36 @@ private fun Long.toUtcDateString(): String =
     Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate().toString()
 
 @Composable
+private fun TaskSingleDateDialog(
+    initialDate: String?,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    val state = rememberDatePickerState(
+        initialSelectedDateMillis = initialDate.toUtcDateMillis()
+            ?: LocalDate.now().toString().toUtcDateMillis(),
+    )
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    state.selectedDateMillis?.let { onConfirm(it.toUtcDateString()) }
+                },
+                enabled = state.selectedDateMillis != null,
+            ) {
+                Text(stringResource(R.string.task_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.task_cancel)) }
+        },
+    ) {
+        DatePicker(state = state)
+    }
+}
+
+@Composable
 private fun TaskPlacementSheet(
     task: TaskItem,
     taskLists: List<TaskListItem>,
@@ -2776,37 +2816,180 @@ private fun TaskRecurrenceSheet(
     task: TaskItem,
     saving: Boolean,
     onDismiss: () -> Unit,
-    onSelect: (TaskRecurrenceFrequency?) -> Unit,
+    onSave: (TaskRecurrenceSettings) -> Unit,
+    onStop: () -> Unit,
 ) {
-    val selected = task.recurrence?.takeIf { it.active }?.frequency
-    val choices = listOf<TaskRecurrenceFrequency?>(
-        null,
+    val recurrence = task.recurrence
+    var selectedFrequency by remember(task.id, recurrence) {
+        mutableStateOf(recurrence?.frequency ?: TaskRecurrenceFrequency.Weekly)
+    }
+    var intervalText by remember(task.id, recurrence) {
+        mutableStateOf((recurrence?.interval ?: 1).toString())
+    }
+    var endMode by remember(task.id, recurrence) {
+        mutableStateOf(
+            when {
+                recurrence?.endDate != null -> TaskRecurrenceEndMode.Date
+                recurrence?.maxOccurrences != null -> TaskRecurrenceEndMode.Count
+                else -> TaskRecurrenceEndMode.Never
+            },
+        )
+    }
+    var endDate by remember(task.id, recurrence) { mutableStateOf(recurrence?.endDate) }
+    var occurrenceText by remember(task.id, recurrence) {
+        mutableStateOf((recurrence?.maxOccurrences ?: 10).toString())
+    }
+    var showEndDatePicker by remember { mutableStateOf(false) }
+    val interval = intervalText.toIntOrNull()
+    val maxOccurrences = occurrenceText.toIntOrNull()
+    val minimumOccurrences = maxOf(1, recurrence?.generatedCount ?: 1)
+    val recurrenceAnchor = task.dueDate ?: task.startDate
+    val selectedEndDate = endDate
+    val valid = interval != null && interval in 1..365 && when (endMode) {
+        TaskRecurrenceEndMode.Never -> true
+        TaskRecurrenceEndMode.Date ->
+            selectedEndDate != null &&
+                (recurrenceAnchor == null || selectedEndDate >= recurrenceAnchor)
+        TaskRecurrenceEndMode.Count ->
+            maxOccurrences != null && maxOccurrences in minimumOccurrences..1000
+    }
+    val frequencyChoices = listOf(
         TaskRecurrenceFrequency.Daily,
         TaskRecurrenceFrequency.Weekly,
         TaskRecurrenceFrequency.Monthly,
     )
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.fillMaxWidth().padding(bottom = Dimens.SpaceXl)) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl)
+                .padding(bottom = Dimens.SpaceXl),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
+        ) {
             Text(
                 stringResource(R.string.calendar_field_repeat),
-                modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
-            choices.forEach { frequency ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().clickable(enabled = !saving) {
-                        if (frequency == selected) onDismiss() else onSelect(frequency)
-                    }.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceL),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(recurrenceFrequencyText(frequency), modifier = Modifier.weight(1f))
-                    if (frequency == selected) {
-                        Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.task_repeat_frequency), fontWeight = FontWeight.SemiBold)
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                items(frequencyChoices) { frequency ->
+                    FilterChip(
+                        selected = selectedFrequency == frequency,
+                        onClick = { selectedFrequency = frequency },
+                        enabled = !saving,
+                        label = { Text(recurrenceFrequencyText(frequency)) },
+                    )
+                }
+            }
+            OutlinedTextField(
+                value = intervalText,
+                onValueChange = { value ->
+                    if (value.length <= 3 && value.all(Char::isDigit)) intervalText = value
+                },
+                label = { Text(stringResource(R.string.task_repeat_interval)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                enabled = !saving,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(stringResource(R.string.task_repeat_ends), fontWeight = FontWeight.SemiBold)
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                items(TaskRecurrenceEndMode.entries) { mode ->
+                    FilterChip(
+                        selected = endMode == mode,
+                        onClick = { endMode = mode },
+                        enabled = !saving,
+                        label = {
+                            Text(
+                                stringResource(
+                                    when (mode) {
+                                        TaskRecurrenceEndMode.Never -> R.string.task_repeat_never
+                                        TaskRecurrenceEndMode.Date -> R.string.task_repeat_on_date
+                                        TaskRecurrenceEndMode.Count -> R.string.task_repeat_after_count
+                                    },
+                                ),
+                            )
+                        },
+                    )
+                }
+            }
+            when (endMode) {
+                TaskRecurrenceEndMode.Never -> Unit
+                TaskRecurrenceEndMode.Date -> {
+                    FormValueRow(
+                        Icons.Outlined.CalendarMonth,
+                        R.string.task_repeat_end_date,
+                        selectedEndDate ?: stringResource(R.string.task_repeat_choose_date),
+                    ) { showEndDatePicker = true }
+                    if (
+                        selectedEndDate != null &&
+                        recurrenceAnchor != null &&
+                        selectedEndDate < recurrenceAnchor
+                    ) {
+                        Text(
+                            stringResource(R.string.task_repeat_end_date_invalid, recurrenceAnchor),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                     }
+                }
+                TaskRecurrenceEndMode.Count -> OutlinedTextField(
+                    value = occurrenceText,
+                    onValueChange = { value ->
+                        if (value.length <= 4 && value.all(Char::isDigit)) occurrenceText = value
+                    },
+                    label = { Text(stringResource(R.string.task_repeat_occurrences)) },
+                    supportingText = {
+                        if (minimumOccurrences > 1) {
+                            Text(stringResource(R.string.task_repeat_min_occurrences, minimumOccurrences))
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    enabled = !saving,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            Button(
+                onClick = {
+                    onSave(
+                        TaskRecurrenceSettings(
+                            frequency = selectedFrequency,
+                            interval = requireNotNull(interval),
+                            endDate = selectedEndDate
+                                .takeIf { endMode == TaskRecurrenceEndMode.Date },
+                            maxOccurrences = maxOccurrences
+                                .takeIf { endMode == TaskRecurrenceEndMode.Count },
+                        ),
+                    )
+                },
+                enabled = valid && !saving,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.task_repeat_save))
+            }
+            if (recurrence?.active == true) {
+                TextButton(
+                    onClick = onStop,
+                    enabled = !saving,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        stringResource(R.string.task_repeat_stop),
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             }
         }
+    }
+    if (showEndDatePicker) {
+        TaskSingleDateDialog(
+            initialDate = endDate ?: task.dueDate ?: task.startDate,
+            onDismiss = { showEndDatePicker = false },
+            onConfirm = { selectedDate ->
+                endDate = selectedDate
+                showEndDatePicker = false
+            },
+        )
     }
 }
 
