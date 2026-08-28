@@ -259,10 +259,15 @@ class TaskRepository(
             }
         }
 
-    suspend fun setFollowing(taskId: String, following: Boolean): Result<TaskDto> =
+    suspend fun setFollowing(
+        taskId: String,
+        following: Boolean,
+        sharedVia: String? = null,
+    ): Result<TaskDto> =
         runCatching {
             withContext(Dispatchers.IO) {
-                if (following) api.followTask(taskId) else api.unfollowTask(taskId)
+                if (following) api.followTask(taskId, sharedVia)
+                else api.unfollowTask(taskId, sharedVia)
             }
         }
 
@@ -335,10 +340,14 @@ class TaskRepository(
         }
     }
 
-    suspend fun createComment(taskId: String, content: String): Result<TaskCommentDto> =
+    suspend fun createComment(
+        taskId: String,
+        content: String,
+        sharedVia: String? = null,
+    ): Result<TaskCommentDto> =
         runCatching {
             withContext(Dispatchers.IO) {
-                api.createComment(taskId, CreateTaskCommentRequest(content))
+                api.createComment(taskId, CreateTaskCommentRequest(content), sharedVia)
             }
         }
 

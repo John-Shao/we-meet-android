@@ -14,11 +14,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,10 +33,14 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -69,8 +77,13 @@ fun ConversationTasksSheet(
                 ConversationTaskDetail(
                     detail = detail,
                     failed = ui.detailFailed,
+                    actionRunning = ui.detailActionRunning,
+                    actionFailure = ui.detailActionFailure,
                     onBack = vm::closeTask,
-                    onRetry = { detail.task?.let(vm::openTask) },
+                    onRetry = vm::retryTask,
+                    onOpenSubtask = vm::openTask,
+                    onToggleFollowing = vm::toggleFollowing,
+                    onSendComment = vm::sendComment,
                 )
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -202,10 +215,16 @@ private fun ConversationTaskRow(
 private fun ConversationTaskDetail(
     detail: TaskDetailItem,
     failed: Boolean,
+    actionRunning: Boolean,
+    actionFailure: TaskFailure?,
     onBack: () -> Unit,
     onRetry: () -> Unit,
+    onOpenSubtask: (TaskItem) -> Unit,
+    onToggleFollowing: (TaskItem) -> Unit,
+    onSendComment: (TaskItem, String, () -> Unit) -> Unit,
 ) {
     val task = detail.task
+    var comment by remember(detail.taskId) { mutableStateOf("") }
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onBack) {
             Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.task_back))
@@ -218,6 +237,21 @@ private fun ConversationTaskDetail(
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
         )
+        if (task != null) {
+            IconButton(
+                onClick = { onToggleFollowing(task) },
+                enabled = !actionRunning,
+            ) {
+                Icon(
+                    if (task.followed) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                    contentDescription = stringResource(
+                        if (task.followed) R.string.task_unfollow else R.string.task_follow,
+                    ),
+                    tint = if (task.followed) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
     if (detail.loading) LinearProgressIndicator(Modifier.fillMaxWidth())
     if (failed) {
@@ -229,6 +263,16 @@ private fun ConversationTaskDetail(
             Text(stringResource(R.string.task_load_failed), color = MaterialTheme.colorScheme.error)
             OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.task_retry)) }
         }
+    }
+    actionFailure?.let { failure ->
+        Text(
+            stringResource(
+                if (failure == TaskFailure.Comment) R.string.task_comment_failed
+                else R.string.task_save_failed,
+            ),
+            modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
+            color = MaterialTheme.colorScheme.error,
+        )
     }
     if (task != null) {
         LazyColumn(
@@ -259,8 +303,10 @@ private fun ConversationTaskDetail(
                 items(detail.subtasks, key = TaskItem::id) { subtask ->
                     val done = subtask.status == TaskStatus.Done
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
-                        verticalAlignment = Alignment.Top,
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            onOpenSubtask(subtask)
+                        }.padding(vertical = Dimens.SpaceS),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
                             if (done) Icons.Filled.CheckCircle
@@ -274,6 +320,11 @@ private fun ConversationTaskDetail(
                             subtask.title,
                             modifier = Modifier.weight(1f),
                             textDecoration = TextDecoration.LineThrough.takeIf { done },
+                        )
+                        Icon(
+                            Icons.Outlined.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -295,6 +346,32 @@ private fun ConversationTaskDetail(
                         Text(comment.author, fontWeight = FontWeight.SemiBold)
                         Text(comment.content, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                }
+            }
+            if (task.canComment) {
+                item {
+                    OutlinedTextField(
+                        value = comment,
+                        onValueChange = { comment = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text(stringResource(R.string.task_comment_hint)) },
+                        trailingIcon = {
+                            IconButton(
+                                onClick = {
+                                    onSendComment(task, comment) { comment = "" }
+                                },
+                                enabled = comment.isNotBlank() && !actionRunning,
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.Send,
+                                    stringResource(R.string.task_send),
+                                )
+                            }
+                        },
+                        enabled = !actionRunning,
+                        minLines = 2,
+                        maxLines = 4,
+                    )
                 }
             }
             if (detail.activities.isNotEmpty()) {
@@ -333,7 +410,7 @@ private fun ConversationTaskDetailValue(labelRes: Int, value: String) {
 private fun ConversationTaskSectionTitle(labelRes: Int, count: Int) {
     HorizontalDivider()
     Text(
-        "${stringResource(labelRes)} · $count",
+        "${stringResource(labelRes)} ($count)",
         modifier = Modifier.padding(top = Dimens.SpaceM),
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,

@@ -111,10 +111,16 @@ interface TaskApi {
     )
 
     @POST("api/v1.0/tasks/{id}/follow/")
-    suspend fun followTask(@Path("id") id: String): TaskDto
+    suspend fun followTask(
+        @Path("id") id: String,
+        @Query("shared_via") sharedVia: String? = null,
+    ): TaskDto
 
     @DELETE("api/v1.0/tasks/{id}/follow/")
-    suspend fun unfollowTask(@Path("id") id: String): TaskDto
+    suspend fun unfollowTask(
+        @Path("id") id: String,
+        @Query("shared_via") sharedVia: String? = null,
+    ): TaskDto
 
     @GET("api/v1.0/tasks/{id}/activities/")
     suspend fun listActivities(
@@ -144,6 +150,7 @@ interface TaskApi {
     suspend fun createComment(
         @Path("id") id: String,
         @Body body: CreateTaskCommentRequest,
+        @Query("shared_via") sharedVia: String? = null,
     ): TaskCommentDto
 
     @GET("api/v1.0/tasks/{id}/subtasks/")
