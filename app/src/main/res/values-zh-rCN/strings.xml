@@ -287,6 +287,14 @@
     <string name="task_priority_low">低</string>
     <string name="task_priority_medium">中</string>
     <string name="task_priority_high">高</string>
+    <string name="task_priority_none">无</string>
+    <string name="task_priority_urgent">紧急</string>
+    <string name="task_ungrouped">未分组</string>
+    <string name="task_load_failed">任务加载失败，请检查网络后重试。</string>
+    <string name="task_save_failed">任务变更保存失败。</string>
+    <string name="task_delete_failed">任务删除失败。</string>
+    <string name="task_comment_failed">评论发送失败。</string>
+    <string name="task_retry">重试</string>
     <string name="task_status">状态</string>
     <string name="task_subtasks">子任务</string>
     <string name="task_attachments">附件</string>

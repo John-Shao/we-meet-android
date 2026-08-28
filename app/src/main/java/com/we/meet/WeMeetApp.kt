@@ -22,6 +22,7 @@ import com.we.meet.data.repository.RoomAiRepository
 import com.we.meet.data.repository.ProfileRepository
 import com.we.meet.data.repository.QrLoginRepository
 import com.we.meet.data.repository.RoomRepository
+import com.we.meet.data.repository.TaskRepository
 import com.we.meet.data.settings.SettingsStore
 import com.we.meet.overlay.ScreenShareOverlay
 import com.we.meet.push.PushTokenUploader
@@ -59,6 +60,8 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
     lateinit var settingsStore: SettingsStore
         private set
     lateinit var directoryRepository: DirectoryRepository
+        private set
+    lateinit var taskRepository: TaskRepository
         private set
 
     /**
@@ -119,6 +122,7 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
             it.bindCalendarApi(apiClient.calendarApi)
         }
         directoryRepository = DirectoryRepository(DirectoryNetwork.directoryApi(this))
+        taskRepository = TaskRepository(apiClient.taskApi)
         // 逐联系人偏好(星标 / 特别提醒):进程级单例,通讯录与会话列表共享(见 ContactPrefs)。
         ContactPrefs.init(directoryRepository)
         ScreenShareOverlay.init(this)

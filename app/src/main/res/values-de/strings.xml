@@ -277,6 +277,14 @@
     <string name="task_priority_low">Niedrig</string>
     <string name="task_priority_medium">Mittel</string>
     <string name="task_priority_high">Hoch</string>
+    <string name="task_priority_none">Keine</string>
+    <string name="task_priority_urgent">Dringend</string>
+    <string name="task_ungrouped">Nicht gruppiert</string>
+    <string name="task_load_failed">Aufgaben konnten nicht geladen werden.</string>
+    <string name="task_save_failed">Die Aufgabenänderung konnte nicht gespeichert werden.</string>
+    <string name="task_delete_failed">Die Aufgabe konnte nicht gelöscht werden.</string>
+    <string name="task_comment_failed">Der Kommentar konnte nicht gesendet werden.</string>
+    <string name="task_retry">Erneut versuchen</string>
     <string name="task_status">Status</string>
     <string name="task_subtasks">Unteraufgaben</string>
     <string name="task_attachments">Anhänge</string>

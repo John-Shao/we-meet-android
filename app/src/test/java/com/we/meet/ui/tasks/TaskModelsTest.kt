@@ -6,15 +6,15 @@ import org.junit.Test
 
 class TaskModelsTest {
     private val tasks = listOf(
-        TaskItem(1, "Android task design", assignee = "Alex", dueLabel = "Today", listName = "Product", section = "Now", followed = true),
-        TaskItem(2, "Review permissions", assignee = "Sam", dueLabel = "Friday", listName = "Team", section = "Later"),
-        TaskItem(3, "Released", assignee = "Alex", dueLabel = "Done", listName = "Product", section = "Done", status = TaskStatus.Done, followed = true),
+        TaskItem("1", "Android task design", assignee = "Alex", dueLabel = "Today", listName = "Product", section = "Now", followed = true),
+        TaskItem("2", "Review permissions", assignee = "Sam", dueLabel = "Friday", listName = "Team", section = "Later"),
+        TaskItem("3", "Released", assignee = "Alex", dueLabel = "Done", listName = "Product", section = "Done", status = TaskStatus.Done, followed = true),
     )
 
     @Test
     fun followingViewOnlyIncludesFollowedIncompleteTasks() {
         val result = tasks.visibleFor(TaskView.Following, TaskFilter())
-        assertEquals(listOf(1L), result.map { it.id })
+        assertEquals(listOf("1"), result.map { it.id })
     }
 
     @Test

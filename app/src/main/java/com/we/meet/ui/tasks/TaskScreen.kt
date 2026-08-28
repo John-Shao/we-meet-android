@@ -82,9 +82,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
@@ -93,11 +97,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -109,103 +115,107 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.R
+import com.we.meet.WeMeetApp
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
+import java.time.LocalDate
 
 private enum class TaskPage { List, Create, Detail, Search, Settings }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskScreen(ownerName: String) {
+fun TaskScreen(ownerName: String, app: WeMeetApp) {
     val owner = ownerName.ifBlank { stringResource(R.string.task_demo_owner) }
-    val tasks = remember(owner) { mutableStateListOf<TaskItem>().apply { addAll(sampleTasks(owner)) } }
+    val vm: TaskViewModel = viewModel(factory = TaskViewModel.Factory(app))
+    val ui by vm.ui.collectAsStateWithLifecycle()
     var page by remember { mutableStateOf(TaskPage.List) }
-    var selectedTask by remember { mutableStateOf<TaskItem?>(null) }
-    var view by remember { mutableStateOf(TaskView.Assigned) }
-    var selectedList by remember { mutableStateOf<String?>(null) }
+    var selectedTaskId by remember { mutableStateOf<String?>(null) }
     var showDrawer by remember { mutableStateOf(false) }
     var showFilter by remember { mutableStateOf(false) }
     var showNewGroup by remember { mutableStateOf(false) }
     var actionTarget by remember { mutableStateOf<TaskItem?>(null) }
     var sectionMenu by remember { mutableStateOf<String?>(null) }
-    var includeDone by remember { mutableStateOf(false) }
+    val selectedTask = (ui.tasks + ui.searchResults).firstOrNull { it.id == selectedTaskId }
+    val snackbar = remember { SnackbarHostState() }
+    val failureText = when (ui.failure) {
+        TaskFailure.Load -> stringResource(R.string.task_load_failed)
+        TaskFailure.Save -> stringResource(R.string.task_save_failed)
+        TaskFailure.Delete -> stringResource(R.string.task_delete_failed)
+        TaskFailure.Comment -> stringResource(R.string.task_comment_failed)
+        null -> ""
+    }
+    val retryText = stringResource(R.string.task_retry)
+    LaunchedEffect(ui.failure) {
+        if (ui.failure != null) {
+            val failedOperation = ui.failure
+            val result = snackbar.showSnackbar(
+                message = failureText,
+                actionLabel = retryText.takeIf { failedOperation == TaskFailure.Load },
+            )
+            vm.clearFailure()
+            if (failedOperation == TaskFailure.Load && result == SnackbarResult.ActionPerformed) {
+                vm.refresh()
+            }
+        }
+    }
 
     Box(Modifier.fillMaxSize()) {
         when (page) {
             TaskPage.List -> TaskListPage(
-                tasks = tasks,
-                view = view,
-                selectedList = selectedList,
-                includeDone = includeDone,
+                tasks = ui.tasks,
+                view = ui.view,
+                selectedList = ui.selectedList?.name,
+                includeDone = ui.includeDone,
+                loading = ui.loading,
                 owner = owner,
-                onViewChange = { view = it },
+                onViewChange = vm::setView,
                 onOpenDrawer = { showDrawer = true },
                 onSearch = { page = TaskPage.Search },
                 onSettings = { page = TaskPage.Settings },
                 onFilter = { showFilter = true },
                 onCreate = { page = TaskPage.Create },
                 onTaskClick = {
-                    selectedTask = it
+                    selectedTaskId = it.id
                     page = TaskPage.Detail
                 },
-                onToggleDone = { item ->
-                    val index = tasks.indexOfFirst { it.id == item.id }
-                    if (index >= 0) {
-                        tasks[index] = item.copy(
-                            status = if (item.status == TaskStatus.Done) TaskStatus.Todo else TaskStatus.Done,
-                        )
-                    }
-                },
+                onToggleDone = vm::toggleCompleted,
                 onTaskAction = { actionTarget = it },
                 onSectionAction = { sectionMenu = it },
             )
 
             TaskPage.Create -> CreateTaskPage(
                 owner = owner,
+                taskLists = ui.taskLists.filter(TaskListItem::canCreateTasks),
+                creating = ui.creating,
                 onClose = { page = TaskPage.List },
-                onCreate = { title, description, due, listName ->
-                    tasks.add(
-                        0,
-                        TaskItem(
-                            id = (tasks.maxOfOrNull { it.id } ?: 0L) + 1,
-                            title = title,
-                            description = description,
-                            assignee = owner,
-                            dueLabel = due,
-                            listName = listName,
-                            section = "今天", // i18n-exempt: local prototype seed models user-authored task content
-                            followed = true,
-                        ),
-                    )
-                    page = TaskPage.List
+                onCreate = { title, description, dueDate, listId ->
+                    vm.createTask(title, description, dueDate, listId) { created ->
+                        selectedTaskId = created.id
+                        page = TaskPage.Detail
+                    }
                 },
             )
 
             TaskPage.Detail -> selectedTask?.let { task ->
                 TaskDetailPage(
-                    task = tasks.firstOrNull { it.id == task.id } ?: task,
+                    task = task,
                     onBack = { page = TaskPage.List },
-                    onToggleDone = { current ->
-                        val index = tasks.indexOfFirst { it.id == current.id }
-                        if (index >= 0) {
-                            tasks[index] = current.copy(
-                                status = if (current.status == TaskStatus.Done) TaskStatus.Todo else TaskStatus.Done,
-                            )
-                        }
-                    },
-                    onToggleFollow = { current ->
-                        val index = tasks.indexOfFirst { it.id == current.id }
-                        if (index >= 0) tasks[index] = current.copy(followed = !current.followed)
+                    onToggleDone = vm::toggleCompleted,
+                    onToggleFollow = vm::toggleFollowing,
+                    onSendComment = { current, content, onSent ->
+                        vm.sendComment(current, content, onSent)
                     },
                     onMore = { actionTarget = it },
                 )
             } ?: run { page = TaskPage.List }
 
             TaskPage.Search -> TaskSearchPage(
-                tasks = tasks,
+                tasks = ui.searchResults,
+                searching = ui.searching,
                 onBack = { page = TaskPage.List },
+                onQueryChange = vm::search,
                 onTaskClick = {
-                    selectedTask = it
+                    selectedTaskId = it.id
                     page = TaskPage.Detail
                 },
             )
@@ -219,26 +229,30 @@ fun TaskScreen(ownerName: String) {
             exit = fadeOut(),
         ) {
             TaskNavigationDrawer(
-                selectedList = selectedList,
+                selectedList = ui.selectedList?.name,
+                taskLists = ui.taskLists,
+                listGroups = ui.listGroups,
+                assignedCount = ui.tasks.count { it.status != TaskStatus.Done },
+                followingCount = ui.tasks.count(TaskItem::followed),
                 onDismiss = { showDrawer = false },
                 onSelectView = {
-                    view = it
-                    selectedList = null
+                    vm.setView(it)
                     showDrawer = false
                 },
-                onSelectList = {
-                    selectedList = it
+                onSelectList = { list ->
+                    vm.selectList(list.id)
                     showDrawer = false
                 },
                 onNewGroup = { showNewGroup = true },
             )
         }
+        SnackbarHost(snackbar, modifier = Modifier.align(Alignment.BottomCenter))
     }
 
     if (showFilter) {
         FilterSheet(
-            includeDone = includeDone,
-            onIncludeDoneChange = { includeDone = it },
+            includeDone = ui.includeDone,
+            onIncludeDoneChange = vm::setIncludeDone,
             onDismiss = { showFilter = false },
         )
     }
@@ -248,9 +262,10 @@ fun TaskScreen(ownerName: String) {
             task = target,
             onDismiss = { actionTarget = null },
             onDelete = {
-                tasks.removeAll { it.id == target.id }
-                actionTarget = null
-                if (page == TaskPage.Detail) page = TaskPage.List
+                vm.deleteTask(target) {
+                    actionTarget = null
+                    if (page == TaskPage.Detail) page = TaskPage.List
+                }
             },
         )
     }
@@ -260,7 +275,13 @@ fun TaskScreen(ownerName: String) {
     }
 
     if (showNewGroup) {
-        NewGroupDialog(onDismiss = { showNewGroup = false })
+        NewGroupDialog(
+            onDismiss = { showNewGroup = false },
+            onCreate = {
+                vm.createListGroup(it)
+                showNewGroup = false
+            },
+        )
     }
 }
 
@@ -271,6 +292,7 @@ private fun TaskListPage(
     view: TaskView,
     selectedList: String?,
     includeDone: Boolean,
+    loading: Boolean,
     owner: String,
     onViewChange: (TaskView) -> Unit,
     onOpenDrawer: () -> Unit,
@@ -313,9 +335,10 @@ private fun TaskListPage(
                     TaskSegmentedControl(selected = view, onSelected = onViewChange)
                 }
                 TaskFilterBar(includeDone = includeDone, onFilter = onFilter)
+                if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
             }
 
-            if (groups.isEmpty()) {
+            if (!loading && groups.isEmpty()) {
                 item { TaskEmptyState(onCreate) }
             } else {
                 groups.forEach { (group, groupedTasks) ->
@@ -623,9 +646,13 @@ private fun Avatar(name: String, size: androidx.compose.ui.unit.Dp) {
 @Composable
 private fun TaskNavigationDrawer(
     selectedList: String?,
+    taskLists: List<TaskListItem>,
+    listGroups: List<TaskListGroupItem>,
+    assignedCount: Int,
+    followingCount: Int,
     onDismiss: () -> Unit,
     onSelectView: (TaskView) -> Unit,
-    onSelectList: (String) -> Unit,
+    onSelectList: (TaskListItem) -> Unit,
     onNewGroup: () -> Unit,
 ) {
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.38f)).clickable(onClick = onDismiss)) {
@@ -650,10 +677,10 @@ private fun TaskNavigationDrawer(
                         Spacer(Modifier.weight(1f))
                         IconButton(onClick = onDismiss) { Icon(Icons.Filled.Close, stringResource(R.string.task_close)) }
                     }
-                    DrawerItem(Icons.Outlined.PersonOutline, R.string.task_assigned_to_me, "4") {
+                    DrawerItem(Icons.Outlined.PersonOutline, R.string.task_assigned_to_me, assignedCount.toString()) {
                         onSelectView(TaskView.Assigned)
                     }
-                    DrawerItem(Icons.Outlined.BookmarkBorder, R.string.task_following, "3") {
+                    DrawerItem(Icons.Outlined.BookmarkBorder, R.string.task_following, followingCount.toString()) {
                         onSelectView(TaskView.Following)
                     }
                     DrawerItem(Icons.Outlined.History, R.string.task_activity, null) {}
@@ -679,8 +706,28 @@ private fun TaskNavigationDrawer(
                         IconButton(onClick = onNewGroup) { Icon(Icons.Filled.Add, stringResource(R.string.task_new_group)) }
                     }
                 }
-                item { DrawerGroup(stringResource(R.string.task_group_product), listOf("产品迭代", "体验优化"), selectedList, onSelectList) } // i18n-exempt: local prototype seed models user-authored task content
-                item { DrawerGroup(stringResource(R.string.task_group_team), listOf("团队管理"), selectedList, onSelectList) } // i18n-exempt: local prototype seed models user-authored task content
+                val groupedIds = listGroups.map(TaskListGroupItem::id).toSet()
+                listGroups.forEach { group ->
+                    item {
+                        DrawerGroup(
+                            group.name,
+                            taskLists.filter { it.groupId == group.id },
+                            selectedList,
+                            onSelectList,
+                        )
+                    }
+                }
+                val ungrouped = taskLists.filter { it.groupId == null || it.groupId !in groupedIds }
+                if (ungrouped.isNotEmpty()) {
+                    item {
+                        DrawerGroup(
+                            stringResource(R.string.task_ungrouped),
+                            ungrouped,
+                            selectedList,
+                            onSelectList,
+                        )
+                    }
+                }
                 item {
                     TextButton(onClick = onNewGroup, modifier = Modifier.padding(horizontal = Dimens.SpaceM)) {
                         Icon(Icons.Filled.Add, null)
@@ -710,9 +757,9 @@ private fun DrawerItem(icon: ImageVector, labelRes: Int, count: String?, onClick
 @Composable
 private fun DrawerGroup(
     title: String,
-    lists: List<String>,
+    lists: List<TaskListItem>,
     selectedList: String?,
-    onSelectList: (String) -> Unit,
+    onSelectList: (TaskListItem) -> Unit,
 ) {
     Column(Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs)) {
         Row(
@@ -725,7 +772,7 @@ private fun DrawerGroup(
             Icon(Icons.Outlined.MoreHoriz, null)
         }
         lists.forEach { list ->
-            val selected = selectedList == list
+            val selected = selectedList == list.name
             Surface(
                 color = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                 shape = RoundedCornerShape(Dimens.SpaceM),
@@ -734,8 +781,8 @@ private fun DrawerGroup(
                 Row(Modifier.padding(start = Dimens.SpaceXxxl, end = Dimens.SpaceM, top = Dimens.SpaceM, bottom = Dimens.SpaceM)) {
                         Icon(Icons.AutoMirrored.Outlined.ListAlt, null, tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.width(Dimens.SpaceM))
-                    Text(list, color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-                    Icon(Icons.Outlined.MoreVert, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(list.name, color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                    Text(list.taskCount.toString(), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -745,21 +792,26 @@ private fun DrawerGroup(
 @Composable
 private fun CreateTaskPage(
     owner: String,
+    taskLists: List<TaskListItem>,
+    creating: Boolean,
     onClose: () -> Unit,
-    onCreate: (String, String, String, String) -> Unit,
+    onCreate: (String, String, String?, String?) -> Unit,
 ) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var due by remember { mutableStateOf("今天 18:00") } // i18n-exempt: local prototype seed models user-authored task content
-    var listName by remember { mutableStateOf("产品迭代") } // i18n-exempt: local prototype seed models user-authored task content
+    var dueDate by remember { mutableStateOf(LocalDate.now().toString()) }
+    var selectedListId by remember(taskLists) { mutableStateOf(taskLists.firstOrNull()?.id) }
+    val selectedList = taskLists.firstOrNull { it.id == selectedListId }
+    val dueLabel = if (dueDate == LocalDate.now().toString()) stringResource(R.string.task_today)
+    else stringResource(R.string.task_tomorrow)
 
     Scaffold(
         topBar = { TaskPageTopBar(stringResource(R.string.task_create), onClose) },
         bottomBar = {
             Surface(shadowElevation = Dimens.SpaceS) {
                 Button(
-                    onClick = { onCreate(title.trim(), description.trim(), due, listName) },
-                    enabled = title.isNotBlank(),
+                    onClick = { onCreate(title.trim(), description.trim(), dueDate, selectedListId) },
+                    enabled = title.isNotBlank() && !creating,
                     modifier = Modifier.fillMaxWidth().navigationBarsPadding()
                         .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM).height(Dimens.ButtonHeight),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
@@ -795,19 +847,25 @@ private fun CreateTaskPage(
                 TaskFormCard {
                     FormValueRow(Icons.Outlined.PersonOutline, R.string.task_assignee, owner)
                     HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
-                    FormValueRow(Icons.Outlined.CalendarMonth, R.string.task_due_time, due) {
-                        due = if (due.startsWith("今天")) "明天 10:00" else "今天 18:00" // i18n-exempt: local prototype seed models user-authored task content
+                    FormValueRow(Icons.Outlined.CalendarMonth, R.string.task_due_time, dueLabel) {
+                        dueDate = if (dueDate == LocalDate.now().toString()) LocalDate.now().plusDays(1).toString()
+                        else LocalDate.now().toString()
                     }
                     HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
-                    FormValueRow(Icons.AutoMirrored.Outlined.ListAlt, R.string.task_add_to_list, listName) {
-                        listName = if (listName == "产品迭代") "体验优化" else "产品迭代" // i18n-exempt: local prototype seed models user-authored task content
+                    FormValueRow(
+                        Icons.AutoMirrored.Outlined.ListAlt,
+                        R.string.task_add_to_list,
+                        selectedList?.name ?: stringResource(R.string.task_ungrouped),
+                    ) {
+                        val current = taskLists.indexOfFirst { it.id == selectedListId }
+                        selectedListId = taskLists.getOrNull((current + 1).mod(taskLists.size.coerceAtLeast(1)))?.id
                     }
                 }
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                    AssistChip(onClick = { due = "今天 18:00" }, label = { Text(stringResource(R.string.task_today)) }, leadingIcon = { Icon(Icons.Outlined.CalendarMonth, null, Modifier.size(Dimens.IconSmall)) }) // i18n-exempt: local prototype seed models user-authored task content
-                    AssistChip(onClick = { due = "明天 10:00" }, label = { Text(stringResource(R.string.task_tomorrow)) }, leadingIcon = { Icon(Icons.Outlined.Alarm, null, Modifier.size(Dimens.IconSmall)) }) // i18n-exempt: local prototype seed models user-authored task content
+                    AssistChip(onClick = { dueDate = LocalDate.now().toString() }, label = { Text(stringResource(R.string.task_today)) }, leadingIcon = { Icon(Icons.Outlined.CalendarMonth, null, Modifier.size(Dimens.IconSmall)) })
+                    AssistChip(onClick = { dueDate = LocalDate.now().plusDays(1).toString() }, label = { Text(stringResource(R.string.task_tomorrow)) }, leadingIcon = { Icon(Icons.Outlined.Alarm, null, Modifier.size(Dimens.IconSmall)) })
                 }
             }
             item {
@@ -827,6 +885,7 @@ private fun TaskDetailPage(
     onBack: () -> Unit,
     onToggleDone: (TaskItem) -> Unit,
     onToggleFollow: (TaskItem) -> Unit,
+    onSendComment: (TaskItem, String, () -> Unit) -> Unit,
     onMore: (TaskItem) -> Unit,
 ) {
     var comment by remember { mutableStateOf("") }
@@ -862,9 +921,14 @@ private fun TaskDetailPage(
                         placeholder = { Text(stringResource(R.string.task_comment_hint)) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
-                        keyboardActions = KeyboardActions(onDone = { comment = "" }),
+                        keyboardActions = KeyboardActions(
+                            onDone = { onSendComment(task, comment) { comment = "" } },
+                        ),
                     )
-                    IconButton(onClick = { comment = "" }, enabled = comment.isNotBlank()) {
+                    IconButton(
+                        onClick = { onSendComment(task, comment) { comment = "" } },
+                        enabled = comment.isNotBlank() && task.canComment,
+                    ) {
                         Icon(Icons.AutoMirrored.Filled.Send, stringResource(R.string.task_send), tint = if (comment.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
@@ -945,9 +1009,14 @@ private fun TaskDetailPage(
 }
 
 @Composable
-private fun TaskSearchPage(tasks: List<TaskItem>, onBack: () -> Unit, onTaskClick: (TaskItem) -> Unit) {
+private fun TaskSearchPage(
+    tasks: List<TaskItem>,
+    searching: Boolean,
+    onBack: () -> Unit,
+    onQueryChange: (String) -> Unit,
+    onTaskClick: (TaskItem) -> Unit,
+) {
     var query by remember { mutableStateOf("") }
-    val results = tasks.visibleFor(TaskView.Assigned, TaskFilter(includeDone = true, query = query))
     Column(Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(Dimens.SpaceM),
@@ -956,10 +1025,18 @@ private fun TaskSearchPage(tasks: List<TaskItem>, onBack: () -> Unit, onTaskClic
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.task_back)) }
             OutlinedTextField(
                 value = query,
-                onValueChange = { query = it },
+                onValueChange = {
+                    query = it
+                    onQueryChange(it)
+                },
                 placeholder = { Text(stringResource(R.string.task_search_hint)) },
                 leadingIcon = { Icon(Icons.Outlined.Search, null) },
-                trailingIcon = if (query.isNotEmpty()) {{ IconButton(onClick = { query = "" }) { Icon(Icons.Filled.Close, null) } }} else null,
+                trailingIcon = if (query.isNotEmpty()) {{
+                    IconButton(onClick = {
+                        query = ""
+                        onQueryChange("")
+                    }) { Icon(Icons.Filled.Close, null) }
+                }} else null,
                 singleLine = true,
                 modifier = Modifier.weight(1f),
             )
@@ -973,13 +1050,14 @@ private fun TaskSearchPage(tasks: List<TaskItem>, onBack: () -> Unit, onTaskClic
             AssistChip(onClick = {}, label = { Text(stringResource(R.string.task_status)) })
         }
         Text(
-            stringResource(R.string.task_search_results, results.size),
+            stringResource(R.string.task_search_results, tasks.size),
             modifier = Modifier.padding(Dimens.SpaceL),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
         )
+        if (searching) LinearProgressIndicator(Modifier.fillMaxWidth())
         LazyColumn {
-            items(results, key = { it.id }) { task ->
+            items(tasks, key = { it.id }) { task ->
                 TaskRow(task, { onTaskClick(task) }, {}, {})
             }
         }
@@ -1104,9 +1182,11 @@ private fun SettingsSwitchRow(title: String, subtitle: String, checked: Boolean,
 
 @Composable
 private fun priorityText(priority: TaskPriority): String = when (priority) {
+    TaskPriority.None -> stringResource(R.string.task_priority_none)
     TaskPriority.Low -> stringResource(R.string.task_priority_low)
     TaskPriority.Medium -> stringResource(R.string.task_priority_medium)
     TaskPriority.High -> stringResource(R.string.task_priority_high)
+    TaskPriority.Urgent -> stringResource(R.string.task_priority_urgent)
 }
 
 @Composable
@@ -1183,7 +1263,7 @@ private fun SheetAction(icon: ImageVector, labelRes: Int, onClick: () -> Unit, d
 }
 
 @Composable
-private fun NewGroupDialog(onDismiss: () -> Unit) {
+private fun NewGroupDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
     var name by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1196,7 +1276,7 @@ private fun NewGroupDialog(onDismiss: () -> Unit) {
                 singleLine = true,
             )
         },
-        confirmButton = { TextButton(onClick = onDismiss, enabled = name.isNotBlank()) { Text(stringResource(R.string.task_confirm)) } },
+        confirmButton = { TextButton(onClick = { onCreate(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.task_confirm)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.task_cancel)) } },
     )
 }

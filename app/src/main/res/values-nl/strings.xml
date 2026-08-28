@@ -277,6 +277,14 @@
     <string name="task_priority_low">Laag</string>
     <string name="task_priority_medium">Gemiddeld</string>
     <string name="task_priority_high">Hoog</string>
+    <string name="task_priority_none">Geen</string>
+    <string name="task_priority_urgent">Dringend</string>
+    <string name="task_ungrouped">Niet gegroepeerd</string>
+    <string name="task_load_failed">Taken konden niet worden geladen.</string>
+    <string name="task_save_failed">De taakwijziging kon niet worden opgeslagen.</string>
+    <string name="task_delete_failed">Deze taak kon niet worden verwijderd.</string>
+    <string name="task_comment_failed">De opmerking kon niet worden verzonden.</string>
+    <string name="task_retry">Opnieuw proberen</string>
     <string name="task_status">Status</string>
     <string name="task_subtasks">Subtaken</string>
     <string name="task_attachments">Bijlagen</string>

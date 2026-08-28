@@ -352,7 +352,7 @@ fun MainTabScreen(
             DocsTabScreen(docsWebView)
         },
         TabItem(R.string.tab_tasks, Icons.Filled.TaskAlt, Icons.Outlined.TaskAlt) {
-            TaskScreen(ownerName = selfName)
+            TaskScreen(ownerName = selfName, app = app)
         },
     )
 
