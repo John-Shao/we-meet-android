@@ -323,6 +323,12 @@
     <string name="task_30_minutes_before">30 min avant</string>
     <string name="task_new_group">Nouveau groupe</string>
     <string name="task_new_list">Nouvelle liste</string>
+    <string name="task_archive">Archiver</string>
+    <string name="task_archive_list_title">Archiver la liste de tâches</string>
+    <string name="task_archive_list_confirm">Archiver « %1$s » ? Elle sera masquée de la navigation et ne pourra plus recevoir de nouvelles tâches.</string>
+    <string name="task_archived_lists">Listes de tâches archivées</string>
+    <string name="task_archived_empty">Aucune liste de tâches archivée</string>
+    <string name="task_restore">Restaurer</string>
     <string name="task_list_name_hint">Nom de la liste</string>
     <string name="task_choose_group">Groupe : %1$s</string>
     <string name="task_delete_navigation_item">Supprimer</string>

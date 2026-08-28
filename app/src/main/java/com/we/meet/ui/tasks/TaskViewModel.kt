@@ -25,6 +25,7 @@ enum class TaskFailure { Load, Save, Delete, Comment, Attachment, Share, Navigat
 data class TaskUiState(
     val tasks: List<TaskItem> = emptyList(),
     val taskLists: List<TaskListItem> = emptyList(),
+    val archivedTaskLists: List<TaskListItem> = emptyList(),
     val listGroups: List<TaskListGroupItem> = emptyList(),
     val navigationCounts: TaskNavigationCounts = TaskNavigationCounts(),
     val view: TaskView = TaskView.Assigned,
@@ -33,6 +34,7 @@ data class TaskUiState(
     val loading: Boolean = true,
     val creating: Boolean = false,
     val navigationMutating: Boolean = false,
+    val archivedListsLoading: Boolean = false,
     val mutatingIds: Set<String> = emptySet(),
     val searchQuery: String = "",
     val searchFilter: TaskSearchFilter = TaskSearchFilter(),
@@ -853,6 +855,74 @@ class TaskViewModel(
         }
     }
 
+    fun loadArchivedTaskLists() {
+        if (_ui.value.archivedListsLoading) return
+        _ui.update { it.copy(archivedListsLoading = true, failure = null) }
+        viewModelScope.launch {
+            repository.loadArchivedTaskLists().fold(
+                onSuccess = { lists ->
+                    _ui.update {
+                        it.copy(
+                            archivedListsLoading = false,
+                            archivedTaskLists = lists.map(TaskListDto::toItem),
+                        )
+                    }
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(
+                            archivedListsLoading = false,
+                            failure = TaskFailure.Navigation,
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    fun archiveTaskList(list: TaskListItem) {
+        if (!list.canArchive || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.setTaskListArchived(list.id, true).fold(
+                onSuccess = { archived ->
+                    val wasSelected = _ui.value.selectedListId == list.id
+                    _ui.update { state ->
+                        state.copy(
+                            navigationMutating = false,
+                            selectedListId = state.selectedListId.takeUnless { it == list.id },
+                            taskLists = state.taskLists.filterNot { it.id == list.id },
+                            archivedTaskLists = state.archivedTaskLists + archived.toItem(),
+                        )
+                    }
+                    if (wasSelected) refresh()
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
+    }
+
+    fun restoreTaskList(list: TaskListItem) {
+        if (!list.canArchive || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.setTaskListArchived(list.id, false).fold(
+                onSuccess = { restored ->
+                    _ui.update { state ->
+                        state.copy(
+                            navigationMutating = false,
+                            archivedTaskLists = state.archivedTaskLists.filterNot {
+                                it.id == list.id
+                            },
+                            taskLists = state.taskLists + restored.toItem(),
+                        )
+                    }
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
+    }
+
     fun deleteTaskList(list: TaskListItem) {
         if (!list.canDelete || _ui.value.navigationMutating) return
         _ui.update { it.copy(navigationMutating = true, failure = null) }
@@ -1060,9 +1130,11 @@ private fun TaskListDto.toItem() = TaskListItem(
     name = name,
     groupId = listGroup?.id,
     groupName = listGroup?.name,
+    isArchived = isArchived,
     taskCount = taskCount,
     canCreateTasks = canCreateTasks,
     canManage = canManage,
+    canArchive = canArchive,
     canDelete = canDelete,
     groups = groups.sortedBy { it.sortOrder }.map(TaskGroupDto::toItem),
 )

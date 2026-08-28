@@ -333,6 +333,12 @@
     <string name="task_30_minutes_before">30 min before</string>
     <string name="task_new_group">New group</string>
     <string name="task_new_list">New list</string>
+    <string name="task_archive">Archive</string>
+    <string name="task_archive_list_title">Archive task list</string>
+    <string name="task_archive_list_confirm">Archive “%1$s”? It will be hidden from navigation and cannot accept new tasks.</string>
+    <string name="task_archived_lists">Archived task lists</string>
+    <string name="task_archived_empty">No archived task lists</string>
+    <string name="task_restore">Restore</string>
     <string name="task_list_name_hint">List name</string>
     <string name="task_choose_group">Group: %1$s</string>
     <string name="task_delete_navigation_item">Delete</string>

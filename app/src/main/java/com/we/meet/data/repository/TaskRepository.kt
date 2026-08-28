@@ -349,11 +349,22 @@ class TaskRepository(
             }
         }
 
+    suspend fun loadArchivedTaskLists(): Result<List<TaskListDto>> = runCatching {
+        withContext(Dispatchers.IO) { api.listTaskLists(archived = true) }
+    }
+
     suspend fun renameTaskList(id: String, name: String): Result<TaskListDto> = runCatching {
         withContext(Dispatchers.IO) {
             api.patchTaskList(id, PatchTaskListRequest(name = name))
         }
     }
+
+    suspend fun setTaskListArchived(id: String, archived: Boolean): Result<TaskListDto> =
+        runCatching {
+            withContext(Dispatchers.IO) {
+                api.patchTaskList(id, PatchTaskListRequest(isArchived = archived))
+            }
+        }
 
     suspend fun deleteTaskList(id: String): Result<Unit> = runCatching {
         withContext(Dispatchers.IO) { api.deleteTaskList(id) }

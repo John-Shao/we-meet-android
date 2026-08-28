@@ -143,9 +143,11 @@ data class TaskListItem(
     val name: String,
     val groupId: String? = null,
     val groupName: String? = null,
+    val isArchived: Boolean = false,
     val taskCount: Int = 0,
     val canCreateTasks: Boolean = false,
     val canManage: Boolean = false,
+    val canArchive: Boolean = false,
     val canDelete: Boolean = false,
     val groups: List<TaskGroupItem> = emptyList(),
 )

@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -52,6 +53,7 @@ import androidx.compose.material.icons.outlined.Alarm
 import androidx.compose.material.icons.outlined.AlternateEmail
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
+import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -167,12 +169,14 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     var showFilter by remember { mutableStateOf(false) }
     var showNewGroup by remember { mutableStateOf(false) }
     var showNewList by remember { mutableStateOf(false) }
+    var showArchivedLists by remember { mutableStateOf(false) }
     var groupActionTarget by remember { mutableStateOf<TaskListGroupItem?>(null) }
     var listActionTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var renameGroupTarget by remember { mutableStateOf<TaskListGroupItem?>(null) }
     var renameListTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var deleteGroupTarget by remember { mutableStateOf<TaskListGroupItem?>(null) }
     var deleteListTarget by remember { mutableStateOf<TaskListItem?>(null) }
+    var archiveListTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var editContentTarget by remember { mutableStateOf<TaskItem?>(null) }
     var dueDateTarget by remember { mutableStateOf<TaskItem?>(null) }
     var priorityTarget by remember { mutableStateOf<TaskItem?>(null) }
@@ -366,6 +370,11 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 },
                 onNewGroup = { showNewGroup = true },
                 onNewList = { showNewList = true },
+                onOpenArchivedLists = {
+                    showDrawer = false
+                    showArchivedLists = true
+                    vm.loadArchivedTaskLists()
+                },
                 onGroupAction = { groupActionTarget = it },
                 onListAction = { listActionTarget = it },
             )
@@ -541,10 +550,38 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 listActionTarget = null
                 renameListTarget = list
             },
+            onArchive = if (list.canArchive) {
+                {
+                    listActionTarget = null
+                    archiveListTarget = list
+                }
+            } else {
+                null
+            },
             onDelete = {
                 listActionTarget = null
                 deleteListTarget = list
             },
+        )
+    }
+    archiveListTarget?.let { list ->
+        ArchiveTaskListDialog(
+            listName = list.name,
+            saving = ui.navigationMutating,
+            onDismiss = { archiveListTarget = null },
+            onConfirm = {
+                vm.archiveTaskList(list)
+                archiveListTarget = null
+            },
+        )
+    }
+    if (showArchivedLists) {
+        ArchivedTaskListsSheet(
+            lists = ui.archivedTaskLists,
+            loading = ui.archivedListsLoading,
+            restoring = ui.navigationMutating,
+            onDismiss = { showArchivedLists = false },
+            onRestore = vm::restoreTaskList,
         )
     }
     renameGroupTarget?.let { group ->
@@ -1204,6 +1241,7 @@ private fun TaskNavigationDrawer(
     onSelectList: (TaskListItem) -> Unit,
     onNewGroup: () -> Unit,
     onNewList: () -> Unit,
+    onOpenArchivedLists: () -> Unit,
     onGroupAction: (TaskListGroupItem) -> Unit,
     onListAction: (TaskListItem) -> Unit,
 ) {
@@ -1310,6 +1348,14 @@ private fun TaskNavigationDrawer(
                             onSelectView(TaskView.Standalone)
                         }
                     }
+                }
+                item {
+                    DrawerItem(
+                        Icons.Outlined.Archive,
+                        R.string.task_archived_lists,
+                        null,
+                        onOpenArchivedLists,
+                    )
                 }
                 item {
                     TextButton(onClick = onNewGroup, modifier = Modifier.padding(horizontal = Dimens.SpaceM)) {
@@ -2663,6 +2709,7 @@ private fun NavigationActionSheet(
     canDelete: Boolean,
     onDismiss: () -> Unit,
     onRename: () -> Unit,
+    onArchive: (() -> Unit)? = null,
     onDelete: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -2676,6 +2723,9 @@ private fun NavigationActionSheet(
                 fontWeight = FontWeight.Bold,
             )
             SheetAction(Icons.Outlined.Edit, R.string.task_rename, onRename)
+            onArchive?.let {
+                SheetAction(Icons.Outlined.Archive, R.string.task_archive, it)
+            }
             if (canDelete) {
                 SheetAction(
                     Icons.Filled.DeleteOutline,
@@ -2683,6 +2733,88 @@ private fun NavigationActionSheet(
                     onDelete,
                     danger = true,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ArchiveTaskListDialog(
+    listName: String,
+    saving: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.task_archive_list_title)) },
+        text = { Text(stringResource(R.string.task_archive_list_confirm, listName)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = !saving) {
+                Text(stringResource(R.string.task_archive))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !saving) {
+                Text(stringResource(R.string.task_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun ArchivedTaskListsSheet(
+    lists: List<TaskListItem>,
+    loading: Boolean,
+    restoring: Boolean,
+    onDismiss: () -> Unit,
+    onRestore: (TaskListItem) -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl)
+                .padding(bottom = Dimens.SpaceXl),
+        ) {
+            Text(
+                stringResource(R.string.task_archived_lists),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(Dimens.SpaceL))
+            when {
+                loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
+                lists.isEmpty() -> Text(
+                    stringResource(R.string.task_archived_empty),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = Dimens.SpaceXl),
+                )
+                else -> LazyColumn(
+                    Modifier.fillMaxWidth().heightIn(max = Dimens.SheetContentMaxHeight),
+                ) {
+                    items(lists, key = TaskListItem::id) { list ->
+                        Row(
+                            Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.AutoMirrored.Outlined.ListAlt, null)
+                            Spacer(Modifier.width(Dimens.SpaceM))
+                            Text(
+                                list.name,
+                                modifier = Modifier.weight(1f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            if (list.canArchive) {
+                                TextButton(
+                                    onClick = { onRestore(list) },
+                                    enabled = !restoring,
+                                ) {
+                                    Text(stringResource(R.string.task_restore))
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

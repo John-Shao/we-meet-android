@@ -60,8 +60,10 @@ data class TaskListDto(
     val description: String = "",
     val color: String = "grey",
     @Json(name = "list_group") val listGroup: TaskListGroupSummaryDto? = null,
+    @Json(name = "is_archived") val isArchived: Boolean = false,
     @Json(name = "can_create_tasks") val canCreateTasks: Boolean = false,
     @Json(name = "can_manage") val canManage: Boolean = false,
+    @Json(name = "can_archive") val canArchive: Boolean = false,
     @Json(name = "can_delete") val canDelete: Boolean = false,
     @Json(name = "task_count") val taskCount: Int = 0,
     val groups: List<TaskGroupDto> = emptyList(),
@@ -79,6 +81,7 @@ data class CreateTaskListRequest(
 data class PatchTaskListRequest(
     val name: String? = null,
     @Json(name = "list_group_id") val listGroupId: String? = null,
+    @Json(name = "is_archived") val isArchived: Boolean? = null,
 )
 
 @JsonClass(generateAdapter = true)

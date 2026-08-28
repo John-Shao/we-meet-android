@@ -169,7 +169,9 @@ interface TaskApi {
     ): ShareTaskResponse
 
     @GET("api/v1.0/task-lists/")
-    suspend fun listTaskLists(): List<TaskListDto>
+    suspend fun listTaskLists(
+        @Query("archived") archived: Boolean = false,
+    ): List<TaskListDto>
 
     @POST("api/v1.0/task-lists/")
     suspend fun createTaskList(@Body body: CreateTaskListRequest): TaskListDto

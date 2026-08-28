@@ -87,8 +87,10 @@ class TaskDtosTest {
               "id":"list-1",
               "name":"Mobile",
               "list_group":{"id":"group-1","name":"Product","sort_order":2},
+              "is_archived":true,
               "can_create_tasks":true,
               "can_manage":true,
+              "can_archive":true,
               "can_delete":true,
               "task_count":8,
               "groups":[{
@@ -115,7 +117,9 @@ class TaskDtosTest {
 
         assertEquals("Product", list.listGroup?.name)
         assertEquals(8, list.taskCount)
+        assertTrue(list.isArchived)
         assertTrue(list.canManage)
+        assertTrue(list.canArchive)
         assertTrue(list.canDelete)
         assertEquals("In progress", list.groups.single().name)
         assertEquals(3, list.groups.single().taskCount)
@@ -130,6 +134,15 @@ class TaskDtosTest {
 
         assertTrue(json.contains("\"list_group_id\":\"group-1\""))
         assertTrue(json.contains("\"name\":\"Mobile\""))
+    }
+
+    @Test
+    fun patchTaskListRequestUsesBackendArchiveField() {
+        val json = moshi.adapter(PatchTaskListRequest::class.java).toJson(
+            PatchTaskListRequest(isArchived = true),
+        )
+
+        assertTrue(json.contains("\"is_archived\":true"))
     }
 
     @Test
