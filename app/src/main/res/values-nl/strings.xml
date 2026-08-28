@@ -288,6 +288,7 @@
     <string name="task_share">Delen</string>
     <string name="task_copy">Link kopiëren</string>
     <string name="task_duplicate">Taak dupliceren</string>
+    <string name="task_copy_title">%1$s (kopie)</string>
     <string name="task_set_milestone">Als mijlpaal instellen</string>
     <string name="task_delete">Taak verwijderen</string>
     <string name="task_priority">Prioriteit</string>

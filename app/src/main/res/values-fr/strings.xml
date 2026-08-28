@@ -288,6 +288,7 @@
     <string name="task_share">Partager</string>
     <string name="task_copy">Copier le lien</string>
     <string name="task_duplicate">Dupliquer la tâche</string>
+    <string name="task_copy_title">%1$s (copie)</string>
     <string name="task_set_milestone">Définir comme jalon</string>
     <string name="task_delete">Supprimer la tâche</string>
     <string name="task_priority">Priorité</string>

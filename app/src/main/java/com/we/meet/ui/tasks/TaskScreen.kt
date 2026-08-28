@@ -6,6 +6,8 @@
 package com.we.meet.ui.tasks
 
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -352,6 +354,11 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                         vm.deleteAttachment(task.id, attachment.id)
                     },
                     onShare = { shareTarget = task },
+                    onCopyLink = {
+                        app.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(
+                            ClipData.newPlainText(task.title, taskDetailUrl(task.id)),
+                        )
+                    },
                     onMore = { actionTarget = it },
                 )
             } ?: run { page = TaskPage.List }
@@ -430,6 +437,17 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             onShare = {
                 actionTarget = null
                 shareTarget = target
+            },
+            onDuplicate = {
+                actionTarget = null
+                vm.duplicateTask(
+                    target,
+                    app.getString(R.string.task_copy_title, target.title),
+                ) { created ->
+                    selectedTaskId = created.id
+                    detailBackStack = listOf(created)
+                    page = TaskPage.Detail
+                }
             },
             onDelete = {
                 vm.deleteTask(target) {
@@ -1663,6 +1681,7 @@ private fun TaskDetailPage(
     onDownloadAttachment: (TaskAttachmentItem) -> Unit,
     onDeleteAttachment: (TaskAttachmentItem) -> Unit,
     onShare: () -> Unit,
+    onCopyLink: () -> Unit,
     onMore: (TaskItem) -> Unit,
 ) {
     var comment by remember { mutableStateOf("") }
@@ -1682,7 +1701,9 @@ private fun TaskDetailPage(
                     )
                 }
                 IconButton(onClick = onShare) { Icon(Icons.Outlined.Share, stringResource(R.string.task_share)) }
-                IconButton(onClick = {}) { Icon(Icons.Outlined.ContentCopy, stringResource(R.string.task_copy)) }
+                IconButton(onClick = onCopyLink) {
+                    Icon(Icons.Outlined.ContentCopy, stringResource(R.string.task_copy))
+                }
                 IconButton(onClick = { onMore(task) }) { Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.task_more)) }
             }
         },
@@ -2660,6 +2681,7 @@ private fun TaskActionSheet(
     task: TaskItem,
     onDismiss: () -> Unit,
     onShare: () -> Unit,
+    onDuplicate: () -> Unit,
     onDelete: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -2673,8 +2695,7 @@ private fun TaskActionSheet(
                 fontWeight = FontWeight.Bold,
             )
             SheetAction(Icons.Outlined.Share, R.string.task_share, onShare)
-            SheetAction(Icons.Outlined.ContentCopy, R.string.task_duplicate, onDismiss)
-            SheetAction(Icons.Outlined.CalendarMonth, R.string.task_set_milestone, onDismiss)
+            SheetAction(Icons.Outlined.ContentCopy, R.string.task_duplicate, onDuplicate)
             SheetAction(Icons.Filled.DeleteOutline, R.string.task_delete, onDelete, danger = true)
         }
     }
@@ -3284,6 +3305,9 @@ private fun formatFileSize(bytes: Long): String = when {
     else -> "$bytes B"
 }
 
+private fun taskDetailUrl(taskId: String): String =
+    "${BuildConfig.WE_MEET_BASE_URL.trimEnd('/')}/tasks?task=${Uri.encode(taskId)}"
+
 private fun buildTaskCardBody(
     task: TaskItem,
     conversationId: String,
@@ -3293,8 +3317,7 @@ private fun buildTaskCardBody(
     followLabel: String,
     viewLabel: String,
 ): String {
-    val detailUrl = "${BuildConfig.WE_MEET_BASE_URL.trimEnd('/')}/tasks" +
-        "?task=${Uri.encode(task.id)}&shared_via=${Uri.encode(conversationId)}"
+    val detailUrl = taskDetailUrl(task.id) + "&shared_via=${Uri.encode(conversationId)}"
     val fields = JSONArray()
         .put(JSONObject().put("label", assigneeLabel).put("value", task.assignee))
         .put(JSONObject().put("label", dueLabel).put("value", task.dueLabel))

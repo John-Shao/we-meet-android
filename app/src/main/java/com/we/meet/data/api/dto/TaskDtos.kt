@@ -211,9 +211,13 @@ data class StandaloneTaskCountDto(
 data class CreateTaskRequest(
     val title: String,
     val description: String = "",
+    @Json(name = "start_date") val startDate: String? = null,
     @Json(name = "assignee_ids") val assigneeIds: List<String>? = null,
+    @Json(name = "follower_ids") val followerIds: List<String>? = null,
     @Json(name = "due_date") val dueDate: String? = null,
+    val priority: String? = null,
     @Json(name = "task_list_id") val taskListId: String? = null,
+    @Json(name = "group_id") val groupId: String? = null,
     @Json(name = "parent_id") val parentId: String? = null,
 )
 

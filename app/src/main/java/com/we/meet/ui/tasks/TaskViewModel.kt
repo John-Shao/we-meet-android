@@ -257,6 +257,47 @@ class TaskViewModel(
         }
     }
 
+    fun duplicateTask(item: TaskItem, copyTitle: String, onCreated: (TaskItem) -> Unit) {
+        if (item.id in _ui.value.mutatingIds) return
+        val list = item.listId?.let { listId ->
+            _ui.value.taskLists.firstOrNull { it.id == listId && it.canCreateTasks }
+        }
+        _ui.update { it.copy(mutatingIds = it.mutatingIds + item.id, failure = null) }
+        viewModelScope.launch {
+            repository.duplicateTask(
+                title = copyTitle,
+                description = item.description,
+                assigneeIds = item.assignees.map(TaskPersonItem::id),
+                startDate = item.startDate,
+                dueDate = item.dueDate,
+                priority = item.priority.takeUnless { it == TaskPriority.None }
+                    ?.name?.lowercase(),
+                taskListId = list?.id,
+                groupId = item.groupId.takeIf { list != null },
+            ).fold(
+                onSuccess = { created ->
+                    val copy = created.toItem()
+                    _ui.update {
+                        it.copy(
+                            tasks = listOf(copy) + it.tasks,
+                            mutatingIds = it.mutatingIds - item.id,
+                        )
+                    }
+                    refreshNavigation()
+                    onCreated(copy)
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(
+                            mutatingIds = it.mutatingIds - item.id,
+                            failure = TaskFailure.Save,
+                        )
+                    }
+                },
+            )
+        }
+    }
+
     fun toggleCompleted(item: TaskItem) {
         if (!item.canUpdateStatus || item.id in _ui.value.mutatingIds) return
         val completed = item.status != TaskStatus.Done

@@ -198,6 +198,32 @@ class TaskRepository(
         }
     }
 
+    suspend fun duplicateTask(
+        title: String,
+        description: String,
+        assigneeIds: List<String>?,
+        startDate: String?,
+        dueDate: String?,
+        priority: String?,
+        taskListId: String?,
+        groupId: String?,
+    ): Result<TaskDto> = runCatching {
+        withContext(Dispatchers.IO) {
+            api.createTask(
+                CreateTaskRequest(
+                    title = title,
+                    description = description,
+                    startDate = startDate,
+                    assigneeIds = assigneeIds?.takeIf { it.isNotEmpty() },
+                    dueDate = dueDate,
+                    priority = priority,
+                    taskListId = taskListId,
+                    groupId = groupId,
+                ),
+            )
+        }
+    }
+
     suspend fun setCompleted(taskId: String, completed: Boolean): Result<TaskDto> =
         runCatching {
             withContext(Dispatchers.IO) {

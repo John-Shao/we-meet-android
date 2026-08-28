@@ -298,6 +298,7 @@
     <string name="task_share">分享</string>
     <string name="task_copy">复制链接</string>
     <string name="task_duplicate">复制任务</string>
+    <string name="task_copy_title">%1$s（副本）</string>
     <string name="task_set_milestone">设为里程碑</string>
     <string name="task_delete">删除任务</string>
     <string name="task_priority">优先级</string>

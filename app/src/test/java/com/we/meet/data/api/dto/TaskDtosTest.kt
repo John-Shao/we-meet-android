@@ -86,6 +86,28 @@ class TaskDtosTest {
     }
 
     @Test
+    fun duplicateTaskRequestSerializesPlacementAndTaskFields() {
+        val json = moshi.adapter(CreateTaskRequest::class.java).toJson(
+            CreateTaskRequest(
+                title = "Review (copy)",
+                description = "Check the release",
+                startDate = "2026-08-28",
+                assigneeIds = listOf("user-1", "user-2"),
+                dueDate = "2026-08-30",
+                priority = "high",
+                taskListId = "list-1",
+                groupId = "group-1",
+            ),
+        )
+
+        assertTrue(json.contains("\"start_date\":\"2026-08-28\""))
+        assertTrue(json.contains("\"assignee_ids\":[\"user-1\",\"user-2\"]"))
+        assertTrue(json.contains("\"priority\":\"high\""))
+        assertTrue(json.contains("\"task_list_id\":\"list-1\""))
+        assertTrue(json.contains("\"group_id\":\"group-1\""))
+    }
+
+    @Test
     fun taskListNavigationMapsPermissionsAndGroup() {
         val listJson = """
             {
