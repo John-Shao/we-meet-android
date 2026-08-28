@@ -339,6 +339,10 @@
     <string name="task_delete_task_group_confirm">„%1$s“ löschen? Nur leere Gruppen können gelöscht werden.</string>
     <string name="task_move_up">Nach oben</string>
     <string name="task_move_down">Nach unten</string>
+    <string name="task_parent">Übergeordnete Aufgabe</string>
+    <string name="task_no_parent">Keine übergeordnete Aufgabe</string>
+    <string name="task_move_subtree_title">Aufgabenbaum verschieben?</string>
+    <string name="task_move_subtree_message">Dadurch werden alle %1$d Aufgaben in diesem Aufgabenbaum verschoben.</string>
     <string name="task_search_filter_me">%1$s: Ich</string>
     <string name="task_search_open">Offen</string>
     <string name="task_search_all_due">Beliebiges Fälligkeitsdatum</string>

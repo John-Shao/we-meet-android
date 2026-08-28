@@ -169,6 +169,14 @@ class TaskViewModel(
                                         createdAt = activity.createdAt,
                                     )
                                 },
+                                parentCandidates = detail.parentCandidates.map { candidate ->
+                                    TaskParentCandidateItem(
+                                        id = candidate.id,
+                                        title = candidate.title,
+                                        depth = candidate.depth,
+                                    )
+                                },
+                                subtreeNodeCount = detail.subtreeNodeCount,
                             ),
                         )
                     }
@@ -544,6 +552,41 @@ class TaskViewModel(
                             mutatingIds = it.mutatingIds - item.id,
                         )
                     }
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(
+                            mutatingIds = it.mutatingIds - item.id,
+                            failure = TaskFailure.Save,
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    fun moveTask(item: TaskItem, parentId: String?, subtreeNodeCount: Int) {
+        if (
+            !item.canEdit ||
+            item.recurrence?.active == true ||
+            item.parentId == parentId ||
+            item.id in _ui.value.mutatingIds
+        ) return
+        _ui.update { it.copy(mutatingIds = it.mutatingIds + item.id, failure = null) }
+        viewModelScope.launch {
+            repository.moveTask(item.id, parentId, subtreeNodeCount).fold(
+                onSuccess = { updated ->
+                    val confirmed = updated.toItem()
+                    _ui.update {
+                        it.copy(
+                            tasks = it.tasks.replace(item.id, confirmed),
+                            searchResults = it.searchResults.replace(item.id, confirmed),
+                            detail = it.detail?.replace(item.id, confirmed),
+                            mutatingIds = it.mutatingIds - item.id,
+                        )
+                    }
+                    loadDetail(item.id)
+                    refresh()
                 },
                 onFailure = {
                     _ui.update {
@@ -976,6 +1019,7 @@ private fun TaskDto.toItem(): TaskItem {
         dueDate = dueDate,
         groupId = group?.id,
         parentId = parentId,
+        parentTitle = ancestorPath.dropLast(1).lastOrNull()?.title,
         recurrence = recurrence?.let { rule ->
             TaskRecurrenceItem(
                 frequency = when (rule.frequency) {

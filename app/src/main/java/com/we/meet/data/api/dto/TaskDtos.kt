@@ -96,6 +96,21 @@ data class TaskProgressDto(
 )
 
 @JsonClass(generateAdapter = true)
+data class TaskAncestorDto(
+    val id: String = "",
+    val title: String = "",
+    val depth: Int = 0,
+)
+
+@JsonClass(generateAdapter = true)
+data class TaskParentCandidateDto(
+    val id: String,
+    val title: String,
+    val depth: Int = 0,
+    @Json(name = "ancestor_path") val ancestorPath: List<TaskAncestorDto> = emptyList(),
+)
+
+@JsonClass(generateAdapter = true)
 data class TaskRecurrenceDto(
     @Json(name = "rule_id") val ruleId: String = "",
     val frequency: String = "daily",
@@ -125,6 +140,7 @@ data class TaskDto(
     @Json(name = "task_list") val taskList: TaskPlacementDto? = null,
     val group: TaskPlacementDto? = null,
     @Json(name = "parent_id") val parentId: String? = null,
+    @Json(name = "ancestor_path") val ancestorPath: List<TaskAncestorDto> = emptyList(),
     @Json(name = "descendant_progress") val descendantProgress: TaskProgressDto = TaskProgressDto(),
     @Json(name = "start_date") val startDate: String? = null,
     @Json(name = "due_date") val dueDate: String? = null,
@@ -200,7 +216,10 @@ data class TaskRecurrenceRequest(
 
 @JsonClass(generateAdapter = true)
 data class TaskSubtreeImpactDto(
+    @Json(name = "task_id") val taskId: String = "",
     @Json(name = "node_count") val nodeCount: Int = 1,
+    @Json(name = "descendant_count") val descendantCount: Int = 0,
+    @Json(name = "maximum_depth") val maximumDepth: Int = 0,
 )
 
 @JsonClass(generateAdapter = true)

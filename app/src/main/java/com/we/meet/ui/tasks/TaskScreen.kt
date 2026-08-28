@@ -148,6 +148,12 @@ private data class TaskGroupInsertion(val list: TaskListItem, val index: Int)
 
 private data class TaskGroupEditTarget(val list: TaskListItem, val group: TaskGroupItem)
 
+private data class TaskParentMove(
+    val task: TaskItem,
+    val parentId: String?,
+    val subtreeNodeCount: Int,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskScreen(ownerName: String, app: WeMeetApp) {
@@ -171,6 +177,8 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     var dueDateTarget by remember { mutableStateOf<TaskItem?>(null) }
     var priorityTarget by remember { mutableStateOf<TaskItem?>(null) }
     var recurrenceTarget by remember { mutableStateOf<TaskItem?>(null) }
+    var parentPickerTarget by remember { mutableStateOf<TaskItem?>(null) }
+    var pendingParentMove by remember { mutableStateOf<TaskParentMove?>(null) }
     var assigneeTarget by remember { mutableStateOf<TaskItem?>(null) }
     var followerTarget by remember { mutableStateOf<TaskItem?>(null) }
     var showNewSubtask by remember { mutableStateOf(false) }
@@ -299,6 +307,8 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                     canManageRecurrence = task.recurrence?.canManage
                         ?: (task.creatorId == app.tokenStore.userId),
                     onEditRecurrence = { recurrenceTarget = task },
+                    canEditParent = task.canEdit && task.recurrence?.active != true,
+                    onEditParent = { parentPickerTarget = task },
                     onEditAssignees = { assigneeTarget = task },
                     onAddFollowers = { followerTarget = task },
                     onRemoveFollower = { follower -> vm.removeFollower(task, follower.id) },
@@ -619,6 +629,39 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             onSelect = { frequency ->
                 vm.setRecurrence(task, frequency)
                 recurrenceTarget = null
+            },
+        )
+    }
+    parentPickerTarget?.let { task ->
+        val detail = ui.detail?.takeIf { it.taskId == task.id }
+        TaskParentSheet(
+            task = task,
+            candidates = detail?.parentCandidates.orEmpty(),
+            saving = task.id in ui.mutatingIds,
+            onDismiss = { parentPickerTarget = null },
+            onSelect = { parentId ->
+                parentPickerTarget = null
+                val move = TaskParentMove(
+                    task = task,
+                    parentId = parentId,
+                    subtreeNodeCount = detail?.subtreeNodeCount ?: 1,
+                )
+                if (move.subtreeNodeCount > 1) {
+                    pendingParentMove = move
+                } else {
+                    vm.moveTask(move.task, move.parentId, move.subtreeNodeCount)
+                }
+            },
+        )
+    }
+    pendingParentMove?.let { move ->
+        MoveTaskTreeDialog(
+            nodeCount = move.subtreeNodeCount,
+            moving = move.task.id in ui.mutatingIds,
+            onDismiss = { pendingParentMove = null },
+            onConfirm = {
+                vm.moveTask(move.task, move.parentId, move.subtreeNodeCount)
+                pendingParentMove = null
             },
         )
     }
@@ -1433,6 +1476,8 @@ private fun TaskDetailPage(
     onEditPriority: () -> Unit,
     canManageRecurrence: Boolean,
     onEditRecurrence: () -> Unit,
+    canEditParent: Boolean,
+    onEditParent: () -> Unit,
     onEditAssignees: () -> Unit,
     onAddFollowers: () -> Unit,
     onRemoveFollower: (TaskPersonItem) -> Unit,
@@ -1558,6 +1603,12 @@ private fun TaskDetailPage(
                             onEditRecurrence.takeIf { canManageRecurrence },
                         )
                     }
+                    FormValueRow(
+                        Icons.Outlined.AccountTree,
+                        R.string.task_parent,
+                        task.parentTitle ?: stringResource(R.string.task_no_parent),
+                        onEditParent.takeIf { canEditParent },
+                    )
                 }
             }
             item {
@@ -2205,6 +2256,91 @@ private fun TaskRecurrenceSheet(
             }
         }
     }
+}
+
+@Composable
+private fun TaskParentSheet(
+    task: TaskItem,
+    candidates: List<TaskParentCandidateItem>,
+    saving: Boolean,
+    onDismiss: () -> Unit,
+    onSelect: (String?) -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.fillMaxWidth().padding(bottom = Dimens.SpaceXl)) {
+            Text(
+                stringResource(R.string.task_parent),
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            ParentChoiceRow(
+                label = stringResource(R.string.task_no_parent),
+                selected = task.parentId == null,
+                enabled = !saving,
+                onClick = {
+                    if (task.parentId == null) onDismiss() else onSelect(null)
+                },
+            )
+            candidates.forEach { candidate ->
+                ParentChoiceRow(
+                    label = buildString {
+                        repeat(candidate.depth) { append("— ") }
+                        append(candidate.title)
+                    },
+                    selected = task.parentId == candidate.id,
+                    enabled = !saving,
+                    onClick = {
+                        if (task.parentId == candidate.id) onDismiss()
+                        else onSelect(candidate.id)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ParentChoiceRow(
+    label: String,
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceL),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+        if (selected) {
+            Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+@Composable
+private fun MoveTaskTreeDialog(
+    nodeCount: Int,
+    moving: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.task_move_subtree_title)) },
+        text = { Text(stringResource(R.string.task_move_subtree_message, nodeCount)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = !moving) {
+                Text(stringResource(R.string.task_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !moving) {
+                Text(stringResource(R.string.task_cancel))
+            }
+        },
+    )
 }
 
 @Composable

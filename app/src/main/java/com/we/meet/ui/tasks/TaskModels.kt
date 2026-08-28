@@ -24,6 +24,12 @@ data class TaskRecurrenceItem(
     val canManage: Boolean = false,
 )
 
+data class TaskParentCandidateItem(
+    val id: String,
+    val title: String,
+    val depth: Int = 0,
+)
+
 enum class TaskSearchStatus(val apiValue: String) {
     All("all"),
     Open("open"),
@@ -93,6 +99,7 @@ data class TaskItem(
     val groupId: String? = null,
     val creatorId: String = "",
     val parentId: String? = null,
+    val parentTitle: String? = null,
     val recurrence: TaskRecurrenceItem? = null,
 )
 
@@ -124,6 +131,8 @@ data class TaskDetailItem(
     val comments: List<TaskCommentItem> = emptyList(),
     val attachments: List<TaskAttachmentItem> = emptyList(),
     val activities: List<TaskActivityItem> = emptyList(),
+    val parentCandidates: List<TaskParentCandidateItem> = emptyList(),
+    val subtreeNodeCount: Int = 1,
     val loading: Boolean = false,
     val uploadingAttachment: Boolean = false,
 )

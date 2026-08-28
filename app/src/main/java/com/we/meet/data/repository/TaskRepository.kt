@@ -23,6 +23,7 @@ import com.we.meet.data.api.dto.TaskAttachmentDto
 import com.we.meet.data.api.dto.TaskActivityDto
 import com.we.meet.data.api.dto.TaskListDto
 import com.we.meet.data.api.dto.TaskListGroupDto
+import com.we.meet.data.api.dto.TaskParentCandidateDto
 import com.we.meet.data.api.dto.TaskGroupDto
 import com.we.meet.data.api.dto.TaskRecurrenceRequest
 import kotlinx.coroutines.Dispatchers
@@ -30,11 +31,14 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okio.BufferedSink
 import okio.source
+import org.json.JSONObject
 
 class TaskRepository(
     private val api: TaskApi,
@@ -62,6 +66,8 @@ class TaskRepository(
         val comments: List<TaskCommentDto>,
         val attachments: List<TaskAttachmentDto>,
         val activities: List<TaskActivityDto>,
+        val parentCandidates: List<TaskParentCandidateDto>,
+        val subtreeNodeCount: Int,
     )
 
     suspend fun loadNavigation(): Result<Navigation> = runCatching {
@@ -139,13 +145,24 @@ class TaskRepository(
 
     suspend fun loadDetail(taskId: String): Result<Detail> = runCatching {
         withContext(Dispatchers.IO) {
-            Detail(
-                task = api.getTask(taskId),
-                subtasks = api.listSubtasks(taskId),
-                comments = api.listComments(taskId),
-                attachments = api.listAttachments(taskId),
-                activities = api.listActivities(taskId),
-            )
+            coroutineScope {
+                val task = async { api.getTask(taskId) }
+                val subtasks = async { api.listSubtasks(taskId) }
+                val comments = async { api.listComments(taskId) }
+                val attachments = async { api.listAttachments(taskId) }
+                val activities = async { api.listActivities(taskId) }
+                val parentCandidates = async { api.listParentCandidates(taskId) }
+                val subtreeImpact = async { api.getSubtreeImpact(taskId) }
+                Detail(
+                    task = task.await(),
+                    subtasks = subtasks.await(),
+                    comments = comments.await(),
+                    attachments = attachments.await(),
+                    activities = activities.await(),
+                    parentCandidates = parentCandidates.await(),
+                    subtreeNodeCount = subtreeImpact.await().nodeCount,
+                )
+            }
         }
     }
 
@@ -192,6 +209,21 @@ class TaskRepository(
         runCatching {
             withContext(Dispatchers.IO) { api.patchTask(taskId, patch) }
         }
+
+    suspend fun moveTask(
+        taskId: String,
+        parentId: String?,
+        subtreeNodeCount: Int,
+    ): Result<TaskDto> = runCatching {
+        withContext(Dispatchers.IO) {
+            val json = JSONObject()
+                .put("parent_id", parentId ?: JSONObject.NULL)
+                .put("confirm_subtree_node_count", subtreeNodeCount)
+                .toString()
+                .toRequestBody("application/json".toMediaType())
+            api.moveTask(taskId, json)
+        }
+    }
 
     suspend fun addFollowers(taskId: String, userIds: List<String>): Result<TaskDto> =
         runCatching {

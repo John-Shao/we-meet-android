@@ -289,4 +289,51 @@ class TaskDtosTest {
         assertTrue(requestJson.contains("\"end_date\":\"2026-12-31\""))
         assertTrue(requestJson.contains("\"max_occurrences\":null").not())
     }
+
+    @Test
+    fun taskHierarchyResponsesMapParentPathCandidatesAndImpact() {
+        val taskJson = """
+            {
+              "id":"task-2",
+              "title":"Android implementation",
+              "creator":{"id":"user-1","full_name":"Alex"},
+              "parent_id":"task-1",
+              "ancestor_path":[
+                {"id":"task-1","title":"Mobile launch","depth":0},
+                {"id":"task-2","title":"Android implementation","depth":1}
+              ]
+            }
+        """.trimIndent()
+        val candidatesJson = """
+            [{
+              "id":"task-3",
+              "title":"Release preparation",
+              "depth":1,
+              "ancestor_path":[
+                {"id":"task-4","title":"Product","depth":0},
+                {"id":"task-3","title":"Release preparation","depth":1}
+              ]
+            }]
+        """.trimIndent()
+        val impactJson = """
+            {"task_id":"task-2","node_count":3,"descendant_count":2,"maximum_depth":3}
+        """.trimIndent()
+
+        val task = moshi.adapter(TaskDto::class.java).fromJson(taskJson)!!
+        val candidateType = com.squareup.moshi.Types.newParameterizedType(
+            List::class.java,
+            TaskParentCandidateDto::class.java,
+        )
+        val candidates = moshi.adapter<List<TaskParentCandidateDto>>(candidateType)
+            .fromJson(candidatesJson)!!
+        val impact = moshi.adapter(TaskSubtreeImpactDto::class.java).fromJson(impactJson)!!
+
+        assertEquals("task-1", task.parentId)
+        assertEquals("Mobile launch", task.ancestorPath.first().title)
+        assertEquals(1, candidates.single().depth)
+        assertEquals("Product", candidates.single().ancestorPath.first().title)
+        assertEquals(3, impact.nodeCount)
+        assertEquals(2, impact.descendantCount)
+        assertEquals(3, impact.maximumDepth)
+    }
 }

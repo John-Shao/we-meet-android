@@ -19,6 +19,7 @@ import com.we.meet.data.api.dto.TaskCommentDto
 import com.we.meet.data.api.dto.TaskDto
 import com.we.meet.data.api.dto.TaskListDto
 import com.we.meet.data.api.dto.TaskListGroupDto
+import com.we.meet.data.api.dto.TaskParentCandidateDto
 import com.we.meet.data.api.dto.TaskGroupDto
 import com.we.meet.data.api.dto.TaskRecurrenceRequest
 import com.we.meet.data.api.dto.TaskStatisticsDto
@@ -34,6 +35,7 @@ import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
+import okhttp3.RequestBody
 
 interface TaskApi {
     @GET("api/v1.0/tasks/")
@@ -68,6 +70,18 @@ interface TaskApi {
 
     @GET("api/v1.0/tasks/{id}/subtree-impact/")
     suspend fun getSubtreeImpact(@Path("id") id: String): TaskSubtreeImpactDto
+
+    @GET("api/v1.0/tasks/{id}/parent-candidates/")
+    suspend fun listParentCandidates(
+        @Path("id") id: String,
+        @Query("q") query: String? = null,
+    ): List<TaskParentCandidateDto>
+
+    @PATCH("api/v1.0/tasks/{id}/")
+    suspend fun moveTask(
+        @Path("id") id: String,
+        @Body body: RequestBody,
+    ): TaskDto
 
     @DELETE("api/v1.0/tasks/{id}/")
     suspend fun deleteTask(
