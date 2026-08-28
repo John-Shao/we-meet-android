@@ -367,6 +367,8 @@
     <string name="task_repeat_save">Enregistrer la récurrence</string>
     <string name="task_repeat_stop">Arrêter la répétition</string>
     <string name="task_rename">Renommer</string>
+    <string name="task_move_to_group">Déplacer vers un groupe</string>
+    <string name="task_move_list_title">Déplacer « %1$s » vers un groupe</string>
     <string name="task_new_group_above">Créer un groupe au-dessus</string>
     <string name="task_new_group_below">Créer un groupe en dessous</string>
     <string name="task_manage_group_order">Gérer l’ordre des groupes</string>

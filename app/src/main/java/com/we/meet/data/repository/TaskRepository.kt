@@ -470,6 +470,16 @@ class TaskRepository(
         }
     }
 
+    suspend fun moveTaskList(id: String, listGroupId: String?): Result<TaskListDto> = runCatching {
+        withContext(Dispatchers.IO) {
+            api.moveTaskList(
+                id,
+                taskListGroupPatchJson(listGroupId)
+                    .toRequestBody("application/json".toMediaType()),
+            )
+        }
+    }
+
     suspend fun setTaskListArchived(id: String, archived: Boolean): Result<TaskListDto> =
         runCatching {
             withContext(Dispatchers.IO) {
@@ -631,6 +641,16 @@ internal fun taskSchedulePatchFields(startDate: String?, dueDate: String?): Map<
 internal fun taskSchedulePatchJson(startDate: String?, dueDate: String?): String =
     JSONObject().apply {
         taskSchedulePatchFields(startDate, dueDate).forEach { (key, value) ->
+            put(key, value ?: JSONObject.NULL)
+        }
+    }.toString()
+
+internal fun taskListGroupPatchFields(listGroupId: String?): Map<String, String?> =
+    mapOf("list_group_id" to listGroupId)
+
+internal fun taskListGroupPatchJson(listGroupId: String?): String =
+    JSONObject().apply {
+        taskListGroupPatchFields(listGroupId).forEach { (key, value) ->
             put(key, value ?: JSONObject.NULL)
         }
     }.toString()

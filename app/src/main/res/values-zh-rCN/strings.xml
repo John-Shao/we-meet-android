@@ -377,6 +377,8 @@
     <string name="task_repeat_save">保存重复规则</string>
     <string name="task_repeat_stop">停止重复</string>
     <string name="task_rename">重命名</string>
+    <string name="task_move_to_group">移动到分组</string>
+    <string name="task_move_list_title">移动“%1$s”到分组</string>
     <string name="task_new_group_above">在上方新建分组</string>
     <string name="task_new_group_below">在下方新建分组</string>
     <string name="task_manage_group_order">管理分组排序</string>

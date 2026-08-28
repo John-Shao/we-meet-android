@@ -43,4 +43,19 @@ class TaskRepositoryPayloadTest {
         assertNull(fields["start_date"])
         assertNull(fields["due_date"])
     }
+
+    @Test
+    fun taskListGroupPatchSerializesSelectedGroup() {
+        val fields = taskListGroupPatchFields("list-group-1")
+
+        assertEquals("list-group-1", fields["list_group_id"])
+    }
+
+    @Test
+    fun ungroupedTaskListExplicitlyClearsListGroup() {
+        val fields = taskListGroupPatchFields(null)
+
+        assertTrue(fields.containsKey("list_group_id"))
+        assertNull(fields["list_group_id"])
+    }
 }

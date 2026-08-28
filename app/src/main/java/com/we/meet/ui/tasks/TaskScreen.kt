@@ -218,6 +218,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     var listGroupInsertion by remember { mutableStateOf<TaskListGroupInsertion?>(null) }
     var orderListGroups by remember { mutableStateOf(false) }
     var listActionTarget by remember { mutableStateOf<TaskListItem?>(null) }
+    var moveListTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var shareListTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var memberPickerListTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var renameGroupTarget by remember { mutableStateOf<TaskListGroupItem?>(null) }
@@ -737,6 +738,14 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             } else {
                 null
             },
+            onMove = if (list.canManage) {
+                {
+                    listActionTarget = null
+                    moveListTarget = list
+                }
+            } else {
+                null
+            },
             onArchive = if (list.canArchive) {
                 {
                     listActionTarget = null
@@ -756,6 +765,18 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             onDelete = {
                 listActionTarget = null
                 deleteListTarget = list
+            },
+        )
+    }
+    moveListTarget?.let { list ->
+        MoveTaskListSheet(
+            list = list,
+            groups = ui.listGroups,
+            moving = ui.navigationMutating,
+            onDismiss = { moveListTarget = null },
+            onSelect = { groupId ->
+                moveListTarget = null
+                vm.moveTaskList(list, groupId)
             },
         )
     }
@@ -3624,6 +3645,7 @@ private fun NavigationActionSheet(
     onCreateBelow: (() -> Unit)? = null,
     onManageOrder: (() -> Unit)? = null,
     onShare: (() -> Unit)? = null,
+    onMove: (() -> Unit)? = null,
     onArchive: (() -> Unit)? = null,
     onLeave: (() -> Unit)? = null,
     onDelete: () -> Unit,
@@ -3657,6 +3679,9 @@ private fun NavigationActionSheet(
             onShare?.let {
                 SheetAction(Icons.Outlined.Groups, R.string.task_list_share, it)
             }
+            onMove?.let {
+                SheetAction(Icons.Outlined.FolderOpen, R.string.task_move_to_group, it)
+            }
             onArchive?.let {
                 SheetAction(Icons.Outlined.Archive, R.string.task_archive, it)
             }
@@ -3676,6 +3701,75 @@ private fun NavigationActionSheet(
                     danger = true,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun MoveTaskListSheet(
+    list: TaskListItem,
+    groups: List<TaskListGroupItem>,
+    moving: Boolean,
+    onDismiss: () -> Unit,
+    onSelect: (String?) -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl)
+                .padding(bottom = Dimens.SpaceXl),
+        ) {
+            Text(
+                stringResource(R.string.task_move_list_title, list.name),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(Dimens.SpaceM))
+            MoveTaskListGroupRow(
+                name = stringResource(R.string.task_ungrouped),
+                selected = list.groupId == null,
+                enabled = !moving,
+                onClick = { onSelect(null) },
+            )
+            groups.sortedBy(TaskListGroupItem::sortOrder).forEach { group ->
+                MoveTaskListGroupRow(
+                    name = group.name,
+                    selected = list.groupId == group.id,
+                    enabled = !moving,
+                    onClick = { onSelect(group.id) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MoveTaskListGroupRow(
+    name: String,
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(enabled = enabled, onClick = onClick)
+            .padding(vertical = Dimens.SpaceL),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Outlined.FolderOpen, null)
+        Spacer(Modifier.width(Dimens.SpaceL))
+        Text(
+            name,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (selected) {
+            Icon(
+                Icons.Filled.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }

@@ -193,6 +193,12 @@ interface TaskApi {
         @Body body: PatchTaskListRequest,
     ): TaskListDto
 
+    @PATCH("api/v1.0/task-lists/{id}/")
+    suspend fun moveTaskList(
+        @Path("id") id: String,
+        @Body body: RequestBody,
+    ): TaskListDto
+
     @DELETE("api/v1.0/task-lists/{id}/")
     suspend fun deleteTaskList(@Path("id") id: String)
 

@@ -377,6 +377,8 @@
     <string name="task_repeat_save">Save recurrence</string>
     <string name="task_repeat_stop">Stop repeating</string>
     <string name="task_rename">Rename</string>
+    <string name="task_move_to_group">Move to group</string>
+    <string name="task_move_list_title">Move “%1$s” to group</string>
     <string name="task_new_group_above">Create group above</string>
     <string name="task_new_group_below">Create group below</string>
     <string name="task_manage_group_order">Manage group order</string>

@@ -1133,6 +1133,33 @@ class TaskViewModel(
         }
     }
 
+    fun moveTaskList(list: TaskListItem, listGroupId: String?) {
+        if (
+            !list.canManage || list.groupId == listGroupId ||
+            _ui.value.navigationMutating
+        ) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.moveTaskList(list.id, listGroupId).fold(
+                onSuccess = { updated ->
+                    _ui.update { state ->
+                        state.copy(
+                            navigationMutating = false,
+                            taskLists = state.taskLists.map {
+                                if (it.id == list.id) updated.toItem() else it
+                            },
+                        )
+                    }
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(navigationMutating = false, failure = TaskFailure.Navigation)
+                    }
+                },
+            )
+        }
+    }
+
     fun loadArchivedTaskLists() {
         if (_ui.value.archivedListsLoading) return
         _ui.update { it.copy(archivedListsLoading = true, failure = null) }
