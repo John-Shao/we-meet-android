@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.TaskDto
+import com.we.meet.data.api.dto.TaskListDto
+import com.we.meet.data.api.dto.TaskListGroupDto
 import com.we.meet.data.repository.TaskRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -16,7 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class TaskFailure { Load, Save, Delete, Comment, Attachment, Share }
+enum class TaskFailure { Load, Save, Delete, Comment, Attachment, Share, Navigation }
 
 data class TaskUiState(
     val tasks: List<TaskItem> = emptyList(),
@@ -27,6 +29,7 @@ data class TaskUiState(
     val selectedListId: String? = null,
     val loading: Boolean = true,
     val creating: Boolean = false,
+    val navigationMutating: Boolean = false,
     val mutatingIds: Set<String> = emptySet(),
     val searchResults: List<TaskItem> = emptyList(),
     val searching: Boolean = false,
@@ -95,18 +98,9 @@ class TaskViewModel(
             repository.loadNavigation().onSuccess { navigation ->
                 _ui.update { state ->
                     state.copy(
-                        taskLists = navigation.lists.map { list ->
-                            TaskListItem(
-                                id = list.id,
-                                name = list.name,
-                                groupId = list.listGroup?.id,
-                                groupName = list.listGroup?.name,
-                                taskCount = list.taskCount,
-                                canCreateTasks = list.canCreateTasks,
-                            )
-                        },
+                        taskLists = navigation.lists.map(TaskListDto::toItem),
                         listGroups = navigation.groups.sortedBy { it.sortOrder }
-                            .map { TaskListGroupItem(it.id, it.name, it.sortOrder) },
+                            .map(TaskListGroupDto::toItem),
                     )
                 }
             }
@@ -408,12 +402,155 @@ class TaskViewModel(
         }
     }
 
-    fun createListGroup(name: String) {
-        if (name.isBlank()) return
+    fun createListGroup(name: String, onCreated: () -> Unit = {}) {
+        if (name.isBlank() || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
         viewModelScope.launch {
             repository.createListGroup(name.trim()).fold(
-                onSuccess = { refreshNavigation() },
-                onFailure = { _ui.update { it.copy(failure = TaskFailure.Save) } },
+                onSuccess = { created ->
+                    _ui.update {
+                        it.copy(
+                            navigationMutating = false,
+                            listGroups = (it.listGroups + created.toItem()).sortedBy(
+                                TaskListGroupItem::sortOrder,
+                            ),
+                        )
+                    }
+                    onCreated()
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(navigationMutating = false, failure = TaskFailure.Navigation)
+                    }
+                },
+            )
+        }
+    }
+
+    fun renameListGroup(group: TaskListGroupItem, name: String) {
+        if (!group.canManage || name.isBlank() || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.renameListGroup(group.id, name.trim()).fold(
+                onSuccess = { updated ->
+                    _ui.update { state ->
+                        state.copy(
+                            navigationMutating = false,
+                            listGroups = state.listGroups.map {
+                                if (it.id == group.id) updated.toItem() else it
+                            },
+                            taskLists = state.taskLists.map {
+                                if (it.groupId == group.id) it.copy(groupName = updated.name) else it
+                            },
+                        )
+                    }
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(navigationMutating = false, failure = TaskFailure.Navigation)
+                    }
+                },
+            )
+        }
+    }
+
+    fun deleteListGroup(group: TaskListGroupItem) {
+        if (!group.canManage || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.deleteListGroup(group.id).fold(
+                onSuccess = {
+                    _ui.update { state ->
+                        state.copy(
+                            navigationMutating = false,
+                            listGroups = state.listGroups.filterNot { it.id == group.id },
+                            taskLists = state.taskLists.map {
+                                if (it.groupId == group.id) {
+                                    it.copy(groupId = null, groupName = null)
+                                } else {
+                                    it
+                                }
+                            },
+                        )
+                    }
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(navigationMutating = false, failure = TaskFailure.Navigation)
+                    }
+                },
+            )
+        }
+    }
+
+    fun createTaskList(name: String, groupId: String?, onCreated: () -> Unit) {
+        if (name.isBlank() || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.createTaskList(name.trim(), groupId).fold(
+                onSuccess = { created ->
+                    _ui.update {
+                        it.copy(
+                            navigationMutating = false,
+                            taskLists = it.taskLists + created.toItem(),
+                        )
+                    }
+                    onCreated()
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(navigationMutating = false, failure = TaskFailure.Navigation)
+                    }
+                },
+            )
+        }
+    }
+
+    fun renameTaskList(list: TaskListItem, name: String) {
+        if (!list.canManage || name.isBlank() || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.renameTaskList(list.id, name.trim()).fold(
+                onSuccess = { updated ->
+                    _ui.update { state ->
+                        state.copy(
+                            navigationMutating = false,
+                            taskLists = state.taskLists.map {
+                                if (it.id == list.id) updated.toItem() else it
+                            },
+                        )
+                    }
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(navigationMutating = false, failure = TaskFailure.Navigation)
+                    }
+                },
+            )
+        }
+    }
+
+    fun deleteTaskList(list: TaskListItem) {
+        if (!list.canDelete || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.deleteTaskList(list.id).fold(
+                onSuccess = {
+                    val wasSelected = _ui.value.selectedListId == list.id
+                    _ui.update { state ->
+                        state.copy(
+                            navigationMutating = false,
+                            selectedListId = state.selectedListId.takeUnless { it == list.id },
+                            taskLists = state.taskLists.filterNot { it.id == list.id },
+                        )
+                    }
+                    if (wasSelected) refresh()
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(navigationMutating = false, failure = TaskFailure.Navigation)
+                    }
+                },
             )
         }
     }
@@ -459,6 +596,24 @@ private fun TaskDto.toItem(): TaskItem {
         canCreateSubtasks = canCreateSubtasks,
     )
 }
+
+private fun TaskListDto.toItem() = TaskListItem(
+    id = id,
+    name = name,
+    groupId = listGroup?.id,
+    groupName = listGroup?.name,
+    taskCount = taskCount,
+    canCreateTasks = canCreateTasks,
+    canManage = canManage,
+    canDelete = canDelete,
+)
+
+private fun TaskListGroupDto.toItem() = TaskListGroupItem(
+    id = id,
+    name = name,
+    sortOrder = sortOrder,
+    canManage = canManage,
+)
 
 private fun List<TaskItem>.replace(id: String, replacement: TaskItem): List<TaskItem> =
     map { if (it.id == id) replacement else it }

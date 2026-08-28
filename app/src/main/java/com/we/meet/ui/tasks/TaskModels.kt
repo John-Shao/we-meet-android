@@ -57,12 +57,15 @@ data class TaskListItem(
     val groupName: String? = null,
     val taskCount: Int = 0,
     val canCreateTasks: Boolean = false,
+    val canManage: Boolean = false,
+    val canDelete: Boolean = false,
 )
 
 data class TaskListGroupItem(
     val id: String,
     val name: String,
     val sortOrder: Int = 0,
+    val canManage: Boolean = false,
 )
 
 data class TaskFilter(

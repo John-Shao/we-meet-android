@@ -79,4 +79,47 @@ class TaskDtosTest {
         assertEquals("Alex", attachment.uploader?.displayName)
         assertEquals("https://storage.example.test/signed", upload.policy)
     }
+
+    @Test
+    fun taskListNavigationMapsPermissionsAndGroup() {
+        val listJson = """
+            {
+              "id":"list-1",
+              "name":"Mobile",
+              "list_group":{"id":"group-1","name":"Product","sort_order":2},
+              "can_create_tasks":true,
+              "can_manage":true,
+              "can_delete":true,
+              "task_count":8
+            }
+        """.trimIndent()
+        val groupJson = """
+            {
+              "id":"group-1",
+              "name":"Product",
+              "sort_order":2,
+              "list_count":1,
+              "can_manage":true
+            }
+        """.trimIndent()
+
+        val list = moshi.adapter(TaskListDto::class.java).fromJson(listJson)!!
+        val group = moshi.adapter(TaskListGroupDto::class.java).fromJson(groupJson)!!
+
+        assertEquals("Product", list.listGroup?.name)
+        assertEquals(8, list.taskCount)
+        assertTrue(list.canManage)
+        assertTrue(list.canDelete)
+        assertTrue(group.canManage)
+    }
+
+    @Test
+    fun createTaskListRequestUsesBackendGroupField() {
+        val json = moshi.adapter(CreateTaskListRequest::class.java).toJson(
+            CreateTaskListRequest(name = "Mobile", listGroupId = "group-1"),
+        )
+
+        assertTrue(json.contains("\"list_group_id\":\"group-1\""))
+        assertTrue(json.contains("\"name\":\"Mobile\""))
+    }
 }

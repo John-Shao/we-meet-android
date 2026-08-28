@@ -78,6 +78,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -142,6 +144,13 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     var showDrawer by remember { mutableStateOf(false) }
     var showFilter by remember { mutableStateOf(false) }
     var showNewGroup by remember { mutableStateOf(false) }
+    var showNewList by remember { mutableStateOf(false) }
+    var groupActionTarget by remember { mutableStateOf<TaskListGroupItem?>(null) }
+    var listActionTarget by remember { mutableStateOf<TaskListItem?>(null) }
+    var renameGroupTarget by remember { mutableStateOf<TaskListGroupItem?>(null) }
+    var renameListTarget by remember { mutableStateOf<TaskListItem?>(null) }
+    var deleteGroupTarget by remember { mutableStateOf<TaskListGroupItem?>(null) }
+    var deleteListTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var showNewSubtask by remember { mutableStateOf(false) }
     var shareTarget by remember { mutableStateOf<TaskItem?>(null) }
     var showShareGroup by remember { mutableStateOf(false) }
@@ -163,6 +172,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
         TaskFailure.Comment -> stringResource(R.string.task_comment_failed)
         TaskFailure.Attachment -> stringResource(R.string.task_attachment_failed)
         TaskFailure.Share -> stringResource(R.string.task_share_failed)
+        TaskFailure.Navigation -> stringResource(R.string.task_navigation_update_failed)
         null -> ""
     }
     val retryText = stringResource(R.string.task_retry)
@@ -276,6 +286,9 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                     showDrawer = false
                 },
                 onNewGroup = { showNewGroup = true },
+                onNewList = { showNewList = true },
+                onGroupAction = { groupActionTarget = it },
+                onListAction = { listActionTarget = it },
             )
         }
         SnackbarHost(snackbar, modifier = Modifier.align(Alignment.BottomCenter))
@@ -312,10 +325,94 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
 
     if (showNewGroup) {
         NewGroupDialog(
+            saving = ui.navigationMutating,
             onDismiss = { showNewGroup = false },
             onCreate = {
-                vm.createListGroup(it)
-                showNewGroup = false
+                vm.createListGroup(it) { showNewGroup = false }
+            },
+        )
+    }
+    if (showNewList) {
+        NewTaskListDialog(
+            groups = ui.listGroups,
+            saving = ui.navigationMutating,
+            onDismiss = { showNewList = false },
+            onCreate = { name, groupId ->
+                vm.createTaskList(name, groupId) { showNewList = false }
+            },
+        )
+    }
+    groupActionTarget?.let { group ->
+        NavigationActionSheet(
+            title = group.name,
+            canDelete = group.canManage,
+            onDismiss = { groupActionTarget = null },
+            onRename = {
+                groupActionTarget = null
+                renameGroupTarget = group
+            },
+            onDelete = {
+                groupActionTarget = null
+                deleteGroupTarget = group
+            },
+        )
+    }
+    listActionTarget?.let { list ->
+        NavigationActionSheet(
+            title = list.name,
+            canDelete = list.canDelete,
+            onDismiss = { listActionTarget = null },
+            onRename = {
+                listActionTarget = null
+                renameListTarget = list
+            },
+            onDelete = {
+                listActionTarget = null
+                deleteListTarget = list
+            },
+        )
+    }
+    renameGroupTarget?.let { group ->
+        RenameNavigationDialog(
+            initialName = group.name,
+            saving = ui.navigationMutating,
+            onDismiss = { renameGroupTarget = null },
+            onConfirm = { name ->
+                vm.renameListGroup(group, name)
+                renameGroupTarget = null
+            },
+        )
+    }
+    renameListTarget?.let { list ->
+        RenameNavigationDialog(
+            initialName = list.name,
+            saving = ui.navigationMutating,
+            onDismiss = { renameListTarget = null },
+            onConfirm = { name ->
+                vm.renameTaskList(list, name)
+                renameListTarget = null
+            },
+        )
+    }
+    deleteGroupTarget?.let { group ->
+        DeleteNavigationDialog(
+            message = stringResource(R.string.task_delete_group_confirm, group.name),
+            deleting = ui.navigationMutating,
+            onDismiss = { deleteGroupTarget = null },
+            onConfirm = {
+                vm.deleteListGroup(group)
+                deleteGroupTarget = null
+            },
+        )
+    }
+    deleteListTarget?.let { list ->
+        DeleteNavigationDialog(
+            message = stringResource(R.string.task_delete_list_confirm, list.name),
+            deleting = ui.navigationMutating,
+            onDismiss = { deleteListTarget = null },
+            onConfirm = {
+                vm.deleteTaskList(list)
+                deleteListTarget = null
             },
         )
     }
@@ -759,6 +856,9 @@ private fun TaskNavigationDrawer(
     onSelectView: (TaskView) -> Unit,
     onSelectList: (TaskListItem) -> Unit,
     onNewGroup: () -> Unit,
+    onNewList: () -> Unit,
+    onGroupAction: (TaskListGroupItem) -> Unit,
+    onListAction: (TaskListItem) -> Unit,
 ) {
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.38f)).clickable(onClick = onDismiss)) {
         Surface(
@@ -808,17 +908,23 @@ private fun TaskNavigationDrawer(
                         Icon(Icons.Outlined.FolderOpen, null)
                         Spacer(Modifier.width(Dimens.SpaceM))
                         Text(stringResource(R.string.task_lists), fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                        IconButton(onClick = onNewGroup) { Icon(Icons.Filled.Add, stringResource(R.string.task_new_group)) }
+                        IconButton(onClick = onNewList) {
+                            Icon(Icons.Filled.Add, stringResource(R.string.task_new_list))
+                        }
                     }
                 }
                 val groupedIds = listGroups.map(TaskListGroupItem::id).toSet()
                 listGroups.forEach { group ->
                     item {
                         DrawerGroup(
-                            group.name,
-                            taskLists.filter { it.groupId == group.id },
-                            selectedList,
-                            onSelectList,
+                            title = group.name,
+                            lists = taskLists.filter { it.groupId == group.id },
+                            selectedList = selectedList,
+                            onSelectList = onSelectList,
+                            onGroupAction = { onGroupAction(group) }.takeIf {
+                                group.canManage
+                            },
+                            onListAction = onListAction,
                         )
                     }
                 }
@@ -826,10 +932,11 @@ private fun TaskNavigationDrawer(
                 if (ungrouped.isNotEmpty()) {
                     item {
                         DrawerGroup(
-                            stringResource(R.string.task_ungrouped),
-                            ungrouped,
-                            selectedList,
-                            onSelectList,
+                            title = stringResource(R.string.task_ungrouped),
+                            lists = ungrouped,
+                            selectedList = selectedList,
+                            onSelectList = onSelectList,
+                            onListAction = onListAction,
                         )
                     }
                 }
@@ -865,6 +972,8 @@ private fun DrawerGroup(
     lists: List<TaskListItem>,
     selectedList: String?,
     onSelectList: (TaskListItem) -> Unit,
+    onGroupAction: (() -> Unit)? = null,
+    onListAction: (TaskListItem) -> Unit,
 ) {
     Column(Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs)) {
         Row(
@@ -874,7 +983,11 @@ private fun DrawerGroup(
             Icon(Icons.Outlined.ExpandMore, null, modifier = Modifier.size(Dimens.SpaceXl))
             Spacer(Modifier.width(Dimens.SpaceS))
             Text(title, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-            Icon(Icons.Outlined.MoreHoriz, null)
+            if (onGroupAction != null) {
+                IconButton(onClick = onGroupAction) {
+                    Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.task_more))
+                }
+            }
         }
         lists.forEach { list ->
             val selected = selectedList == list.name
@@ -883,11 +996,24 @@ private fun DrawerGroup(
                 shape = RoundedCornerShape(Dimens.SpaceM),
                 modifier = Modifier.fillMaxWidth().clickable { onSelectList(list) },
             ) {
-                Row(Modifier.padding(start = Dimens.SpaceXxxl, end = Dimens.SpaceM, top = Dimens.SpaceM, bottom = Dimens.SpaceM)) {
-                        Icon(Icons.AutoMirrored.Outlined.ListAlt, null, tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(
+                    Modifier.padding(
+                        start = Dimens.SpaceXxxl,
+                        end = Dimens.SpaceS,
+                        top = Dimens.SpaceS,
+                        bottom = Dimens.SpaceS,
+                    ),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.AutoMirrored.Outlined.ListAlt, null, tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.width(Dimens.SpaceM))
                     Text(list.name, color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
                     Text(list.taskCount.toString(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (list.canManage || list.canDelete) {
+                        IconButton(onClick = { onListAction(list) }) {
+                            Icon(Icons.Outlined.MoreVert, stringResource(R.string.task_more))
+                        }
+                    }
                 }
             }
         }
@@ -1453,7 +1579,11 @@ private fun SheetAction(icon: ImageVector, labelRes: Int, onClick: () -> Unit, d
 }
 
 @Composable
-private fun NewGroupDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
+private fun NewGroupDialog(
+    saving: Boolean,
+    onDismiss: () -> Unit,
+    onCreate: (String) -> Unit,
+) {
     var name by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1466,8 +1596,180 @@ private fun NewGroupDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
                 singleLine = true,
             )
         },
-        confirmButton = { TextButton(onClick = { onCreate(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.task_confirm)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.task_cancel)) } },
+        confirmButton = {
+            TextButton(
+                onClick = { onCreate(name) },
+                enabled = name.isNotBlank() && !saving,
+            ) {
+                Text(stringResource(R.string.task_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !saving) {
+                Text(stringResource(R.string.task_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun NewTaskListDialog(
+    groups: List<TaskListGroupItem>,
+    saving: Boolean,
+    onDismiss: () -> Unit,
+    onCreate: (String, String?) -> Unit,
+) {
+    var name by remember { mutableStateOf("") }
+    var selectedGroupId by remember(groups) { mutableStateOf<String?>(null) }
+    var groupMenuExpanded by remember { mutableStateOf(false) }
+    val selectedGroupName = groups.firstOrNull { it.id == selectedGroupId }?.name
+        ?: stringResource(R.string.task_ungrouped)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.task_new_list)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    placeholder = { Text(stringResource(R.string.task_list_name_hint)) },
+                    singleLine = true,
+                )
+                Box {
+                    OutlinedButton(onClick = { groupMenuExpanded = true }) {
+                        Text(stringResource(R.string.task_choose_group, selectedGroupName))
+                        Spacer(Modifier.width(Dimens.SpaceS))
+                        Icon(Icons.Outlined.ExpandMore, null)
+                    }
+                    DropdownMenu(
+                        expanded = groupMenuExpanded,
+                        onDismissRequest = { groupMenuExpanded = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.task_ungrouped)) },
+                            onClick = {
+                                selectedGroupId = null
+                                groupMenuExpanded = false
+                            },
+                        )
+                        groups.forEach { group ->
+                            DropdownMenuItem(
+                                text = { Text(group.name) },
+                                onClick = {
+                                    selectedGroupId = group.id
+                                    groupMenuExpanded = false
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onCreate(name, selectedGroupId) },
+                enabled = name.isNotBlank() && !saving,
+            ) {
+                Text(stringResource(R.string.task_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !saving) {
+                Text(stringResource(R.string.task_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun NavigationActionSheet(
+    title: String,
+    canDelete: Boolean,
+    onDismiss: () -> Unit,
+    onRename: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.fillMaxWidth().padding(bottom = Dimens.SpaceXl)) {
+            Text(
+                title,
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            SheetAction(Icons.Outlined.Edit, R.string.task_rename, onRename)
+            if (canDelete) {
+                SheetAction(
+                    Icons.Filled.DeleteOutline,
+                    R.string.task_delete_navigation_item,
+                    onDelete,
+                    danger = true,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RenameNavigationDialog(
+    initialName: String,
+    saving: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var name by remember(initialName) { mutableStateOf(initialName) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.task_rename)) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                singleLine = true,
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name) },
+                enabled = name.isNotBlank() && name.trim() != initialName && !saving,
+            ) {
+                Text(stringResource(R.string.task_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !saving) {
+                Text(stringResource(R.string.task_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun DeleteNavigationDialog(
+    message: String,
+    deleting: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.task_delete_navigation_item)) },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = !deleting) {
+                Text(
+                    stringResource(R.string.task_delete_navigation_item),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !deleting) {
+                Text(stringResource(R.string.task_cancel))
+            }
+        },
     )
 }
 

@@ -307,6 +307,13 @@
     <string name="task_default_reminder_desc">Standarderinnerung für neue Aufgaben</string>
     <string name="task_30_minutes_before">30 Min. vorher</string>
     <string name="task_new_group">Neue Gruppe</string>
+    <string name="task_new_list">Neue Liste</string>
+    <string name="task_list_name_hint">Listenname</string>
+    <string name="task_choose_group">Gruppe: %1$s</string>
+    <string name="task_delete_navigation_item">Löschen</string>
+    <string name="task_delete_group_confirm">„%1$s“ löschen? Die Listen werden nach „Nicht gruppiert“ verschoben.</string>
+    <string name="task_delete_list_confirm">„%1$s“ löschen? Die Aufgaben werden eigenständig.</string>
+    <string name="task_navigation_update_failed">Die Aufgabenlisten-Navigation konnte nicht aktualisiert werden.</string>
     <string name="task_group_name_hint">Gruppenname</string>
     <string name="task_confirm">Bestätigen</string>
     <string name="task_cancel">Abbrechen</string>

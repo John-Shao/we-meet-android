@@ -8,8 +8,11 @@ import com.we.meet.data.api.dto.CreateFileRequest
 import com.we.meet.data.api.dto.CreateTaskAttachmentRequest
 import com.we.meet.data.api.dto.CreateTaskCommentRequest
 import com.we.meet.data.api.dto.CreateTaskListGroupRequest
+import com.we.meet.data.api.dto.CreateTaskListRequest
 import com.we.meet.data.api.dto.CreateTaskRequest
 import com.we.meet.data.api.dto.PatchTaskRequest
+import com.we.meet.data.api.dto.PatchTaskListGroupRequest
+import com.we.meet.data.api.dto.PatchTaskListRequest
 import com.we.meet.data.api.dto.TaskCommentDto
 import com.we.meet.data.api.dto.TaskDto
 import com.we.meet.data.api.dto.TaskAttachmentDto
@@ -168,6 +171,34 @@ class TaskRepository(
         withContext(Dispatchers.IO) {
             api.createTaskListGroup(CreateTaskListGroupRequest(name))
         }
+    }
+
+    suspend fun renameListGroup(id: String, name: String): Result<TaskListGroupDto> =
+        runCatching {
+            withContext(Dispatchers.IO) {
+                api.patchTaskListGroup(id, PatchTaskListGroupRequest(name))
+            }
+        }
+
+    suspend fun deleteListGroup(id: String): Result<Unit> = runCatching {
+        withContext(Dispatchers.IO) { api.deleteTaskListGroup(id) }
+    }
+
+    suspend fun createTaskList(name: String, listGroupId: String?): Result<TaskListDto> =
+        runCatching {
+            withContext(Dispatchers.IO) {
+                api.createTaskList(CreateTaskListRequest(name = name, listGroupId = listGroupId))
+            }
+        }
+
+    suspend fun renameTaskList(id: String, name: String): Result<TaskListDto> = runCatching {
+        withContext(Dispatchers.IO) {
+            api.patchTaskList(id, PatchTaskListRequest(name = name))
+        }
+    }
+
+    suspend fun deleteTaskList(id: String): Result<Unit> = runCatching {
+        withContext(Dispatchers.IO) { api.deleteTaskList(id) }
     }
 
     private data class AttachmentMetadata(

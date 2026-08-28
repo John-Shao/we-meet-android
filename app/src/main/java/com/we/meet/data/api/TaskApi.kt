@@ -2,12 +2,15 @@ package com.we.meet.data.api
 
 import com.we.meet.data.api.dto.CreateTaskCommentRequest
 import com.we.meet.data.api.dto.CreateTaskListGroupRequest
+import com.we.meet.data.api.dto.CreateTaskListRequest
 import com.we.meet.data.api.dto.CreateTaskAttachmentRequest
 import com.we.meet.data.api.dto.CreateTaskRequest
 import com.we.meet.data.api.dto.CreateFileRequest
 import com.we.meet.data.api.dto.FileUploadDto
 import com.we.meet.data.api.dto.PagedTasksDto
 import com.we.meet.data.api.dto.PatchTaskRequest
+import com.we.meet.data.api.dto.PatchTaskListGroupRequest
+import com.we.meet.data.api.dto.PatchTaskListRequest
 import com.we.meet.data.api.dto.TaskCommentDto
 import com.we.meet.data.api.dto.TaskDto
 import com.we.meet.data.api.dto.TaskListDto
@@ -101,9 +104,30 @@ interface TaskApi {
     @GET("api/v1.0/task-lists/")
     suspend fun listTaskLists(): List<TaskListDto>
 
+    @POST("api/v1.0/task-lists/")
+    suspend fun createTaskList(@Body body: CreateTaskListRequest): TaskListDto
+
+    @PATCH("api/v1.0/task-lists/{id}/")
+    suspend fun patchTaskList(
+        @Path("id") id: String,
+        @Body body: PatchTaskListRequest,
+    ): TaskListDto
+
+    @DELETE("api/v1.0/task-lists/{id}/")
+    suspend fun deleteTaskList(@Path("id") id: String)
+
     @GET("api/v1.0/task-list-groups/")
     suspend fun listTaskListGroups(): List<TaskListGroupDto>
 
     @POST("api/v1.0/task-list-groups/")
     suspend fun createTaskListGroup(@Body body: CreateTaskListGroupRequest): TaskListGroupDto
+
+    @PATCH("api/v1.0/task-list-groups/{id}/")
+    suspend fun patchTaskListGroup(
+        @Path("id") id: String,
+        @Body body: PatchTaskListGroupRequest,
+    ): TaskListGroupDto
+
+    @DELETE("api/v1.0/task-list-groups/{id}/")
+    suspend fun deleteTaskListGroup(@Path("id") id: String)
 }

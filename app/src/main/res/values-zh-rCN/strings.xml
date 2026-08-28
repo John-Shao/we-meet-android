@@ -317,6 +317,13 @@
     <string name="task_default_reminder_desc">设置新建任务的默认提醒时间</string>
     <string name="task_30_minutes_before">截止前 30 分钟</string>
     <string name="task_new_group">新建分组</string>
+    <string name="task_new_list">新建清单</string>
+    <string name="task_list_name_hint">清单名称</string>
+    <string name="task_choose_group">分组：%1$s</string>
+    <string name="task_delete_navigation_item">删除</string>
+    <string name="task_delete_group_confirm">删除“%1$s”？其中的清单将移至未分组。</string>
+    <string name="task_delete_list_confirm">删除“%1$s”？其中的任务将变为独立任务。</string>
+    <string name="task_navigation_update_failed">无法更新任务清单导航。</string>
     <string name="task_group_name_hint">输入分组名称</string>
     <string name="task_confirm">确定</string>
     <string name="task_cancel">取消</string>

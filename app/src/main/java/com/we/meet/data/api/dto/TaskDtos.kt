@@ -48,8 +48,24 @@ data class TaskListDto(
     val color: String = "grey",
     @Json(name = "list_group") val listGroup: TaskListGroupSummaryDto? = null,
     @Json(name = "can_create_tasks") val canCreateTasks: Boolean = false,
+    @Json(name = "can_manage") val canManage: Boolean = false,
+    @Json(name = "can_delete") val canDelete: Boolean = false,
     @Json(name = "task_count") val taskCount: Int = 0,
     val groups: List<TaskGroupDto> = emptyList(),
+)
+
+@JsonClass(generateAdapter = true)
+data class CreateTaskListRequest(
+    val name: String,
+    val description: String = "",
+    val color: String = "blue",
+    @Json(name = "list_group_id") val listGroupId: String? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class PatchTaskListRequest(
+    val name: String? = null,
+    @Json(name = "list_group_id") val listGroupId: String? = null,
 )
 
 @JsonClass(generateAdapter = true)
@@ -138,6 +154,9 @@ data class CreateTaskCommentRequest(val content: String)
 
 @JsonClass(generateAdapter = true)
 data class CreateTaskListGroupRequest(val name: String)
+
+@JsonClass(generateAdapter = true)
+data class PatchTaskListGroupRequest(val name: String)
 
 @JsonClass(generateAdapter = true)
 data class TaskAttachmentDto(
