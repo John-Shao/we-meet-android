@@ -516,6 +516,47 @@ class TaskViewModel(
         }
     }
 
+    fun setRecurrence(item: TaskItem, frequency: TaskRecurrenceFrequency?) {
+        val canManage = item.recurrence?.canManage ?: (item.creatorId == selfUserId)
+        if (!canManage || item.parentId != null || item.id in _ui.value.mutatingIds) return
+        if (frequency == null && item.recurrence?.active != true) return
+        _ui.update { it.copy(mutatingIds = it.mutatingIds + item.id, failure = null) }
+        viewModelScope.launch {
+            val request = if (frequency == null) {
+                repository.stopRecurrence(item.id)
+            } else {
+                repository.setRecurrence(
+                    taskId = item.id,
+                    frequency = frequency.apiValue,
+                    interval = item.recurrence?.interval ?: 1,
+                    endDate = item.recurrence?.endDate,
+                    maxOccurrences = item.recurrence?.maxOccurrences,
+                )
+            }
+            request.fold(
+                onSuccess = { updated ->
+                    val confirmed = updated.toItem()
+                    _ui.update {
+                        it.copy(
+                            tasks = it.tasks.replace(item.id, confirmed),
+                            searchResults = it.searchResults.replace(item.id, confirmed),
+                            detail = it.detail?.replace(item.id, confirmed),
+                            mutatingIds = it.mutatingIds - item.id,
+                        )
+                    }
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(
+                            mutatingIds = it.mutatingIds - item.id,
+                            failure = TaskFailure.Save,
+                        )
+                    }
+                },
+            )
+        }
+    }
+
     fun uploadAttachment(task: TaskItem, uri: Uri) {
         if (ui.value.detail?.uploadingAttachment == true) return
         _ui.update {
@@ -899,6 +940,7 @@ private fun TaskDto.toItem(): TaskItem {
     val people = assignees.ifEmpty { listOfNotNull(assignee) }
     return TaskItem(
         id = id,
+        creatorId = creator.id,
         title = title,
         description = description,
         assignee = people.joinToString { it.displayName }.ifBlank { creator.displayName },
@@ -933,6 +975,24 @@ private fun TaskDto.toItem(): TaskItem {
         startDate = startDate,
         dueDate = dueDate,
         groupId = group?.id,
+        parentId = parentId,
+        recurrence = recurrence?.let { rule ->
+            TaskRecurrenceItem(
+                frequency = when (rule.frequency) {
+                    "weekly" -> TaskRecurrenceFrequency.Weekly
+                    "monthly" -> TaskRecurrenceFrequency.Monthly
+                    else -> TaskRecurrenceFrequency.Daily
+                },
+                interval = rule.interval,
+                endDate = rule.endDate,
+                maxOccurrences = rule.maxOccurrences,
+                generatedCount = rule.generatedCount,
+                nextOccurrenceDate = rule.nextOccurrenceDate,
+                active = rule.isActive,
+                sequence = rule.sequence,
+                canManage = rule.canManage,
+            )
+        },
     )
 }
 

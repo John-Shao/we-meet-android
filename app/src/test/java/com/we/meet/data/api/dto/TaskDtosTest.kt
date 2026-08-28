@@ -248,4 +248,45 @@ class TaskDtosTest {
 
         assertEquals("{\"task_ids\":[\"task-2\",\"task-1\"]}", json)
     }
+
+    @Test
+    fun taskRecurrenceMapsAndRequestUsesBackendFields() {
+        val taskJson = """
+            {
+              "id":"task-1",
+              "title":"Weekly review",
+              "creator":{"id":"user-1","full_name":"Alex"},
+              "recurrence":{
+                "rule_id":"rule-1",
+                "frequency":"weekly",
+                "interval":2,
+                "timezone":"Asia/Shanghai",
+                "end_date":"2026-12-31",
+                "max_occurrences":null,
+                "generated_count":3,
+                "next_occurrence_date":"2026-09-11",
+                "is_active":true,
+                "last_error":"",
+                "sequence":2,
+                "can_manage":true
+              }
+            }
+        """.trimIndent()
+        val requestJson = moshi.adapter(TaskRecurrenceRequest::class.java).toJson(
+            TaskRecurrenceRequest(
+                frequency = "monthly",
+                interval = 2,
+                endDate = "2026-12-31",
+            ),
+        )
+
+        val recurrence = moshi.adapter(TaskDto::class.java).fromJson(taskJson)!!.recurrence!!
+        assertEquals("weekly", recurrence.frequency)
+        assertEquals(2, recurrence.interval)
+        assertEquals("2026-09-11", recurrence.nextOccurrenceDate)
+        assertTrue(recurrence.canManage)
+        assertTrue(requestJson.contains("\"frequency\":\"monthly\""))
+        assertTrue(requestJson.contains("\"end_date\":\"2026-12-31\""))
+        assertTrue(requestJson.contains("\"max_occurrences\":null").not())
+    }
 }

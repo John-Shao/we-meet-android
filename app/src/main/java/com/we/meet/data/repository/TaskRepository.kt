@@ -24,6 +24,7 @@ import com.we.meet.data.api.dto.TaskActivityDto
 import com.we.meet.data.api.dto.TaskListDto
 import com.we.meet.data.api.dto.TaskListGroupDto
 import com.we.meet.data.api.dto.TaskGroupDto
+import com.we.meet.data.api.dto.TaskRecurrenceRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -224,6 +225,31 @@ class TaskRepository(
         withContext(Dispatchers.IO) {
             api.reorderSubtasks(parentId, ReorderTaskSubtasksRequest(orderedIds))
         }
+    }
+
+    suspend fun setRecurrence(
+        taskId: String,
+        frequency: String,
+        interval: Int,
+        endDate: String?,
+        maxOccurrences: Int?,
+    ): Result<TaskDto> =
+        runCatching {
+            withContext(Dispatchers.IO) {
+                api.setRecurrence(
+                    taskId,
+                    TaskRecurrenceRequest(
+                        frequency = frequency,
+                        interval = interval,
+                        endDate = endDate,
+                        maxOccurrences = maxOccurrences,
+                    ),
+                )
+            }
+        }
+
+    suspend fun stopRecurrence(taskId: String): Result<TaskDto> = runCatching {
+        withContext(Dispatchers.IO) { api.stopRecurrence(taskId) }
     }
 
     suspend fun uploadAttachment(taskId: String, uri: Uri): Result<TaskAttachmentDto> =

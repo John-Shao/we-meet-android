@@ -6,6 +6,24 @@ enum class TaskStatus { Todo, Done }
 
 enum class TaskPriority { None, Low, Medium, High, Urgent }
 
+enum class TaskRecurrenceFrequency(val apiValue: String) {
+    Daily("daily"),
+    Weekly("weekly"),
+    Monthly("monthly"),
+}
+
+data class TaskRecurrenceItem(
+    val frequency: TaskRecurrenceFrequency,
+    val interval: Int = 1,
+    val endDate: String? = null,
+    val maxOccurrences: Int? = null,
+    val generatedCount: Int = 0,
+    val nextOccurrenceDate: String? = null,
+    val active: Boolean = false,
+    val sequence: Int? = null,
+    val canManage: Boolean = false,
+)
+
 enum class TaskSearchStatus(val apiValue: String) {
     All("all"),
     Open("open"),
@@ -73,6 +91,9 @@ data class TaskItem(
     val startDate: String? = null,
     val dueDate: String? = null,
     val groupId: String? = null,
+    val creatorId: String = "",
+    val parentId: String? = null,
+    val recurrence: TaskRecurrenceItem? = null,
 )
 
 data class TaskCommentItem(

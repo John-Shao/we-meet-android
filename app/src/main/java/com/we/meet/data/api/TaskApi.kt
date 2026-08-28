@@ -20,6 +20,7 @@ import com.we.meet.data.api.dto.TaskDto
 import com.we.meet.data.api.dto.TaskListDto
 import com.we.meet.data.api.dto.TaskListGroupDto
 import com.we.meet.data.api.dto.TaskGroupDto
+import com.we.meet.data.api.dto.TaskRecurrenceRequest
 import com.we.meet.data.api.dto.TaskStatisticsDto
 import com.we.meet.data.api.dto.TaskSubtreeImpactDto
 import com.we.meet.data.api.dto.TaskAttachmentDto
@@ -112,6 +113,15 @@ interface TaskApi {
         @Path("id") id: String,
         @Body body: ReorderTaskSubtasksRequest,
     ): List<TaskDto>
+
+    @POST("api/v1.0/tasks/{id}/recurrence/")
+    suspend fun setRecurrence(
+        @Path("id") id: String,
+        @Body body: TaskRecurrenceRequest,
+    ): TaskDto
+
+    @DELETE("api/v1.0/tasks/{id}/recurrence/")
+    suspend fun stopRecurrence(@Path("id") id: String): TaskDto
 
     @GET("api/v1.0/tasks/{id}/attachments/")
     suspend fun listAttachments(@Path("id") id: String): List<TaskAttachmentDto>

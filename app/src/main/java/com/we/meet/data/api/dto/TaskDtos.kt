@@ -96,6 +96,22 @@ data class TaskProgressDto(
 )
 
 @JsonClass(generateAdapter = true)
+data class TaskRecurrenceDto(
+    @Json(name = "rule_id") val ruleId: String = "",
+    val frequency: String = "daily",
+    val interval: Int = 1,
+    val timezone: String = "UTC",
+    @Json(name = "end_date") val endDate: String? = null,
+    @Json(name = "max_occurrences") val maxOccurrences: Int? = null,
+    @Json(name = "generated_count") val generatedCount: Int = 0,
+    @Json(name = "next_occurrence_date") val nextOccurrenceDate: String? = null,
+    @Json(name = "is_active") val isActive: Boolean = false,
+    @Json(name = "last_error") val lastError: String = "",
+    val sequence: Int? = null,
+    @Json(name = "can_manage") val canManage: Boolean = false,
+)
+
+@JsonClass(generateAdapter = true)
 data class TaskDto(
     val id: String,
     val title: String,
@@ -108,6 +124,7 @@ data class TaskDto(
     val priority: String = "medium",
     @Json(name = "task_list") val taskList: TaskPlacementDto? = null,
     val group: TaskPlacementDto? = null,
+    @Json(name = "parent_id") val parentId: String? = null,
     @Json(name = "descendant_progress") val descendantProgress: TaskProgressDto = TaskProgressDto(),
     @Json(name = "start_date") val startDate: String? = null,
     @Json(name = "due_date") val dueDate: String? = null,
@@ -120,6 +137,7 @@ data class TaskDto(
     @Json(name = "can_create_subtasks") val canCreateSubtasks: Boolean = false,
     @Json(name = "is_following") val isFollowing: Boolean = false,
     @Json(name = "time_state") val timeState: String? = null,
+    val recurrence: TaskRecurrenceDto? = null,
 )
 
 @JsonClass(generateAdapter = true)
@@ -170,6 +188,14 @@ data class PatchTaskRequest(
 @JsonClass(generateAdapter = true)
 data class ReorderTaskSubtasksRequest(
     @Json(name = "task_ids") val taskIds: List<String>,
+)
+
+@JsonClass(generateAdapter = true)
+data class TaskRecurrenceRequest(
+    val frequency: String,
+    val interval: Int = 1,
+    @Json(name = "end_date") val endDate: String? = null,
+    @Json(name = "max_occurrences") val maxOccurrences: Int? = null,
 )
 
 @JsonClass(generateAdapter = true)

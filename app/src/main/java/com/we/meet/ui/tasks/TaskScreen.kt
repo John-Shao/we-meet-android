@@ -71,6 +71,7 @@ import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material.icons.outlined.PersonOutline
+import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Share
@@ -169,6 +170,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     var editContentTarget by remember { mutableStateOf<TaskItem?>(null) }
     var dueDateTarget by remember { mutableStateOf<TaskItem?>(null) }
     var priorityTarget by remember { mutableStateOf<TaskItem?>(null) }
+    var recurrenceTarget by remember { mutableStateOf<TaskItem?>(null) }
     var assigneeTarget by remember { mutableStateOf<TaskItem?>(null) }
     var followerTarget by remember { mutableStateOf<TaskItem?>(null) }
     var showNewSubtask by remember { mutableStateOf(false) }
@@ -294,6 +296,9 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                     onEditContent = { editContentTarget = task },
                     onEditDueDate = { dueDateTarget = task },
                     onEditPriority = { priorityTarget = task },
+                    canManageRecurrence = task.recurrence?.canManage
+                        ?: (task.creatorId == app.tokenStore.userId),
+                    onEditRecurrence = { recurrenceTarget = task },
                     onEditAssignees = { assigneeTarget = task },
                     onAddFollowers = { followerTarget = task },
                     onRemoveFollower = { follower -> vm.removeFollower(task, follower.id) },
@@ -603,6 +608,17 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             onSelect = { priority ->
                 vm.updatePriority(task, priority)
                 priorityTarget = null
+            },
+        )
+    }
+    recurrenceTarget?.let { task ->
+        TaskRecurrenceSheet(
+            task = task,
+            saving = task.id in ui.mutatingIds,
+            onDismiss = { recurrenceTarget = null },
+            onSelect = { frequency ->
+                vm.setRecurrence(task, frequency)
+                recurrenceTarget = null
             },
         )
     }
@@ -1415,6 +1431,8 @@ private fun TaskDetailPage(
     onEditContent: () -> Unit,
     onEditDueDate: () -> Unit,
     onEditPriority: () -> Unit,
+    canManageRecurrence: Boolean,
+    onEditRecurrence: () -> Unit,
     onEditAssignees: () -> Unit,
     onAddFollowers: () -> Unit,
     onRemoveFollower: (TaskPersonItem) -> Unit,
@@ -1532,6 +1550,14 @@ private fun TaskDetailPage(
                         priorityText(task.priority),
                         onEditPriority.takeIf { task.canEdit },
                     )
+                    if (task.parentId == null) {
+                        FormValueRow(
+                            Icons.Outlined.Repeat,
+                            R.string.calendar_field_repeat,
+                            recurrenceText(task.recurrence),
+                            onEditRecurrence.takeIf { canManageRecurrence },
+                        )
+                    }
                 }
             }
             item {
@@ -2004,6 +2030,19 @@ private fun priorityText(priority: TaskPriority): String = when (priority) {
 }
 
 @Composable
+private fun recurrenceFrequencyText(frequency: TaskRecurrenceFrequency?): String =
+    when (frequency) {
+        null -> stringResource(R.string.calendar_repeat_none)
+        TaskRecurrenceFrequency.Daily -> stringResource(R.string.calendar_repeat_daily)
+        TaskRecurrenceFrequency.Weekly -> stringResource(R.string.calendar_repeat_weekly)
+        TaskRecurrenceFrequency.Monthly -> stringResource(R.string.calendar_repeat_monthly)
+    }
+
+@Composable
+private fun recurrenceText(recurrence: TaskRecurrenceItem?): String =
+    recurrenceFrequencyText(recurrence?.takeIf { it.active }?.frequency)
+
+@Composable
 private fun activityText(activity: TaskActivityItem): String {
     val actor = activity.actor.ifBlank { stringResource(R.string.task_unknown_actor) }
     val resource = when (activity.event) {
@@ -2121,6 +2160,45 @@ private fun TaskPrioritySheet(
                 ) {
                     Text(priorityText(priority), modifier = Modifier.weight(1f))
                     if (priority == selected) {
+                        Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TaskRecurrenceSheet(
+    task: TaskItem,
+    saving: Boolean,
+    onDismiss: () -> Unit,
+    onSelect: (TaskRecurrenceFrequency?) -> Unit,
+) {
+    val selected = task.recurrence?.takeIf { it.active }?.frequency
+    val choices = listOf<TaskRecurrenceFrequency?>(
+        null,
+        TaskRecurrenceFrequency.Daily,
+        TaskRecurrenceFrequency.Weekly,
+        TaskRecurrenceFrequency.Monthly,
+    )
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.fillMaxWidth().padding(bottom = Dimens.SpaceXl)) {
+            Text(
+                stringResource(R.string.calendar_field_repeat),
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            choices.forEach { frequency ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().clickable(enabled = !saving) {
+                        if (frequency == selected) onDismiss() else onSelect(frequency)
+                    }.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceL),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(recurrenceFrequencyText(frequency), modifier = Modifier.weight(1f))
+                    if (frequency == selected) {
                         Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary)
                     }
                 }
