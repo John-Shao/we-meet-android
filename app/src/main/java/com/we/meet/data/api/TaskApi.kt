@@ -40,6 +40,9 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 import okhttp3.RequestBody
+import okhttp3.ResponseBody
+import retrofit2.http.Streaming
+import retrofit2.http.Url
 
 interface TaskApi {
     @GET("api/v1.0/tasks/")
@@ -152,6 +155,10 @@ interface TaskApi {
         @Path("id") id: String,
         @Body body: CreateTaskAttachmentRequest,
     ): TaskAttachmentDto
+
+    @Streaming
+    @GET
+    suspend fun downloadAttachment(@Url url: String): ResponseBody
 
     @DELETE("api/v1.0/tasks/{id}/attachments/{attachmentId}/")
     suspend fun deleteAttachment(

@@ -5,6 +5,8 @@
 
 package com.we.meet.ui.tasks
 
+import android.app.Activity
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -61,6 +63,7 @@ import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.FilterList
@@ -84,6 +87,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DatePicker
@@ -198,6 +202,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     var renameTaskGroupTarget by remember { mutableStateOf<TaskGroupEditTarget?>(null) }
     var deleteTaskGroupTarget by remember { mutableStateOf<TaskGroupEditTarget?>(null) }
     var orderTaskGroupsFor by remember { mutableStateOf<TaskListItem?>(null) }
+    var pendingAttachmentDownload by remember { mutableStateOf<TaskAttachmentItem?>(null) }
     val selectedTask = ui.detail?.task?.takeIf { it.id == selectedTaskId }
         ?: (ui.tasks + ui.searchResults).firstOrNull { it.id == selectedTaskId }
         ?: ui.detail?.subtasks?.firstOrNull { it.id == selectedTaskId }
@@ -209,6 +214,15 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     ) { uri ->
         val task = selectedTask
         if (uri != null && task != null) vm.uploadAttachment(task, uri)
+    }
+    val attachmentDownloadPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        val attachment = pendingAttachmentDownload
+        pendingAttachmentDownload = null
+        if (result.resultCode == Activity.RESULT_OK && attachment != null) {
+            result.data?.data?.let { uri -> vm.downloadAttachment(attachment, uri) }
+        }
     }
     val failureText = when (ui.failure) {
         TaskFailure.Load -> stringResource(R.string.task_load_failed)
@@ -320,6 +334,17 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                     onAddFollowers = { followerTarget = task },
                     onRemoveFollower = { follower -> vm.removeFollower(task, follower.id) },
                     onAddAttachment = { attachmentPicker.launch(arrayOf("*/*")) },
+                    onDownloadAttachment = { attachment ->
+                        pendingAttachmentDownload = attachment
+                        attachmentDownloadPicker.launch(
+                            Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                                addCategory(Intent.CATEGORY_OPENABLE)
+                                type = attachment.mimeType?.takeIf(String::isNotBlank)
+                                    ?: "application/octet-stream"
+                                putExtra(Intent.EXTRA_TITLE, attachment.filename)
+                            },
+                        )
+                    },
                     onDeleteAttachment = { attachment ->
                         vm.deleteAttachment(task.id, attachment.id)
                     },
@@ -1613,6 +1638,7 @@ private fun TaskDetailPage(
     onAddFollowers: () -> Unit,
     onRemoveFollower: (TaskPersonItem) -> Unit,
     onAddAttachment: () -> Unit,
+    onDownloadAttachment: (TaskAttachmentItem) -> Unit,
     onDeleteAttachment: (TaskAttachmentItem) -> Unit,
     onShare: () -> Unit,
     onMore: (TaskItem) -> Unit,
@@ -1774,8 +1800,13 @@ private fun TaskDetailPage(
             item {
                 DetailSectionTitle(R.string.task_attachments, null)
                 detail?.attachments.orEmpty().forEach { attachment ->
+                    val downloading = attachment.id in detail?.downloadingAttachmentIds.orEmpty()
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
+                        modifier = Modifier.fillMaxWidth()
+                            .clickable(enabled = !downloading) {
+                                onDownloadAttachment(attachment)
+                            }
+                            .padding(vertical = Dimens.SpaceS),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(Icons.Outlined.AttachFile, null)
@@ -1790,8 +1821,22 @@ private fun TaskDetailPage(
                                 )
                             }
                         }
+                        if (downloading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(Dimens.IconMedium),
+                                strokeWidth = Dimens.BorderEmphasis,
+                            )
+                        } else {
+                            Icon(
+                                Icons.Outlined.Download,
+                                stringResource(R.string.task_download_attachment, attachment.filename),
+                            )
+                        }
                         if (task.canManageAttachments) {
-                            IconButton(onClick = { onDeleteAttachment(attachment) }) {
+                            IconButton(
+                                onClick = { onDeleteAttachment(attachment) },
+                                enabled = !downloading,
+                            ) {
                                 Icon(Icons.Filled.DeleteOutline, stringResource(R.string.task_delete_attachment))
                             }
                         }

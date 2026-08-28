@@ -75,6 +75,11 @@ class TaskDtosTest {
         val upload = moshi.adapter(FileUploadDto::class.java).fromJson(uploadJson)!!
 
         assertEquals("brief.pdf", attachment.filename)
+        assertEquals("application/pdf", attachment.mimetype)
+        assertEquals(
+            "/api/v1.0/tasks/task-1/attachments/attachment-1/download/",
+            attachment.url,
+        )
         assertEquals(4096L, attachment.size)
         assertEquals("Alex", attachment.uploader?.displayName)
         assertEquals("https://storage.example.test/signed", upload.policy)

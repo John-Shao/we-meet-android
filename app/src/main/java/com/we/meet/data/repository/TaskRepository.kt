@@ -318,6 +318,25 @@ class TaskRepository(
             withContext(Dispatchers.IO) { api.deleteAttachment(taskId, attachmentId) }
         }
 
+    suspend fun downloadAttachment(downloadUrl: String, destination: Uri): Result<Unit> =
+        runCatching {
+            withContext(Dispatchers.IO) {
+                try {
+                    api.downloadAttachment(downloadUrl).use { body ->
+                        val output = checkNotNull(contentResolver.openOutputStream(destination, "w")) {
+                            "Unable to open attachment destination"
+                        }
+                        output.use { stream ->
+                            body.byteStream().use { input -> input.copyTo(stream) }
+                        }
+                    }
+                } catch (throwable: Throwable) {
+                    runCatching { contentResolver.delete(destination, null, null) }
+                    throw throwable
+                }
+            }
+        }
+
     suspend fun shareTask(taskId: String, conversationIds: List<String>): Result<List<String>> =
         runCatching {
             withContext(Dispatchers.IO) {

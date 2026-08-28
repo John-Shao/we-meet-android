@@ -178,6 +178,8 @@ class TaskViewModel(
                                     TaskAttachmentItem(
                                         id = attachment.id,
                                         filename = attachment.filename,
+                                        mimeType = attachment.mimetype,
+                                        downloadUrl = attachment.url,
                                         size = attachment.size,
                                         uploader = attachment.uploader?.displayName.orEmpty(),
                                     )
@@ -639,6 +641,8 @@ class TaskViewModel(
                                 attachments = it.detail.attachments + TaskAttachmentItem(
                                     id = attachment.id,
                                     filename = attachment.filename,
+                                    mimeType = attachment.mimetype,
+                                    downloadUrl = attachment.url,
                                     size = attachment.size,
                                     uploader = attachment.uploader?.displayName.orEmpty(),
                                 ),
@@ -673,6 +677,47 @@ class TaskViewModel(
                     }
                 },
                 onFailure = { _ui.update { it.copy(failure = TaskFailure.Attachment) } },
+            )
+        }
+    }
+
+    fun downloadAttachment(attachment: TaskAttachmentItem, destination: Uri) {
+        if (attachment.id in ui.value.detail?.downloadingAttachmentIds.orEmpty()) return
+        if (attachment.downloadUrl.isBlank()) {
+            _ui.update { it.copy(failure = TaskFailure.Attachment) }
+            return
+        }
+        _ui.update {
+            it.copy(
+                detail = it.detail?.copy(
+                    downloadingAttachmentIds = it.detail.downloadingAttachmentIds + attachment.id,
+                ),
+                failure = null,
+            )
+        }
+        viewModelScope.launch {
+            repository.downloadAttachment(attachment.downloadUrl, destination).fold(
+                onSuccess = {
+                    _ui.update {
+                        it.copy(
+                            detail = it.detail?.copy(
+                                downloadingAttachmentIds =
+                                    it.detail.downloadingAttachmentIds - attachment.id,
+                            ),
+                        )
+                    }
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(
+                            detail = it.detail?.copy(
+                                downloadingAttachmentIds =
+                                    it.detail.downloadingAttachmentIds - attachment.id,
+                            ),
+                            failure = TaskFailure.Attachment,
+                        )
+                    }
+                },
             )
         }
     }

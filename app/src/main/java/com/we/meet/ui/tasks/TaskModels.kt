@@ -114,6 +114,8 @@ data class TaskCommentItem(
 data class TaskAttachmentItem(
     val id: String,
     val filename: String,
+    val mimeType: String? = null,
+    val downloadUrl: String = "",
     val size: Long? = null,
     val uploader: String = "",
 )
@@ -136,6 +138,7 @@ data class TaskDetailItem(
     val subtreeNodeCount: Int = 1,
     val loading: Boolean = false,
     val uploadingAttachment: Boolean = false,
+    val downloadingAttachmentIds: Set<String> = emptySet(),
 )
 
 data class TaskListItem(

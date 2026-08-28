@@ -300,10 +300,11 @@
     <string name="task_delete_failed">Die Aufgabe konnte nicht gelöscht werden.</string>
     <string name="task_comment_failed">Der Kommentar konnte nicht gesendet werden.</string>
     <string name="task_retry">Erneut versuchen</string>
-    <string name="task_attachment_failed">Der Aufgabenanhang konnte nicht aktualisiert werden.</string>
+    <string name="task_attachment_failed">Der Anhangvorgang konnte nicht abgeschlossen werden.</string>
     <string name="task_share_failed">Die Aufgabe konnte nicht geteilt werden.</string>
     <string name="task_delete_attachment">Anhang löschen</string>
     <string name="task_uploading_attachment">Wird hochgeladen…</string>
+    <string name="task_download_attachment">%1$s herunterladen</string>
     <string name="task_comments">Kommentare</string>
     <string name="task_share_card_title">Aufgabe</string>
     <string name="task_view_details">Details anzeigen</string>
