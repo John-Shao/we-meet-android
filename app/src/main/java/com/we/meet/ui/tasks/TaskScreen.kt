@@ -8,8 +8,10 @@ package com.we.meet.ui.tasks
 import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.ContentResolver
 import android.content.Intent
 import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -173,6 +175,8 @@ private data class TaskCreateInput(
     val assigneeIds: List<String>?,
     val followerIds: List<String>,
     val priority: TaskPriority,
+    val subtaskTitle: String?,
+    val attachmentUri: Uri?,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -318,6 +322,8 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                         followerIds = input.followerIds,
                         priority = input.priority,
                     ) { created ->
+                        input.subtaskTitle?.let { vm.createSubtask(created, it) }
+                        input.attachmentUri?.let { vm.uploadAttachment(created, it) }
                         selectedTaskId = created.id
                         detailBackStack = listOf(created)
                         page = TaskPage.Detail
@@ -1606,9 +1612,15 @@ private fun CreateTaskPage(
     var selectedAssignees by remember { mutableStateOf<List<PickedMember>?>(null) }
     var selectedFollowers by remember { mutableStateOf<List<PickedMember>>(emptyList()) }
     var selectedPriority by remember { mutableStateOf(TaskPriority.Medium) }
+    var subtaskTitle by remember { mutableStateOf<String?>(null) }
+    var attachmentUri by remember { mutableStateOf<Uri?>(null) }
     var showAssigneePicker by remember { mutableStateOf(false) }
     var showFollowerPicker by remember { mutableStateOf(false) }
     var showPriorityPicker by remember { mutableStateOf(false) }
+    var showSubtaskDialog by remember { mutableStateOf(false) }
+    val attachmentPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri -> attachmentUri = uri }
     val selectedList = taskLists.firstOrNull { it.id == selectedListId }
     val selectedGroup = selectedList?.groups?.firstOrNull { it.id == selectedGroupId }
     val listChoices = listOf<String?>(null) + taskLists.map(TaskListItem::id)
@@ -1620,6 +1632,9 @@ private fun CreateTaskPage(
         .joinToString { it.displayName }
         .takeIf(String::isNotBlank)
         ?: stringResource(R.string.task_priority_none)
+    val attachmentLabel = attachmentUri?.let {
+        contentDisplayName(app.contentResolver, it)
+    } ?: stringResource(R.string.task_priority_none)
     val dueLabel = if (dueDate == LocalDate.now().toString()) stringResource(R.string.task_today)
     else stringResource(R.string.task_tomorrow)
 
@@ -1639,6 +1654,8 @@ private fun CreateTaskPage(
                                 assigneeIds = selectedAssignees?.map(PickedMember::userId),
                                 followerIds = selectedFollowers.map(PickedMember::userId),
                                 priority = selectedPriority,
+                                subtaskTitle = subtaskTitle,
+                                attachmentUri = attachmentUri,
                             ),
                         )
                     },
@@ -1725,8 +1742,18 @@ private fun CreateTaskPage(
             }
             item {
                 TaskFormCard {
-                    ActionRow(Icons.Outlined.AccountTree, R.string.task_add_subtask)
-                    ActionRow(Icons.Outlined.AttachFile, R.string.task_add_attachment)
+                    FormValueRow(
+                        Icons.Outlined.AccountTree,
+                        R.string.task_add_subtask,
+                        subtaskTitle ?: stringResource(R.string.task_priority_none),
+                    ) { showSubtaskDialog = true }
+                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    FormValueRow(
+                        Icons.Outlined.AttachFile,
+                        R.string.task_add_attachment,
+                        attachmentLabel,
+                    ) { attachmentPicker.launch(arrayOf("*/*")) }
+                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
                     FormValueRow(
                         Icons.Outlined.BookmarkBorder,
                         R.string.task_followers,
@@ -1773,6 +1800,16 @@ private fun CreateTaskPage(
             onSelect = {
                 selectedPriority = it
                 showPriorityPicker = false
+            },
+        )
+    }
+    if (showSubtaskDialog) {
+        NewSubtaskDialog(
+            initialTitle = subtaskTitle.orEmpty(),
+            onDismiss = { showSubtaskDialog = false },
+            onCreate = {
+                subtaskTitle = it
+                showSubtaskDialog = false
             },
         )
     }
@@ -3398,8 +3435,12 @@ private fun DeleteNavigationDialog(
 }
 
 @Composable
-private fun NewSubtaskDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
-    var title by remember { mutableStateOf("") }
+private fun NewSubtaskDialog(
+    initialTitle: String = "",
+    onDismiss: () -> Unit,
+    onCreate: (String) -> Unit,
+) {
+    var title by remember(initialTitle) { mutableStateOf(initialTitle) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.task_add_subtask)) },
@@ -3412,7 +3453,7 @@ private fun NewSubtaskDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) 
             )
         },
         confirmButton = {
-            TextButton(onClick = { onCreate(title) }, enabled = title.isNotBlank()) {
+            TextButton(onClick = { onCreate(title.trim()) }, enabled = title.isNotBlank()) {
                 Text(stringResource(R.string.task_confirm))
             }
         },
@@ -3421,6 +3462,21 @@ private fun NewSubtaskDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) 
         },
     )
 }
+
+private fun contentDisplayName(contentResolver: ContentResolver, uri: Uri): String? =
+    runCatching {
+        contentResolver.query(
+            uri,
+            arrayOf(OpenableColumns.DISPLAY_NAME),
+            null,
+            null,
+            null,
+        )?.use { cursor ->
+            val column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (column >= 0 && cursor.moveToFirst()) cursor.getString(column) else null
+        }
+    }.getOrNull()?.takeIf(String::isNotBlank)
+        ?: uri.lastPathSegment?.substringAfterLast('/')?.takeIf(String::isNotBlank)
 
 private fun formatFileSize(bytes: Long): String = when {
     bytes >= 1024L * 1024L -> "${bytes / (1024L * 1024L)} MB"
