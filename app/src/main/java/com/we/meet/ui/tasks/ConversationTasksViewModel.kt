@@ -24,6 +24,7 @@ data class ConversationTasksUiState(
     val detailFailed: Boolean = false,
     val detailActionRunning: Boolean = false,
     val detailActionFailure: TaskFailure? = null,
+    val deletingAttachmentIds: Set<String> = emptySet(),
 )
 
 class ConversationTasksViewModel(
@@ -59,26 +60,33 @@ class ConversationTasksViewModel(
     fun toggleCompleted(task: TaskItem) {
         if (!task.canUpdateStatus || task.id in _ui.value.mutatingIds) return
         val completed = task.status != TaskStatus.Done
+        val optimistic = task.copy(
+            status = if (completed) TaskStatus.Done else TaskStatus.Todo,
+        )
         _ui.update { state ->
             state.copy(
                 tasks = state.tasks.map {
-                    if (it.id == task.id) {
-                        it.copy(status = if (completed) TaskStatus.Done else TaskStatus.Todo)
-                    } else {
-                        it
-                    }
+                    if (it.id == task.id) optimistic else it
+                },
+                detail = state.detail?.let { detail ->
+                    if (detail.taskId == task.id) detail.copy(task = optimistic) else detail
                 },
                 mutatingIds = state.mutatingIds + task.id,
                 failed = false,
             )
         }
         viewModelScope.launch {
-            repository.setCompleted(task.id, completed).fold(
+            repository.setCompleted(task.id, completed, sharedVia = conversationId).fold(
                 onSuccess = { updated ->
                     _ui.update { state ->
+                        val mapped = updated.toItem().copy(commentCount = task.commentCount)
                         state.copy(
                             tasks = state.tasks.map {
-                                if (it.id == task.id) updated.toItem() else it
+                                if (it.id == task.id) mapped else it
+                            },
+                            detail = state.detail?.let { detail ->
+                                if (detail.taskId == task.id) detail.copy(task = mapped)
+                                else detail
                             },
                             mutatingIds = state.mutatingIds - task.id,
                         )
@@ -89,6 +97,10 @@ class ConversationTasksViewModel(
                         state.copy(
                             tasks = state.tasks.map {
                                 if (it.id == task.id) task else it
+                            },
+                            detail = state.detail?.let { detail ->
+                                if (detail.taskId == task.id) detail.copy(task = task)
+                                else detail
                             },
                             mutatingIds = state.mutatingIds - task.id,
                             failed = true,
@@ -117,6 +129,7 @@ class ConversationTasksViewModel(
                 detailFailed = false,
                 detailActionRunning = false,
                 detailActionFailure = null,
+                deletingAttachmentIds = emptySet(),
             )
         }
         detailLoadJob = viewModelScope.launch {
@@ -158,6 +171,7 @@ class ConversationTasksViewModel(
                 detailFailed = false,
                 detailActionRunning = false,
                 detailActionFailure = null,
+                deletingAttachmentIds = emptySet(),
             )
         }
     }
@@ -273,6 +287,106 @@ class ConversationTasksViewModel(
                         TaskFailure.Attachment,
                     )
                 },
+            )
+        }
+    }
+
+    fun uploadAttachment(task: TaskItem, uri: Uri) {
+        val current = _ui.value.detail
+        if (!task.canManageAttachments || current?.taskId != task.id) return
+        if (current.uploadingAttachment) return
+        _ui.update { state ->
+            state.copy(
+                detail = state.detail?.copy(uploadingAttachment = true),
+                detailActionFailure = null,
+            )
+        }
+        viewModelScope.launch {
+            repository.uploadAttachment(task.id, uri, sharedVia = conversationId).fold(
+                onSuccess = { attachment ->
+                    _ui.update { state ->
+                        val detail = state.detail
+                        if (detail?.taskId != task.id) return@update state
+                        state.copy(
+                            detail = detail.copy(
+                                uploadingAttachment = false,
+                                attachments = detail.attachments + TaskAttachmentItem(
+                                    id = attachment.id,
+                                    filename = attachment.filename,
+                                    mimeType = attachment.mimetype,
+                                    downloadUrl = attachment.url,
+                                    size = attachment.size,
+                                    uploader = attachment.uploader?.displayName.orEmpty(),
+                                ),
+                            ),
+                        )
+                    }
+                },
+                onFailure = { failure ->
+                    if (failure is CancellationException) return@launch
+                    finishAttachmentMutation(task.id, TaskFailure.Attachment)
+                },
+            )
+        }
+    }
+
+    fun deleteAttachment(task: TaskItem, attachment: TaskAttachmentItem) {
+        val current = _ui.value.detail
+        if (!task.canManageAttachments || current?.taskId != task.id) return
+        if (attachment.id in current.downloadingAttachmentIds) return
+        if (attachment.id in _ui.value.deletingAttachmentIds) return
+        _ui.update {
+            it.copy(
+                deletingAttachmentIds = it.deletingAttachmentIds + attachment.id,
+                detailActionFailure = null,
+            )
+        }
+        viewModelScope.launch {
+            repository.deleteAttachment(
+                task.id,
+                attachment.id,
+                sharedVia = conversationId,
+            ).fold(
+                onSuccess = {
+                    _ui.update { state ->
+                        val detail = state.detail
+                        if (detail?.taskId != task.id) return@update state
+                        state.copy(
+                            detail = detail.copy(
+                                attachments = detail.attachments.filterNot {
+                                    it.id == attachment.id
+                                },
+                            ),
+                            deletingAttachmentIds = state.deletingAttachmentIds - attachment.id,
+                        )
+                    }
+                },
+                onFailure = { failure ->
+                    if (failure is CancellationException) return@launch
+                    finishAttachmentMutation(
+                        task.id,
+                        TaskFailure.Attachment,
+                        attachment.id,
+                    )
+                },
+            )
+        }
+    }
+
+    private fun finishAttachmentMutation(
+        taskId: String,
+        failure: TaskFailure?,
+        attachmentId: String? = null,
+    ) {
+        _ui.update { state ->
+            val detail = state.detail
+            if (detail?.taskId != taskId) return@update state
+            state.copy(
+                detail = detail.copy(uploadingAttachment = false),
+                detailActionFailure = failure,
+                deletingAttachmentIds = attachmentId?.let {
+                    state.deletingAttachmentIds - it
+                } ?: state.deletingAttachmentIds,
             )
         }
     }

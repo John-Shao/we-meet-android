@@ -249,12 +249,17 @@ class TaskRepository(
         }
     }
 
-    suspend fun setCompleted(taskId: String, completed: Boolean): Result<TaskDto> =
+    suspend fun setCompleted(
+        taskId: String,
+        completed: Boolean,
+        sharedVia: String? = null,
+    ): Result<TaskDto> =
         runCatching {
             withContext(Dispatchers.IO) {
                 api.patchTask(
                     taskId,
                     PatchTaskRequest(status = if (completed) "completed" else "todo"),
+                    sharedVia,
                 )
             }
         }
@@ -385,7 +390,11 @@ class TaskRepository(
         withContext(Dispatchers.IO) { api.stopRecurrence(taskId) }
     }
 
-    suspend fun uploadAttachment(taskId: String, uri: Uri): Result<TaskAttachmentDto> =
+    suspend fun uploadAttachment(
+        taskId: String,
+        uri: Uri,
+        sharedVia: String? = null,
+    ): Result<TaskAttachmentDto> =
         runCatching {
             withContext(Dispatchers.IO) {
                 val metadata = attachmentMetadata(uri)
@@ -402,13 +411,23 @@ class TaskRepository(
                 }
                 val ready = api.finishFileUpload(pending.id)
                 check(ready.uploadState == "ready") { "Attachment processing did not finish" }
-                api.createAttachment(taskId, CreateTaskAttachmentRequest(ready.id))
+                api.createAttachment(
+                    taskId,
+                    CreateTaskAttachmentRequest(ready.id),
+                    sharedVia,
+                )
             }
         }
 
-    suspend fun deleteAttachment(taskId: String, attachmentId: String): Result<Unit> =
+    suspend fun deleteAttachment(
+        taskId: String,
+        attachmentId: String,
+        sharedVia: String? = null,
+    ): Result<Unit> =
         runCatching {
-            withContext(Dispatchers.IO) { api.deleteAttachment(taskId, attachmentId) }
+            withContext(Dispatchers.IO) {
+                api.deleteAttachment(taskId, attachmentId, sharedVia)
+            }
         }
 
     suspend fun downloadAttachment(downloadUrl: String, destination: Uri): Result<Unit> =

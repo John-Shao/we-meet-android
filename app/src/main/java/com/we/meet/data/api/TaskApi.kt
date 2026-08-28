@@ -83,7 +83,11 @@ interface TaskApi {
     suspend fun createTask(@Body body: CreateTaskRequest): TaskDto
 
     @PATCH("api/v1.0/tasks/{id}/")
-    suspend fun patchTask(@Path("id") id: String, @Body body: PatchTaskRequest): TaskDto
+    suspend fun patchTask(
+        @Path("id") id: String,
+        @Body body: PatchTaskRequest,
+        @Query("shared_via") sharedVia: String? = null,
+    ): TaskDto
 
     @GET("api/v1.0/tasks/{id}/subtree-impact/")
     suspend fun getSubtreeImpact(
@@ -184,6 +188,7 @@ interface TaskApi {
     suspend fun createAttachment(
         @Path("id") id: String,
         @Body body: CreateTaskAttachmentRequest,
+        @Query("shared_via") sharedVia: String? = null,
     ): TaskAttachmentDto
 
     @Streaming
@@ -194,6 +199,7 @@ interface TaskApi {
     suspend fun deleteAttachment(
         @Path("id") id: String,
         @Path("attachmentId") attachmentId: String,
+        @Query("shared_via") sharedVia: String? = null,
     )
 
     @POST("api/v1.0/files/")

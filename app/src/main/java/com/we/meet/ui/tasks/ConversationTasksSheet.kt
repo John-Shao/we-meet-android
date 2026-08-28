@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -84,6 +85,12 @@ fun ConversationTasksSheet(
             }
         }
     }
+    val attachmentPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        val task = ui.detail?.task
+        if (uri != null && task != null) vm.uploadAttachment(task, uri)
+    }
     LaunchedEffect(vm) { vm.refresh() }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -98,11 +105,16 @@ fun ConversationTasksSheet(
                     failed = ui.detailFailed,
                     actionRunning = ui.detailActionRunning,
                     actionFailure = ui.detailActionFailure,
+                    statusMutating = detail.taskId in ui.mutatingIds,
+                    deletingAttachmentIds = ui.deletingAttachmentIds,
                     onBack = vm::closeTask,
                     onRetry = vm::retryTask,
                     onOpenSubtask = vm::openTask,
                     onToggleFollowing = vm::toggleFollowing,
                     onSendComment = vm::sendComment,
+                    onToggleCompleted = vm::toggleCompleted,
+                    onAddAttachment = { attachmentPicker.launch(arrayOf("*/*")) },
+                    onDeleteAttachment = vm::deleteAttachment,
                     onDownloadAttachment = { attachment ->
                         pendingAttachment = detail.taskId to attachment
                         attachmentDownloadPicker.launch(
@@ -247,11 +259,16 @@ private fun ConversationTaskDetail(
     failed: Boolean,
     actionRunning: Boolean,
     actionFailure: TaskFailure?,
+    statusMutating: Boolean,
+    deletingAttachmentIds: Set<String>,
     onBack: () -> Unit,
     onRetry: () -> Unit,
     onOpenSubtask: (TaskItem) -> Unit,
     onToggleFollowing: (TaskItem) -> Unit,
     onSendComment: (TaskItem, String, () -> Unit) -> Unit,
+    onToggleCompleted: (TaskItem) -> Unit,
+    onAddAttachment: () -> Unit,
+    onDeleteAttachment: (TaskItem, TaskAttachmentItem) -> Unit,
     onDownloadAttachment: (TaskAttachmentItem) -> Unit,
 ) {
     val task = detail.task
@@ -259,6 +276,33 @@ private fun ConversationTaskDetail(
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onBack) {
             Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.task_back))
+        }
+        if (task != null) {
+            if (statusMutating) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(Dimens.IconMedium),
+                    strokeWidth = Dimens.BorderEmphasis,
+                )
+            } else {
+                IconButton(
+                    onClick = { onToggleCompleted(task) },
+                    enabled = task.canUpdateStatus,
+                ) {
+                    Icon(
+                        if (task.status == TaskStatus.Done) Icons.Filled.CheckCircle
+                        else Icons.Outlined.RadioButtonUnchecked,
+                        contentDescription = stringResource(
+                            if (task.status == TaskStatus.Done) R.string.task_mark_incomplete
+                            else R.string.task_mark_complete,
+                        ),
+                        tint = if (task.status == TaskStatus.Done) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                }
+            }
         }
         Text(
             task?.title.orEmpty(),
@@ -363,13 +407,14 @@ private fun ConversationTaskDetail(
                     }
                 }
             }
-            if (detail.attachments.isNotEmpty()) {
+            if (detail.attachments.isNotEmpty() || task.canManageAttachments) {
                 item { ConversationTaskSectionTitle(R.string.task_attachments, detail.attachments.size) }
                 items(detail.attachments, key = TaskAttachmentItem::id) { attachment ->
                     val downloading = attachment.id in detail.downloadingAttachmentIds
+                    val deleting = attachment.id in deletingAttachmentIds
                     Row(
                         modifier = Modifier.fillMaxWidth()
-                            .clickable(enabled = !downloading) {
+                            .clickable(enabled = !downloading && !deleting) {
                                 onDownloadAttachment(attachment)
                             }
                             .padding(vertical = Dimens.SpaceS),
@@ -383,7 +428,7 @@ private fun ConversationTaskDetail(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        if (downloading) {
+                        if (downloading || deleting) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(Dimens.IconMedium),
                                 strokeWidth = Dimens.BorderEmphasis,
@@ -394,6 +439,45 @@ private fun ConversationTaskDetail(
                                 stringResource(
                                     R.string.task_download_attachment,
                                     attachment.filename,
+                                ),
+                            )
+                        }
+                        if (task.canManageAttachments) {
+                            IconButton(
+                                onClick = { onDeleteAttachment(task, attachment) },
+                                enabled = !downloading && !deleting,
+                            ) {
+                                Icon(
+                                    Icons.Filled.DeleteOutline,
+                                    stringResource(R.string.task_delete_attachment),
+                                )
+                            }
+                        }
+                    }
+                }
+                if (task.canManageAttachments) {
+                    item {
+                        OutlinedButton(
+                            onClick = onAddAttachment,
+                            enabled = !detail.uploadingAttachment,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            if (detail.uploadingAttachment) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(Dimens.IconMedium),
+                                    strokeWidth = Dimens.BorderEmphasis,
+                                )
+                            } else {
+                                Icon(Icons.Outlined.AttachFile, null)
+                            }
+                            Spacer(Modifier.width(Dimens.SpaceS))
+                            Text(
+                                stringResource(
+                                    if (detail.uploadingAttachment) {
+                                        R.string.task_uploading_attachment
+                                    } else {
+                                        R.string.task_add_attachment
+                                    },
                                 ),
                             )
                         }
