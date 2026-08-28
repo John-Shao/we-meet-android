@@ -374,6 +374,9 @@
     <string name="task_no_parent">无父任务</string>
     <string name="task_move_subtree_title">移动任务树？</string>
     <string name="task_move_subtree_message">此操作会同时移动该任务树中的全部 %1$d 个任务。</string>
+    <string name="task_delete_confirm_title">删除任务？</string>
+    <string name="task_delete_confirm_single">删除“%1$s”？此操作无法撤销。</string>
+    <string name="task_delete_confirm_tree">删除“%1$s”及其任务树中的全部 %2$d 个任务？此操作无法撤销。</string>
     <string name="task_search_filter_me">%1$s：我</string>
     <string name="task_search_open">未完成</string>
     <string name="task_search_all_due">全部截止时间</string>

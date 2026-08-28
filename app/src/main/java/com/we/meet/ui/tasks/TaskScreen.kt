@@ -166,6 +166,11 @@ private data class TaskParentMove(
     val subtreeNodeCount: Int,
 )
 
+private data class TaskDeleteRequest(
+    val task: TaskItem,
+    val subtreeNodeCount: Int,
+)
+
 private data class TaskCreateInput(
     val title: String,
     val description: String,
@@ -216,6 +221,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     var recurrenceTarget by remember { mutableStateOf<TaskItem?>(null) }
     var parentPickerTarget by remember { mutableStateOf<TaskItem?>(null) }
     var pendingParentMove by remember { mutableStateOf<TaskParentMove?>(null) }
+    var pendingTaskDelete by remember { mutableStateOf<TaskDeleteRequest?>(null) }
     var assigneeTarget by remember { mutableStateOf<TaskItem?>(null) }
     var followerTarget by remember { mutableStateOf<TaskItem?>(null) }
     var showNewSubtask by remember { mutableStateOf(false) }
@@ -487,9 +493,25 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 }
             },
             onDelete = {
-                vm.deleteTask(target) {
-                    actionTarget = null
-                    if (page == TaskPage.Detail) {
+                actionTarget = null
+                vm.prepareDelete(target) { nodeCount ->
+                    pendingTaskDelete = TaskDeleteRequest(target, nodeCount)
+                }
+            },
+        )
+    }
+
+    pendingTaskDelete?.let { request ->
+        DeleteTaskDialog(
+            task = request.task,
+            nodeCount = request.subtreeNodeCount,
+            deleting = request.task.id in ui.mutatingIds,
+            onDismiss = { pendingTaskDelete = null },
+            onConfirm = {
+                vm.deleteTask(request.task, request.subtreeNodeCount) {
+                    pendingTaskDelete = null
+                    if (page == TaskPage.Detail && selectedTaskId == request.task.id) {
+                        selectedTaskId = null
                         detailBackStack = emptyList()
                         page = TaskPage.List
                     }
@@ -2810,6 +2832,42 @@ private fun MoveTaskTreeDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !moving) {
+                Text(stringResource(R.string.task_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun DeleteTaskDialog(
+    task: TaskItem,
+    nodeCount: Int,
+    deleting: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.task_delete_confirm_title)) },
+        text = {
+            Text(
+                if (nodeCount > 1) {
+                    stringResource(R.string.task_delete_confirm_tree, task.title, nodeCount)
+                } else {
+                    stringResource(R.string.task_delete_confirm_single, task.title)
+                },
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = !deleting) {
+                Text(
+                    stringResource(R.string.task_delete_navigation_item),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !deleting) {
                 Text(stringResource(R.string.task_cancel))
             }
         },

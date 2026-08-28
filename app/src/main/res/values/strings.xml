@@ -374,6 +374,9 @@
     <string name="task_no_parent">No parent task</string>
     <string name="task_move_subtree_title">Move task tree?</string>
     <string name="task_move_subtree_message">This will move all %1$d tasks in this task tree.</string>
+    <string name="task_delete_confirm_title">Delete task?</string>
+    <string name="task_delete_confirm_single">Delete “%1$s”? This action cannot be undone.</string>
+    <string name="task_delete_confirm_tree">Delete “%1$s” and all %2$d tasks in its task tree? This action cannot be undone.</string>
     <string name="task_search_filter_me">%1$s: Me</string>
     <string name="task_search_open">Open</string>
     <string name="task_search_all_due">Any due date</string>

@@ -28,6 +28,7 @@ import com.we.meet.data.api.dto.TaskListGroupDto
 import com.we.meet.data.api.dto.TaskParentCandidateDto
 import com.we.meet.data.api.dto.TaskGroupDto
 import com.we.meet.data.api.dto.TaskRecurrenceRequest
+import com.we.meet.data.api.dto.TaskSubtreeImpactDto
 import com.we.meet.data.api.dto.ShareTaskListRequest
 import com.we.meet.data.api.dto.UpdateTaskListAccessRequest
 import kotlinx.coroutines.Dispatchers
@@ -301,10 +302,13 @@ class TaskRepository(
         withContext(Dispatchers.IO) { api.removeFollower(taskId, userId) }
     }
 
-    suspend fun deleteTask(taskId: String): Result<Unit> = runCatching {
+    suspend fun loadSubtreeImpact(taskId: String): Result<TaskSubtreeImpactDto> = runCatching {
+        withContext(Dispatchers.IO) { api.getSubtreeImpact(taskId) }
+    }
+
+    suspend fun deleteTask(taskId: String, confirmedNodeCount: Int): Result<Unit> = runCatching {
         withContext(Dispatchers.IO) {
-            val impact = api.getSubtreeImpact(taskId)
-            api.deleteTask(taskId, impact.nodeCount.takeIf { it > 1 })
+            api.deleteTask(taskId, confirmedNodeCount.takeIf { it > 1 })
         }
     }
 

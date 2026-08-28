@@ -364,6 +364,9 @@
     <string name="task_no_parent">Geen bovenliggende taak</string>
     <string name="task_move_subtree_title">Taakstructuur verplaatsen?</string>
     <string name="task_move_subtree_message">Hiermee worden alle %1$d taken in deze taakstructuur verplaatst.</string>
+    <string name="task_delete_confirm_title">Taak verwijderen?</string>
+    <string name="task_delete_confirm_single">‘%1$s’ verwijderen? Deze actie kan niet ongedaan worden gemaakt.</string>
+    <string name="task_delete_confirm_tree">‘%1$s’ en alle %2$d taken in de taakstructuur verwijderen? Deze actie kan niet ongedaan worden gemaakt.</string>
     <string name="task_search_filter_me">%1$s: ik</string>
     <string name="task_search_open">Open</string>
     <string name="task_search_all_due">Elke vervaldatum</string>
