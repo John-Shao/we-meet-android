@@ -101,6 +101,8 @@ data class CreateTaskListRequest(
 @JsonClass(generateAdapter = true)
 data class PatchTaskListRequest(
     val name: String? = null,
+    val description: String? = null,
+    val color: String? = null,
     @Json(name = "list_group_id") val listGroupId: String? = null,
     @Json(name = "is_archived") val isArchived: Boolean? = null,
 )

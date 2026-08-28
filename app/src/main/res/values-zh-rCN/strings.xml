@@ -354,6 +354,7 @@
     <string name="task_leave_list">退出任务清单</string>
     <string name="task_leave_list_confirm">退出“%1$s”？你将无法再访问此任务清单。</string>
     <string name="task_list_name_hint">清单名称</string>
+    <string name="task_edit_list_details">编辑清单详情</string>
     <string name="task_list_description">描述</string>
     <string name="task_list_color">颜色</string>
     <string name="task_list_color_grey">灰色</string>

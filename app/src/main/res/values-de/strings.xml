@@ -344,6 +344,7 @@
     <string name="task_leave_list">Aufgabenliste verlassen</string>
     <string name="task_leave_list_confirm">„%1$s“ verlassen? Sie verlieren den Zugriff auf diese Aufgabenliste.</string>
     <string name="task_list_name_hint">Listenname</string>
+    <string name="task_edit_list_details">Listendetails bearbeiten</string>
     <string name="task_list_description">Beschreibung</string>
     <string name="task_list_color">Farbe</string>
     <string name="task_list_color_grey">Grau</string>

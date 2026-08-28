@@ -199,11 +199,19 @@ class TaskDtosTest {
     }
 
     @Test
-    fun patchTaskListRequestUsesBackendArchiveField() {
+    fun patchTaskListRequestUsesBackendDetailAndArchiveFields() {
         val json = moshi.adapter(PatchTaskListRequest::class.java).toJson(
-            PatchTaskListRequest(isArchived = true),
+            PatchTaskListRequest(
+                name = "Mobile",
+                description = "Android delivery",
+                color = "purple",
+                isArchived = true,
+            ),
         )
 
+        assertTrue(json.contains("\"name\":\"Mobile\""))
+        assertTrue(json.contains("\"description\":\"Android delivery\""))
+        assertTrue(json.contains("\"color\":\"purple\""))
         assertTrue(json.contains("\"is_archived\":true"))
     }
 

@@ -354,6 +354,7 @@
     <string name="task_leave_list">Leave task list</string>
     <string name="task_leave_list_confirm">Leave “%1$s”? You will lose access to this task list.</string>
     <string name="task_list_name_hint">List name</string>
+    <string name="task_edit_list_details">Edit list details</string>
     <string name="task_list_description">Description</string>
     <string name="task_list_color">Color</string>
     <string name="task_list_color_grey">Grey</string>

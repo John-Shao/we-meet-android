@@ -476,9 +476,21 @@ class TaskRepository(
         withContext(Dispatchers.IO) { api.listTaskLists(archived = true) }
     }
 
-    suspend fun renameTaskList(id: String, name: String): Result<TaskListDto> = runCatching {
+    suspend fun updateTaskListDetails(
+        id: String,
+        name: String,
+        description: String,
+        color: String,
+    ): Result<TaskListDto> = runCatching {
         withContext(Dispatchers.IO) {
-            api.patchTaskList(id, PatchTaskListRequest(name = name))
+            api.patchTaskList(
+                id,
+                PatchTaskListRequest(
+                    name = name,
+                    description = description,
+                    color = color,
+                ),
+            )
         }
     }
 

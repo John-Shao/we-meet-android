@@ -1120,11 +1120,21 @@ class TaskViewModel(
         }
     }
 
-    fun renameTaskList(list: TaskListItem, name: String) {
+    fun updateTaskListDetails(
+        list: TaskListItem,
+        name: String,
+        description: String,
+        color: TaskListColor,
+    ) {
         if (!list.canManage || name.isBlank() || _ui.value.navigationMutating) return
         _ui.update { it.copy(navigationMutating = true, failure = null) }
         viewModelScope.launch {
-            repository.renameTaskList(list.id, name.trim()).fold(
+            repository.updateTaskListDetails(
+                id = list.id,
+                name = name.trim(),
+                description = description.trim(),
+                color = color.apiValue,
+            ).fold(
                 onSuccess = { updated ->
                     _ui.update { state ->
                         state.copy(

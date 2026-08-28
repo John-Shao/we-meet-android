@@ -723,6 +723,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             title = list.name,
             canDelete = list.canDelete,
             onDismiss = { listActionTarget = null },
+            renameLabelRes = R.string.task_edit_list_details,
             onRename = if (list.canManage) {
                 {
                     listActionTarget = null
@@ -853,12 +854,12 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
         )
     }
     renameListTarget?.let { list ->
-        RenameNavigationDialog(
-            initialName = list.name,
+        EditTaskListDialog(
+            list = list,
             saving = ui.navigationMutating,
             onDismiss = { renameListTarget = null },
-            onConfirm = { name ->
-                vm.renameTaskList(list, name)
+            onConfirm = { name, description, color ->
+                vm.updateTaskListDetails(list, name, description, color)
                 renameListTarget = null
             },
         )
@@ -3673,6 +3674,74 @@ private fun NewTaskListDialog(
 }
 
 @Composable
+private fun EditTaskListDialog(
+    list: TaskListItem,
+    saving: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String, String, TaskListColor) -> Unit,
+) {
+    var name by remember(list.id) { mutableStateOf(list.name) }
+    var description by remember(list.id) { mutableStateOf(list.description) }
+    var color by remember(list.id) { mutableStateOf(list.color) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.task_edit_list_details)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.task_list_name_hint)) },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text(stringResource(R.string.task_list_description)) },
+                    placeholder = { Text(stringResource(R.string.task_description_hint)) },
+                    minLines = 2,
+                    maxLines = 4,
+                )
+                Text(
+                    stringResource(R.string.task_list_color),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                    items(TaskListColor.entries) { option ->
+                        FilterChip(
+                            selected = color == option,
+                            onClick = { color = option },
+                            label = { Text(taskListColorText(option)) },
+                            leadingIcon = {
+                                Surface(
+                                    modifier = Modifier.size(Dimens.SpaceM),
+                                    shape = CircleShape,
+                                    color = taskListColor(option),
+                                ) {}
+                            },
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name, description, color) },
+                enabled = name.isNotBlank() && !saving,
+            ) {
+                Text(stringResource(R.string.task_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !saving) {
+                Text(stringResource(R.string.task_cancel))
+            }
+        },
+    )
+}
+
+@Composable
 private fun taskListColor(color: TaskListColor): Color = when (color) {
     TaskListColor.Grey -> MaterialTheme.colorScheme.onSurfaceVariant
     TaskListColor.Blue -> MaterialTheme.colorScheme.primary
@@ -3702,6 +3771,7 @@ private fun NavigationActionSheet(
     canDelete: Boolean,
     onDismiss: () -> Unit,
     onRename: (() -> Unit)?,
+    renameLabelRes: Int = R.string.task_rename,
     onCreateAbove: (() -> Unit)? = null,
     onCreateBelow: (() -> Unit)? = null,
     onManageOrder: (() -> Unit)? = null,
@@ -3722,7 +3792,7 @@ private fun NavigationActionSheet(
                 fontWeight = FontWeight.Bold,
             )
             onRename?.let {
-                SheetAction(Icons.Outlined.Edit, R.string.task_rename, it)
+                SheetAction(Icons.Outlined.Edit, renameLabelRes, it)
             }
             onCreateAbove?.let {
                 SheetAction(Icons.Filled.Add, R.string.task_new_group_above, it)

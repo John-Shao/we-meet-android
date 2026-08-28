@@ -344,6 +344,7 @@
     <string name="task_leave_list">Takenlijst verlaten</string>
     <string name="task_leave_list_confirm">‘%1$s’ verlaten? U verliest de toegang tot deze takenlijst.</string>
     <string name="task_list_name_hint">Lijstnaam</string>
+    <string name="task_edit_list_details">Lijstdetails bewerken</string>
     <string name="task_list_description">Beschrijving</string>
     <string name="task_list_color">Kleur</string>
     <string name="task_list_color_grey">Grijs</string>
