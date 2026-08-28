@@ -23,6 +23,31 @@ data class TaskItem(
     val canUpdateStatus: Boolean = false,
     val canDelete: Boolean = false,
     val canComment: Boolean = false,
+    val canManageAttachments: Boolean = false,
+    val canCreateSubtasks: Boolean = false,
+)
+
+data class TaskCommentItem(
+    val id: String,
+    val author: String,
+    val content: String,
+    val createdAt: String,
+)
+
+data class TaskAttachmentItem(
+    val id: String,
+    val filename: String,
+    val size: Long? = null,
+    val uploader: String = "",
+)
+
+data class TaskDetailItem(
+    val taskId: String,
+    val subtasks: List<TaskItem> = emptyList(),
+    val comments: List<TaskCommentItem> = emptyList(),
+    val attachments: List<TaskAttachmentItem> = emptyList(),
+    val loading: Boolean = false,
+    val uploadingAttachment: Boolean = false,
 )
 
 data class TaskListItem(

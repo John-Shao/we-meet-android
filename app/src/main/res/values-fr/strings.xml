@@ -285,6 +285,13 @@
     <string name="task_delete_failed">Impossible de supprimer cette tâche.</string>
     <string name="task_comment_failed">Impossible d’envoyer le commentaire.</string>
     <string name="task_retry">Réessayer</string>
+    <string name="task_attachment_failed">Impossible de mettre à jour la pièce jointe.</string>
+    <string name="task_share_failed">Impossible de partager cette tâche.</string>
+    <string name="task_delete_attachment">Supprimer la pièce jointe</string>
+    <string name="task_uploading_attachment">Téléversement…</string>
+    <string name="task_comments">Commentaires</string>
+    <string name="task_share_card_title">Tâche</string>
+    <string name="task_view_details">Voir les détails</string>
     <string name="task_status">Statut</string>
     <string name="task_subtasks">Sous-tâches</string>
     <string name="task_attachments">Pièces jointes</string>

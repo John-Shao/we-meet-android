@@ -2,7 +2,10 @@ package com.we.meet.data.api
 
 import com.we.meet.data.api.dto.CreateTaskCommentRequest
 import com.we.meet.data.api.dto.CreateTaskListGroupRequest
+import com.we.meet.data.api.dto.CreateTaskAttachmentRequest
 import com.we.meet.data.api.dto.CreateTaskRequest
+import com.we.meet.data.api.dto.CreateFileRequest
+import com.we.meet.data.api.dto.FileUploadDto
 import com.we.meet.data.api.dto.PagedTasksDto
 import com.we.meet.data.api.dto.PatchTaskRequest
 import com.we.meet.data.api.dto.TaskCommentDto
@@ -10,6 +13,9 @@ import com.we.meet.data.api.dto.TaskDto
 import com.we.meet.data.api.dto.TaskListDto
 import com.we.meet.data.api.dto.TaskListGroupDto
 import com.we.meet.data.api.dto.TaskSubtreeImpactDto
+import com.we.meet.data.api.dto.TaskAttachmentDto
+import com.we.meet.data.api.dto.ShareTaskRequest
+import com.we.meet.data.api.dto.ShareTaskResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -61,6 +67,36 @@ interface TaskApi {
         @Path("id") id: String,
         @Body body: CreateTaskCommentRequest,
     ): TaskCommentDto
+
+    @GET("api/v1.0/tasks/{id}/subtasks/")
+    suspend fun listSubtasks(@Path("id") id: String): List<TaskDto>
+
+    @GET("api/v1.0/tasks/{id}/attachments/")
+    suspend fun listAttachments(@Path("id") id: String): List<TaskAttachmentDto>
+
+    @POST("api/v1.0/tasks/{id}/attachments/")
+    suspend fun createAttachment(
+        @Path("id") id: String,
+        @Body body: CreateTaskAttachmentRequest,
+    ): TaskAttachmentDto
+
+    @DELETE("api/v1.0/tasks/{id}/attachments/{attachmentId}/")
+    suspend fun deleteAttachment(
+        @Path("id") id: String,
+        @Path("attachmentId") attachmentId: String,
+    )
+
+    @POST("api/v1.0/files/")
+    suspend fun createFile(@Body body: CreateFileRequest): FileUploadDto
+
+    @POST("api/v1.0/files/{id}/upload-ended/")
+    suspend fun finishFileUpload(@Path("id") id: String): FileUploadDto
+
+    @POST("api/v1.0/tasks/{id}/share/")
+    suspend fun shareTask(
+        @Path("id") id: String,
+        @Body body: ShareTaskRequest,
+    ): ShareTaskResponse
 
     @GET("api/v1.0/task-lists/")
     suspend fun listTaskLists(): List<TaskListDto>

@@ -86,7 +86,9 @@ data class TaskDto(
     @Json(name = "can_update_status") val canUpdateStatus: Boolean = false,
     @Json(name = "can_delete") val canDelete: Boolean = false,
     @Json(name = "can_comment") val canComment: Boolean = false,
+    @Json(name = "can_manage_attachments") val canManageAttachments: Boolean = false,
     @Json(name = "can_manage_followers") val canManageFollowers: Boolean = false,
+    @Json(name = "can_create_subtasks") val canCreateSubtasks: Boolean = false,
     @Json(name = "is_following") val isFollowing: Boolean = false,
     @Json(name = "time_state") val timeState: String? = null,
 )
@@ -106,6 +108,7 @@ data class CreateTaskRequest(
     @Json(name = "assignee_ids") val assigneeIds: List<String>? = null,
     @Json(name = "due_date") val dueDate: String? = null,
     @Json(name = "task_list_id") val taskListId: String? = null,
+    @Json(name = "parent_id") val parentId: String? = null,
 )
 
 @JsonClass(generateAdapter = true)
@@ -135,3 +138,43 @@ data class CreateTaskCommentRequest(val content: String)
 
 @JsonClass(generateAdapter = true)
 data class CreateTaskListGroupRequest(val name: String)
+
+@JsonClass(generateAdapter = true)
+data class TaskAttachmentDto(
+    val id: String,
+    @Json(name = "file_id") val fileId: String,
+    val title: String = "",
+    val filename: String,
+    val mimetype: String? = null,
+    val size: Long? = null,
+    val url: String = "",
+    val uploader: TaskUserDto? = null,
+    @Json(name = "created_at") val createdAt: String = "",
+)
+
+@JsonClass(generateAdapter = true)
+data class CreateTaskAttachmentRequest(@Json(name = "file_id") val fileId: String)
+
+@JsonClass(generateAdapter = true)
+data class CreateFileRequest(
+    val filename: String,
+    val type: String = "task_attachment",
+)
+
+@JsonClass(generateAdapter = true)
+data class FileUploadDto(
+    val id: String,
+    val filename: String,
+    @Json(name = "upload_state") val uploadState: String = "pending",
+    val policy: String? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class ShareTaskRequest(
+    @Json(name = "conversation_ids") val conversationIds: List<String>,
+)
+
+@JsonClass(generateAdapter = true)
+data class ShareTaskResponse(
+    @Json(name = "conversation_ids") val conversationIds: List<String> = emptyList(),
+)

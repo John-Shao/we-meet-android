@@ -295,6 +295,13 @@
     <string name="task_delete_failed">Couldn’t delete this task.</string>
     <string name="task_comment_failed">Couldn’t send the comment.</string>
     <string name="task_retry">Retry</string>
+    <string name="task_attachment_failed">Couldn’t update the task attachment.</string>
+    <string name="task_share_failed">Couldn’t share this task.</string>
+    <string name="task_delete_attachment">Delete attachment</string>
+    <string name="task_uploading_attachment">Uploading…</string>
+    <string name="task_comments">Comments</string>
+    <string name="task_share_card_title">Task</string>
+    <string name="task_view_details">View details</string>
     <string name="task_status">Status</string>
     <string name="task_subtasks">Subtasks</string>
     <string name="task_attachments">Attachments</string>

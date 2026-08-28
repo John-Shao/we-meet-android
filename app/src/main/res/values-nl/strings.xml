@@ -285,6 +285,13 @@
     <string name="task_delete_failed">Deze taak kon niet worden verwijderd.</string>
     <string name="task_comment_failed">De opmerking kon niet worden verzonden.</string>
     <string name="task_retry">Opnieuw proberen</string>
+    <string name="task_attachment_failed">De taakbijlage kon niet worden bijgewerkt.</string>
+    <string name="task_share_failed">Deze taak kon niet worden gedeeld.</string>
+    <string name="task_delete_attachment">Bijlage verwijderen</string>
+    <string name="task_uploading_attachment">Uploaden…</string>
+    <string name="task_comments">Opmerkingen</string>
+    <string name="task_share_card_title">Taak</string>
+    <string name="task_view_details">Details bekijken</string>
     <string name="task_status">Status</string>
     <string name="task_subtasks">Subtaken</string>
     <string name="task_attachments">Bijlagen</string>

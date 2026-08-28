@@ -122,7 +122,7 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
             it.bindCalendarApi(apiClient.calendarApi)
         }
         directoryRepository = DirectoryRepository(DirectoryNetwork.directoryApi(this))
-        taskRepository = TaskRepository(apiClient.taskApi)
+        taskRepository = TaskRepository(apiClient.taskApi, contentResolver)
         // 逐联系人偏好(星标 / 特别提醒):进程级单例,通讯录与会话列表共享(见 ContactPrefs)。
         ContactPrefs.init(directoryRepository)
         ScreenShareOverlay.init(this)

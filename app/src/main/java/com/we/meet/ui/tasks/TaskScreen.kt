@@ -5,6 +5,9 @@
 
 package com.we.meet.ui.tasks
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -115,10 +118,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.R
+import com.we.meet.BuildConfig
 import com.we.meet.WeMeetApp
+import com.we.meet.feature.im.ImSession
+import com.we.meet.feature.im.ui.chat.ForwardCreateGroupFlow
+import com.we.meet.feature.im.ui.chat.ForwardPicker
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 import java.time.LocalDate
+import org.json.JSONArray
+import org.json.JSONObject
 
 private enum class TaskPage { List, Create, Detail, Search, Settings }
 
@@ -133,15 +142,27 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     var showDrawer by remember { mutableStateOf(false) }
     var showFilter by remember { mutableStateOf(false) }
     var showNewGroup by remember { mutableStateOf(false) }
+    var showNewSubtask by remember { mutableStateOf(false) }
+    var shareTarget by remember { mutableStateOf<TaskItem?>(null) }
+    var showShareGroup by remember { mutableStateOf(false) }
     var actionTarget by remember { mutableStateOf<TaskItem?>(null) }
     var sectionMenu by remember { mutableStateOf<String?>(null) }
     val selectedTask = (ui.tasks + ui.searchResults).firstOrNull { it.id == selectedTaskId }
     val snackbar = remember { SnackbarHostState() }
+    val imSession = remember(app) { ImSession.get(app) }
+    val attachmentPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        val task = selectedTask
+        if (uri != null && task != null) vm.uploadAttachment(task, uri)
+    }
     val failureText = when (ui.failure) {
         TaskFailure.Load -> stringResource(R.string.task_load_failed)
         TaskFailure.Save -> stringResource(R.string.task_save_failed)
         TaskFailure.Delete -> stringResource(R.string.task_delete_failed)
         TaskFailure.Comment -> stringResource(R.string.task_comment_failed)
+        TaskFailure.Attachment -> stringResource(R.string.task_attachment_failed)
+        TaskFailure.Share -> stringResource(R.string.task_share_failed)
         null -> ""
     }
     val retryText = stringResource(R.string.task_retry)
@@ -157,6 +178,9 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 vm.refresh()
             }
         }
+    }
+    LaunchedEffect(page, selectedTaskId) {
+        if (page == TaskPage.Detail) selectedTaskId?.let(vm::loadDetail)
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -199,12 +223,20 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             TaskPage.Detail -> selectedTask?.let { task ->
                 TaskDetailPage(
                     task = task,
+                    detail = ui.detail?.takeIf { it.taskId == task.id },
                     onBack = { page = TaskPage.List },
                     onToggleDone = vm::toggleCompleted,
                     onToggleFollow = vm::toggleFollowing,
                     onSendComment = { current, content, onSent ->
                         vm.sendComment(current, content, onSent)
                     },
+                    onAddSubtask = { showNewSubtask = true },
+                    onToggleSubtask = vm::toggleCompleted,
+                    onAddAttachment = { attachmentPicker.launch(arrayOf("*/*")) },
+                    onDeleteAttachment = { attachment ->
+                        vm.deleteAttachment(task.id, attachment.id)
+                    },
+                    onShare = { shareTarget = task },
                     onMore = { actionTarget = it },
                 )
             } ?: run { page = TaskPage.List }
@@ -261,6 +293,10 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
         TaskActionSheet(
             task = target,
             onDismiss = { actionTarget = null },
+            onShare = {
+                actionTarget = null
+                shareTarget = target
+            },
             onDelete = {
                 vm.deleteTask(target) {
                     actionTarget = null
@@ -282,6 +318,75 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 showNewGroup = false
             },
         )
+    }
+    if (showNewSubtask && selectedTask != null) {
+        NewSubtaskDialog(
+            onDismiss = { showNewSubtask = false },
+            onCreate = { title ->
+                vm.createSubtask(selectedTask, title)
+                showNewSubtask = false
+            },
+        )
+    }
+    shareTarget?.let { task ->
+        val cardTitle = stringResource(R.string.task_share_card_title)
+        val assigneeLabel = stringResource(R.string.task_assignee)
+        val dueLabel = stringResource(R.string.task_due_time)
+        val followLabel = stringResource(R.string.task_follow)
+        val viewLabel = stringResource(R.string.task_view_details)
+        ForwardPicker(
+            deps = app,
+            targets = imSession.allForwardTargets(),
+            onForward = { cids ->
+                vm.shareTask(task, cids) { granted ->
+                    granted.forEach { cid ->
+                        imSession.sendMessageAsync(
+                            cid,
+                            buildTaskCardBody(
+                                task,
+                                cid,
+                                cardTitle,
+                                assigneeLabel,
+                                dueLabel,
+                                followLabel,
+                                viewLabel,
+                            ),
+                            "rich-card",
+                        )
+                    }
+                    shareTarget = null
+                }
+            },
+            onCreateGroupForward = { showShareGroup = true },
+            onDismiss = { shareTarget = null },
+        )
+        if (showShareGroup) {
+            ForwardCreateGroupFlow(
+                deps = app,
+                onCreated = { cid ->
+                    vm.shareTask(task, listOf(cid)) { granted ->
+                        granted.forEach { grantedCid ->
+                            imSession.sendMessageAsync(
+                                grantedCid,
+                                buildTaskCardBody(
+                                    task,
+                                    grantedCid,
+                                    cardTitle,
+                                    assigneeLabel,
+                                    dueLabel,
+                                    followLabel,
+                                    viewLabel,
+                                ),
+                                "rich-card",
+                            )
+                        }
+                        showShareGroup = false
+                        shareTarget = null
+                    }
+                },
+                onCancel = { showShareGroup = false },
+            )
+        }
     }
 }
 
@@ -882,10 +987,16 @@ private fun CreateTaskPage(
 @Composable
 private fun TaskDetailPage(
     task: TaskItem,
+    detail: TaskDetailItem?,
     onBack: () -> Unit,
     onToggleDone: (TaskItem) -> Unit,
     onToggleFollow: (TaskItem) -> Unit,
     onSendComment: (TaskItem, String, () -> Unit) -> Unit,
+    onAddSubtask: () -> Unit,
+    onToggleSubtask: (TaskItem) -> Unit,
+    onAddAttachment: () -> Unit,
+    onDeleteAttachment: (TaskAttachmentItem) -> Unit,
+    onShare: () -> Unit,
     onMore: (TaskItem) -> Unit,
 ) {
     var comment by remember { mutableStateOf("") }
@@ -904,7 +1015,7 @@ private fun TaskDetailPage(
                         tint = if (task.followed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                IconButton(onClick = {}) { Icon(Icons.Outlined.Share, stringResource(R.string.task_share)) }
+                IconButton(onClick = onShare) { Icon(Icons.Outlined.Share, stringResource(R.string.task_share)) }
                 IconButton(onClick = {}) { Icon(Icons.Outlined.ContentCopy, stringResource(R.string.task_copy)) }
                 IconButton(onClick = { onMore(task) }) { Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.task_more)) }
             }
@@ -940,6 +1051,9 @@ private fun TaskDetailPage(
             contentPadding = PaddingValues(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
             verticalArrangement = Arrangement.spacedBy(Dimens.IconSmall),
         ) {
+            if (detail?.loading == true) {
+                item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
+            }
             item {
                 Row(verticalAlignment = Alignment.Top) {
                     Box(
@@ -971,17 +1085,71 @@ private fun TaskDetailPage(
                 }
             }
             item {
-                DetailSectionTitle(R.string.task_subtasks, "${task.subtaskProgress?.first ?: 0}/${task.subtaskProgress?.second ?: 0}")
+                DetailSectionTitle(
+                    R.string.task_subtasks,
+                    "${detail?.subtasks?.count { it.status == TaskStatus.Done } ?: 0}/${detail?.subtasks?.size ?: 0}",
+                )
                 Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(Dimens.SpaceM), modifier = Modifier.fillMaxWidth()) {
-                    ActionRow(Icons.Filled.Add, R.string.task_add_subtask)
+                    Column {
+                        detail?.subtasks.orEmpty().forEach { subtask ->
+                            TaskRow(
+                                task = subtask,
+                                onClick = {},
+                                onToggleDone = { onToggleSubtask(subtask) },
+                                onLongClick = {},
+                            )
+                        }
+                        if (task.canCreateSubtasks) {
+                            ActionRow(
+                                Icons.Filled.Add,
+                                R.string.task_add_subtask,
+                                onClick = onAddSubtask,
+                            )
+                        }
+                    }
                 }
             }
             item {
                 DetailSectionTitle(R.string.task_attachments, null)
-                OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Outlined.AttachFile, null)
-                    Spacer(Modifier.width(Dimens.SpaceS))
-                    Text(stringResource(R.string.task_add_attachment))
+                detail?.attachments.orEmpty().forEach { attachment ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Outlined.AttachFile, null)
+                        Spacer(Modifier.width(Dimens.SpaceM))
+                        Column(Modifier.weight(1f)) {
+                            Text(attachment.filename, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            attachment.size?.let { size ->
+                                Text(
+                                    formatFileSize(size),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        if (task.canManageAttachments) {
+                            IconButton(onClick = { onDeleteAttachment(attachment) }) {
+                                Icon(Icons.Filled.DeleteOutline, stringResource(R.string.task_delete_attachment))
+                            }
+                        }
+                    }
+                }
+                if (task.canManageAttachments) {
+                    OutlinedButton(
+                        onClick = onAddAttachment,
+                        enabled = detail?.uploadingAttachment != true,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Outlined.AttachFile, null)
+                        Spacer(Modifier.width(Dimens.SpaceS))
+                        Text(
+                            stringResource(
+                                if (detail?.uploadingAttachment == true) R.string.task_uploading_attachment
+                                else R.string.task_add_attachment,
+                            ),
+                        )
+                    }
                 }
             }
             item {
@@ -1003,6 +1171,22 @@ private fun TaskDetailPage(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
                 )
+            }
+            if (!detail?.comments.isNullOrEmpty()) {
+                item { DetailSectionTitle(R.string.task_comments, detail?.comments?.size.toString()) }
+                items(detail?.comments.orEmpty(), key = { it.id }) { taskComment ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        Avatar(taskComment.author, Dimens.AvatarS)
+                        Spacer(Modifier.width(Dimens.SpaceM))
+                        Column(Modifier.weight(1f)) {
+                            Text(taskComment.author, fontWeight = FontWeight.SemiBold)
+                            Text(taskComment.content)
+                        }
+                    }
+                }
             }
         }
     }
@@ -1143,9 +1327,10 @@ private fun FormValueRow(icon: ImageVector, labelRes: Int, value: String, onClic
 }
 
 @Composable
-private fun ActionRow(icon: ImageVector, labelRes: Int) {
+private fun ActionRow(icon: ImageVector, labelRes: Int, onClick: () -> Unit = {}) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable {}.padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceL),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
+            .padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceL),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1218,7 +1403,12 @@ private fun FilterSheet(includeDone: Boolean, onIncludeDoneChange: (Boolean) -> 
 }
 
 @Composable
-private fun TaskActionSheet(task: TaskItem, onDismiss: () -> Unit, onDelete: () -> Unit) {
+private fun TaskActionSheet(
+    task: TaskItem,
+    onDismiss: () -> Unit,
+    onShare: () -> Unit,
+    onDelete: () -> Unit,
+) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().padding(bottom = Dimens.SpaceXl)) {
             Text(
@@ -1229,7 +1419,7 @@ private fun TaskActionSheet(task: TaskItem, onDismiss: () -> Unit, onDelete: () 
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
-            SheetAction(Icons.Outlined.Share, R.string.task_share, onDismiss)
+            SheetAction(Icons.Outlined.Share, R.string.task_share, onShare)
             SheetAction(Icons.Outlined.ContentCopy, R.string.task_duplicate, onDismiss)
             SheetAction(Icons.Outlined.CalendarMonth, R.string.task_set_milestone, onDismiss)
             SheetAction(Icons.Filled.DeleteOutline, R.string.task_delete, onDelete, danger = true)
@@ -1279,4 +1469,93 @@ private fun NewGroupDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
         confirmButton = { TextButton(onClick = { onCreate(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.task_confirm)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.task_cancel)) } },
     )
+}
+
+@Composable
+private fun NewSubtaskDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
+    var title by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.task_add_subtask)) },
+        text = {
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                placeholder = { Text(stringResource(R.string.task_title_hint)) },
+                singleLine = true,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onCreate(title) }, enabled = title.isNotBlank()) {
+                Text(stringResource(R.string.task_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.task_cancel)) }
+        },
+    )
+}
+
+private fun formatFileSize(bytes: Long): String = when {
+    bytes >= 1024L * 1024L -> "${bytes / (1024L * 1024L)} MB"
+    bytes >= 1024L -> "${bytes / 1024L} KB"
+    else -> "$bytes B"
+}
+
+private fun buildTaskCardBody(
+    task: TaskItem,
+    conversationId: String,
+    cardTitle: String,
+    assigneeLabel: String,
+    dueLabel: String,
+    followLabel: String,
+    viewLabel: String,
+): String {
+    val detailUrl = "${BuildConfig.WE_MEET_BASE_URL.trimEnd('/')}/tasks" +
+        "?task=${Uri.encode(task.id)}&shared_via=${Uri.encode(conversationId)}"
+    val fields = JSONArray()
+        .put(JSONObject().put("label", assigneeLabel).put("value", task.assignee))
+        .put(JSONObject().put("label", dueLabel).put("value", task.dueLabel))
+    val buttons = JSONArray()
+        .put(
+            JSONObject()
+                .put("id", "follow-task:${task.id}:$conversationId")
+                .put("text", followLabel)
+                .put("style", "default")
+                .put("action", "url")
+                .put("url", detailUrl),
+        )
+        .put(
+            JSONObject()
+                .put("id", "view-task:${task.id}")
+                .put("text", viewLabel)
+                .put("style", "primary")
+                .put("action", "url")
+                .put("url", detailUrl),
+        )
+    val blocks = JSONArray()
+        .put(
+            JSONObject()
+                .put("type", "text")
+                .put(
+                    "spans",
+                    JSONArray().put(
+                        JSONObject().put("tag", "text").put("text", task.title).put("b", true),
+                    ),
+                ),
+        )
+        .put(JSONObject().put("type", "fields").put("items", fields))
+        .put(JSONObject().put("type", "divider"))
+        .put(
+            JSONObject()
+                .put("type", "actions")
+                .put("resolve", "each")
+                .put("buttons", buttons),
+        )
+    return JSONObject()
+        .put("plain", "$cardTitle ${task.title}")
+        .put("v", 1)
+        .put("header", JSONObject().put("title", cardTitle).put("theme", "info"))
+        .put("blocks", blocks)
+        .toString()
 }

@@ -1,5 +1,6 @@
 package com.we.meet.ui.tasks
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -15,7 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class TaskFailure { Load, Save, Delete, Comment }
+enum class TaskFailure { Load, Save, Delete, Comment, Attachment, Share }
 
 data class TaskUiState(
     val tasks: List<TaskItem> = emptyList(),
@@ -29,6 +30,7 @@ data class TaskUiState(
     val mutatingIds: Set<String> = emptySet(),
     val searchResults: List<TaskItem> = emptyList(),
     val searching: Boolean = false,
+    val detail: TaskDetailItem? = null,
     val failure: TaskFailure? = null,
 ) {
     val selectedList: TaskListItem?
@@ -111,6 +113,54 @@ class TaskViewModel(
         }
     }
 
+    fun loadDetail(taskId: String) {
+        _ui.update {
+            it.copy(detail = TaskDetailItem(taskId = taskId, loading = true), failure = null)
+        }
+        viewModelScope.launch {
+            repository.loadDetail(taskId).fold(
+                onSuccess = { detail ->
+                    val task = detail.task.toItem().copy(commentCount = detail.comments.size)
+                    _ui.update {
+                        it.copy(
+                            tasks = it.tasks.replace(taskId, task),
+                            searchResults = it.searchResults.replace(taskId, task),
+                            detail = TaskDetailItem(
+                                taskId = taskId,
+                                subtasks = detail.subtasks.map(TaskDto::toItem),
+                                comments = detail.comments.map { comment ->
+                                    TaskCommentItem(
+                                        id = comment.id,
+                                        author = comment.author?.displayName.orEmpty(),
+                                        content = comment.content,
+                                        createdAt = comment.createdAt,
+                                    )
+                                },
+                                attachments = detail.attachments.map { attachment ->
+                                    TaskAttachmentItem(
+                                        id = attachment.id,
+                                        filename = attachment.filename,
+                                        size = attachment.size,
+                                        uploader = attachment.uploader?.displayName.orEmpty(),
+                                    )
+                                },
+                            ),
+                        )
+                    }
+                },
+                onFailure = { failure ->
+                    if (failure is CancellationException) return@launch
+                    _ui.update {
+                        it.copy(
+                            detail = it.detail?.copy(loading = false),
+                            failure = TaskFailure.Load,
+                        )
+                    }
+                },
+            )
+        }
+    }
+
     fun createTask(
         title: String,
         description: String,
@@ -160,6 +210,7 @@ class TaskViewModel(
             it.copy(
                 tasks = it.tasks.replace(id, optimistic),
                 searchResults = it.searchResults.replace(id, optimistic),
+                detail = it.detail?.copy(subtasks = it.detail.subtasks.replace(id, optimistic)),
                 mutatingIds = it.mutatingIds + id,
                 failure = null,
             )
@@ -172,6 +223,9 @@ class TaskViewModel(
                         it.copy(
                             tasks = it.tasks.replace(id, confirmed),
                             searchResults = it.searchResults.replace(id, confirmed),
+                            detail = it.detail?.copy(
+                                subtasks = it.detail.subtasks.replace(id, confirmed),
+                            ),
                             mutatingIds = it.mutatingIds - id,
                         )
                     }
@@ -181,6 +235,9 @@ class TaskViewModel(
                         it.copy(
                             tasks = it.tasks.replace(id, previous),
                             searchResults = it.searchResults.replace(id, previous),
+                            detail = it.detail?.copy(
+                                subtasks = it.detail.subtasks.replace(id, previous),
+                            ),
                             mutatingIds = it.mutatingIds - id,
                             failure = TaskFailure.Save,
                         )
@@ -217,12 +274,115 @@ class TaskViewModel(
         if (!item.canComment || content.isBlank()) return
         viewModelScope.launch {
             repository.createComment(item.id, content.trim()).fold(
-                onSuccess = {
+                onSuccess = { comment ->
                     val updated = item.copy(commentCount = item.commentCount + 1)
-                    _ui.update { it.copy(tasks = it.tasks.replace(item.id, updated)) }
+                    _ui.update {
+                        it.copy(
+                            tasks = it.tasks.replace(item.id, updated),
+                            detail = it.detail?.copy(
+                                comments = it.detail.comments + TaskCommentItem(
+                                    id = comment.id,
+                                    author = comment.author?.displayName.orEmpty(),
+                                    content = comment.content,
+                                    createdAt = comment.createdAt,
+                                ),
+                            ),
+                        )
+                    }
                     onSent()
                 },
                 onFailure = { _ui.update { it.copy(failure = TaskFailure.Comment) } },
+            )
+        }
+    }
+
+    fun createSubtask(parent: TaskItem, title: String) {
+        if (!parent.canCreateSubtasks || title.isBlank()) return
+        viewModelScope.launch {
+            repository.createTask(
+                title = title.trim(),
+                description = "",
+                assigneeId = selfUserId,
+                dueDate = null,
+                taskListId = parent.listId,
+                parentId = parent.id,
+            ).fold(
+                onSuccess = { created ->
+                    _ui.update {
+                        it.copy(
+                            detail = it.detail?.copy(
+                                subtasks = it.detail.subtasks + created.toItem(),
+                            ),
+                        )
+                    }
+                },
+                onFailure = { _ui.update { it.copy(failure = TaskFailure.Save) } },
+            )
+        }
+    }
+
+    fun uploadAttachment(task: TaskItem, uri: Uri) {
+        if (ui.value.detail?.uploadingAttachment == true) return
+        _ui.update {
+            it.copy(
+                detail = it.detail?.copy(uploadingAttachment = true),
+                failure = null,
+            )
+        }
+        viewModelScope.launch {
+            repository.uploadAttachment(task.id, uri).fold(
+                onSuccess = { attachment ->
+                    _ui.update {
+                        it.copy(
+                            detail = it.detail?.copy(
+                                uploadingAttachment = false,
+                                attachments = it.detail.attachments + TaskAttachmentItem(
+                                    id = attachment.id,
+                                    filename = attachment.filename,
+                                    size = attachment.size,
+                                    uploader = attachment.uploader?.displayName.orEmpty(),
+                                ),
+                            ),
+                        )
+                    }
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(
+                            detail = it.detail?.copy(uploadingAttachment = false),
+                            failure = TaskFailure.Attachment,
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    fun deleteAttachment(taskId: String, attachmentId: String) {
+        viewModelScope.launch {
+            repository.deleteAttachment(taskId, attachmentId).fold(
+                onSuccess = {
+                    _ui.update {
+                        it.copy(
+                            detail = it.detail?.copy(
+                                attachments = it.detail.attachments.filterNot { attachment ->
+                                    attachment.id == attachmentId
+                                },
+                            ),
+                        )
+                    }
+                },
+                onFailure = { _ui.update { it.copy(failure = TaskFailure.Attachment) } },
+            )
+        }
+    }
+
+    fun shareTask(item: TaskItem, conversationIds: List<String>, onShared: (List<String>) -> Unit) {
+        if (conversationIds.isEmpty()) return
+        viewModelScope.launch {
+            repository.shareTask(item.id, conversationIds).fold(
+                onSuccess = onShared,
+                onFailure = { _ui.update { it.copy(failure = TaskFailure.Share) } },
             )
         }
     }
@@ -295,6 +455,8 @@ private fun TaskDto.toItem(): TaskItem {
         canUpdateStatus = canUpdateStatus,
         canDelete = canDelete,
         canComment = canComment,
+        canManageAttachments = canManageAttachments,
+        canCreateSubtasks = canCreateSubtasks,
     )
 }
 
