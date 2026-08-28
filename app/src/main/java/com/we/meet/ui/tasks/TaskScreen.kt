@@ -226,7 +226,10 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 loading = ui.loading,
                 owner = owner,
                 onViewChange = vm::setView,
-                onOpenDrawer = { showDrawer = true },
+                onOpenDrawer = {
+                    vm.refreshNavigation()
+                    showDrawer = true
+                },
                 onSearch = { page = TaskPage.Search },
                 onSettings = { page = TaskPage.Settings },
                 onFilter = { showFilter = true },
@@ -310,8 +313,11 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 selectedList = ui.selectedList?.name,
                 taskLists = ui.taskLists,
                 listGroups = ui.listGroups,
-                assignedCount = ui.tasks.count { it.status != TaskStatus.Done },
-                followingCount = ui.tasks.count(TaskItem::followed),
+                assignedCount = ui.navigationCounts.assigned,
+                followingCount = ui.navigationCounts.following,
+                createdCount = ui.navigationCounts.created,
+                allCount = ui.navigationCounts.all,
+                completedCount = ui.navigationCounts.completed,
                 onDismiss = { showDrawer = false },
                 onSelectView = {
                     vm.setView(it)
@@ -722,10 +728,13 @@ private fun TaskListPage(
                     onSearch = onSearch,
                     onSettings = onSettings,
                 )
-                if (selectedList == null) {
+                if (
+                    selectedList == null &&
+                    (view == TaskView.Assigned || view == TaskView.Following)
+                ) {
                     TaskSegmentedControl(selected = view, onSelected = onViewChange)
                 }
-                TaskFilterBar(includeDone = includeDone, onFilter = onFilter)
+                TaskFilterBar(view = view, includeDone = includeDone, onFilter = onFilter)
                 if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
             }
 
@@ -865,7 +874,7 @@ private fun TaskSegmentedControl(selected: TaskView, onSelected: (TaskView) -> U
 }
 
 @Composable
-private fun TaskFilterBar(includeDone: Boolean, onFilter: () -> Unit) {
+private fun TaskFilterBar(view: TaskView, includeDone: Boolean, onFilter: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
@@ -873,8 +882,12 @@ private fun TaskFilterBar(includeDone: Boolean, onFilter: () -> Unit) {
         Icon(Icons.Outlined.FilterList, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.width(Dimens.SpaceS))
         Text(
-            if (includeDone) stringResource(R.string.task_all_statuses)
-            else stringResource(R.string.task_incomplete),
+            when (view) {
+                TaskView.All -> stringResource(R.string.task_all_statuses)
+                TaskView.Completed -> stringResource(R.string.task_completed)
+                else -> if (includeDone) stringResource(R.string.task_all_statuses)
+                else stringResource(R.string.task_incomplete)
+            },
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -885,7 +898,11 @@ private fun TaskFilterBar(includeDone: Boolean, onFilter: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.weight(1f))
-        IconButton(onClick = onFilter) { Icon(Icons.Outlined.Tune, stringResource(R.string.task_filter)) }
+        if (view != TaskView.All && view != TaskView.Completed) {
+            IconButton(onClick = onFilter) {
+                Icon(Icons.Outlined.Tune, stringResource(R.string.task_filter))
+            }
+        }
     }
 }
 
@@ -1064,6 +1081,9 @@ private fun TaskNavigationDrawer(
     listGroups: List<TaskListGroupItem>,
     assignedCount: Int,
     followingCount: Int,
+    createdCount: Int,
+    allCount: Int,
+    completedCount: Int,
     onDismiss: () -> Unit,
     onSelectView: (TaskView) -> Unit,
     onSelectList: (TaskListItem) -> Unit,
@@ -1108,10 +1128,23 @@ private fun TaskNavigationDrawer(
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    DrawerItem(Icons.Outlined.TaskAlt, R.string.task_all_tasks, null) {
-                        onSelectView(TaskView.Assigned)
+                    DrawerItem(Icons.Outlined.TaskAlt, R.string.task_all_tasks, allCount.toString()) {
+                        onSelectView(TaskView.All)
                     }
-                    DrawerItem(Icons.Outlined.Checklist, R.string.task_completed, null) {}
+                    DrawerItem(
+                        Icons.Outlined.PersonOutline,
+                        R.string.task_created_by_me,
+                        createdCount.toString(),
+                    ) {
+                        onSelectView(TaskView.Created)
+                    }
+                    DrawerItem(
+                        Icons.Outlined.Checklist,
+                        R.string.task_completed,
+                        completedCount.toString(),
+                    ) {
+                        onSelectView(TaskView.Completed)
+                    }
                     HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM))
                     Row(
                         Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceS),

@@ -24,6 +24,8 @@ import com.we.meet.data.api.dto.TaskListDto
 import com.we.meet.data.api.dto.TaskListGroupDto
 import com.we.meet.data.api.dto.TaskGroupDto
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
@@ -41,6 +43,15 @@ class TaskRepository(
     data class Navigation(
         val lists: List<TaskListDto>,
         val groups: List<TaskListGroupDto>,
+        val counts: NavigationCounts,
+    )
+
+    data class NavigationCounts(
+        val assigned: Int = 0,
+        val following: Int = 0,
+        val created: Int = 0,
+        val all: Int = 0,
+        val completed: Int = 0,
     )
 
     data class Detail(
@@ -53,20 +64,50 @@ class TaskRepository(
 
     suspend fun loadNavigation(): Result<Navigation> = runCatching {
         withContext(Dispatchers.IO) {
-            Navigation(api.listTaskLists(), api.listTaskListGroups())
+            coroutineScope {
+                val lists = async { api.listTaskLists() }
+                val groups = async { api.listTaskListGroups() }
+                val assigned = async {
+                    runCatching { api.getTaskStatistics("assigned").summary }.getOrNull()
+                }
+                val following = async {
+                    runCatching { api.getTaskStatistics("following").summary }.getOrNull()
+                }
+                val created = async {
+                    runCatching { api.getTaskStatistics("created").summary }.getOrNull()
+                }
+                val all = async {
+                    runCatching { api.getTaskStatistics("all").summary }.getOrNull()
+                }
+                val assignedSummary = assigned.await()
+                val followingSummary = following.await()
+                val createdSummary = created.await()
+                val allSummary = all.await()
+                Navigation(
+                    lists = lists.await(),
+                    groups = groups.await(),
+                    counts = NavigationCounts(
+                        assigned = assignedSummary?.openCount ?: 0,
+                        following = followingSummary?.openCount ?: 0,
+                        created = createdSummary?.openCount ?: 0,
+                        all = allSummary?.total ?: 0,
+                        completed = allSummary?.completed ?: 0,
+                    ),
+                )
+            }
         }
     }
 
     suspend fun loadTasks(
         scope: String,
-        includeCompleted: Boolean,
+        status: String,
         taskListId: String?,
         query: String? = null,
     ): Result<List<TaskDto>> = runCatching {
         withContext(Dispatchers.IO) {
             api.listTasks(
                 scope = scope,
-                status = if (includeCompleted) "all" else "open",
+                status = status,
                 taskList = taskListId ?: "all",
                 query = query?.takeIf(String::isNotBlank),
             ).results

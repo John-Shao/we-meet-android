@@ -19,6 +19,7 @@ import com.we.meet.data.api.dto.TaskDto
 import com.we.meet.data.api.dto.TaskListDto
 import com.we.meet.data.api.dto.TaskListGroupDto
 import com.we.meet.data.api.dto.TaskGroupDto
+import com.we.meet.data.api.dto.TaskStatisticsDto
 import com.we.meet.data.api.dto.TaskSubtreeImpactDto
 import com.we.meet.data.api.dto.TaskAttachmentDto
 import com.we.meet.data.api.dto.TaskActivityDto
@@ -46,6 +47,13 @@ interface TaskApi {
         @Query("ordering") ordering: String = "due_date",
         @Query("page_size") pageSize: Int = 50,
     ): PagedTasksDto
+
+    @GET("api/v1.0/tasks/statistics/")
+    suspend fun getTaskStatistics(
+        @Query("scope") scope: String,
+        @Query("status") status: String = "all",
+        @Query("task_list") taskList: String = "all",
+    ): TaskStatisticsDto
 
     @GET("api/v1.0/tasks/{id}/")
     suspend fun getTask(@Path("id") id: String): TaskDto

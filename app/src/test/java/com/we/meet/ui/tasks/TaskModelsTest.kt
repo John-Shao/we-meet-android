@@ -49,4 +49,16 @@ class TaskModelsTest {
         assertEquals("urgent", filter.priority?.name?.lowercase())
         assertTrue(!TaskSearchFilter().isActive)
     }
+
+    @Test
+    fun quickAccessViewsApplyCompletedVisibility() {
+        assertEquals(
+            listOf("1", "2", "3"),
+            tasks.visibleFor(TaskView.All, TaskFilter()).map(TaskItem::id),
+        )
+        assertEquals(
+            listOf("3"),
+            tasks.visibleFor(TaskView.Completed, TaskFilter()).map(TaskItem::id),
+        )
+    }
 }

@@ -239,6 +239,7 @@
     <string name="task_activity">Activity</string>
     <string name="task_quick_access">Quick access</string>
     <string name="task_all_tasks">All tasks</string>
+    <string name="task_created_by_me">Created by me</string>
     <string name="task_completed">Completed</string>
     <string name="task_lists">Task lists</string>
     <string name="task_group_product">Product</string>

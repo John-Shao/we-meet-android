@@ -131,6 +131,20 @@ data class PagedTasksDto(
 )
 
 @JsonClass(generateAdapter = true)
+data class TaskStatisticsSummaryDto(
+    val total: Int = 0,
+    @Json(name = "open") val openCount: Int = 0,
+    val completed: Int = 0,
+    val overdue: Int = 0,
+    @Json(name = "completion_rate") val completionRate: Int = 0,
+)
+
+@JsonClass(generateAdapter = true)
+data class TaskStatisticsDto(
+    val summary: TaskStatisticsSummaryDto = TaskStatisticsSummaryDto(),
+)
+
+@JsonClass(generateAdapter = true)
 data class CreateTaskRequest(
     val title: String,
     val description: String = "",

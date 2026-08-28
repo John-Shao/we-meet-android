@@ -229,6 +229,7 @@
     <string name="task_activity">Activiteit</string>
     <string name="task_quick_access">Snelle toegang</string>
     <string name="task_all_tasks">Alle taken</string>
+    <string name="task_created_by_me">Door mij gemaakt</string>
     <string name="task_completed">Voltooid</string>
     <string name="task_lists">Takenlijsten</string>
     <string name="task_group_product">Product</string>

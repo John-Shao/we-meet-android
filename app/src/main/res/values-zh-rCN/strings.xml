@@ -239,6 +239,7 @@
     <string name="task_activity">动态</string>
     <string name="task_quick_access">快速访问</string>
     <string name="task_all_tasks">全部任务</string>
+    <string name="task_created_by_me">我创建的</string>
     <string name="task_completed">已完成</string>
     <string name="task_lists">任务清单</string>
     <string name="task_group_product">产品</string>

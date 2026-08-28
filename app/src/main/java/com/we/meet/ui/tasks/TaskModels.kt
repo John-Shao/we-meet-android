@@ -1,6 +1,6 @@
 package com.we.meet.ui.tasks
 
-enum class TaskView { Assigned, Following }
+enum class TaskView { Assigned, Following, Created, All, Completed }
 
 enum class TaskStatus { Todo, Done }
 
@@ -32,6 +32,14 @@ data class TaskSearchFilter(
         get() = creatorSelf || assigneeSelf || status != TaskSearchStatus.All ||
             due != TaskSearchDue.All || priority != null
 }
+
+data class TaskNavigationCounts(
+    val assigned: Int = 0,
+    val following: Int = 0,
+    val created: Int = 0,
+    val all: Int = 0,
+    val completed: Int = 0,
+)
 
 data class TaskPersonItem(
     val id: String,
@@ -138,7 +146,11 @@ internal fun List<TaskItem>.visibleFor(
 ): List<TaskItem> {
     val needle = filter.query.trim()
     return asSequence()
-        .filter { filter.includeDone || it.status != TaskStatus.Done }
+        .filter {
+            filter.includeDone || view == TaskView.All || view == TaskView.Completed ||
+                it.status != TaskStatus.Done
+        }
+        .filter { view != TaskView.Completed || it.status == TaskStatus.Done }
         .filter { view != TaskView.Following || it.followed }
         .filter { listName == null || it.listName == listName }
         .filter {

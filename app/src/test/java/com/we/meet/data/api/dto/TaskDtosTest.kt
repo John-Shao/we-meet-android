@@ -162,6 +162,32 @@ class TaskDtosTest {
     }
 
     @Test
+    fun taskStatisticsMapsNavigationCounts() {
+        val json = """
+            {
+              "hierarchy_scope":"include_descendants",
+              "summary":{
+                "total":12,
+                "open":8,
+                "completed":4,
+                "overdue":2,
+                "completion_rate":33
+              },
+              "workload":[],
+              "groups":[]
+            }
+        """.trimIndent()
+
+        val statistics = moshi.adapter(TaskStatisticsDto::class.java).fromJson(json)!!
+
+        assertEquals(12, statistics.summary.total)
+        assertEquals(8, statistics.summary.openCount)
+        assertEquals(4, statistics.summary.completed)
+        assertEquals(2, statistics.summary.overdue)
+        assertEquals(33, statistics.summary.completionRate)
+    }
+
+    @Test
     fun detailCollaborationResponsesMapFollowersAndActivity() {
         val taskJson = """
             {
