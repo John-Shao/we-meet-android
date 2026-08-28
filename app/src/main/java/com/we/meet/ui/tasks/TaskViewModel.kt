@@ -1425,6 +1425,7 @@ private fun TaskDto.toItem(): TaskItem {
         listName = taskList?.name ?: "—",
         section = group?.name ?: taskList?.name ?: "—",
         status = if (status == "completed") TaskStatus.Done else TaskStatus.Todo,
+        timeState = timeState.toTaskTimeState(),
         priority = when (priority) {
             "none" -> TaskPriority.None
             "low" -> TaskPriority.Low

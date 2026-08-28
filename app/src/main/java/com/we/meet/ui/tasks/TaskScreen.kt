@@ -1330,6 +1330,9 @@ private fun TaskRow(
     onLongClick: () -> Unit,
 ) {
     val done = task.status == TaskStatus.Done
+    val overdue = task.timeState == TaskTimeState.Overdue
+    val emphasizedPriority = task.priority == TaskPriority.High ||
+        task.priority == TaskPriority.Urgent
     Row(
         modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
@@ -1348,7 +1351,7 @@ private fun TaskRow(
         Spacer(Modifier.width(Dimens.SpaceM))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (task.priority == TaskPriority.High) {
+                if (emphasizedPriority) {
                     Box(Modifier.size(Dimens.SpaceS).clip(CircleShape).background(MaterialTheme.colorScheme.error))
                     Spacer(Modifier.width(Dimens.SpaceS))
                 }
@@ -1368,14 +1371,14 @@ private fun TaskRow(
                     Icons.Outlined.CalendarMonth,
                     null,
                     modifier = Modifier.size(Dimens.SpaceL),
-                    tint = if (task.priority == TaskPriority.High && !done) MaterialTheme.colorScheme.error
+                    tint = if (overdue && !done) MaterialTheme.colorScheme.error
                     else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.width(Dimens.SpaceXs))
                 Text(
                     task.dueLabel,
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (task.priority == TaskPriority.High && !done) MaterialTheme.colorScheme.error
+                    color = if (overdue && !done) MaterialTheme.colorScheme.error
                     else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 task.subtaskProgress?.let {

@@ -4,6 +4,19 @@ enum class TaskView { Assigned, Following, Created, All, Completed, Standalone }
 
 enum class TaskStatus { Todo, Done }
 
+enum class TaskTimeState {
+    StartingToday,
+    DueToday,
+    Overdue,
+}
+
+internal fun String?.toTaskTimeState(): TaskTimeState? = when (this) {
+    "starting_today" -> TaskTimeState.StartingToday
+    "due_today" -> TaskTimeState.DueToday
+    "overdue" -> TaskTimeState.Overdue
+    else -> null
+}
+
 enum class TaskPriority { None, Low, Medium, High, Urgent }
 
 enum class TaskGrouping { List, None }
@@ -97,6 +110,7 @@ data class TaskItem(
     val listName: String,
     val section: String,
     val status: TaskStatus = TaskStatus.Todo,
+    val timeState: TaskTimeState? = null,
     val priority: TaskPriority = TaskPriority.Medium,
     val followed: Boolean = false,
     val commentCount: Int = 0,

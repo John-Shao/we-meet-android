@@ -26,6 +26,7 @@ class TaskDtosTest {
                 "task_list":{"id":"list-1","name":"Mobile","color":"blue"},
                 "descendant_progress":{"completed":1,"total":3},
                 "due_date":"2026-08-29",
+                "time_state":"overdue",
                 "can_update_status":true,
                 "can_delete":true,
                 "can_comment":true,
@@ -43,6 +44,7 @@ class TaskDtosTest {
         assertEquals("Alex", task.assignees.single().displayName)
         assertEquals("Mobile", task.taskList?.name)
         assertEquals(3, task.descendantProgress.total)
+        assertEquals("overdue", task.timeState)
         assertTrue(task.canUpdateStatus)
         assertTrue(task.canManageAttachments)
         assertTrue(task.canCreateSubtasks)

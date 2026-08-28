@@ -58,6 +58,15 @@ class TaskModelsTest {
     }
 
     @Test
+    fun serverTimeStatesMapToTypedDisplayStates() {
+        assertEquals(TaskTimeState.StartingToday, "starting_today".toTaskTimeState())
+        assertEquals(TaskTimeState.DueToday, "due_today".toTaskTimeState())
+        assertEquals(TaskTimeState.Overdue, "overdue".toTaskTimeState())
+        assertEquals(null, "future".toTaskTimeState())
+        assertEquals(null, null.toTaskTimeState())
+    }
+
+    @Test
     fun quickAccessViewsApplyCompletedVisibility() {
         assertEquals(
             listOf("1", "2", "3"),
