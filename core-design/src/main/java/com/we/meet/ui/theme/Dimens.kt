@@ -262,6 +262,14 @@ object Dimens {
         val FabClearance = 88.dp
     }
 
+    /** Geometry that is specific to the task editor and detail flow. */
+    object Task {
+        /** Compact task sub-page toolbar; the tab root has its own larger header. */
+        val TopBarHeight = 60.dp
+        /** Multi-line description field in the task creation form. */
+        val DescriptionFieldHeight = 112.dp
+    }
+
     /**
      * 聊天与通话界面的几何常量。
      *

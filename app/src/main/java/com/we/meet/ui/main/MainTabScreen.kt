@@ -18,11 +18,13 @@ import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Contacts
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Videocam
+import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -76,6 +78,7 @@ import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.ui.home.HomeScreen
 import com.we.meet.ui.docs.DocsWebViewClient
 import com.we.meet.ui.profile.ProfileScreen
+import com.we.meet.ui.tasks.TaskScreen
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
@@ -87,7 +90,7 @@ import org.json.JSONObject
  * in the 消息 header (see the [ModalNavigationDrawer] below), matching Feishu.
  * That means 消息 is the ONLY route to the profile page.
  */
-enum class MainTab { Messages, Calendar, Meeting, Contacts, Docs }
+enum class MainTab { Messages, Calendar, Meeting, Contacts, Docs, Tasks }
 
 /** 分享云文档到聊天(入口 B)待处理请求:docs WebView 发来的一条「分享到聊天」。 */
 private data class ShareDocRequest(val docId: String, val title: String, val url: String)
@@ -347,6 +350,9 @@ fun MainTabScreen(
         },
         TabItem(R.string.tab_docs, Icons.Filled.Description, Icons.Outlined.Description) {
             DocsTabScreen(docsWebView)
+        },
+        TabItem(R.string.tab_tasks, Icons.Filled.TaskAlt, Icons.Outlined.TaskAlt) {
+            TaskScreen(ownerName = selfName)
         },
     )
 
