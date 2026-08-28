@@ -28,6 +28,7 @@ import com.we.meet.data.api.dto.TaskAttachmentDto
 import com.we.meet.data.api.dto.TaskActivityDto
 import com.we.meet.data.api.dto.ShareTaskRequest
 import com.we.meet.data.api.dto.ShareTaskResponse
+import com.we.meet.data.api.dto.StandaloneTaskCountDto
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -58,6 +59,9 @@ interface TaskApi {
         @Query("status") status: String = "all",
         @Query("task_list") taskList: String = "all",
     ): TaskStatisticsDto
+
+    @GET("api/v1.0/tasks/standalone-count/")
+    suspend fun getStandaloneTaskCount(): StandaloneTaskCountDto
 
     @GET("api/v1.0/tasks/{id}/")
     suspend fun getTask(@Path("id") id: String): TaskDto

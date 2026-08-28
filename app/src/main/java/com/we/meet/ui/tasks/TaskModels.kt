@@ -1,6 +1,6 @@
 package com.we.meet.ui.tasks
 
-enum class TaskView { Assigned, Following, Created, All, Completed }
+enum class TaskView { Assigned, Following, Created, All, Completed, Standalone }
 
 enum class TaskStatus { Todo, Done }
 
@@ -63,6 +63,7 @@ data class TaskNavigationCounts(
     val created: Int = 0,
     val all: Int = 0,
     val completed: Int = 0,
+    val standalone: Int = 0,
 )
 
 data class TaskPersonItem(

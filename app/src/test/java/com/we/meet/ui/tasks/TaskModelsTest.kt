@@ -60,5 +60,9 @@ class TaskModelsTest {
             listOf("3"),
             tasks.visibleFor(TaskView.Completed, TaskFilter()).map(TaskItem::id),
         )
+        assertEquals(
+            listOf("1", "2"),
+            tasks.visibleFor(TaskView.Standalone, TaskFilter()).map(TaskItem::id),
+        )
     }
 }

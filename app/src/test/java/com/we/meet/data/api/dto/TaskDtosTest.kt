@@ -188,6 +188,14 @@ class TaskDtosTest {
     }
 
     @Test
+    fun standaloneTaskCountMapsNavigationResponse() {
+        val count = moshi.adapter(StandaloneTaskCountDto::class.java)
+            .fromJson("{\"count\":7}")!!
+
+        assertEquals(7, count.count)
+    }
+
+    @Test
     fun detailCollaborationResponsesMapFollowersAndActivity() {
         val taskJson = """
             {

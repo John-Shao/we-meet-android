@@ -58,6 +58,7 @@ class TaskRepository(
         val created: Int = 0,
         val all: Int = 0,
         val completed: Int = 0,
+        val standalone: Int = 0,
     )
 
     data class Detail(
@@ -87,6 +88,9 @@ class TaskRepository(
                 val all = async {
                     runCatching { api.getTaskStatistics("all").summary }.getOrNull()
                 }
+                val standalone = async {
+                    runCatching { api.getStandaloneTaskCount().count }.getOrDefault(0)
+                }
                 val assignedSummary = assigned.await()
                 val followingSummary = following.await()
                 val createdSummary = created.await()
@@ -100,6 +104,7 @@ class TaskRepository(
                         created = createdSummary?.openCount ?: 0,
                         all = allSummary?.total ?: 0,
                         completed = allSummary?.completed ?: 0,
+                        standalone = standalone.await(),
                     ),
                 )
             }

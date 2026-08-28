@@ -354,6 +354,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 createdCount = ui.navigationCounts.created,
                 allCount = ui.navigationCounts.all,
                 completedCount = ui.navigationCounts.completed,
+                standaloneCount = ui.navigationCounts.standalone,
                 onDismiss = { showDrawer = false },
                 onSelectView = {
                     vm.setView(it)
@@ -786,7 +787,10 @@ private fun TaskListPage(
     onNewTaskGroup: (TaskListItem) -> Unit,
 ) {
     val visible = tasks.visibleFor(view, TaskFilter(includeDone = includeDone), selectedList?.name)
-    val sections = if (selectedList == null) {
+    val standaloneLabel = stringResource(R.string.task_standalone)
+    val sections = if (view == TaskView.Standalone) {
+        listOf(TaskDisplaySection(standaloneLabel, visible))
+    } else if (selectedList == null) {
         visible.groupBy(TaskItem::listName).map { (title, groupedTasks) ->
             TaskDisplaySection(title, groupedTasks)
         }
@@ -827,7 +831,8 @@ private fun TaskListPage(
             item {
                 TaskHomeHeader(
                     owner = owner,
-                    selectedList = selectedList?.name,
+                    selectedList = selectedList?.name
+                        ?: standaloneLabel.takeIf { view == TaskView.Standalone },
                     onOpenDrawer = onOpenDrawer,
                     onSearch = onSearch,
                     onSettings = onSettings,
@@ -989,6 +994,11 @@ private fun TaskFilterBar(view: TaskView, includeDone: Boolean, onFilter: () -> 
             when (view) {
                 TaskView.All -> stringResource(R.string.task_all_statuses)
                 TaskView.Completed -> stringResource(R.string.task_completed)
+                TaskView.Standalone -> if (includeDone) {
+                    stringResource(R.string.task_all_statuses)
+                } else {
+                    stringResource(R.string.task_incomplete)
+                }
                 else -> if (includeDone) stringResource(R.string.task_all_statuses)
                 else stringResource(R.string.task_incomplete)
             },
@@ -1188,6 +1198,7 @@ private fun TaskNavigationDrawer(
     createdCount: Int,
     allCount: Int,
     completedCount: Int,
+    standaloneCount: Int,
     onDismiss: () -> Unit,
     onSelectView: (TaskView) -> Unit,
     onSelectList: (TaskListItem) -> Unit,
@@ -1287,6 +1298,17 @@ private fun TaskNavigationDrawer(
                             onSelectList = onSelectList,
                             onListAction = onListAction,
                         )
+                    }
+                }
+                if (standaloneCount > 0) {
+                    item {
+                        DrawerItem(
+                            Icons.AutoMirrored.Outlined.ListAlt,
+                            R.string.task_standalone,
+                            standaloneCount.toString(),
+                        ) {
+                            onSelectView(TaskView.Standalone)
+                        }
                     }
                 }
                 item {

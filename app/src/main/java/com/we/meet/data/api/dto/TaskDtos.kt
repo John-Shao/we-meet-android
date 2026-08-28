@@ -179,6 +179,11 @@ data class TaskStatisticsDto(
 )
 
 @JsonClass(generateAdapter = true)
+data class StandaloneTaskCountDto(
+    val count: Int = 0,
+)
+
+@JsonClass(generateAdapter = true)
 data class CreateTaskRequest(
     val title: String,
     val description: String = "",

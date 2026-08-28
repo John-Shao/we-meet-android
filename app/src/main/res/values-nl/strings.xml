@@ -231,6 +231,7 @@
     <string name="task_all_tasks">Alle taken</string>
     <string name="task_created_by_me">Door mij gemaakt</string>
     <string name="task_completed">Voltooid</string>
+    <string name="task_standalone">Zelfstandige taken</string>
     <string name="task_lists">Takenlijsten</string>
     <string name="task_group_product">Product</string>
     <string name="task_group_team">Team</string>

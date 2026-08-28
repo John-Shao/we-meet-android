@@ -231,6 +231,7 @@
     <string name="task_all_tasks">Toutes les tâches</string>
     <string name="task_created_by_me">Créées par moi</string>
     <string name="task_completed">Terminées</string>
+    <string name="task_standalone">Tâches autonomes</string>
     <string name="task_lists">Listes de tâches</string>
     <string name="task_group_product">Produit</string>
     <string name="task_group_team">Équipe</string>

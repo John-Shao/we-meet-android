@@ -67,7 +67,16 @@ class TaskViewModel(
 
     fun selectList(listId: String?) {
         if (_ui.value.selectedListId == listId) return
-        _ui.update { it.copy(selectedListId = listId) }
+        _ui.update {
+            it.copy(
+                selectedListId = listId,
+                view = if (listId != null && it.view == TaskView.Standalone) {
+                    TaskView.Assigned
+                } else {
+                    it.view
+                },
+            )
+        }
         refresh()
     }
 
@@ -85,7 +94,11 @@ class TaskViewModel(
             repository.loadTasks(
                 scope = snapshot.view.apiScope,
                 status = snapshot.view.apiStatus(snapshot.includeDone),
-                taskListId = snapshot.selectedListId,
+                taskListId = if (snapshot.view == TaskView.Standalone) {
+                    "unassigned"
+                } else {
+                    snapshot.selectedListId
+                },
             ).fold(
                 onSuccess = { tasks ->
                     _ui.update { it.copy(tasks = tasks.map(TaskDto::toItem), loading = false) }
@@ -112,6 +125,7 @@ class TaskViewModel(
                             created = navigation.counts.created,
                             all = navigation.counts.all,
                             completed = navigation.counts.completed,
+                            standalone = navigation.counts.standalone,
                         ),
                     )
                 }
@@ -970,12 +984,13 @@ private val TaskView.apiScope: String
         TaskView.Assigned -> "assigned"
         TaskView.Following -> "following"
         TaskView.Created -> "created"
-        TaskView.All, TaskView.Completed -> "all"
+        TaskView.All, TaskView.Completed, TaskView.Standalone -> "all"
     }
 
 private fun TaskView.apiStatus(includeDone: Boolean): String = when (this) {
     TaskView.All -> "all"
     TaskView.Completed -> "completed"
+    TaskView.Standalone -> if (includeDone) "all" else "open"
     else -> if (includeDone) "all" else "open"
 }
 
