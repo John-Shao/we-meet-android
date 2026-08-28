@@ -41,6 +41,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -212,6 +213,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     var showNewList by remember { mutableStateOf(false) }
     var showArchivedLists by remember { mutableStateOf(false) }
     var groupActionTarget by remember { mutableStateOf<TaskListGroupItem?>(null) }
+    var orderListGroups by remember { mutableStateOf(false) }
     var listActionTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var shareListTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var memberPickerListTarget by remember { mutableStateOf<TaskListItem?>(null) }
@@ -653,9 +655,30 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 groupActionTarget = null
                 renameGroupTarget = group
             },
+            onManageOrder = if (
+                ui.listGroups.size > 1 && ui.listGroups.all(TaskListGroupItem::canManage)
+            ) {
+                {
+                    groupActionTarget = null
+                    orderListGroups = true
+                }
+            } else {
+                null
+            },
             onDelete = {
                 groupActionTarget = null
                 deleteGroupTarget = group
+            },
+        )
+    }
+    if (orderListGroups) {
+        TaskListGroupOrderDialog(
+            groups = ui.listGroups,
+            saving = ui.navigationMutating,
+            onDismiss = { orderListGroups = false },
+            onSave = { ordered ->
+                vm.reorderListGroups(ordered)
+                orderListGroups = false
             },
         )
     }
@@ -3310,6 +3333,76 @@ private fun SectionActionSheet(
 }
 
 @Composable
+private fun TaskListGroupOrderDialog(
+    groups: List<TaskListGroupItem>,
+    saving: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (List<TaskListGroupItem>) -> Unit,
+) {
+    var ordered by remember(groups) {
+        mutableStateOf(groups.sortedBy(TaskListGroupItem::sortOrder))
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.task_manage_group_order)) },
+        text = {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth()
+                    .heightIn(max = Dimens.SheetContentMaxHeight),
+            ) {
+                itemsIndexed(ordered, key = { _, group -> group.id }) { index, group ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(group.name, modifier = Modifier.weight(1f))
+                        IconButton(
+                            onClick = {
+                                ordered = ordered.toMutableList().also {
+                                    val moved = it.removeAt(index)
+                                    it.add(index - 1, moved)
+                                }
+                            },
+                            enabled = index > 0 && !saving,
+                        ) {
+                            Icon(Icons.Outlined.ArrowUpward, stringResource(R.string.task_move_up))
+                        }
+                        IconButton(
+                            onClick = {
+                                ordered = ordered.toMutableList().also {
+                                    val moved = it.removeAt(index)
+                                    it.add(index + 1, moved)
+                                }
+                            },
+                            enabled = index < ordered.lastIndex && !saving,
+                        ) {
+                            Icon(
+                                Icons.Outlined.ArrowDownward,
+                                stringResource(R.string.task_move_down),
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onSave(ordered) },
+                enabled = !saving && ordered.map(TaskListGroupItem::id) !=
+                    groups.sortedBy(TaskListGroupItem::sortOrder).map(TaskListGroupItem::id),
+            ) {
+                Text(stringResource(R.string.task_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !saving) {
+                Text(stringResource(R.string.task_cancel))
+            }
+        },
+    )
+}
+
+@Composable
 private fun TaskGroupOrderDialog(
     groups: List<TaskGroupItem>,
     saving: Boolean,
@@ -3494,6 +3587,7 @@ private fun NavigationActionSheet(
     canDelete: Boolean,
     onDismiss: () -> Unit,
     onRename: (() -> Unit)?,
+    onManageOrder: (() -> Unit)? = null,
     onShare: (() -> Unit)? = null,
     onArchive: (() -> Unit)? = null,
     onLeave: (() -> Unit)? = null,
@@ -3511,6 +3605,13 @@ private fun NavigationActionSheet(
             )
             onRename?.let {
                 SheetAction(Icons.Outlined.Edit, R.string.task_rename, it)
+            }
+            onManageOrder?.let {
+                SheetAction(
+                    Icons.AutoMirrored.Outlined.Sort,
+                    R.string.task_manage_group_order,
+                    it,
+                )
             }
             onShare?.let {
                 SheetAction(Icons.Outlined.Groups, R.string.task_list_share, it)

@@ -283,7 +283,10 @@ data class AddTaskFollowersRequest(
 data class CreateTaskListGroupRequest(val name: String)
 
 @JsonClass(generateAdapter = true)
-data class PatchTaskListGroupRequest(val name: String)
+data class PatchTaskListGroupRequest(
+    val name: String? = null,
+    @Json(name = "sort_order") val sortOrder: Int? = null,
+)
 
 @JsonClass(generateAdapter = true)
 data class TaskAttachmentDto(

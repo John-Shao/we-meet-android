@@ -994,6 +994,31 @@ class TaskViewModel(
         }
     }
 
+    fun reorderListGroups(groups: List<TaskListGroupItem>) {
+        if (
+            groups.size < 2 ||
+            groups.any { !it.canManage } ||
+            _ui.value.navigationMutating
+        ) {
+            return
+        }
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.reorderListGroups(groups.map(TaskListGroupItem::id)).fold(
+                onSuccess = { serverGroups ->
+                    _ui.update {
+                        it.copy(
+                            navigationMutating = false,
+                            listGroups = serverGroups.sortedBy { group -> group.sortOrder }
+                                .map(TaskListGroupDto::toItem),
+                        )
+                    }
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
+    }
+
     fun deleteListGroup(group: TaskListGroupItem) {
         if (!group.canManage || _ui.value.navigationMutating) return
         _ui.update { it.copy(navigationMutating = true, failure = null) }

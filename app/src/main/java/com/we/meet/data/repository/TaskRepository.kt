@@ -433,7 +433,19 @@ class TaskRepository(
     suspend fun renameListGroup(id: String, name: String): Result<TaskListGroupDto> =
         runCatching {
             withContext(Dispatchers.IO) {
-                api.patchTaskListGroup(id, PatchTaskListGroupRequest(name))
+                api.patchTaskListGroup(id, PatchTaskListGroupRequest(name = name))
+            }
+        }
+
+    suspend fun reorderListGroups(orderedIds: List<String>): Result<List<TaskListGroupDto>> =
+        runCatching {
+            withContext(Dispatchers.IO) {
+                orderedIds.mapIndexed { index, id ->
+                    api.patchTaskListGroup(
+                        id,
+                        PatchTaskListGroupRequest(sortOrder = index),
+                    )
+                }
             }
         }
 

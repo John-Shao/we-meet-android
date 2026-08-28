@@ -174,6 +174,15 @@ class TaskDtosTest {
     }
 
     @Test
+    fun patchTaskListGroupRequestUsesBackendSortField() {
+        val json = moshi.adapter(PatchTaskListGroupRequest::class.java).toJson(
+            PatchTaskListGroupRequest(sortOrder = 2),
+        )
+
+        assertEquals("{\"sort_order\":2}", json)
+    }
+
+    @Test
     fun patchTaskListRequestUsesBackendArchiveField() {
         val json = moshi.adapter(PatchTaskListRequest::class.java).toJson(
             PatchTaskListRequest(isArchived = true),
