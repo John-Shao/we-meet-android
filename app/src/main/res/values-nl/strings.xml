@@ -338,6 +338,14 @@
     <string name="task_delete_task_group_confirm">‘%1$s’ verwijderen? Alleen lege groepen kunnen worden verwijderd.</string>
     <string name="task_move_up">Omhoog verplaatsen</string>
     <string name="task_move_down">Omlaag verplaatsen</string>
+    <string name="task_search_filter_me">%1$s: ik</string>
+    <string name="task_search_open">Open</string>
+    <string name="task_search_all_due">Elke vervaldatum</string>
+    <string name="task_search_this_week">Deze week</string>
+    <string name="task_search_overdue">Te laat</string>
+    <string name="task_search_no_due">Geen vervaldatum</string>
+    <string name="task_search_all_priorities">Alle prioriteiten</string>
+    <string name="task_clear_filters">Filters wissen</string>
     <string name="tab_profile">Ik</string>
 
     <!-- WebView Keycloak login -->

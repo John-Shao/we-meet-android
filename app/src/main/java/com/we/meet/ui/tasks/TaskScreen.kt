@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -285,8 +286,12 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             TaskPage.Search -> TaskSearchPage(
                 tasks = ui.searchResults,
                 searching = ui.searching,
+                query = ui.searchQuery,
+                filter = ui.searchFilter,
+                canFilterSelf = !app.tokenStore.userId.isNullOrBlank(),
                 onBack = { page = TaskPage.List },
                 onQueryChange = vm::search,
+                onFilterChange = vm::setSearchFilter,
                 onTaskClick = {
                     selectedTaskId = it.id
                     page = TaskPage.Detail
@@ -1594,11 +1599,17 @@ private fun TaskDetailPage(
 private fun TaskSearchPage(
     tasks: List<TaskItem>,
     searching: Boolean,
+    query: String,
+    filter: TaskSearchFilter,
+    canFilterSelf: Boolean,
     onBack: () -> Unit,
     onQueryChange: (String) -> Unit,
+    onFilterChange: (TaskSearchFilter) -> Unit,
     onTaskClick: (TaskItem) -> Unit,
 ) {
-    var query by remember { mutableStateOf("") }
+    var statusMenu by remember { mutableStateOf(false) }
+    var dueMenu by remember { mutableStateOf(false) }
+    var priorityMenu by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(Dimens.SpaceM),
@@ -1607,15 +1618,11 @@ private fun TaskSearchPage(
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.task_back)) }
             OutlinedTextField(
                 value = query,
-                onValueChange = {
-                    query = it
-                    onQueryChange(it)
-                },
+                onValueChange = onQueryChange,
                 placeholder = { Text(stringResource(R.string.task_search_hint)) },
                 leadingIcon = { Icon(Icons.Outlined.Search, null) },
                 trailingIcon = if (query.isNotEmpty()) {{
                     IconButton(onClick = {
-                        query = ""
                         onQueryChange("")
                     }) { Icon(Icons.Filled.Close, null) }
                 }} else null,
@@ -1623,13 +1630,129 @@ private fun TaskSearchPage(
                 modifier = Modifier.weight(1f),
             )
         }
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceL),
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = Dimens.SpaceL),
             horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
         ) {
-            AssistChip(onClick = {}, label = { Text(stringResource(R.string.task_creator)) })
-            AssistChip(onClick = {}, label = { Text(stringResource(R.string.task_assignee)) })
-            AssistChip(onClick = {}, label = { Text(stringResource(R.string.task_status)) })
+            item {
+                AssistChip(
+                    onClick = { onFilterChange(filter.copy(creatorSelf = !filter.creatorSelf)) },
+                    enabled = canFilterSelf,
+                    label = {
+                        Text(
+                            if (filter.creatorSelf) {
+                                stringResource(R.string.task_search_filter_me, stringResource(R.string.task_creator))
+                            } else {
+                                stringResource(R.string.task_creator)
+                            },
+                        )
+                    },
+                    leadingIcon = filter.creatorSelf.takeIf { it }?.let {{
+                        Icon(Icons.Filled.Check, null, Modifier.size(Dimens.IconSmall))
+                    }},
+                )
+            }
+            item {
+                AssistChip(
+                    onClick = { onFilterChange(filter.copy(assigneeSelf = !filter.assigneeSelf)) },
+                    enabled = canFilterSelf,
+                    label = {
+                        Text(
+                            if (filter.assigneeSelf) {
+                                stringResource(R.string.task_search_filter_me, stringResource(R.string.task_assignee))
+                            } else {
+                                stringResource(R.string.task_assignee)
+                            },
+                        )
+                    },
+                    leadingIcon = filter.assigneeSelf.takeIf { it }?.let {{
+                        Icon(Icons.Filled.Check, null, Modifier.size(Dimens.IconSmall))
+                    }},
+                )
+            }
+            item {
+                Box {
+                    AssistChip(
+                        onClick = { statusMenu = true },
+                        label = { Text(searchStatusText(filter.status)) },
+                    )
+                    DropdownMenu(expanded = statusMenu, onDismissRequest = { statusMenu = false }) {
+                        TaskSearchStatus.entries.forEach { status ->
+                            DropdownMenuItem(
+                                text = { Text(searchStatusText(status)) },
+                                onClick = {
+                                    statusMenu = false
+                                    onFilterChange(filter.copy(status = status))
+                                },
+                                leadingIcon = selectedFilterIcon(status == filter.status),
+                            )
+                        }
+                    }
+                }
+            }
+            item {
+                Box {
+                    AssistChip(
+                        onClick = { dueMenu = true },
+                        label = { Text(searchDueText(filter.due)) },
+                    )
+                    DropdownMenu(expanded = dueMenu, onDismissRequest = { dueMenu = false }) {
+                        TaskSearchDue.entries.forEach { due ->
+                            DropdownMenuItem(
+                                text = { Text(searchDueText(due)) },
+                                onClick = {
+                                    dueMenu = false
+                                    onFilterChange(filter.copy(due = due))
+                                },
+                                leadingIcon = selectedFilterIcon(due == filter.due),
+                            )
+                        }
+                    }
+                }
+            }
+            item {
+                Box {
+                    AssistChip(
+                        onClick = { priorityMenu = true },
+                        label = {
+                            Text(
+                                if (filter.priority == null) {
+                                    stringResource(R.string.task_search_all_priorities)
+                                } else {
+                                    priorityText(filter.priority)
+                                },
+                            )
+                        },
+                    )
+                    DropdownMenu(expanded = priorityMenu, onDismissRequest = { priorityMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.task_search_all_priorities)) },
+                            onClick = {
+                                priorityMenu = false
+                                onFilterChange(filter.copy(priority = null))
+                            },
+                            leadingIcon = selectedFilterIcon(filter.priority == null),
+                        )
+                        TaskPriority.entries.forEach { priority ->
+                            DropdownMenuItem(
+                                text = { Text(priorityText(priority)) },
+                                onClick = {
+                                    priorityMenu = false
+                                    onFilterChange(filter.copy(priority = priority))
+                                },
+                                leadingIcon = selectedFilterIcon(priority == filter.priority),
+                            )
+                        }
+                    }
+                }
+            }
+            if (filter.isActive) {
+                item {
+                    TextButton(onClick = { onFilterChange(TaskSearchFilter()) }) {
+                        Text(stringResource(R.string.task_clear_filters))
+                    }
+                }
+            }
         }
         Text(
             stringResource(R.string.task_search_results, tasks.size),
@@ -1645,6 +1768,30 @@ private fun TaskSearchPage(
         }
     }
 }
+
+@Composable
+private fun searchStatusText(status: TaskSearchStatus): String = when (status) {
+    TaskSearchStatus.All -> stringResource(R.string.task_all_statuses)
+    TaskSearchStatus.Open -> stringResource(R.string.task_search_open)
+    TaskSearchStatus.Completed -> stringResource(R.string.task_completed)
+}
+
+@Composable
+private fun searchDueText(due: TaskSearchDue): String = when (due) {
+    TaskSearchDue.All -> stringResource(R.string.task_search_all_due)
+    TaskSearchDue.Today -> stringResource(R.string.task_today)
+    TaskSearchDue.Tomorrow -> stringResource(R.string.task_tomorrow)
+    TaskSearchDue.ThisWeek -> stringResource(R.string.task_search_this_week)
+    TaskSearchDue.Overdue -> stringResource(R.string.task_search_overdue)
+    TaskSearchDue.NoDate -> stringResource(R.string.task_search_no_due)
+}
+
+private fun selectedFilterIcon(selected: Boolean): (@Composable () -> Unit)? =
+    if (selected) {
+        { Icon(Icons.Filled.Check, null, Modifier.size(Dimens.IconSmall)) }
+    } else {
+        null
+    }
 
 @Composable
 private fun TaskSettingsPage(onBack: () -> Unit) {

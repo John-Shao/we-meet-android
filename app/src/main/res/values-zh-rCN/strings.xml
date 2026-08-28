@@ -348,6 +348,14 @@
     <string name="task_delete_task_group_confirm">删除“%1$s”？仅空分组可以删除。</string>
     <string name="task_move_up">上移</string>
     <string name="task_move_down">下移</string>
+    <string name="task_search_filter_me">%1$s：我</string>
+    <string name="task_search_open">未完成</string>
+    <string name="task_search_all_due">全部截止时间</string>
+    <string name="task_search_this_week">本周</string>
+    <string name="task_search_overdue">已逾期</string>
+    <string name="task_search_no_due">无截止时间</string>
+    <string name="task_search_all_priorities">全部优先级</string>
+    <string name="task_clear_filters">清除筛选</string>
     <string name="profile_ai_entry">AI 助手</string>
 
     <!-- WebView Keycloak 登录 -->

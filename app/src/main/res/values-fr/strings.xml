@@ -338,6 +338,14 @@
     <string name="task_delete_task_group_confirm">Supprimer « %1$s » ? Seuls les groupes vides peuvent être supprimés.</string>
     <string name="task_move_up">Déplacer vers le haut</string>
     <string name="task_move_down">Déplacer vers le bas</string>
+    <string name="task_search_filter_me">%1$s : moi</string>
+    <string name="task_search_open">En cours</string>
+    <string name="task_search_all_due">Toutes les échéances</string>
+    <string name="task_search_this_week">Cette semaine</string>
+    <string name="task_search_overdue">En retard</string>
+    <string name="task_search_no_due">Sans échéance</string>
+    <string name="task_search_all_priorities">Toutes les priorités</string>
+    <string name="task_clear_filters">Effacer les filtres</string>
     <string name="tab_profile">Moi</string>
 
     <!-- WebView Keycloak login -->

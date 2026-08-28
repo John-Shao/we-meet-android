@@ -338,6 +338,14 @@
     <string name="task_delete_task_group_confirm">„%1$s“ löschen? Nur leere Gruppen können gelöscht werden.</string>
     <string name="task_move_up">Nach oben</string>
     <string name="task_move_down">Nach unten</string>
+    <string name="task_search_filter_me">%1$s: Ich</string>
+    <string name="task_search_open">Offen</string>
+    <string name="task_search_all_due">Beliebiges Fälligkeitsdatum</string>
+    <string name="task_search_this_week">Diese Woche</string>
+    <string name="task_search_overdue">Überfällig</string>
+    <string name="task_search_no_due">Kein Fälligkeitsdatum</string>
+    <string name="task_search_all_priorities">Alle Prioritäten</string>
+    <string name="task_clear_filters">Filter löschen</string>
     <string name="tab_profile">Ich</string>
 
     <!-- WebView Keycloak login -->

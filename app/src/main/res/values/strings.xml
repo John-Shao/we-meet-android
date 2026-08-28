@@ -348,6 +348,14 @@
     <string name="task_delete_task_group_confirm">Delete “%1$s”? Only empty groups can be deleted.</string>
     <string name="task_move_up">Move up</string>
     <string name="task_move_down">Move down</string>
+    <string name="task_search_filter_me">%1$s: Me</string>
+    <string name="task_search_open">Open</string>
+    <string name="task_search_all_due">Any due date</string>
+    <string name="task_search_this_week">This week</string>
+    <string name="task_search_overdue">Overdue</string>
+    <string name="task_search_no_due">No due date</string>
+    <string name="task_search_all_priorities">All priorities</string>
+    <string name="task_clear_filters">Clear filters</string>
 
     <!-- WebView Keycloak login -->
     <string name="web_login_error">Sign-in failed</string>

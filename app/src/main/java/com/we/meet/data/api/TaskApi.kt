@@ -39,6 +39,10 @@ interface TaskApi {
         @Query("status") status: String,
         @Query("task_list") taskList: String = "all",
         @Query("q") query: String? = null,
+        @Query("creator_ids") creatorIds: String? = null,
+        @Query("assignee_ids") assigneeIds: String? = null,
+        @Query("due") due: String = "all",
+        @Query("priority") priority: String = "all",
         @Query("ordering") ordering: String = "due_date",
         @Query("page_size") pageSize: Int = 50,
     ): PagedTasksDto

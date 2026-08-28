@@ -73,6 +73,27 @@ class TaskRepository(
         }
     }
 
+    suspend fun searchTasks(
+        query: String?,
+        creatorId: String?,
+        assigneeId: String?,
+        status: String,
+        due: String,
+        priority: String,
+    ): Result<List<TaskDto>> = runCatching {
+        withContext(Dispatchers.IO) {
+            api.listTasks(
+                scope = "all",
+                status = status,
+                query = query?.trim()?.takeIf { it.length >= 2 },
+                creatorIds = creatorId,
+                assigneeIds = assigneeId,
+                due = due,
+                priority = priority,
+            ).results
+        }
+    }
+
     suspend fun loadDetail(taskId: String): Result<Detail> = runCatching {
         withContext(Dispatchers.IO) {
             Detail(

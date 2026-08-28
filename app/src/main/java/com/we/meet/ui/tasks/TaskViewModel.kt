@@ -33,6 +33,8 @@ data class TaskUiState(
     val creating: Boolean = false,
     val navigationMutating: Boolean = false,
     val mutatingIds: Set<String> = emptySet(),
+    val searchQuery: String = "",
+    val searchFilter: TaskSearchFilter = TaskSearchFilter(),
     val searchResults: List<TaskItem> = emptyList(),
     val searching: Boolean = false,
     val detail: TaskDetailItem? = null,
@@ -518,15 +520,39 @@ class TaskViewModel(
     }
 
     fun search(query: String) {
+        _ui.update { it.copy(searchQuery = query) }
+        scheduleSearch()
+    }
+
+    fun setSearchFilter(filter: TaskSearchFilter) {
+        if (_ui.value.searchFilter == filter) return
+        _ui.update { it.copy(searchFilter = filter) }
+        scheduleSearch()
+    }
+
+    private fun scheduleSearch() {
         searchJob?.cancel()
-        if (query.trim().length < 2) {
+        val snapshot = _ui.value
+        val query = snapshot.searchQuery.trim()
+        if (
+            (query.isNotEmpty() && query.length < 2) ||
+            (query.isEmpty() && !snapshot.searchFilter.isActive)
+        ) {
             _ui.update { it.copy(searchResults = emptyList(), searching = false) }
             return
         }
         searchJob = viewModelScope.launch {
             delay(300)
             _ui.update { it.copy(searching = true) }
-            repository.loadTasks("all", true, null, query).fold(
+            val filter = _ui.value.searchFilter
+            repository.searchTasks(
+                query = _ui.value.searchQuery,
+                creatorId = selfUserId?.takeIf { filter.creatorSelf && it.isNotBlank() },
+                assigneeId = selfUserId?.takeIf { filter.assigneeSelf && it.isNotBlank() },
+                status = filter.status.apiValue,
+                due = filter.due.apiValue,
+                priority = filter.priority?.name?.lowercase() ?: "all",
+            ).fold(
                 onSuccess = { results ->
                     _ui.update { it.copy(searchResults = results.map(TaskDto::toItem), searching = false) }
                 },

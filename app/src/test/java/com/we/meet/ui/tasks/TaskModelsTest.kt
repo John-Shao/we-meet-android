@@ -33,4 +33,20 @@ class TaskModelsTest {
         assertEquals(2, result.size)
         assertTrue(result.any { it.status == TaskStatus.Done })
     }
+
+    @Test
+    fun searchFiltersExposeBackendValuesAndActiveState() {
+        val filter = TaskSearchFilter(
+            creatorSelf = true,
+            status = TaskSearchStatus.Completed,
+            due = TaskSearchDue.ThisWeek,
+            priority = TaskPriority.Urgent,
+        )
+
+        assertTrue(filter.isActive)
+        assertEquals("completed", filter.status.apiValue)
+        assertEquals("this_week", filter.due.apiValue)
+        assertEquals("urgent", filter.priority?.name?.lowercase())
+        assertTrue(!TaskSearchFilter().isActive)
+    }
 }

@@ -6,6 +6,33 @@ enum class TaskStatus { Todo, Done }
 
 enum class TaskPriority { None, Low, Medium, High, Urgent }
 
+enum class TaskSearchStatus(val apiValue: String) {
+    All("all"),
+    Open("open"),
+    Completed("completed"),
+}
+
+enum class TaskSearchDue(val apiValue: String) {
+    All("all"),
+    Today("today"),
+    Tomorrow("tomorrow"),
+    ThisWeek("this_week"),
+    Overdue("overdue"),
+    NoDate("no_date"),
+}
+
+data class TaskSearchFilter(
+    val creatorSelf: Boolean = false,
+    val assigneeSelf: Boolean = false,
+    val status: TaskSearchStatus = TaskSearchStatus.All,
+    val due: TaskSearchDue = TaskSearchDue.All,
+    val priority: TaskPriority? = null,
+) {
+    val isActive: Boolean
+        get() = creatorSelf || assigneeSelf || status != TaskSearchStatus.All ||
+            due != TaskSearchDue.All || priority != null
+}
+
 data class TaskPersonItem(
     val id: String,
     val name: String,
