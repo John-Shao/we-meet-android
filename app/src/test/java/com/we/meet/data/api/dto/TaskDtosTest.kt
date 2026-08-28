@@ -239,4 +239,13 @@ class TaskDtosTest {
         assertTrue(patchJson.contains("\"recurrence_scope\":\"one\""))
         assertTrue(followerJson.contains("\"follower_ids\":[\"user-3\"]"))
     }
+
+    @Test
+    fun subtaskOrderRequestUsesExactBackendSnapshotField() {
+        val json = moshi.adapter(ReorderTaskSubtasksRequest::class.java).toJson(
+            ReorderTaskSubtasksRequest(listOf("task-2", "task-1")),
+        )
+
+        assertEquals("{\"task_ids\":[\"task-2\",\"task-1\"]}", json)
+    }
 }

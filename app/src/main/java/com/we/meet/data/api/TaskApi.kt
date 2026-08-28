@@ -14,6 +14,7 @@ import com.we.meet.data.api.dto.PatchTaskRequest
 import com.we.meet.data.api.dto.PatchTaskListGroupRequest
 import com.we.meet.data.api.dto.PatchTaskListRequest
 import com.we.meet.data.api.dto.PatchTaskGroupRequest
+import com.we.meet.data.api.dto.ReorderTaskSubtasksRequest
 import com.we.meet.data.api.dto.TaskCommentDto
 import com.we.meet.data.api.dto.TaskDto
 import com.we.meet.data.api.dto.TaskListDto
@@ -105,6 +106,12 @@ interface TaskApi {
 
     @GET("api/v1.0/tasks/{id}/subtasks/")
     suspend fun listSubtasks(@Path("id") id: String): List<TaskDto>
+
+    @POST("api/v1.0/tasks/{id}/subtasks/reorder/")
+    suspend fun reorderSubtasks(
+        @Path("id") id: String,
+        @Body body: ReorderTaskSubtasksRequest,
+    ): List<TaskDto>
 
     @GET("api/v1.0/tasks/{id}/attachments/")
     suspend fun listAttachments(@Path("id") id: String): List<TaskAttachmentDto>

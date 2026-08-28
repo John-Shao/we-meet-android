@@ -155,6 +155,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     var page by remember { mutableStateOf(TaskPage.List) }
     var selectedTaskId by remember { mutableStateOf<String?>(null) }
+    var detailBackStack by remember { mutableStateOf<List<TaskItem>>(emptyList()) }
     var showDrawer by remember { mutableStateOf(false) }
     var showFilter by remember { mutableStateOf(false) }
     var showNewGroup by remember { mutableStateOf(false) }
@@ -171,6 +172,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     var assigneeTarget by remember { mutableStateOf<TaskItem?>(null) }
     var followerTarget by remember { mutableStateOf<TaskItem?>(null) }
     var showNewSubtask by remember { mutableStateOf(false) }
+    var subtaskActionTarget by remember { mutableStateOf<TaskItem?>(null) }
     var shareTarget by remember { mutableStateOf<TaskItem?>(null) }
     var showShareGroup by remember { mutableStateOf(false) }
     var actionTarget by remember { mutableStateOf<TaskItem?>(null) }
@@ -179,7 +181,10 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     var renameTaskGroupTarget by remember { mutableStateOf<TaskGroupEditTarget?>(null) }
     var deleteTaskGroupTarget by remember { mutableStateOf<TaskGroupEditTarget?>(null) }
     var orderTaskGroupsFor by remember { mutableStateOf<TaskListItem?>(null) }
-    val selectedTask = (ui.tasks + ui.searchResults).firstOrNull { it.id == selectedTaskId }
+    val selectedTask = ui.detail?.task?.takeIf { it.id == selectedTaskId }
+        ?: (ui.tasks + ui.searchResults).firstOrNull { it.id == selectedTaskId }
+        ?: ui.detail?.subtasks?.firstOrNull { it.id == selectedTaskId }
+        ?: detailBackStack.lastOrNull { it.id == selectedTaskId }
     val snackbar = remember { SnackbarHostState() }
     val imSession = remember(app) { ImSession.get(app) }
     val attachmentPicker = rememberLauncherForActivityResult(
@@ -236,6 +241,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 onCreate = { page = TaskPage.Create },
                 onTaskClick = {
                     selectedTaskId = it.id
+                    detailBackStack = listOf(it)
                     page = TaskPage.Detail
                 },
                 onToggleDone = vm::toggleCompleted,
@@ -254,6 +260,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 onCreate = { title, description, dueDate, listId ->
                     vm.createTask(title, description, dueDate, listId) { created ->
                         selectedTaskId = created.id
+                        detailBackStack = listOf(created)
                         page = TaskPage.Detail
                     }
                 },
@@ -263,7 +270,15 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 TaskDetailPage(
                     task = task,
                     detail = ui.detail?.takeIf { it.taskId == task.id },
-                    onBack = { page = TaskPage.List },
+                    onBack = {
+                        if (detailBackStack.size > 1) {
+                            detailBackStack = detailBackStack.dropLast(1)
+                            selectedTaskId = detailBackStack.last().id
+                        } else {
+                            detailBackStack = emptyList()
+                            page = TaskPage.List
+                        }
+                    },
                     onToggleDone = vm::toggleCompleted,
                     onToggleFollow = vm::toggleFollowing,
                     onSendComment = { current, content, onSent ->
@@ -271,6 +286,11 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                     },
                     onAddSubtask = { showNewSubtask = true },
                     onToggleSubtask = vm::toggleCompleted,
+                    onOpenSubtask = { subtask ->
+                        detailBackStack = detailBackStack + subtask
+                        selectedTaskId = subtask.id
+                    },
+                    onSubtaskAction = { subtaskActionTarget = it },
                     onEditContent = { editContentTarget = task },
                     onEditDueDate = { dueDateTarget = task },
                     onEditPriority = { priorityTarget = task },
@@ -297,6 +317,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 onFilterChange = vm::setSearchFilter,
                 onTaskClick = {
                     selectedTaskId = it.id
+                    detailBackStack = listOf(it)
                     page = TaskPage.Detail
                 },
             )
@@ -355,8 +376,32 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             onDelete = {
                 vm.deleteTask(target) {
                     actionTarget = null
-                    if (page == TaskPage.Detail) page = TaskPage.List
+                    if (page == TaskPage.Detail) {
+                        detailBackStack = emptyList()
+                        page = TaskPage.List
+                    }
                 }
+            },
+        )
+    }
+
+    subtaskActionTarget?.let { subtask ->
+        val parent = selectedTask
+        val subtasks = ui.detail?.takeIf { it.taskId == parent?.id }?.subtasks.orEmpty()
+        val index = subtasks.indexOfFirst { it.id == subtask.id }
+        SubtaskActionSheet(
+            task = subtask,
+            moving = parent?.id?.let { it in ui.mutatingIds } == true,
+            canMoveUp = index > 0,
+            canMoveDown = index >= 0 && index < subtasks.lastIndex,
+            onDismiss = { subtaskActionTarget = null },
+            onMoveUp = {
+                parent?.let { vm.moveSubtask(it, subtask.id, -1) }
+                subtaskActionTarget = null
+            },
+            onMoveDown = {
+                parent?.let { vm.moveSubtask(it, subtask.id, 1) }
+                subtaskActionTarget = null
             },
         )
     }
@@ -1365,6 +1410,8 @@ private fun TaskDetailPage(
     onSendComment: (TaskItem, String, () -> Unit) -> Unit,
     onAddSubtask: () -> Unit,
     onToggleSubtask: (TaskItem) -> Unit,
+    onOpenSubtask: (TaskItem) -> Unit,
+    onSubtaskAction: (TaskItem) -> Unit,
     onEditContent: () -> Unit,
     onEditDueDate: () -> Unit,
     onEditPriority: () -> Unit,
@@ -1488,18 +1535,22 @@ private fun TaskDetailPage(
                 }
             }
             item {
+                val subtasks = detail?.subtasks.orEmpty()
+                val canReorderSubtasks = task.canEdit && subtasks.all(TaskItem::canEdit)
                 DetailSectionTitle(
                     R.string.task_subtasks,
-                    "${detail?.subtasks?.count { it.status == TaskStatus.Done } ?: 0}/${detail?.subtasks?.size ?: 0}",
+                    "${subtasks.count { it.status == TaskStatus.Done }}/${subtasks.size}",
                 )
                 Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(Dimens.SpaceM), modifier = Modifier.fillMaxWidth()) {
                     Column {
-                        detail?.subtasks.orEmpty().forEach { subtask ->
+                        subtasks.forEach { subtask ->
                             TaskRow(
                                 task = subtask,
-                                onClick = {},
+                                onClick = { onOpenSubtask(subtask) },
                                 onToggleDone = { onToggleSubtask(subtask) },
-                                onLongClick = {},
+                                onLongClick = {
+                                    if (canReorderSubtasks) onSubtaskAction(subtask)
+                                },
                             )
                         }
                         if (task.canCreateSubtasks) {
@@ -2127,6 +2178,36 @@ private fun TaskActionSheet(
             SheetAction(Icons.Outlined.ContentCopy, R.string.task_duplicate, onDismiss)
             SheetAction(Icons.Outlined.CalendarMonth, R.string.task_set_milestone, onDismiss)
             SheetAction(Icons.Filled.DeleteOutline, R.string.task_delete, onDelete, danger = true)
+        }
+    }
+}
+
+@Composable
+private fun SubtaskActionSheet(
+    task: TaskItem,
+    moving: Boolean,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onDismiss: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.fillMaxWidth().padding(bottom = Dimens.SpaceXl)) {
+            Text(
+                task.title,
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            if (canMoveUp && !moving) {
+                SheetAction(Icons.Outlined.ArrowUpward, R.string.task_move_up, onMoveUp)
+            }
+            if (canMoveDown && !moving) {
+                SheetAction(Icons.Outlined.ArrowDownward, R.string.task_move_down, onMoveDown)
+            }
         }
     }
 }

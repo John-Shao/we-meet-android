@@ -98,6 +98,7 @@ data class TaskActivityItem(
 
 data class TaskDetailItem(
     val taskId: String,
+    val task: TaskItem? = null,
     val subtasks: List<TaskItem> = emptyList(),
     val comments: List<TaskCommentItem> = emptyList(),
     val attachments: List<TaskAttachmentItem> = emptyList(),

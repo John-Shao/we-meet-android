@@ -120,8 +120,18 @@ class TaskViewModel(
     }
 
     fun loadDetail(taskId: String) {
+        val snapshot = _ui.value
+        val cachedTask = buildList {
+            addAll(snapshot.tasks)
+            addAll(snapshot.searchResults)
+            snapshot.detail?.task?.let(::add)
+            addAll(snapshot.detail?.subtasks.orEmpty())
+        }.firstOrNull { it.id == taskId }
         _ui.update {
-            it.copy(detail = TaskDetailItem(taskId = taskId, loading = true), failure = null)
+            it.copy(
+                detail = TaskDetailItem(taskId = taskId, task = cachedTask, loading = true),
+                failure = null,
+            )
         }
         viewModelScope.launch {
             repository.loadDetail(taskId).fold(
@@ -133,6 +143,7 @@ class TaskViewModel(
                             searchResults = it.searchResults.replace(taskId, task),
                             detail = TaskDetailItem(
                                 taskId = taskId,
+                                task = task,
                                 subtasks = detail.subtasks.map(TaskDto::toItem),
                                 comments = detail.comments.map { comment ->
                                     TaskCommentItem(
@@ -264,6 +275,7 @@ class TaskViewModel(
                         it.copy(
                             tasks = it.tasks.replace(item.id, confirmed),
                             searchResults = it.searchResults.replace(item.id, confirmed),
+                            detail = it.detail?.replace(item.id, confirmed),
                             mutatingIds = it.mutatingIds - item.id,
                         )
                     }
@@ -324,6 +336,7 @@ class TaskViewModel(
                         it.copy(
                             tasks = it.tasks.replace(item.id, updated),
                             searchResults = it.searchResults.replace(item.id, updated),
+                            detail = it.detail?.replace(item.id, updated),
                             mutatingIds = it.mutatingIds - item.id,
                         )
                     }
@@ -350,7 +363,7 @@ class TaskViewModel(
             it.copy(
                 tasks = it.tasks.replace(id, optimistic),
                 searchResults = it.searchResults.replace(id, optimistic),
-                detail = it.detail?.copy(subtasks = it.detail.subtasks.replace(id, optimistic)),
+                detail = it.detail?.replace(id, optimistic),
                 mutatingIds = it.mutatingIds + id,
                 failure = null,
             )
@@ -363,9 +376,7 @@ class TaskViewModel(
                         it.copy(
                             tasks = it.tasks.replace(id, confirmed),
                             searchResults = it.searchResults.replace(id, confirmed),
-                            detail = it.detail?.copy(
-                                subtasks = it.detail.subtasks.replace(id, confirmed),
-                            ),
+                            detail = it.detail?.replace(id, confirmed),
                             mutatingIds = it.mutatingIds - id,
                         )
                     }
@@ -375,9 +386,7 @@ class TaskViewModel(
                         it.copy(
                             tasks = it.tasks.replace(id, previous),
                             searchResults = it.searchResults.replace(id, previous),
-                            detail = it.detail?.copy(
-                                subtasks = it.detail.subtasks.replace(id, previous),
-                            ),
+                            detail = it.detail?.replace(id, previous),
                             mutatingIds = it.mutatingIds - id,
                             failure = TaskFailure.Save,
                         )
@@ -457,6 +466,52 @@ class TaskViewModel(
                     }
                 },
                 onFailure = { _ui.update { it.copy(failure = TaskFailure.Save) } },
+            )
+        }
+    }
+
+    fun moveSubtask(parent: TaskItem, subtaskId: String, offset: Int) {
+        val detail = _ui.value.detail?.takeIf { it.taskId == parent.id } ?: return
+        if (
+            parent.id in _ui.value.mutatingIds ||
+            !parent.canEdit ||
+            detail.subtasks.any { !it.canEdit }
+        ) return
+        val fromIndex = detail.subtasks.indexOfFirst { it.id == subtaskId }
+        val toIndex = fromIndex + offset
+        if (fromIndex < 0 || toIndex !in detail.subtasks.indices) return
+        val previous = detail.subtasks
+        val reordered = previous.toMutableList().apply {
+            add(toIndex, removeAt(fromIndex))
+        }
+        _ui.update {
+            it.copy(
+                detail = it.detail?.copy(subtasks = reordered),
+                mutatingIds = it.mutatingIds + parent.id,
+                failure = null,
+            )
+        }
+        viewModelScope.launch {
+            repository.reorderSubtasks(parent.id, reordered.map(TaskItem::id)).fold(
+                onSuccess = { confirmed ->
+                    _ui.update {
+                        it.copy(
+                            detail = it.detail?.takeIf { current -> current.taskId == parent.id }
+                                ?.copy(subtasks = confirmed.map(TaskDto::toItem)) ?: it.detail,
+                            mutatingIds = it.mutatingIds - parent.id,
+                        )
+                    }
+                },
+                onFailure = {
+                    _ui.update {
+                        it.copy(
+                            detail = it.detail?.takeIf { current -> current.taskId == parent.id }
+                                ?.copy(subtasks = previous) ?: it.detail,
+                            mutatingIds = it.mutatingIds - parent.id,
+                            failure = TaskFailure.Save,
+                        )
+                    }
+                },
             )
         }
     }
@@ -910,3 +965,8 @@ private fun TaskListGroupDto.toItem() = TaskListGroupItem(
 
 private fun List<TaskItem>.replace(id: String, replacement: TaskItem): List<TaskItem> =
     map { if (it.id == id) replacement else it }
+
+private fun TaskDetailItem.replace(id: String, replacement: TaskItem): TaskDetailItem = copy(
+    task = if (task?.id == id) replacement else task,
+    subtasks = subtasks.replace(id, replacement),
+)

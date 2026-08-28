@@ -16,6 +16,7 @@ import com.we.meet.data.api.dto.PatchTaskRequest
 import com.we.meet.data.api.dto.PatchTaskListGroupRequest
 import com.we.meet.data.api.dto.PatchTaskListRequest
 import com.we.meet.data.api.dto.PatchTaskGroupRequest
+import com.we.meet.data.api.dto.ReorderTaskSubtasksRequest
 import com.we.meet.data.api.dto.TaskCommentDto
 import com.we.meet.data.api.dto.TaskDto
 import com.we.meet.data.api.dto.TaskAttachmentDto
@@ -215,6 +216,15 @@ class TaskRepository(
                 api.createComment(taskId, CreateTaskCommentRequest(content))
             }
         }
+
+    suspend fun reorderSubtasks(
+        parentId: String,
+        orderedIds: List<String>,
+    ): Result<List<TaskDto>> = runCatching {
+        withContext(Dispatchers.IO) {
+            api.reorderSubtasks(parentId, ReorderTaskSubtasksRequest(orderedIds))
+        }
+    }
 
     suspend fun uploadAttachment(taskId: String, uri: Uri): Result<TaskAttachmentDto> =
         runCatching {

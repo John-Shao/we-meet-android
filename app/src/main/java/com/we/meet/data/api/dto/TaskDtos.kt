@@ -168,6 +168,11 @@ data class PatchTaskRequest(
 )
 
 @JsonClass(generateAdapter = true)
+data class ReorderTaskSubtasksRequest(
+    @Json(name = "task_ids") val taskIds: List<String>,
+)
+
+@JsonClass(generateAdapter = true)
 data class TaskSubtreeImpactDto(
     @Json(name = "node_count") val nodeCount: Int = 1,
 )
