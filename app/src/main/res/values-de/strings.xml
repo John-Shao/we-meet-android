@@ -344,6 +344,15 @@
     <string name="task_leave_list">Aufgabenliste verlassen</string>
     <string name="task_leave_list_confirm">„%1$s“ verlassen? Sie verlieren den Zugriff auf diese Aufgabenliste.</string>
     <string name="task_list_name_hint">Listenname</string>
+    <string name="task_list_description">Beschreibung</string>
+    <string name="task_list_color">Farbe</string>
+    <string name="task_list_color_grey">Grau</string>
+    <string name="task_list_color_blue">Blau</string>
+    <string name="task_list_color_green">Grün</string>
+    <string name="task_list_color_yellow">Gelb</string>
+    <string name="task_list_color_orange">Orange</string>
+    <string name="task_list_color_red">Rot</string>
+    <string name="task_list_color_purple">Violett</string>
     <string name="task_choose_group">Gruppe: %1$s</string>
     <string name="task_delete_navigation_item">Löschen</string>
     <string name="task_delete_group_confirm">„%1$s“ löschen? Die Listen werden nach „Nicht gruppiert“ verschoben.</string>

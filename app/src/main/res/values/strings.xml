@@ -354,6 +354,15 @@
     <string name="task_leave_list">Leave task list</string>
     <string name="task_leave_list_confirm">Leave “%1$s”? You will lose access to this task list.</string>
     <string name="task_list_name_hint">List name</string>
+    <string name="task_list_description">Description</string>
+    <string name="task_list_color">Color</string>
+    <string name="task_list_color_grey">Grey</string>
+    <string name="task_list_color_blue">Blue</string>
+    <string name="task_list_color_green">Green</string>
+    <string name="task_list_color_yellow">Yellow</string>
+    <string name="task_list_color_orange">Orange</string>
+    <string name="task_list_color_red">Red</string>
+    <string name="task_list_color_purple">Purple</string>
     <string name="task_choose_group">Group: %1$s</string>
     <string name="task_delete_navigation_item">Delete</string>
     <string name="task_delete_group_confirm">Delete “%1$s”? Its lists will move to Ungrouped.</string>

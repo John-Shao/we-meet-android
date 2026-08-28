@@ -166,11 +166,18 @@ class TaskDtosTest {
     @Test
     fun createTaskListRequestUsesBackendGroupField() {
         val json = moshi.adapter(CreateTaskListRequest::class.java).toJson(
-            CreateTaskListRequest(name = "Mobile", listGroupId = "group-1"),
+            CreateTaskListRequest(
+                name = "Mobile",
+                description = "Android delivery",
+                color = "green",
+                listGroupId = "group-1",
+            ),
         )
 
         assertTrue(json.contains("\"list_group_id\":\"group-1\""))
         assertTrue(json.contains("\"name\":\"Mobile\""))
+        assertTrue(json.contains("\"description\":\"Android delivery\""))
+        assertTrue(json.contains("\"color\":\"green\""))
     }
 
     @Test

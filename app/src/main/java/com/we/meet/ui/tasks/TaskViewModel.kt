@@ -1086,11 +1086,22 @@ class TaskViewModel(
         }
     }
 
-    fun createTaskList(name: String, groupId: String?, onCreated: () -> Unit) {
+    fun createTaskList(
+        name: String,
+        description: String,
+        color: TaskListColor,
+        groupId: String?,
+        onCreated: () -> Unit,
+    ) {
         if (name.isBlank() || _ui.value.navigationMutating) return
         _ui.update { it.copy(navigationMutating = true, failure = null) }
         viewModelScope.launch {
-            repository.createTaskList(name.trim(), groupId).fold(
+            repository.createTaskList(
+                name = name.trim(),
+                description = description.trim(),
+                color = color.apiValue,
+                listGroupId = groupId,
+            ).fold(
                 onSuccess = { created ->
                     _ui.update {
                         it.copy(
@@ -1567,6 +1578,8 @@ private fun TaskDto.toItem(): TaskItem {
 private fun TaskListDto.toItem() = TaskListItem(
     id = id,
     name = name,
+    description = description,
+    color = color.toTaskListColor(),
     groupId = listGroup?.id,
     groupName = listGroup?.name,
     isArchived = isArchived,
@@ -1580,6 +1593,9 @@ private fun TaskListDto.toItem() = TaskListItem(
     canDelete = canDelete,
     groups = groups.sortedBy { it.sortOrder }.map(TaskGroupDto::toItem),
 )
+
+private fun String.toTaskListColor(): TaskListColor =
+    TaskListColor.entries.firstOrNull { it.apiValue == this } ?: TaskListColor.Blue
 
 private fun TaskListAccessDto.toItem(selfUserId: String?) = TaskListMemberItem(
     id = id,

@@ -453,10 +453,22 @@ class TaskRepository(
         withContext(Dispatchers.IO) { api.deleteTaskListGroup(id) }
     }
 
-    suspend fun createTaskList(name: String, listGroupId: String?): Result<TaskListDto> =
+    suspend fun createTaskList(
+        name: String,
+        description: String,
+        color: String,
+        listGroupId: String?,
+    ): Result<TaskListDto> =
         runCatching {
             withContext(Dispatchers.IO) {
-                api.createTaskList(CreateTaskListRequest(name = name, listGroupId = listGroupId))
+                api.createTaskList(
+                    CreateTaskListRequest(
+                        name = name,
+                        description = description,
+                        color = color,
+                        listGroupId = listGroupId,
+                    ),
+                )
             }
         }
 

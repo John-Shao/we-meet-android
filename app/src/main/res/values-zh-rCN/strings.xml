@@ -354,6 +354,15 @@
     <string name="task_leave_list">退出任务清单</string>
     <string name="task_leave_list_confirm">退出“%1$s”？你将无法再访问此任务清单。</string>
     <string name="task_list_name_hint">清单名称</string>
+    <string name="task_list_description">描述</string>
+    <string name="task_list_color">颜色</string>
+    <string name="task_list_color_grey">灰色</string>
+    <string name="task_list_color_blue">蓝色</string>
+    <string name="task_list_color_green">绿色</string>
+    <string name="task_list_color_yellow">黄色</string>
+    <string name="task_list_color_orange">橙色</string>
+    <string name="task_list_color_red">红色</string>
+    <string name="task_list_color_purple">紫色</string>
     <string name="task_choose_group">分组：%1$s</string>
     <string name="task_delete_navigation_item">删除</string>
     <string name="task_delete_group_confirm">删除“%1$s”？其中的清单将移至未分组。</string>

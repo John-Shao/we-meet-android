@@ -645,8 +645,10 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             groups = ui.listGroups,
             saving = ui.navigationMutating,
             onDismiss = { showNewList = false },
-            onCreate = { name, groupId ->
-                vm.createTaskList(name, groupId) { showNewList = false }
+            onCreate = { name, description, color, groupId ->
+                vm.createTaskList(name, description, color, groupId) {
+                    showNewList = false
+                }
             },
         )
     }
@@ -1715,7 +1717,11 @@ private fun DrawerGroup(
                     ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.AutoMirrored.Outlined.ListAlt, null, tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(
+                        Icons.AutoMirrored.Outlined.ListAlt,
+                        null,
+                        tint = taskListColor(list.color),
+                    )
                     Spacer(Modifier.width(Dimens.SpaceM))
                     Text(list.name, color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
                     Text(list.taskCount.toString(), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -3571,9 +3577,11 @@ private fun NewTaskListDialog(
     groups: List<TaskListGroupItem>,
     saving: Boolean,
     onDismiss: () -> Unit,
-    onCreate: (String, String?) -> Unit,
+    onCreate: (String, String, TaskListColor, String?) -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var color by remember { mutableStateOf(TaskListColor.Blue) }
     var selectedGroupId by remember(groups) { mutableStateOf<String?>(null) }
     var groupMenuExpanded by remember { mutableStateOf(false) }
     val selectedGroupName = groups.firstOrNull { it.id == selectedGroupId }?.name
@@ -3588,6 +3596,14 @@ private fun NewTaskListDialog(
                     onValueChange = { name = it },
                     placeholder = { Text(stringResource(R.string.task_list_name_hint)) },
                     singleLine = true,
+                )
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text(stringResource(R.string.task_list_description)) },
+                    placeholder = { Text(stringResource(R.string.task_description_hint)) },
+                    minLines = 2,
+                    maxLines = 4,
                 )
                 Box {
                     OutlinedButton(onClick = { groupMenuExpanded = true }) {
@@ -3617,11 +3633,32 @@ private fun NewTaskListDialog(
                         }
                     }
                 }
+                Text(
+                    stringResource(R.string.task_list_color),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                    items(TaskListColor.entries) { option ->
+                        FilterChip(
+                            selected = color == option,
+                            onClick = { color = option },
+                            label = { Text(taskListColorText(option)) },
+                            leadingIcon = {
+                                Surface(
+                                    modifier = Modifier.size(Dimens.SpaceM),
+                                    shape = CircleShape,
+                                    color = taskListColor(option),
+                                ) {}
+                            },
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onCreate(name, selectedGroupId) },
+                onClick = { onCreate(name, description, color, selectedGroupId) },
                 enabled = name.isNotBlank() && !saving,
             ) {
                 Text(stringResource(R.string.task_confirm))
@@ -3634,6 +3671,30 @@ private fun NewTaskListDialog(
         },
     )
 }
+
+@Composable
+private fun taskListColor(color: TaskListColor): Color = when (color) {
+    TaskListColor.Grey -> MaterialTheme.colorScheme.onSurfaceVariant
+    TaskListColor.Blue -> MaterialTheme.colorScheme.primary
+    TaskListColor.Green -> MaterialTheme.colorScheme.tertiary
+    TaskListColor.Yellow -> MaterialTheme.colorScheme.tertiaryContainer
+    TaskListColor.Orange -> MaterialTheme.colorScheme.errorContainer
+    TaskListColor.Red -> MaterialTheme.colorScheme.error
+    TaskListColor.Purple -> MaterialTheme.colorScheme.secondary
+}
+
+@Composable
+private fun taskListColorText(color: TaskListColor): String = stringResource(
+    when (color) {
+        TaskListColor.Grey -> R.string.task_list_color_grey
+        TaskListColor.Blue -> R.string.task_list_color_blue
+        TaskListColor.Green -> R.string.task_list_color_green
+        TaskListColor.Yellow -> R.string.task_list_color_yellow
+        TaskListColor.Orange -> R.string.task_list_color_orange
+        TaskListColor.Red -> R.string.task_list_color_red
+        TaskListColor.Purple -> R.string.task_list_color_purple
+    },
+)
 
 @Composable
 private fun NavigationActionSheet(

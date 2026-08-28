@@ -173,6 +173,8 @@ data class TaskDetailItem(
 data class TaskListItem(
     val id: String,
     val name: String,
+    val description: String = "",
+    val color: TaskListColor = TaskListColor.Blue,
     val groupId: String? = null,
     val groupName: String? = null,
     val isArchived: Boolean = false,
@@ -188,6 +190,16 @@ data class TaskListItem(
 )
 
 enum class TaskListRole { Viewer, Editor, Owner }
+
+enum class TaskListColor(val apiValue: String) {
+    Grey("grey"),
+    Blue("blue"),
+    Green("green"),
+    Yellow("yellow"),
+    Orange("orange"),
+    Red("red"),
+    Purple("purple"),
+}
 
 data class TaskListMemberItem(
     val id: String,

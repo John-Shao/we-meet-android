@@ -344,6 +344,15 @@
     <string name="task_leave_list">Quitter la liste de tâches</string>
     <string name="task_leave_list_confirm">Quitter « %1$s » ? Vous perdrez l’accès à cette liste de tâches.</string>
     <string name="task_list_name_hint">Nom de la liste</string>
+    <string name="task_list_description">Description</string>
+    <string name="task_list_color">Couleur</string>
+    <string name="task_list_color_grey">Gris</string>
+    <string name="task_list_color_blue">Bleu</string>
+    <string name="task_list_color_green">Vert</string>
+    <string name="task_list_color_yellow">Jaune</string>
+    <string name="task_list_color_orange">Orange</string>
+    <string name="task_list_color_red">Rouge</string>
+    <string name="task_list_color_purple">Violet</string>
     <string name="task_choose_group">Groupe : %1$s</string>
     <string name="task_delete_navigation_item">Supprimer</string>
     <string name="task_delete_group_confirm">Supprimer « %1$s » ? Ses listes seront déplacées vers Sans groupe.</string>
