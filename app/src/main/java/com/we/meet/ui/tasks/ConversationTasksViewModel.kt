@@ -1,5 +1,6 @@
 package com.we.meet.ui.tasks
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -234,6 +235,62 @@ class ConversationTasksViewModel(
                         )
                     }
                 },
+            )
+        }
+    }
+
+    fun downloadAttachment(
+        taskId: String,
+        attachment: TaskAttachmentItem,
+        destination: Uri,
+    ) {
+        val current = _ui.value.detail
+        if (current?.taskId != taskId) return
+        if (attachment.id in current.downloadingAttachmentIds) return
+        if (attachment.downloadUrl.isBlank()) {
+            _ui.update { it.copy(detailActionFailure = TaskFailure.Attachment) }
+            return
+        }
+        _ui.update { state ->
+            state.copy(
+                detail = state.detail?.takeIf { it.taskId == taskId }?.copy(
+                    downloadingAttachmentIds =
+                        state.detail.downloadingAttachmentIds + attachment.id,
+                ) ?: state.detail,
+                detailActionFailure = null,
+            )
+        }
+        viewModelScope.launch {
+            repository.downloadAttachment(attachment.downloadUrl, destination).fold(
+                onSuccess = {
+                    finishAttachmentDownload(taskId, attachment.id)
+                },
+                onFailure = { failure ->
+                    if (failure is CancellationException) return@launch
+                    finishAttachmentDownload(
+                        taskId,
+                        attachment.id,
+                        TaskFailure.Attachment,
+                    )
+                },
+            )
+        }
+    }
+
+    private fun finishAttachmentDownload(
+        taskId: String,
+        attachmentId: String,
+        failure: TaskFailure? = null,
+    ) {
+        _ui.update { state ->
+            val detail = state.detail
+            if (detail?.taskId != taskId) return@update state
+            state.copy(
+                detail = detail.copy(
+                    downloadingAttachmentIds =
+                        detail.downloadingAttachmentIds - attachmentId,
+                ),
+                detailActionFailure = failure,
             )
         }
     }

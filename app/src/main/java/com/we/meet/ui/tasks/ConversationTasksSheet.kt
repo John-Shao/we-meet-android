@@ -1,5 +1,9 @@
 package com.we.meet.ui.tasks
 
+import android.app.Activity
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,6 +25,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.TaskAlt
@@ -65,6 +70,20 @@ fun ConversationTasksSheet(
         factory = ConversationTasksViewModel.Factory(app, conversationId),
     )
     val ui by vm.ui.collectAsStateWithLifecycle()
+    var pendingAttachment by remember {
+        mutableStateOf<Pair<String, TaskAttachmentItem>?>(null)
+    }
+    val attachmentDownloadPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        val pending = pendingAttachment
+        pendingAttachment = null
+        if (result.resultCode == Activity.RESULT_OK && pending != null) {
+            result.data?.data?.let { destination ->
+                vm.downloadAttachment(pending.first, pending.second, destination)
+            }
+        }
+    }
     LaunchedEffect(vm) { vm.refresh() }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -84,6 +103,17 @@ fun ConversationTasksSheet(
                     onOpenSubtask = vm::openTask,
                     onToggleFollowing = vm::toggleFollowing,
                     onSendComment = vm::sendComment,
+                    onDownloadAttachment = { attachment ->
+                        pendingAttachment = detail.taskId to attachment
+                        attachmentDownloadPicker.launch(
+                            Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                                addCategory(Intent.CATEGORY_OPENABLE)
+                                type = attachment.mimeType?.takeIf(String::isNotBlank)
+                                    ?: "application/octet-stream"
+                                putExtra(Intent.EXTRA_TITLE, attachment.filename)
+                            },
+                        )
+                    },
                 )
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -222,6 +252,7 @@ private fun ConversationTaskDetail(
     onOpenSubtask: (TaskItem) -> Unit,
     onToggleFollowing: (TaskItem) -> Unit,
     onSendComment: (TaskItem, String, () -> Unit) -> Unit,
+    onDownloadAttachment: (TaskAttachmentItem) -> Unit,
 ) {
     val task = detail.task
     var comment by remember(detail.taskId) { mutableStateOf("") }
@@ -267,8 +298,11 @@ private fun ConversationTaskDetail(
     actionFailure?.let { failure ->
         Text(
             stringResource(
-                if (failure == TaskFailure.Comment) R.string.task_comment_failed
-                else R.string.task_save_failed,
+                when (failure) {
+                    TaskFailure.Comment -> R.string.task_comment_failed
+                    TaskFailure.Attachment -> R.string.task_attachment_failed
+                    else -> R.string.task_save_failed
+                },
             ),
             modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
             color = MaterialTheme.colorScheme.error,
@@ -332,10 +366,37 @@ private fun ConversationTaskDetail(
             if (detail.attachments.isNotEmpty()) {
                 item { ConversationTaskSectionTitle(R.string.task_attachments, detail.attachments.size) }
                 items(detail.attachments, key = TaskAttachmentItem::id) { attachment ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    val downloading = attachment.id in detail.downloadingAttachmentIds
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .clickable(enabled = !downloading) {
+                                onDownloadAttachment(attachment)
+                            }
+                            .padding(vertical = Dimens.SpaceS),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Icon(Icons.Outlined.AttachFile, null)
                         Spacer(Modifier.width(Dimens.SpaceM))
-                        Text(attachment.filename, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            attachment.filename,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (downloading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(Dimens.IconMedium),
+                                strokeWidth = Dimens.BorderEmphasis,
+                            )
+                        } else {
+                            Icon(
+                                Icons.Outlined.Download,
+                                stringResource(
+                                    R.string.task_download_attachment,
+                                    attachment.filename,
+                                ),
+                            )
+                        }
                     }
                 }
             }
