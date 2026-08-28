@@ -339,6 +339,16 @@
     <string name="task_archived_lists">已归档清单</string>
     <string name="task_archived_empty">暂无已归档清单</string>
     <string name="task_restore">取消归档</string>
+    <string name="task_list_share">管理协作者</string>
+    <string name="task_list_share_title">协作者 · %1$s</string>
+    <string name="task_add_collaborator">添加协作者</string>
+    <string name="task_collaborators_empty">暂无协作者</string>
+    <string name="task_role_viewer">可查看</string>
+    <string name="task_role_editor">可编辑</string>
+    <string name="task_role_owner">所有者</string>
+    <string name="task_remove_collaborator">移除%1$s</string>
+    <string name="task_leave_list">退出任务清单</string>
+    <string name="task_leave_list_confirm">退出“%1$s”？你将无法再访问此任务清单。</string>
     <string name="task_list_name_hint">清单名称</string>
     <string name="task_choose_group">分组：%1$s</string>
     <string name="task_delete_navigation_item">删除</string>

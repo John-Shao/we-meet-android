@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.TaskDto
 import com.we.meet.data.api.dto.TaskListDto
+import com.we.meet.data.api.dto.TaskListAccessDto
 import com.we.meet.data.api.dto.TaskListGroupDto
 import com.we.meet.data.api.dto.PatchTaskRequest
 import com.we.meet.data.api.dto.TaskGroupDto
@@ -26,6 +27,8 @@ data class TaskUiState(
     val tasks: List<TaskItem> = emptyList(),
     val taskLists: List<TaskListItem> = emptyList(),
     val archivedTaskLists: List<TaskListItem> = emptyList(),
+    val taskListMembers: List<TaskListMemberItem> = emptyList(),
+    val taskListMembersFor: String? = null,
     val listGroups: List<TaskListGroupItem> = emptyList(),
     val navigationCounts: TaskNavigationCounts = TaskNavigationCounts(),
     val view: TaskView = TaskView.Assigned,
@@ -35,6 +38,7 @@ data class TaskUiState(
     val creating: Boolean = false,
     val navigationMutating: Boolean = false,
     val archivedListsLoading: Boolean = false,
+    val taskListMembersLoading: Boolean = false,
     val mutatingIds: Set<String> = emptySet(),
     val searchQuery: String = "",
     val searchFilter: TaskSearchFilter = TaskSearchFilter(),
@@ -55,6 +59,7 @@ class TaskViewModel(
     val ui: StateFlow<TaskUiState> = _ui.asStateFlow()
     private var loadJob: Job? = null
     private var searchJob: Job? = null
+    private var taskListMembersJob: Job? = null
 
     init {
         refreshNavigation()
@@ -923,6 +928,139 @@ class TaskViewModel(
         }
     }
 
+    fun loadTaskListMembers(list: TaskListItem) {
+        if (!list.canShare) return
+        if (_ui.value.taskListMembersFor == list.id && _ui.value.taskListMembersLoading) return
+        taskListMembersJob?.cancel()
+        _ui.update {
+            it.copy(
+                taskListMembersFor = list.id,
+                taskListMembers = emptyList(),
+                taskListMembersLoading = true,
+                failure = null,
+            )
+        }
+        taskListMembersJob = viewModelScope.launch {
+            repository.loadTaskListMembers(list.id).fold(
+                onSuccess = { members ->
+                    _ui.update {
+                        if (it.taskListMembersFor != list.id) it else {
+                            it.copy(
+                                taskListMembersLoading = false,
+                                taskListMembers = members.map { member ->
+                                    member.toItem(selfUserId)
+                                },
+                            )
+                        }
+                    }
+                },
+                onFailure = { failure ->
+                    if (failure is CancellationException) return@launch
+                    _ui.update {
+                        if (it.taskListMembersFor != list.id) it else {
+                            it.copy(
+                                taskListMembersLoading = false,
+                                failure = TaskFailure.Navigation,
+                            )
+                        }
+                    }
+                },
+            )
+        }
+    }
+
+    fun addTaskListMember(list: TaskListItem, userId: String) {
+        if (!list.canShare || userId.isBlank() || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.shareTaskList(list.id, userId).fold(
+                onSuccess = { access ->
+                    _ui.update { state ->
+                        state.copy(
+                            navigationMutating = false,
+                            taskListMembers = state.taskListMembers
+                                .filterNot { it.userId == userId } + access.toItem(selfUserId),
+                        )
+                    }
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
+    }
+
+    fun updateTaskListMemberRole(
+        list: TaskListItem,
+        member: TaskListMemberItem,
+        role: TaskListRole,
+    ) {
+        if (!list.canShare || member.role == TaskListRole.Owner || member.isSelf ||
+            role == TaskListRole.Owner || role == member.role || _ui.value.navigationMutating
+        ) {
+            return
+        }
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.updateTaskListMemberRole(list.id, member.userId, role.apiValue).fold(
+                onSuccess = { access ->
+                    _ui.update { state ->
+                        state.copy(
+                            navigationMutating = false,
+                            taskListMembers = state.taskListMembers.map {
+                                if (it.userId == member.userId) access.toItem(selfUserId) else it
+                            },
+                        )
+                    }
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
+    }
+
+    fun removeTaskListMember(list: TaskListItem, member: TaskListMemberItem) {
+        if (!list.canShare || member.role == TaskListRole.Owner || member.isSelf ||
+            _ui.value.navigationMutating
+        ) {
+            return
+        }
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.removeTaskListMember(list.id, member.userId).fold(
+                onSuccess = {
+                    _ui.update { state ->
+                        state.copy(
+                            navigationMutating = false,
+                            taskListMembers = state.taskListMembers.filterNot {
+                                it.userId == member.userId
+                            },
+                        )
+                    }
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
+    }
+
+    fun leaveTaskList(list: TaskListItem) {
+        if (!list.canRemove || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.leaveTaskList(list.id).fold(
+                onSuccess = {
+                    val wasSelected = _ui.value.selectedListId == list.id
+                    _ui.update { state ->
+                        state.copy(
+                            navigationMutating = false,
+                            selectedListId = state.selectedListId.takeUnless { it == list.id },
+                            taskLists = state.taskLists.filterNot { it.id == list.id },
+                        )
+                    }
+                    if (wasSelected) refresh()
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
+    }
+
     fun deleteTaskList(list: TaskListItem) {
         if (!list.canDelete || _ui.value.navigationMutating) return
         _ui.update { it.copy(navigationMutating = true, failure = null) }
@@ -1133,11 +1271,33 @@ private fun TaskListDto.toItem() = TaskListItem(
     isArchived = isArchived,
     taskCount = taskCount,
     canCreateTasks = canCreateTasks,
+    accessRole = accessRole.toTaskListRole(),
     canManage = canManage,
+    canShare = canShare,
     canArchive = canArchive,
+    canRemove = canRemove,
     canDelete = canDelete,
     groups = groups.sortedBy { it.sortOrder }.map(TaskGroupDto::toItem),
 )
+
+private fun TaskListAccessDto.toItem(selfUserId: String?) = TaskListMemberItem(
+    id = id,
+    userId = user.id,
+    name = user.displayName.ifBlank { "—" },
+    avatarUrl = user.avatarUrl.takeIf(String::isNotBlank),
+    role = role.toTaskListRole() ?: TaskListRole.Viewer,
+    isSelf = user.id == selfUserId,
+)
+
+private fun String?.toTaskListRole(): TaskListRole? = when (this) {
+    "viewer" -> TaskListRole.Viewer
+    "editor" -> TaskListRole.Editor
+    "owner" -> TaskListRole.Owner
+    else -> null
+}
+
+private val TaskListRole.apiValue: String
+    get() = name.lowercase()
 
 private fun TaskGroupDto.toItem() = TaskGroupItem(
     id = id,

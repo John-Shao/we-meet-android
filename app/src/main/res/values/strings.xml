@@ -339,6 +339,16 @@
     <string name="task_archived_lists">Archived task lists</string>
     <string name="task_archived_empty">No archived task lists</string>
     <string name="task_restore">Restore</string>
+    <string name="task_list_share">Manage collaborators</string>
+    <string name="task_list_share_title">Collaborators · %1$s</string>
+    <string name="task_add_collaborator">Add collaborator</string>
+    <string name="task_collaborators_empty">No collaborators</string>
+    <string name="task_role_viewer">Viewer</string>
+    <string name="task_role_editor">Editor</string>
+    <string name="task_role_owner">Owner</string>
+    <string name="task_remove_collaborator">Remove %1$s</string>
+    <string name="task_leave_list">Leave task list</string>
+    <string name="task_leave_list_confirm">Leave “%1$s”? You will lose access to this task list.</string>
     <string name="task_list_name_hint">List name</string>
     <string name="task_choose_group">Group: %1$s</string>
     <string name="task_delete_navigation_item">Delete</string>

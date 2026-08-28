@@ -329,6 +329,16 @@
     <string name="task_archived_lists">Listes de tâches archivées</string>
     <string name="task_archived_empty">Aucune liste de tâches archivée</string>
     <string name="task_restore">Restaurer</string>
+    <string name="task_list_share">Gérer les collaborateurs</string>
+    <string name="task_list_share_title">Collaborateurs · %1$s</string>
+    <string name="task_add_collaborator">Ajouter un collaborateur</string>
+    <string name="task_collaborators_empty">Aucun collaborateur</string>
+    <string name="task_role_viewer">Lecteur</string>
+    <string name="task_role_editor">Éditeur</string>
+    <string name="task_role_owner">Propriétaire</string>
+    <string name="task_remove_collaborator">Retirer %1$s</string>
+    <string name="task_leave_list">Quitter la liste de tâches</string>
+    <string name="task_leave_list_confirm">Quitter « %1$s » ? Vous perdrez l’accès à cette liste de tâches.</string>
     <string name="task_list_name_hint">Nom de la liste</string>
     <string name="task_choose_group">Groupe : %1$s</string>
     <string name="task_delete_navigation_item">Supprimer</string>

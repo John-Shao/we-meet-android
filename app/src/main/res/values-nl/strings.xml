@@ -329,6 +329,16 @@
     <string name="task_archived_lists">Gearchiveerde takenlijsten</string>
     <string name="task_archived_empty">Geen gearchiveerde takenlijsten</string>
     <string name="task_restore">Herstellen</string>
+    <string name="task_list_share">Medewerkers beheren</string>
+    <string name="task_list_share_title">Medewerkers · %1$s</string>
+    <string name="task_add_collaborator">Medewerker toevoegen</string>
+    <string name="task_collaborators_empty">Geen medewerkers</string>
+    <string name="task_role_viewer">Lezer</string>
+    <string name="task_role_editor">Bewerker</string>
+    <string name="task_role_owner">Eigenaar</string>
+    <string name="task_remove_collaborator">%1$s verwijderen</string>
+    <string name="task_leave_list">Takenlijst verlaten</string>
+    <string name="task_leave_list_confirm">‘%1$s’ verlaten? U verliest de toegang tot deze takenlijst.</string>
     <string name="task_list_name_hint">Lijstnaam</string>
     <string name="task_choose_group">Groep: %1$s</string>
     <string name="task_delete_navigation_item">Verwijderen</string>

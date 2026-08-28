@@ -329,6 +329,16 @@
     <string name="task_archived_lists">Archivierte Aufgabenlisten</string>
     <string name="task_archived_empty">Keine archivierten Aufgabenlisten</string>
     <string name="task_restore">Wiederherstellen</string>
+    <string name="task_list_share">Mitwirkende verwalten</string>
+    <string name="task_list_share_title">Mitwirkende · %1$s</string>
+    <string name="task_add_collaborator">Mitwirkende hinzufügen</string>
+    <string name="task_collaborators_empty">Keine Mitwirkenden</string>
+    <string name="task_role_viewer">Betrachter</string>
+    <string name="task_role_editor">Bearbeiter</string>
+    <string name="task_role_owner">Eigentümer</string>
+    <string name="task_remove_collaborator">%1$s entfernen</string>
+    <string name="task_leave_list">Aufgabenliste verlassen</string>
+    <string name="task_leave_list_confirm">„%1$s“ verlassen? Sie verlieren den Zugriff auf diese Aufgabenliste.</string>
     <string name="task_list_name_hint">Listenname</string>
     <string name="task_choose_group">Gruppe: %1$s</string>
     <string name="task_delete_navigation_item">Löschen</string>

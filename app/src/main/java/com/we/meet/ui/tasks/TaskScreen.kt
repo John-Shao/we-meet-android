@@ -172,11 +172,14 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     var showArchivedLists by remember { mutableStateOf(false) }
     var groupActionTarget by remember { mutableStateOf<TaskListGroupItem?>(null) }
     var listActionTarget by remember { mutableStateOf<TaskListItem?>(null) }
+    var shareListTarget by remember { mutableStateOf<TaskListItem?>(null) }
+    var memberPickerListTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var renameGroupTarget by remember { mutableStateOf<TaskListGroupItem?>(null) }
     var renameListTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var deleteGroupTarget by remember { mutableStateOf<TaskListGroupItem?>(null) }
     var deleteListTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var archiveListTarget by remember { mutableStateOf<TaskListItem?>(null) }
+    var leaveListTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var editContentTarget by remember { mutableStateOf<TaskItem?>(null) }
     var dueDateTarget by remember { mutableStateOf<TaskItem?>(null) }
     var priorityTarget by remember { mutableStateOf<TaskItem?>(null) }
@@ -546,14 +549,35 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             title = list.name,
             canDelete = list.canDelete,
             onDismiss = { listActionTarget = null },
-            onRename = {
-                listActionTarget = null
-                renameListTarget = list
+            onRename = if (list.canManage) {
+                {
+                    listActionTarget = null
+                    renameListTarget = list
+                }
+            } else {
+                null
+            },
+            onShare = if (list.canShare) {
+                {
+                    listActionTarget = null
+                    shareListTarget = list
+                    vm.loadTaskListMembers(list)
+                }
+            } else {
+                null
             },
             onArchive = if (list.canArchive) {
                 {
                     listActionTarget = null
                     archiveListTarget = list
+                }
+            } else {
+                null
+            },
+            onLeave = if (list.canRemove) {
+                {
+                    listActionTarget = null
+                    leaveListTarget = list
                 }
             } else {
                 null
@@ -582,6 +606,45 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             restoring = ui.navigationMutating,
             onDismiss = { showArchivedLists = false },
             onRestore = vm::restoreTaskList,
+        )
+    }
+    shareListTarget?.takeIf { memberPickerListTarget == null }?.let { list ->
+        TaskListSharingSheet(
+            list = list,
+            members = ui.taskListMembers.takeIf { ui.taskListMembersFor == list.id }.orEmpty(),
+            loading = ui.taskListMembersLoading,
+            mutating = ui.navigationMutating,
+            onDismiss = { shareListTarget = null },
+            onAddMember = { memberPickerListTarget = list },
+            onRoleChange = { member, role ->
+                vm.updateTaskListMemberRole(list, member, role)
+            },
+            onRemove = { member -> vm.removeTaskListMember(list, member) },
+        )
+    }
+    memberPickerListTarget?.let { list ->
+        ContactPicker(
+            deps = app,
+            mode = ContactPickerMode.Single,
+            enabled = !ui.navigationMutating,
+            excludeSelf = true,
+            excludeUserIds = ui.taskListMembers.mapTo(mutableSetOf()) { it.userId },
+            onConfirm = { picked ->
+                picked.firstOrNull()?.let { vm.addTaskListMember(list, it.userId) }
+                memberPickerListTarget = null
+            },
+            onDismiss = { memberPickerListTarget = null },
+        )
+    }
+    leaveListTarget?.let { list ->
+        LeaveTaskListDialog(
+            listName = list.name,
+            leaving = ui.navigationMutating,
+            onDismiss = { leaveListTarget = null },
+            onConfirm = {
+                vm.leaveTaskList(list)
+                leaveListTarget = null
+            },
         )
     }
     renameGroupTarget?.let { group ->
@@ -1426,7 +1489,7 @@ private fun DrawerGroup(
                     Spacer(Modifier.width(Dimens.SpaceM))
                     Text(list.name, color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
                     Text(list.taskCount.toString(), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (list.canManage || list.canDelete) {
+                    if (list.canManage || list.canShare || list.canRemove || list.canDelete) {
                         IconButton(onClick = { onListAction(list) }) {
                             Icon(Icons.Outlined.MoreVert, stringResource(R.string.task_more))
                         }
@@ -2149,6 +2212,13 @@ private fun priorityText(priority: TaskPriority): String = when (priority) {
 }
 
 @Composable
+private fun taskListRoleText(role: TaskListRole): String = when (role) {
+    TaskListRole.Viewer -> stringResource(R.string.task_role_viewer)
+    TaskListRole.Editor -> stringResource(R.string.task_role_editor)
+    TaskListRole.Owner -> stringResource(R.string.task_role_owner)
+}
+
+@Composable
 private fun recurrenceFrequencyText(frequency: TaskRecurrenceFrequency?): String =
     when (frequency) {
         null -> stringResource(R.string.calendar_repeat_none)
@@ -2708,8 +2778,10 @@ private fun NavigationActionSheet(
     title: String,
     canDelete: Boolean,
     onDismiss: () -> Unit,
-    onRename: () -> Unit,
+    onRename: (() -> Unit)?,
+    onShare: (() -> Unit)? = null,
     onArchive: (() -> Unit)? = null,
+    onLeave: (() -> Unit)? = null,
     onDelete: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -2722,9 +2794,22 @@ private fun NavigationActionSheet(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
-            SheetAction(Icons.Outlined.Edit, R.string.task_rename, onRename)
+            onRename?.let {
+                SheetAction(Icons.Outlined.Edit, R.string.task_rename, it)
+            }
+            onShare?.let {
+                SheetAction(Icons.Outlined.Groups, R.string.task_list_share, it)
+            }
             onArchive?.let {
                 SheetAction(Icons.Outlined.Archive, R.string.task_archive, it)
+            }
+            onLeave?.let {
+                SheetAction(
+                    Icons.AutoMirrored.Outlined.ArrowBack,
+                    R.string.task_leave_list,
+                    it,
+                    danger = true,
+                )
             }
             if (canDelete) {
                 SheetAction(
@@ -2736,6 +2821,147 @@ private fun NavigationActionSheet(
             }
         }
     }
+}
+
+@Composable
+private fun TaskListSharingSheet(
+    list: TaskListItem,
+    members: List<TaskListMemberItem>,
+    loading: Boolean,
+    mutating: Boolean,
+    onDismiss: () -> Unit,
+    onAddMember: () -> Unit,
+    onRoleChange: (TaskListMemberItem, TaskListRole) -> Unit,
+    onRemove: (TaskListMemberItem) -> Unit,
+) {
+    var roleMenuFor by remember(list.id) { mutableStateOf<String?>(null) }
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl)
+                .padding(bottom = Dimens.SpaceXl),
+        ) {
+            Text(
+                stringResource(R.string.task_list_share_title, list.name),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(Dimens.SpaceM))
+            OutlinedButton(
+                onClick = onAddMember,
+                enabled = !loading && !mutating,
+            ) {
+                Icon(Icons.Filled.Add, null)
+                Spacer(Modifier.width(Dimens.SpaceS))
+                Text(stringResource(R.string.task_add_collaborator))
+            }
+            Spacer(Modifier.height(Dimens.SpaceM))
+            when {
+                loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
+                members.isEmpty() -> Text(
+                    stringResource(R.string.task_collaborators_empty),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = Dimens.SpaceXl),
+                )
+                else -> LazyColumn(
+                    Modifier.fillMaxWidth().heightIn(max = Dimens.Chat.SheetListMaxHeight),
+                ) {
+                    items(members, key = TaskListMemberItem::id) { member ->
+                        Row(
+                            Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Avatar(member.name, Dimens.AvatarS)
+                            Spacer(Modifier.width(Dimens.SpaceM))
+                            Text(
+                                member.name,
+                                modifier = Modifier.weight(1f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            if (member.role == TaskListRole.Owner || member.isSelf) {
+                                Text(
+                                    taskListRoleText(member.role),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            } else {
+                                Box {
+                                    TextButton(
+                                        onClick = { roleMenuFor = member.userId },
+                                        enabled = !mutating,
+                                    ) {
+                                        Text(taskListRoleText(member.role))
+                                        Icon(Icons.Outlined.ExpandMore, null)
+                                    }
+                                    DropdownMenu(
+                                        expanded = roleMenuFor == member.userId,
+                                        onDismissRequest = { roleMenuFor = null },
+                                    ) {
+                                        listOf(TaskListRole.Viewer, TaskListRole.Editor)
+                                            .forEach { role ->
+                                                DropdownMenuItem(
+                                                    text = { Text(taskListRoleText(role)) },
+                                                    onClick = {
+                                                        roleMenuFor = null
+                                                        onRoleChange(member, role)
+                                                    },
+                                                    trailingIcon = {
+                                                        if (role == member.role) {
+                                                            Icon(Icons.Filled.Check, null)
+                                                        }
+                                                    },
+                                                )
+                                            }
+                                    }
+                                }
+                                IconButton(
+                                    onClick = { onRemove(member) },
+                                    enabled = !mutating,
+                                ) {
+                                    Icon(
+                                        Icons.Filled.DeleteOutline,
+                                        stringResource(
+                                            R.string.task_remove_collaborator,
+                                            member.name,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LeaveTaskListDialog(
+    listName: String,
+    leaving: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.task_leave_list)) },
+        text = { Text(stringResource(R.string.task_leave_list_confirm, listName)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = !leaving) {
+                Text(
+                    stringResource(R.string.task_leave_list),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !leaving) {
+                Text(stringResource(R.string.task_cancel))
+            }
+        },
+    )
 }
 
 @Composable

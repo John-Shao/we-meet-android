@@ -18,6 +18,7 @@ import com.we.meet.data.api.dto.ReorderTaskSubtasksRequest
 import com.we.meet.data.api.dto.TaskCommentDto
 import com.we.meet.data.api.dto.TaskDto
 import com.we.meet.data.api.dto.TaskListDto
+import com.we.meet.data.api.dto.TaskListAccessDto
 import com.we.meet.data.api.dto.TaskListGroupDto
 import com.we.meet.data.api.dto.TaskParentCandidateDto
 import com.we.meet.data.api.dto.TaskGroupDto
@@ -29,6 +30,8 @@ import com.we.meet.data.api.dto.TaskActivityDto
 import com.we.meet.data.api.dto.ShareTaskRequest
 import com.we.meet.data.api.dto.ShareTaskResponse
 import com.we.meet.data.api.dto.StandaloneTaskCountDto
+import com.we.meet.data.api.dto.ShareTaskListRequest
+import com.we.meet.data.api.dto.UpdateTaskListAccessRequest
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -184,6 +187,31 @@ interface TaskApi {
 
     @DELETE("api/v1.0/task-lists/{id}/")
     suspend fun deleteTaskList(@Path("id") id: String)
+
+    @GET("api/v1.0/task-lists/{id}/shares/")
+    suspend fun listTaskListShares(@Path("id") id: String): List<TaskListAccessDto>
+
+    @POST("api/v1.0/task-lists/{id}/shares/")
+    suspend fun shareTaskList(
+        @Path("id") id: String,
+        @Body body: ShareTaskListRequest,
+    ): TaskListAccessDto
+
+    @PATCH("api/v1.0/task-lists/{id}/shares/{userId}/")
+    suspend fun updateTaskListShare(
+        @Path("id") id: String,
+        @Path("userId") userId: String,
+        @Body body: UpdateTaskListAccessRequest,
+    ): TaskListAccessDto
+
+    @DELETE("api/v1.0/task-lists/{id}/shares/{userId}/")
+    suspend fun removeTaskListShare(
+        @Path("id") id: String,
+        @Path("userId") userId: String,
+    )
+
+    @POST("api/v1.0/task-lists/{id}/leave/")
+    suspend fun leaveTaskList(@Path("id") id: String)
 
     @GET("api/v1.0/task-lists/{id}/groups/")
     suspend fun listTaskGroups(@Path("id") id: String): List<TaskGroupDto>

@@ -146,10 +146,24 @@ data class TaskListItem(
     val isArchived: Boolean = false,
     val taskCount: Int = 0,
     val canCreateTasks: Boolean = false,
+    val accessRole: TaskListRole? = null,
     val canManage: Boolean = false,
+    val canShare: Boolean = false,
     val canArchive: Boolean = false,
+    val canRemove: Boolean = false,
     val canDelete: Boolean = false,
     val groups: List<TaskGroupItem> = emptyList(),
+)
+
+enum class TaskListRole { Viewer, Editor, Owner }
+
+data class TaskListMemberItem(
+    val id: String,
+    val userId: String,
+    val name: String,
+    val avatarUrl: String? = null,
+    val role: TaskListRole,
+    val isSelf: Boolean = false,
 )
 
 data class TaskGroupItem(

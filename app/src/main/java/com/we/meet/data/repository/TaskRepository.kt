@@ -22,10 +22,13 @@ import com.we.meet.data.api.dto.TaskDto
 import com.we.meet.data.api.dto.TaskAttachmentDto
 import com.we.meet.data.api.dto.TaskActivityDto
 import com.we.meet.data.api.dto.TaskListDto
+import com.we.meet.data.api.dto.TaskListAccessDto
 import com.we.meet.data.api.dto.TaskListGroupDto
 import com.we.meet.data.api.dto.TaskParentCandidateDto
 import com.we.meet.data.api.dto.TaskGroupDto
 import com.we.meet.data.api.dto.TaskRecurrenceRequest
+import com.we.meet.data.api.dto.ShareTaskListRequest
+import com.we.meet.data.api.dto.UpdateTaskListAccessRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -368,6 +371,40 @@ class TaskRepository(
 
     suspend fun deleteTaskList(id: String): Result<Unit> = runCatching {
         withContext(Dispatchers.IO) { api.deleteTaskList(id) }
+    }
+
+    suspend fun loadTaskListMembers(id: String): Result<List<TaskListAccessDto>> =
+        runCatching {
+            withContext(Dispatchers.IO) { api.listTaskListShares(id) }
+        }
+
+    suspend fun shareTaskList(
+        id: String,
+        userId: String,
+        role: String = "viewer",
+    ): Result<TaskListAccessDto> = runCatching {
+        withContext(Dispatchers.IO) {
+            api.shareTaskList(id, ShareTaskListRequest(userId, role))
+        }
+    }
+
+    suspend fun updateTaskListMemberRole(
+        id: String,
+        userId: String,
+        role: String,
+    ): Result<TaskListAccessDto> = runCatching {
+        withContext(Dispatchers.IO) {
+            api.updateTaskListShare(id, userId, UpdateTaskListAccessRequest(role))
+        }
+    }
+
+    suspend fun removeTaskListMember(id: String, userId: String): Result<Unit> =
+        runCatching {
+            withContext(Dispatchers.IO) { api.removeTaskListShare(id, userId) }
+        }
+
+    suspend fun leaveTaskList(id: String): Result<Unit> = runCatching {
+        withContext(Dispatchers.IO) { api.leaveTaskList(id) }
     }
 
     suspend fun createTaskGroup(

@@ -89,8 +89,11 @@ class TaskDtosTest {
               "list_group":{"id":"group-1","name":"Product","sort_order":2},
               "is_archived":true,
               "can_create_tasks":true,
+              "access_role":"editor",
               "can_manage":true,
+              "can_share":true,
               "can_archive":true,
+              "can_remove":true,
               "can_delete":true,
               "task_count":8,
               "groups":[{
@@ -118,8 +121,11 @@ class TaskDtosTest {
         assertEquals("Product", list.listGroup?.name)
         assertEquals(8, list.taskCount)
         assertTrue(list.isArchived)
+        assertEquals("editor", list.accessRole)
         assertTrue(list.canManage)
+        assertTrue(list.canShare)
         assertTrue(list.canArchive)
+        assertTrue(list.canRemove)
         assertTrue(list.canDelete)
         assertEquals("In progress", list.groups.single().name)
         assertEquals(3, list.groups.single().taskCount)
@@ -143,6 +149,32 @@ class TaskDtosTest {
         )
 
         assertTrue(json.contains("\"is_archived\":true"))
+    }
+
+    @Test
+    fun taskListSharingMapsMemberAndSerializesRoles() {
+        val access = moshi.adapter(TaskListAccessDto::class.java).fromJson(
+            """
+                {
+                  "id":"access-1",
+                  "user":{"id":"user-2","full_name":"Sam Lee"},
+                  "role":"editor"
+                }
+            """.trimIndent(),
+        )!!
+        val shareJson = moshi.adapter(ShareTaskListRequest::class.java).toJson(
+            ShareTaskListRequest(userId = "user-2"),
+        )
+        val updateJson = moshi.adapter(UpdateTaskListAccessRequest::class.java).toJson(
+            UpdateTaskListAccessRequest(role = "editor"),
+        )
+
+        assertEquals("user-2", access.user.id)
+        assertEquals("Sam Lee", access.user.displayName)
+        assertEquals("editor", access.role)
+        assertTrue(shareJson.contains("\"user_id\":\"user-2\""))
+        assertTrue(shareJson.contains("\"role\":\"viewer\""))
+        assertTrue(updateJson.contains("\"role\":\"editor\""))
     }
 
     @Test
