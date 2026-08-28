@@ -11,15 +11,18 @@ import com.we.meet.data.api.dto.CreateTaskCommentRequest
 import com.we.meet.data.api.dto.CreateTaskListGroupRequest
 import com.we.meet.data.api.dto.CreateTaskListRequest
 import com.we.meet.data.api.dto.CreateTaskRequest
+import com.we.meet.data.api.dto.CreateTaskGroupRequest
 import com.we.meet.data.api.dto.PatchTaskRequest
 import com.we.meet.data.api.dto.PatchTaskListGroupRequest
 import com.we.meet.data.api.dto.PatchTaskListRequest
+import com.we.meet.data.api.dto.PatchTaskGroupRequest
 import com.we.meet.data.api.dto.TaskCommentDto
 import com.we.meet.data.api.dto.TaskDto
 import com.we.meet.data.api.dto.TaskAttachmentDto
 import com.we.meet.data.api.dto.TaskActivityDto
 import com.we.meet.data.api.dto.TaskListDto
 import com.we.meet.data.api.dto.TaskListGroupDto
+import com.we.meet.data.api.dto.TaskGroupDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -219,6 +222,35 @@ class TaskRepository(
 
     suspend fun deleteTaskList(id: String): Result<Unit> = runCatching {
         withContext(Dispatchers.IO) { api.deleteTaskList(id) }
+    }
+
+    suspend fun createTaskGroup(
+        taskListId: String,
+        name: String,
+        sortOrder: Int,
+    ): Result<TaskGroupDto> = runCatching {
+        withContext(Dispatchers.IO) {
+            api.createTaskGroup(taskListId, CreateTaskGroupRequest(name, sortOrder))
+        }
+    }
+
+    suspend fun renameTaskGroup(id: String, name: String): Result<TaskGroupDto> = runCatching {
+        withContext(Dispatchers.IO) {
+            api.patchTaskGroup(id, PatchTaskGroupRequest(name = name))
+        }
+    }
+
+    suspend fun reorderTaskGroups(orderedIds: List<String>): Result<List<TaskGroupDto>> =
+        runCatching {
+            withContext(Dispatchers.IO) {
+                orderedIds.mapIndexed { index, id ->
+                    api.patchTaskGroup(id, PatchTaskGroupRequest(sortOrder = index))
+                }
+            }
+        }
+
+    suspend fun deleteTaskGroup(id: String): Result<Unit> = runCatching {
+        withContext(Dispatchers.IO) { api.deleteTaskGroup(id) }
     }
 
     private data class AttachmentMetadata(

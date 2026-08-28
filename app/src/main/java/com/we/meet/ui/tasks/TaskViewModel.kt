@@ -9,6 +9,7 @@ import com.we.meet.data.api.dto.TaskDto
 import com.we.meet.data.api.dto.TaskListDto
 import com.we.meet.data.api.dto.TaskListGroupDto
 import com.we.meet.data.api.dto.PatchTaskRequest
+import com.we.meet.data.api.dto.TaskGroupDto
 import com.we.meet.data.repository.TaskRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -690,6 +691,98 @@ class TaskViewModel(
         }
     }
 
+    fun createTaskGroup(
+        list: TaskListItem,
+        name: String,
+        insertIndex: Int = list.groups.size,
+        onCreated: () -> Unit = {},
+    ) {
+        if (!list.canManage || name.isBlank() || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.createTaskGroup(list.id, name.trim(), insertIndex).fold(
+                onSuccess = { created ->
+                    val ordered = list.groups.sortedBy(TaskGroupItem::sortOrder).toMutableList()
+                    ordered.add(insertIndex.coerceIn(0, ordered.size), created.toItem())
+                    repository.reorderTaskGroups(ordered.map(TaskGroupItem::id)).fold(
+                        onSuccess = { serverGroups ->
+                            updateTaskGroups(
+                                list.id,
+                                serverGroups.sortedBy { it.sortOrder }.map(TaskGroupDto::toItem),
+                            )
+                            onCreated()
+                        },
+                        onFailure = { navigationMutationFailed() },
+                    )
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
+    }
+
+    fun renameTaskGroup(list: TaskListItem, group: TaskGroupItem, name: String) {
+        if (!list.canManage || name.isBlank() || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.renameTaskGroup(group.id, name.trim()).fold(
+                onSuccess = { updated ->
+                    updateTaskGroups(
+                        list.id,
+                        list.groups.map { if (it.id == group.id) updated.toItem() else it },
+                    )
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
+    }
+
+    fun reorderTaskGroups(list: TaskListItem, groups: List<TaskGroupItem>) {
+        if (!list.canManage || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.reorderTaskGroups(groups.map(TaskGroupItem::id)).fold(
+                onSuccess = { serverGroups ->
+                    updateTaskGroups(
+                        list.id,
+                        serverGroups.sortedBy { it.sortOrder }.map(TaskGroupDto::toItem),
+                    )
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
+    }
+
+    fun deleteTaskGroup(list: TaskListItem, group: TaskGroupItem) {
+        if (!list.canManage || !group.canDelete || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.deleteTaskGroup(group.id).fold(
+                onSuccess = {
+                    updateTaskGroups(list.id, list.groups.filterNot { it.id == group.id })
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
+    }
+
+    private fun updateTaskGroups(listId: String, groups: List<TaskGroupItem>) {
+        _ui.update { state ->
+            state.copy(
+                navigationMutating = false,
+                taskLists = state.taskLists.map { list ->
+                    if (list.id == listId) list.copy(groups = groups) else list
+                },
+            )
+        }
+    }
+
+    private fun navigationMutationFailed() {
+        _ui.update {
+            it.copy(navigationMutating = false, failure = TaskFailure.Navigation)
+        }
+        refreshNavigation()
+    }
+
     fun clearFailure() = _ui.update { it.copy(failure = null) }
 
     class Factory(private val app: WeMeetApp) : ViewModelProvider.Factory {
@@ -739,6 +832,7 @@ private fun TaskDto.toItem(): TaskItem {
         },
         startDate = startDate,
         dueDate = dueDate,
+        groupId = group?.id,
     )
 }
 
@@ -750,6 +844,15 @@ private fun TaskListDto.toItem() = TaskListItem(
     taskCount = taskCount,
     canCreateTasks = canCreateTasks,
     canManage = canManage,
+    canDelete = canDelete,
+    groups = groups.sortedBy { it.sortOrder }.map(TaskGroupDto::toItem),
+)
+
+private fun TaskGroupDto.toItem() = TaskGroupItem(
+    id = id,
+    name = name,
+    sortOrder = sortOrder,
+    taskCount = taskCount,
     canDelete = canDelete,
 )
 

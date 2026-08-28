@@ -38,6 +38,19 @@ data class TaskGroupDto(
     val name: String = "",
     @Json(name = "sort_order") val sortOrder: Int = 0,
     @Json(name = "task_count") val taskCount: Int = 0,
+    @Json(name = "can_delete") val canDelete: Boolean = false,
+)
+
+@JsonClass(generateAdapter = true)
+data class CreateTaskGroupRequest(
+    val name: String,
+    @Json(name = "sort_order") val sortOrder: Int = 0,
+)
+
+@JsonClass(generateAdapter = true)
+data class PatchTaskGroupRequest(
+    val name: String? = null,
+    @Json(name = "sort_order") val sortOrder: Int? = null,
 )
 
 @JsonClass(generateAdapter = true)

@@ -344,6 +344,10 @@
     <string name="task_new_group_above">Create group above</string>
     <string name="task_new_group_below">Create group below</string>
     <string name="task_manage_group_order">Manage group order</string>
+    <string name="task_new_task_group">New task group</string>
+    <string name="task_delete_task_group_confirm">Delete “%1$s”? Only empty groups can be deleted.</string>
+    <string name="task_move_up">Move up</string>
+    <string name="task_move_down">Move down</string>
 
     <!-- WebView Keycloak login -->
     <string name="web_login_error">Sign-in failed</string>

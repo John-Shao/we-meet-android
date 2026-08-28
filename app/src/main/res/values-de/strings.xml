@@ -334,6 +334,10 @@
     <string name="task_new_group_above">Gruppe darüber erstellen</string>
     <string name="task_new_group_below">Gruppe darunter erstellen</string>
     <string name="task_manage_group_order">Gruppenreihenfolge verwalten</string>
+    <string name="task_new_task_group">Neue Aufgabengruppe</string>
+    <string name="task_delete_task_group_confirm">„%1$s“ löschen? Nur leere Gruppen können gelöscht werden.</string>
+    <string name="task_move_up">Nach oben</string>
+    <string name="task_move_down">Nach unten</string>
     <string name="tab_profile">Ich</string>
 
     <!-- WebView Keycloak login -->

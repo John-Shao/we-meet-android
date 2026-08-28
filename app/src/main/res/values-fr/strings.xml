@@ -334,6 +334,10 @@
     <string name="task_new_group_above">Créer un groupe au-dessus</string>
     <string name="task_new_group_below">Créer un groupe en dessous</string>
     <string name="task_manage_group_order">Gérer l’ordre des groupes</string>
+    <string name="task_new_task_group">Nouveau groupe de tâches</string>
+    <string name="task_delete_task_group_confirm">Supprimer « %1$s » ? Seuls les groupes vides peuvent être supprimés.</string>
+    <string name="task_move_up">Déplacer vers le haut</string>
+    <string name="task_move_down">Déplacer vers le bas</string>
     <string name="tab_profile">Moi</string>
 
     <!-- WebView Keycloak login -->

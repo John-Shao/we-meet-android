@@ -49,6 +49,8 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.AccountTree
 import androidx.compose.material.icons.outlined.Alarm
 import androidx.compose.material.icons.outlined.AlternateEmail
+import androidx.compose.material.icons.outlined.ArrowDownward
+import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -140,6 +142,10 @@ import org.json.JSONObject
 
 private enum class TaskPage { List, Create, Detail, Search, Settings }
 
+private data class TaskGroupInsertion(val list: TaskListItem, val index: Int)
+
+private data class TaskGroupEditTarget(val list: TaskListItem, val group: TaskGroupItem)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskScreen(ownerName: String, app: WeMeetApp) {
@@ -167,7 +173,11 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     var shareTarget by remember { mutableStateOf<TaskItem?>(null) }
     var showShareGroup by remember { mutableStateOf(false) }
     var actionTarget by remember { mutableStateOf<TaskItem?>(null) }
-    var sectionMenu by remember { mutableStateOf<String?>(null) }
+    var sectionMenu by remember { mutableStateOf<TaskGroupItem?>(null) }
+    var taskGroupInsertion by remember { mutableStateOf<TaskGroupInsertion?>(null) }
+    var renameTaskGroupTarget by remember { mutableStateOf<TaskGroupEditTarget?>(null) }
+    var deleteTaskGroupTarget by remember { mutableStateOf<TaskGroupEditTarget?>(null) }
+    var orderTaskGroupsFor by remember { mutableStateOf<TaskListItem?>(null) }
     val selectedTask = (ui.tasks + ui.searchResults).firstOrNull { it.id == selectedTaskId }
     val snackbar = remember { SnackbarHostState() }
     val imSession = remember(app) { ImSession.get(app) }
@@ -210,7 +220,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             TaskPage.List -> TaskListPage(
                 tasks = ui.tasks,
                 view = ui.view,
-                selectedList = ui.selectedList?.name,
+                selectedList = ui.selectedList,
                 includeDone = ui.includeDone,
                 loading = ui.loading,
                 owner = owner,
@@ -227,6 +237,9 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 onToggleDone = vm::toggleCompleted,
                 onTaskAction = { actionTarget = it },
                 onSectionAction = { sectionMenu = it },
+                onNewTaskGroup = { list ->
+                    taskGroupInsertion = TaskGroupInsertion(list, list.groups.size)
+                },
             )
 
             TaskPage.Create -> CreateTaskPage(
@@ -337,8 +350,80 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
         )
     }
 
-    sectionMenu?.let {
-        SectionActionSheet(section = it, onDismiss = { sectionMenu = null })
+    sectionMenu?.let { group ->
+        ui.selectedList?.takeIf(TaskListItem::canManage)?.let { list ->
+            val ordered = list.groups.sortedBy(TaskGroupItem::sortOrder)
+            val index = ordered.indexOfFirst { it.id == group.id }.coerceAtLeast(0)
+            SectionActionSheet(
+                section = group.name,
+                canDelete = group.canDelete,
+                onDismiss = { sectionMenu = null },
+                onRename = {
+                    sectionMenu = null
+                    renameTaskGroupTarget = TaskGroupEditTarget(list, group)
+                },
+                onCreateAbove = {
+                    sectionMenu = null
+                    taskGroupInsertion = TaskGroupInsertion(list, index)
+                },
+                onCreateBelow = {
+                    sectionMenu = null
+                    taskGroupInsertion = TaskGroupInsertion(list, index + 1)
+                },
+                onManageOrder = {
+                    sectionMenu = null
+                    orderTaskGroupsFor = list
+                },
+                onDelete = {
+                    sectionMenu = null
+                    deleteTaskGroupTarget = TaskGroupEditTarget(list, group)
+                },
+            )
+        }
+    }
+    taskGroupInsertion?.let { target ->
+        NewGroupDialog(
+            saving = ui.navigationMutating,
+            onDismiss = { taskGroupInsertion = null },
+            onCreate = { name ->
+                vm.createTaskGroup(target.list, name, target.index) {
+                    taskGroupInsertion = null
+                }
+            },
+        )
+    }
+    renameTaskGroupTarget?.let { target ->
+        RenameNavigationDialog(
+            initialName = target.group.name,
+            saving = ui.navigationMutating,
+            onDismiss = { renameTaskGroupTarget = null },
+            onConfirm = { name ->
+                vm.renameTaskGroup(target.list, target.group, name)
+                renameTaskGroupTarget = null
+            },
+        )
+    }
+    deleteTaskGroupTarget?.let { target ->
+        DeleteNavigationDialog(
+            message = stringResource(R.string.task_delete_task_group_confirm, target.group.name),
+            deleting = ui.navigationMutating,
+            onDismiss = { deleteTaskGroupTarget = null },
+            onConfirm = {
+                vm.deleteTaskGroup(target.list, target.group)
+                deleteTaskGroupTarget = null
+            },
+        )
+    }
+    orderTaskGroupsFor?.let { list ->
+        TaskGroupOrderDialog(
+            groups = list.groups,
+            saving = ui.navigationMutating,
+            onDismiss = { orderTaskGroupsFor = null },
+            onSave = { ordered ->
+                vm.reorderTaskGroups(list, ordered)
+                orderTaskGroupsFor = null
+            },
+        )
     }
 
     if (showNewGroup) {
@@ -569,7 +654,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
 private fun TaskListPage(
     tasks: List<TaskItem>,
     view: TaskView,
-    selectedList: String?,
+    selectedList: TaskListItem?,
     includeDone: Boolean,
     loading: Boolean,
     owner: String,
@@ -582,10 +667,32 @@ private fun TaskListPage(
     onTaskClick: (TaskItem) -> Unit,
     onToggleDone: (TaskItem) -> Unit,
     onTaskAction: (TaskItem) -> Unit,
-    onSectionAction: (String) -> Unit,
+    onSectionAction: (TaskGroupItem) -> Unit,
+    onNewTaskGroup: (TaskListItem) -> Unit,
 ) {
-    val visible = tasks.visibleFor(view, TaskFilter(includeDone = includeDone), selectedList)
-    val groups = visible.groupBy { if (selectedList == null) it.listName else it.section }
+    val visible = tasks.visibleFor(view, TaskFilter(includeDone = includeDone), selectedList?.name)
+    val sections = if (selectedList == null) {
+        visible.groupBy(TaskItem::listName).map { (title, groupedTasks) ->
+            TaskDisplaySection(title, groupedTasks)
+        }
+    } else {
+        val knownGroupIds = selectedList.groups.mapTo(mutableSetOf(), TaskGroupItem::id)
+        buildList {
+            selectedList.groups.sortedBy(TaskGroupItem::sortOrder).forEach { group ->
+                add(
+                    TaskDisplaySection(
+                        title = group.name,
+                        tasks = visible.filter { it.groupId == group.id },
+                        group = group,
+                    ),
+                )
+            }
+            val ungrouped = visible.filter { it.groupId == null || it.groupId !in knownGroupIds }
+            if (ungrouped.isNotEmpty()) {
+                add(TaskDisplaySection(stringResource(R.string.task_ungrouped), ungrouped))
+            }
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -605,7 +712,7 @@ private fun TaskListPage(
             item {
                 TaskHomeHeader(
                     owner = owner,
-                    selectedList = selectedList,
+                    selectedList = selectedList?.name,
                     onOpenDrawer = onOpenDrawer,
                     onSearch = onSearch,
                     onSettings = onSettings,
@@ -617,18 +724,19 @@ private fun TaskListPage(
                 if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
             }
 
-            if (!loading && groups.isEmpty()) {
+            if (!loading && sections.isEmpty()) {
                 item { TaskEmptyState(onCreate) }
             } else {
-                groups.forEach { (group, groupedTasks) ->
+                sections.forEach { section ->
                     item {
                         TaskSectionHeader(
-                            title = group,
-                            count = groupedTasks.size,
-                            onMore = { onSectionAction(group) },
+                            title = section.title,
+                            count = section.tasks.size,
+                            onMore = section.group?.takeIf { selectedList?.canManage == true }
+                                ?.let { group -> { onSectionAction(group) } },
                         )
                     }
-                    items(groupedTasks, key = { it.id }) { task ->
+                    items(section.tasks, key = { it.id }) { task ->
                         SwipeTaskRow(
                             task = task,
                             onClick = { onTaskClick(task) },
@@ -638,9 +746,27 @@ private fun TaskListPage(
                     }
                 }
             }
+            selectedList?.takeIf(TaskListItem::canManage)?.let { manageableList ->
+                item {
+                    TextButton(
+                        onClick = { onNewTaskGroup(manageableList) },
+                        modifier = Modifier.padding(horizontal = Dimens.ScreenPadding),
+                    ) {
+                        Icon(Icons.Filled.Add, null)
+                        Spacer(Modifier.width(Dimens.SpaceS))
+                        Text(stringResource(R.string.task_new_task_group))
+                    }
+                }
+            }
         }
     }
 }
+
+private data class TaskDisplaySection(
+    val title: String,
+    val tasks: List<TaskItem>,
+    val group: TaskGroupItem? = null,
+)
 
 @Composable
 private fun TaskHomeHeader(
@@ -759,7 +885,7 @@ private fun TaskFilterBar(includeDone: Boolean, onFilter: () -> Unit) {
 }
 
 @Composable
-private fun TaskSectionHeader(title: String, count: Int, onMore: () -> Unit) {
+private fun TaskSectionHeader(title: String, count: Int, onMore: (() -> Unit)?) {
     Row(
         modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerLow)
             .padding(start = Dimens.ScreenPadding, top = Dimens.SpaceM, bottom = Dimens.SpaceM, end = Dimens.SpaceXs),
@@ -769,7 +895,11 @@ private fun TaskSectionHeader(title: String, count: Int, onMore: () -> Unit) {
         Spacer(Modifier.width(Dimens.SpaceS))
         Text(title, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
         Text(count.toString(), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        IconButton(onClick = onMore) { Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.task_more)) }
+        if (onMore != null) {
+            IconButton(onClick = onMore) {
+                Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.task_more))
+            }
+        }
     }
 }
 
@@ -1822,16 +1952,97 @@ private fun TaskActionSheet(
 }
 
 @Composable
-private fun SectionActionSheet(section: String, onDismiss: () -> Unit) {
+private fun SectionActionSheet(
+    section: String,
+    canDelete: Boolean,
+    onDismiss: () -> Unit,
+    onRename: () -> Unit,
+    onCreateAbove: () -> Unit,
+    onCreateBelow: () -> Unit,
+    onManageOrder: () -> Unit,
+    onDelete: () -> Unit,
+) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().padding(bottom = Dimens.SpaceXl)) {
             Text(section, Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            SheetAction(Icons.Outlined.Edit, R.string.task_rename, onDismiss)
-            SheetAction(Icons.Filled.Add, R.string.task_new_group_above, onDismiss)
-            SheetAction(Icons.Filled.Add, R.string.task_new_group_below, onDismiss)
-            SheetAction(Icons.AutoMirrored.Outlined.Sort, R.string.task_manage_group_order, onDismiss)
+            SheetAction(Icons.Outlined.Edit, R.string.task_rename, onRename)
+            SheetAction(Icons.Filled.Add, R.string.task_new_group_above, onCreateAbove)
+            SheetAction(Icons.Filled.Add, R.string.task_new_group_below, onCreateBelow)
+            SheetAction(Icons.AutoMirrored.Outlined.Sort, R.string.task_manage_group_order, onManageOrder)
+            if (canDelete) {
+                SheetAction(
+                    Icons.Filled.DeleteOutline,
+                    R.string.task_delete_navigation_item,
+                    onDelete,
+                    danger = true,
+                )
+            }
         }
     }
+}
+
+@Composable
+private fun TaskGroupOrderDialog(
+    groups: List<TaskGroupItem>,
+    saving: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (List<TaskGroupItem>) -> Unit,
+) {
+    var ordered by remember(groups) {
+        mutableStateOf(groups.sortedBy(TaskGroupItem::sortOrder))
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.task_manage_group_order)) },
+        text = {
+            Column {
+                ordered.forEachIndexed { index, group ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(group.name, modifier = Modifier.weight(1f))
+                        IconButton(
+                            onClick = {
+                                ordered = ordered.toMutableList().also {
+                                    val moved = it.removeAt(index)
+                                    it.add(index - 1, moved)
+                                }
+                            },
+                            enabled = index > 0 && !saving,
+                        ) {
+                            Icon(Icons.Outlined.ArrowUpward, stringResource(R.string.task_move_up))
+                        }
+                        IconButton(
+                            onClick = {
+                                ordered = ordered.toMutableList().also {
+                                    val moved = it.removeAt(index)
+                                    it.add(index + 1, moved)
+                                }
+                            },
+                            enabled = index < ordered.lastIndex && !saving,
+                        ) {
+                            Icon(Icons.Outlined.ArrowDownward, stringResource(R.string.task_move_down))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onSave(ordered) },
+                enabled = !saving && ordered.map(TaskGroupItem::id) !=
+                    groups.sortedBy(TaskGroupItem::sortOrder).map(TaskGroupItem::id),
+            ) {
+                Text(stringResource(R.string.task_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !saving) {
+                Text(stringResource(R.string.task_cancel))
+            }
+        },
+    )
 }
 
 @Composable

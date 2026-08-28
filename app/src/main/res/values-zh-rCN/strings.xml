@@ -344,6 +344,10 @@
     <string name="task_new_group_above">在上方新建分组</string>
     <string name="task_new_group_below">在下方新建分组</string>
     <string name="task_manage_group_order">管理分组排序</string>
+    <string name="task_new_task_group">新建任务分组</string>
+    <string name="task_delete_task_group_confirm">删除“%1$s”？仅空分组可以删除。</string>
+    <string name="task_move_up">上移</string>
+    <string name="task_move_down">下移</string>
     <string name="profile_ai_entry">AI 助手</string>
 
     <!-- WebView Keycloak 登录 -->

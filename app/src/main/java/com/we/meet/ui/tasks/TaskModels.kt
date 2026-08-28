@@ -37,6 +37,7 @@ data class TaskItem(
     val followers: List<TaskPersonItem> = emptyList(),
     val startDate: String? = null,
     val dueDate: String? = null,
+    val groupId: String? = null,
 )
 
 data class TaskCommentItem(
@@ -78,6 +79,15 @@ data class TaskListItem(
     val taskCount: Int = 0,
     val canCreateTasks: Boolean = false,
     val canManage: Boolean = false,
+    val canDelete: Boolean = false,
+    val groups: List<TaskGroupItem> = emptyList(),
+)
+
+data class TaskGroupItem(
+    val id: String,
+    val name: String,
+    val sortOrder: Int = 0,
+    val taskCount: Int = 0,
     val canDelete: Boolean = false,
 )
 

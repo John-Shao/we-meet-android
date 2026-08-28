@@ -90,7 +90,14 @@ class TaskDtosTest {
               "can_create_tasks":true,
               "can_manage":true,
               "can_delete":true,
-              "task_count":8
+              "task_count":8,
+              "groups":[{
+                "id":"task-group-1",
+                "name":"In progress",
+                "sort_order":1,
+                "task_count":3,
+                "can_delete":false
+              }]
             }
         """.trimIndent()
         val groupJson = """
@@ -110,6 +117,8 @@ class TaskDtosTest {
         assertEquals(8, list.taskCount)
         assertTrue(list.canManage)
         assertTrue(list.canDelete)
+        assertEquals("In progress", list.groups.single().name)
+        assertEquals(3, list.groups.single().taskCount)
         assertTrue(group.canManage)
     }
 
@@ -121,6 +130,35 @@ class TaskDtosTest {
 
         assertTrue(json.contains("\"list_group_id\":\"group-1\""))
         assertTrue(json.contains("\"name\":\"Mobile\""))
+    }
+
+    @Test
+    fun taskGroupMapsPermissionsAndRequestsUseBackendSortField() {
+        val groupJson = """
+            {
+              "id":"task-group-1",
+              "name":"In progress",
+              "sort_order":2,
+              "task_count":0,
+              "can_delete":true
+            }
+        """.trimIndent()
+
+        val group = moshi.adapter(TaskGroupDto::class.java).fromJson(groupJson)!!
+        val createJson = moshi.adapter(CreateTaskGroupRequest::class.java).toJson(
+            CreateTaskGroupRequest(name = "In progress", sortOrder = 2),
+        )
+        val patchJson = moshi.adapter(PatchTaskGroupRequest::class.java).toJson(
+            PatchTaskGroupRequest(name = "Doing", sortOrder = 1),
+        )
+
+        assertEquals("task-group-1", group.id)
+        assertEquals(2, group.sortOrder)
+        assertEquals(0, group.taskCount)
+        assertTrue(group.canDelete)
+        assertTrue(createJson.contains("\"sort_order\":2"))
+        assertTrue(patchJson.contains("\"name\":\"Doing\""))
+        assertTrue(patchJson.contains("\"sort_order\":1"))
     }
 
     @Test

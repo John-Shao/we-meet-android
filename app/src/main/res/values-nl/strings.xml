@@ -334,6 +334,10 @@
     <string name="task_new_group_above">Groep erboven maken</string>
     <string name="task_new_group_below">Groep eronder maken</string>
     <string name="task_manage_group_order">Groepsvolgorde beheren</string>
+    <string name="task_new_task_group">Nieuwe taakgroep</string>
+    <string name="task_delete_task_group_confirm">‘%1$s’ verwijderen? Alleen lege groepen kunnen worden verwijderd.</string>
+    <string name="task_move_up">Omhoog verplaatsen</string>
+    <string name="task_move_down">Omlaag verplaatsen</string>
     <string name="tab_profile">Ik</string>
 
     <!-- WebView Keycloak login -->
