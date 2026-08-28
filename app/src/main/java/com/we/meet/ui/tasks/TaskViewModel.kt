@@ -175,50 +175,13 @@ class TaskViewModel(
         viewModelScope.launch {
             repository.loadDetail(taskId).fold(
                 onSuccess = { detail ->
-                    val task = detail.task.toItem().copy(commentCount = detail.comments.size)
+                    val mappedDetail = detail.toItem(taskId)
+                    val task = requireNotNull(mappedDetail.task)
                     _ui.update {
                         it.copy(
                             tasks = it.tasks.replace(taskId, task),
                             searchResults = it.searchResults.replace(taskId, task),
-                            detail = TaskDetailItem(
-                                taskId = taskId,
-                                task = task,
-                                subtasks = detail.subtasks.map(TaskDto::toItem),
-                                comments = detail.comments.map { comment ->
-                                    TaskCommentItem(
-                                        id = comment.id,
-                                        author = comment.author?.displayName.orEmpty(),
-                                        content = comment.content,
-                                        createdAt = comment.createdAt,
-                                    )
-                                },
-                                attachments = detail.attachments.map { attachment ->
-                                    TaskAttachmentItem(
-                                        id = attachment.id,
-                                        filename = attachment.filename,
-                                        mimeType = attachment.mimetype,
-                                        downloadUrl = attachment.url,
-                                        size = attachment.size,
-                                        uploader = attachment.uploader?.displayName.orEmpty(),
-                                    )
-                                },
-                                activities = detail.activities.map { activity ->
-                                    TaskActivityItem(
-                                        id = activity.id,
-                                        actor = activity.actor?.displayName.orEmpty(),
-                                        event = activity.event,
-                                        createdAt = activity.createdAt,
-                                    )
-                                },
-                                parentCandidates = detail.parentCandidates.map { candidate ->
-                                    TaskParentCandidateItem(
-                                        id = candidate.id,
-                                        title = candidate.title,
-                                        depth = candidate.depth,
-                                    )
-                                },
-                                subtreeNodeCount = detail.subtreeNodeCount,
-                            ),
+                            detail = mappedDetail,
                         )
                     }
                 },
@@ -1582,6 +1545,49 @@ internal fun TaskDto.toItem(): TaskItem {
                 canManage = rule.canManage,
             )
         },
+    )
+}
+
+internal fun TaskRepository.Detail.toItem(taskId: String): TaskDetailItem {
+    val mappedTask = task.toItem().copy(commentCount = comments.size)
+    return TaskDetailItem(
+        taskId = taskId,
+        task = mappedTask,
+        subtasks = subtasks.map(TaskDto::toItem),
+        comments = comments.map { comment ->
+            TaskCommentItem(
+                id = comment.id,
+                author = comment.author?.displayName.orEmpty(),
+                content = comment.content,
+                createdAt = comment.createdAt,
+            )
+        },
+        attachments = attachments.map { attachment ->
+            TaskAttachmentItem(
+                id = attachment.id,
+                filename = attachment.filename,
+                mimeType = attachment.mimetype,
+                downloadUrl = attachment.url,
+                size = attachment.size,
+                uploader = attachment.uploader?.displayName.orEmpty(),
+            )
+        },
+        activities = activities.map { activity ->
+            TaskActivityItem(
+                id = activity.id,
+                actor = activity.actor?.displayName.orEmpty(),
+                event = activity.event,
+                createdAt = activity.createdAt,
+            )
+        },
+        parentCandidates = parentCandidates.map { candidate ->
+            TaskParentCandidateItem(
+                id = candidate.id,
+                title = candidate.title,
+                depth = candidate.depth,
+            )
+        },
+        subtreeNodeCount = subtreeNodeCount,
     )
 }
 

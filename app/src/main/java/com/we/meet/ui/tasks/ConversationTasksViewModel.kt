@@ -17,6 +17,8 @@ data class ConversationTasksUiState(
     val loading: Boolean = true,
     val mutatingIds: Set<String> = emptySet(),
     val failed: Boolean = false,
+    val detail: TaskDetailItem? = null,
+    val detailFailed: Boolean = false,
 )
 
 class ConversationTasksViewModel(
@@ -87,6 +89,43 @@ class ConversationTasksViewModel(
                 },
             )
         }
+    }
+
+    fun openTask(task: TaskItem) {
+        _ui.update {
+            it.copy(
+                detail = TaskDetailItem(taskId = task.id, task = task, loading = true),
+                detailFailed = false,
+            )
+        }
+        viewModelScope.launch {
+            repository.loadDetail(task.id, sharedVia = conversationId).fold(
+                onSuccess = { detail ->
+                    val mapped = detail.toItem(task.id)
+                    _ui.update { state ->
+                        state.copy(
+                            tasks = state.tasks.map { item ->
+                                if (item.id == task.id) requireNotNull(mapped.task) else item
+                            },
+                            detail = mapped,
+                            detailFailed = false,
+                        )
+                    }
+                },
+                onFailure = {
+                    _ui.update { state ->
+                        state.copy(
+                            detail = state.detail?.copy(loading = false),
+                            detailFailed = true,
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    fun closeTask() {
+        _ui.update { it.copy(detail = null, detailFailed = false) }
     }
 
     class Factory(

@@ -74,7 +74,10 @@ interface TaskApi {
     suspend fun getStandaloneTaskCount(): StandaloneTaskCountDto
 
     @GET("api/v1.0/tasks/{id}/")
-    suspend fun getTask(@Path("id") id: String): TaskDto
+    suspend fun getTask(
+        @Path("id") id: String,
+        @Query("shared_via") sharedVia: String? = null,
+    ): TaskDto
 
     @POST("api/v1.0/tasks/")
     suspend fun createTask(@Body body: CreateTaskRequest): TaskDto
@@ -83,12 +86,16 @@ interface TaskApi {
     suspend fun patchTask(@Path("id") id: String, @Body body: PatchTaskRequest): TaskDto
 
     @GET("api/v1.0/tasks/{id}/subtree-impact/")
-    suspend fun getSubtreeImpact(@Path("id") id: String): TaskSubtreeImpactDto
+    suspend fun getSubtreeImpact(
+        @Path("id") id: String,
+        @Query("shared_via") sharedVia: String? = null,
+    ): TaskSubtreeImpactDto
 
     @GET("api/v1.0/tasks/{id}/parent-candidates/")
     suspend fun listParentCandidates(
         @Path("id") id: String,
         @Query("q") query: String? = null,
+        @Query("shared_via") sharedVia: String? = null,
     ): List<TaskParentCandidateDto>
 
     @PATCH("api/v1.0/tasks/{id}/")
@@ -110,7 +117,10 @@ interface TaskApi {
     suspend fun unfollowTask(@Path("id") id: String): TaskDto
 
     @GET("api/v1.0/tasks/{id}/activities/")
-    suspend fun listActivities(@Path("id") id: String): List<TaskActivityDto>
+    suspend fun listActivities(
+        @Path("id") id: String,
+        @Query("shared_via") sharedVia: String? = null,
+    ): List<TaskActivityDto>
 
     @POST("api/v1.0/tasks/{id}/followers/")
     suspend fun addFollowers(
@@ -125,7 +135,10 @@ interface TaskApi {
     )
 
     @GET("api/v1.0/tasks/{id}/comments/")
-    suspend fun listComments(@Path("id") id: String): List<TaskCommentDto>
+    suspend fun listComments(
+        @Path("id") id: String,
+        @Query("shared_via") sharedVia: String? = null,
+    ): List<TaskCommentDto>
 
     @POST("api/v1.0/tasks/{id}/comments/")
     suspend fun createComment(
@@ -134,7 +147,10 @@ interface TaskApi {
     ): TaskCommentDto
 
     @GET("api/v1.0/tasks/{id}/subtasks/")
-    suspend fun listSubtasks(@Path("id") id: String): List<TaskDto>
+    suspend fun listSubtasks(
+        @Path("id") id: String,
+        @Query("shared_via") sharedVia: String? = null,
+    ): List<TaskDto>
 
     @POST("api/v1.0/tasks/{id}/subtasks/reorder/")
     suspend fun reorderSubtasks(
@@ -152,7 +168,10 @@ interface TaskApi {
     suspend fun stopRecurrence(@Path("id") id: String): TaskDto
 
     @GET("api/v1.0/tasks/{id}/attachments/")
-    suspend fun listAttachments(@Path("id") id: String): List<TaskAttachmentDto>
+    suspend fun listAttachments(
+        @Path("id") id: String,
+        @Query("shared_via") sharedVia: String? = null,
+    ): List<TaskAttachmentDto>
 
     @POST("api/v1.0/tasks/{id}/attachments/")
     suspend fun createAttachment(

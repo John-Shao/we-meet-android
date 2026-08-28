@@ -168,16 +168,18 @@ class TaskRepository(
             withContext(Dispatchers.IO) { api.listConversationTasks(conversationId) }
         }
 
-    suspend fun loadDetail(taskId: String): Result<Detail> = runCatching {
+    suspend fun loadDetail(taskId: String, sharedVia: String? = null): Result<Detail> = runCatching {
         withContext(Dispatchers.IO) {
             coroutineScope {
-                val task = async { api.getTask(taskId) }
-                val subtasks = async { api.listSubtasks(taskId) }
-                val comments = async { api.listComments(taskId) }
-                val attachments = async { api.listAttachments(taskId) }
-                val activities = async { api.listActivities(taskId) }
-                val parentCandidates = async { api.listParentCandidates(taskId) }
-                val subtreeImpact = async { api.getSubtreeImpact(taskId) }
+                val task = async { api.getTask(taskId, sharedVia) }
+                val subtasks = async { api.listSubtasks(taskId, sharedVia) }
+                val comments = async { api.listComments(taskId, sharedVia) }
+                val attachments = async { api.listAttachments(taskId, sharedVia) }
+                val activities = async { api.listActivities(taskId, sharedVia) }
+                val parentCandidates = async {
+                    api.listParentCandidates(taskId, sharedVia = sharedVia)
+                }
+                val subtreeImpact = async { api.getSubtreeImpact(taskId, sharedVia) }
                 Detail(
                     task = task.await(),
                     subtasks = subtasks.await(),
