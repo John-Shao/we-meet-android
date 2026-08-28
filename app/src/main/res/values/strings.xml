@@ -257,9 +257,11 @@
     <string name="task_incomplete">Incomplete</string>
     <string name="task_all_statuses">All statuses</string>
     <string name="task_group_by_list">Group by list</string>
+    <string name="task_group_none">No grouping</string>
     <string name="task_grouping">Group</string>
     <string name="task_sorting">Sort</string>
     <string name="task_sort_due_time">Due time</string>
+    <string name="task_sort_recently_created">Recently created</string>
     <string name="task_apply">Apply</string>
     <string name="task_more">More actions</string>
     <string name="task_empty_title">Everything is clear</string>

@@ -51,6 +51,13 @@ class TaskModelsTest {
     }
 
     @Test
+    fun listOrderingUsesSupportedBackendValues() {
+        assertEquals("due_date", TaskOrdering.DueDate.apiValue)
+        assertEquals("priority", TaskOrdering.Priority.apiValue)
+        assertEquals("-created_at", TaskOrdering.RecentlyCreated.apiValue)
+    }
+
+    @Test
     fun quickAccessViewsApplyCompletedVisibility() {
         assertEquals(
             listOf("1", "2", "3"),

@@ -247,9 +247,11 @@
     <string name="task_incomplete">Niet voltooid</string>
     <string name="task_all_statuses">Alle statussen</string>
     <string name="task_group_by_list">Groeperen op lijst</string>
+    <string name="task_group_none">Niet groeperen</string>
     <string name="task_grouping">Groeperen</string>
     <string name="task_sorting">Sorteren</string>
     <string name="task_sort_due_time">Deadline</string>
+    <string name="task_sort_recently_created">Onlangs gemaakt</string>
     <string name="task_apply">Toepassen</string>
     <string name="task_more">Meer acties</string>
     <string name="task_empty_title">Alles is afgehandeld</string>

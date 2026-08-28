@@ -93,6 +93,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -259,6 +260,8 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 view = ui.view,
                 selectedList = ui.selectedList,
                 includeDone = ui.includeDone,
+                grouping = ui.grouping,
+                ordering = ui.ordering,
                 loading = ui.loading,
                 owner = owner,
                 onViewChange = vm::setView,
@@ -413,7 +416,9 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     if (showFilter) {
         FilterSheet(
             includeDone = ui.includeDone,
-            onIncludeDoneChange = vm::setIncludeDone,
+            grouping = ui.grouping,
+            ordering = ui.ordering,
+            onApply = vm::applyListFilter,
             onDismiss = { showFilter = false },
         )
     }
@@ -897,6 +902,8 @@ private fun TaskListPage(
     view: TaskView,
     selectedList: TaskListItem?,
     includeDone: Boolean,
+    grouping: TaskGrouping,
+    ordering: TaskOrdering,
     loading: Boolean,
     owner: String,
     onViewChange: (TaskView) -> Unit,
@@ -915,10 +922,12 @@ private fun TaskListPage(
     val standaloneLabel = stringResource(R.string.task_standalone)
     val sections = if (view == TaskView.Standalone) {
         listOf(TaskDisplaySection(standaloneLabel, visible))
-    } else if (selectedList == null) {
+    } else if (selectedList == null && grouping == TaskGrouping.List) {
         visible.groupBy(TaskItem::listName).map { (title, groupedTasks) ->
             TaskDisplaySection(title, groupedTasks)
         }
+    } else if (selectedList == null) {
+        listOf(TaskDisplaySection(stringResource(R.string.task_all_tasks), visible))
     } else {
         val knownGroupIds = selectedList.groups.mapTo(mutableSetOf(), TaskGroupItem::id)
         buildList {
@@ -968,7 +977,13 @@ private fun TaskListPage(
                 ) {
                     TaskSegmentedControl(selected = view, onSelected = onViewChange)
                 }
-                TaskFilterBar(view = view, includeDone = includeDone, onFilter = onFilter)
+                TaskFilterBar(
+                    view = view,
+                    includeDone = includeDone,
+                    grouping = grouping,
+                    ordering = ordering,
+                    onFilter = onFilter,
+                )
                 if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
             }
 
@@ -1108,7 +1123,28 @@ private fun TaskSegmentedControl(selected: TaskView, onSelected: (TaskView) -> U
 }
 
 @Composable
-private fun TaskFilterBar(view: TaskView, includeDone: Boolean, onFilter: () -> Unit) {
+private fun TaskFilterBar(
+    view: TaskView,
+    includeDone: Boolean,
+    grouping: TaskGrouping,
+    ordering: TaskOrdering,
+    onFilter: () -> Unit,
+) {
+    val statusText = when (view) {
+        TaskView.All -> stringResource(R.string.task_all_statuses)
+        TaskView.Completed -> stringResource(R.string.task_completed)
+        TaskView.Standalone -> if (includeDone) {
+            stringResource(R.string.task_all_statuses)
+        } else {
+            stringResource(R.string.task_incomplete)
+        }
+        else -> if (includeDone) stringResource(R.string.task_all_statuses)
+        else stringResource(R.string.task_incomplete)
+    }
+    val groupingText = stringResource(
+        if (grouping == TaskGrouping.List) R.string.task_group_by_list
+        else R.string.task_group_none,
+    )
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
@@ -1116,27 +1152,13 @@ private fun TaskFilterBar(view: TaskView, includeDone: Boolean, onFilter: () -> 
         Icon(Icons.Outlined.FilterList, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.width(Dimens.SpaceS))
         Text(
-            when (view) {
-                TaskView.All -> stringResource(R.string.task_all_statuses)
-                TaskView.Completed -> stringResource(R.string.task_completed)
-                TaskView.Standalone -> if (includeDone) {
-                    stringResource(R.string.task_all_statuses)
-                } else {
-                    stringResource(R.string.task_incomplete)
-                }
-                else -> if (includeDone) stringResource(R.string.task_all_statuses)
-                else stringResource(R.string.task_incomplete)
-            },
+            "$statusText · $groupingText · ${taskOrderingText(ordering)}",
+            modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
-        Text(" · ", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(
-            stringResource(R.string.task_group_by_list),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.weight(1f))
         if (view != TaskView.All && view != TaskView.Completed) {
             IconButton(onClick = onFilter) {
                 Icon(Icons.Outlined.Tune, stringResource(R.string.task_filter))
@@ -2527,32 +2549,111 @@ private fun MoveTaskTreeDialog(
 }
 
 @Composable
-private fun FilterSheet(includeDone: Boolean, onIncludeDoneChange: (Boolean) -> Unit, onDismiss: () -> Unit) {
+private fun FilterSheet(
+    includeDone: Boolean,
+    grouping: TaskGrouping,
+    ordering: TaskOrdering,
+    onApply: (Boolean, TaskGrouping, TaskOrdering) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var selectedIncludeDone by remember(includeDone) { mutableStateOf(includeDone) }
+    var selectedGrouping by remember(grouping) { mutableStateOf(grouping) }
+    var selectedOrdering by remember(ordering) { mutableStateOf(ordering) }
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl).padding(bottom = Dimens.IconLarge)) {
-            Text(stringResource(R.string.task_filter_and_sort), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl)
+                .padding(bottom = Dimens.IconLarge),
+        ) {
+            Text(
+                stringResource(R.string.task_filter_and_sort),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
             Spacer(Modifier.height(Dimens.SpaceXl))
             Text(stringResource(R.string.task_status), fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(Dimens.SpaceS))
             Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                AssistChip(onClick = { onIncludeDoneChange(false) }, label = { Text(stringResource(R.string.task_incomplete)) })
-                AssistChip(onClick = { onIncludeDoneChange(true) }, label = { Text(stringResource(R.string.task_all_statuses)) })
+                FilterChip(
+                    selected = !selectedIncludeDone,
+                    onClick = { selectedIncludeDone = false },
+                    label = { Text(stringResource(R.string.task_incomplete)) },
+                )
+                FilterChip(
+                    selected = selectedIncludeDone,
+                    onClick = { selectedIncludeDone = true },
+                    label = { Text(stringResource(R.string.task_all_statuses)) },
+                )
             }
             Spacer(Modifier.height(Dimens.IconSmall))
             Text(stringResource(R.string.task_grouping), fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(Dimens.SpaceS))
-            AssistChip(onClick = {}, label = { Text(stringResource(R.string.task_group_by_list)) }, leadingIcon = { Icon(Icons.AutoMirrored.Outlined.ListAlt, null, Modifier.size(Dimens.IconSmall)) })
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                item {
+                    FilterChip(
+                        selected = selectedGrouping == TaskGrouping.List,
+                        onClick = { selectedGrouping = TaskGrouping.List },
+                        label = { Text(stringResource(R.string.task_group_by_list)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.AutoMirrored.Outlined.ListAlt,
+                                null,
+                                Modifier.size(Dimens.IconSmall),
+                            )
+                        },
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = selectedGrouping == TaskGrouping.None,
+                        onClick = { selectedGrouping = TaskGrouping.None },
+                        label = { Text(stringResource(R.string.task_group_none)) },
+                    )
+                }
+            }
             Spacer(Modifier.height(Dimens.IconSmall))
             Text(stringResource(R.string.task_sorting), fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(Dimens.SpaceS))
-            AssistChip(onClick = {}, label = { Text(stringResource(R.string.task_sort_due_time)) }, leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Sort, null, Modifier.size(Dimens.IconSmall)) })
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                items(TaskOrdering.entries) { item ->
+                    FilterChip(
+                        selected = selectedOrdering == item,
+                        onClick = { selectedOrdering = item },
+                        label = { Text(taskOrderingText(item)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.AutoMirrored.Outlined.Sort,
+                                null,
+                                Modifier.size(Dimens.IconSmall),
+                            )
+                        },
+                    )
+                }
+            }
             Spacer(Modifier.height(Dimens.SpaceXl))
-            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
+            Button(
+                onClick = {
+                    onApply(selectedIncludeDone, selectedGrouping, selectedOrdering)
+                    onDismiss()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                ),
+            ) {
                 Text(stringResource(R.string.task_apply))
             }
         }
     }
 }
+
+@Composable
+private fun taskOrderingText(ordering: TaskOrdering): String = stringResource(
+    when (ordering) {
+        TaskOrdering.DueDate -> R.string.task_sort_due_time
+        TaskOrdering.Priority -> R.string.task_priority
+        TaskOrdering.RecentlyCreated -> R.string.task_sort_recently_created
+    },
+)
 
 @Composable
 private fun TaskActionSheet(

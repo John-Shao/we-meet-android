@@ -119,6 +119,7 @@ class TaskRepository(
         status: String,
         taskListId: String?,
         query: String? = null,
+        ordering: String = "due_date",
     ): Result<List<TaskDto>> = runCatching {
         withContext(Dispatchers.IO) {
             api.listTasks(
@@ -126,6 +127,7 @@ class TaskRepository(
                 status = status,
                 taskList = taskListId ?: "all",
                 query = query?.takeIf(String::isNotBlank),
+                ordering = ordering,
             ).results
         }
     }

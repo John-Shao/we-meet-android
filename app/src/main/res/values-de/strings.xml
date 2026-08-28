@@ -247,9 +247,11 @@
     <string name="task_incomplete">Nicht erledigt</string>
     <string name="task_all_statuses">Alle Status</string>
     <string name="task_group_by_list">Nach Liste gruppieren</string>
+    <string name="task_group_none">Keine Gruppierung</string>
     <string name="task_grouping">Gruppieren</string>
     <string name="task_sorting">Sortieren</string>
     <string name="task_sort_due_time">Fälligkeit</string>
+    <string name="task_sort_recently_created">Kürzlich erstellt</string>
     <string name="task_apply">Anwenden</string>
     <string name="task_more">Weitere Aktionen</string>
     <string name="task_empty_title">Alles erledigt</string>

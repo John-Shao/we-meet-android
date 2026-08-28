@@ -257,9 +257,11 @@
     <string name="task_incomplete">未完成</string>
     <string name="task_all_statuses">全部状态</string>
     <string name="task_group_by_list">按清单分组</string>
+    <string name="task_group_none">不分组</string>
     <string name="task_grouping">分组</string>
     <string name="task_sorting">排序</string>
     <string name="task_sort_due_time">截止时间</string>
+    <string name="task_sort_recently_created">最近创建</string>
     <string name="task_apply">应用</string>
     <string name="task_more">更多操作</string>
     <string name="task_empty_title">事情都处理完了</string>

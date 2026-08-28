@@ -33,6 +33,8 @@ data class TaskUiState(
     val navigationCounts: TaskNavigationCounts = TaskNavigationCounts(),
     val view: TaskView = TaskView.Assigned,
     val includeDone: Boolean = false,
+    val grouping: TaskGrouping = TaskGrouping.List,
+    val ordering: TaskOrdering = TaskOrdering.DueDate,
     val selectedListId: String? = null,
     val loading: Boolean = true,
     val creating: Boolean = false,
@@ -87,10 +89,25 @@ class TaskViewModel(
         refresh()
     }
 
-    fun setIncludeDone(includeDone: Boolean) {
-        if (_ui.value.includeDone == includeDone) return
-        _ui.update { it.copy(includeDone = includeDone) }
-        refresh()
+    fun applyListFilter(
+        includeDone: Boolean,
+        grouping: TaskGrouping,
+        ordering: TaskOrdering,
+    ) {
+        val previous = _ui.value
+        if (
+            previous.includeDone == includeDone &&
+            previous.grouping == grouping &&
+            previous.ordering == ordering
+        ) return
+        _ui.update {
+            it.copy(
+                includeDone = includeDone,
+                grouping = grouping,
+                ordering = ordering,
+            )
+        }
+        if (previous.includeDone != includeDone || previous.ordering != ordering) refresh()
     }
 
     fun refresh() {
@@ -106,6 +123,7 @@ class TaskViewModel(
                 } else {
                     snapshot.selectedListId
                 },
+                ordering = snapshot.ordering.apiValue,
             ).fold(
                 onSuccess = { tasks ->
                     _ui.update { it.copy(tasks = tasks.map(TaskDto::toItem), loading = false) }

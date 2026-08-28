@@ -6,6 +6,14 @@ enum class TaskStatus { Todo, Done }
 
 enum class TaskPriority { None, Low, Medium, High, Urgent }
 
+enum class TaskGrouping { List, None }
+
+enum class TaskOrdering(val apiValue: String) {
+    DueDate("due_date"),
+    Priority("priority"),
+    RecentlyCreated("-created_at"),
+}
+
 enum class TaskRecurrenceFrequency(val apiValue: String) {
     Daily("daily"),
     Weekly("weekly"),
