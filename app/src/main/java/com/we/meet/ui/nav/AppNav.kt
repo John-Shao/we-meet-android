@@ -80,6 +80,7 @@ import com.we.meet.ui.settings.MeetingSettingsScreen
 import com.we.meet.ui.settings.NotificationSettingsScreen
 import com.we.meet.ui.settings.SpecialAlertContactsScreen
 import com.we.meet.ui.settings.SettingsScreen
+import com.we.meet.ui.tasks.ConversationTasksSheet
 import com.we.meet.ui.waiting.WaitingRoomScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -632,6 +633,7 @@ fun AppNav() {
         ) { entry ->
             val cid = Routes.decode(entry.arguments?.getString("cid").orEmpty())
             val locateSeq = entry.arguments?.getLong("seq")?.takeIf { it > 0 }
+            var showConversationTasks by remember(cid) { mutableStateOf(false) }
             ChatScreen(
                 deps = app,
                 cid = cid,
@@ -651,6 +653,7 @@ fun AppNav() {
                         Routes.freeBusy(memberIds, context.getString(R.string.freebusy_group_title), sourceCid),
                     )
                 },
+                onOpenTasks = { showConversationTasks = true },
                 // 1:1 通话 no longer flows through here — ChatScreen drives
                 // CallController directly and the top-level collector below
                 // pushes Routes.IM_CALL when the call machine leaves Idle.
@@ -669,6 +672,13 @@ fun AppNav() {
                     }
                 },
             )
+            if (showConversationTasks) {
+                ConversationTasksSheet(
+                    app = app,
+                    conversationId = cid,
+                    onDismiss = { showConversationTasks = false },
+                )
+            }
         }
 
         composable(Routes.IM_CALL) {

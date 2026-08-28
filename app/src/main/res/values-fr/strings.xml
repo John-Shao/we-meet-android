@@ -231,6 +231,10 @@
     <string name="task_all_tasks">Toutes les tâches</string>
     <string name="task_created_by_me">Créées par moi</string>
     <string name="task_completed">Terminées</string>
+    <string name="task_conversation_tasks">Tâches de la conversation</string>
+    <string name="task_conversation_empty">Aucune tâche n’a été partagée dans cette conversation.</string>
+    <string name="task_mark_complete">Marquer comme terminée</string>
+    <string name="task_mark_incomplete">Marquer comme non terminée</string>
     <string name="task_standalone">Tâches autonomes</string>
     <string name="task_lists">Listes de tâches</string>
     <string name="task_group_product">Produit</string>

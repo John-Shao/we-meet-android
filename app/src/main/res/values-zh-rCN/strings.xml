@@ -241,6 +241,10 @@
     <string name="task_all_tasks">全部任务</string>
     <string name="task_created_by_me">我创建的</string>
     <string name="task_completed">已完成</string>
+    <string name="task_conversation_tasks">会话任务</string>
+    <string name="task_conversation_empty">此会话中还没有分享任务。</string>
+    <string name="task_mark_complete">标记为已完成</string>
+    <string name="task_mark_incomplete">标记为未完成</string>
     <string name="task_standalone">独立任务</string>
     <string name="task_lists">任务清单</string>
     <string name="task_group_product">产品</string>

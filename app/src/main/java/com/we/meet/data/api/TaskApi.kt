@@ -60,6 +60,9 @@ interface TaskApi {
         @Query("page_size") pageSize: Int = 100,
     ): PagedTasksDto
 
+    @GET("api/v1.0/tasks/conversation/")
+    suspend fun listConversationTasks(@Query("cid") conversationId: String): List<TaskDto>
+
     @GET("api/v1.0/tasks/statistics/")
     suspend fun getTaskStatistics(
         @Query("scope") scope: String,

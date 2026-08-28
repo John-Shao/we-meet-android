@@ -24,6 +24,7 @@
     <string name="im_search_clear">Suche löschen</string>
     <string name="im_search_no_results">Keine passenden Unterhaltungen</string>
     <string name="im_more">Mehr</string>
+    <string name="im_conversation_tasks">Unterhaltungsaufgaben</string>
     <string name="im_menu_scan_login">Zum Anmelden scannen</string>
     <string name="im_menu_create_meeting">Neue Videokonferenz</string>
     <string name="im_menu_join_meeting">Videokonferenz beitreten</string>

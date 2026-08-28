@@ -231,6 +231,10 @@
     <string name="task_all_tasks">Alle taken</string>
     <string name="task_created_by_me">Door mij gemaakt</string>
     <string name="task_completed">Voltooid</string>
+    <string name="task_conversation_tasks">Gesprekstaken</string>
+    <string name="task_conversation_empty">In dit gesprek zijn geen taken gedeeld.</string>
+    <string name="task_mark_complete">Als voltooid markeren</string>
+    <string name="task_mark_incomplete">Als onvoltooid markeren</string>
     <string name="task_standalone">Zelfstandige taken</string>
     <string name="task_lists">Takenlijsten</string>
     <string name="task_group_product">Product</string>

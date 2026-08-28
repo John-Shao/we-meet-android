@@ -163,6 +163,11 @@ class TaskRepository(
         }
     }
 
+    suspend fun loadConversationTasks(conversationId: String): Result<List<TaskDto>> =
+        runCatching {
+            withContext(Dispatchers.IO) { api.listConversationTasks(conversationId) }
+        }
+
     suspend fun loadDetail(taskId: String): Result<Detail> = runCatching {
         withContext(Dispatchers.IO) {
             coroutineScope {

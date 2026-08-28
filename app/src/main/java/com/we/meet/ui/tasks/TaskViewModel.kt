@@ -1523,7 +1523,7 @@ private fun TaskView.apiStatus(includeDone: Boolean): String = when (this) {
     else -> if (includeDone) "all" else "open"
 }
 
-private fun TaskDto.toItem(): TaskItem {
+internal fun TaskDto.toItem(): TaskItem {
     val people = assignees.ifEmpty { listOfNotNull(assignee) }
     return TaskItem(
         id = id,

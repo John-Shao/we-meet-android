@@ -92,6 +92,7 @@ import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.VideoCall
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -146,6 +147,7 @@ fun ChatScreen(
     /** 分享会议卡片:点「加入会议」→ 按 slug 走入会预览(app 层接 joinPreview)。 */
     onJoinMeeting: ((slug: String) -> Unit)? = null,
     onOpenSchedule: ((cid: String, memberUserIds: List<String>) -> Unit)? = null,
+    onOpenTasks: ((cid: String) -> Unit)? = null,
 ) {
     val vm: ChatViewModel =
         viewModel(
@@ -328,6 +330,14 @@ fun ChatScreen(
                         if (!ui.isGroup) {
                             IconButton(onClick = { showCallSheet = true }) {
                                 Icon(Icons.Filled.Call, contentDescription = stringResource(R.string.im_plus_call))
+                            }
+                        }
+                        if (onOpenTasks != null) {
+                            IconButton(onClick = { onOpenTasks(cid) }) {
+                                Icon(
+                                    Icons.Filled.TaskAlt,
+                                    contentDescription = stringResource(R.string.im_conversation_tasks),
+                                )
                             }
                         }
                         if (ui.isGroup) {

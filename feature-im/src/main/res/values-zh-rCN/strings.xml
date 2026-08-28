@@ -22,6 +22,7 @@
     <string name="im_search_clear">清除搜索内容</string>
     <string name="im_search_no_results">没有匹配的会话</string>
     <string name="im_more">更多</string>
+    <string name="im_conversation_tasks">会话任务</string>
     <string name="im_menu_scan_login">扫码登录</string>
     <string name="im_menu_create_meeting">发起视频会议</string>
     <string name="im_menu_join_meeting">加入视频会议</string>

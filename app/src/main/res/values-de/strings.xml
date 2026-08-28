@@ -231,6 +231,10 @@
     <string name="task_all_tasks">Alle Aufgaben</string>
     <string name="task_created_by_me">Von mir erstellt</string>
     <string name="task_completed">Erledigt</string>
+    <string name="task_conversation_tasks">Unterhaltungsaufgaben</string>
+    <string name="task_conversation_empty">In dieser Unterhaltung wurden keine Aufgaben geteilt.</string>
+    <string name="task_mark_complete">Als erledigt markieren</string>
+    <string name="task_mark_incomplete">Als unerledigt markieren</string>
     <string name="task_standalone">Eigenständige Aufgaben</string>
     <string name="task_lists">Aufgabenlisten</string>
     <string name="task_group_product">Produkt</string>
