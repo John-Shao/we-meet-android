@@ -56,7 +56,8 @@ interface TaskApi {
         @Query("due") due: String = "all",
         @Query("priority") priority: String = "all",
         @Query("ordering") ordering: String = "due_date",
-        @Query("page_size") pageSize: Int = 50,
+        @Query("page") page: Int = 1,
+        @Query("page_size") pageSize: Int = 100,
     ): PagedTasksDto
 
     @GET("api/v1.0/tasks/statistics/")

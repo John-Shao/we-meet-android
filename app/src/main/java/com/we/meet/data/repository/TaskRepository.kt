@@ -13,6 +13,7 @@ import com.we.meet.data.api.dto.CreateTaskListRequest
 import com.we.meet.data.api.dto.CreateTaskRequest
 import com.we.meet.data.api.dto.CreateTaskGroupRequest
 import com.we.meet.data.api.dto.PatchTaskRequest
+import com.we.meet.data.api.dto.PagedTasksDto
 import com.we.meet.data.api.dto.PatchTaskListGroupRequest
 import com.we.meet.data.api.dto.PatchTaskListRequest
 import com.we.meet.data.api.dto.PatchTaskGroupRequest
@@ -122,13 +123,17 @@ class TaskRepository(
         ordering: String = "due_date",
     ): Result<List<TaskDto>> = runCatching {
         withContext(Dispatchers.IO) {
-            api.listTasks(
-                scope = scope,
-                status = status,
-                taskList = taskListId ?: "all",
-                query = query?.takeIf(String::isNotBlank),
-                ordering = ordering,
-            ).results
+            collectTaskPages { page, pageSize ->
+                api.listTasks(
+                    scope = scope,
+                    status = status,
+                    taskList = taskListId ?: "all",
+                    query = query?.takeIf(String::isNotBlank),
+                    ordering = ordering,
+                    page = page,
+                    pageSize = pageSize,
+                )
+            }
         }
     }
 
@@ -141,15 +146,19 @@ class TaskRepository(
         priority: String,
     ): Result<List<TaskDto>> = runCatching {
         withContext(Dispatchers.IO) {
-            api.listTasks(
-                scope = "all",
-                status = status,
-                query = query?.trim()?.takeIf { it.length >= 2 },
-                creatorIds = creatorId,
-                assigneeIds = assigneeId,
-                due = due,
-                priority = priority,
-            ).results
+            collectTaskPages { page, pageSize ->
+                api.listTasks(
+                    scope = "all",
+                    status = status,
+                    query = query?.trim()?.takeIf { it.length >= 2 },
+                    creatorIds = creatorId,
+                    assigneeIds = assigneeId,
+                    due = due,
+                    priority = priority,
+                    page = page,
+                    pageSize = pageSize,
+                )
+            }
         }
     }
 
@@ -528,4 +537,26 @@ class TaskRepository(
                 input.use { source -> sink.writeAll(source.source()) }
             }
         }
+}
+
+internal suspend fun collectTaskPages(
+    pageSize: Int = 100,
+    maxResults: Int = 500,
+    fetchPage: suspend (page: Int, pageSize: Int) -> PagedTasksDto,
+): List<TaskDto> {
+    require(pageSize > 0)
+    require(maxResults > 0)
+    val tasks = linkedMapOf<String, TaskDto>()
+    val maxPages = (maxResults + pageSize - 1) / pageSize
+    var pageNumber = 1
+    var hasNextPage: Boolean
+    do {
+        val response = fetchPage(pageNumber, pageSize)
+        response.results.forEach { task ->
+            if (tasks.size < maxResults) tasks.putIfAbsent(task.id, task)
+        }
+        hasNextPage = response.next != null
+        pageNumber += 1
+    } while (hasNextPage && pageNumber <= maxPages && tasks.size < maxResults)
+    return tasks.values.toList()
 }
