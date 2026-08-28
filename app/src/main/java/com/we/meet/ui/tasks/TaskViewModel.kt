@@ -1382,13 +1382,12 @@ class TaskViewModel(
         }
     }
 
-    fun deleteTaskList(list: TaskListItem) {
+    fun deleteTaskList(list: TaskListItem, deleteUnassigned: Boolean) {
         if (!list.canDelete || _ui.value.navigationMutating) return
         _ui.update { it.copy(navigationMutating = true, failure = null) }
         viewModelScope.launch {
-            repository.deleteTaskList(list.id).fold(
+            repository.deleteTaskList(list.id, deleteUnassigned).fold(
                 onSuccess = {
-                    val wasSelected = _ui.value.selectedListId == list.id
                     _ui.update { state ->
                         state.copy(
                             navigationMutating = false,
@@ -1396,7 +1395,8 @@ class TaskViewModel(
                             taskLists = state.taskLists.filterNot { it.id == list.id },
                         )
                     }
-                    if (wasSelected) refresh()
+                    refreshNavigation()
+                    refresh()
                 },
                 onFailure = {
                     _ui.update {

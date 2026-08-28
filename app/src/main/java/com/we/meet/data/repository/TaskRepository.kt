@@ -511,8 +511,8 @@ class TaskRepository(
             }
         }
 
-    suspend fun deleteTaskList(id: String): Result<Unit> = runCatching {
-        withContext(Dispatchers.IO) { api.deleteTaskList(id) }
+    suspend fun deleteTaskList(id: String, deleteUnassigned: Boolean): Result<Unit> = runCatching {
+        withContext(Dispatchers.IO) { api.deleteTaskList(id, deleteUnassigned) }
     }
 
     suspend fun loadTaskListMembers(id: String): Result<List<TaskListAccessDto>> =

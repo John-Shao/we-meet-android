@@ -357,7 +357,9 @@
     <string name="task_choose_group">Groep: %1$s</string>
     <string name="task_delete_navigation_item">Verwijderen</string>
     <string name="task_delete_group_confirm">‘%1$s’ verwijderen? De lijsten worden naar Niet gegroepeerd verplaatst.</string>
-    <string name="task_delete_list_confirm">‘%1$s’ verwijderen? De taken worden zelfstandig.</string>
+    <string name="task_delete_list_confirm">‘%1$s’ verwijderen?</string>
+    <string name="task_delete_list_keep_tasks">Toegewezen en behouden taken worden zelfstandig.</string>
+    <string name="task_delete_unassigned">Taken zonder verantwoordelijke ook verwijderen</string>
     <string name="task_navigation_update_failed">De takenlijstnavigatie kan niet worden bijgewerkt.</string>
     <string name="task_group_name_hint">Groepsnaam</string>
     <string name="task_confirm">Bevestigen</string>

@@ -367,7 +367,9 @@
     <string name="task_choose_group">Group: %1$s</string>
     <string name="task_delete_navigation_item">Delete</string>
     <string name="task_delete_group_confirm">Delete “%1$s”? Its lists will move to Ungrouped.</string>
-    <string name="task_delete_list_confirm">Delete “%1$s”? Its tasks will become standalone.</string>
+    <string name="task_delete_list_confirm">Delete “%1$s”?</string>
+    <string name="task_delete_list_keep_tasks">Assigned and retained tasks will become standalone.</string>
+    <string name="task_delete_unassigned">Also delete tasks without assignees</string>
     <string name="task_navigation_update_failed">Couldn’t update task-list navigation.</string>
     <string name="task_group_name_hint">Group name</string>
     <string name="task_confirm">Confirm</string>

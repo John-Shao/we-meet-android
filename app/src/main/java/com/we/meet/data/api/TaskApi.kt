@@ -200,7 +200,10 @@ interface TaskApi {
     ): TaskListDto
 
     @DELETE("api/v1.0/task-lists/{id}/")
-    suspend fun deleteTaskList(@Path("id") id: String)
+    suspend fun deleteTaskList(
+        @Path("id") id: String,
+        @Query("delete_unassigned") deleteUnassigned: Boolean = false,
+    )
 
     @GET("api/v1.0/task-lists/{id}/shares/")
     suspend fun listTaskListShares(@Path("id") id: String): List<TaskListAccessDto>

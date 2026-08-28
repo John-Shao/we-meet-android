@@ -367,7 +367,9 @@
     <string name="task_choose_group">分组：%1$s</string>
     <string name="task_delete_navigation_item">删除</string>
     <string name="task_delete_group_confirm">删除“%1$s”？其中的清单将移至未分组。</string>
-    <string name="task_delete_list_confirm">删除“%1$s”？其中的任务将变为独立任务。</string>
+    <string name="task_delete_list_confirm">删除“%1$s”？</string>
+    <string name="task_delete_list_keep_tasks">已分配及保留的任务将变为独立任务。</string>
+    <string name="task_delete_unassigned">同时删除没有负责人的任务</string>
     <string name="task_navigation_update_failed">无法更新任务清单导航。</string>
     <string name="task_group_name_hint">输入分组名称</string>
     <string name="task_confirm">确定</string>

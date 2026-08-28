@@ -876,12 +876,12 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
         )
     }
     deleteListTarget?.let { list ->
-        DeleteNavigationDialog(
-            message = stringResource(R.string.task_delete_list_confirm, list.name),
+        DeleteTaskListDialog(
+            listName = list.name,
             deleting = ui.navigationMutating,
             onDismiss = { deleteListTarget = null },
-            onConfirm = {
-                vm.deleteTaskList(list)
+            onConfirm = { deleteUnassigned ->
+                vm.deleteTaskList(list, deleteUnassigned)
                 deleteListTarget = null
             },
         )
@@ -4175,6 +4175,60 @@ private fun DeleteNavigationDialog(
         text = { Text(message) },
         confirmButton = {
             TextButton(onClick = onConfirm, enabled = !deleting) {
+                Text(
+                    stringResource(R.string.task_delete_navigation_item),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !deleting) {
+                Text(stringResource(R.string.task_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun DeleteTaskListDialog(
+    listName: String,
+    deleting: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (Boolean) -> Unit,
+) {
+    var deleteUnassigned by remember(listName) { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = { if (!deleting) onDismiss() },
+        title = { Text(stringResource(R.string.task_delete_list_confirm, listName)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                Text(stringResource(R.string.task_delete_list_keep_tasks))
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .clickable(enabled = !deleting) {
+                            deleteUnassigned = !deleteUnassigned
+                        }
+                        .padding(vertical = Dimens.SpaceS),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        stringResource(R.string.task_delete_unassigned),
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(Dimens.SpaceM))
+                    Switch(
+                        checked = deleteUnassigned,
+                        onCheckedChange = { deleteUnassigned = it },
+                        enabled = !deleting,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(deleteUnassigned) },
+                enabled = !deleting,
+            ) {
                 Text(
                     stringResource(R.string.task_delete_navigation_item),
                     color = MaterialTheme.colorScheme.error,

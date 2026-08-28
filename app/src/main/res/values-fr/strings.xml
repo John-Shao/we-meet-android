@@ -357,7 +357,9 @@
     <string name="task_choose_group">Groupe : %1$s</string>
     <string name="task_delete_navigation_item">Supprimer</string>
     <string name="task_delete_group_confirm">Supprimer « %1$s » ? Ses listes seront déplacées vers Sans groupe.</string>
-    <string name="task_delete_list_confirm">Supprimer « %1$s » ? Ses tâches deviendront indépendantes.</string>
+    <string name="task_delete_list_confirm">Supprimer « %1$s » ?</string>
+    <string name="task_delete_list_keep_tasks">Les tâches attribuées et conservées deviendront indépendantes.</string>
+    <string name="task_delete_unassigned">Supprimer aussi les tâches sans responsable</string>
     <string name="task_navigation_update_failed">Impossible de mettre à jour la navigation des listes de tâches.</string>
     <string name="task_group_name_hint">Nom du groupe</string>
     <string name="task_confirm">Confirmer</string>
