@@ -424,9 +424,9 @@ class TaskRepository(
             }
         }
 
-    suspend fun createListGroup(name: String): Result<TaskListGroupDto> = runCatching {
+    suspend fun createListGroup(name: String, sortOrder: Int): Result<TaskListGroupDto> = runCatching {
         withContext(Dispatchers.IO) {
-            api.createTaskListGroup(CreateTaskListGroupRequest(name))
+            api.createTaskListGroup(CreateTaskListGroupRequest(name, sortOrder))
         }
     }
 

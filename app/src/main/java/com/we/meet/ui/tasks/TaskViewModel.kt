@@ -942,21 +942,56 @@ class TaskViewModel(
         }
     }
 
-    fun createListGroup(name: String, onCreated: () -> Unit = {}) {
+    fun createListGroup(
+        name: String,
+        insertIndex: Int? = null,
+        onCreated: () -> Unit = {},
+    ) {
         if (name.isBlank() || _ui.value.navigationMutating) return
+        val existing = _ui.value.listGroups.sortedBy(TaskListGroupItem::sortOrder)
+        val targetIndex = insertIndex?.coerceIn(0, existing.size)
+        if (targetIndex != null && existing.any { !it.canManage }) return
+        val requestedSortOrder = targetIndex
+            ?: (existing.maxOfOrNull(TaskListGroupItem::sortOrder)?.plus(1) ?: 0)
         _ui.update { it.copy(navigationMutating = true, failure = null) }
         viewModelScope.launch {
-            repository.createListGroup(name.trim()).fold(
+            repository.createListGroup(name.trim(), requestedSortOrder).fold(
                 onSuccess = { created ->
-                    _ui.update {
-                        it.copy(
-                            navigationMutating = false,
-                            listGroups = (it.listGroups + created.toItem()).sortedBy(
-                                TaskListGroupItem::sortOrder,
-                            ),
+                    if (targetIndex == null) {
+                        _ui.update {
+                            it.copy(
+                                navigationMutating = false,
+                                listGroups = (it.listGroups + created.toItem()).sortedBy(
+                                    TaskListGroupItem::sortOrder,
+                                ),
+                            )
+                        }
+                        onCreated()
+                    } else {
+                        val ordered = existing.toMutableList().also {
+                            it.add(targetIndex, created.toItem())
+                        }
+                        repository.reorderListGroups(
+                            ordered.map(TaskListGroupItem::id),
+                        ).fold(
+                            onSuccess = { serverGroups ->
+                                _ui.update {
+                                    it.copy(
+                                        navigationMutating = false,
+                                        listGroups = serverGroups.sortedBy { group ->
+                                            group.sortOrder
+                                        }.map(TaskListGroupDto::toItem),
+                                    )
+                                }
+                                onCreated()
+                            },
+                            onFailure = {
+                                navigationMutationFailed()
+                                refreshNavigation()
+                                onCreated()
+                            },
                         )
                     }
-                    onCreated()
                 },
                 onFailure = {
                     _ui.update {
@@ -1014,7 +1049,10 @@ class TaskViewModel(
                         )
                     }
                 },
-                onFailure = { navigationMutationFailed() },
+                onFailure = {
+                    navigationMutationFailed()
+                    refreshNavigation()
+                },
             )
         }
     }

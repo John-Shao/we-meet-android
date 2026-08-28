@@ -280,7 +280,10 @@ data class AddTaskFollowersRequest(
 )
 
 @JsonClass(generateAdapter = true)
-data class CreateTaskListGroupRequest(val name: String)
+data class CreateTaskListGroupRequest(
+    val name: String,
+    @Json(name = "sort_order") val sortOrder: Int = 0,
+)
 
 @JsonClass(generateAdapter = true)
 data class PatchTaskListGroupRequest(

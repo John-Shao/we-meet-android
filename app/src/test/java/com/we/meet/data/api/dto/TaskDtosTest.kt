@@ -183,6 +183,15 @@ class TaskDtosTest {
     }
 
     @Test
+    fun createTaskListGroupRequestUsesBackendSortField() {
+        val json = moshi.adapter(CreateTaskListGroupRequest::class.java).toJson(
+            CreateTaskListGroupRequest(name = "Product", sortOrder = 3),
+        )
+
+        assertEquals("{\"name\":\"Product\",\"sort_order\":3}", json)
+    }
+
+    @Test
     fun patchTaskListRequestUsesBackendArchiveField() {
         val json = moshi.adapter(PatchTaskListRequest::class.java).toJson(
             PatchTaskListRequest(isArchived = true),

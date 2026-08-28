@@ -165,6 +165,8 @@ private enum class TaskRecurrenceEndMode { Never, Date, Count }
 
 private data class TaskGroupInsertion(val list: TaskListItem, val index: Int)
 
+private data class TaskListGroupInsertion(val index: Int)
+
 private data class TaskGroupEditTarget(val list: TaskListItem, val group: TaskGroupItem)
 
 private data class TaskParentMove(
@@ -213,6 +215,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     var showNewList by remember { mutableStateOf(false) }
     var showArchivedLists by remember { mutableStateOf(false) }
     var groupActionTarget by remember { mutableStateOf<TaskListGroupItem?>(null) }
+    var listGroupInsertion by remember { mutableStateOf<TaskListGroupInsertion?>(null) }
     var orderListGroups by remember { mutableStateOf(false) }
     var listActionTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var shareListTarget by remember { mutableStateOf<TaskListItem?>(null) }
@@ -647,6 +650,9 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
         )
     }
     groupActionTarget?.let { group ->
+        val ordered = ui.listGroups.sortedBy(TaskListGroupItem::sortOrder)
+        val groupIndex = ordered.indexOfFirst { it.id == group.id }.coerceAtLeast(0)
+        val canInsert = ordered.all(TaskListGroupItem::canManage)
         NavigationActionSheet(
             title = group.name,
             canDelete = group.canManage,
@@ -655,8 +661,24 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 groupActionTarget = null
                 renameGroupTarget = group
             },
+            onCreateAbove = if (canInsert) {
+                {
+                    groupActionTarget = null
+                    listGroupInsertion = TaskListGroupInsertion(groupIndex)
+                }
+            } else {
+                null
+            },
+            onCreateBelow = if (canInsert) {
+                {
+                    groupActionTarget = null
+                    listGroupInsertion = TaskListGroupInsertion(groupIndex + 1)
+                }
+            } else {
+                null
+            },
             onManageOrder = if (
-                ui.listGroups.size > 1 && ui.listGroups.all(TaskListGroupItem::canManage)
+                ui.listGroups.size > 1 && canInsert
             ) {
                 {
                     groupActionTarget = null
@@ -668,6 +690,17 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             onDelete = {
                 groupActionTarget = null
                 deleteGroupTarget = group
+            },
+        )
+    }
+    listGroupInsertion?.let { insertion ->
+        NewGroupDialog(
+            saving = ui.navigationMutating,
+            onDismiss = { listGroupInsertion = null },
+            onCreate = { name ->
+                vm.createListGroup(name, insertion.index) {
+                    listGroupInsertion = null
+                }
             },
         )
     }
@@ -3587,6 +3620,8 @@ private fun NavigationActionSheet(
     canDelete: Boolean,
     onDismiss: () -> Unit,
     onRename: (() -> Unit)?,
+    onCreateAbove: (() -> Unit)? = null,
+    onCreateBelow: (() -> Unit)? = null,
     onManageOrder: (() -> Unit)? = null,
     onShare: (() -> Unit)? = null,
     onArchive: (() -> Unit)? = null,
@@ -3605,6 +3640,12 @@ private fun NavigationActionSheet(
             )
             onRename?.let {
                 SheetAction(Icons.Outlined.Edit, R.string.task_rename, it)
+            }
+            onCreateAbove?.let {
+                SheetAction(Icons.Filled.Add, R.string.task_new_group_above, it)
+            }
+            onCreateBelow?.let {
+                SheetAction(Icons.Filled.Add, R.string.task_new_group_below, it)
             }
             onManageOrder?.let {
                 SheetAction(
