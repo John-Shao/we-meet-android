@@ -1228,76 +1228,76 @@ private fun TaskListPage(
             ) { Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.task_create)) }
         },
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding).testTag(TASK_LIST_TEST_TAG),
-            contentPadding = PaddingValues(bottom = Dimens.Calendar.FabClearance),
-        ) {
-            item {
-                TaskHomeHeader(
-                    selectedList = selectedList?.name
-                        ?: standaloneLabel.takeIf { view == TaskView.Standalone },
-                    onSearch = onSearch,
-                    onSettings = onSettings,
-                )
-                TaskViewNavigationRow(
-                    view = view,
-                    selectedList = selectedList?.name,
-                    onOpenDrawer = onOpenDrawer,
-                    onViewChange = onViewChange,
-                )
-                TaskFilterBar(
-                    view = view,
-                    includeDone = includeDone,
-                    grouping = grouping,
-                    ordering = ordering,
-                    onFilter = onFilter,
-                )
-                if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
-            }
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            TaskHomeHeader(
+                selectedList = selectedList?.name
+                    ?: standaloneLabel.takeIf { view == TaskView.Standalone },
+                onSearch = onSearch,
+                onSettings = onSettings,
+            )
+            TaskViewNavigationRow(
+                view = view,
+                selectedList = selectedList?.name,
+                onOpenDrawer = onOpenDrawer,
+                onViewChange = onViewChange,
+            )
+            TaskFilterBar(
+                view = view,
+                includeDone = includeDone,
+                grouping = grouping,
+                ordering = ordering,
+                onFilter = onFilter,
+            )
+            if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
 
-            if (!loading && sections.isEmpty()) {
-                item { TaskEmptyState(onCreate) }
-            } else {
-                sections.forEach { section ->
-                    val expanded = section.key !in collapsedSections
-                    item {
-                        TaskSectionHeader(
-                            title = section.title,
-                            count = section.tasks.size,
-                            expanded = expanded,
-                            onToggle = {
-                                collapsedSections = if (expanded) {
-                                    collapsedSections + section.key
-                                } else {
-                                    collapsedSections - section.key
-                                }
-                            },
-                            onMore = section.group?.takeIf { selectedList?.canManage == true }
-                                ?.let { group -> { onSectionAction(group) } },
-                        )
-                    }
-                    if (expanded) {
-                        items(section.tasks, key = { it.id }) { task ->
-                            TaskRow(
-                                task = task,
-                                showOverdueMarker = showOverdueMarker,
-                                onClick = { onTaskClick(task) },
-                                onToggleDone = { onToggleDone(task) },
-                                onLongClick = { onTaskAction(task) },
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().weight(1f).testTag(TASK_LIST_TEST_TAG),
+                contentPadding = PaddingValues(bottom = Dimens.Calendar.FabClearance),
+            ) {
+                if (!loading && sections.isEmpty()) {
+                    item { TaskEmptyState(onCreate) }
+                } else {
+                    sections.forEach { section ->
+                        val expanded = section.key !in collapsedSections
+                        item {
+                            TaskSectionHeader(
+                                title = section.title,
+                                count = section.tasks.size,
+                                expanded = expanded,
+                                onToggle = {
+                                    collapsedSections = if (expanded) {
+                                        collapsedSections + section.key
+                                    } else {
+                                        collapsedSections - section.key
+                                    }
+                                },
+                                onMore = section.group?.takeIf { selectedList?.canManage == true }
+                                    ?.let { group -> { onSectionAction(group) } },
                             )
+                        }
+                        if (expanded) {
+                            items(section.tasks, key = { it.id }) { task ->
+                                TaskRow(
+                                    task = task,
+                                    showOverdueMarker = showOverdueMarker,
+                                    onClick = { onTaskClick(task) },
+                                    onToggleDone = { onToggleDone(task) },
+                                    onLongClick = { onTaskAction(task) },
+                                )
+                            }
                         }
                     }
                 }
-            }
-            selectedList?.takeIf(TaskListItem::canManage)?.let { manageableList ->
-                item {
-                    TextButton(
-                        onClick = { onNewTaskGroup(manageableList) },
-                        modifier = Modifier.padding(horizontal = Dimens.ScreenPadding),
-                    ) {
-                        Icon(Icons.Filled.Add, null)
-                        Spacer(Modifier.width(Dimens.SpaceS))
-                        Text(stringResource(R.string.task_new_task_group))
+                selectedList?.takeIf(TaskListItem::canManage)?.let { manageableList ->
+                    item {
+                        TextButton(
+                            onClick = { onNewTaskGroup(manageableList) },
+                            modifier = Modifier.padding(horizontal = Dimens.ScreenPadding),
+                        ) {
+                            Icon(Icons.Filled.Add, null)
+                            Spacer(Modifier.width(Dimens.SpaceS))
+                            Text(stringResource(R.string.task_new_task_group))
+                        }
                     }
                 }
             }
