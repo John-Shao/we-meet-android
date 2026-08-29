@@ -22,6 +22,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +40,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -124,6 +128,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -136,6 +141,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -144,6 +150,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.we.meet.R
@@ -161,6 +168,7 @@ import com.we.meet.ui.theme.WeMeetTheme
 import java.time.LocalDate
 import java.time.Instant
 import java.time.ZoneOffset
+import kotlin.math.roundToInt
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -1718,147 +1726,171 @@ private fun TaskNavigationDrawer(
     onGroupAction: (TaskListGroupItem) -> Unit,
     onListAction: (TaskListItem) -> Unit,
 ) {
+    var drawerWidthPx by remember { mutableFloatStateOf(0f) }
+    var drawerOffsetX by remember { mutableFloatStateOf(0f) }
+    val drawerDragState = rememberDraggableState { delta ->
+        drawerOffsetX = (drawerOffsetX + delta).coerceIn(-drawerWidthPx, 0f)
+    }
+
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.38f)).clickable(onClick = onDismiss)) {
         Surface(
-            modifier = Modifier.fillMaxWidth(0.86f).fillMaxHeight()
+            modifier = Modifier.fillMaxWidth(0.8f).fillMaxHeight()
+                .onSizeChanged { drawerWidthPx = it.width.toFloat() }
+                .offset { IntOffset(drawerOffsetX.roundToInt(), 0) }
+                .draggable(
+                    state = drawerDragState,
+                    orientation = Orientation.Horizontal,
+                    onDragStopped = { velocity ->
+                        val shouldDismiss = drawerWidthPx > 0f && (
+                            drawerOffsetX <= -drawerWidthPx * 0.2f || velocity <= -1_200f
+                        )
+                        if (shouldDismiss) onDismiss() else drawerOffsetX = 0f
+                    },
+                )
                 .clickable(enabled = false) {},
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = Dimens.SpaceM,
         ) {
-            LazyColumn(contentPadding = PaddingValues(bottom = Dimens.SpaceXl)) {
-                item {
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceXl),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Surface(shape = RoundedCornerShape(Dimens.SpaceM), color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(Dimens.ListLeadingIcon)) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Outlined.TaskAlt, null, tint = MaterialTheme.colorScheme.onPrimary)
-                            }
-                        }
-                        Spacer(Modifier.width(Dimens.SpaceM))
-                        Text(stringResource(R.string.task_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.weight(1f))
-                        IconButton(onClick = onDismiss) { Icon(Icons.Filled.Close, stringResource(R.string.task_close)) }
-                    }
-                    DrawerItem(
-                        Icons.Outlined.PersonOutline,
-                        R.string.task_assigned_to_me,
-                        assignedCount.toString(),
-                        selected = selectedList == null && selectedView == TaskView.Assigned,
-                    ) {
-                        onSelectView(TaskView.Assigned)
-                    }
-                    DrawerItem(
-                        Icons.Outlined.BookmarkBorder,
-                        R.string.task_following,
-                        followingCount.toString(),
-                        selected = selectedList == null && selectedView == TaskView.Following,
-                    ) {
-                        onSelectView(TaskView.Following)
-                    }
-                    DrawerItem(
-                        Icons.Outlined.History,
-                        R.string.task_activity,
-                        null,
-                        onClick = onOpenActivity,
-                    )
-                    HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM))
-                    Text(
-                        stringResource(R.string.task_quick_access),
-                        modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    DrawerItem(
-                        Icons.Outlined.TaskAlt,
-                        R.string.task_all_tasks,
-                        allCount.toString(),
-                        selected = selectedList == null && selectedView == TaskView.All,
-                    ) {
-                        onSelectView(TaskView.All)
-                    }
-                    DrawerItem(
-                        Icons.Outlined.PersonOutline,
-                        R.string.task_created_by_me,
-                        createdCount.toString(),
-                        selected = selectedList == null && selectedView == TaskView.Created,
-                    ) {
-                        onSelectView(TaskView.Created)
-                    }
-                    DrawerItem(
-                        Icons.Outlined.Checklist,
-                        R.string.task_completed,
-                        completedCount.toString(),
-                        selected = selectedList == null && selectedView == TaskView.Completed,
-                    ) {
-                        onSelectView(TaskView.Completed)
-                    }
-                    HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM))
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceS),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.Outlined.FolderOpen, null)
-                        Spacer(Modifier.width(Dimens.SpaceM))
-                        Text(stringResource(R.string.task_lists), fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                        IconButton(onClick = onNewList) {
-                            Icon(Icons.Filled.Add, stringResource(R.string.task_new_list))
+            Column {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceXl),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Surface(shape = RoundedCornerShape(Dimens.SpaceM), color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(Dimens.ListLeadingIcon)) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Outlined.TaskAlt, null, tint = MaterialTheme.colorScheme.onPrimary)
                         }
                     }
+                    Spacer(Modifier.width(Dimens.SpaceM))
+                    Text(stringResource(R.string.task_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.weight(1f))
+                    IconButton(onClick = onDismiss) { Icon(Icons.Filled.Close, stringResource(R.string.task_close)) }
                 }
-                val groupedIds = listGroups.map(TaskListGroupItem::id).toSet()
-                listGroups.forEach { group ->
-                    item {
-                        DrawerGroup(
-                            title = group.name,
-                            lists = taskLists.filter { it.groupId == group.id },
-                            selectedList = selectedList,
-                            onSelectList = onSelectList,
-                            onGroupAction = { onGroupAction(group) }.takeIf {
-                                group.canManage
-                            },
-                            onListAction = onListAction,
-                        )
-                    }
-                }
-                val ungrouped = taskLists.filter { it.groupId == null || it.groupId !in groupedIds }
-                if (ungrouped.isNotEmpty()) {
-                    item {
-                        DrawerGroup(
-                            title = stringResource(R.string.task_ungrouped),
-                            lists = ungrouped,
-                            selectedList = selectedList,
-                            onSelectList = onSelectList,
-                            onListAction = onListAction,
-                        )
-                    }
-                }
-                if (standaloneCount > 0) {
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentPadding = PaddingValues(bottom = Dimens.SpaceXl),
+                ) {
                     item {
                         DrawerItem(
-                            Icons.AutoMirrored.Outlined.ListAlt,
-                            R.string.task_standalone,
-                            standaloneCount.toString(),
-                            selected = selectedList == null && selectedView == TaskView.Standalone,
+                            Icons.Outlined.PersonOutline,
+                            R.string.task_assigned_to_me,
+                            assignedCount.toString(),
+                            selected = selectedList == null && selectedView == TaskView.Assigned,
                         ) {
-                            onSelectView(TaskView.Standalone)
+                            onSelectView(TaskView.Assigned)
+                        }
+                        DrawerItem(
+                            Icons.Outlined.BookmarkBorder,
+                            R.string.task_following,
+                            followingCount.toString(),
+                            selected = selectedList == null && selectedView == TaskView.Following,
+                        ) {
+                            onSelectView(TaskView.Following)
+                        }
+                        DrawerItem(
+                            Icons.Outlined.History,
+                            R.string.task_activity,
+                            null,
+                            onClick = onOpenActivity,
+                        )
+                        HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM))
+                        Text(
+                            stringResource(R.string.task_quick_access),
+                            modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        DrawerItem(
+                            Icons.Outlined.TaskAlt,
+                            R.string.task_all_tasks,
+                            allCount.toString(),
+                            selected = selectedList == null && selectedView == TaskView.All,
+                        ) {
+                            onSelectView(TaskView.All)
+                        }
+                        DrawerItem(
+                            Icons.Outlined.PersonOutline,
+                            R.string.task_created_by_me,
+                            createdCount.toString(),
+                            selected = selectedList == null && selectedView == TaskView.Created,
+                        ) {
+                            onSelectView(TaskView.Created)
+                        }
+                        DrawerItem(
+                            Icons.Outlined.Checklist,
+                            R.string.task_completed,
+                            completedCount.toString(),
+                            selected = selectedList == null && selectedView == TaskView.Completed,
+                        ) {
+                            onSelectView(TaskView.Completed)
+                        }
+                        HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM))
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceS),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Outlined.FolderOpen, null)
+                            Spacer(Modifier.width(Dimens.SpaceM))
+                            Text(stringResource(R.string.task_lists), fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            IconButton(onClick = onNewList) {
+                                Icon(Icons.Filled.Add, stringResource(R.string.task_new_list))
+                            }
                         }
                     }
-                }
-                item {
-                    DrawerItem(
-                        Icons.Outlined.Archive,
-                        R.string.task_archived_lists,
-                        null,
-                        onClick = onOpenArchivedLists,
-                    )
-                }
-                item {
-                    TextButton(onClick = onNewGroup, modifier = Modifier.padding(horizontal = Dimens.SpaceM)) {
-                        Icon(Icons.Filled.Add, null)
-                        Spacer(Modifier.width(Dimens.SpaceS))
-                        Text(stringResource(R.string.task_new_group))
+                    val groupedIds = listGroups.map(TaskListGroupItem::id).toSet()
+                    listGroups.forEach { group ->
+                        item {
+                            DrawerGroup(
+                                title = group.name,
+                                lists = taskLists.filter { it.groupId == group.id },
+                                selectedList = selectedList,
+                                onSelectList = onSelectList,
+                                onGroupAction = { onGroupAction(group) }.takeIf {
+                                    group.canManage
+                                },
+                                onListAction = onListAction,
+                            )
+                        }
+                    }
+                    val ungrouped = taskLists.filter { it.groupId == null || it.groupId !in groupedIds }
+                    if (ungrouped.isNotEmpty()) {
+                        item {
+                            DrawerGroup(
+                                title = stringResource(R.string.task_ungrouped),
+                                lists = ungrouped,
+                                selectedList = selectedList,
+                                onSelectList = onSelectList,
+                                onListAction = onListAction,
+                            )
+                        }
+                    }
+                    if (standaloneCount > 0) {
+                        item {
+                            DrawerItem(
+                                Icons.AutoMirrored.Outlined.ListAlt,
+                                R.string.task_standalone,
+                                standaloneCount.toString(),
+                                selected = selectedList == null && selectedView == TaskView.Standalone,
+                            ) {
+                                onSelectView(TaskView.Standalone)
+                            }
+                        }
+                    }
+                    item {
+                        DrawerItem(
+                            Icons.Outlined.Archive,
+                            R.string.task_archived_lists,
+                            null,
+                            onClick = onOpenArchivedLists,
+                        )
+                    }
+                    item {
+                        TextButton(onClick = onNewGroup, modifier = Modifier.padding(horizontal = Dimens.SpaceM)) {
+                            Icon(Icons.Filled.Add, null)
+                            Spacer(Modifier.width(Dimens.SpaceS))
+                            Text(stringResource(R.string.task_new_group))
+                        }
                     }
                 }
             }
