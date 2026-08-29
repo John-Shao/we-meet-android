@@ -332,6 +332,7 @@
     <string name="task_default_reminder">Rappel par défaut</string>
     <string name="task_default_reminder_desc">Rappel par défaut des nouvelles tâches</string>
     <string name="task_30_minutes_before">30 min avant</string>
+    <string name="task_settings_failed">Impossible de mettre à jour les paramètres des tâches.</string>
     <string name="task_new_group">Nouveau groupe</string>
     <string name="task_new_list">Nouvelle liste</string>
     <string name="task_archive">Archiver</string>

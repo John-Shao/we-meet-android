@@ -11,7 +11,9 @@ import com.we.meet.data.api.dto.TaskListDto
 import com.we.meet.data.api.dto.TaskListAccessDto
 import com.we.meet.data.api.dto.TaskListGroupDto
 import com.we.meet.data.api.dto.PatchTaskRequest
+import com.we.meet.data.api.dto.PatchTaskSettingsRequest
 import com.we.meet.data.api.dto.TaskGroupDto
+import com.we.meet.data.api.dto.TaskSettingsDto
 import com.we.meet.data.repository.TaskRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -22,7 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class TaskFailure { Load, Activity, Save, Delete, Comment, Attachment, Share, Navigation }
+enum class TaskFailure { Load, Activity, Settings, Save, Delete, Comment, Attachment, Share, Navigation }
 
 data class TaskUiState(
     val tasks: List<TaskItem> = emptyList(),
@@ -52,6 +54,9 @@ data class TaskUiState(
     val activityLoadingMore: Boolean = false,
     val activityPage: Int = 0,
     val activityHasMore: Boolean = false,
+    val settings: TaskSettingsItem = TaskSettingsItem(),
+    val settingsLoading: Boolean = false,
+    val settingsSaving: Boolean = false,
     val detail: TaskDetailItem? = null,
     val failure: TaskFailure? = null,
 ) {
@@ -71,6 +76,7 @@ class TaskViewModel(
     private var activityJob: Job? = null
 
     init {
+        loadSettings()
         refreshNavigation()
         refresh()
     }
@@ -168,6 +174,57 @@ class TaskViewModel(
     fun refreshActivityFeed() = loadActivityFeed(reset = true)
 
     fun loadMoreActivityFeed() = loadActivityFeed(reset = false)
+
+    fun loadSettings() {
+        _ui.update { it.copy(settingsLoading = true, failure = null) }
+        viewModelScope.launch {
+            repository.loadSettings().fold(
+                onSuccess = { settings ->
+                    _ui.update {
+                        it.copy(settings = settings.toItem(), settingsLoading = false)
+                    }
+                },
+                onFailure = { failure ->
+                    if (failure is CancellationException) return@launch
+                    _ui.update {
+                        it.copy(settingsLoading = false, failure = TaskFailure.Settings)
+                    }
+                },
+            )
+        }
+    }
+
+    fun setDailyReminder(enabled: Boolean) = updateSettings(
+        PatchTaskSettingsRequest(dailyReminderEnabled = enabled),
+    )
+
+    fun setOverdueMarker(enabled: Boolean) = updateSettings(
+        PatchTaskSettingsRequest(overdueMarkerEnabled = enabled),
+    )
+
+    fun setDefaultReminder(minutes: Int) = updateSettings(
+        PatchTaskSettingsRequest(defaultReminderMinutes = minutes),
+    )
+
+    private fun updateSettings(request: PatchTaskSettingsRequest) {
+        if (_ui.value.settingsSaving) return
+        _ui.update { it.copy(settingsSaving = true, failure = null) }
+        viewModelScope.launch {
+            repository.updateSettings(request).fold(
+                onSuccess = { settings ->
+                    _ui.update {
+                        it.copy(settings = settings.toItem(), settingsSaving = false)
+                    }
+                },
+                onFailure = { failure ->
+                    if (failure is CancellationException) return@launch
+                    _ui.update {
+                        it.copy(settingsSaving = false, failure = TaskFailure.Settings)
+                    }
+                },
+            )
+        }
+    }
 
     private fun loadActivityFeed(reset: Boolean) {
         val snapshot = _ui.value
@@ -1648,6 +1705,12 @@ internal fun TaskActivityDto.toItem() = TaskActivityItem(
     actor = actor?.displayName.orEmpty(),
     event = event,
     createdAt = createdAt,
+)
+
+internal fun TaskSettingsDto.toItem() = TaskSettingsItem(
+    dailyReminderEnabled = dailyReminderEnabled,
+    overdueMarkerEnabled = overdueMarkerEnabled,
+    defaultReminderMinutes = defaultReminderMinutes,
 )
 
 private fun TaskListDto.toItem() = TaskListItem(

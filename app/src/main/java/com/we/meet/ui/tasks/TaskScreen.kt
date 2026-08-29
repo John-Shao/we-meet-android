@@ -282,6 +282,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     val failureText = when (ui.failure) {
         TaskFailure.Load -> stringResource(R.string.task_load_failed)
         TaskFailure.Activity -> stringResource(R.string.task_activity_load_failed)
+        TaskFailure.Settings -> stringResource(R.string.task_settings_failed)
         TaskFailure.Save -> stringResource(R.string.task_save_failed)
         TaskFailure.Delete -> stringResource(R.string.task_delete_failed)
         TaskFailure.Comment -> stringResource(R.string.task_comment_failed)
@@ -323,6 +324,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 grouping = ui.grouping,
                 ordering = ui.ordering,
                 loading = ui.loading,
+                showOverdueMarker = ui.settings.overdueMarkerEnabled,
                 owner = owner,
                 onViewChange = vm::setView,
                 onOpenDrawer = {
@@ -330,7 +332,10 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                     showDrawer = true
                 },
                 onSearch = { page = TaskPage.Search },
-                onSettings = { page = TaskPage.Settings },
+                onSettings = {
+                    page = TaskPage.Settings
+                    vm.loadSettings()
+                },
                 onFilter = { showFilter = true },
                 onCreate = { page = TaskPage.Create },
                 onTaskClick = {
@@ -442,6 +447,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 query = ui.searchQuery,
                 filter = ui.searchFilter,
                 canFilterSelf = !app.tokenStore.userId.isNullOrBlank(),
+                showOverdueMarker = ui.settings.overdueMarkerEnabled,
                 onBack = { page = TaskPage.List },
                 onQueryChange = vm::search,
                 onFilterChange = vm::setSearchFilter,
@@ -466,7 +472,15 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 },
             )
 
-            TaskPage.Settings -> TaskSettingsPage(onBack = { page = TaskPage.List })
+            TaskPage.Settings -> TaskSettingsPage(
+                settings = ui.settings,
+                loading = ui.settingsLoading,
+                saving = ui.settingsSaving,
+                onBack = { page = TaskPage.List },
+                onDailyReminderChange = vm::setDailyReminder,
+                onOverdueMarkerChange = vm::setOverdueMarker,
+                onDefaultReminderChange = vm::setDefaultReminder,
+            )
         }
 
         AnimatedVisibility(
@@ -1123,6 +1137,7 @@ private fun TaskListPage(
     grouping: TaskGrouping,
     ordering: TaskOrdering,
     loading: Boolean,
+    showOverdueMarker: Boolean,
     owner: String,
     onViewChange: (TaskView) -> Unit,
     onOpenDrawer: () -> Unit,
@@ -1220,6 +1235,7 @@ private fun TaskListPage(
                     items(section.tasks, key = { it.id }) { task ->
                         SwipeTaskRow(
                             task = task,
+                            showOverdueMarker = showOverdueMarker,
                             onClick = { onTaskClick(task) },
                             onToggleDone = { onToggleDone(task) },
                             onAction = { onTaskAction(task) },
@@ -1408,6 +1424,7 @@ private fun TaskSectionHeader(title: String, count: Int, onMore: (() -> Unit)?) 
 @Composable
 private fun SwipeTaskRow(
     task: TaskItem,
+    showOverdueMarker: Boolean,
     onClick: () -> Unit,
     onToggleDone: () -> Unit,
     onAction: () -> Unit,
@@ -1433,7 +1450,7 @@ private fun SwipeTaskRow(
             }
         },
     ) {
-        TaskRow(task, onClick, onToggleDone, onAction)
+        TaskRow(task, onClick, onToggleDone, onAction, showOverdueMarker)
     }
 }
 
@@ -1443,9 +1460,10 @@ private fun TaskRow(
     onClick: () -> Unit,
     onToggleDone: () -> Unit,
     onLongClick: () -> Unit,
+    showOverdueMarker: Boolean = true,
 ) {
     val done = task.status == TaskStatus.Done
-    val overdue = task.timeState == TaskTimeState.Overdue
+    val overdue = showOverdueMarker && task.timeState == TaskTimeState.Overdue
     val emphasizedPriority = task.priority == TaskPriority.High ||
         task.priority == TaskPriority.Urgent
     Row(
@@ -2454,6 +2472,7 @@ private fun TaskSearchPage(
     query: String,
     filter: TaskSearchFilter,
     canFilterSelf: Boolean,
+    showOverdueMarker: Boolean,
     onBack: () -> Unit,
     onQueryChange: (String) -> Unit,
     onFilterChange: (TaskSearchFilter) -> Unit,
@@ -2615,7 +2634,7 @@ private fun TaskSearchPage(
         if (searching) LinearProgressIndicator(Modifier.fillMaxWidth())
         LazyColumn {
             items(tasks, key = { it.id }) { task ->
-                TaskRow(task, { onTaskClick(task) }, {}, {})
+                TaskRow(task, { onTaskClick(task) }, {}, {}, showOverdueMarker)
             }
         }
     }
@@ -2646,45 +2665,83 @@ private fun selectedFilterIcon(selected: Boolean): (@Composable () -> Unit)? =
     }
 
 @Composable
-private fun TaskSettingsPage(onBack: () -> Unit) {
-    var dailyReminder by remember { mutableStateOf(true) }
-    var overdueDots by remember { mutableStateOf(true) }
+private fun TaskSettingsPage(
+    settings: TaskSettingsItem,
+    loading: Boolean,
+    saving: Boolean,
+    onBack: () -> Unit,
+    onDailyReminderChange: (Boolean) -> Unit,
+    onOverdueMarkerChange: (Boolean) -> Unit,
+    onDefaultReminderChange: (Int) -> Unit,
+) {
+    var reminderMenu by remember { mutableStateOf(false) }
     Scaffold(topBar = { TaskPageTopBar(stringResource(R.string.task_settings), onBack) }) { padding ->
         Column(
             Modifier.padding(padding).fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLow).padding(Dimens.SpaceL),
             verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
         ) {
+            if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
             SettingsCard {
                 SettingsSwitchRow(
                     title = stringResource(R.string.task_daily_reminder),
                     subtitle = stringResource(R.string.task_daily_reminder_desc),
-                    checked = dailyReminder,
-                    onCheckedChange = { dailyReminder = it },
+                    checked = settings.dailyReminderEnabled,
+                    enabled = !loading && !saving,
+                    onCheckedChange = onDailyReminderChange,
                 )
             }
             SettingsCard {
                 SettingsSwitchRow(
                     title = stringResource(R.string.task_overdue_marker),
                     subtitle = stringResource(R.string.task_overdue_marker_desc),
-                    checked = overdueDots,
-                    onCheckedChange = { overdueDots = it },
+                    checked = settings.overdueMarkerEnabled,
+                    enabled = !loading && !saving,
+                    onCheckedChange = onOverdueMarkerChange,
                 )
             }
             SettingsCard {
-                Row(
-                    Modifier.fillMaxWidth().clickable {}.padding(Dimens.SpaceL),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.task_default_reminder), fontWeight = FontWeight.SemiBold)
-                        Text(stringResource(R.string.task_default_reminder_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Box {
+                    Row(
+                        Modifier.fillMaxWidth()
+                            .clickable(enabled = !loading && !saving) { reminderMenu = true }
+                            .padding(Dimens.SpaceL),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(R.string.task_default_reminder), fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(R.string.task_default_reminder_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Text(defaultTaskReminderText(settings.defaultReminderMinutes), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Outlined.ChevronRight, null)
                     }
-                    Text(stringResource(R.string.task_30_minutes_before), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Icon(Icons.Outlined.ChevronRight, null)
+                    DropdownMenu(
+                        expanded = reminderMenu,
+                        onDismissRequest = { reminderMenu = false },
+                    ) {
+                        listOf(30, 60, 1440).forEach { minutes ->
+                            DropdownMenuItem(
+                                text = { Text(defaultTaskReminderText(minutes)) },
+                                leadingIcon = selectedFilterIcon(
+                                    minutes == settings.defaultReminderMinutes,
+                                ),
+                                onClick = {
+                                    reminderMenu = false
+                                    onDefaultReminderChange(minutes)
+                                },
+                            )
+                        }
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun defaultTaskReminderText(minutes: Int): String = when (minutes) {
+    60 -> stringResource(R.string.calendar_reminder_hour)
+    1440 -> stringResource(R.string.calendar_reminder_day)
+    else -> stringResource(R.string.task_30_minutes_before)
 }
 
 @Composable
@@ -2751,14 +2808,20 @@ private fun SettingsCard(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun SettingsSwitchRow(title: String, subtitle: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+private fun SettingsSwitchRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    enabled: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
     Row(Modifier.fillMaxWidth().padding(Dimens.SpaceL), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(Dimens.SpaceXs))
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(checked = checked, enabled = enabled, onCheckedChange = onCheckedChange)
     }
 }
 

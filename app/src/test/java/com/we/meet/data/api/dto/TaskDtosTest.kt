@@ -366,6 +366,27 @@ class TaskDtosTest {
     }
 
     @Test
+    fun taskSettingsMapAndPatchUsesBackendFieldNames() {
+        val settings = moshi.adapter(TaskSettingsDto::class.java).fromJson(
+            """
+                {
+                  "daily_reminder_enabled":false,
+                  "overdue_marker_enabled":true,
+                  "default_reminder_minutes":60
+                }
+            """.trimIndent(),
+        )!!
+        val patchJson = moshi.adapter(PatchTaskSettingsRequest::class.java).toJson(
+            PatchTaskSettingsRequest(defaultReminderMinutes = 1440),
+        )
+
+        assertEquals(false, settings.dailyReminderEnabled)
+        assertTrue(settings.overdueMarkerEnabled)
+        assertEquals(60, settings.defaultReminderMinutes)
+        assertEquals("{\"default_reminder_minutes\":1440}", patchJson)
+    }
+
+    @Test
     fun taskPatchAndFollowerRequestsUseBackendFieldNames() {
         val patchJson = moshi.adapter(PatchTaskRequest::class.java).toJson(
             PatchTaskRequest(

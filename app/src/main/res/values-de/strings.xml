@@ -332,6 +332,7 @@
     <string name="task_default_reminder">Standarderinnerung</string>
     <string name="task_default_reminder_desc">Standarderinnerung für neue Aufgaben</string>
     <string name="task_30_minutes_before">30 Min. vorher</string>
+    <string name="task_settings_failed">Aufgabeneinstellungen konnten nicht aktualisiert werden.</string>
     <string name="task_new_group">Neue Gruppe</string>
     <string name="task_new_list">Neue Liste</string>
     <string name="task_archive">Archivieren</string>

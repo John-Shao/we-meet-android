@@ -12,6 +12,7 @@ import com.we.meet.data.api.dto.FileUploadDto
 import com.we.meet.data.api.dto.PagedTasksDto
 import com.we.meet.data.api.dto.PagedTaskActivitiesDto
 import com.we.meet.data.api.dto.PatchTaskRequest
+import com.we.meet.data.api.dto.PatchTaskSettingsRequest
 import com.we.meet.data.api.dto.PatchTaskListGroupRequest
 import com.we.meet.data.api.dto.PatchTaskListRequest
 import com.we.meet.data.api.dto.PatchTaskGroupRequest
@@ -25,6 +26,7 @@ import com.we.meet.data.api.dto.TaskParentCandidateDto
 import com.we.meet.data.api.dto.TaskGroupDto
 import com.we.meet.data.api.dto.TaskRecurrenceRequest
 import com.we.meet.data.api.dto.TaskStatisticsDto
+import com.we.meet.data.api.dto.TaskSettingsDto
 import com.we.meet.data.api.dto.TaskSubtreeImpactDto
 import com.we.meet.data.api.dto.TaskAttachmentDto
 import com.we.meet.data.api.dto.TaskActivityDto
@@ -138,6 +140,12 @@ interface TaskApi {
         @Query("page") page: Int = 1,
         @Query("page_size") pageSize: Int = 30,
     ): PagedTaskActivitiesDto
+
+    @GET("api/v1.0/tasks/settings/")
+    suspend fun getTaskSettings(): TaskSettingsDto
+
+    @PATCH("api/v1.0/tasks/settings/")
+    suspend fun patchTaskSettings(@Body body: PatchTaskSettingsRequest): TaskSettingsDto
 
     @POST("api/v1.0/tasks/{id}/followers/")
     suspend fun addFollowers(

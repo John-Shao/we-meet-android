@@ -13,6 +13,7 @@ import com.we.meet.data.api.dto.CreateTaskListRequest
 import com.we.meet.data.api.dto.CreateTaskRequest
 import com.we.meet.data.api.dto.CreateTaskGroupRequest
 import com.we.meet.data.api.dto.PatchTaskRequest
+import com.we.meet.data.api.dto.PatchTaskSettingsRequest
 import com.we.meet.data.api.dto.PagedTasksDto
 import com.we.meet.data.api.dto.PagedTaskActivitiesDto
 import com.we.meet.data.api.dto.PatchTaskListGroupRequest
@@ -30,6 +31,7 @@ import com.we.meet.data.api.dto.TaskParentCandidateDto
 import com.we.meet.data.api.dto.TaskGroupDto
 import com.we.meet.data.api.dto.TaskRecurrenceRequest
 import com.we.meet.data.api.dto.TaskSubtreeImpactDto
+import com.we.meet.data.api.dto.TaskSettingsDto
 import com.we.meet.data.api.dto.ShareTaskListRequest
 import com.we.meet.data.api.dto.UpdateTaskListAccessRequest
 import kotlinx.coroutines.Dispatchers
@@ -175,6 +177,15 @@ class TaskRepository(
     ): Result<PagedTaskActivitiesDto> = runCatching {
         withContext(Dispatchers.IO) { api.listTaskActivityFeed(page, pageSize) }
     }
+
+    suspend fun loadSettings(): Result<TaskSettingsDto> = runCatching {
+        withContext(Dispatchers.IO) { api.getTaskSettings() }
+    }
+
+    suspend fun updateSettings(request: PatchTaskSettingsRequest): Result<TaskSettingsDto> =
+        runCatching {
+            withContext(Dispatchers.IO) { api.patchTaskSettings(request) }
+        }
 
     suspend fun loadDetail(taskId: String, sharedVia: String? = null): Result<Detail> = runCatching {
         withContext(Dispatchers.IO) {

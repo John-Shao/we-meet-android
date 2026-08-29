@@ -94,6 +94,12 @@ data class TaskNavigationCounts(
     val standalone: Int = 0,
 )
 
+data class TaskSettingsItem(
+    val dailyReminderEnabled: Boolean = true,
+    val overdueMarkerEnabled: Boolean = true,
+    val defaultReminderMinutes: Int = 30,
+)
+
 data class TaskPersonItem(
     val id: String,
     val name: String,

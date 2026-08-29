@@ -342,6 +342,7 @@
     <string name="task_default_reminder">Default reminder</string>
     <string name="task_default_reminder_desc">Default reminder for newly created tasks</string>
     <string name="task_30_minutes_before">30 min before</string>
+    <string name="task_settings_failed">Couldn’t update task settings. Try again.</string>
     <string name="task_new_group">New group</string>
     <string name="task_new_list">New list</string>
     <string name="task_archive">Archive</string>
