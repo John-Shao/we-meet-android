@@ -74,7 +74,6 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Groups
@@ -1461,8 +1460,6 @@ private fun TaskFilterBar(
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Outlined.FilterList, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.width(Dimens.SpaceS))
         Text(
             "$statusText · $groupingText · ${taskOrderingText(ordering)}",
             modifier = Modifier.weight(1f),
