@@ -1420,6 +1420,7 @@ private fun TaskSegmentedControl(
                     Text(
                         stringResource(label),
                         modifier = Modifier.padding(vertical = Dimens.SpaceS),
+                        style = MaterialTheme.typography.labelLarge,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
@@ -1497,8 +1498,17 @@ private fun TaskSectionHeader(
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.width(Dimens.SpaceS))
-        Text(title, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-        Text(count.toString(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            count.toString(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         if (onMore != null) {
             IconButton(onClick = onMore) {
                 Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.task_more))
@@ -1547,7 +1557,7 @@ internal fun TaskRow(
                 }
                 Text(
                     task.title,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     textDecoration = if (done) TextDecoration.LineThrough else null,
                     color = if (done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
@@ -1569,7 +1579,7 @@ internal fun TaskRow(
                         Spacer(Modifier.width(Dimens.SpaceXs))
                         Text(
                             task.dueLabel,
-                            style = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.typography.bodySmall,
                             color = if (overdue && !done) MaterialTheme.colorScheme.error
                             else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -1585,7 +1595,7 @@ internal fun TaskRow(
                         Spacer(Modifier.width(Dimens.SpaceXs))
                         Text(
                             "${it.first}/${it.second}",
-                            style = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -1602,7 +1612,7 @@ internal fun TaskRow(
                         Spacer(Modifier.width(Dimens.SpaceXs))
                         Text(
                             task.commentCount.toString(),
-                            style = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -1634,7 +1644,11 @@ private fun TaskEmptyState(onCreate: () -> Unit) {
             }
         }
         Spacer(Modifier.height(Dimens.SpaceXl))
-        Text(stringResource(R.string.task_empty_title), fontWeight = FontWeight.Bold)
+        Text(
+            stringResource(R.string.task_empty_title),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+        )
         Spacer(Modifier.height(Dimens.SpaceS))
         Text(
             stringResource(R.string.task_empty_body),
