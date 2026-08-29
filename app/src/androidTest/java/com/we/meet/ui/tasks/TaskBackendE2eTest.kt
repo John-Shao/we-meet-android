@@ -1,6 +1,7 @@
 package com.we.meet.ui.tasks
 
 import android.Manifest
+import android.net.ConnectivityManager
 import android.os.Build
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -39,6 +40,8 @@ class TaskBackendE2eTest {
         override fun before() {
             val instrumentation = InstrumentationRegistry.getInstrumentation()
             val app = instrumentation.targetContext.applicationContext as WeMeetApp
+            val connectivityManager = app.getSystemService(ConnectivityManager::class.java)
+            connectivityManager.bindProcessToNetwork(connectivityManager.activeNetwork)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 // The push SDK can request this as soon as an authenticated
                 // Activity starts. Grant it before Compose launches so a clean

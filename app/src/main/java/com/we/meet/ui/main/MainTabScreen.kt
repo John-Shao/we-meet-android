@@ -144,6 +144,7 @@ fun MainTabScreen(
 ) {
     // Default to the Messages tab.
     var selectedTab by rememberSaveable { mutableIntStateOf(MainTab.Messages.ordinal) }
+    var taskNavigationOpen by remember { mutableStateOf(false) }
     val ctx = LocalContext.current
     val app = ctx.applicationContext as WeMeetApp
 
@@ -240,6 +241,9 @@ fun MainTabScreen(
     // site: coercing only where the content is looked up would still leave
     // CompactTabBar's `selectedTab == index` highlight matching nothing.
     val safeTab = selectedTab.coerceIn(MainTab.entries.indices)
+    LaunchedEffect(safeTab) {
+        if (safeTab != MainTab.Tasks.ordinal) taskNavigationOpen = false
+    }
 
     // Profile drawer, opened by tapping the avatar in the 消息 header.
     //
@@ -353,7 +357,11 @@ fun MainTabScreen(
             DocsTabScreen(docsWebView)
         },
         TabItem(R.string.tab_tasks, Icons.Filled.TaskAlt, Icons.Outlined.TaskAlt) {
-            TaskScreen(ownerName = selfName, app = app)
+            TaskScreen(
+                ownerName = selfName,
+                app = app,
+                onNavigationOverlayChange = { taskNavigationOpen = it },
+            )
         },
     )
 
@@ -395,11 +403,13 @@ fun MainTabScreen(
     ) {
         Scaffold(
             bottomBar = {
-                CompactTabBar(
-                    tabs = tabs,
-                    selectedTab = safeTab,
-                    onTabSelected = { selectedTab = it },
-                )
+                if (!taskNavigationOpen) {
+                    CompactTabBar(
+                        tabs = tabs,
+                        selectedTab = safeTab,
+                        onTabSelected = { selectedTab = it },
+                    )
+                }
             },
         ) { padding ->
             Box(

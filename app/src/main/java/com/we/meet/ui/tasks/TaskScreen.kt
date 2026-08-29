@@ -12,6 +12,7 @@ import android.content.ContentResolver
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -21,6 +22,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -129,6 +131,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
@@ -139,6 +142,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
@@ -220,7 +224,11 @@ private data class TaskPlacementOption(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskScreen(ownerName: String, app: WeMeetApp) {
+fun TaskScreen(
+    ownerName: String,
+    app: WeMeetApp,
+    onNavigationOverlayChange: (Boolean) -> Unit = {},
+) {
     val owner = ownerName.ifBlank { stringResource(R.string.task_demo_owner) }
     val vm: TaskViewModel = viewModel(factory = TaskViewModel.Factory(app))
     val ui by vm.ui.collectAsStateWithLifecycle()
@@ -331,6 +339,12 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     LaunchedEffect(page, selectedTaskId) {
         if (page == TaskPage.Detail) selectedTaskId?.let(vm::loadDetail)
     }
+    LaunchedEffect(showDrawer, page) {
+        onNavigationOverlayChange(showDrawer && page == TaskPage.List)
+    }
+    BackHandler(enabled = showDrawer && page == TaskPage.List) {
+        showDrawer = false
+    }
 
     Box(Modifier.fillMaxSize()) {
         when (page) {
@@ -401,6 +415,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 TaskDetailPage(
                     task = task,
                     detail = ui.detail?.takeIf { it.taskId == task.id },
+                    statusMutating = task.id in ui.mutatingIds,
                     onBack = {
                         if (detailBackStack.size > 1) {
                             detailBackStack = detailBackStack.dropLast(1)
@@ -507,6 +522,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             exit = fadeOut(),
         ) {
             TaskNavigationDrawer(
+                selectedView = ui.view,
                 selectedList = ui.selectedList?.name,
                 taskLists = ui.taskLists,
                 listGroups = ui.listGroups,
@@ -1171,11 +1187,15 @@ private fun TaskListPage(
 ) {
     val visible = tasks.visibleFor(view, TaskFilter(includeDone = includeDone), selectedList?.name)
     val standaloneLabel = stringResource(R.string.task_standalone)
+    var collapsedSections by rememberSaveable { mutableStateOf(emptyList<String>()) }
     val sections = if (view == TaskView.Standalone) {
         listOf(TaskDisplaySection(standaloneLabel, visible))
     } else if (selectedList == null && grouping == TaskGrouping.List) {
-        visible.groupBy(TaskItem::listName).map { (title, groupedTasks) ->
-            TaskDisplaySection(title, groupedTasks)
+        visible.groupBy(TaskItem::listId).map { (listId, groupedTasks) ->
+            TaskDisplaySection(
+                title = if (listId == null) standaloneLabel else groupedTasks.first().listName,
+                tasks = groupedTasks,
+            )
         }
     } else if (selectedList == null) {
         listOf(TaskDisplaySection(stringResource(R.string.task_all_tasks), visible))
@@ -1219,16 +1239,15 @@ private fun TaskListPage(
                     owner = owner,
                     selectedList = selectedList?.name
                         ?: standaloneLabel.takeIf { view == TaskView.Standalone },
-                    onOpenDrawer = onOpenDrawer,
                     onSearch = onSearch,
                     onSettings = onSettings,
                 )
-                if (
-                    selectedList == null &&
-                    (view == TaskView.Assigned || view == TaskView.Following)
-                ) {
-                    TaskSegmentedControl(selected = view, onSelected = onViewChange)
-                }
+                TaskViewNavigationRow(
+                    view = view,
+                    selectedList = selectedList?.name,
+                    onOpenDrawer = onOpenDrawer,
+                    onViewChange = onViewChange,
+                )
                 TaskFilterBar(
                     view = view,
                     includeDone = includeDone,
@@ -1243,22 +1262,33 @@ private fun TaskListPage(
                 item { TaskEmptyState(onCreate) }
             } else {
                 sections.forEach { section ->
+                    val expanded = section.key !in collapsedSections
                     item {
                         TaskSectionHeader(
                             title = section.title,
                             count = section.tasks.size,
+                            expanded = expanded,
+                            onToggle = {
+                                collapsedSections = if (expanded) {
+                                    collapsedSections + section.key
+                                } else {
+                                    collapsedSections - section.key
+                                }
+                            },
                             onMore = section.group?.takeIf { selectedList?.canManage == true }
                                 ?.let { group -> { onSectionAction(group) } },
                         )
                     }
-                    items(section.tasks, key = { it.id }) { task ->
-                        SwipeTaskRow(
-                            task = task,
-                            showOverdueMarker = showOverdueMarker,
-                            onClick = { onTaskClick(task) },
-                            onToggleDone = { onToggleDone(task) },
-                            onAction = { onTaskAction(task) },
-                        )
+                    if (expanded) {
+                        items(section.tasks, key = { it.id }) { task ->
+                            SwipeTaskRow(
+                                task = task,
+                                showOverdueMarker = showOverdueMarker,
+                                onClick = { onTaskClick(task) },
+                                onToggleDone = { onToggleDone(task) },
+                                onAction = { onTaskAction(task) },
+                            )
+                        }
                     }
                 }
             }
@@ -1282,13 +1312,13 @@ private data class TaskDisplaySection(
     val title: String,
     val tasks: List<TaskItem>,
     val group: TaskGroupItem? = null,
+    val key: String = title,
 )
 
 @Composable
 private fun TaskHomeHeader(
     owner: String,
     selectedList: String?,
-    onOpenDrawer: () -> Unit,
     onSearch: () -> Unit,
     onSettings: () -> Unit,
 ) {
@@ -1320,35 +1350,61 @@ private fun TaskHomeHeader(
                 Icon(Icons.Outlined.Settings, stringResource(R.string.task_settings))
             }
         }
-        Row(
-            modifier = Modifier.fillMaxWidth().height(Dimens.MinTouchTarget),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onOpenDrawer) {
-                Icon(Icons.Outlined.Menu, stringResource(R.string.task_navigation))
+    }
+}
+
+@Composable
+private fun TaskViewNavigationRow(
+    view: TaskView,
+    selectedList: String?,
+    onOpenDrawer: () -> Unit,
+    onViewChange: (TaskView) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onOpenDrawer) {
+            Icon(Icons.Outlined.Menu, stringResource(R.string.task_navigation))
+        }
+        Spacer(Modifier.width(Dimens.SpaceS))
+        if (selectedList == null && (view == TaskView.Assigned || view == TaskView.Following)) {
+            TaskSegmentedControl(
+                selected = view,
+                onSelected = onViewChange,
+                modifier = Modifier.weight(1f),
+            )
+        } else {
+            val label = when {
+                selectedList != null -> selectedList
+                view == TaskView.All -> stringResource(R.string.task_all_tasks)
+                view == TaskView.Created -> stringResource(R.string.task_created_by_me)
+                view == TaskView.Completed -> stringResource(R.string.task_completed)
+                view == TaskView.Standalone -> stringResource(R.string.task_standalone)
+                else -> stringResource(R.string.task_title)
             }
-            if (selectedList != null) {
-                Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(Dimens.SpaceXl)) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.AutoMirrored.Outlined.ListAlt, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(Dimens.IconSmall))
-                        Spacer(Modifier.width(Dimens.SpaceS))
-                        Text(selectedList, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-            }
+            Text(
+                text = label,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
 
 @Composable
-private fun TaskSegmentedControl(selected: TaskView, onSelected: (TaskView) -> Unit) {
+private fun TaskSegmentedControl(
+    selected: TaskView,
+    onSelected: (TaskView) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = RoundedCornerShape(Dimens.SpaceL),
-        modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS).fillMaxWidth(),
+        modifier = modifier.padding(vertical = Dimens.SpaceS),
     ) {
         Row(Modifier.padding(Dimens.SpaceXs)) {
             listOf(
@@ -1360,11 +1416,15 @@ private fun TaskSegmentedControl(selected: TaskView, onSelected: (TaskView) -> U
                     color = if (active) MaterialTheme.colorScheme.surface else Color.Transparent,
                     shape = RoundedCornerShape(Dimens.SpaceM),
                     shadowElevation = if (active) Dimens.ElevationSubtle else Dimens.SpaceNone,
-                    modifier = Modifier.weight(1f).clickable { onSelected(view) },
+                    modifier = Modifier.weight(1f).selectable(
+                        selected = active,
+                        onClick = { onSelected(view) },
+                        role = Role.Tab,
+                    ),
                 ) {
                     Text(
                         stringResource(label),
-                        modifier = Modifier.padding(vertical = Dimens.SpaceM),
+                        modifier = Modifier.padding(vertical = Dimens.SpaceS),
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
@@ -1398,8 +1458,11 @@ private fun TaskFilterBar(
         if (grouping == TaskGrouping.List) R.string.task_group_by_list
         else R.string.task_group_none,
     )
+    val canFilter = view != TaskView.All && view != TaskView.Completed
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+        modifier = Modifier.fillMaxWidth().heightIn(min = Dimens.MinTouchTarget)
+            .clickable(enabled = canFilter, onClick = onFilter)
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.Outlined.FilterList, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1412,22 +1475,32 @@ private fun TaskFilterBar(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        if (view != TaskView.All && view != TaskView.Completed) {
-            IconButton(onClick = onFilter) {
-                Icon(Icons.Outlined.Tune, stringResource(R.string.task_filter))
-            }
+        if (canFilter) {
+            Spacer(Modifier.width(Dimens.SpaceM))
+            Icon(Icons.Outlined.Tune, stringResource(R.string.task_filter))
         }
     }
 }
 
 @Composable
-private fun TaskSectionHeader(title: String, count: Int, onMore: (() -> Unit)?) {
+private fun TaskSectionHeader(
+    title: String,
+    count: Int,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    onMore: (() -> Unit)?,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .clickable(onClick = onToggle)
             .padding(start = Dimens.ScreenPadding, top = Dimens.SpaceM, bottom = Dimens.SpaceM, end = Dimens.SpaceXs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Outlined.ExpandMore, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(
+            if (expanded) Icons.Outlined.ExpandMore else Icons.Outlined.ChevronRight,
+            null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Spacer(Modifier.width(Dimens.SpaceS))
         Text(title, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
         Text(count.toString(), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1483,6 +1556,8 @@ private fun TaskRow(
 ) {
     val done = task.status == TaskStatus.Done
     val overdue = showOverdueMarker && task.timeState == TaskTimeState.Overdue
+    val hasDate = task.startDate != null || task.dueDate != null
+    val hasMetadata = hasDate || task.subtaskProgress != null || task.commentCount > 0
     val emphasizedPriority = task.priority == TaskPriority.High ||
         task.priority == TaskPriority.Urgent
     Row(
@@ -1519,38 +1594,64 @@ private fun TaskRow(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Spacer(Modifier.height(Dimens.SpaceS))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Outlined.CalendarMonth,
-                    null,
-                    modifier = Modifier.size(Dimens.SpaceL),
-                    tint = if (overdue && !done) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.width(Dimens.SpaceXs))
-                Text(
-                    task.dueLabel,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (overdue && !done) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                task.subtaskProgress?.let {
-                    Spacer(Modifier.width(Dimens.SpaceM))
-                    Icon(Icons.Outlined.AccountTree, null, modifier = Modifier.size(Dimens.SpaceL))
-                    Spacer(Modifier.width(Dimens.SpaceXs))
-                    Text("${it.first}/${it.second}", style = MaterialTheme.typography.labelMedium)
-                }
-                if (task.commentCount > 0) {
-                    Spacer(Modifier.width(Dimens.SpaceM))
-                    Icon(Icons.Outlined.ChatBubbleOutline, null, modifier = Modifier.size(Dimens.SpaceL))
-                    Spacer(Modifier.width(Dimens.SpaceXs))
-                    Text(task.commentCount.toString(), style = MaterialTheme.typography.labelMedium)
+            if (hasMetadata) {
+                Spacer(Modifier.height(Dimens.SpaceS))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (hasDate) {
+                        Icon(
+                            Icons.Outlined.CalendarMonth,
+                            null,
+                            modifier = Modifier.size(Dimens.SpaceL),
+                            tint = if (overdue && !done) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.width(Dimens.SpaceXs))
+                        Text(
+                            task.dueLabel,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (overdue && !done) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    task.subtaskProgress?.let {
+                        if (hasDate) Spacer(Modifier.width(Dimens.SpaceM))
+                        Icon(
+                            Icons.Outlined.AccountTree,
+                            null,
+                            modifier = Modifier.size(Dimens.SpaceL),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.width(Dimens.SpaceXs))
+                        Text(
+                            "${it.first}/${it.second}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (task.commentCount > 0) {
+                        if (hasDate || task.subtaskProgress != null) {
+                            Spacer(Modifier.width(Dimens.SpaceM))
+                        }
+                        Icon(
+                            Icons.Outlined.ChatBubbleOutline,
+                            null,
+                            modifier = Modifier.size(Dimens.SpaceL),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.width(Dimens.SpaceXs))
+                        Text(
+                            task.commentCount.toString(),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }
-        Spacer(Modifier.width(Dimens.SpaceS))
-        Avatar(task.assignee, Dimens.SpaceXxl)
+        if (task.assignee.isNotBlank()) {
+            Spacer(Modifier.width(Dimens.SpaceS))
+            Avatar(task.assignee, Dimens.SpaceXxl)
+        }
     }
     HorizontalDivider(thickness = Dimens.DividerThin, modifier = Modifier.padding(start = Dimens.ButtonHeight))
 }
@@ -1581,13 +1682,14 @@ private fun TaskEmptyState(onCreate: () -> Unit) {
 
 @Composable
 private fun Avatar(name: String, size: androidx.compose.ui.unit.Dp) {
+    val label = name.trim().firstOrNull()?.uppercase() ?: ""
     val colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary)
     Box(
         modifier = Modifier.size(size).clip(CircleShape).background(Brush.linearGradient(colors)),
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            name.takeLast(1),
+            label,
             color = MaterialTheme.colorScheme.onPrimary,
             fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.labelLarge,
@@ -1597,6 +1699,7 @@ private fun Avatar(name: String, size: androidx.compose.ui.unit.Dp) {
 
 @Composable
 private fun TaskNavigationDrawer(
+    selectedView: TaskView,
     selectedList: String?,
     taskLists: List<TaskListItem>,
     listGroups: List<TaskListGroupItem>,
@@ -1618,8 +1721,9 @@ private fun TaskNavigationDrawer(
 ) {
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.38f)).clickable(onClick = onDismiss)) {
         Surface(
-            modifier = Modifier.fillMaxWidth(0.86f).fillMaxHeight().clickable(enabled = false) {},
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            modifier = Modifier.fillMaxWidth(0.86f).fillMaxHeight()
+                .clickable(enabled = false) {},
+            color = MaterialTheme.colorScheme.surface,
             shadowElevation = Dimens.SpaceM,
         ) {
             LazyColumn(contentPadding = PaddingValues(bottom = Dimens.SpaceXl)) {
@@ -1638,13 +1742,28 @@ private fun TaskNavigationDrawer(
                         Spacer(Modifier.weight(1f))
                         IconButton(onClick = onDismiss) { Icon(Icons.Filled.Close, stringResource(R.string.task_close)) }
                     }
-                    DrawerItem(Icons.Outlined.PersonOutline, R.string.task_assigned_to_me, assignedCount.toString()) {
+                    DrawerItem(
+                        Icons.Outlined.PersonOutline,
+                        R.string.task_assigned_to_me,
+                        assignedCount.toString(),
+                        selected = selectedList == null && selectedView == TaskView.Assigned,
+                    ) {
                         onSelectView(TaskView.Assigned)
                     }
-                    DrawerItem(Icons.Outlined.BookmarkBorder, R.string.task_following, followingCount.toString()) {
+                    DrawerItem(
+                        Icons.Outlined.BookmarkBorder,
+                        R.string.task_following,
+                        followingCount.toString(),
+                        selected = selectedList == null && selectedView == TaskView.Following,
+                    ) {
                         onSelectView(TaskView.Following)
                     }
-                    DrawerItem(Icons.Outlined.History, R.string.task_activity, null, onOpenActivity)
+                    DrawerItem(
+                        Icons.Outlined.History,
+                        R.string.task_activity,
+                        null,
+                        onClick = onOpenActivity,
+                    )
                     HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM))
                     Text(
                         stringResource(R.string.task_quick_access),
@@ -1652,13 +1771,19 @@ private fun TaskNavigationDrawer(
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    DrawerItem(Icons.Outlined.TaskAlt, R.string.task_all_tasks, allCount.toString()) {
+                    DrawerItem(
+                        Icons.Outlined.TaskAlt,
+                        R.string.task_all_tasks,
+                        allCount.toString(),
+                        selected = selectedList == null && selectedView == TaskView.All,
+                    ) {
                         onSelectView(TaskView.All)
                     }
                     DrawerItem(
                         Icons.Outlined.PersonOutline,
                         R.string.task_created_by_me,
                         createdCount.toString(),
+                        selected = selectedList == null && selectedView == TaskView.Created,
                     ) {
                         onSelectView(TaskView.Created)
                     }
@@ -1666,6 +1791,7 @@ private fun TaskNavigationDrawer(
                         Icons.Outlined.Checklist,
                         R.string.task_completed,
                         completedCount.toString(),
+                        selected = selectedList == null && selectedView == TaskView.Completed,
                     ) {
                         onSelectView(TaskView.Completed)
                     }
@@ -1715,6 +1841,7 @@ private fun TaskNavigationDrawer(
                             Icons.AutoMirrored.Outlined.ListAlt,
                             R.string.task_standalone,
                             standaloneCount.toString(),
+                            selected = selectedList == null && selectedView == TaskView.Standalone,
                         ) {
                             onSelectView(TaskView.Standalone)
                         }
@@ -1725,7 +1852,7 @@ private fun TaskNavigationDrawer(
                         Icons.Outlined.Archive,
                         R.string.task_archived_lists,
                         null,
-                        onOpenArchivedLists,
+                        onClick = onOpenArchivedLists,
                     )
                 }
                 item {
@@ -1741,16 +1868,39 @@ private fun TaskNavigationDrawer(
 }
 
 @Composable
-private fun DrawerItem(icon: ImageVector, labelRes: Int, count: String?, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
-            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
-        verticalAlignment = Alignment.CenterVertically,
+private fun DrawerItem(
+    icon: ImageVector,
+    labelRes: Int,
+    count: String?,
+    selected: Boolean = false,
+    onClick: () -> Unit,
+) {
+    Surface(
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+        shape = RoundedCornerShape(Dimens.SpaceM),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceM)
+            .selectable(selected = selected, onClick = onClick, role = Role.Tab),
     ) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.width(Dimens.SpaceL))
-        Text(stringResource(labelRes), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-        if (count != null) Text(count, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(
+            modifier = Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceM),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val contentColor = if (selected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            Icon(icon, null, tint = contentColor)
+            Spacer(Modifier.width(Dimens.SpaceL))
+            Text(
+                stringResource(labelRes),
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge,
+                color = contentColor,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            )
+            if (count != null) Text(count, color = contentColor)
+        }
     }
 }
 
@@ -1763,12 +1913,18 @@ private fun DrawerGroup(
     onGroupAction: (() -> Unit)? = null,
     onListAction: (TaskListItem) -> Unit,
 ) {
+    var expanded by rememberSaveable(title) { mutableStateOf(true) }
     Column(Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs)) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceM),
+            modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
+                .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceM),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Outlined.ExpandMore, null, modifier = Modifier.size(Dimens.SpaceXl))
+            Icon(
+                if (expanded) Icons.Outlined.ExpandMore else Icons.Outlined.ChevronRight,
+                null,
+                modifier = Modifier.size(Dimens.SpaceXl),
+            )
             Spacer(Modifier.width(Dimens.SpaceS))
             Text(title, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
             if (onGroupAction != null) {
@@ -1777,33 +1933,55 @@ private fun DrawerGroup(
                 }
             }
         }
-        lists.forEach { list ->
-            val selected = selectedList == list.name
-            Surface(
-                color = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                shape = RoundedCornerShape(Dimens.SpaceM),
-                modifier = Modifier.fillMaxWidth().clickable { onSelectList(list) },
-            ) {
-                Row(
-                    Modifier.padding(
-                        start = Dimens.SpaceXxxl,
-                        end = Dimens.SpaceS,
-                        top = Dimens.SpaceS,
-                        bottom = Dimens.SpaceS,
-                    ),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Outlined.ListAlt,
-                        null,
-                        tint = taskListColor(list.color),
-                    )
-                    Spacer(Modifier.width(Dimens.SpaceM))
-                    Text(list.name, color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-                    Text(list.taskCount.toString(), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (list.canManage || list.canShare || list.canRemove || list.canDelete) {
-                        IconButton(onClick = { onListAction(list) }) {
-                            Icon(Icons.Outlined.MoreVert, stringResource(R.string.task_more))
+        AnimatedVisibility(visible = expanded) {
+            Column {
+                lists.forEach { list ->
+                    val selected = selectedList == list.name
+                    Surface(
+                        color = if (selected) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            Color.Transparent
+                        },
+                        shape = RoundedCornerShape(Dimens.SpaceM),
+                        modifier = Modifier.fillMaxWidth().clickable { onSelectList(list) },
+                    ) {
+                        Row(
+                            Modifier.padding(
+                                start = Dimens.SpaceXxxl,
+                                end = Dimens.SpaceS,
+                                top = Dimens.SpaceS,
+                                bottom = Dimens.SpaceS,
+                            ),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Outlined.ListAlt,
+                                null,
+                                tint = taskListColor(list.color),
+                            )
+                            Spacer(Modifier.width(Dimens.SpaceM))
+                            Text(
+                                list.name,
+                                color = if (selected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
+                                modifier = Modifier.weight(1f),
+                            )
+                            Text(
+                                list.taskCount.toString(),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            if (list.canManage || list.canShare || list.canRemove || list.canDelete) {
+                                IconButton(onClick = { onListAction(list) }) {
+                                    Icon(
+                                        Icons.Outlined.MoreVert,
+                                        stringResource(R.string.task_more),
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -2074,6 +2252,7 @@ private fun CreateTaskPage(
 private fun TaskDetailPage(
     task: TaskItem,
     detail: TaskDetailItem?,
+    statusMutating: Boolean,
     onBack: () -> Unit,
     onToggleDone: (TaskItem) -> Unit,
     onToggleFollow: (TaskItem) -> Unit,
@@ -2163,15 +2342,22 @@ private fun TaskDetailPage(
             }
             item {
                 Row(verticalAlignment = Alignment.Top) {
-                    Box(
-                        modifier = Modifier.padding(top = Dimens.SpaceXs).size(Dimens.IconLarge).clip(CircleShape)
-                            .testTag(taskDetailToggleTestTag(task.status == TaskStatus.Done))
-                            .border(Dimens.BorderEmphasis, if (task.status == TaskStatus.Done) WeMeetTheme.extras.status.success else MaterialTheme.colorScheme.outline, CircleShape)
-                            .background(if (task.status == TaskStatus.Done) WeMeetTheme.extras.status.successContainer else Color.Transparent)
-                            .clickable { onToggleDone(task) },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (task.status == TaskStatus.Done) Icon(Icons.Filled.Check, null, tint = WeMeetTheme.extras.status.onSuccessContainer, modifier = Modifier.size(Dimens.IconSmall))
+                    if (statusMutating) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.padding(top = Dimens.SpaceXs).size(Dimens.IconLarge),
+                            strokeWidth = Dimens.BorderEmphasis,
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier.padding(top = Dimens.SpaceXs).size(Dimens.IconLarge).clip(CircleShape)
+                                .testTag(taskDetailToggleTestTag(task.status == TaskStatus.Done))
+                                .border(Dimens.BorderEmphasis, if (task.status == TaskStatus.Done) WeMeetTheme.extras.status.success else MaterialTheme.colorScheme.outline, CircleShape)
+                                .background(if (task.status == TaskStatus.Done) WeMeetTheme.extras.status.successContainer else Color.Transparent)
+                                .clickable(enabled = task.canUpdateStatus) { onToggleDone(task) },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (task.status == TaskStatus.Done) Icon(Icons.Filled.Check, null, tint = WeMeetTheme.extras.status.onSuccessContainer, modifier = Modifier.size(Dimens.IconSmall))
+                        }
                     }
                     Spacer(Modifier.width(Dimens.SpaceM))
                     Text(
