@@ -159,7 +159,7 @@ import java.time.ZoneOffset
 import org.json.JSONArray
 import org.json.JSONObject
 
-private enum class TaskPage { List, Create, Detail, Search, Settings }
+private enum class TaskPage { List, Create, Detail, Search, Activity, Settings }
 
 private enum class TaskRecurrenceEndMode { Never, Date, Count }
 
@@ -252,6 +252,16 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
         ?: (ui.tasks + ui.searchResults).firstOrNull { it.id == selectedTaskId }
         ?: ui.detail?.subtasks?.firstOrNull { it.id == selectedTaskId }
         ?: detailBackStack.lastOrNull { it.id == selectedTaskId }
+        ?: ui.activityFeed.firstOrNull { it.taskId == selectedTaskId }?.let { activity ->
+            TaskItem(
+                id = activity.taskId,
+                title = activity.taskTitle,
+                assignee = "",
+                dueLabel = "",
+                listName = "",
+                section = "",
+            )
+        }
     val snackbar = remember { SnackbarHostState() }
     val imSession = remember(app) { ImSession.get(app) }
     val attachmentPicker = rememberLauncherForActivityResult(
@@ -271,6 +281,7 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
     }
     val failureText = when (ui.failure) {
         TaskFailure.Load -> stringResource(R.string.task_load_failed)
+        TaskFailure.Activity -> stringResource(R.string.task_activity_load_failed)
         TaskFailure.Save -> stringResource(R.string.task_save_failed)
         TaskFailure.Delete -> stringResource(R.string.task_delete_failed)
         TaskFailure.Comment -> stringResource(R.string.task_comment_failed)
@@ -285,11 +296,16 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
             val failedOperation = ui.failure
             val result = snackbar.showSnackbar(
                 message = failureText,
-                actionLabel = retryText.takeIf { failedOperation == TaskFailure.Load },
+                actionLabel = retryText.takeIf {
+                    failedOperation == TaskFailure.Load || failedOperation == TaskFailure.Activity
+                },
             )
             vm.clearFailure()
             if (failedOperation == TaskFailure.Load && result == SnackbarResult.ActionPerformed) {
                 vm.refresh()
+            }
+            if (failedOperation == TaskFailure.Activity && result == SnackbarResult.ActionPerformed) {
+                vm.refreshActivityFeed()
             }
         }
     }
@@ -436,6 +452,20 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 },
             )
 
+            TaskPage.Activity -> TaskActivityPage(
+                activities = ui.activityFeed,
+                loading = ui.activityLoading,
+                loadingMore = ui.activityLoadingMore,
+                hasMore = ui.activityHasMore,
+                onBack = { page = TaskPage.List },
+                onLoadMore = vm::loadMoreActivityFeed,
+                onOpenTask = { activity ->
+                    selectedTaskId = activity.taskId
+                    detailBackStack = emptyList()
+                    page = TaskPage.Detail
+                },
+            )
+
             TaskPage.Settings -> TaskSettingsPage(onBack = { page = TaskPage.List })
         }
 
@@ -458,6 +488,11 @@ fun TaskScreen(ownerName: String, app: WeMeetApp) {
                 onSelectView = {
                     vm.setView(it)
                     showDrawer = false
+                },
+                onOpenActivity = {
+                    showDrawer = false
+                    page = TaskPage.Activity
+                    vm.refreshActivityFeed()
                 },
                 onSelectList = { list ->
                     vm.selectList(list.id)
@@ -1534,6 +1569,7 @@ private fun TaskNavigationDrawer(
     standaloneCount: Int,
     onDismiss: () -> Unit,
     onSelectView: (TaskView) -> Unit,
+    onOpenActivity: () -> Unit,
     onSelectList: (TaskListItem) -> Unit,
     onNewGroup: () -> Unit,
     onNewList: () -> Unit,
@@ -1569,7 +1605,7 @@ private fun TaskNavigationDrawer(
                     DrawerItem(Icons.Outlined.BookmarkBorder, R.string.task_following, followingCount.toString()) {
                         onSelectView(TaskView.Following)
                     }
-                    DrawerItem(Icons.Outlined.History, R.string.task_activity, null) {}
+                    DrawerItem(Icons.Outlined.History, R.string.task_activity, null, onOpenActivity)
                     HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM))
                     Text(
                         stringResource(R.string.task_quick_access),
@@ -2311,6 +2347,98 @@ private fun TaskDetailPage(
                         Column(Modifier.weight(1f)) {
                             Text(taskComment.author, fontWeight = FontWeight.SemiBold)
                             Text(taskComment.content)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TaskActivityPage(
+    activities: List<TaskActivityItem>,
+    loading: Boolean,
+    loadingMore: Boolean,
+    hasMore: Boolean,
+    onBack: () -> Unit,
+    onLoadMore: () -> Unit,
+    onOpenTask: (TaskActivityItem) -> Unit,
+) {
+    Scaffold(topBar = { TaskPageTopBar(stringResource(R.string.task_activity), onBack) }) { padding ->
+        when {
+            loading -> Box(
+                Modifier.padding(padding).fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+
+            activities.isEmpty() -> Column(
+                Modifier.padding(padding).fillMaxSize().padding(Dimens.SpaceXl),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    Icons.Outlined.History,
+                    null,
+                    modifier = Modifier.size(Dimens.AvatarS),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(Dimens.SpaceM))
+                Text(
+                    stringResource(R.string.task_activity_empty),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            else -> LazyColumn(
+                modifier = Modifier.padding(padding).fillMaxSize(),
+                contentPadding = PaddingValues(vertical = Dimens.SpaceS),
+            ) {
+                items(activities, key = TaskActivityItem::id) { activity ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onOpenTask(activity) }
+                            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceL),
+                    ) {
+                        Text(
+                            activity.taskTitle,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Spacer(Modifier.height(Dimens.SpaceXs))
+                        Text(
+                            activityText(activity),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        if (activity.createdAt.isNotBlank()) {
+                            Spacer(Modifier.height(Dimens.SpaceXs))
+                            Text(
+                                activity.createdAt.take(16).replace('T', ' '),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                    HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceXl))
+                }
+                if (hasMore || loadingMore) {
+                    item {
+                        Box(
+                            Modifier.fillMaxWidth().padding(Dimens.SpaceL),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (loadingMore) {
+                                CircularProgressIndicator(Modifier.size(Dimens.IconMedium))
+                            } else {
+                                OutlinedButton(onClick = onLoadMore) {
+                                    Text(stringResource(R.string.task_activity_load_more))
+                                }
+                            }
                         }
                     }
                 }

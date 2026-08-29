@@ -237,6 +237,9 @@
     <string name="task_assigned_to_me">我负责的</string>
     <string name="task_following">我关注的</string>
     <string name="task_activity">动态</string>
+    <string name="task_activity_empty">暂无任务动态</string>
+    <string name="task_activity_load_more">加载更多</string>
+    <string name="task_activity_load_failed">任务动态加载失败，请检查网络后重试。</string>
     <string name="task_quick_access">快速访问</string>
     <string name="task_all_tasks">全部任务</string>
     <string name="task_created_by_me">我创建的</string>

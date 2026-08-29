@@ -271,9 +271,19 @@ data class CreateTaskCommentRequest(val content: String)
 @JsonClass(generateAdapter = true)
 data class TaskActivityDto(
     val id: String,
+    @Json(name = "task_id") val taskId: String = "",
+    @Json(name = "task_title") val taskTitle: String = "",
     val actor: TaskUserDto? = null,
     val event: String,
     @Json(name = "created_at") val createdAt: String = "",
+)
+
+@JsonClass(generateAdapter = true)
+data class PagedTaskActivitiesDto(
+    val count: Int = 0,
+    val next: String? = null,
+    val previous: String? = null,
+    val results: List<TaskActivityDto> = emptyList(),
 )
 
 @JsonClass(generateAdapter = true)

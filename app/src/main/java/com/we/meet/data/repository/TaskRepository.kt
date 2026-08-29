@@ -14,6 +14,7 @@ import com.we.meet.data.api.dto.CreateTaskRequest
 import com.we.meet.data.api.dto.CreateTaskGroupRequest
 import com.we.meet.data.api.dto.PatchTaskRequest
 import com.we.meet.data.api.dto.PagedTasksDto
+import com.we.meet.data.api.dto.PagedTaskActivitiesDto
 import com.we.meet.data.api.dto.PatchTaskListGroupRequest
 import com.we.meet.data.api.dto.PatchTaskListRequest
 import com.we.meet.data.api.dto.PatchTaskGroupRequest
@@ -167,6 +168,13 @@ class TaskRepository(
         runCatching {
             withContext(Dispatchers.IO) { api.listConversationTasks(conversationId) }
         }
+
+    suspend fun loadActivityFeed(
+        page: Int,
+        pageSize: Int = 30,
+    ): Result<PagedTaskActivitiesDto> = runCatching {
+        withContext(Dispatchers.IO) { api.listTaskActivityFeed(page, pageSize) }
+    }
 
     suspend fun loadDetail(taskId: String, sharedVia: String? = null): Result<Detail> = runCatching {
         withContext(Dispatchers.IO) {

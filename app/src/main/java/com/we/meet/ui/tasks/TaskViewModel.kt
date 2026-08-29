@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.TaskDto
+import com.we.meet.data.api.dto.TaskActivityDto
 import com.we.meet.data.api.dto.TaskListDto
 import com.we.meet.data.api.dto.TaskListAccessDto
 import com.we.meet.data.api.dto.TaskListGroupDto
@@ -21,7 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class TaskFailure { Load, Save, Delete, Comment, Attachment, Share, Navigation }
+enum class TaskFailure { Load, Activity, Save, Delete, Comment, Attachment, Share, Navigation }
 
 data class TaskUiState(
     val tasks: List<TaskItem> = emptyList(),
@@ -46,6 +47,11 @@ data class TaskUiState(
     val searchFilter: TaskSearchFilter = TaskSearchFilter(),
     val searchResults: List<TaskItem> = emptyList(),
     val searching: Boolean = false,
+    val activityFeed: List<TaskActivityItem> = emptyList(),
+    val activityLoading: Boolean = false,
+    val activityLoadingMore: Boolean = false,
+    val activityPage: Int = 0,
+    val activityHasMore: Boolean = false,
     val detail: TaskDetailItem? = null,
     val failure: TaskFailure? = null,
 ) {
@@ -62,6 +68,7 @@ class TaskViewModel(
     private var loadJob: Job? = null
     private var searchJob: Job? = null
     private var taskListMembersJob: Job? = null
+    private var activityJob: Job? = null
 
     init {
         refreshNavigation()
@@ -155,6 +162,54 @@ class TaskViewModel(
                     )
                 }
             }
+        }
+    }
+
+    fun refreshActivityFeed() = loadActivityFeed(reset = true)
+
+    fun loadMoreActivityFeed() = loadActivityFeed(reset = false)
+
+    private fun loadActivityFeed(reset: Boolean) {
+        val snapshot = _ui.value
+        if (!reset && (snapshot.activityLoadingMore || !snapshot.activityHasMore)) return
+        activityJob?.cancel()
+        val page = if (reset) 1 else snapshot.activityPage + 1
+        _ui.update {
+            it.copy(
+                activityLoading = reset,
+                activityLoadingMore = !reset,
+                failure = null,
+            )
+        }
+        activityJob = viewModelScope.launch {
+            repository.loadActivityFeed(page).fold(
+                onSuccess = { response ->
+                    val mapped = response.results.map(TaskActivityDto::toItem)
+                    _ui.update { state ->
+                        state.copy(
+                            activityFeed = if (reset) {
+                                mapped
+                            } else {
+                                (state.activityFeed + mapped).distinctBy(TaskActivityItem::id)
+                            },
+                            activityLoading = false,
+                            activityLoadingMore = false,
+                            activityPage = page,
+                            activityHasMore = response.next != null,
+                        )
+                    }
+                },
+                onFailure = { failure ->
+                    if (failure is CancellationException) return@launch
+                    _ui.update {
+                        it.copy(
+                            activityLoading = false,
+                            activityLoadingMore = false,
+                            failure = TaskFailure.Activity,
+                        )
+                    }
+                },
+            )
         }
     }
 
@@ -1573,12 +1628,7 @@ internal fun TaskRepository.Detail.toItem(taskId: String): TaskDetailItem {
             )
         },
         activities = activities.map { activity ->
-            TaskActivityItem(
-                id = activity.id,
-                actor = activity.actor?.displayName.orEmpty(),
-                event = activity.event,
-                createdAt = activity.createdAt,
-            )
+            activity.toItem()
         },
         parentCandidates = parentCandidates.map { candidate ->
             TaskParentCandidateItem(
@@ -1590,6 +1640,15 @@ internal fun TaskRepository.Detail.toItem(taskId: String): TaskDetailItem {
         subtreeNodeCount = subtreeNodeCount,
     )
 }
+
+internal fun TaskActivityDto.toItem() = TaskActivityItem(
+    id = id,
+    taskId = taskId,
+    taskTitle = taskTitle,
+    actor = actor?.displayName.orEmpty(),
+    event = event,
+    createdAt = createdAt,
+)
 
 private fun TaskListDto.toItem() = TaskListItem(
     id = id,

@@ -10,6 +10,7 @@ import com.we.meet.data.api.dto.AddTaskFollowersRequest
 import com.we.meet.data.api.dto.CreateFileRequest
 import com.we.meet.data.api.dto.FileUploadDto
 import com.we.meet.data.api.dto.PagedTasksDto
+import com.we.meet.data.api.dto.PagedTaskActivitiesDto
 import com.we.meet.data.api.dto.PatchTaskRequest
 import com.we.meet.data.api.dto.PatchTaskListGroupRequest
 import com.we.meet.data.api.dto.PatchTaskListRequest
@@ -131,6 +132,12 @@ interface TaskApi {
         @Path("id") id: String,
         @Query("shared_via") sharedVia: String? = null,
     ): List<TaskActivityDto>
+
+    @GET("api/v1.0/tasks/activity/")
+    suspend fun listTaskActivityFeed(
+        @Query("page") page: Int = 1,
+        @Query("page_size") pageSize: Int = 30,
+    ): PagedTaskActivitiesDto
 
     @POST("api/v1.0/tasks/{id}/followers/")
     suspend fun addFollowers(

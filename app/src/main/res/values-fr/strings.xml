@@ -227,6 +227,9 @@
     <string name="task_assigned_to_me">Mes tâches</string>
     <string name="task_following">Suivies</string>
     <string name="task_activity">Activité</string>
+    <string name="task_activity_empty">Aucune activité de tâche</string>
+    <string name="task_activity_load_more">Charger plus</string>
+    <string name="task_activity_load_failed">Impossible de charger l’activité des tâches.</string>
     <string name="task_quick_access">Accès rapide</string>
     <string name="task_all_tasks">Toutes les tâches</string>
     <string name="task_created_by_me">Créées par moi</string>

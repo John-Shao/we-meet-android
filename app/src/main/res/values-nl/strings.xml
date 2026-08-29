@@ -227,6 +227,9 @@
     <string name="task_assigned_to_me">Aan mij toegewezen</string>
     <string name="task_following">Gevolgd</string>
     <string name="task_activity">Activiteit</string>
+    <string name="task_activity_empty">Nog geen taakactiviteit</string>
+    <string name="task_activity_load_more">Meer laden</string>
+    <string name="task_activity_load_failed">Taakactiviteit kon niet worden geladen.</string>
     <string name="task_quick_access">Snelle toegang</string>
     <string name="task_all_tasks">Alle taken</string>
     <string name="task_created_by_me">Door mij gemaakt</string>

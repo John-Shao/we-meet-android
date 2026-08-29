@@ -338,6 +338,34 @@ class TaskDtosTest {
     }
 
     @Test
+    fun taskActivityFeedMapsPaginationAndTaskSummary() {
+        val page = moshi.adapter(PagedTaskActivitiesDto::class.java).fromJson(
+            """
+                {
+                  "count":2,
+                  "next":"https://example.test/api/v1.0/tasks/activity/?page=2",
+                  "previous":null,
+                  "results":[{
+                    "id":"activity-1",
+                    "task_id":"task-1",
+                    "task_title":"Prepare release",
+                    "actor":{"id":"user-1","full_name":"Alex"},
+                    "event":"status_changed",
+                    "changes":{},
+                    "created_at":"2026-08-29T09:30:00Z"
+                  }]
+                }
+            """.trimIndent(),
+        )!!
+
+        assertEquals(2, page.count)
+        assertEquals("task-1", page.results.single().taskId)
+        assertEquals("Prepare release", page.results.single().taskTitle)
+        assertEquals("Alex", page.results.single().actor?.displayName)
+        assertTrue(page.next?.contains("page=2") == true)
+    }
+
+    @Test
     fun taskPatchAndFollowerRequestsUseBackendFieldNames() {
         val patchJson = moshi.adapter(PatchTaskRequest::class.java).toJson(
             PatchTaskRequest(

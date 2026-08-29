@@ -151,6 +151,8 @@ data class TaskAttachmentItem(
 
 data class TaskActivityItem(
     val id: String,
+    val taskId: String = "",
+    val taskTitle: String = "",
     val actor: String,
     val event: String,
     val createdAt: String,
