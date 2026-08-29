@@ -28,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -81,6 +82,8 @@ import com.we.meet.ui.settings.NotificationSettingsScreen
 import com.we.meet.ui.settings.SpecialAlertContactsScreen
 import com.we.meet.ui.settings.SettingsScreen
 import com.we.meet.ui.tasks.ConversationTasksSheet
+import com.we.meet.ui.tasks.TaskSettingsScreen
+import com.we.meet.ui.tasks.TaskViewModel
 import com.we.meet.ui.waiting.WaitingRoomScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -94,6 +97,7 @@ object Routes {
     const val SETTINGS = "settings"
     const val ACCOUNT_SECURITY = "account_security"
     const val MEETING_SETTINGS = "meeting_settings"
+    const val TASK_SETTINGS = "task_settings"
     /**
      * `name` optionally seeds the meeting-name field in Create mode — populated
      * when 发起会议 came from a group chat ("{群名}的视频会议"), empty from the
@@ -583,6 +587,9 @@ fun AppNav() {
                 },
                 onOpenCalendarSettings = {
                     navController.navigate(Routes.CALENDAR_SETTINGS)
+                },
+                onOpenTaskSettings = {
+                    navController.navigate(Routes.TASK_SETTINGS)
                 },
             )
         }
@@ -1254,6 +1261,7 @@ fun AppNav() {
                 // P8 设置收敛:模块设置从用户设置进,模块内齿轮是同页快捷入口。
                 onOpenMeetingSettings = { navController.navigate(Routes.MEETING_SETTINGS) },
                 onOpenCalendarSettings = { navController.navigate(Routes.CALENDAR_SETTINGS) },
+                onOpenTaskSettings = { navController.navigate(Routes.TASK_SETTINGS) },
                 onOpenNotificationSettings = {
                     navController.navigate(Routes.NOTIFICATION_SETTINGS)
                 },
@@ -1262,6 +1270,20 @@ fun AppNav() {
 
         composable(Routes.MEETING_SETTINGS) {
             MeetingSettingsScreen(
+                onBack = rememberOnceOnly(safePop),
+            )
+        }
+
+        composable(Routes.TASK_SETTINGS) { entry ->
+            val homeEntry = remember(entry) {
+                navController.getBackStackEntry(Routes.HOME)
+            }
+            val taskViewModel: TaskViewModel = viewModel(
+                viewModelStoreOwner = homeEntry,
+                factory = TaskViewModel.Factory(app),
+            )
+            TaskSettingsScreen(
+                viewModel = taskViewModel,
                 onBack = rememberOnceOnly(safePop),
             )
         }

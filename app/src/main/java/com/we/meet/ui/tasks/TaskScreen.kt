@@ -172,7 +172,7 @@ import kotlin.math.roundToInt
 import org.json.JSONArray
 import org.json.JSONObject
 
-private enum class TaskPage { List, Create, Detail, Search, Activity, Settings }
+private enum class TaskPage { List, Create, Detail, Search, Activity }
 
 internal const val TASK_LIST_TEST_TAG = "task-list"
 internal const val TASK_CREATE_FAB_TEST_TAG = "task-create-fab"
@@ -236,6 +236,7 @@ fun TaskScreen(
     ownerName: String,
     app: WeMeetApp,
     onNavigationOverlayChange: (Boolean) -> Unit = {},
+    onOpenSettings: () -> Unit = {},
 ) {
     val owner = ownerName.ifBlank { stringResource(R.string.task_demo_owner) }
     val vm: TaskViewModel = viewModel(factory = TaskViewModel.Factory(app))
@@ -371,10 +372,7 @@ fun TaskScreen(
                     showDrawer = true
                 },
                 onSearch = { page = TaskPage.Search },
-                onSettings = {
-                    page = TaskPage.Settings
-                    vm.loadSettings()
-                },
+                onSettings = onOpenSettings,
                 onFilter = { showFilter = true },
                 onCreate = { page = TaskPage.Create },
                 onTaskClick = {
@@ -512,15 +510,6 @@ fun TaskScreen(
                 },
             )
 
-            TaskPage.Settings -> TaskSettingsPage(
-                settings = ui.settings,
-                loading = ui.settingsLoading,
-                saving = ui.settingsSaving,
-                onBack = { page = TaskPage.List },
-                onDailyReminderChange = vm::setDailyReminder,
-                onOverdueMarkerChange = vm::setOverdueMarker,
-                onDefaultReminderChange = vm::setDefaultReminder,
-            )
         }
 
         AnimatedVisibility(
@@ -2920,86 +2909,6 @@ private fun selectedFilterIcon(selected: Boolean): (@Composable () -> Unit)? =
     }
 
 @Composable
-private fun TaskSettingsPage(
-    settings: TaskSettingsItem,
-    loading: Boolean,
-    saving: Boolean,
-    onBack: () -> Unit,
-    onDailyReminderChange: (Boolean) -> Unit,
-    onOverdueMarkerChange: (Boolean) -> Unit,
-    onDefaultReminderChange: (Int) -> Unit,
-) {
-    var reminderMenu by remember { mutableStateOf(false) }
-    Scaffold(topBar = { TaskPageTopBar(stringResource(R.string.task_settings), onBack) }) { padding ->
-        Column(
-            Modifier.padding(padding).fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLow).padding(Dimens.SpaceL),
-            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
-        ) {
-            if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
-            SettingsCard {
-                SettingsSwitchRow(
-                    title = stringResource(R.string.task_daily_reminder),
-                    subtitle = stringResource(R.string.task_daily_reminder_desc),
-                    checked = settings.dailyReminderEnabled,
-                    enabled = !loading && !saving,
-                    onCheckedChange = onDailyReminderChange,
-                )
-            }
-            SettingsCard {
-                SettingsSwitchRow(
-                    title = stringResource(R.string.task_overdue_marker),
-                    subtitle = stringResource(R.string.task_overdue_marker_desc),
-                    checked = settings.overdueMarkerEnabled,
-                    enabled = !loading && !saving,
-                    onCheckedChange = onOverdueMarkerChange,
-                )
-            }
-            SettingsCard {
-                Box {
-                    Row(
-                        Modifier.fillMaxWidth()
-                            .clickable(enabled = !loading && !saving) { reminderMenu = true }
-                            .padding(Dimens.SpaceL),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(stringResource(R.string.task_default_reminder), fontWeight = FontWeight.SemiBold)
-                            Text(stringResource(R.string.task_default_reminder_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Text(defaultTaskReminderText(settings.defaultReminderMinutes), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Icon(Icons.Outlined.ChevronRight, null)
-                    }
-                    DropdownMenu(
-                        expanded = reminderMenu,
-                        onDismissRequest = { reminderMenu = false },
-                    ) {
-                        listOf(30, 60, 1440).forEach { minutes ->
-                            DropdownMenuItem(
-                                text = { Text(defaultTaskReminderText(minutes)) },
-                                leadingIcon = selectedFilterIcon(
-                                    minutes == settings.defaultReminderMinutes,
-                                ),
-                                onClick = {
-                                    reminderMenu = false
-                                    onDefaultReminderChange(minutes)
-                                },
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun defaultTaskReminderText(minutes: Int): String = when (minutes) {
-    60 -> stringResource(R.string.calendar_reminder_hour)
-    1440 -> stringResource(R.string.calendar_reminder_day)
-    else -> stringResource(R.string.task_30_minutes_before)
-}
-
-@Composable
 private fun TaskPageTopBar(title: String, onBack: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().height(Dimens.Task.TopBarHeight).padding(horizontal = Dimens.SpaceXs),
@@ -3055,29 +2964,6 @@ private fun DetailSectionTitle(labelRes: Int, value: String?) {
         if (value != null) Text(value, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
     Spacer(Modifier.height(Dimens.SpaceS))
-}
-
-@Composable
-private fun SettingsCard(content: @Composable () -> Unit) {
-    Surface(shape = RoundedCornerShape(Dimens.SpaceL), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth(), content = content)
-}
-
-@Composable
-private fun SettingsSwitchRow(
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    enabled: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Row(Modifier.fillMaxWidth().padding(Dimens.SpaceL), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(Dimens.SpaceXs))
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Switch(checked = checked, enabled = enabled, onCheckedChange = onCheckedChange)
-    }
 }
 
 @Composable

@@ -141,6 +141,8 @@ fun MainTabScreen(
     onOpenCalendarManagement: () -> Unit,
     /** 会议室页进入全局日历偏好设置。 */
     onOpenCalendarSettings: () -> Unit,
+    /** 任务页齿轮与系统设置中的入口共用同一个任务设置页。 */
+    onOpenTaskSettings: () -> Unit,
 ) {
     // Default to the Messages tab.
     var selectedTab by rememberSaveable { mutableIntStateOf(MainTab.Messages.ordinal) }
@@ -361,6 +363,7 @@ fun MainTabScreen(
                 ownerName = selfName,
                 app = app,
                 onNavigationOverlayChange = { taskNavigationOpen = it },
+                onOpenSettings = onOpenTaskSettings,
             )
         },
     )

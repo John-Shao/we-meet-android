@@ -58,10 +58,11 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onSignedOut: () -> Unit,
     onOpenAccountSecurity: () -> Unit,
-    /** P8 设置收敛:模块设置页入口(会议/日历)。模块内的齿轮只是快捷入口,
+    /** P8 设置收敛:模块设置页入口(会议/日历/任务)。模块内的齿轮只是快捷入口,
      * 指向的仍是这里挂的同一页面。 */
     onOpenMeetingSettings: () -> Unit,
     onOpenCalendarSettings: () -> Unit,
+    onOpenTaskSettings: () -> Unit,
     /** 「通知」页 —— 免打扰时段/星标穿透等消息通知设置都在里面。 */
     onOpenNotificationSettings: () -> Unit,
 ) {
@@ -96,6 +97,7 @@ fun SettingsScreen(
             ModuleSettingsSection(
                 onMeetingClick = onOpenMeetingSettings,
                 onCalendarClick = onOpenCalendarSettings,
+                onTaskClick = onOpenTaskSettings,
             )
             AccountSection(
                 onAccountSecurityClick = onOpenAccountSecurity,
@@ -137,13 +139,14 @@ fun SettingsScreen(
 // ── Module settings (P8 设置收敛) ────────────────────────────────────────
 
 /**
- * 模块设置入口(会议设置/日历设置):所有设置集中在用户设置里,模块内的
- * 齿轮(会议 tab、日历 tab)只是指向同一页面的快捷入口。
+ * 模块设置入口(会议设置/日历设置/任务设置):所有设置集中在用户设置里,模块内的
+ * 齿轮(会议 tab、日历 tab、任务 tab)只是指向同一页面的快捷入口。
  */
 @Composable
 private fun ModuleSettingsSection(
     onMeetingClick: () -> Unit,
     onCalendarClick: () -> Unit,
+    onTaskClick: () -> Unit,
 ) {
     Spacer(Modifier.height(Dimens.SpaceS))
     Box(
@@ -161,6 +164,10 @@ private fun ModuleSettingsSection(
             ModuleEntryRow(
                 label = stringResource(R.string.calendar_settings_title),
                 onClick = onCalendarClick,
+            )
+            ModuleEntryRow(
+                label = stringResource(R.string.task_settings),
+                onClick = onTaskClick,
             )
         }
     }
@@ -506,4 +513,3 @@ private fun LanguageDropdownRow(label: String) {
         }
     }
 }
-
