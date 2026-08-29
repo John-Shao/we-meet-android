@@ -117,12 +117,9 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
@@ -1289,12 +1286,12 @@ private fun TaskListPage(
                     }
                     if (expanded) {
                         items(section.tasks, key = { it.id }) { task ->
-                            SwipeTaskRow(
+                            TaskRow(
                                 task = task,
                                 showOverdueMarker = showOverdueMarker,
                                 onClick = { onTaskClick(task) },
                                 onToggleDone = { onToggleDone(task) },
-                                onAction = { onTaskAction(task) },
+                                onLongClick = { onTaskAction(task) },
                             )
                         }
                     }
@@ -1526,42 +1523,8 @@ private fun TaskSectionHeader(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SwipeTaskRow(
-    task: TaskItem,
-    showOverdueMarker: Boolean,
-    onClick: () -> Unit,
-    onToggleDone: () -> Unit,
-    onAction: () -> Unit,
-) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = {
-            if (it == SwipeToDismissBoxValue.EndToStart) onAction()
-            false
-        },
-    )
-    SwipeToDismissBox(
-        state = dismissState,
-        enableDismissFromStartToEnd = false,
-        backgroundContent = {
-            Row(
-                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.error).padding(horizontal = Dimens.SpaceXl),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(Icons.Outlined.Share, null, tint = MaterialTheme.colorScheme.onError)
-                Spacer(Modifier.width(Dimens.SpaceXl))
-                Icon(Icons.Filled.DeleteOutline, null, tint = MaterialTheme.colorScheme.onError)
-            }
-        },
-    ) {
-        TaskRow(task, onClick, onToggleDone, onAction, showOverdueMarker)
-    }
-}
-
-@Composable
-private fun TaskRow(
+internal fun TaskRow(
     task: TaskItem,
     onClick: () -> Unit,
     onToggleDone: () -> Unit,
