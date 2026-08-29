@@ -228,7 +228,6 @@ private data class TaskPlacementOption(
 fun TaskScreen(
     ownerName: String,
     app: WeMeetApp,
-    ownerAvatarUrl: String? = null,
     onNavigationOverlayChange: (Boolean) -> Unit = {},
 ) {
     val owner = ownerName.ifBlank { stringResource(R.string.task_demo_owner) }
@@ -359,8 +358,6 @@ fun TaskScreen(
                 ordering = ui.ordering,
                 loading = ui.loading,
                 showOverdueMarker = ui.settings.overdueMarkerEnabled,
-                owner = owner,
-                ownerAvatarUrl = ownerAvatarUrl,
                 onViewChange = vm::setView,
                 onOpenDrawer = {
                     vm.refreshNavigation()
@@ -1175,8 +1172,6 @@ private fun TaskListPage(
     ordering: TaskOrdering,
     loading: Boolean,
     showOverdueMarker: Boolean,
-    owner: String,
-    ownerAvatarUrl: String?,
     onViewChange: (TaskView) -> Unit,
     onOpenDrawer: () -> Unit,
     onSearch: () -> Unit,
@@ -1240,8 +1235,6 @@ private fun TaskListPage(
         ) {
             item {
                 TaskHomeHeader(
-                    owner = owner,
-                    ownerAvatarUrl = ownerAvatarUrl,
                     selectedList = selectedList?.name
                         ?: standaloneLabel.takeIf { view == TaskView.Standalone },
                     onSearch = onSearch,
@@ -1322,8 +1315,6 @@ private data class TaskDisplaySection(
 
 @Composable
 private fun TaskHomeHeader(
-    owner: String,
-    ownerAvatarUrl: String?,
     selectedList: String?,
     onSearch: () -> Unit,
     onSettings: () -> Unit,
@@ -1333,13 +1324,6 @@ private fun TaskHomeHeader(
             modifier = Modifier.fillMaxWidth().height(Dimens.ActionTile),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Avatar(
-                name = owner,
-                size = Dimens.AvatarM,
-                avatarUrl = ownerAvatarUrl,
-                stableId = "self",
-            )
-            Spacer(Modifier.width(Dimens.SpaceM))
             Column(Modifier.weight(1f)) {
                 Text(
                     text = selectedList ?: stringResource(R.string.task_title),

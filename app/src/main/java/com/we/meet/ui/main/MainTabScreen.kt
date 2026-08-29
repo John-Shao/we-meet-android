@@ -303,7 +303,7 @@ fun MainTabScreen(
             ConversationListScreen(
                 deps = app,
                 selfName = selfName,
-                selfAvatarUrl = tokenStore.avatarUrl,
+                selfAvatarUrl = selfAvatarUrl,
                 selfDepartment = selfDepartment,
                 onAvatarClick = { scope.launch { drawerState.open() } },
                 onOpenChat = onOpenChat,
@@ -359,7 +359,6 @@ fun MainTabScreen(
         TabItem(R.string.tab_tasks, Icons.Filled.TaskAlt, Icons.Outlined.TaskAlt) {
             TaskScreen(
                 ownerName = selfName,
-                ownerAvatarUrl = selfAvatarUrl,
                 app = app,
                 onNavigationOverlayChange = { taskNavigationOpen = it },
             )
