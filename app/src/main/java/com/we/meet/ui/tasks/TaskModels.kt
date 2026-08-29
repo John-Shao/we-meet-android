@@ -137,6 +137,7 @@ data class TaskItem(
     val parentId: String? = null,
     val parentTitle: String? = null,
     val recurrence: TaskRecurrenceItem? = null,
+    val assigneeAvatarUrl: String = "",
 )
 
 data class TaskCommentItem(
@@ -144,6 +145,8 @@ data class TaskCommentItem(
     val author: String,
     val content: String,
     val createdAt: String,
+    val authorId: String = "",
+    val authorAvatarUrl: String = "",
 )
 
 data class TaskAttachmentItem(

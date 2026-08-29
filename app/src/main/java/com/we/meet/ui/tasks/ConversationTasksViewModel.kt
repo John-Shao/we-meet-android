@@ -210,6 +210,8 @@ class ConversationTasksViewModel(
                     val mapped = TaskCommentItem(
                         id = comment.id,
                         author = comment.author?.displayName.orEmpty(),
+                        authorId = comment.author?.id.orEmpty(),
+                        authorAvatarUrl = comment.author?.avatarUrl.orEmpty(),
                         content = comment.content,
                         createdAt = comment.createdAt,
                     )

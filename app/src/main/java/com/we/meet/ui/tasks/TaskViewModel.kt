@@ -691,6 +691,8 @@ class TaskViewModel(
                                 comments = it.detail.comments + TaskCommentItem(
                                     id = comment.id,
                                     author = comment.author?.displayName.orEmpty(),
+                                    authorId = comment.author?.id.orEmpty(),
+                                    authorAvatarUrl = comment.author?.avatarUrl.orEmpty(),
                                     content = comment.content,
                                     createdAt = comment.createdAt,
                                 ),
@@ -1606,6 +1608,7 @@ internal fun TaskDto.toItem(): TaskItem {
         title = title,
         description = description,
         assignee = people.joinToString { it.displayName }.ifBlank { creator.displayName },
+        assigneeAvatarUrl = people.firstOrNull()?.avatarUrl ?: creator.avatarUrl,
         dueLabel = taskDateRangeLabel(startDate, dueDate),
         listId = taskList?.id,
         listName = taskList?.name ?: "—",
@@ -1670,6 +1673,8 @@ internal fun TaskRepository.Detail.toItem(taskId: String): TaskDetailItem {
             TaskCommentItem(
                 id = comment.id,
                 author = comment.author?.displayName.orEmpty(),
+                authorId = comment.author?.id.orEmpty(),
+                authorAvatarUrl = comment.author?.avatarUrl.orEmpty(),
                 content = comment.content,
                 createdAt = comment.createdAt,
             )

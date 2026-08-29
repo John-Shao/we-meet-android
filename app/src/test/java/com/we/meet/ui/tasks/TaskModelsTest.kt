@@ -1,5 +1,7 @@
 package com.we.meet.ui.tasks
 
+import com.we.meet.data.api.dto.TaskDto
+import com.we.meet.data.api.dto.TaskUserDto
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -79,6 +81,38 @@ class TaskModelsTest {
         assertEquals(
             listOf("1", "2"),
             tasks.visibleFor(TaskView.Standalone, TaskFilter()).map(TaskItem::id),
+        )
+    }
+
+    @Test
+    fun taskMappingKeepsTheDisplayedAssigneeAvatar() {
+        val creator = TaskUserDto(
+            id = "creator",
+            fullName = "Creator",
+            avatarUrl = "https://example.com/creator.png",
+        )
+        val assignee = TaskUserDto(
+            id = "assignee",
+            fullName = "Assignee",
+            avatarUrl = "https://example.com/assignee.png",
+        )
+
+        assertEquals(
+            assignee.avatarUrl,
+            TaskDto(
+                id = "assigned-task",
+                title = "Assigned task",
+                creator = creator,
+                assignees = listOf(assignee),
+            ).toItem().assigneeAvatarUrl,
+        )
+        assertEquals(
+            creator.avatarUrl,
+            TaskDto(
+                id = "unassigned-task",
+                title = "Unassigned task",
+                creator = creator,
+            ).toItem().assigneeAvatarUrl,
         )
     }
 

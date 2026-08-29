@@ -137,9 +137,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -147,6 +148,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.we.meet.R
 import com.we.meet.BuildConfig
 import com.we.meet.WeMeetApp
@@ -154,6 +157,7 @@ import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.ui.chat.ForwardCreateGroupFlow
 import com.we.meet.feature.im.ui.chat.ForwardPicker
 import com.we.meet.core.directory.ui.ContactPicker
+import com.we.meet.core.directory.ui.avatarCacheKey
 import com.we.meet.core.directory.ui.ContactPickerMode
 import com.we.meet.core.directory.ui.PickedMember
 import com.we.meet.ui.theme.Dimens
@@ -227,6 +231,7 @@ private data class TaskPlacementOption(
 fun TaskScreen(
     ownerName: String,
     app: WeMeetApp,
+    ownerAvatarUrl: String? = null,
     onNavigationOverlayChange: (Boolean) -> Unit = {},
 ) {
     val owner = ownerName.ifBlank { stringResource(R.string.task_demo_owner) }
@@ -358,6 +363,7 @@ fun TaskScreen(
                 loading = ui.loading,
                 showOverdueMarker = ui.settings.overdueMarkerEnabled,
                 owner = owner,
+                ownerAvatarUrl = ownerAvatarUrl,
                 onViewChange = vm::setView,
                 onOpenDrawer = {
                     vm.refreshNavigation()
@@ -1173,6 +1179,7 @@ private fun TaskListPage(
     loading: Boolean,
     showOverdueMarker: Boolean,
     owner: String,
+    ownerAvatarUrl: String?,
     onViewChange: (TaskView) -> Unit,
     onOpenDrawer: () -> Unit,
     onSearch: () -> Unit,
@@ -1237,6 +1244,7 @@ private fun TaskListPage(
             item {
                 TaskHomeHeader(
                     owner = owner,
+                    ownerAvatarUrl = ownerAvatarUrl,
                     selectedList = selectedList?.name
                         ?: standaloneLabel.takeIf { view == TaskView.Standalone },
                     onSearch = onSearch,
@@ -1318,6 +1326,7 @@ private data class TaskDisplaySection(
 @Composable
 private fun TaskHomeHeader(
     owner: String,
+    ownerAvatarUrl: String?,
     selectedList: String?,
     onSearch: () -> Unit,
     onSettings: () -> Unit,
@@ -1327,7 +1336,12 @@ private fun TaskHomeHeader(
             modifier = Modifier.fillMaxWidth().height(Dimens.ActionTile),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Avatar(owner, Dimens.AvatarM)
+            Avatar(
+                name = owner,
+                size = Dimens.AvatarM,
+                avatarUrl = ownerAvatarUrl,
+                stableId = "self",
+            )
             Spacer(Modifier.width(Dimens.SpaceM))
             Column(Modifier.weight(1f)) {
                 Text(
@@ -1650,7 +1664,12 @@ private fun TaskRow(
         }
         if (task.assignee.isNotBlank()) {
             Spacer(Modifier.width(Dimens.SpaceS))
-            Avatar(task.assignee, Dimens.SpaceXxl)
+            Avatar(
+                name = task.assignee,
+                size = Dimens.SpaceXxl,
+                avatarUrl = task.assigneeAvatarUrl,
+                stableId = task.assignees.firstOrNull()?.id ?: task.creatorId.ifBlank { task.id },
+            )
         }
     }
     HorizontalDivider(thickness = Dimens.DividerThin, modifier = Modifier.padding(start = Dimens.ButtonHeight))
@@ -1681,19 +1700,41 @@ private fun TaskEmptyState(onCreate: () -> Unit) {
 }
 
 @Composable
-private fun Avatar(name: String, size: androidx.compose.ui.unit.Dp) {
+private fun Avatar(
+    name: String,
+    size: androidx.compose.ui.unit.Dp,
+    avatarUrl: String? = null,
+    stableId: String = name,
+) {
     val label = name.trim().firstOrNull()?.uppercase() ?: ""
-    val colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary)
+    var imageFailed by remember(avatarUrl) { mutableStateOf(false) }
+    val showImage = !avatarUrl.isNullOrBlank() && !imageFailed
+    val cacheKey = avatarCacheKey(avatarUrl, "task-avatar:$stableId")
     Box(
-        modifier = Modifier.size(size).clip(CircleShape).background(Brush.linearGradient(colors)),
+        modifier = Modifier.size(size).clip(CircleShape)
+            .background(if (showImage) Color.Transparent else MaterialTheme.colorScheme.primary),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            label,
-            color = MaterialTheme.colorScheme.onPrimary,
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.labelLarge,
-        )
+        if (showImage) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(avatarUrl)
+                    .memoryCacheKey(cacheKey)
+                    .diskCacheKey(cacheKey)
+                    .build(),
+                contentDescription = name,
+                contentScale = ContentScale.Crop,
+                onError = { imageFailed = true },
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Text(
+                label,
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelLarge,
+            )
+        }
     }
 }
 
@@ -2521,7 +2562,12 @@ private fun TaskDetailPage(
                         modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Avatar(follower.name, Dimens.AvatarS)
+                        Avatar(
+                            name = follower.name,
+                            size = Dimens.AvatarS,
+                            avatarUrl = follower.avatarUrl,
+                            stableId = follower.id,
+                        )
                         Spacer(Modifier.width(Dimens.SpaceM))
                         Text(follower.name, modifier = Modifier.weight(1f))
                         if (task.canManageFollowers) {
@@ -2574,7 +2620,12 @@ private fun TaskDetailPage(
                         modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
                         verticalAlignment = Alignment.Top,
                     ) {
-                        Avatar(taskComment.author, Dimens.AvatarS)
+                        Avatar(
+                            name = taskComment.author,
+                            size = Dimens.AvatarS,
+                            avatarUrl = taskComment.authorAvatarUrl,
+                            stableId = taskComment.authorId.ifBlank { taskComment.id },
+                        )
                         Spacer(Modifier.width(Dimens.SpaceM))
                         Column(Modifier.weight(1f)) {
                             Text(taskComment.author, fontWeight = FontWeight.SemiBold)
@@ -4359,7 +4410,12 @@ private fun TaskListSharingSheet(
                             Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Avatar(member.name, Dimens.AvatarS)
+                            Avatar(
+                                name = member.name,
+                                size = Dimens.AvatarS,
+                                avatarUrl = member.avatarUrl,
+                                stableId = member.userId,
+                            )
                             Spacer(Modifier.width(Dimens.SpaceM))
                             Text(
                                 member.name,

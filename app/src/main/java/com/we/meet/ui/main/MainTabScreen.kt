@@ -359,6 +359,7 @@ fun MainTabScreen(
         TabItem(R.string.tab_tasks, Icons.Filled.TaskAlt, Icons.Outlined.TaskAlt) {
             TaskScreen(
                 ownerName = selfName,
+                ownerAvatarUrl = selfAvatarUrl,
                 app = app,
                 onNavigationOverlayChange = { taskNavigationOpen = it },
             )
