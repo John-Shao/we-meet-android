@@ -18,6 +18,8 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import org.json.JSONObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.activity.compose.BackHandler
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Box
@@ -368,15 +370,16 @@ internal suspend fun docsEntryUrl(context: Context, next: String, fallback: Stri
 /**
  * 云文档 tab 的进站加载:票据优先,拿不到退回 authenticate 入口。
  *
- * 调用方是 Compose 的 LaunchedEffect(主线程),WebView.loadUrl 也必须在主线程 ——
- * Retrofit 的 suspend 调用会回到同一个调度器,中间不切线程。
+ * WebView.loadUrl 必须在主线程。不要依赖网络库恢复 continuation 的线程:
+ * 某些 Retrofit/OkHttp 路径会直接在响应线程恢复,设备上会被 WebView 的线程检查拦截。
  */
 suspend fun loadDocsTabEntry(context: Context, webView: WebView) {
     // chrome=full:显式声明**不是**阅读态。docs 侧会据此清掉 sessionStorage 里的
     // 阅读态标记 —— 不这么做就得赌两个 WebView 实例的 sessionStorage 互相隔离,
     // 赌输的话打开一次文档查看器,常驻的云文档 tab 就永久丢了左栏开关。
     val next = "/?embed=1&chrome=full&lang=${Uri.encode(appLanguageTag())}"
-    webView.loadUrl(docsEntryUrl(context, next = next, fallback = docsUrl()))
+    val entryUrl = docsEntryUrl(context, next = next, fallback = docsUrl())
+    withContext(Dispatchers.Main.immediate) { webView.loadUrl(entryUrl) }
 }
 
 /**
@@ -390,9 +393,8 @@ suspend fun loadDocsTabEntry(context: Context, webView: WebView) {
  */
 suspend fun loadDocsDeepLinkEntry(context: Context, webView: WebView, url: String) {
     val next = docsRelativePathOrNull(url)?.let(::withReadingMode)
-    webView.loadUrl(
-        if (next == null) url else docsEntryUrl(context, next = next, fallback = url),
-    )
+    val entryUrl = if (next == null) url else docsEntryUrl(context, next = next, fallback = url)
+    withContext(Dispatchers.Main.immediate) { webView.loadUrl(entryUrl) }
 }
 
 /** 给站内相对路径追加 `chrome=none`(已有则不重复加)。 */

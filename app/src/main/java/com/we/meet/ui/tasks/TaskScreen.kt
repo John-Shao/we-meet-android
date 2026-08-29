@@ -137,6 +137,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -160,6 +161,23 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 private enum class TaskPage { List, Create, Detail, Search, Activity, Settings }
+
+internal const val TASK_LIST_TEST_TAG = "task-list"
+internal const val TASK_CREATE_FAB_TEST_TAG = "task-create-fab"
+internal const val TASK_CREATE_PAGE_TEST_TAG = "task-create-page"
+internal const val TASK_CREATE_TITLE_TEST_TAG = "task-create-title"
+internal const val TASK_CREATE_SUBMIT_TEST_TAG = "task-create-submit"
+internal const val TASK_DETAIL_TEST_TAG = "task-detail"
+internal const val TASK_DETAIL_TITLE_TEST_TAG = "task-detail-title"
+internal const val TASK_DETAIL_MORE_TEST_TAG = "task-detail-more"
+
+internal fun taskRowTestTag(taskId: String) = "task-row-$taskId"
+
+internal fun taskToggleTestTag(taskId: String, done: Boolean) =
+    "task-toggle-$taskId-${if (done) "done" else "todo"}"
+
+internal fun taskDetailToggleTestTag(done: Boolean) =
+    "task-detail-toggle-${if (done) "done" else "todo"}"
 
 private enum class TaskRecurrenceEndMode { Never, Date, Count }
 
@@ -1184,6 +1202,7 @@ private fun TaskListPage(
         containerColor = MaterialTheme.colorScheme.surface,
         floatingActionButton = {
             FloatingActionButton(
+                modifier = Modifier.testTag(TASK_CREATE_FAB_TEST_TAG),
                 onClick = onCreate,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -1192,7 +1211,7 @@ private fun TaskListPage(
         },
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
+            modifier = Modifier.fillMaxSize().padding(padding).testTag(TASK_LIST_TEST_TAG),
             contentPadding = PaddingValues(bottom = Dimens.Calendar.FabClearance),
         ) {
             item {
@@ -1468,12 +1487,14 @@ private fun TaskRow(
         task.priority == TaskPriority.Urgent
     Row(
         modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)
+            .testTag(taskRowTestTag(task.id))
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceL),
         verticalAlignment = Alignment.Top,
     ) {
         Box(
             modifier = Modifier.padding(top = Dimens.SpaceXxs).size(Dimens.SpaceXl).clip(CircleShape)
+                .testTag(taskToggleTestTag(task.id, done))
                 .border(Dimens.BorderEmphasis, if (done) WeMeetTheme.extras.status.success else MaterialTheme.colorScheme.outline, CircleShape)
                 .background(if (done) WeMeetTheme.extras.status.successContainer else Color.Transparent)
                 .clickable(onClick = onToggleDone),
@@ -1843,10 +1864,14 @@ private fun CreateTaskPage(
     }
 
     Scaffold(
+        modifier = Modifier.testTag(TASK_CREATE_PAGE_TEST_TAG),
         topBar = { TaskPageTopBar(stringResource(R.string.task_create), onClose) },
         bottomBar = {
             Surface(shadowElevation = Dimens.SpaceS) {
                 Button(
+                    modifier = Modifier.fillMaxWidth().navigationBarsPadding()
+                        .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM)
+                        .height(Dimens.ButtonHeight).testTag(TASK_CREATE_SUBMIT_TEST_TAG),
                     onClick = {
                         onCreate(
                             TaskCreateInput(
@@ -1865,8 +1890,6 @@ private fun CreateTaskPage(
                         )
                     },
                     enabled = title.isNotBlank() && !creating,
-                    modifier = Modifier.fillMaxWidth().navigationBarsPadding()
-                        .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM).height(Dimens.ButtonHeight),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 ) { Text(stringResource(R.string.task_create_action)) }
             }
@@ -1883,7 +1906,7 @@ private fun CreateTaskPage(
                     onValueChange = { title = it },
                     placeholder = { Text(stringResource(R.string.task_title_hint)) },
                     textStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag(TASK_CREATE_TITLE_TEST_TAG),
                     singleLine = false,
                 )
             }
@@ -2079,6 +2102,7 @@ private fun TaskDetailPage(
 ) {
     var comment by remember { mutableStateOf("") }
     Scaffold(
+        modifier = Modifier.testTag(TASK_DETAIL_TEST_TAG),
         topBar = {
             Row(
                 modifier = Modifier.fillMaxWidth().height(Dimens.Task.TopBarHeight).padding(horizontal = Dimens.SpaceXs),
@@ -2097,7 +2121,10 @@ private fun TaskDetailPage(
                 IconButton(onClick = onCopyLink) {
                     Icon(Icons.Outlined.ContentCopy, stringResource(R.string.task_copy))
                 }
-                IconButton(onClick = { onMore(task) }) { Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.task_more)) }
+                IconButton(
+                    onClick = { onMore(task) },
+                    modifier = Modifier.testTag(TASK_DETAIL_MORE_TEST_TAG),
+                ) { Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.task_more)) }
             }
         },
         bottomBar = {
@@ -2138,6 +2165,7 @@ private fun TaskDetailPage(
                 Row(verticalAlignment = Alignment.Top) {
                     Box(
                         modifier = Modifier.padding(top = Dimens.SpaceXs).size(Dimens.IconLarge).clip(CircleShape)
+                            .testTag(taskDetailToggleTestTag(task.status == TaskStatus.Done))
                             .border(Dimens.BorderEmphasis, if (task.status == TaskStatus.Done) WeMeetTheme.extras.status.success else MaterialTheme.colorScheme.outline, CircleShape)
                             .background(if (task.status == TaskStatus.Done) WeMeetTheme.extras.status.successContainer else Color.Transparent)
                             .clickable { onToggleDone(task) },
@@ -2150,7 +2178,7 @@ private fun TaskDetailPage(
                         task.title,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.then(
+                        modifier = Modifier.testTag(TASK_DETAIL_TITLE_TEST_TAG).then(
                             if (task.canEdit) Modifier.clickable(onClick = onEditContent)
                             else Modifier,
                         ),

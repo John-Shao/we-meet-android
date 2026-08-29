@@ -54,6 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.ui.theme.Dimens
@@ -509,6 +510,7 @@ private fun CompactTabBar(
         tabs.forEachIndexed { index, tab ->
             val selected = selectedTab == index
             NavigationBarItem(
+                modifier = Modifier.testTag("main-tab-${MainTab.entries[index].name.lowercase()}"),
                 selected = selected,
                 onClick = { onTabSelected(index) },
                 icon = {
