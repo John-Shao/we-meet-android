@@ -12,19 +12,13 @@ import android.content.ContentResolver
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,14 +27,12 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -104,6 +96,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -112,6 +105,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -125,12 +120,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -139,9 +135,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -150,7 +146,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.we.meet.R
@@ -169,6 +164,7 @@ import java.time.LocalDate
 import java.time.Instant
 import java.time.ZoneOffset
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -244,7 +240,13 @@ fun TaskScreen(
     var page by remember { mutableStateOf(TaskPage.List) }
     var selectedTaskId by remember { mutableStateOf<String?>(null) }
     var detailBackStack by remember { mutableStateOf<List<TaskItem>>(emptyList()) }
-    var showDrawer by remember { mutableStateOf(false) }
+    // Task navigation drawer — a real Material ModalNavigationDrawer, matching
+    // the profile drawer (消息 -> 我的): one DrawerState drives the scrim fade and
+    // sheet slide in lockstep, the sheet stays composed eagerly, and the swipe /
+    // predictive-back gestures come from anchoredDraggable. Swipe-to-close only;
+    // it is opened by tapping the nav row.
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val drawerScope = rememberCoroutineScope()
     var showFilter by remember { mutableStateOf(false) }
     var showNewGroup by remember { mutableStateOf(false) }
     var showNewList by remember { mutableStateOf(false) }
@@ -348,14 +350,68 @@ fun TaskScreen(
     LaunchedEffect(page, selectedTaskId) {
         if (page == TaskPage.Detail) selectedTaskId?.let(vm::loadDetail)
     }
-    LaunchedEffect(showDrawer, page) {
-        onNavigationOverlayChange(showDrawer && page == TaskPage.List)
-    }
-    BackHandler(enabled = showDrawer && page == TaskPage.List) {
-        showDrawer = false
+    // Hide the bottom tab bar only while the drawer is open or animating. The
+    // sheet lives inside the tab content (below the Scaffold's bottomBar slot),
+    // so unlike the full-screen profile drawer it cannot cover the bar — keep the
+    // bar hidden until the drawer finishes closing to avoid the resize "flash".
+    LaunchedEffect(drawerState.isOpen, drawerState.isAnimationRunning, page) {
+        onNavigationOverlayChange(
+            (drawerState.isOpen || drawerState.isAnimationRunning) && page == TaskPage.List,
+        )
     }
 
-    Box(Modifier.fillMaxSize()) {
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        // Swipe-to-close only, like the profile drawer: it is opened by tapping
+        // the nav row, not by an edge swipe.
+        gesturesEnabled = drawerState.isOpen,
+        drawerContent = {
+            // The drawerState overload installs DrawerPredictiveBackHandler, so
+            // system Back closes the drawer (same as the profile drawer).
+            ModalDrawerSheet(
+                drawerState = drawerState,
+                drawerShape = RectangleShape,
+                modifier = Modifier.fillMaxWidth(0.8f),
+            ) {
+                TaskNavigationDrawer(
+                    selectedView = ui.view,
+                    selectedList = ui.selectedList?.name,
+                    taskLists = ui.taskLists,
+                    listGroups = ui.listGroups,
+                    assignedCount = ui.navigationCounts.assigned,
+                    followingCount = ui.navigationCounts.following,
+                    createdCount = ui.navigationCounts.created,
+                    allCount = ui.navigationCounts.all,
+                    completedCount = ui.navigationCounts.completed,
+                    standaloneCount = ui.navigationCounts.standalone,
+                    onDismiss = { drawerScope.launch { drawerState.close() } },
+                    onSelectView = {
+                        vm.setView(it)
+                        drawerScope.launch { drawerState.close() }
+                    },
+                    onOpenActivity = {
+                        drawerScope.launch { drawerState.close() }
+                        page = TaskPage.Activity
+                        vm.refreshActivityFeed()
+                    },
+                    onSelectList = { list ->
+                        vm.selectList(list.id)
+                        drawerScope.launch { drawerState.close() }
+                    },
+                    onNewGroup = { showNewGroup = true },
+                    onNewList = { showNewList = true },
+                    onOpenArchivedLists = {
+                        drawerScope.launch { drawerState.close() }
+                        showArchivedLists = true
+                        vm.loadArchivedTaskLists()
+                    },
+                    onGroupAction = { groupActionTarget = it },
+                    onListAction = { listActionTarget = it },
+                )
+            }
+        },
+    ) {
+        Box(Modifier.fillMaxSize()) {
         when (page) {
             TaskPage.List -> TaskListPage(
                 tasks = ui.tasks,
@@ -369,7 +425,7 @@ fun TaskScreen(
                 onViewChange = vm::setView,
                 onOpenDrawer = {
                     vm.refreshNavigation()
-                    showDrawer = true
+                    drawerScope.launch { drawerState.open() }
                 },
                 onSearch = { page = TaskPage.Search },
                 onSettings = onOpenSettings,
@@ -512,48 +568,8 @@ fun TaskScreen(
 
         }
 
-        AnimatedVisibility(
-            visible = showDrawer && page == TaskPage.List,
-            enter = fadeIn(),
-            exit = fadeOut(),
-        ) {
-            TaskNavigationDrawer(
-                selectedView = ui.view,
-                selectedList = ui.selectedList?.name,
-                taskLists = ui.taskLists,
-                listGroups = ui.listGroups,
-                assignedCount = ui.navigationCounts.assigned,
-                followingCount = ui.navigationCounts.following,
-                createdCount = ui.navigationCounts.created,
-                allCount = ui.navigationCounts.all,
-                completedCount = ui.navigationCounts.completed,
-                standaloneCount = ui.navigationCounts.standalone,
-                onDismiss = { showDrawer = false },
-                onSelectView = {
-                    vm.setView(it)
-                    showDrawer = false
-                },
-                onOpenActivity = {
-                    showDrawer = false
-                    page = TaskPage.Activity
-                    vm.refreshActivityFeed()
-                },
-                onSelectList = { list ->
-                    vm.selectList(list.id)
-                    showDrawer = false
-                },
-                onNewGroup = { showNewGroup = true },
-                onNewList = { showNewList = true },
-                onOpenArchivedLists = {
-                    showDrawer = false
-                    showArchivedLists = true
-                    vm.loadArchivedTaskLists()
-                },
-                onGroupAction = { groupActionTarget = it },
-                onListAction = { listActionTarget = it },
-            )
-        }
         SnackbarHost(snackbar, modifier = Modifier.align(Alignment.BottomCenter))
+    }
     }
 
     if (showFilter) {
@@ -1715,35 +1731,10 @@ private fun TaskNavigationDrawer(
     onGroupAction: (TaskListGroupItem) -> Unit,
     onListAction: (TaskListItem) -> Unit,
 ) {
-    var drawerWidthPx by remember { mutableFloatStateOf(0f) }
-    var drawerOffsetX by remember { mutableFloatStateOf(0f) }
-    val drawerDragState = rememberDraggableState { delta ->
-        drawerOffsetX = (drawerOffsetX + delta).coerceIn(-drawerWidthPx, 0f)
-    }
-
-    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.38f)).clickable(onClick = onDismiss)) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(0.8f).fillMaxHeight()
-                .onSizeChanged { drawerWidthPx = it.width.toFloat() }
-                .offset { IntOffset(drawerOffsetX.roundToInt(), 0) }
-                .draggable(
-                    state = drawerDragState,
-                    orientation = Orientation.Horizontal,
-                    onDragStopped = { velocity ->
-                        val shouldDismiss = drawerWidthPx > 0f && (
-                            drawerOffsetX <= -drawerWidthPx * 0.2f || velocity <= -1_200f
-                        )
-                        if (shouldDismiss) onDismiss() else drawerOffsetX = 0f
-                    },
-                )
-                .clickable(enabled = false) {},
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = Dimens.SpaceM,
-        ) {
-            Column {
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceXl),
-                    verticalAlignment = Alignment.CenterVertically,
+    Column {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceXl),
+            verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Surface(shape = RoundedCornerShape(Dimens.SpaceM), color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(Dimens.ListLeadingIcon)) {
                         Box(contentAlignment = Alignment.Center) {
@@ -1883,8 +1874,6 @@ private fun TaskNavigationDrawer(
                     }
                 }
             }
-        }
-    }
 }
 
 @Composable
