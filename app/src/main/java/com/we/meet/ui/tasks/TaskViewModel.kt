@@ -74,6 +74,7 @@ class TaskViewModel(
     private var searchJob: Job? = null
     private var taskListMembersJob: Job? = null
     private var activityJob: Job? = null
+    private var detailLoadJob: Job? = null
 
     init {
         loadSettings()
@@ -271,6 +272,7 @@ class TaskViewModel(
     }
 
     fun loadDetail(taskId: String) {
+        detailLoadJob?.cancel()
         val snapshot = _ui.value
         val cachedTask = buildList {
             addAll(snapshot.tasks)
@@ -284,24 +286,28 @@ class TaskViewModel(
                 failure = null,
             )
         }
-        viewModelScope.launch {
+        detailLoadJob = viewModelScope.launch {
             repository.loadDetail(taskId).fold(
                 onSuccess = { detail ->
                     val mappedDetail = detail.toItem(taskId)
                     val task = requireNotNull(mappedDetail.task)
-                    _ui.update {
-                        it.copy(
-                            tasks = it.tasks.replace(taskId, task),
-                            searchResults = it.searchResults.replace(taskId, task),
+                    _ui.update { state ->
+                        // Ignore a stale response that arrives after the user has
+                        // moved to a different task.
+                        if (state.detail?.taskId != taskId) return@update state
+                        state.copy(
+                            tasks = state.tasks.replace(taskId, task),
+                            searchResults = state.searchResults.replace(taskId, task),
                             detail = mappedDetail,
                         )
                     }
                 },
                 onFailure = { failure ->
                     if (failure is CancellationException) return@launch
-                    _ui.update {
-                        it.copy(
-                            detail = it.detail?.copy(loading = false),
+                    _ui.update { state ->
+                        if (state.detail?.taskId != taskId) return@update state
+                        state.copy(
+                            detail = state.detail?.copy(loading = false),
                             failure = TaskFailure.Load,
                         )
                     }
