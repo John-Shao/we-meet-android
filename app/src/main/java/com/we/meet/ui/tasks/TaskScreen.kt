@@ -231,7 +231,6 @@ private data class TaskPlacementOption(
 fun TaskScreen(
     ownerName: String,
     app: WeMeetApp,
-    onNavigationOverlayChange: (Boolean) -> Unit = {},
     onOpenSettings: () -> Unit = {},
 ) {
     val owner = ownerName.ifBlank { stringResource(R.string.task_demo_owner) }
@@ -349,15 +348,6 @@ fun TaskScreen(
     }
     LaunchedEffect(page, selectedTaskId) {
         if (page == TaskPage.Detail) selectedTaskId?.let(vm::loadDetail)
-    }
-    // Hide the bottom tab bar only while the drawer is open or animating. The
-    // sheet lives inside the tab content (below the Scaffold's bottomBar slot),
-    // so unlike the full-screen profile drawer it cannot cover the bar — keep the
-    // bar hidden until the drawer finishes closing to avoid the resize "flash".
-    LaunchedEffect(drawerState.isOpen, drawerState.isAnimationRunning, page) {
-        onNavigationOverlayChange(
-            (drawerState.isOpen || drawerState.isAnimationRunning) && page == TaskPage.List,
-        )
     }
 
     ModalNavigationDrawer(
