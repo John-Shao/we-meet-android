@@ -79,6 +79,8 @@ import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.ui.home.HomeScreen
 import com.we.meet.ui.docs.DocsWebViewClient
 import com.we.meet.ui.profile.ProfileScreen
+import com.we.meet.ui.tasks.TaskNavController
+import com.we.meet.ui.tasks.TaskNavigationDrawer
 import com.we.meet.ui.tasks.TaskScreen
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -252,6 +254,19 @@ fun MainTabScreen(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
+    // Task navigation drawer — hoisted here (like the profile drawer) so its
+    // scrim covers the whole screen including the bottom tab bar. The controller
+    // is registered by TaskScreen (which owns the TaskViewModel + nav state).
+    val taskNavDrawerState = rememberDrawerState(DrawerValue.Closed)
+    val taskNavScope = rememberCoroutineScope()
+    var taskNavController by remember { mutableStateOf<TaskNavController?>(null) }
+    // Close the task drawer when the user leaves the Tasks tab.
+    LaunchedEffect(safeTab) {
+        if (safeTab != MainTab.Tasks.ordinal && taskNavDrawerState.isOpen) {
+            taskNavDrawerState.close()
+        }
+    }
+
     // Identity for the 消息 header. TokenStore's getters are plain prefs reads, not
     // snapshot state, so they can never trigger a recomposition — hold them in
     // Compose state instead and refresh explicitly. One /users/me/ at startup is
@@ -359,6 +374,8 @@ fun MainTabScreen(
                 ownerName = selfName,
                 app = app,
                 onOpenSettings = onOpenTaskSettings,
+                onOpenTaskNav = { taskNavScope.launch { taskNavDrawerState.open() } },
+                onRegisterTaskNav = { taskNavController = it },
             )
         },
     )
@@ -399,21 +416,75 @@ fun MainTabScreen(
             }
         },
     ) {
-        Scaffold(
-            bottomBar = {
-                CompactTabBar(
-                    tabs = tabs,
-                    selectedTab = safeTab,
-                    onTabSelected = { selectedTab = it },
-                )
+        // Task nav drawer — hoisted to cover the whole screen (incl. the bottom
+        // tab bar), matching the profile drawer. The content reads the shared
+        // TaskViewModel through the controller TaskScreen registered.
+        ModalNavigationDrawer(
+            drawerState = taskNavDrawerState,
+            gesturesEnabled = taskNavDrawerState.isOpen,
+            drawerContent = {
+                ModalDrawerSheet(
+                    drawerState = taskNavDrawerState,
+                    drawerShape = RectangleShape,
+                    modifier = Modifier.fillMaxWidth(0.8f),
+                ) {
+                    taskNavController
+                        ?.takeIf { safeTab == MainTab.Tasks.ordinal }
+                        ?.let { c ->
+                            val ui by c.vm.ui.collectAsStateWithLifecycle()
+                            TaskNavigationDrawer(
+                                selectedView = ui.view,
+                                selectedList = ui.selectedList?.name,
+                                taskLists = ui.taskLists,
+                                listGroups = ui.listGroups,
+                                assignedCount = ui.navigationCounts.assigned,
+                                followingCount = ui.navigationCounts.following,
+                                createdCount = ui.navigationCounts.created,
+                                allCount = ui.navigationCounts.all,
+                                completedCount = ui.navigationCounts.completed,
+                                standaloneCount = ui.navigationCounts.standalone,
+                                onDismiss = { taskNavScope.launch { taskNavDrawerState.close() } },
+                                onSelectView = {
+                                    c.vm.setView(it)
+                                    taskNavScope.launch { taskNavDrawerState.close() }
+                                },
+                                onOpenActivity = {
+                                    c.onOpenActivity()
+                                    taskNavScope.launch { taskNavDrawerState.close() }
+                                },
+                                onSelectList = { list ->
+                                    c.vm.selectList(list.id)
+                                    taskNavScope.launch { taskNavDrawerState.close() }
+                                },
+                                onNewGroup = { c.onNewGroup() },
+                                onNewList = { c.onNewList() },
+                                onOpenArchivedLists = {
+                                    c.onOpenArchivedLists()
+                                    taskNavScope.launch { taskNavDrawerState.close() }
+                                },
+                                onGroupAction = { c.onGroupAction(it) },
+                                onListAction = { c.onListAction(it) },
+                            )
+                        }
+                }
             },
-        ) { padding ->
-            Box(
-                modifier = Modifier
-                    .padding(padding)
-                    .consumeWindowInsets(padding),
-            ) {
-                tabs[safeTab].content()
+        ) {
+            Scaffold(
+                bottomBar = {
+                    CompactTabBar(
+                        tabs = tabs,
+                        selectedTab = safeTab,
+                        onTabSelected = { selectedTab = it },
+                    )
+                },
+            ) { padding ->
+                Box(
+                    modifier = Modifier
+                        .padding(padding)
+                        .consumeWindowInsets(padding),
+                ) {
+                    tabs[safeTab].content()
+                }
             }
         }
     }

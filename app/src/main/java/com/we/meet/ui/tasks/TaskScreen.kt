@@ -96,7 +96,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -105,8 +104,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -120,13 +117,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -135,7 +131,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -164,7 +159,6 @@ import java.time.LocalDate
 import java.time.Instant
 import java.time.ZoneOffset
 import kotlin.math.roundToInt
-import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -232,6 +226,8 @@ fun TaskScreen(
     ownerName: String,
     app: WeMeetApp,
     onOpenSettings: () -> Unit = {},
+    onOpenTaskNav: () -> Unit = {},
+    onRegisterTaskNav: (TaskNavController) -> Unit = {},
 ) {
     val owner = ownerName.ifBlank { stringResource(R.string.task_demo_owner) }
     val vm: TaskViewModel = viewModel(factory = TaskViewModel.Factory(app))
@@ -239,13 +235,6 @@ fun TaskScreen(
     var page by remember { mutableStateOf(TaskPage.List) }
     var selectedTaskId by remember { mutableStateOf<String?>(null) }
     var detailBackStack by remember { mutableStateOf<List<TaskItem>>(emptyList()) }
-    // Task navigation drawer — a real Material ModalNavigationDrawer, matching
-    // the profile drawer (消息 -> 我的): one DrawerState drives the scrim fade and
-    // sheet slide in lockstep, the sheet stays composed eagerly, and the swipe /
-    // predictive-back gestures come from anchoredDraggable. Swipe-to-close only;
-    // it is opened by tapping the nav row.
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
-    val drawerScope = rememberCoroutineScope()
     var showFilter by remember { mutableStateOf(false) }
     var showNewGroup by remember { mutableStateOf(false) }
     var showNewList by remember { mutableStateOf(false) }
@@ -284,6 +273,28 @@ fun TaskScreen(
     var deleteTaskGroupTarget by remember { mutableStateOf<TaskGroupEditTarget?>(null) }
     var orderTaskGroupsFor by remember { mutableStateOf<TaskListItem?>(null) }
     var pendingAttachmentDownload by remember { mutableStateOf<TaskAttachmentItem?>(null) }
+    // The nav drawer lives in MainTabScreen (so its scrim covers the bottom tab
+    // bar too). We hand it our ViewModel + the navigation/dialog state via this
+    // controller; the lambdas close over the mutable states above (valid while
+    // this screen is composed, which is exactly when the drawer can be opened).
+    val taskNavController = remember(vm) {
+        TaskNavController(
+            vm = vm,
+            onOpenActivity = {
+                page = TaskPage.Activity
+                vm.refreshActivityFeed()
+            },
+            onNewGroup = { showNewGroup = true },
+            onNewList = { showNewList = true },
+            onOpenArchivedLists = {
+                showArchivedLists = true
+                vm.loadArchivedTaskLists()
+            },
+            onGroupAction = { groupActionTarget = it },
+            onListAction = { listActionTarget = it },
+        )
+    }
+    SideEffect { onRegisterTaskNav(taskNavController) }
     val selectedTask = ui.detail?.task?.takeIf { it.id == selectedTaskId }
         ?: (ui.tasks + ui.searchResults).firstOrNull { it.id == selectedTaskId }
         ?: ui.detail?.subtasks?.firstOrNull { it.id == selectedTaskId }
@@ -350,58 +361,7 @@ fun TaskScreen(
         if (page == TaskPage.Detail) selectedTaskId?.let(vm::loadDetail)
     }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        // Swipe-to-close only, like the profile drawer: it is opened by tapping
-        // the nav row, not by an edge swipe.
-        gesturesEnabled = drawerState.isOpen,
-        drawerContent = {
-            // The drawerState overload installs DrawerPredictiveBackHandler, so
-            // system Back closes the drawer (same as the profile drawer).
-            ModalDrawerSheet(
-                drawerState = drawerState,
-                drawerShape = RectangleShape,
-                modifier = Modifier.fillMaxWidth(0.8f),
-            ) {
-                TaskNavigationDrawer(
-                    selectedView = ui.view,
-                    selectedList = ui.selectedList?.name,
-                    taskLists = ui.taskLists,
-                    listGroups = ui.listGroups,
-                    assignedCount = ui.navigationCounts.assigned,
-                    followingCount = ui.navigationCounts.following,
-                    createdCount = ui.navigationCounts.created,
-                    allCount = ui.navigationCounts.all,
-                    completedCount = ui.navigationCounts.completed,
-                    standaloneCount = ui.navigationCounts.standalone,
-                    onDismiss = { drawerScope.launch { drawerState.close() } },
-                    onSelectView = {
-                        vm.setView(it)
-                        drawerScope.launch { drawerState.close() }
-                    },
-                    onOpenActivity = {
-                        drawerScope.launch { drawerState.close() }
-                        page = TaskPage.Activity
-                        vm.refreshActivityFeed()
-                    },
-                    onSelectList = { list ->
-                        vm.selectList(list.id)
-                        drawerScope.launch { drawerState.close() }
-                    },
-                    onNewGroup = { showNewGroup = true },
-                    onNewList = { showNewList = true },
-                    onOpenArchivedLists = {
-                        drawerScope.launch { drawerState.close() }
-                        showArchivedLists = true
-                        vm.loadArchivedTaskLists()
-                    },
-                    onGroupAction = { groupActionTarget = it },
-                    onListAction = { listActionTarget = it },
-                )
-            }
-        },
-    ) {
-        Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize()) {
         when (page) {
             TaskPage.List -> TaskListPage(
                 tasks = ui.tasks,
@@ -415,7 +375,7 @@ fun TaskScreen(
                 onViewChange = vm::setView,
                 onOpenDrawer = {
                     vm.refreshNavigation()
-                    drawerScope.launch { drawerState.open() }
+                    onOpenTaskNav()
                 },
                 onSearch = { page = TaskPage.Search },
                 onSettings = onOpenSettings,
@@ -559,7 +519,6 @@ fun TaskScreen(
         }
 
         SnackbarHost(snackbar, modifier = Modifier.align(Alignment.BottomCenter))
-    }
     }
 
     if (showFilter) {
@@ -1700,7 +1659,7 @@ private fun Avatar(
 }
 
 @Composable
-private fun TaskNavigationDrawer(
+fun TaskNavigationDrawer(
     selectedView: TaskView,
     selectedList: String?,
     taskLists: List<TaskListItem>,
