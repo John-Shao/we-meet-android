@@ -117,6 +117,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -3482,7 +3483,8 @@ private fun FilterSheet(
     var selectedIncludeDone by remember(includeDone) { mutableStateOf(includeDone) }
     var selectedGrouping by remember(grouping) { mutableStateOf(grouping) }
     var selectedOrdering by remember(ordering) { mutableStateOf(ordering) }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl)
                 .padding(bottom = Dimens.IconLarge),
