@@ -971,7 +971,7 @@ class TaskViewModel(
     }
 
     fun shareTask(item: TaskItem, conversationIds: List<String>, onShared: (List<String>) -> Unit) {
-        if (conversationIds.isEmpty()) return
+        if (!item.canEdit || conversationIds.isEmpty()) return
         viewModelScope.launch {
             repository.shareTask(item.id, conversationIds).fold(
                 onSuccess = onShared,

@@ -476,7 +476,11 @@ fun TaskScreen(
                     onDeleteAttachment = { attachment ->
                         vm.deleteAttachment(task.id, attachment.id)
                     },
-                    onShare = { shareTarget = task },
+                    onShare = if (task.canEdit) {
+                        { shareTarget = task }
+                    } else {
+                        null
+                    },
                     onCopyLink = {
                         app.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(
                             ClipData.newPlainText(task.title, taskDetailUrl(task.id)),
@@ -536,9 +540,13 @@ fun TaskScreen(
         TaskActionSheet(
             task = target,
             onDismiss = { actionTarget = null },
-            onShare = {
-                actionTarget = null
-                shareTarget = target
+            onShare = if (target.canEdit) {
+                {
+                    actionTarget = null
+                    shareTarget = target
+                }
+            } else {
+                null
             },
             onDuplicate = {
                 actionTarget = null
@@ -2234,7 +2242,7 @@ private fun TaskDetailPage(
     onAddAttachment: () -> Unit,
     onDownloadAttachment: (TaskAttachmentItem) -> Unit,
     onDeleteAttachment: (TaskAttachmentItem) -> Unit,
-    onShare: () -> Unit,
+    onShare: (() -> Unit)?,
     onCopyLink: () -> Unit,
     onMore: (TaskItem) -> Unit,
 ) {
@@ -2255,7 +2263,11 @@ private fun TaskDetailPage(
                         tint = if (task.followed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                IconButton(onClick = onShare) { Icon(Icons.Outlined.Share, stringResource(R.string.task_share)) }
+                onShare?.let { share ->
+                    IconButton(onClick = share) {
+                        Icon(Icons.Outlined.Share, stringResource(R.string.task_share))
+                    }
+                }
                 IconButton(onClick = onCopyLink) {
                     Icon(Icons.Outlined.ContentCopy, stringResource(R.string.task_copy))
                 }
@@ -3584,7 +3596,7 @@ private fun taskOrderingText(ordering: TaskOrdering): String = stringResource(
 private fun TaskActionSheet(
     task: TaskItem,
     onDismiss: () -> Unit,
-    onShare: () -> Unit,
+    onShare: (() -> Unit)?,
     onDuplicate: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -3598,7 +3610,7 @@ private fun TaskActionSheet(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
-            SheetAction(Icons.Outlined.Share, R.string.task_share, onShare)
+            onShare?.let { SheetAction(Icons.Outlined.Share, R.string.task_share, it) }
             SheetAction(Icons.Outlined.ContentCopy, R.string.task_duplicate, onDuplicate)
             SheetAction(Icons.Filled.DeleteOutline, R.string.task_delete, onDelete, danger = true)
         }
