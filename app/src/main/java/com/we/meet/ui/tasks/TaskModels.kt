@@ -197,6 +197,11 @@ data class TaskItem(
     val assigneeAvatarUrl: String = "",
 )
 
+internal fun TaskItem.filteredParentTitle(visibleTaskIds: Set<String>): String? =
+    parentTitle?.takeIf { title ->
+        title.isNotBlank() && parentId != null && parentId !in visibleTaskIds
+    }
+
 data class TaskCommentItem(
     val id: String,
     val author: String,

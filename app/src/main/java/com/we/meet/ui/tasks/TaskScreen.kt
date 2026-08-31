@@ -66,6 +66,7 @@ import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ContentCopy
@@ -1168,6 +1169,7 @@ private fun TaskListPage(
     onNewTaskGroup: () -> Unit,
 ) {
     val visible = tasks.visibleFor(view, TaskFilter(status = status), selectedList?.name)
+    val visibleTaskIds = visible.mapTo(mutableSetOf(), TaskItem::id)
     val standaloneLabel = stringResource(R.string.task_standalone)
     var collapsedSections by rememberSaveable { mutableStateOf(emptyList<String>()) }
     val ungroupedLabel = stringResource(R.string.task_ungrouped)
@@ -1270,6 +1272,7 @@ private fun TaskListPage(
                             items(section.tasks, key = { it.id }) { task ->
                                 TaskRow(
                                     task = task,
+                                    filteredParentTitle = task.filteredParentTitle(visibleTaskIds),
                                     showOverdueMarker = showOverdueMarker,
                                     onClick = { onTaskClick(task) },
                                     onToggleDone = { onToggleDone(task) },
@@ -1430,6 +1433,7 @@ internal fun TaskRow(
     onToggleDone: () -> Unit,
     onLongClick: () -> Unit,
     showOverdueMarker: Boolean = true,
+    filteredParentTitle: String? = null,
 ) {
     val done = task.status == TaskStatus.Done
     val overdue = showOverdueMarker && task.timeState == TaskTimeState.Overdue
@@ -1463,13 +1467,31 @@ internal fun TaskRow(
                 }
                 Text(
                     task.title,
+                    modifier = if (filteredParentTitle != null) Modifier.weight(1f) else Modifier,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     textDecoration = if (done) TextDecoration.LineThrough else null,
                     color = if (done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
+                    maxLines = if (filteredParentTitle == null) 2 else 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (filteredParentTitle != null) {
+                    Spacer(Modifier.width(Dimens.SpaceXs))
+                    Icon(
+                        Icons.Outlined.ChevronLeft,
+                        contentDescription = null,
+                        modifier = Modifier.size(Dimens.IconSmall),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        filteredParentTitle,
+                        modifier = Modifier.weight(0.55f, fill = false),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             if (hasMetadata) {
                 Spacer(Modifier.height(Dimens.SpaceS))

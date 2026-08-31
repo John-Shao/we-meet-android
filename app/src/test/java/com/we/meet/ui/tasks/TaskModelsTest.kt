@@ -152,4 +152,22 @@ class TaskModelsTest {
         assertEquals("2026-08-31", taskDateRangeLabel(null, "2026-08-31"))
         assertEquals("—", taskDateRangeLabel(null, null))
     }
+
+    @Test
+    fun filteredChildShowsOnlyItsDirectMissingParent() {
+        val child = TaskItem(
+            id = "child",
+            title = "Child",
+            assignee = "",
+            dueLabel = "",
+            listName = "",
+            section = "",
+            parentId = "parent",
+            parentTitle = "Direct parent",
+        )
+
+        assertEquals("Direct parent", child.filteredParentTitle(setOf("child")))
+        assertEquals(null, child.filteredParentTitle(setOf("parent", "child")))
+        assertEquals(null, child.copy(parentTitle = null).filteredParentTitle(setOf("child")))
+    }
 }
