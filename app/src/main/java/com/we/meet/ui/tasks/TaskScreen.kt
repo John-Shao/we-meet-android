@@ -374,7 +374,6 @@ fun TaskScreen(
                 ordering = ui.ordering,
                 loading = ui.loading,
                 showOverdueMarker = ui.settings.overdueMarkerEnabled,
-                onViewChange = vm::setView,
                 onOpenDrawer = {
                     vm.refreshNavigation()
                     onOpenTaskNav()
@@ -1149,7 +1148,6 @@ private fun TaskListPage(
     ordering: TaskOrdering,
     loading: Boolean,
     showOverdueMarker: Boolean,
-    onViewChange: (TaskView) -> Unit,
     onOpenDrawer: () -> Unit,
     onSearch: () -> Unit,
     onSettings: () -> Unit,
@@ -1217,16 +1215,12 @@ private fun TaskListPage(
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             TaskHomeHeader(
+                view = view,
                 selectedList = selectedList?.name
                     ?: standaloneLabel.takeIf { view == TaskView.Standalone },
+                onOpenDrawer = onOpenDrawer,
                 onSearch = onSearch,
                 onSettings = onSettings,
-            )
-            TaskViewNavigationRow(
-                view = view,
-                selectedList = selectedList?.name,
-                onOpenDrawer = onOpenDrawer,
-                onViewChange = onViewChange,
             )
             TaskFilterBar(
                 view = view,
@@ -1301,117 +1295,42 @@ private data class TaskDisplaySection(
 
 @Composable
 private fun TaskHomeHeader(
-    selectedList: String?,
-    onSearch: () -> Unit,
-    onSettings: () -> Unit,
-) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().height(Dimens.ActionTile),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = selectedList ?: stringResource(R.string.task_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                )
-                if (selectedList != null) {
-                    Text(
-                        stringResource(R.string.task_list_subtitle),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            IconButton(onClick = onSearch) {
-                Icon(Icons.Outlined.Search, stringResource(R.string.task_search))
-            }
-            IconButton(onClick = onSettings) {
-                Icon(Icons.Outlined.Settings, stringResource(R.string.task_settings))
-            }
-        }
-    }
-}
-
-@Composable
-private fun TaskViewNavigationRow(
     view: TaskView,
     selectedList: String?,
     onOpenDrawer: () -> Unit,
-    onViewChange: (TaskView) -> Unit,
+    onSearch: () -> Unit,
+    onSettings: () -> Unit,
 ) {
+    val title = selectedList ?: when (view) {
+        TaskView.Assigned -> stringResource(R.string.task_assigned_to_me)
+        TaskView.Following -> stringResource(R.string.task_following)
+        TaskView.Created -> stringResource(R.string.task_created_by_me)
+        TaskView.All -> stringResource(R.string.task_all_tasks)
+        TaskView.Standalone -> stringResource(R.string.task_standalone)
+    }
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding),
+        modifier = Modifier.fillMaxWidth()
+            .height(Dimens.ActionTile)
+            .padding(horizontal = Dimens.ScreenPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onOpenDrawer) {
             Icon(Icons.Outlined.Menu, stringResource(R.string.task_navigation))
         }
         Spacer(Modifier.width(Dimens.SpaceS))
-        if (selectedList == null && (view == TaskView.Assigned || view == TaskView.Following)) {
-            TaskSegmentedControl(
-                selected = view,
-                onSelected = onViewChange,
-                modifier = Modifier.weight(1f),
-            )
-        } else {
-            val label = when {
-                selectedList != null -> selectedList
-                view == TaskView.All -> stringResource(R.string.task_all_tasks)
-                view == TaskView.Created -> stringResource(R.string.task_created_by_me)
-                view == TaskView.Standalone -> stringResource(R.string.task_standalone)
-                else -> stringResource(R.string.task_title)
-            }
-            Text(
-                text = label,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        IconButton(onClick = onSearch) {
+            Icon(Icons.Outlined.Search, stringResource(R.string.task_search))
         }
-    }
-}
-
-@Composable
-private fun TaskSegmentedControl(
-    selected: TaskView,
-    onSelected: (TaskView) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        shape = RoundedCornerShape(Dimens.SpaceL),
-        modifier = modifier.padding(vertical = Dimens.SpaceS),
-    ) {
-        Row(Modifier.padding(Dimens.SpaceXs)) {
-            listOf(
-                TaskView.Assigned to R.string.task_assigned_to_me,
-                TaskView.Following to R.string.task_following,
-            ).forEach { (view, label) ->
-                val active = view == selected
-                Surface(
-                    color = if (active) MaterialTheme.colorScheme.surface else Color.Transparent,
-                    shape = RoundedCornerShape(Dimens.SpaceM),
-                    shadowElevation = if (active) Dimens.ElevationSubtle else Dimens.SpaceNone,
-                    modifier = Modifier.weight(1f).selectable(
-                        selected = active,
-                        onClick = { onSelected(view) },
-                        role = Role.Tab,
-                    ),
-                ) {
-                    Text(
-                        stringResource(label),
-                        modifier = Modifier.padding(vertical = Dimens.SpaceS),
-                        style = MaterialTheme.typography.labelLarge,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
-                    )
-                }
-            }
+        IconButton(onClick = onSettings) {
+            Icon(Icons.Outlined.Settings, stringResource(R.string.task_settings))
         }
     }
 }
