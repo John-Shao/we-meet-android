@@ -76,6 +76,7 @@ class TaskViewModel(
     private var taskListMembersJob: Job? = null
     private var activityJob: Job? = null
     private var detailLoadJob: Job? = null
+    private val viewPreferences = mutableMapOf<String, TaskViewPreferences>()
 
     init {
         loadSettings()
@@ -85,12 +86,25 @@ class TaskViewModel(
 
     fun setView(view: TaskView) {
         if (_ui.value.view == view && _ui.value.selectedListId == null) return
-        _ui.update { it.copy(view = view, selectedListId = null) }
+        rememberCurrentViewPreferences()
+        val preferences = viewPreferences[view.preferenceKey] ?: TaskViewPreferences()
+        _ui.update {
+            it.copy(
+                view = view,
+                selectedListId = null,
+                status = preferences.status,
+                grouping = preferences.grouping,
+                ordering = preferences.ordering,
+            )
+        }
         refresh()
     }
 
     fun selectList(listId: String?) {
         if (_ui.value.selectedListId == listId) return
+        rememberCurrentViewPreferences()
+        val targetKey = listId?.let { "task-list:$it" } ?: _ui.value.view.preferenceKey
+        val preferences = viewPreferences[targetKey] ?: TaskViewPreferences()
         _ui.update {
             it.copy(
                 selectedListId = listId,
@@ -99,9 +113,17 @@ class TaskViewModel(
                 } else {
                     it.view
                 },
+                status = preferences.status,
+                grouping = preferences.grouping,
+                ordering = preferences.ordering,
             )
         }
         refresh()
+    }
+
+    private fun rememberCurrentViewPreferences() {
+        val state = _ui.value
+        viewPreferences[state.preferenceKey] = state.preferences
     }
 
     fun applyListFilter(
@@ -122,6 +144,7 @@ class TaskViewModel(
                 ordering = ordering,
             )
         }
+        rememberCurrentViewPreferences()
         if (previous.status != status || previous.ordering != ordering) refresh()
     }
 
@@ -1618,6 +1641,15 @@ class TaskViewModel(
             TaskViewModel(app.taskRepository, app.tokenStore.userId) as T
     }
 }
+
+private val TaskView.preferenceKey: String
+    get() = if (this == TaskView.Standalone) "standalone" else "quick:${apiScope}"
+
+private val TaskUiState.preferenceKey: String
+    get() = selectedListId?.let { "task-list:$it" } ?: view.preferenceKey
+
+private val TaskUiState.preferences: TaskViewPreferences
+    get() = TaskViewPreferences(status, grouping, ordering)
 
 private val TaskView.apiScope: String
     get() = when (this) {

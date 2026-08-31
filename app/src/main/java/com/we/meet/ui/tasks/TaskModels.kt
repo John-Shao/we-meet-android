@@ -100,6 +100,12 @@ data class TaskNavigationCounts(
     val standalone: Int = 0,
 )
 
+data class TaskViewPreferences(
+    val status: TaskListStatus = TaskListStatus.Open,
+    val grouping: TaskGrouping = TaskGrouping.None,
+    val ordering: TaskOrdering = TaskOrdering.DueDate,
+)
+
 data class TaskSettingsItem(
     val dailyReminderEnabled: Boolean = true,
     val overdueMarkerEnabled: Boolean = true,
