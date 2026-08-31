@@ -213,6 +213,75 @@ data class StandaloneTaskCountDto(
 )
 
 @JsonClass(generateAdapter = true)
+data class TaskSavedViewConfigDto(
+    val version: Int = 3,
+    val scope: String = "all",
+    val status: String = "open",
+    val time: String = "all",
+    val priority: String = "all",
+    @Json(name = "task_list") val taskList: String = "all",
+    val ordering: String = "",
+    val view: String = "list",
+    val grouping: String = "none",
+    val columns: List<String> = DEFAULT_TASK_SAVED_VIEW_COLUMNS,
+    @Json(name = "column_order")
+    val columnOrder: List<String> = DEFAULT_TASK_SAVED_VIEW_COLUMN_ORDER,
+)
+
+@JsonClass(generateAdapter = true)
+data class TaskSavedViewDto(
+    val id: String,
+    val name: String,
+    val config: TaskSavedViewConfigDto,
+    val position: Int = 0,
+    @Json(name = "is_pinned") val isPinned: Boolean = false,
+    @Json(name = "is_default") val isDefault: Boolean = false,
+    @Json(name = "invalid_task_list") val invalidTaskList: Boolean = false,
+    @Json(name = "created_at") val createdAt: String = "",
+    @Json(name = "updated_at") val updatedAt: String = "",
+)
+
+@JsonClass(generateAdapter = true)
+data class CreateTaskSavedViewRequest(
+    val name: String,
+    val config: TaskSavedViewConfigDto,
+    @Json(name = "is_pinned") val isPinned: Boolean = true,
+)
+
+@JsonClass(generateAdapter = true)
+data class PatchTaskSavedViewRequest(
+    val name: String? = null,
+    val config: TaskSavedViewConfigDto? = null,
+    val position: Int? = null,
+    @Json(name = "is_pinned") val isPinned: Boolean? = null,
+    @Json(name = "is_default") val isDefault: Boolean? = null,
+)
+
+val DEFAULT_TASK_SAVED_VIEW_COLUMNS = listOf(
+    "title",
+    "assignee",
+    "priority",
+    "startDate",
+    "dueDate",
+    "taskList",
+    "creator",
+    "createdAt",
+)
+
+val DEFAULT_TASK_SAVED_VIEW_COLUMN_ORDER = listOf(
+    "title",
+    "assignee",
+    "priority",
+    "startDate",
+    "dueDate",
+    "taskList",
+    "customGroup",
+    "creator",
+    "createdAt",
+    "completedAt",
+)
+
+@JsonClass(generateAdapter = true)
 data class CreateTaskRequest(
     val title: String,
     val description: String = "",

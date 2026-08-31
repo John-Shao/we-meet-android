@@ -435,6 +435,8 @@ fun MainTabScreen(
                             TaskNavigationDrawer(
                                 selectedView = ui.view,
                                 selectedList = ui.selectedList?.name,
+                                savedViews = ui.savedViews,
+                                activeSavedViewId = ui.activeSavedViewId,
                                 taskLists = ui.taskLists,
                                 listGroups = ui.listGroups,
                                 assignedCount = ui.navigationCounts.assigned,
@@ -445,6 +447,10 @@ fun MainTabScreen(
                                 onDismiss = { taskNavScope.launch { taskNavDrawerState.close() } },
                                 onSelectView = {
                                     c.vm.setView(it)
+                                    taskNavScope.launch { taskNavDrawerState.close() }
+                                },
+                                onSelectSavedView = {
+                                    c.vm.openSavedView(it)
                                     taskNavScope.launch { taskNavDrawerState.close() }
                                 },
                                 onOpenActivity = {

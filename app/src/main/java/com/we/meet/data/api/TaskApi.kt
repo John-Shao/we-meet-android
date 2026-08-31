@@ -35,6 +35,9 @@ import com.we.meet.data.api.dto.ShareTaskResponse
 import com.we.meet.data.api.dto.StandaloneTaskCountDto
 import com.we.meet.data.api.dto.ShareTaskListRequest
 import com.we.meet.data.api.dto.UpdateTaskListAccessRequest
+import com.we.meet.data.api.dto.CreateTaskSavedViewRequest
+import com.we.meet.data.api.dto.PatchTaskSavedViewRequest
+import com.we.meet.data.api.dto.TaskSavedViewDto
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -76,6 +79,23 @@ interface TaskApi {
 
     @GET("api/v1.0/tasks/standalone-count/")
     suspend fun getStandaloneTaskCount(): StandaloneTaskCountDto
+
+    @GET("api/v1.0/task-saved-views/")
+    suspend fun listTaskSavedViews(): List<TaskSavedViewDto>
+
+    @POST("api/v1.0/task-saved-views/")
+    suspend fun createTaskSavedView(
+        @Body body: CreateTaskSavedViewRequest,
+    ): TaskSavedViewDto
+
+    @PATCH("api/v1.0/task-saved-views/{id}/")
+    suspend fun patchTaskSavedView(
+        @Path("id") id: String,
+        @Body body: PatchTaskSavedViewRequest,
+    ): TaskSavedViewDto
+
+    @DELETE("api/v1.0/task-saved-views/{id}/")
+    suspend fun deleteTaskSavedView(@Path("id") id: String)
 
     @GET("api/v1.0/tasks/{id}/")
     suspend fun getTask(

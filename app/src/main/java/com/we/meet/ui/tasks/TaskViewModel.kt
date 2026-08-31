@@ -14,6 +14,12 @@ import com.we.meet.data.api.dto.PatchTaskRequest
 import com.we.meet.data.api.dto.PatchTaskSettingsRequest
 import com.we.meet.data.api.dto.TaskGroupDto
 import com.we.meet.data.api.dto.TaskSettingsDto
+import com.we.meet.data.api.dto.CreateTaskSavedViewRequest
+import com.we.meet.data.api.dto.PatchTaskSavedViewRequest
+import com.we.meet.data.api.dto.TaskSavedViewConfigDto
+import com.we.meet.data.api.dto.TaskSavedViewDto
+import com.we.meet.data.api.dto.DEFAULT_TASK_SAVED_VIEW_COLUMNS
+import com.we.meet.data.api.dto.DEFAULT_TASK_SAVED_VIEW_COLUMN_ORDER
 import com.we.meet.data.repository.TaskRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -34,6 +40,7 @@ data class TaskUiState(
     val taskListMembers: List<TaskListMemberItem> = emptyList(),
     val taskListMembersFor: String? = null,
     val listGroups: List<TaskListGroupItem> = emptyList(),
+    val savedViews: List<TaskSavedViewItem> = emptyList(),
     val navigationCounts: TaskNavigationCounts = TaskNavigationCounts(),
     val view: TaskView = TaskView.Assigned,
     val status: TaskListStatus = TaskListStatus.Open,
@@ -42,6 +49,7 @@ data class TaskUiState(
     val grouping: TaskGrouping = TaskGrouping.None,
     val ordering: TaskOrdering = TaskOrdering.Smart,
     val selectedListId: String? = null,
+    val activeSavedViewId: String? = null,
     val loading: Boolean = true,
     val creating: Boolean = false,
     val navigationMutating: Boolean = false,
@@ -65,6 +73,9 @@ data class TaskUiState(
 ) {
     val selectedList: TaskListItem?
         get() = taskLists.firstOrNull { it.id == selectedListId }
+
+    val activeSavedView: TaskSavedViewItem?
+        get() = savedViews.firstOrNull { it.id == activeSavedViewId }
 }
 
 class TaskViewModel(
@@ -79,6 +90,7 @@ class TaskViewModel(
     private var activityJob: Job? = null
     private var detailLoadJob: Job? = null
     private val viewPreferences = mutableMapOf<String, TaskViewPreferences>()
+    private var initialDefaultViewApplied = false
 
     init {
         loadSettings()
@@ -94,6 +106,7 @@ class TaskViewModel(
             it.copy(
                 view = view,
                 selectedListId = null,
+                activeSavedViewId = null,
                 status = preferences.status,
                 time = preferences.time,
                 priorityFilter = preferences.priority,
@@ -112,6 +125,7 @@ class TaskViewModel(
         _ui.update {
             it.copy(
                 selectedListId = listId,
+                activeSavedViewId = null,
                 view = if (listId != null && it.view == TaskView.Standalone) {
                     TaskView.Assigned
                 } else {
@@ -129,7 +143,111 @@ class TaskViewModel(
 
     private fun rememberCurrentViewPreferences() {
         val state = _ui.value
+        if (state.activeSavedViewId != null) return
         viewPreferences[state.preferenceKey] = state.preferences
+    }
+
+    fun openSavedView(savedView: TaskSavedViewItem) {
+        rememberCurrentViewPreferences()
+        val configuredListId = savedView.taskListId.takeUnless { savedView.invalidTaskList }
+        val standalone = configuredListId == "unassigned"
+        _ui.update {
+            it.copy(
+                view = if (standalone) TaskView.Standalone else savedView.scope,
+                selectedListId = configuredListId?.takeUnless { id -> id == "unassigned" },
+                activeSavedViewId = savedView.id,
+                status = savedView.preferences.status,
+                time = savedView.preferences.time,
+                priorityFilter = savedView.preferences.priority,
+                grouping = savedView.preferences.grouping,
+                ordering = savedView.preferences.ordering,
+            )
+        }
+        refresh()
+    }
+
+    fun createSavedView(name: String, onCreated: () -> Unit = {}) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty() || _ui.value.navigationMutating) return
+        val state = _ui.value
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.createSavedView(
+                CreateTaskSavedViewRequest(trimmed, state.toSavedViewConfig()),
+            ).fold(
+                onSuccess = { created ->
+                    _ui.update {
+                        it.copy(
+                            navigationMutating = false,
+                            activeSavedViewId = created.id,
+                            savedViews = (it.savedViews + created.toItem())
+                                .distinctBy(TaskSavedViewItem::id)
+                                .sortedWith(savedViewComparator),
+                        )
+                    }
+                    onCreated()
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
+    }
+
+    fun updateActiveSavedView(onUpdated: () -> Unit = {}) {
+        val state = _ui.value
+        val savedView = state.activeSavedView ?: return
+        if (state.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.updateSavedView(
+                savedView.id,
+                PatchTaskSavedViewRequest(config = state.toSavedViewConfig(savedView)),
+            ).fold(
+                onSuccess = { updated ->
+                    _ui.update {
+                        it.copy(
+                            navigationMutating = false,
+                            savedViews = it.savedViews.map { item ->
+                                if (item.id == updated.id) updated.toItem() else item
+                            }.sortedWith(savedViewComparator),
+                        )
+                    }
+                    onUpdated()
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
+    }
+
+    fun deleteActiveSavedView(onDeleted: () -> Unit = {}) {
+        val state = _ui.value
+        val savedViewId = state.activeSavedViewId ?: return
+        if (state.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.deleteSavedView(savedViewId).fold(
+                onSuccess = {
+                    val preferences = viewPreferences[TaskView.All.preferenceKey]
+                        ?: TaskViewPreferences()
+                    _ui.update {
+                        it.copy(
+                            navigationMutating = false,
+                            savedViews = it.savedViews.filterNot { view -> view.id == savedViewId },
+                            activeSavedViewId = null,
+                            selectedListId = null,
+                            view = TaskView.All,
+                            status = preferences.status,
+                            time = preferences.time,
+                            priorityFilter = preferences.priority,
+                            grouping = preferences.grouping,
+                            ordering = preferences.ordering,
+                        )
+                    }
+                    refresh()
+                    onDeleted()
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
     }
 
     fun applyListFilter(
@@ -201,6 +319,8 @@ class TaskViewModel(
                             .map(TaskGroupDto::toItem),
                         listGroups = navigation.groups.sortedBy { it.sortOrder }
                             .map(TaskListGroupDto::toItem),
+                        savedViews = navigation.savedViews.map(TaskSavedViewDto::toItem)
+                            .sortedWith(savedViewComparator),
                         navigationCounts = TaskNavigationCounts(
                             assigned = navigation.counts.assigned,
                             following = navigation.counts.following,
@@ -210,6 +330,12 @@ class TaskViewModel(
                             standalone = navigation.counts.standalone,
                         ),
                     )
+                }
+                if (!initialDefaultViewApplied) {
+                    initialDefaultViewApplied = true
+                    navigation.savedViews.firstOrNull(TaskSavedViewDto::isDefault)
+                        ?.toItem()
+                        ?.let(::openSavedView)
                 }
             }
         }
@@ -1668,6 +1794,10 @@ private val TaskUiState.preferenceKey: String
 private val TaskUiState.preferences: TaskViewPreferences
     get() = TaskViewPreferences(status, time, priorityFilter, grouping, ordering)
 
+private val savedViewComparator = compareByDescending<TaskSavedViewItem> { it.isPinned }
+    .thenBy(TaskSavedViewItem::position)
+    .thenBy(TaskSavedViewItem::name)
+
 private val TaskView.apiScope: String
     get() = when (this) {
         TaskView.Assigned -> "assigned"
@@ -1675,6 +1805,86 @@ private val TaskView.apiScope: String
         TaskView.Created -> "created"
         TaskView.All, TaskView.Standalone -> "all"
     }
+
+private val TaskGrouping.apiValue: String
+    get() = when (this) {
+        TaskGrouping.None -> "none"
+        TaskGrouping.Custom -> "custom"
+        TaskGrouping.List -> "task_list"
+        TaskGrouping.StartDate -> "start_date"
+        TaskGrouping.DueDate -> "due_date"
+        TaskGrouping.Creator -> "creator"
+    }
+
+private fun String.toTaskView(): TaskView = when (this) {
+    "assigned" -> TaskView.Assigned
+    "following" -> TaskView.Following
+    "created" -> TaskView.Created
+    else -> TaskView.All
+}
+
+private fun String.toTaskListStatus(): TaskListStatus =
+    TaskListStatus.entries.firstOrNull { it.apiValue == this } ?: TaskListStatus.Open
+
+private fun String.toTaskTimeFilter(): TaskTimeFilter =
+    TaskTimeFilter.entries.firstOrNull { it.apiValue == this } ?: TaskTimeFilter.All
+
+private fun String.toTaskPriorityFilter(): TaskPriority? = when (this) {
+    "none" -> TaskPriority.None
+    "low" -> TaskPriority.Low
+    "medium" -> TaskPriority.Medium
+    "high" -> TaskPriority.High
+    "urgent" -> TaskPriority.Urgent
+    else -> null
+}
+
+private fun String.toTaskGrouping(): TaskGrouping = when (this) {
+    "custom" -> TaskGrouping.Custom
+    "task_list" -> TaskGrouping.List
+    "start_date" -> TaskGrouping.StartDate
+    "due_date" -> TaskGrouping.DueDate
+    "creator" -> TaskGrouping.Creator
+    else -> TaskGrouping.None
+}
+
+internal fun TaskSavedViewDto.toItem(): TaskSavedViewItem = TaskSavedViewItem(
+    id = id,
+    name = name,
+    scope = config.scope.toTaskView(),
+    preferences = TaskViewPreferences(
+        status = config.status.toTaskListStatus(),
+        time = config.time.toTaskTimeFilter(),
+        priority = config.priority.toTaskPriorityFilter(),
+        grouping = config.grouping.toTaskGrouping(),
+        ordering = TaskOrdering.fromApiValue(config.ordering),
+    ),
+    taskListId = config.taskList.takeUnless { it == "all" },
+    position = position,
+    isPinned = isPinned,
+    isDefault = isDefault,
+    invalidTaskList = invalidTaskList,
+    version = config.version,
+    columns = config.columns,
+    columnOrder = config.columnOrder,
+)
+
+internal fun TaskUiState.toSavedViewConfig(
+    existing: TaskSavedViewItem? = null,
+): TaskSavedViewConfigDto = TaskSavedViewConfigDto(
+    version = 3,
+    scope = view.apiScope,
+    status = status.apiValue,
+    time = time.apiValue,
+    priority = priorityFilter?.name?.lowercase() ?: "all",
+    taskList = if (view == TaskView.Standalone) "unassigned" else selectedListId ?: "all",
+    ordering = ordering.apiValue.orEmpty(),
+    view = "list",
+    grouping = grouping.apiValue,
+    columns = existing?.columns?.takeIf(List<String>::isNotEmpty)
+        ?: DEFAULT_TASK_SAVED_VIEW_COLUMNS,
+    columnOrder = existing?.columnOrder?.takeIf(List<String>::isNotEmpty)
+        ?: DEFAULT_TASK_SAVED_VIEW_COLUMN_ORDER,
+)
 
 internal fun TaskDto.toItem(): TaskItem {
     val people = assignees.ifEmpty { listOfNotNull(assignee) }

@@ -34,6 +34,9 @@ import com.we.meet.data.api.dto.TaskSubtreeImpactDto
 import com.we.meet.data.api.dto.TaskSettingsDto
 import com.we.meet.data.api.dto.ShareTaskListRequest
 import com.we.meet.data.api.dto.UpdateTaskListAccessRequest
+import com.we.meet.data.api.dto.CreateTaskSavedViewRequest
+import com.we.meet.data.api.dto.PatchTaskSavedViewRequest
+import com.we.meet.data.api.dto.TaskSavedViewDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -58,6 +61,7 @@ class TaskRepository(
         val lists: List<TaskListDto>,
         val groups: List<TaskListGroupDto>,
         val taskGroups: List<TaskGroupDto>,
+        val savedViews: List<TaskSavedViewDto>,
         val counts: NavigationCounts,
     )
 
@@ -86,6 +90,7 @@ class TaskRepository(
                 val lists = async { api.listTaskLists() }
                 val groups = async { api.listTaskListGroups() }
                 val taskGroups = async { api.listCustomTaskGroups() }
+                val savedViews = async { api.listTaskSavedViews() }
                 val assigned = async {
                     runCatching { api.getTaskStatistics("assigned").summary }.getOrNull()
                 }
@@ -109,6 +114,7 @@ class TaskRepository(
                     lists = lists.await(),
                     groups = groups.await(),
                     taskGroups = taskGroups.await(),
+                    savedViews = savedViews.await(),
                     counts = NavigationCounts(
                         assigned = assignedSummary?.openCount ?: 0,
                         following = followingSummary?.openCount ?: 0,
@@ -177,6 +183,20 @@ class TaskRepository(
         runCatching {
             withContext(Dispatchers.IO) { api.listConversationTasks(conversationId) }
         }
+
+    suspend fun createSavedView(request: CreateTaskSavedViewRequest): Result<TaskSavedViewDto> =
+        runCatching { withContext(Dispatchers.IO) { api.createTaskSavedView(request) } }
+
+    suspend fun updateSavedView(
+        id: String,
+        request: PatchTaskSavedViewRequest,
+    ): Result<TaskSavedViewDto> = runCatching {
+        withContext(Dispatchers.IO) { api.patchTaskSavedView(id, request) }
+    }
+
+    suspend fun deleteSavedView(id: String): Result<Unit> = runCatching {
+        withContext(Dispatchers.IO) { api.deleteTaskSavedView(id) }
+    }
 
     suspend fun loadActivityFeed(
         page: Int,

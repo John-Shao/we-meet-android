@@ -502,4 +502,26 @@ class TaskDtosTest {
         assertEquals(2, impact.descendantCount)
         assertEquals(3, impact.maximumDepth)
     }
+
+    @Test
+    fun savedViewConfigUsesVersionThreeContractKeys() {
+        val config = TaskSavedViewConfigDto(
+            scope = "assigned",
+            status = "completed",
+            time = "due_today",
+            priority = "urgent",
+            taskList = "list-1",
+            ordering = "-created_at",
+            grouping = "creator",
+        )
+        val json = moshi.adapter(TaskSavedViewConfigDto::class.java).toJson(config)
+        val decoded = moshi.adapter(TaskSavedViewConfigDto::class.java).fromJson(json)!!
+
+        assertTrue(json.contains("\"task_list\":\"list-1\""))
+        assertTrue(json.contains("\"column_order\""))
+        assertEquals(3, decoded.version)
+        assertEquals("-created_at", decoded.ordering)
+        assertEquals(DEFAULT_TASK_SAVED_VIEW_COLUMN_ORDER, decoded.columnOrder)
+        assertEquals(10, decoded.columnOrder.size)
+    }
 }

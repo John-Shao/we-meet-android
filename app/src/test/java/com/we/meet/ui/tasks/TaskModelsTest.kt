@@ -1,6 +1,8 @@
 package com.we.meet.ui.tasks
 
 import com.we.meet.data.api.dto.TaskDto
+import com.we.meet.data.api.dto.TaskSavedViewConfigDto
+import com.we.meet.data.api.dto.TaskSavedViewDto
 import com.we.meet.data.api.dto.TaskUserDto
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -169,5 +171,42 @@ class TaskModelsTest {
         assertEquals("Direct parent", child.filteredParentTitle(setOf("child")))
         assertEquals(null, child.filteredParentTitle(setOf("parent", "child")))
         assertEquals(null, child.copy(parentTitle = null).filteredParentTitle(setOf("child")))
+    }
+
+    @Test
+    fun savedViewMapsAndRoundTripsMobileViewSettings() {
+        val item = TaskSavedViewDto(
+            id = "saved-1",
+            name = "Urgent today",
+            config = TaskSavedViewConfigDto(
+                scope = "created",
+                status = "completed",
+                time = "starting_today",
+                priority = "urgent",
+                taskList = "list-1",
+                ordering = "-created_at",
+                grouping = "creator",
+            ),
+            isPinned = true,
+        ).toItem()
+
+        assertEquals(TaskView.Created, item.scope)
+        assertEquals(TaskTimeFilter.StartingToday, item.preferences.time)
+        assertEquals(TaskPriority.Urgent, item.preferences.priority)
+        assertEquals(TaskGrouping.Creator, item.preferences.grouping)
+        assertEquals("-created_at", item.preferences.ordering.apiValue)
+
+        val config = TaskUiState(
+            view = item.scope,
+            selectedListId = item.taskListId,
+            status = item.preferences.status,
+            time = item.preferences.time,
+            priorityFilter = item.preferences.priority,
+            grouping = item.preferences.grouping,
+            ordering = item.preferences.ordering,
+        ).toSavedViewConfig(item)
+        assertEquals("list-1", config.taskList)
+        assertEquals("urgent", config.priority)
+        assertEquals("creator", config.grouping)
     }
 }
