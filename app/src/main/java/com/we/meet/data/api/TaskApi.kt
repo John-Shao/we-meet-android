@@ -289,6 +289,14 @@ interface TaskApi {
         @Body body: CreateTaskGroupRequest,
     ): TaskGroupDto
 
+    @GET("api/v1.0/task-groups/")
+    suspend fun listCustomTaskGroups(): List<TaskGroupDto>
+
+    @POST("api/v1.0/task-groups/")
+    suspend fun createCustomTaskGroup(
+        @Body body: CreateTaskGroupRequest,
+    ): TaskGroupDto
+
     @PATCH("api/v1.0/task-groups/{id}/")
     suspend fun patchTaskGroup(
         @Path("id") id: String,

@@ -29,6 +29,7 @@ enum class TaskFailure { Load, Activity, Settings, Save, Delete, Comment, Attach
 data class TaskUiState(
     val tasks: List<TaskItem> = emptyList(),
     val taskLists: List<TaskListItem> = emptyList(),
+    val taskGroups: List<TaskGroupItem> = emptyList(),
     val archivedTaskLists: List<TaskListItem> = emptyList(),
     val taskListMembers: List<TaskListMemberItem> = emptyList(),
     val taskListMembersFor: String? = null,
@@ -36,7 +37,7 @@ data class TaskUiState(
     val navigationCounts: TaskNavigationCounts = TaskNavigationCounts(),
     val view: TaskView = TaskView.Assigned,
     val includeDone: Boolean = false,
-    val grouping: TaskGrouping = TaskGrouping.List,
+    val grouping: TaskGrouping = TaskGrouping.None,
     val ordering: TaskOrdering = TaskOrdering.DueDate,
     val selectedListId: String? = null,
     val loading: Boolean = true,
@@ -156,6 +157,8 @@ class TaskViewModel(
                 _ui.update { state ->
                     state.copy(
                         taskLists = navigation.lists.map(TaskListDto::toItem),
+                        taskGroups = navigation.taskGroups.sortedBy { it.sortOrder }
+                            .map(TaskGroupDto::toItem),
                         listGroups = navigation.groups.sortedBy { it.sortOrder }
                             .map(TaskListGroupDto::toItem),
                         navigationCounts = TaskNavigationCounts(
@@ -1519,6 +1522,31 @@ class TaskViewModel(
         }
     }
 
+    fun createTaskGroup(
+        name: String,
+        insertIndex: Int = _ui.value.taskGroups.size,
+        onCreated: () -> Unit = {},
+    ) {
+        if (name.isBlank() || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.createTaskGroup(name.trim(), insertIndex).fold(
+                onSuccess = { created ->
+                    _ui.update { state ->
+                        val groups = state.taskGroups.toMutableList()
+                        groups.add(insertIndex.coerceIn(0, groups.size), created.toItem())
+                        state.copy(
+                            navigationMutating = false,
+                            taskGroups = groups,
+                        )
+                    }
+                    onCreated()
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
+    }
+
     fun renameTaskGroup(list: TaskListItem, group: TaskGroupItem, name: String) {
         if (!list.canManage || name.isBlank() || _ui.value.navigationMutating) return
         _ui.update { it.copy(navigationMutating = true, failure = null) }
@@ -1611,6 +1639,7 @@ internal fun TaskDto.toItem(): TaskItem {
     return TaskItem(
         id = id,
         creatorId = creator.id,
+        creatorName = creator.displayName,
         title = title,
         description = description,
         assignee = people.joinToString { it.displayName }.ifBlank { creator.displayName },
@@ -1647,6 +1676,9 @@ internal fun TaskDto.toItem(): TaskItem {
         startDate = startDate,
         dueDate = dueDate,
         groupId = group?.id,
+        groupName = group?.name,
+        completedAt = completedAt,
+        createdAt = createdAt,
         parentId = parentId,
         parentTitle = ancestorPath.dropLast(1).lastOrNull()?.title,
         recurrence = recurrence?.let { rule ->
@@ -1771,6 +1803,7 @@ private fun TaskGroupDto.toItem() = TaskGroupItem(
     sortOrder = sortOrder,
     taskCount = taskCount,
     canDelete = canDelete,
+    canManage = canManage,
 )
 
 private fun TaskListGroupDto.toItem() = TaskListGroupItem(

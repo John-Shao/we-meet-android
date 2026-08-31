@@ -184,7 +184,7 @@ internal fun taskDetailToggleTestTag(done: Boolean) =
 
 private enum class TaskRecurrenceEndMode { Never, Date, Count }
 
-private data class TaskGroupInsertion(val list: TaskListItem, val index: Int)
+private data class TaskGroupInsertion(val list: TaskListItem?, val index: Int)
 
 private data class TaskListGroupInsertion(val index: Int)
 
@@ -366,6 +366,7 @@ fun TaskScreen(
         when (page) {
             TaskPage.List -> TaskListPage(
                 tasks = ui.tasks,
+                taskGroups = ui.taskGroups,
                 view = ui.view,
                 selectedList = ui.selectedList,
                 includeDone = ui.includeDone,
@@ -390,8 +391,8 @@ fun TaskScreen(
                 onToggleDone = vm::toggleCompleted,
                 onTaskAction = { actionTarget = it },
                 onSectionAction = { sectionMenu = it },
-                onNewTaskGroup = { list ->
-                    taskGroupInsertion = TaskGroupInsertion(list, list.groups.size)
+                onNewTaskGroup = {
+                    taskGroupInsertion = TaskGroupInsertion(null, ui.taskGroups.size)
                 },
             )
 
@@ -400,6 +401,7 @@ fun TaskScreen(
                 owner = owner,
                 selfUserId = app.tokenStore.userId,
                 taskLists = ui.taskLists.filter(TaskListItem::canCreateTasks),
+                taskGroups = ui.taskGroups,
                 creating = ui.creating,
                 onClose = { page = TaskPage.List },
                 onCreate = { input ->
@@ -644,8 +646,11 @@ fun TaskScreen(
             saving = ui.navigationMutating,
             onDismiss = { taskGroupInsertion = null },
             onCreate = { name ->
-                vm.createTaskGroup(target.list, name, target.index) {
-                    taskGroupInsertion = null
+                val onCreated = { taskGroupInsertion = null }
+                if (target.list == null) {
+                    vm.createTaskGroup(name, target.index, onCreated)
+                } else {
+                    vm.createTaskGroup(target.list, name, target.index, onCreated)
                 }
             },
         )
@@ -976,6 +981,7 @@ fun TaskScreen(
         TaskPlacementSheet(
             task = task,
             taskLists = ui.taskLists.filter(TaskListItem::canCreateTasks),
+            taskGroups = ui.taskGroups,
             saving = task.id in ui.mutatingIds,
             onDismiss = { placementTarget = null },
             onSelect = { taskListId, groupId ->
@@ -1135,6 +1141,7 @@ fun TaskScreen(
 @Composable
 private fun TaskListPage(
     tasks: List<TaskItem>,
+    taskGroups: List<TaskGroupItem>,
     view: TaskView,
     selectedList: TaskListItem?,
     includeDone: Boolean,
@@ -1152,38 +1159,47 @@ private fun TaskListPage(
     onToggleDone: (TaskItem) -> Unit,
     onTaskAction: (TaskItem) -> Unit,
     onSectionAction: (TaskGroupItem) -> Unit,
-    onNewTaskGroup: (TaskListItem) -> Unit,
+    onNewTaskGroup: () -> Unit,
 ) {
     val visible = tasks.visibleFor(view, TaskFilter(includeDone = includeDone), selectedList?.name)
     val standaloneLabel = stringResource(R.string.task_standalone)
     var collapsedSections by rememberSaveable { mutableStateOf(emptyList<String>()) }
-    val sections = if (view == TaskView.Standalone) {
-        listOf(TaskDisplaySection(standaloneLabel, visible))
-    } else if (selectedList == null && grouping == TaskGrouping.List) {
-        visible.groupBy(TaskItem::listId).map { (listId, groupedTasks) ->
+    val ungroupedLabel = stringResource(R.string.task_ungrouped)
+    val noDateLabel = stringResource(R.string.task_group_no_date)
+    val sections = when (grouping) {
+        TaskGrouping.None -> listOf(
+            TaskDisplaySection(stringResource(R.string.task_all_tasks), visible),
+        )
+        TaskGrouping.List -> visible.groupBy(TaskItem::listId).map { (listId, groupedTasks) ->
             TaskDisplaySection(
                 title = if (listId == null) standaloneLabel else groupedTasks.first().listName,
                 tasks = groupedTasks,
             )
         }
-    } else if (selectedList == null) {
-        listOf(TaskDisplaySection(stringResource(R.string.task_all_tasks), visible))
-    } else {
-        val knownGroupIds = selectedList.groups.mapTo(mutableSetOf(), TaskGroupItem::id)
-        buildList {
-            selectedList.groups.sortedBy(TaskGroupItem::sortOrder).forEach { group ->
-                add(
-                    TaskDisplaySection(
-                        title = group.name,
-                        tasks = visible.filter { it.groupId == group.id },
-                        group = group,
-                    ),
-                )
+        TaskGrouping.Custom -> {
+            val knownGroups = taskGroups.associateBy(TaskGroupItem::id)
+            val grouped = visible.filter { it.groupId != null }.groupBy { it.groupId!! }
+            buildList {
+                knownGroups.values.sortedBy(TaskGroupItem::sortOrder).forEach { group ->
+                    add(TaskDisplaySection(group.name, grouped[group.id].orEmpty(), group))
+                }
+                grouped.filterKeys { it !in knownGroups }.forEach { (_, tasks) ->
+                    add(TaskDisplaySection(tasks.first().groupName ?: ungroupedLabel, tasks))
+                }
+                val ungroupedTasks = visible.filter { it.groupId == null }
+                if (ungroupedTasks.isNotEmpty()) {
+                    add(TaskDisplaySection(ungroupedLabel, ungroupedTasks))
+                }
             }
-            val ungrouped = visible.filter { it.groupId == null || it.groupId !in knownGroupIds }
-            if (ungrouped.isNotEmpty()) {
-                add(TaskDisplaySection(stringResource(R.string.task_ungrouped), ungrouped))
-            }
+        }
+        TaskGrouping.StartDate -> visible.groupBy(TaskItem::startDate).map { (date, tasks) ->
+            TaskDisplaySection(date ?: noDateLabel, tasks)
+        }
+        TaskGrouping.DueDate -> visible.groupBy(TaskItem::dueDate).map { (date, tasks) ->
+            TaskDisplaySection(date ?: noDateLabel, tasks)
+        }
+        TaskGrouping.Creator -> visible.groupBy(TaskItem::creatorId).map { (_, tasks) ->
+            TaskDisplaySection(tasks.first().creatorName.ifBlank { "—" }, tasks)
         }
     }
 
@@ -1259,10 +1275,10 @@ private fun TaskListPage(
                         }
                     }
                 }
-                selectedList?.takeIf(TaskListItem::canManage)?.let { manageableList ->
+                if (grouping == TaskGrouping.Custom) {
                     item {
                         TextButton(
-                            onClick = { onNewTaskGroup(manageableList) },
+                            onClick = onNewTaskGroup,
                             modifier = Modifier.padding(horizontal = Dimens.ScreenPadding),
                         ) {
                             Icon(Icons.Filled.Add, null)
@@ -1420,14 +1436,10 @@ private fun TaskFilterBar(
         else -> if (includeDone) stringResource(R.string.task_all_statuses)
         else stringResource(R.string.task_incomplete)
     }
-    val groupingText = stringResource(
-        if (grouping == TaskGrouping.List) R.string.task_group_by_list
-        else R.string.task_group_none,
-    )
-    val canFilter = view != TaskView.All && view != TaskView.Completed
+    val groupingText = taskGroupingText(grouping)
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = Dimens.MinTouchTarget)
-            .clickable(enabled = canFilter, onClick = onFilter)
+            .clickable(onClick = onFilter)
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -1439,10 +1451,8 @@ private fun TaskFilterBar(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        if (canFilter) {
-            Spacer(Modifier.width(Dimens.SpaceM))
-            Icon(Icons.Outlined.Tune, stringResource(R.string.task_filter))
-        }
+        Spacer(Modifier.width(Dimens.SpaceM))
+        Icon(Icons.Outlined.Tune, stringResource(R.string.task_filter))
     }
 }
 
@@ -1963,6 +1973,7 @@ private fun CreateTaskPage(
     owner: String,
     selfUserId: String?,
     taskLists: List<TaskListItem>,
+    taskGroups: List<TaskGroupItem>,
     creating: Boolean,
     onClose: () -> Unit,
     onCreate: (TaskCreateInput) -> Unit,
@@ -1987,7 +1998,8 @@ private fun CreateTaskPage(
         ActivityResultContracts.OpenDocument(),
     ) { uri -> attachmentUri = uri }
     val selectedList = taskLists.firstOrNull { it.id == selectedListId }
-    val selectedGroup = selectedList?.groups?.firstOrNull { it.id == selectedGroupId }
+    val allTaskGroups = taskGroups
+    val selectedGroup = allTaskGroups.firstOrNull { it.id == selectedGroupId }
     val listChoices = listOf<String?>(null) + taskLists.map(TaskListItem::id)
     val assigneeLabel = selectedAssignees
         ?.joinToString { it.displayName }
@@ -2083,9 +2095,8 @@ private fun CreateTaskPage(
                     ) {
                         val current = listChoices.indexOf(selectedListId).coerceAtLeast(0)
                         selectedListId = listChoices[(current + 1) % listChoices.size]
-                        selectedGroupId = null
                     }
-                    if (selectedList?.groups?.isNotEmpty() == true) {
+                    if (allTaskGroups.isNotEmpty()) {
                         HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
                         FormValueRow(
                             Icons.Outlined.Checklist,
@@ -2093,7 +2104,7 @@ private fun CreateTaskPage(
                             selectedGroup?.name ?: stringResource(R.string.task_ungrouped),
                         ) {
                             val groupChoices = listOf<String?>(null) +
-                                selectedList.groups.map(TaskGroupItem::id)
+                                allTaskGroups.map(TaskGroupItem::id)
                             val current = groupChoices.indexOf(selectedGroupId).coerceAtLeast(0)
                             selectedGroupId = groupChoices[(current + 1) % groupChoices.size]
                         }
@@ -3094,18 +3105,22 @@ private fun TaskSingleDateDialog(
 private fun TaskPlacementSheet(
     task: TaskItem,
     taskLists: List<TaskListItem>,
+    taskGroups: List<TaskGroupItem>,
     saving: Boolean,
     onDismiss: () -> Unit,
     onSelect: (taskListId: String?, groupId: String?) -> Unit,
 ) {
     val standaloneLabel = stringResource(R.string.task_standalone)
+    val ungroupedLabel = stringResource(R.string.task_ungrouped)
+    val groups = taskGroups
     val options = buildList {
-        add(TaskPlacementOption(null, null, standaloneLabel))
+        add(TaskPlacementOption(null, task.groupId, standaloneLabel))
         taskLists.forEach { list ->
-            add(TaskPlacementOption(list.id, null, list.name))
-            list.groups.sortedBy(TaskGroupItem::sortOrder).forEach { group ->
-                add(TaskPlacementOption(list.id, group.id, "${list.name} · ${group.name}"))
-            }
+            add(TaskPlacementOption(list.id, task.groupId, list.name))
+        }
+        add(TaskPlacementOption(task.listId, null, ungroupedLabel))
+        groups.sortedBy(TaskGroupItem::sortOrder).forEach { group ->
+            add(TaskPlacementOption(task.listId, group.id, group.name))
         }
     }
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -3120,7 +3135,7 @@ private fun TaskPlacementSheet(
             LazyColumn(Modifier.fillMaxWidth().heightIn(max = Dimens.SheetContentMaxHeight)) {
                 items(
                     items = options,
-                    key = { "${it.taskListId.orEmpty()}:${it.groupId.orEmpty()}" },
+                    key = { "${it.taskListId.orEmpty()}:${it.groupId.orEmpty()}:${it.label}" },
                 ) { option ->
                     val selected = task.listId == option.taskListId &&
                         task.groupId == option.groupId
@@ -3525,25 +3540,20 @@ private fun FilterSheet(
             Text(stringResource(R.string.task_grouping), fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(Dimens.SpaceS))
             LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                item {
+                items(TaskGrouping.entries) { item ->
                     FilterChip(
-                        selected = selectedGrouping == TaskGrouping.List,
-                        onClick = { selectedGrouping = TaskGrouping.List },
-                        label = { Text(stringResource(R.string.task_group_by_list)) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.AutoMirrored.Outlined.ListAlt,
-                                null,
-                                Modifier.size(Dimens.IconSmall),
-                            )
-                        },
-                    )
-                }
-                item {
-                    FilterChip(
-                        selected = selectedGrouping == TaskGrouping.None,
-                        onClick = { selectedGrouping = TaskGrouping.None },
-                        label = { Text(stringResource(R.string.task_group_none)) },
+                        selected = selectedGrouping == item,
+                        onClick = { selectedGrouping = item },
+                        label = { Text(taskGroupingText(item)) },
+                        leadingIcon = if (item == TaskGrouping.List) {
+                            {
+                                Icon(
+                                    Icons.AutoMirrored.Outlined.ListAlt,
+                                    null,
+                                    Modifier.size(Dimens.IconSmall),
+                                )
+                            }
+                        } else null,
                     )
                 }
             }
@@ -3582,6 +3592,18 @@ private fun FilterSheet(
         }
     }
 }
+
+@Composable
+private fun taskGroupingText(grouping: TaskGrouping): String = stringResource(
+    when (grouping) {
+        TaskGrouping.None -> R.string.task_group_none
+        TaskGrouping.Custom -> R.string.task_group_by_custom
+        TaskGrouping.List -> R.string.task_group_by_list
+        TaskGrouping.StartDate -> R.string.task_group_by_start_date
+        TaskGrouping.DueDate -> R.string.task_group_by_due_date
+        TaskGrouping.Creator -> R.string.task_group_by_creator
+    },
+)
 
 @Composable
 private fun taskOrderingText(ordering: TaskOrdering): String = stringResource(

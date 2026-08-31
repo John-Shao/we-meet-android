@@ -57,6 +57,7 @@ class TaskRepository(
     data class Navigation(
         val lists: List<TaskListDto>,
         val groups: List<TaskListGroupDto>,
+        val taskGroups: List<TaskGroupDto>,
         val counts: NavigationCounts,
     )
 
@@ -84,6 +85,7 @@ class TaskRepository(
             coroutineScope {
                 val lists = async { api.listTaskLists() }
                 val groups = async { api.listTaskListGroups() }
+                val taskGroups = async { api.listCustomTaskGroups() }
                 val assigned = async {
                     runCatching { api.getTaskStatistics("assigned").summary }.getOrNull()
                 }
@@ -106,6 +108,7 @@ class TaskRepository(
                 Navigation(
                     lists = lists.await(),
                     groups = groups.await(),
+                    taskGroups = taskGroups.await(),
                     counts = NavigationCounts(
                         assigned = assignedSummary?.openCount ?: 0,
                         following = followingSummary?.openCount ?: 0,
@@ -613,6 +616,12 @@ class TaskRepository(
         }
     }
 
+    suspend fun createTaskGroup(name: String, sortOrder: Int): Result<TaskGroupDto> = runCatching {
+        withContext(Dispatchers.IO) {
+            api.createCustomTaskGroup(CreateTaskGroupRequest(name, sortOrder))
+        }
+    }
+
     suspend fun renameTaskGroup(id: String, name: String): Result<TaskGroupDto> = runCatching {
         withContext(Dispatchers.IO) {
             api.patchTaskGroup(id, PatchTaskGroupRequest(name = name))
@@ -698,7 +707,7 @@ internal suspend fun collectTaskPages(
 internal fun taskPlacementPatchFields(taskListId: String?, groupId: String?): Map<String, String?> =
     linkedMapOf(
         "task_list_id" to taskListId,
-        "group_id" to groupId?.takeIf { taskListId != null },
+        "group_id" to groupId,
         "recurrence_scope" to "one",
     )
 

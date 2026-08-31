@@ -39,6 +39,7 @@ data class TaskGroupDto(
     @Json(name = "sort_order") val sortOrder: Int = 0,
     @Json(name = "task_count") val taskCount: Int = 0,
     @Json(name = "can_delete") val canDelete: Boolean = false,
+    @Json(name = "can_manage") val canManage: Boolean = false,
 )
 
 @JsonClass(generateAdapter = true)
@@ -170,6 +171,8 @@ data class TaskDto(
     @Json(name = "descendant_progress") val descendantProgress: TaskProgressDto = TaskProgressDto(),
     @Json(name = "start_date") val startDate: String? = null,
     @Json(name = "due_date") val dueDate: String? = null,
+    @Json(name = "completed_at") val completedAt: String? = null,
+    @Json(name = "created_at") val createdAt: String = "",
     @Json(name = "can_edit") val canEdit: Boolean = false,
     @Json(name = "can_update_status") val canUpdateStatus: Boolean = false,
     @Json(name = "can_delete") val canDelete: Boolean = false,

@@ -16,13 +16,13 @@ class TaskRepositoryPayloadTest {
     }
 
     @Test
-    fun standalonePlacementExplicitlyClearsListAndGroup() {
-        val fields = taskPlacementPatchFields(null, "ignored-group")
+    fun standalonePlacementKeepsItsOrthogonalCustomGroup() {
+        val fields = taskPlacementPatchFields(null, "custom-group")
 
         assertTrue(fields.containsKey("task_list_id"))
         assertTrue(fields.containsKey("group_id"))
         assertNull(fields["task_list_id"])
-        assertNull(fields["group_id"])
+        assertEquals("custom-group", fields["group_id"])
     }
 
     @Test

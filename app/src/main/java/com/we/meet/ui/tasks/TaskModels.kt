@@ -19,7 +19,7 @@ internal fun String?.toTaskTimeState(): TaskTimeState? = when (this) {
 
 enum class TaskPriority { None, Low, Medium, High, Urgent }
 
-enum class TaskGrouping { List, None }
+enum class TaskGrouping { None, Custom, List, StartDate, DueDate, Creator }
 
 enum class TaskOrdering(val apiValue: String) {
     DueDate("due_date"),
@@ -133,7 +133,11 @@ data class TaskItem(
     val startDate: String? = null,
     val dueDate: String? = null,
     val groupId: String? = null,
+    val groupName: String? = null,
     val creatorId: String = "",
+    val creatorName: String = "",
+    val completedAt: String? = null,
+    val createdAt: String = "",
     val parentId: String? = null,
     val parentTitle: String? = null,
     val recurrence: TaskRecurrenceItem? = null,
@@ -227,6 +231,7 @@ data class TaskGroupItem(
     val sortOrder: Int = 0,
     val taskCount: Int = 0,
     val canDelete: Boolean = false,
+    val canManage: Boolean = false,
 )
 
 data class TaskListGroupItem(
