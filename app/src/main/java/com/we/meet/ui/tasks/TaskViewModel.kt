@@ -40,7 +40,7 @@ data class TaskUiState(
     val time: TaskTimeFilter = TaskTimeFilter.All,
     val priorityFilter: TaskPriority? = null,
     val grouping: TaskGrouping = TaskGrouping.None,
-    val ordering: TaskOrdering = TaskOrdering.DueDate,
+    val ordering: TaskOrdering = TaskOrdering.Smart,
     val selectedListId: String? = null,
     val loading: Boolean = true,
     val creating: Boolean = false,

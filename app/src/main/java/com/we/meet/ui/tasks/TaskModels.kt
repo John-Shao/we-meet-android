@@ -34,10 +34,42 @@ enum class TaskPriority { None, Low, Medium, High, Urgent }
 
 enum class TaskGrouping { None, Custom, List, StartDate, DueDate, Creator }
 
-enum class TaskOrdering(val apiValue: String) {
-    DueDate("due_date"),
+enum class TaskOrderingField(val apiValue: String) {
+    Assignee("assignee"),
     Priority("priority"),
-    RecentlyCreated("-created_at"),
+    StartDate("start_date"),
+    DueDate("due_date"),
+    Creator("creator"),
+    CreatedAt("created_at"),
+}
+
+enum class TaskSortDirection { Ascending, Descending }
+
+data class TaskOrdering(
+    val sortField: TaskOrderingField? = null,
+    val direction: TaskSortDirection = TaskSortDirection.Ascending,
+) {
+    val apiValue: String?
+        get() = sortField?.apiValue?.let { value ->
+            if (direction == TaskSortDirection.Descending) "-$value" else value
+        }
+
+    companion object {
+        val Smart = TaskOrdering()
+
+        fun fromApiValue(value: String?): TaskOrdering {
+            if (value.isNullOrBlank()) return Smart
+            val direction = if (value.startsWith("-")) {
+                TaskSortDirection.Descending
+            } else {
+                TaskSortDirection.Ascending
+            }
+            val sortField = TaskOrderingField.entries.firstOrNull {
+                it.apiValue == value.removePrefix("-")
+            } ?: return Smart
+            return TaskOrdering(sortField, direction)
+        }
+    }
 }
 
 enum class TaskRecurrenceFrequency(val apiValue: String) {
@@ -112,7 +144,7 @@ data class TaskViewPreferences(
     val time: TaskTimeFilter = TaskTimeFilter.All,
     val priority: TaskPriority? = null,
     val grouping: TaskGrouping = TaskGrouping.None,
-    val ordering: TaskOrdering = TaskOrdering.DueDate,
+    val ordering: TaskOrdering = TaskOrdering.Smart,
 )
 
 data class TaskSettingsItem(

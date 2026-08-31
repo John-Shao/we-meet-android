@@ -276,6 +276,10 @@
     <string name="task_group_none">No grouping</string>
     <string name="task_grouping">Group</string>
     <string name="task_sorting">Sort</string>
+    <string name="task_sort_smart">Smart sort</string>
+    <string name="task_sort_ascending">Ascending</string>
+    <string name="task_sort_descending">Descending</string>
+    <string name="task_sort_created_at">Created at</string>
     <string name="task_sort_due_time">Due time</string>
     <string name="task_sort_recently_created">Recently created</string>
     <string name="task_apply">Apply</string>

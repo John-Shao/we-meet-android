@@ -3520,16 +3520,61 @@ private fun FilterSheet(
             Spacer(Modifier.height(Dimens.IconSmall))
             Text(stringResource(R.string.task_sorting), fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(Dimens.SpaceS))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                items(TaskOrdering.entries) { item ->
+            FilterChip(
+                selected = selectedOrdering.sortField == null,
+                onClick = { selectedOrdering = TaskOrdering.Smart },
+                label = { Text(stringResource(R.string.task_sort_smart)) },
+                leadingIcon = {
+                    Icon(
+                        Icons.AutoMirrored.Outlined.Sort,
+                        null,
+                        Modifier.size(Dimens.IconSmall),
+                    )
+                },
+            )
+            TaskOrderingField.entries.forEach { field ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().heightIn(min = Dimens.MinTouchTarget),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(taskOrderingFieldText(field), modifier = Modifier.weight(1f))
                     FilterChip(
-                        selected = selectedOrdering == item,
-                        onClick = { selectedOrdering = item },
-                        label = { Text(taskOrderingText(item)) },
+                        selected = selectedOrdering == TaskOrdering(
+                            field,
+                            TaskSortDirection.Ascending,
+                        ),
+                        onClick = {
+                            selectedOrdering = TaskOrdering(
+                                field,
+                                TaskSortDirection.Ascending,
+                            )
+                        },
+                        label = { Text(stringResource(R.string.task_sort_ascending)) },
                         leadingIcon = {
                             Icon(
-                                Icons.AutoMirrored.Outlined.Sort,
-                                null,
+                                Icons.Outlined.ArrowUpward,
+                                stringResource(R.string.task_sort_ascending),
+                                Modifier.size(Dimens.IconSmall),
+                            )
+                        },
+                    )
+                    Spacer(Modifier.width(Dimens.SpaceS))
+                    FilterChip(
+                        selected = selectedOrdering == TaskOrdering(
+                            field,
+                            TaskSortDirection.Descending,
+                        ),
+                        onClick = {
+                            selectedOrdering = TaskOrdering(
+                                field,
+                                TaskSortDirection.Descending,
+                            )
+                        },
+                        label = { Text(stringResource(R.string.task_sort_descending)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.ArrowDownward,
+                                stringResource(R.string.task_sort_descending),
                                 Modifier.size(Dimens.IconSmall),
                             )
                         },
@@ -3593,11 +3638,21 @@ private fun taskGroupingText(grouping: TaskGrouping): String = stringResource(
 )
 
 @Composable
-private fun taskOrderingText(ordering: TaskOrdering): String = stringResource(
-    when (ordering) {
-        TaskOrdering.DueDate -> R.string.task_sort_due_time
-        TaskOrdering.Priority -> R.string.task_priority
-        TaskOrdering.RecentlyCreated -> R.string.task_sort_recently_created
+private fun taskOrderingText(ordering: TaskOrdering): String {
+    val field = ordering.sortField ?: return stringResource(R.string.task_sort_smart)
+    val arrow = if (ordering.direction == TaskSortDirection.Ascending) "↑" else "↓"
+    return "${taskOrderingFieldText(field)} $arrow"
+}
+
+@Composable
+private fun taskOrderingFieldText(field: TaskOrderingField): String = stringResource(
+    when (field) {
+        TaskOrderingField.Assignee -> R.string.task_assignee
+        TaskOrderingField.Priority -> R.string.task_priority
+        TaskOrderingField.StartDate -> R.string.task_group_by_start_date
+        TaskOrderingField.DueDate -> R.string.task_group_by_due_date
+        TaskOrderingField.Creator -> R.string.task_creator
+        TaskOrderingField.CreatedAt -> R.string.task_sort_created_at
     },
 )
 

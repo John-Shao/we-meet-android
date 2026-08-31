@@ -54,9 +54,20 @@ class TaskModelsTest {
 
     @Test
     fun listOrderingUsesSupportedBackendValues() {
-        assertEquals("due_date", TaskOrdering.DueDate.apiValue)
-        assertEquals("priority", TaskOrdering.Priority.apiValue)
-        assertEquals("-created_at", TaskOrdering.RecentlyCreated.apiValue)
+        assertEquals(null, TaskOrdering.Smart.apiValue)
+        assertEquals(
+            listOf("assignee", "priority", "start_date", "due_date", "creator", "created_at"),
+            TaskOrderingField.entries.map(TaskOrderingField::apiValue),
+        )
+        assertEquals(
+            "-priority",
+            TaskOrdering(TaskOrderingField.Priority, TaskSortDirection.Descending).apiValue,
+        )
+        assertEquals(
+            TaskOrdering(TaskOrderingField.CreatedAt, TaskSortDirection.Descending),
+            TaskOrdering.fromApiValue("-created_at"),
+        )
+        assertEquals(TaskOrdering.Smart, TaskOrdering.fromApiValue("unsupported"))
     }
 
     @Test
