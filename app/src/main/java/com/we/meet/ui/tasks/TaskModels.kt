@@ -1,8 +1,14 @@
 package com.we.meet.ui.tasks
 
-enum class TaskView { Assigned, Following, Created, All, Completed, Standalone }
+enum class TaskView { Assigned, Following, Created, All, Standalone }
 
 enum class TaskStatus { Todo, Done }
+
+enum class TaskListStatus(val apiValue: String) {
+    Open("open"),
+    All("all"),
+    Completed("completed"),
+}
 
 enum class TaskTimeState {
     StartingToday,
@@ -242,7 +248,7 @@ data class TaskListGroupItem(
 )
 
 data class TaskFilter(
-    val includeDone: Boolean = false,
+    val status: TaskListStatus = TaskListStatus.Open,
     val groupBySection: Boolean = true,
     val query: String = "",
 )
@@ -255,10 +261,12 @@ internal fun List<TaskItem>.visibleFor(
     val needle = filter.query.trim()
     return asSequence()
         .filter {
-            filter.includeDone || view == TaskView.All || view == TaskView.Completed ||
-                it.status != TaskStatus.Done
+            when (filter.status) {
+                TaskListStatus.Open -> it.status != TaskStatus.Done
+                TaskListStatus.All -> true
+                TaskListStatus.Completed -> it.status == TaskStatus.Done
+            }
         }
-        .filter { view != TaskView.Completed || it.status == TaskStatus.Done }
         .filter { view != TaskView.Following || it.followed }
         .filter { listName == null || it.listName == listName }
         .filter {

@@ -36,7 +36,7 @@ data class TaskUiState(
     val listGroups: List<TaskListGroupItem> = emptyList(),
     val navigationCounts: TaskNavigationCounts = TaskNavigationCounts(),
     val view: TaskView = TaskView.Assigned,
-    val includeDone: Boolean = false,
+    val status: TaskListStatus = TaskListStatus.Open,
     val grouping: TaskGrouping = TaskGrouping.None,
     val ordering: TaskOrdering = TaskOrdering.DueDate,
     val selectedListId: String? = null,
@@ -105,24 +105,24 @@ class TaskViewModel(
     }
 
     fun applyListFilter(
-        includeDone: Boolean,
+        status: TaskListStatus,
         grouping: TaskGrouping,
         ordering: TaskOrdering,
     ) {
         val previous = _ui.value
         if (
-            previous.includeDone == includeDone &&
+            previous.status == status &&
             previous.grouping == grouping &&
             previous.ordering == ordering
         ) return
         _ui.update {
             it.copy(
-                includeDone = includeDone,
+                status = status,
                 grouping = grouping,
                 ordering = ordering,
             )
         }
-        if (previous.includeDone != includeDone || previous.ordering != ordering) refresh()
+        if (previous.status != status || previous.ordering != ordering) refresh()
     }
 
     fun refresh() {
@@ -132,7 +132,7 @@ class TaskViewModel(
             _ui.update { it.copy(loading = true, failure = null) }
             repository.loadTasks(
                 scope = snapshot.view.apiScope,
-                status = snapshot.view.apiStatus(snapshot.includeDone),
+                status = snapshot.status.apiValue,
                 taskListId = if (snapshot.view == TaskView.Standalone) {
                     "unassigned"
                 } else {
@@ -1624,15 +1624,8 @@ private val TaskView.apiScope: String
         TaskView.Assigned -> "assigned"
         TaskView.Following -> "following"
         TaskView.Created -> "created"
-        TaskView.All, TaskView.Completed, TaskView.Standalone -> "all"
+        TaskView.All, TaskView.Standalone -> "all"
     }
-
-private fun TaskView.apiStatus(includeDone: Boolean): String = when (this) {
-    TaskView.All -> "all"
-    TaskView.Completed -> "completed"
-    TaskView.Standalone -> if (includeDone) "all" else "open"
-    else -> if (includeDone) "all" else "open"
-}
 
 internal fun TaskDto.toItem(): TaskItem {
     val people = assignees.ifEmpty { listOfNotNull(assignee) }

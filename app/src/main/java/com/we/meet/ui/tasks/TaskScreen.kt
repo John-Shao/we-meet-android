@@ -369,7 +369,7 @@ fun TaskScreen(
                 taskGroups = ui.taskGroups,
                 view = ui.view,
                 selectedList = ui.selectedList,
-                includeDone = ui.includeDone,
+                status = ui.status,
                 grouping = ui.grouping,
                 ordering = ui.ordering,
                 loading = ui.loading,
@@ -530,7 +530,7 @@ fun TaskScreen(
 
     if (showFilter) {
         FilterSheet(
-            includeDone = ui.includeDone,
+            status = ui.status,
             grouping = ui.grouping,
             ordering = ui.ordering,
             onApply = vm::applyListFilter,
@@ -1144,7 +1144,7 @@ private fun TaskListPage(
     taskGroups: List<TaskGroupItem>,
     view: TaskView,
     selectedList: TaskListItem?,
-    includeDone: Boolean,
+    status: TaskListStatus,
     grouping: TaskGrouping,
     ordering: TaskOrdering,
     loading: Boolean,
@@ -1161,7 +1161,7 @@ private fun TaskListPage(
     onSectionAction: (TaskGroupItem) -> Unit,
     onNewTaskGroup: () -> Unit,
 ) {
-    val visible = tasks.visibleFor(view, TaskFilter(includeDone = includeDone), selectedList?.name)
+    val visible = tasks.visibleFor(view, TaskFilter(status = status), selectedList?.name)
     val standaloneLabel = stringResource(R.string.task_standalone)
     var collapsedSections by rememberSaveable { mutableStateOf(emptyList<String>()) }
     val ungroupedLabel = stringResource(R.string.task_ungrouped)
@@ -1230,7 +1230,7 @@ private fun TaskListPage(
             )
             TaskFilterBar(
                 view = view,
-                includeDone = includeDone,
+                status = status,
                 grouping = grouping,
                 ordering = ordering,
                 onFilter = onFilter,
@@ -1360,7 +1360,6 @@ private fun TaskViewNavigationRow(
                 selectedList != null -> selectedList
                 view == TaskView.All -> stringResource(R.string.task_all_tasks)
                 view == TaskView.Created -> stringResource(R.string.task_created_by_me)
-                view == TaskView.Completed -> stringResource(R.string.task_completed)
                 view == TaskView.Standalone -> stringResource(R.string.task_standalone)
                 else -> stringResource(R.string.task_title)
             }
@@ -1420,21 +1419,15 @@ private fun TaskSegmentedControl(
 @Composable
 private fun TaskFilterBar(
     view: TaskView,
-    includeDone: Boolean,
+    status: TaskListStatus,
     grouping: TaskGrouping,
     ordering: TaskOrdering,
     onFilter: () -> Unit,
 ) {
-    val statusText = when (view) {
-        TaskView.All -> stringResource(R.string.task_all_statuses)
-        TaskView.Completed -> stringResource(R.string.task_completed)
-        TaskView.Standalone -> if (includeDone) {
-            stringResource(R.string.task_all_statuses)
-        } else {
-            stringResource(R.string.task_incomplete)
-        }
-        else -> if (includeDone) stringResource(R.string.task_all_statuses)
-        else stringResource(R.string.task_incomplete)
+    val statusText = when (status) {
+        TaskListStatus.Open -> stringResource(R.string.task_incomplete)
+        TaskListStatus.All -> stringResource(R.string.task_all_statuses)
+        TaskListStatus.Completed -> stringResource(R.string.task_completed)
     }
     val groupingText = taskGroupingText(grouping)
     Row(
@@ -1687,7 +1680,6 @@ fun TaskNavigationDrawer(
     followingCount: Int,
     createdCount: Int,
     allCount: Int,
-    completedCount: Int,
     standaloneCount: Int,
     onDismiss: () -> Unit,
     onSelectView: (TaskView) -> Unit,
@@ -1764,14 +1756,6 @@ fun TaskNavigationDrawer(
                             selected = selectedList == null && selectedView == TaskView.Created,
                         ) {
                             onSelectView(TaskView.Created)
-                        }
-                        DrawerItem(
-                            Icons.Outlined.Checklist,
-                            R.string.task_completed,
-                            completedCount.toString(),
-                            selected = selectedList == null && selectedView == TaskView.Completed,
-                        ) {
-                            onSelectView(TaskView.Completed)
                         }
                         HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM))
                         Row(
@@ -3501,13 +3485,13 @@ private fun DeleteTaskDialog(
 
 @Composable
 private fun FilterSheet(
-    includeDone: Boolean,
+    status: TaskListStatus,
     grouping: TaskGrouping,
     ordering: TaskOrdering,
-    onApply: (Boolean, TaskGrouping, TaskOrdering) -> Unit,
+    onApply: (TaskListStatus, TaskGrouping, TaskOrdering) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var selectedIncludeDone by remember(includeDone) { mutableStateOf(includeDone) }
+    var selectedStatus by remember(status) { mutableStateOf(status) }
     var selectedGrouping by remember(grouping) { mutableStateOf(grouping) }
     var selectedOrdering by remember(ordering) { mutableStateOf(ordering) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -3526,14 +3510,19 @@ private fun FilterSheet(
             Spacer(Modifier.height(Dimens.SpaceS))
             Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                 FilterChip(
-                    selected = !selectedIncludeDone,
-                    onClick = { selectedIncludeDone = false },
+                    selected = selectedStatus == TaskListStatus.Open,
+                    onClick = { selectedStatus = TaskListStatus.Open },
                     label = { Text(stringResource(R.string.task_incomplete)) },
                 )
                 FilterChip(
-                    selected = selectedIncludeDone,
-                    onClick = { selectedIncludeDone = true },
+                    selected = selectedStatus == TaskListStatus.All,
+                    onClick = { selectedStatus = TaskListStatus.All },
                     label = { Text(stringResource(R.string.task_all_statuses)) },
+                )
+                FilterChip(
+                    selected = selectedStatus == TaskListStatus.Completed,
+                    onClick = { selectedStatus = TaskListStatus.Completed },
+                    label = { Text(stringResource(R.string.task_completed)) },
                 )
             }
             Spacer(Modifier.height(Dimens.IconSmall))
@@ -3579,7 +3568,7 @@ private fun FilterSheet(
             Spacer(Modifier.height(Dimens.SpaceXl))
             Button(
                 onClick = {
-                    onApply(selectedIncludeDone, selectedGrouping, selectedOrdering)
+                    onApply(selectedStatus, selectedGrouping, selectedOrdering)
                     onDismiss()
                 },
                 modifier = Modifier.fillMaxWidth(),

@@ -441,7 +441,6 @@ fun MainTabScreen(
                                 followingCount = ui.navigationCounts.following,
                                 createdCount = ui.navigationCounts.created,
                                 allCount = ui.navigationCounts.all,
-                                completedCount = ui.navigationCounts.completed,
                                 standaloneCount = ui.navigationCounts.standalone,
                                 onDismiss = { taskNavScope.launch { taskNavDrawerState.close() } },
                                 onSelectView = {

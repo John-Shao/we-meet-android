@@ -22,14 +22,14 @@ class TaskModelsTest {
     @Test
     fun queryMatchesDescriptionAssigneeAndList() {
         assertEquals(1, tasks.visibleFor(TaskView.Assigned, TaskFilter(query = "Sam")).size)
-        assertEquals(2, tasks.visibleFor(TaskView.Assigned, TaskFilter(includeDone = true, query = "Product")).size)
+        assertEquals(2, tasks.visibleFor(TaskView.Assigned, TaskFilter(status = TaskListStatus.All, query = "Product")).size)
     }
 
     @Test
     fun listFilterAndCompletedToggleCompose() {
         val result = tasks.visibleFor(
             TaskView.Assigned,
-            TaskFilter(includeDone = true),
+            TaskFilter(status = TaskListStatus.All),
             listName = "Product",
         )
         assertEquals(2, result.size)
@@ -69,14 +69,24 @@ class TaskModelsTest {
     }
 
     @Test
-    fun quickAccessViewsApplyCompletedVisibility() {
+    fun statusFilterAppliesWithoutCompletedPredefinedView() {
         assertEquals(
-            listOf("1", "2", "3"),
+            listOf("1", "2"),
             tasks.visibleFor(TaskView.All, TaskFilter()).map(TaskItem::id),
         )
         assertEquals(
+            listOf("1", "2", "3"),
+            tasks.visibleFor(
+                TaskView.All,
+                TaskFilter(status = TaskListStatus.All),
+            ).map(TaskItem::id),
+        )
+        assertEquals(
             listOf("3"),
-            tasks.visibleFor(TaskView.Completed, TaskFilter()).map(TaskItem::id),
+            tasks.visibleFor(
+                TaskView.All,
+                TaskFilter(status = TaskListStatus.Completed),
+            ).map(TaskItem::id),
         )
         assertEquals(
             listOf("1", "2"),
