@@ -261,6 +261,10 @@
     <string name="task_navigation">Task navigation</string>
     <string name="task_filter">Filter tasks</string>
     <string name="task_filter_and_sort">Filter and sort</string>
+    <string name="task_time_filter">Date</string>
+    <string name="task_time_all">All dates</string>
+    <string name="task_time_starting_today">Starting today</string>
+    <string name="task_time_due_today">Due today</string>
     <string name="task_incomplete">Incomplete</string>
     <string name="task_all_statuses">All statuses</string>
     <string name="task_group_by_list">Group by list</string>

@@ -37,6 +37,8 @@ data class TaskUiState(
     val navigationCounts: TaskNavigationCounts = TaskNavigationCounts(),
     val view: TaskView = TaskView.Assigned,
     val status: TaskListStatus = TaskListStatus.Open,
+    val time: TaskTimeFilter = TaskTimeFilter.All,
+    val priorityFilter: TaskPriority? = null,
     val grouping: TaskGrouping = TaskGrouping.None,
     val ordering: TaskOrdering = TaskOrdering.DueDate,
     val selectedListId: String? = null,
@@ -93,6 +95,8 @@ class TaskViewModel(
                 view = view,
                 selectedListId = null,
                 status = preferences.status,
+                time = preferences.time,
+                priorityFilter = preferences.priority,
                 grouping = preferences.grouping,
                 ordering = preferences.ordering,
             )
@@ -114,6 +118,8 @@ class TaskViewModel(
                     it.view
                 },
                 status = preferences.status,
+                time = preferences.time,
+                priorityFilter = preferences.priority,
                 grouping = preferences.grouping,
                 ordering = preferences.ordering,
             )
@@ -128,24 +134,33 @@ class TaskViewModel(
 
     fun applyListFilter(
         status: TaskListStatus,
+        time: TaskTimeFilter,
+        priority: TaskPriority?,
         grouping: TaskGrouping,
         ordering: TaskOrdering,
     ) {
         val previous = _ui.value
         if (
             previous.status == status &&
+            previous.time == time &&
+            previous.priorityFilter == priority &&
             previous.grouping == grouping &&
             previous.ordering == ordering
         ) return
         _ui.update {
             it.copy(
                 status = status,
+                time = time,
+                priorityFilter = priority,
                 grouping = grouping,
                 ordering = ordering,
             )
         }
         rememberCurrentViewPreferences()
-        if (previous.status != status || previous.ordering != ordering) refresh()
+        if (
+            previous.status != status || previous.time != time ||
+            previous.priorityFilter != priority || previous.ordering != ordering
+        ) refresh()
     }
 
     fun refresh() {
@@ -162,6 +177,8 @@ class TaskViewModel(
                     snapshot.selectedListId
                 },
                 ordering = snapshot.ordering.apiValue,
+                time = snapshot.time.apiValue,
+                priority = snapshot.priorityFilter?.name?.lowercase() ?: "all",
             ).fold(
                 onSuccess = { tasks ->
                     _ui.update { it.copy(tasks = tasks.map(TaskDto::toItem), loading = false) }
@@ -1649,7 +1666,7 @@ private val TaskUiState.preferenceKey: String
     get() = selectedListId?.let { "task-list:$it" } ?: view.preferenceKey
 
 private val TaskUiState.preferences: TaskViewPreferences
-    get() = TaskViewPreferences(status, grouping, ordering)
+    get() = TaskViewPreferences(status, time, priorityFilter, grouping, ordering)
 
 private val TaskView.apiScope: String
     get() = when (this) {

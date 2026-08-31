@@ -57,6 +57,7 @@ interface TaskApi {
         @Query("creator_ids") creatorIds: String? = null,
         @Query("assignee_ids") assigneeIds: String? = null,
         @Query("due") due: String = "all",
+        @Query("time") time: String = "all",
         @Query("priority") priority: String = "all",
         @Query("ordering") ordering: String = "due_date",
         @Query("page") page: Int = 1,

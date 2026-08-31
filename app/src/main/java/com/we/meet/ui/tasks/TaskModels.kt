@@ -16,6 +16,13 @@ enum class TaskTimeState {
     Overdue,
 }
 
+enum class TaskTimeFilter(val apiValue: String) {
+    All("all"),
+    StartingToday("starting_today"),
+    DueToday("due_today"),
+    Overdue("overdue"),
+}
+
 internal fun String?.toTaskTimeState(): TaskTimeState? = when (this) {
     "starting_today" -> TaskTimeState.StartingToday
     "due_today" -> TaskTimeState.DueToday
@@ -102,6 +109,8 @@ data class TaskNavigationCounts(
 
 data class TaskViewPreferences(
     val status: TaskListStatus = TaskListStatus.Open,
+    val time: TaskTimeFilter = TaskTimeFilter.All,
+    val priority: TaskPriority? = null,
     val grouping: TaskGrouping = TaskGrouping.None,
     val ordering: TaskOrdering = TaskOrdering.DueDate,
 )

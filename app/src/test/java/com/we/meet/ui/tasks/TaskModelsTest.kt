@@ -60,6 +60,14 @@ class TaskModelsTest {
     }
 
     @Test
+    fun listTimeFiltersUseBackendContractValues() {
+        assertEquals("all", TaskTimeFilter.All.apiValue)
+        assertEquals("starting_today", TaskTimeFilter.StartingToday.apiValue)
+        assertEquals("due_today", TaskTimeFilter.DueToday.apiValue)
+        assertEquals("overdue", TaskTimeFilter.Overdue.apiValue)
+    }
+
+    @Test
     fun serverTimeStatesMapToTypedDisplayStates() {
         assertEquals(TaskTimeState.StartingToday, "starting_today".toTaskTimeState())
         assertEquals(TaskTimeState.DueToday, "due_today".toTaskTimeState())

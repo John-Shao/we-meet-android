@@ -19,7 +19,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -370,6 +372,8 @@ fun TaskScreen(
                 view = ui.view,
                 selectedList = ui.selectedList,
                 status = ui.status,
+                time = ui.time,
+                priorityFilter = ui.priorityFilter,
                 grouping = ui.grouping,
                 ordering = ui.ordering,
                 loading = ui.loading,
@@ -530,6 +534,8 @@ fun TaskScreen(
     if (showFilter) {
         FilterSheet(
             status = ui.status,
+            time = ui.time,
+            priority = ui.priorityFilter,
             grouping = ui.grouping,
             ordering = ui.ordering,
             onApply = vm::applyListFilter,
@@ -1144,6 +1150,8 @@ private fun TaskListPage(
     view: TaskView,
     selectedList: TaskListItem?,
     status: TaskListStatus,
+    time: TaskTimeFilter,
+    priorityFilter: TaskPriority?,
     grouping: TaskGrouping,
     ordering: TaskOrdering,
     loading: Boolean,
@@ -1225,6 +1233,8 @@ private fun TaskListPage(
             TaskFilterBar(
                 view = view,
                 status = status,
+                time = time,
+                priorityFilter = priorityFilter,
                 grouping = grouping,
                 ordering = ordering,
                 onFilter = onFilter,
@@ -1339,6 +1349,8 @@ private fun TaskHomeHeader(
 private fun TaskFilterBar(
     view: TaskView,
     status: TaskListStatus,
+    time: TaskTimeFilter,
+    priorityFilter: TaskPriority?,
     grouping: TaskGrouping,
     ordering: TaskOrdering,
     onFilter: () -> Unit,
@@ -1348,6 +1360,9 @@ private fun TaskFilterBar(
         TaskListStatus.All -> stringResource(R.string.task_all_statuses)
         TaskListStatus.Completed -> stringResource(R.string.task_completed)
     }
+    val timeText = taskTimeFilterText(time)
+    val priorityText = priorityFilter?.let { taskPriorityText(it) }
+        ?: stringResource(R.string.task_search_all_priorities)
     val groupingText = taskGroupingText(grouping)
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = Dimens.MinTouchTarget)
@@ -1356,7 +1371,8 @@ private fun TaskFilterBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            "$statusText · $groupingText · ${taskOrderingText(ordering)}",
+            listOf(statusText, timeText, priorityText, groupingText, taskOrderingText(ordering))
+                .joinToString(" · "),
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -3405,18 +3421,23 @@ private fun DeleteTaskDialog(
 @Composable
 private fun FilterSheet(
     status: TaskListStatus,
+    time: TaskTimeFilter,
+    priority: TaskPriority?,
     grouping: TaskGrouping,
     ordering: TaskOrdering,
-    onApply: (TaskListStatus, TaskGrouping, TaskOrdering) -> Unit,
+    onApply: (TaskListStatus, TaskTimeFilter, TaskPriority?, TaskGrouping, TaskOrdering) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var selectedStatus by remember(status) { mutableStateOf(status) }
+    var selectedTime by remember(time) { mutableStateOf(time) }
+    var selectedPriority by remember(priority) { mutableStateOf(priority) }
     var selectedGrouping by remember(grouping) { mutableStateOf(grouping) }
     var selectedOrdering by remember(ordering) { mutableStateOf(ordering) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
-            Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl)
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+                .padding(horizontal = Dimens.SpaceXl)
                 .padding(bottom = Dimens.IconLarge),
         ) {
             Text(
@@ -3443,6 +3464,37 @@ private fun FilterSheet(
                     onClick = { selectedStatus = TaskListStatus.Completed },
                     label = { Text(stringResource(R.string.task_completed)) },
                 )
+            }
+            Spacer(Modifier.height(Dimens.IconSmall))
+            Text(stringResource(R.string.task_time_filter), fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(Dimens.SpaceS))
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                items(TaskTimeFilter.entries) { item ->
+                    FilterChip(
+                        selected = selectedTime == item,
+                        onClick = { selectedTime = item },
+                        label = { Text(taskTimeFilterText(item)) },
+                    )
+                }
+            }
+            Spacer(Modifier.height(Dimens.IconSmall))
+            Text(stringResource(R.string.task_priority), fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(Dimens.SpaceS))
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                item {
+                    FilterChip(
+                        selected = selectedPriority == null,
+                        onClick = { selectedPriority = null },
+                        label = { Text(stringResource(R.string.task_search_all_priorities)) },
+                    )
+                }
+                items(TaskPriority.entries) { item ->
+                    FilterChip(
+                        selected = selectedPriority == item,
+                        onClick = { selectedPriority = item },
+                        label = { Text(taskPriorityText(item)) },
+                    )
+                }
             }
             Spacer(Modifier.height(Dimens.IconSmall))
             Text(stringResource(R.string.task_grouping), fontWeight = FontWeight.SemiBold)
@@ -3487,7 +3539,13 @@ private fun FilterSheet(
             Spacer(Modifier.height(Dimens.SpaceXl))
             Button(
                 onClick = {
-                    onApply(selectedStatus, selectedGrouping, selectedOrdering)
+                    onApply(
+                        selectedStatus,
+                        selectedTime,
+                        selectedPriority,
+                        selectedGrouping,
+                        selectedOrdering,
+                    )
                     onDismiss()
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -3500,6 +3558,27 @@ private fun FilterSheet(
         }
     }
 }
+
+@Composable
+private fun taskTimeFilterText(time: TaskTimeFilter): String = stringResource(
+    when (time) {
+        TaskTimeFilter.All -> R.string.task_time_all
+        TaskTimeFilter.StartingToday -> R.string.task_time_starting_today
+        TaskTimeFilter.DueToday -> R.string.task_time_due_today
+        TaskTimeFilter.Overdue -> R.string.task_search_overdue
+    },
+)
+
+@Composable
+private fun taskPriorityText(priority: TaskPriority): String = stringResource(
+    when (priority) {
+        TaskPriority.None -> R.string.task_priority_none
+        TaskPriority.Low -> R.string.task_priority_low
+        TaskPriority.Medium -> R.string.task_priority_medium
+        TaskPriority.High -> R.string.task_priority_high
+        TaskPriority.Urgent -> R.string.task_priority_urgent
+    },
+)
 
 @Composable
 private fun taskGroupingText(grouping: TaskGrouping): String = stringResource(
