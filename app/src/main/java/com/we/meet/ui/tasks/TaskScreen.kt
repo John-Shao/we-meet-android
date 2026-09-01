@@ -2832,7 +2832,9 @@ private fun TaskDetailPage(
                 DetailSectionTitle(
                     R.string.task_comments,
                     detail?.comments.orEmpty().size.toString(),
-                    actionLabelRes = R.string.task_add_comment.takeIf { task.canComment },
+                    actionContentDescriptionRes = R.string.task_add_comment.takeIf {
+                        task.canComment
+                    },
                     onAction = { showCommentDialog = true }.takeIf { task.canComment },
                 )
             }
@@ -3528,7 +3530,7 @@ private fun DetailSectionTitle(
     value: String?,
     expanded: Boolean? = null,
     onClick: () -> Unit = {},
-    actionLabelRes: Int? = null,
+    actionContentDescriptionRes: Int? = null,
     onAction: (() -> Unit)? = null,
 ) {
     val modifier = if (expanded == null) {
@@ -3540,16 +3542,16 @@ private fun DetailSectionTitle(
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(labelRes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
         if (value != null) Text(value, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        if (actionLabelRes != null && onAction != null) {
+        if (actionContentDescriptionRes != null && onAction != null) {
             Spacer(Modifier.width(Dimens.SpaceS))
-            TextButton(onClick = onAction) {
+            Box(
+                modifier = Modifier.size(Dimens.MinTouchTarget).clickable(onClick = onAction),
+                contentAlignment = Alignment.Center,
+            ) {
                 Icon(
                     Icons.Filled.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(Dimens.IconSmall),
+                    contentDescription = stringResource(actionContentDescriptionRes),
                 )
-                Spacer(Modifier.width(Dimens.SpaceXs))
-                Text(stringResource(actionLabelRes))
             }
         }
         if (expanded != null) {
@@ -3571,6 +3573,8 @@ private fun TaskCommentDialog(
     onDismiss: () -> Unit,
     onSend: () -> Unit,
 ) {
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.task_add_comment)) },
@@ -3579,7 +3583,7 @@ private fun TaskCommentDialog(
                 value = value,
                 onValueChange = onValueChange,
                 placeholder = { Text(stringResource(R.string.task_comment_hint)) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                 minLines = 3,
                 maxLines = 6,
             )
