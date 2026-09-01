@@ -248,7 +248,7 @@
     <string name="task_conversation_empty">In dit gesprek zijn geen taken gedeeld.</string>
     <string name="task_mark_complete">Als voltooid markeren</string>
     <string name="task_mark_incomplete">Als onvoltooid markeren</string>
-    <string name="task_standalone">Zelfstandige taken</string>
+    <string name="task_standalone">Standaardlijst</string>
     <string name="task_lists">Takenlijsten</string>
     <string name="task_group_product">Product</string>
     <string name="task_group_team">Team</string>
@@ -349,7 +349,7 @@
     <string name="task_priority_high">Hoog</string>
     <string name="task_priority_none">Geen</string>
     <string name="task_priority_urgent">Dringend</string>
-    <string name="task_ungrouped">Niet gegroepeerd</string>
+    <string name="task_ungrouped">Standaardgroep</string>
     <string name="task_load_failed">Taken konden niet worden geladen.</string>
     <string name="task_save_failed">De taakwijziging kon niet worden opgeslagen.</string>
     <string name="task_delete_failed">Deze taak kon niet worden verwijderd.</string>
@@ -409,9 +409,9 @@
     <string name="task_list_color_purple">Paars</string>
     <string name="task_choose_group">Groep: %1$s</string>
     <string name="task_delete_navigation_item">Verwijderen</string>
-    <string name="task_delete_group_confirm">‘%1$s’ verwijderen? De lijsten worden naar Niet gegroepeerd verplaatst.</string>
+    <string name="task_delete_group_confirm">‘%1$s’ verwijderen? De lijsten worden naar de standaardgroep verplaatst.</string>
     <string name="task_delete_list_confirm">‘%1$s’ verwijderen?</string>
-    <string name="task_delete_list_keep_tasks">Toegewezen en behouden taken worden zelfstandig.</string>
+    <string name="task_delete_list_keep_tasks">Toegewezen en behouden taken worden naar de standaardlijst verplaatst.</string>
     <string name="task_delete_unassigned">Taken zonder verantwoordelijke ook verwijderen</string>
     <string name="task_navigation_update_failed">De takenlijstnavigatie kan niet worden bijgewerkt.</string>
     <string name="task_group_name_hint">Groepsnaam</string>

@@ -258,7 +258,7 @@
     <string name="task_conversation_empty">此会话中还没有分享任务。</string>
     <string name="task_mark_complete">标记为已完成</string>
     <string name="task_mark_incomplete">标记为未完成</string>
-    <string name="task_standalone">独立任务</string>
+    <string name="task_standalone">默认清单</string>
     <string name="task_lists">任务清单</string>
     <string name="task_group_product">产品</string>
     <string name="task_group_team">团队</string>
@@ -359,7 +359,7 @@
     <string name="task_priority_high">高</string>
     <string name="task_priority_none">无</string>
     <string name="task_priority_urgent">紧急</string>
-    <string name="task_ungrouped">未分组</string>
+    <string name="task_ungrouped">默认分组</string>
     <string name="task_load_failed">任务加载失败，请检查网络后重试。</string>
     <string name="task_save_failed">任务变更保存失败。</string>
     <string name="task_delete_failed">任务删除失败。</string>
@@ -419,9 +419,9 @@
     <string name="task_list_color_purple">紫色</string>
     <string name="task_choose_group">分组：%1$s</string>
     <string name="task_delete_navigation_item">删除</string>
-    <string name="task_delete_group_confirm">删除“%1$s”？其中的清单将移至未分组。</string>
+    <string name="task_delete_group_confirm">删除“%1$s”？其中的清单将移至默认分组。</string>
     <string name="task_delete_list_confirm">删除“%1$s”？</string>
-    <string name="task_delete_list_keep_tasks">已分配及保留的任务将变为独立任务。</string>
+    <string name="task_delete_list_keep_tasks">已分配及保留的任务将移至默认清单。</string>
     <string name="task_delete_unassigned">同时删除没有负责人的任务</string>
     <string name="task_navigation_update_failed">无法更新任务清单导航。</string>
     <string name="task_group_name_hint">输入分组名称</string>

@@ -248,7 +248,7 @@
     <string name="task_conversation_empty">In dieser Unterhaltung wurden keine Aufgaben geteilt.</string>
     <string name="task_mark_complete">Als erledigt markieren</string>
     <string name="task_mark_incomplete">Als unerledigt markieren</string>
-    <string name="task_standalone">Eigenständige Aufgaben</string>
+    <string name="task_standalone">Standardliste</string>
     <string name="task_lists">Aufgabenlisten</string>
     <string name="task_group_product">Produkt</string>
     <string name="task_group_team">Team</string>
@@ -349,7 +349,7 @@
     <string name="task_priority_high">Hoch</string>
     <string name="task_priority_none">Keine</string>
     <string name="task_priority_urgent">Dringend</string>
-    <string name="task_ungrouped">Nicht gruppiert</string>
+    <string name="task_ungrouped">Standardgruppe</string>
     <string name="task_load_failed">Aufgaben konnten nicht geladen werden.</string>
     <string name="task_save_failed">Die Aufgabenänderung konnte nicht gespeichert werden.</string>
     <string name="task_delete_failed">Die Aufgabe konnte nicht gelöscht werden.</string>
@@ -409,9 +409,9 @@
     <string name="task_list_color_purple">Violett</string>
     <string name="task_choose_group">Gruppe: %1$s</string>
     <string name="task_delete_navigation_item">Löschen</string>
-    <string name="task_delete_group_confirm">„%1$s“ löschen? Die Listen werden nach „Nicht gruppiert“ verschoben.</string>
+    <string name="task_delete_group_confirm">„%1$s“ löschen? Die Listen werden in die Standardgruppe verschoben.</string>
     <string name="task_delete_list_confirm">„%1$s“ löschen?</string>
-    <string name="task_delete_list_keep_tasks">Zugewiesene und beibehaltene Aufgaben werden eigenständig.</string>
+    <string name="task_delete_list_keep_tasks">Zugewiesene und beibehaltene Aufgaben werden in die Standardliste verschoben.</string>
     <string name="task_delete_unassigned">Aufgaben ohne Verantwortliche ebenfalls löschen</string>
     <string name="task_navigation_update_failed">Die Aufgabenlisten-Navigation konnte nicht aktualisiert werden.</string>
     <string name="task_group_name_hint">Gruppenname</string>

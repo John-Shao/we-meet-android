@@ -258,7 +258,7 @@
     <string name="task_conversation_empty">No tasks have been shared in this conversation.</string>
     <string name="task_mark_complete">Mark complete</string>
     <string name="task_mark_incomplete">Mark incomplete</string>
-    <string name="task_standalone">Standalone tasks</string>
+    <string name="task_standalone">Default list</string>
     <string name="task_lists">Task lists</string>
     <string name="task_group_product">Product</string>
     <string name="task_group_team">Team</string>
@@ -359,7 +359,7 @@
     <string name="task_priority_high">High</string>
     <string name="task_priority_none">None</string>
     <string name="task_priority_urgent">Urgent</string>
-    <string name="task_ungrouped">Ungrouped</string>
+    <string name="task_ungrouped">Default group</string>
     <string name="task_load_failed">Couldn’t load tasks. Check your connection and try again.</string>
     <string name="task_save_failed">Couldn’t save the task change.</string>
     <string name="task_delete_failed">Couldn’t delete this task.</string>
@@ -419,9 +419,9 @@
     <string name="task_list_color_purple">Purple</string>
     <string name="task_choose_group">Group: %1$s</string>
     <string name="task_delete_navigation_item">Delete</string>
-    <string name="task_delete_group_confirm">Delete “%1$s”? Its lists will move to Ungrouped.</string>
+    <string name="task_delete_group_confirm">Delete “%1$s”? Its lists will move to the default group.</string>
     <string name="task_delete_list_confirm">Delete “%1$s”?</string>
-    <string name="task_delete_list_keep_tasks">Assigned and retained tasks will become standalone.</string>
+    <string name="task_delete_list_keep_tasks">Assigned and retained tasks will move to the default list.</string>
     <string name="task_delete_unassigned">Also delete tasks without assignees</string>
     <string name="task_navigation_update_failed">Couldn’t update task-list navigation.</string>
     <string name="task_group_name_hint">Group name</string>

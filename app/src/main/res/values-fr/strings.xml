@@ -248,7 +248,7 @@
     <string name="task_conversation_empty">Aucune tâche n’a été partagée dans cette conversation.</string>
     <string name="task_mark_complete">Marquer comme terminée</string>
     <string name="task_mark_incomplete">Marquer comme non terminée</string>
-    <string name="task_standalone">Tâches autonomes</string>
+    <string name="task_standalone">Liste par défaut</string>
     <string name="task_lists">Listes de tâches</string>
     <string name="task_group_product">Produit</string>
     <string name="task_group_team">Équipe</string>
@@ -349,7 +349,7 @@
     <string name="task_priority_high">Haute</string>
     <string name="task_priority_none">Aucune</string>
     <string name="task_priority_urgent">Urgente</string>
-    <string name="task_ungrouped">Sans groupe</string>
+    <string name="task_ungrouped">Groupe par défaut</string>
     <string name="task_load_failed">Impossible de charger les tâches.</string>
     <string name="task_save_failed">Impossible d’enregistrer la modification.</string>
     <string name="task_delete_failed">Impossible de supprimer cette tâche.</string>
@@ -409,9 +409,9 @@
     <string name="task_list_color_purple">Violet</string>
     <string name="task_choose_group">Groupe : %1$s</string>
     <string name="task_delete_navigation_item">Supprimer</string>
-    <string name="task_delete_group_confirm">Supprimer « %1$s » ? Ses listes seront déplacées vers Sans groupe.</string>
+    <string name="task_delete_group_confirm">Supprimer « %1$s » ? Ses listes seront déplacées vers le groupe par défaut.</string>
     <string name="task_delete_list_confirm">Supprimer « %1$s » ?</string>
-    <string name="task_delete_list_keep_tasks">Les tâches attribuées et conservées deviendront indépendantes.</string>
+    <string name="task_delete_list_keep_tasks">Les tâches attribuées et conservées seront déplacées vers la liste par défaut.</string>
     <string name="task_delete_unassigned">Supprimer aussi les tâches sans responsable</string>
     <string name="task_navigation_update_failed">Impossible de mettre à jour la navigation des listes de tâches.</string>
     <string name="task_group_name_hint">Nom du groupe</string>
