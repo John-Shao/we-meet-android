@@ -1486,7 +1486,7 @@ private fun TaskFilterBar(
             label = stringResource(R.string.task_filter_options),
             summary = filterSummary,
             onClick = onFilter,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(3f),
         )
         Spacer(
             Modifier.padding(horizontal = Dimens.SpaceS)
@@ -1498,7 +1498,7 @@ private fun TaskFilterBar(
             label = stringResource(R.string.task_group_and_sort),
             summary = displaySummary,
             onClick = onDisplaySettings,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(2f),
         )
     }
 }
