@@ -131,6 +131,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -254,7 +256,8 @@ fun TaskScreen(
     var deleteListTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var archiveListTarget by remember { mutableStateOf<TaskListItem?>(null) }
     var leaveListTarget by remember { mutableStateOf<TaskListItem?>(null) }
-    var editContentTarget by remember { mutableStateOf<TaskItem?>(null) }
+    var editTitleTarget by remember { mutableStateOf<TaskItem?>(null) }
+    var editDescriptionTarget by remember { mutableStateOf<TaskItem?>(null) }
     var startDateTarget by remember { mutableStateOf<TaskItem?>(null) }
     var dueDateTarget by remember { mutableStateOf<TaskItem?>(null) }
     var priorityTarget by remember { mutableStateOf<TaskItem?>(null) }
@@ -471,7 +474,8 @@ fun TaskScreen(
                         selectedTaskId = subtask.id
                     },
                     onSubtaskAction = { subtaskActionTarget = it },
-                    onEditContent = { editContentTarget = task },
+                    onEditTitle = { editTitleTarget = task },
+                    onEditDescription = { editDescriptionTarget = task },
                     onEditStartDate = { startDateTarget = task },
                     onEditDueDate = { dueDateTarget = task },
                     onReminderEnabledChange = { enabled ->
@@ -1050,14 +1054,25 @@ fun TaskScreen(
             },
         )
     }
-    editContentTarget?.let { task ->
-        EditTaskContentDialog(
+    editTitleTarget?.let { task ->
+        EditTaskTitleDialog(
             task = task,
             saving = task.id in ui.mutatingIds,
-            onDismiss = { editContentTarget = null },
-            onConfirm = { title, description ->
-                vm.updateContent(task, title, description)
-                editContentTarget = null
+            onDismiss = { editTitleTarget = null },
+            onConfirm = { title ->
+                vm.updateTitle(task, title)
+                editTitleTarget = null
+            },
+        )
+    }
+    editDescriptionTarget?.let { task ->
+        EditTaskDescriptionDialog(
+            task = task,
+            saving = task.id in ui.mutatingIds,
+            onDismiss = { editDescriptionTarget = null },
+            onConfirm = { description ->
+                vm.updateDescription(task, description)
+                editDescriptionTarget = null
             },
         )
     }
@@ -2507,7 +2522,8 @@ private fun TaskDetailPage(
     onToggleSubtask: (TaskItem) -> Unit,
     onOpenSubtask: (TaskItem) -> Unit,
     onSubtaskAction: (TaskItem) -> Unit,
-    onEditContent: () -> Unit,
+    onEditTitle: () -> Unit,
+    onEditDescription: () -> Unit,
     onEditStartDate: () -> Unit,
     onEditDueDate: () -> Unit,
     onReminderEnabledChange: (Boolean) -> Unit,
@@ -2598,7 +2614,7 @@ private fun TaskDetailPage(
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.testTag(TASK_DETAIL_TITLE_TEST_TAG).then(
-                            if (task.canEdit) Modifier.clickable(onClick = onEditContent)
+                            if (task.canEdit) Modifier.clickable(onClick = onEditTitle)
                             else Modifier,
                         ),
                     )
@@ -2704,7 +2720,7 @@ private fun TaskDetailPage(
                 TaskFormCard {
                     TaskDescriptionRow(
                         description = task.description,
-                        onClick = onEditContent.takeIf { task.canEdit },
+                        onClick = onEditDescription.takeIf { task.canEdit },
                     )
                     HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
                     FormValueRow(
@@ -3596,38 +3612,69 @@ private fun activityText(activity: TaskActivityItem): String {
 }
 
 @Composable
-private fun EditTaskContentDialog(
+private fun EditTaskTitleDialog(
     task: TaskItem,
     saving: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String, String) -> Unit,
+    onConfirm: (String) -> Unit,
 ) {
     var title by remember(task.id) { mutableStateOf(task.title) }
-    var description by remember(task.id) { mutableStateOf(task.description) }
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(task.id) { focusRequester.requestFocus() }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.task_edit_details)) },
+        title = { Text(stringResource(R.string.task_edit_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text(stringResource(R.string.task_title_field)) },
-                    singleLine = true,
-                )
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text(stringResource(R.string.task_description_field)) },
-                    minLines = 3,
-                )
-            }
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                singleLine = true,
+            )
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(title, description) },
-                enabled = title.isNotBlank() && !saving &&
-                    (title.trim() != task.title || description.trim() != task.description),
+                onClick = { onConfirm(title) },
+                enabled = title.isNotBlank() && !saving && title.trim() != task.title,
+            ) {
+                Text(stringResource(R.string.task_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !saving) {
+                Text(stringResource(R.string.task_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun EditTaskDescriptionDialog(
+    task: TaskItem,
+    saving: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var description by remember(task.id) { mutableStateOf(task.description) }
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(task.id) { focusRequester.requestFocus() }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.task_edit_description)) },
+        text = {
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text(stringResource(R.string.task_description_field)) },
+                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                minLines = 3,
+                maxLines = 8,
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(description) },
+                enabled = !saving && description.trim() != task.description,
             ) {
                 Text(stringResource(R.string.task_confirm))
             }

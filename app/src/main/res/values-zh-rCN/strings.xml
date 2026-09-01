@@ -344,6 +344,8 @@
     <string name="task_add_follower">添加关注人</string>
     <string name="task_remove_follower">移除关注人</string>
     <string name="task_edit_details">编辑任务详情</string>
+    <string name="task_edit_title">编辑任务标题</string>
+    <string name="task_edit_description">编辑任务描述</string>
     <string name="task_title_field">标题</string>
     <string name="task_description_field">描述</string>
     <string name="task_unknown_actor">某位成员</string>

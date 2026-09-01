@@ -334,6 +334,8 @@
     <string name="task_add_follower">Ajouter un abonné</string>
     <string name="task_remove_follower">Retirer l’abonné</string>
     <string name="task_edit_details">Modifier les détails de la tâche</string>
+    <string name="task_edit_title">Modifier le titre de la tâche</string>
+    <string name="task_edit_description">Modifier la description de la tâche</string>
     <string name="task_title_field">Titre</string>
     <string name="task_description_field">Description</string>
     <string name="task_unknown_actor">Quelqu’un</string>

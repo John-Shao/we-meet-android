@@ -3,6 +3,7 @@ package com.we.meet.data.api.dto
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -120,6 +121,22 @@ class TaskDtosTest {
                 "\"reminder\":{\"enabled\":true,\"reminder_minutes\":4320}",
             ),
         )
+    }
+
+    @Test
+    fun titleAndDescriptionPatchesStayIndependent() {
+        val adapter = moshi.adapter(PatchTaskRequest::class.java)
+        val titleJson = adapter.toJson(
+            PatchTaskRequest(title = "Updated title", recurrenceScope = "one"),
+        )
+        val descriptionJson = adapter.toJson(
+            PatchTaskRequest(description = "", recurrenceScope = "one"),
+        )
+
+        assertTrue(titleJson.contains("\"title\":\"Updated title\""))
+        assertFalse(titleJson.contains("\"description\""))
+        assertTrue(descriptionJson.contains("\"description\":\"\""))
+        assertFalse(descriptionJson.contains("\"title\""))
     }
 
     @Test

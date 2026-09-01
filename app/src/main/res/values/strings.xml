@@ -344,6 +344,8 @@
     <string name="task_add_follower">Add follower</string>
     <string name="task_remove_follower">Remove follower</string>
     <string name="task_edit_details">Edit task details</string>
+    <string name="task_edit_title">Edit task title</string>
+    <string name="task_edit_description">Edit task description</string>
     <string name="task_title_field">Title</string>
     <string name="task_description_field">Description</string>
     <string name="task_unknown_actor">Someone</string>

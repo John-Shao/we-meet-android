@@ -334,6 +334,8 @@
     <string name="task_add_follower">Volger toevoegen</string>
     <string name="task_remove_follower">Volger verwijderen</string>
     <string name="task_edit_details">Taakdetails bewerken</string>
+    <string name="task_edit_title">Taaktitel bewerken</string>
+    <string name="task_edit_description">Taakbeschrijving bewerken</string>
     <string name="task_title_field">Titel</string>
     <string name="task_description_field">Beschrijving</string>
     <string name="task_unknown_actor">Iemand</string>

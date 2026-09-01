@@ -334,6 +334,8 @@
     <string name="task_add_follower">Beobachter hinzufügen</string>
     <string name="task_remove_follower">Beobachter entfernen</string>
     <string name="task_edit_details">Aufgabendetails bearbeiten</string>
+    <string name="task_edit_title">Aufgabentitel bearbeiten</string>
+    <string name="task_edit_description">Aufgabenbeschreibung bearbeiten</string>
     <string name="task_title_field">Titel</string>
     <string name="task_description_field">Beschreibung</string>
     <string name="task_unknown_actor">Jemand</string>

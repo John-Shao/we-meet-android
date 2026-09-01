@@ -639,13 +639,25 @@ class TaskViewModel(
         }
     }
 
-    fun updateContent(item: TaskItem, title: String, description: String) {
-        if (!item.canEdit || title.isBlank()) return
+    fun updateTitle(item: TaskItem, title: String) {
+        val normalizedTitle = title.trim()
+        if (!item.canEdit || normalizedTitle.isBlank() || normalizedTitle == item.title) return
         updateTask(
             item,
             PatchTaskRequest(
-                title = title.trim(),
-                description = description.trim(),
+                title = normalizedTitle,
+                recurrenceScope = "one",
+            ),
+        )
+    }
+
+    fun updateDescription(item: TaskItem, description: String) {
+        val normalizedDescription = description.trim()
+        if (!item.canEdit || normalizedDescription == item.description) return
+        updateTask(
+            item,
+            PatchTaskRequest(
+                description = normalizedDescription,
                 recurrenceScope = "one",
             ),
         )
