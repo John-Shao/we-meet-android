@@ -2726,7 +2726,6 @@ private fun TaskDetailPage(
                     SummaryActionRow(
                         icon = Icons.Outlined.AttachFile,
                         labelRes = R.string.task_attachments,
-                        value = detail?.attachments.orEmpty().size.toString(),
                         actionContentDescriptionRes = R.string.task_add_attachment,
                         onAction = onAddAttachment.takeIf { task.canManageAttachments },
                         actionLoading = detail?.uploadingAttachment == true,
@@ -2806,7 +2805,6 @@ private fun TaskDetailPage(
                     SummaryActionRow(
                         icon = Icons.Outlined.AccountTree,
                         labelRes = R.string.task_subtasks,
-                        value = "${subtasks.count { it.status == TaskStatus.Done }}/${subtasks.size}",
                         actionContentDescriptionRes = R.string.task_add_subtask,
                         onAction = onAddSubtask.takeIf { task.canCreateSubtasks },
                     )
@@ -3230,7 +3228,6 @@ private fun FormValueRow(icon: ImageVector, labelRes: Int, value: String, onClic
 private fun SummaryActionRow(
     icon: ImageVector,
     labelRes: Int,
-    value: String,
     actionContentDescriptionRes: Int,
     onAction: (() -> Unit)?,
     actionLoading: Boolean = false,
@@ -3249,12 +3246,7 @@ private fun SummaryActionRow(
         Text(
             stringResource(labelRes),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(Dimens.LabelColumnWidth),
-        )
-        Text(
-            value,
             modifier = Modifier.weight(1f),
-            fontWeight = FontWeight.Medium,
         )
         onAction?.let { action ->
             Box(
