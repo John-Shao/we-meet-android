@@ -260,7 +260,8 @@ fun TaskScreen(
     var editContentTarget by remember { mutableStateOf<TaskItem?>(null) }
     var dueDateTarget by remember { mutableStateOf<TaskItem?>(null) }
     var priorityTarget by remember { mutableStateOf<TaskItem?>(null) }
-    var placementTarget by remember { mutableStateOf<TaskItem?>(null) }
+    var taskListTarget by remember { mutableStateOf<TaskItem?>(null) }
+    var taskGroupTarget by remember { mutableStateOf<TaskItem?>(null) }
     var recurrenceTarget by remember { mutableStateOf<TaskItem?>(null) }
     var parentPickerTarget by remember { mutableStateOf<TaskItem?>(null) }
     var pendingParentMove by remember { mutableStateOf<TaskParentMove?>(null) }
@@ -472,7 +473,8 @@ fun TaskScreen(
                     onEditContent = { editContentTarget = task },
                     onEditDueDate = { dueDateTarget = task },
                     onEditPriority = { priorityTarget = task },
-                    onEditPlacement = { placementTarget = task },
+                    onEditTaskList = { taskListTarget = task },
+                    onEditGroup = { taskGroupTarget = task },
                     canManageRecurrence = task.recurrence?.canManage
                         ?: (task.creatorId == app.tokenStore.userId),
                     onEditRecurrence = { recurrenceTarget = task },
@@ -1073,16 +1075,27 @@ fun TaskScreen(
             },
         )
     }
-    placementTarget?.let { task ->
-        TaskPlacementSheet(
+    taskListTarget?.let { task ->
+        TaskListSelectionSheet(
             task = task,
             taskLists = ui.taskLists.filter(TaskListItem::canCreateTasks),
+            saving = task.id in ui.mutatingIds,
+            onDismiss = { taskListTarget = null },
+            onSelect = { taskListId ->
+                vm.updatePlacement(task, taskListId, task.groupId)
+                taskListTarget = null
+            },
+        )
+    }
+    taskGroupTarget?.let { task ->
+        TaskGroupSelectionSheet(
+            task = task,
             taskGroups = ui.taskGroups,
             saving = task.id in ui.mutatingIds,
-            onDismiss = { placementTarget = null },
-            onSelect = { taskListId, groupId ->
-                vm.updatePlacement(task, taskListId, groupId)
-                placementTarget = null
+            onDismiss = { taskGroupTarget = null },
+            onSelect = { groupId ->
+                vm.updatePlacement(task, task.listId, groupId)
+                taskGroupTarget = null
             },
         )
     }
@@ -2420,7 +2433,8 @@ private fun TaskDetailPage(
     onEditContent: () -> Unit,
     onEditDueDate: () -> Unit,
     onEditPriority: () -> Unit,
-    onEditPlacement: () -> Unit,
+    onEditTaskList: () -> Unit,
+    onEditGroup: () -> Unit,
     canManageRecurrence: Boolean,
     onEditRecurrence: () -> Unit,
     canEditParent: Boolean,
@@ -2569,15 +2583,15 @@ private fun TaskDetailPage(
                     )
                     FormValueRow(
                         Icons.AutoMirrored.Outlined.ListAlt,
-                        R.string.task_list,
+                        R.string.task_belongs_to_list,
                         task.listName.ifBlank { stringResource(R.string.task_standalone) },
-                        onEditPlacement.takeIf { task.canEdit },
+                        onEditTaskList.takeIf { task.canEdit },
                     )
                     FormValueRow(
                         Icons.Outlined.AccountTree,
-                        R.string.task_group,
+                        R.string.task_belongs_to_group,
                         task.groupName ?: stringResource(R.string.task_ungrouped),
-                        onEditPlacement.takeIf { task.canEdit },
+                        onEditGroup.takeIf { task.canEdit },
                     )
                     FormValueRow(
                         Icons.Outlined.Flag,
@@ -3365,34 +3379,31 @@ private fun TaskSingleDateDialog(
 }
 
 @Composable
-private fun TaskPlacementSheet(
+private fun TaskListSelectionSheet(
     task: TaskItem,
     taskLists: List<TaskListItem>,
-    taskGroups: List<TaskGroupItem>,
     saving: Boolean,
     onDismiss: () -> Unit,
-    onSelect: (taskListId: String?, groupId: String?) -> Unit,
+    onSelect: (taskListId: String?) -> Unit,
 ) {
     val standaloneLabel = stringResource(R.string.task_standalone)
-    val ungroupedLabel = stringResource(R.string.task_ungrouped)
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().padding(bottom = Dimens.SpaceXl)) {
             Text(
-                stringResource(R.string.task_placement),
+                stringResource(R.string.task_belongs_to_list),
                 modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
             if (saving) LinearProgressIndicator(Modifier.fillMaxWidth())
             LazyColumn(Modifier.fillMaxWidth().heightIn(max = Dimens.SheetContentMaxHeight)) {
-                item { TaskPlacementSectionTitle(R.string.task_list) }
                 item {
                     TaskPlacementRow(
                         icon = Icons.Outlined.FolderOpen,
                         label = standaloneLabel,
                         selected = task.listId == null,
                         saving = saving,
-                        onClick = { onSelect(null, task.groupId) },
+                        onClick = { onSelect(null) },
                     )
                 }
                 items(taskLists, key = TaskListItem::id) { list ->
@@ -3401,29 +3412,7 @@ private fun TaskPlacementSheet(
                         label = list.name,
                         selected = task.listId == list.id,
                         saving = saving,
-                        onClick = { onSelect(list.id, task.groupId) },
-                    )
-                }
-                item {
-                    HorizontalDivider(Modifier.padding(vertical = Dimens.SpaceS))
-                    TaskPlacementSectionTitle(R.string.task_group_by_custom)
-                }
-                item {
-                    TaskPlacementRow(
-                        icon = Icons.Outlined.AccountTree,
-                        label = ungroupedLabel,
-                        selected = task.groupId == null,
-                        saving = saving,
-                        onClick = { onSelect(task.listId, null) },
-                    )
-                }
-                items(taskGroups.sortedBy(TaskGroupItem::sortOrder), key = TaskGroupItem::id) { group ->
-                    TaskPlacementRow(
-                        icon = Icons.Outlined.AccountTree,
-                        label = group.name,
-                        selected = task.groupId == group.id,
-                        saving = saving,
-                        onClick = { onSelect(task.listId, group.id) },
+                        onClick = { onSelect(list.id) },
                     )
                 }
             }
@@ -3432,13 +3421,45 @@ private fun TaskPlacementSheet(
 }
 
 @Composable
-private fun TaskPlacementSectionTitle(labelRes: Int) {
-    Text(
-        text = stringResource(labelRes),
-        modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceS),
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+private fun TaskGroupSelectionSheet(
+    task: TaskItem,
+    taskGroups: List<TaskGroupItem>,
+    saving: Boolean,
+    onDismiss: () -> Unit,
+    onSelect: (groupId: String?) -> Unit,
+) {
+    val ungroupedLabel = stringResource(R.string.task_ungrouped)
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.fillMaxWidth().padding(bottom = Dimens.SpaceXl)) {
+            Text(
+                stringResource(R.string.task_belongs_to_group),
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            if (saving) LinearProgressIndicator(Modifier.fillMaxWidth())
+            LazyColumn(Modifier.fillMaxWidth().heightIn(max = Dimens.SheetContentMaxHeight)) {
+                item {
+                    TaskPlacementRow(
+                        icon = Icons.Outlined.AccountTree,
+                        label = ungroupedLabel,
+                        selected = task.groupId == null,
+                        saving = saving,
+                        onClick = { onSelect(null) },
+                    )
+                }
+                items(taskGroups.sortedBy(TaskGroupItem::sortOrder), key = TaskGroupItem::id) { group ->
+                    TaskPlacementRow(
+                        icon = Icons.Outlined.AccountTree,
+                        label = group.name,
+                        selected = task.groupId == group.id,
+                        saving = saving,
+                        onClick = { onSelect(group.id) },
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable

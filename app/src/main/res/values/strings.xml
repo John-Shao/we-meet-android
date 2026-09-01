@@ -322,6 +322,8 @@
     <string name="task_add_to_list">Add to list</string>
     <string name="task_list">Task list</string>
     <string name="task_group">Group</string>
+    <string name="task_belongs_to_list">Task list</string>
+    <string name="task_belongs_to_group">Group</string>
     <string name="task_placement">Placement</string>
     <string name="task_today">Today</string>
     <string name="task_tomorrow">Tomorrow</string>

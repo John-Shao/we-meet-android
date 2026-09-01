@@ -371,9 +371,14 @@ private fun ConversationTaskDetail(
                 if (task.dueLabel.isNotBlank()) {
                     ConversationTaskDetailValue(R.string.task_due_time, task.dueLabel)
                 }
-                if (task.listName.isNotBlank()) {
-                    ConversationTaskDetailValue(R.string.task_list, task.listName)
-                }
+                ConversationTaskDetailValue(
+                    R.string.task_belongs_to_list,
+                    task.listName.ifBlank { stringResource(R.string.task_standalone) },
+                )
+                ConversationTaskDetailValue(
+                    R.string.task_belongs_to_group,
+                    task.groupName ?: stringResource(R.string.task_ungrouped),
+                )
                 ConversationTaskDetailValue(R.string.task_priority, task.priority.label())
             }
             if (detail.subtasks.isNotEmpty()) {

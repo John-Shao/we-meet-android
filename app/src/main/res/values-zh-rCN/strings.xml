@@ -322,6 +322,8 @@
     <string name="task_add_to_list">添加至清单</string>
     <string name="task_list">任务清单</string>
     <string name="task_group">分组</string>
+    <string name="task_belongs_to_list">所属清单</string>
+    <string name="task_belongs_to_group">所属分组</string>
     <string name="task_placement">任务归属</string>
     <string name="task_today">今天</string>
     <string name="task_tomorrow">明天</string>

@@ -312,6 +312,8 @@
     <string name="task_add_to_list">Ajouter à la liste</string>
     <string name="task_list">Liste de tâches</string>
     <string name="task_group">Groupe</string>
+    <string name="task_belongs_to_list">Liste associée</string>
+    <string name="task_belongs_to_group">Groupe associé</string>
     <string name="task_placement">Organisation</string>
     <string name="task_today">Aujourd’hui</string>
     <string name="task_tomorrow">Demain</string>
