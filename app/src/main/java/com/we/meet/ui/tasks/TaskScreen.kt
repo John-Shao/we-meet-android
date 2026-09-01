@@ -1480,14 +1480,17 @@ private fun TaskFilterBar(
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = Dimens.MinTouchTarget)
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Top,
     ) {
         TaskControlEntry(
             icon = Icons.Outlined.Tune,
             label = stringResource(R.string.task_filter_options),
             summary = filterSummary,
             onClick = onFilter,
-            modifier = Modifier.weight(1f),
+            // The filter summary has three fields while display settings has two.
+            // Giving both entries half the row made the last filter permanently
+            // ellipsized on phone-sized screens.
+            modifier = Modifier.weight(1.25f),
         )
         Spacer(
             Modifier.padding(horizontal = Dimens.SpaceS)
@@ -1500,13 +1503,13 @@ private fun TaskFilterBar(
             label = stringResource(R.string.task_group_and_sort),
             summary = displaySummary,
             onClick = onDisplaySettings,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(0.75f),
         )
     }
 }
 
 @Composable
-private fun TaskControlEntry(
+internal fun TaskControlEntry(
     icon: ImageVector,
     label: String,
     summary: String,
@@ -1536,8 +1539,6 @@ private fun TaskControlEntry(
                 summary,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -3803,15 +3804,6 @@ private fun DisplaySettingsSheet(
                         selected = selectedGrouping == item,
                         onClick = { selectedGrouping = item },
                         label = { Text(taskGroupingText(item)) },
-                        leadingIcon = if (item == TaskGrouping.List) {
-                            {
-                                Icon(
-                                    Icons.AutoMirrored.Outlined.ListAlt,
-                                    null,
-                                    Modifier.size(Dimens.IconSmall),
-                                )
-                            }
-                        } else null,
                     )
                 }
             }
@@ -3824,13 +3816,6 @@ private fun DisplaySettingsSheet(
                         selected = selectedOrdering.sortField == null,
                         onClick = { selectedOrdering = TaskOrdering.Smart },
                         label = { Text(stringResource(R.string.task_sort_smart)) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.AutoMirrored.Outlined.Sort,
-                                null,
-                                Modifier.size(Dimens.IconSmall),
-                            )
-                        },
                     )
                 }
                 items(TaskOrderingField.entries) { field ->
