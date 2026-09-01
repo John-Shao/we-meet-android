@@ -1467,15 +1467,29 @@ private fun TaskFilterBar(
     onDisplaySettings: () -> Unit,
 ) {
     val statusText = when (status) {
-        TaskListStatus.Open -> stringResource(R.string.task_incomplete)
-        TaskListStatus.All -> stringResource(R.string.task_all_statuses)
-        TaskListStatus.Completed -> stringResource(R.string.task_completed)
+        TaskListStatus.Open -> stringResource(R.string.task_summary_status_open)
+        TaskListStatus.All -> stringResource(R.string.task_summary_status_all)
+        TaskListStatus.Completed -> stringResource(R.string.task_summary_status_completed)
     }
-    val timeText = taskTimeFilterText(time)
+    val timeText = when (time) {
+        TaskTimeFilter.All -> stringResource(R.string.task_summary_time_all)
+        TaskTimeFilter.StartingToday -> stringResource(R.string.task_summary_time_starting_today)
+        else -> taskTimeFilterText(time)
+    }
     val priorityText = priorityFilter?.let { taskPriorityText(it) }
-        ?: stringResource(R.string.task_search_all_priorities)
+        ?: stringResource(R.string.task_summary_priority_all)
     val filterSummary = listOf(statusText, timeText, priorityText).joinToString(" · ")
-    val displaySummary = listOf(taskGroupingText(grouping), taskOrderingText(ordering))
+    val groupingText = when (grouping) {
+        TaskGrouping.None -> stringResource(R.string.task_summary_group_none)
+        TaskGrouping.Custom -> stringResource(R.string.task_summary_group_custom)
+        else -> taskGroupingText(grouping)
+    }
+    val orderingText = if (ordering.sortField == null) {
+        stringResource(R.string.task_summary_sort_smart)
+    } else {
+        taskOrderingText(ordering)
+    }
+    val displaySummary = listOf(groupingText, orderingText)
         .joinToString(" · ")
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = Dimens.MinTouchTarget)
@@ -1524,6 +1538,9 @@ internal fun TaskControlEntry(
             summary,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

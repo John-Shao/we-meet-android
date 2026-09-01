@@ -263,6 +263,15 @@
     <string name="task_filter_and_sort">Filteren en sorteren</string>
     <string name="task_filter_options">Filters</string>
     <string name="task_group_and_sort">Groeperen en sorteren</string>
+    <string name="task_summary_status_open">Open</string>
+    <string name="task_summary_status_all">Alle</string>
+    <string name="task_summary_status_completed">Voltooid</string>
+    <string name="task_summary_time_all">Alle data</string>
+    <string name="task_summary_time_starting_today">Vandaag</string>
+    <string name="task_summary_priority_all">Alle</string>
+    <string name="task_summary_group_none">Geen</string>
+    <string name="task_summary_group_custom">Aangepast</string>
+    <string name="task_summary_sort_smart">Slim</string>
     <string name="task_time_filter">Datum</string>
     <string name="task_time_all">Alle datums</string>
     <string name="task_time_starting_today">Begint vandaag</string>

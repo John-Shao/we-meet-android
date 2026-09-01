@@ -273,6 +273,15 @@
     <string name="task_filter_and_sort">筛选与排序</string>
     <string name="task_filter_options">筛选</string>
     <string name="task_group_and_sort">分组与排序</string>
+    <string name="task_summary_status_open">未完成</string>
+    <string name="task_summary_status_all">全部状态</string>
+    <string name="task_summary_status_completed">已完成</string>
+    <string name="task_summary_time_all">全部日期</string>
+    <string name="task_summary_time_starting_today">今天开始</string>
+    <string name="task_summary_priority_all">全部优先级</string>
+    <string name="task_summary_group_none">不分组</string>
+    <string name="task_summary_group_custom">自定义分组</string>
+    <string name="task_summary_sort_smart">智能排序</string>
     <string name="task_time_filter">时间筛选</string>
     <string name="task_time_all">全部日期</string>
     <string name="task_time_starting_today">今天开始</string>

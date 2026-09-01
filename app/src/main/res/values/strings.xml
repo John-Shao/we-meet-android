@@ -273,6 +273,15 @@
     <string name="task_filter_and_sort">Filter and sort</string>
     <string name="task_filter_options">Filters</string>
     <string name="task_group_and_sort">Group and sort</string>
+    <string name="task_summary_status_open">Open</string>
+    <string name="task_summary_status_all">All</string>
+    <string name="task_summary_status_completed">Done</string>
+    <string name="task_summary_time_all">Any date</string>
+    <string name="task_summary_time_starting_today">Today</string>
+    <string name="task_summary_priority_all">Any</string>
+    <string name="task_summary_group_none">None</string>
+    <string name="task_summary_group_custom">Custom</string>
+    <string name="task_summary_sort_smart">Smart</string>
     <string name="task_time_filter">Date</string>
     <string name="task_time_all">All dates</string>
     <string name="task_time_starting_today">Starting today</string>

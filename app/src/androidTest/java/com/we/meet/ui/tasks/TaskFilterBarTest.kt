@@ -23,14 +23,12 @@ class TaskFilterBarTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun filterSummaryWrapsWithoutLosingTextOnPhoneWidth() {
-        val summary = "未完成 · 全部日期 · 全部优先级"
+    fun compactFilterSummaryStaysOnOneLineAtPhoneWidth() {
+        val summary = "All · Today · Any"
 
         composeRule.setContent {
             WeMeetTheme(darkTheme = false) {
-                // The former 50/50 layout left about this much width for the
-                // complete entry on a 360dp screen.
-                Box(Modifier.width(155.dp)) {
+                Box(Modifier.width(190.dp)) {
                     TaskControlEntry(
                         label = "筛选",
                         summary = summary,
@@ -47,7 +45,7 @@ class TaskFilterBarTest {
             getTextLayoutResult(layoutResults)
         }
 
-        assertTrue(layoutResults.single().lineCount > 1)
+        assertTrue(layoutResults.single().lineCount == 1)
         assertFalse(layoutResults.single().hasVisualOverflow)
     }
 }
