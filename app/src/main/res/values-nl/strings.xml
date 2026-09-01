@@ -307,8 +307,12 @@
     <string name="task_assignee">Verantwoordelijke</string>
     <string name="task_creator">Maker</string>
     <string name="task_due_time">Deadline</string>
+    <string name="task_date_range">Datums</string>
+    <string name="task_select_date_range">Datums selecteren</string>
     <string name="task_add_to_list">Aan lijst toevoegen</string>
     <string name="task_list">Takenlijst</string>
+    <string name="task_group">Groep</string>
+    <string name="task_placement">Indeling</string>
     <string name="task_today">Vandaag</string>
     <string name="task_tomorrow">Morgen</string>
     <string name="task_add_subtask">Subtaak toevoegen</string>
@@ -328,7 +332,7 @@
     <string name="task_activity_placement">%1$s heeft deze taak verplaatst</string>
     <string name="task_activity_attachment">%1$s heeft een bijlage verwijderd</string>
     <string name="task_follow">Volgen</string>
-    <string name="task_unfollow">Gevolgd</string>
+    <string name="task_unfollow">Niet meer volgen</string>
     <string name="task_share">Delen</string>
     <string name="task_copy">Link kopiëren</string>
     <string name="task_duplicate">Taak dupliceren</string>

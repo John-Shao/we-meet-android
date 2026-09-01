@@ -84,6 +84,7 @@ class TaskBackendE2eTest {
         composeRule.onNodeWithTag(TASK_CREATE_SUBMIT_TEST_TAG).performClick()
 
         waitForTag(TASK_DETAIL_TEST_TAG, timeoutMillis = 45_000)
+        composeRule.onNodeWithTag("main-tab-tasks").assertDoesNotExist()
         composeRule.onNodeWithTag(TASK_DETAIL_TITLE_TEST_TAG)
             .assertIsDisplayed()
         composeRule.onNodeWithText(title).assertIsDisplayed()
@@ -100,6 +101,7 @@ class TaskBackendE2eTest {
         composeRule.onNodeWithText(delete).performClick()
 
         waitForTag(TASK_LIST_TEST_TAG, timeoutMillis = 30_000)
+        composeRule.onNodeWithTag("main-tab-tasks").assertIsDisplayed()
         composeRule.onNodeWithTag(TASK_DETAIL_TEST_TAG).assertDoesNotExist()
         composeRule.onNodeWithText(title).assertDoesNotExist()
     }

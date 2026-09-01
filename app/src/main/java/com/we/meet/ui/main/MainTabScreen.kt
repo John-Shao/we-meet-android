@@ -260,11 +260,13 @@ fun MainTabScreen(
     val taskNavDrawerState = rememberDrawerState(DrawerValue.Closed)
     val taskNavScope = rememberCoroutineScope()
     var taskNavController by remember { mutableStateOf<TaskNavController?>(null) }
+    var taskDetailVisible by remember { mutableStateOf(false) }
     // Close the task drawer when the user leaves the Tasks tab.
     LaunchedEffect(safeTab) {
         if (safeTab != MainTab.Tasks.ordinal && taskNavDrawerState.isOpen) {
             taskNavDrawerState.close()
         }
+        if (safeTab != MainTab.Tasks.ordinal) taskDetailVisible = false
     }
 
     // Identity for the 消息 header. TokenStore's getters are plain prefs reads, not
@@ -376,6 +378,7 @@ fun MainTabScreen(
                 onOpenSettings = onOpenTaskSettings,
                 onOpenTaskNav = { taskNavScope.launch { taskNavDrawerState.open() } },
                 onRegisterTaskNav = { taskNavController = it },
+                onDetailVisibilityChanged = { taskDetailVisible = it },
             )
         },
     )
@@ -476,11 +479,13 @@ fun MainTabScreen(
         ) {
             Scaffold(
                 bottomBar = {
-                    CompactTabBar(
-                        tabs = tabs,
-                        selectedTab = safeTab,
-                        onTabSelected = { selectedTab = it },
-                    )
+                    if (!(safeTab == MainTab.Tasks.ordinal && taskDetailVisible)) {
+                        CompactTabBar(
+                            tabs = tabs,
+                            selectedTab = safeTab,
+                            onTabSelected = { selectedTab = it },
+                        )
+                    }
                 },
             ) { padding ->
                 Box(

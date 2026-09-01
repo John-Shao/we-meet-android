@@ -307,8 +307,12 @@
     <string name="task_assignee">Responsable</string>
     <string name="task_creator">Créateur</string>
     <string name="task_due_time">Échéance</string>
+    <string name="task_date_range">Dates</string>
+    <string name="task_select_date_range">Sélectionner les dates</string>
     <string name="task_add_to_list">Ajouter à la liste</string>
     <string name="task_list">Liste de tâches</string>
+    <string name="task_group">Groupe</string>
+    <string name="task_placement">Organisation</string>
     <string name="task_today">Aujourd’hui</string>
     <string name="task_tomorrow">Demain</string>
     <string name="task_add_subtask">Ajouter une sous-tâche</string>
@@ -328,7 +332,7 @@
     <string name="task_activity_placement">%1$s a déplacé cette tâche</string>
     <string name="task_activity_attachment">%1$s a retiré une pièce jointe</string>
     <string name="task_follow">Suivre</string>
-    <string name="task_unfollow">Suivie</string>
+    <string name="task_unfollow">Ne plus suivre</string>
     <string name="task_share">Partager</string>
     <string name="task_copy">Copier le lien</string>
     <string name="task_duplicate">Dupliquer la tâche</string>

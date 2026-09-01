@@ -307,8 +307,12 @@
     <string name="task_assignee">Verantwortlich</string>
     <string name="task_creator">Erstellt von</string>
     <string name="task_due_time">Fälligkeit</string>
+    <string name="task_date_range">Zeitraum</string>
+    <string name="task_select_date_range">Zeitraum auswählen</string>
     <string name="task_add_to_list">Zu Liste hinzufügen</string>
     <string name="task_list">Aufgabenliste</string>
+    <string name="task_group">Gruppe</string>
+    <string name="task_placement">Zuordnung</string>
     <string name="task_today">Heute</string>
     <string name="task_tomorrow">Morgen</string>
     <string name="task_add_subtask">Unteraufgabe hinzufügen</string>
@@ -328,7 +332,7 @@
     <string name="task_activity_placement">%1$s hat diese Aufgabe verschoben</string>
     <string name="task_activity_attachment">%1$s hat einen Anhang entfernt</string>
     <string name="task_follow">Beobachten</string>
-    <string name="task_unfollow">Beobachtet</string>
+    <string name="task_unfollow">Nicht mehr beobachten</string>
     <string name="task_share">Teilen</string>
     <string name="task_copy">Link kopieren</string>
     <string name="task_duplicate">Aufgabe duplizieren</string>

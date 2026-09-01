@@ -122,6 +122,7 @@ import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -143,6 +144,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
@@ -218,12 +220,6 @@ private data class TaskCreateInput(
     val attachmentUri: Uri?,
 )
 
-private data class TaskPlacementOption(
-    val taskListId: String?,
-    val groupId: String?,
-    val label: String,
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskScreen(
@@ -232,6 +228,7 @@ fun TaskScreen(
     onOpenSettings: () -> Unit = {},
     onOpenTaskNav: () -> Unit = {},
     onRegisterTaskNav: (TaskNavController) -> Unit = {},
+    onDetailVisibilityChanged: (Boolean) -> Unit = {},
 ) {
     val owner = ownerName.ifBlank { stringResource(R.string.task_demo_owner) }
     val vm: TaskViewModel = viewModel(factory = TaskViewModel.Factory(app))
@@ -303,6 +300,10 @@ fun TaskScreen(
         )
     }
     SideEffect { onRegisterTaskNav(taskNavController) }
+    LaunchedEffect(page) { onDetailVisibilityChanged(page == TaskPage.Detail) }
+    DisposableEffect(Unit) {
+        onDispose { onDetailVisibilityChanged(false) }
+    }
     val selectedTask = ui.detail?.task?.takeIf { it.id == selectedTaskId }
         ?: (ui.tasks + ui.searchResults).firstOrNull { it.id == selectedTaskId }
         ?: ui.detail?.subtasks?.firstOrNull { it.id == selectedTaskId }
@@ -2434,7 +2435,8 @@ private fun TaskDetailPage(
     onCopyLink: () -> Unit,
     onMore: (TaskItem) -> Unit,
 ) {
-    var comment by remember { mutableStateOf("") }
+    var comment by remember(task.id) { mutableStateOf("") }
+    var activityExpanded by remember(task.id) { mutableStateOf(false) }
     Scaffold(
         modifier = Modifier.testTag(TASK_DETAIL_TEST_TAG),
         topBar = {
@@ -2447,7 +2449,9 @@ private fun TaskDetailPage(
                 IconButton(onClick = { onToggleFollow(task) }) {
                     Icon(
                         if (task.followed) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                        stringResource(R.string.task_follow),
+                        stringResource(
+                            if (task.followed) R.string.task_unfollow else R.string.task_follow,
+                        ),
                         tint = if (task.followed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     )
                 }
@@ -2466,26 +2470,35 @@ private fun TaskDetailPage(
             }
         },
         bottomBar = {
-            Surface(shadowElevation = Dimens.SpaceS) {
-                Row(
-                    Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(Dimens.SpaceM),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    OutlinedTextField(
-                        value = comment,
-                        onValueChange = { comment = it },
-                        placeholder = { Text(stringResource(R.string.task_comment_hint)) },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true,
-                        keyboardActions = KeyboardActions(
-                            onDone = { onSendComment(task, comment) { comment = "" } },
-                        ),
-                    )
-                    IconButton(
-                        onClick = { onSendComment(task, comment) { comment = "" } },
-                        enabled = comment.isNotBlank() && task.canComment,
+            if (task.canComment) {
+                Surface(shadowElevation = Dimens.SpaceS) {
+                    Row(
+                        Modifier.fillMaxWidth().navigationBarsPadding().imePadding()
+                            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.Send, stringResource(R.string.task_send), tint = if (comment.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                        OutlinedTextField(
+                            value = comment,
+                            onValueChange = { comment = it },
+                            placeholder = { Text(stringResource(R.string.task_comment_hint)) },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                            keyboardActions = KeyboardActions(
+                                onSend = { onSendComment(task, comment) { comment = "" } },
+                            ),
+                        )
+                        IconButton(
+                            onClick = { onSendComment(task, comment) { comment = "" } },
+                            enabled = comment.isNotBlank(),
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.Send,
+                                stringResource(R.string.task_send),
+                                tint = if (comment.isNotBlank()) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
@@ -2550,14 +2563,20 @@ private fun TaskDetailPage(
                     )
                     FormValueRow(
                         Icons.Outlined.CalendarMonth,
-                        R.string.task_due_time,
-                        task.dueLabel,
+                        R.string.task_date_range,
+                        compactTaskDateRangeLabel(task.startDate, task.dueDate, task.dueLabel),
                         onEditDueDate.takeIf { task.canEdit },
                     )
                     FormValueRow(
                         Icons.AutoMirrored.Outlined.ListAlt,
                         R.string.task_list,
                         task.listName.ifBlank { stringResource(R.string.task_standalone) },
+                        onEditPlacement.takeIf { task.canEdit },
+                    )
+                    FormValueRow(
+                        Icons.Outlined.AccountTree,
+                        R.string.task_group,
+                        task.groupName ?: stringResource(R.string.task_ungrouped),
                         onEditPlacement.takeIf { task.canEdit },
                     )
                     FormValueRow(
@@ -2705,49 +2724,56 @@ private fun TaskDetailPage(
                         Text(stringResource(R.string.task_add_follower))
                     }
                 }
-                TextButton(onClick = { onToggleFollow(task) }) {
-                    Text(
-                        if (task.followed) stringResource(R.string.task_unfollow)
-                        else stringResource(R.string.task_follow),
-                    )
-                }
             }
             item {
-                DetailSectionTitle(R.string.task_activity, null)
-                detail?.activities.orEmpty().forEach { activity ->
-                    Column(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS)) {
-                        Text(
-                            activityText(activity),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        if (activity.createdAt.isNotBlank()) {
-                            Text(
-                                activity.createdAt.take(16).replace('T', ' '),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
+                DetailSectionTitle(
+                    R.string.task_comments,
+                    detail?.comments.orEmpty().size.toString(),
+                )
+            }
+            items(detail?.comments.orEmpty(), key = { it.id }) { taskComment ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    Avatar(
+                        name = taskComment.author,
+                        size = Dimens.AvatarS,
+                        avatarUrl = taskComment.authorAvatarUrl,
+                        stableId = taskComment.authorId.ifBlank { taskComment.id },
+                    )
+                    Spacer(Modifier.width(Dimens.SpaceM))
+                    Column(Modifier.weight(1f)) {
+                        Text(taskComment.author, fontWeight = FontWeight.SemiBold)
+                        Text(taskComment.content)
                     }
                 }
             }
-            if (!detail?.comments.isNullOrEmpty()) {
-                item { DetailSectionTitle(R.string.task_comments, detail?.comments?.size.toString()) }
-                items(detail?.comments.orEmpty(), key = { it.id }) { taskComment ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
-                        verticalAlignment = Alignment.Top,
-                    ) {
-                        Avatar(
-                            name = taskComment.author,
-                            size = Dimens.AvatarS,
-                            avatarUrl = taskComment.authorAvatarUrl,
-                            stableId = taskComment.authorId.ifBlank { taskComment.id },
-                        )
-                        Spacer(Modifier.width(Dimens.SpaceM))
-                        Column(Modifier.weight(1f)) {
-                            Text(taskComment.author, fontWeight = FontWeight.SemiBold)
-                            Text(taskComment.content)
+            item {
+                val activities = detail?.activities.orEmpty()
+                DetailSectionTitle(
+                    labelRes = R.string.task_activity,
+                    value = activities.size.toString(),
+                    expanded = activityExpanded.takeIf { activities.isNotEmpty() },
+                    onClick = { activityExpanded = !activityExpanded },
+                )
+                AnimatedVisibility(visible = activityExpanded) {
+                    Column {
+                        activities.forEach { activity ->
+                            Column(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS)) {
+                                Text(
+                                    activityText(activity),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                if (activity.createdAt.isNotBlank()) {
+                                    Text(
+                                        activity.createdAt.take(16).replace('T', ' '),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -3072,7 +3098,7 @@ private fun TaskFormCard(content: @Composable ColumnScope.() -> Unit) {
 private fun FormValueRow(icon: ImageVector, labelRes: Int, value: String, onClick: (() -> Unit)? = null) {
     Row(
         modifier = Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceL),
+            .padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceM),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -3097,10 +3123,29 @@ private fun ActionRow(icon: ImageVector, labelRes: Int, onClick: () -> Unit = {}
 }
 
 @Composable
-private fun DetailSectionTitle(labelRes: Int, value: String?) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+private fun DetailSectionTitle(
+    labelRes: Int,
+    value: String?,
+    expanded: Boolean? = null,
+    onClick: () -> Unit = {},
+) {
+    val modifier = if (expanded == null) {
+        Modifier.fillMaxWidth()
+    } else {
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Dimens.SpaceS)).clickable(onClick = onClick)
+            .padding(vertical = Dimens.SpaceXs)
+    }
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(labelRes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
         if (value != null) Text(value, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (expanded != null) {
+            Spacer(Modifier.width(Dimens.SpaceS))
+            Icon(
+                if (expanded) Icons.Outlined.ExpandMore else Icons.Outlined.ChevronRight,
+                null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
     Spacer(Modifier.height(Dimens.SpaceS))
 }
@@ -3237,7 +3282,48 @@ private fun TaskDateRangeDialog(
             }
         },
     ) {
-        DateRangePicker(state = state, showModeToggle = false)
+        DateRangePicker(
+            state = state,
+            showModeToggle = false,
+            headline = {
+                val start = state.selectedStartDateMillis?.toUtcDateString()
+                val end = state.selectedEndDateMillis?.toUtcDateString()
+                Text(
+                    text = when {
+                        start == null -> stringResource(R.string.task_select_date_range)
+                        end == null -> "$start–…"
+                        else -> compactTaskDateRangeLabel(start, end, "$start–$end")
+                    },
+                    modifier = Modifier.padding(
+                        start = Dimens.SpaceXl,
+                        end = Dimens.SpaceXl,
+                        bottom = Dimens.SpaceM,
+                    ),
+                    style = MaterialTheme.typography.headlineSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            },
+        )
+    }
+}
+
+internal fun compactTaskDateRangeLabel(
+    startDate: String?,
+    dueDate: String?,
+    fallback: String,
+): String {
+    val start = runCatching { startDate?.let(LocalDate::parse) }.getOrNull()
+    val due = runCatching { dueDate?.let(LocalDate::parse) }.getOrNull()
+    return when {
+        start == null && due == null -> fallback
+        start == null -> due.toString()
+        due == null || due == start -> start.toString()
+        start.year == due.year && start.month == due.month ->
+            "${start}–${due.dayOfMonth.toString().padStart(2, '0')}"
+        start.year == due.year ->
+            "${start}–${due.monthValue.toString().padStart(2, '0')}-${due.dayOfMonth.toString().padStart(2, '0')}"
+        else -> "${start}–${due}"
     }
 }
 
@@ -3289,56 +3375,101 @@ private fun TaskPlacementSheet(
 ) {
     val standaloneLabel = stringResource(R.string.task_standalone)
     val ungroupedLabel = stringResource(R.string.task_ungrouped)
-    val groups = taskGroups
-    val options = buildList {
-        add(TaskPlacementOption(null, task.groupId, standaloneLabel))
-        taskLists.forEach { list ->
-            add(TaskPlacementOption(list.id, task.groupId, list.name))
-        }
-        add(TaskPlacementOption(task.listId, null, ungroupedLabel))
-        groups.sortedBy(TaskGroupItem::sortOrder).forEach { group ->
-            add(TaskPlacementOption(task.listId, group.id, group.name))
-        }
-    }
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().padding(bottom = Dimens.SpaceXl)) {
             Text(
-                stringResource(R.string.task_list),
+                stringResource(R.string.task_placement),
                 modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
             if (saving) LinearProgressIndicator(Modifier.fillMaxWidth())
             LazyColumn(Modifier.fillMaxWidth().heightIn(max = Dimens.SheetContentMaxHeight)) {
-                items(
-                    items = options,
-                    key = { "${it.taskListId.orEmpty()}:${it.groupId.orEmpty()}:${it.label}" },
-                ) { option ->
-                    val selected = task.listId == option.taskListId &&
-                        task.groupId == option.groupId
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
-                            .clickable(enabled = !saving && !selected) {
-                                onSelect(option.taskListId, option.groupId)
-                            }
-                            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceL),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            if (option.taskListId == null) Icons.Outlined.FolderOpen
-                            else Icons.AutoMirrored.Outlined.ListAlt,
-                            null,
-                            tint = if (selected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(Modifier.width(Dimens.SpaceM))
-                        Text(option.label, modifier = Modifier.weight(1f))
-                        if (selected) {
-                            Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary)
-                        }
-                    }
+                item { TaskPlacementSectionTitle(R.string.task_list) }
+                item {
+                    TaskPlacementRow(
+                        icon = Icons.Outlined.FolderOpen,
+                        label = standaloneLabel,
+                        selected = task.listId == null,
+                        saving = saving,
+                        onClick = { onSelect(null, task.groupId) },
+                    )
+                }
+                items(taskLists, key = TaskListItem::id) { list ->
+                    TaskPlacementRow(
+                        icon = Icons.AutoMirrored.Outlined.ListAlt,
+                        label = list.name,
+                        selected = task.listId == list.id,
+                        saving = saving,
+                        onClick = { onSelect(list.id, task.groupId) },
+                    )
+                }
+                item {
+                    HorizontalDivider(Modifier.padding(vertical = Dimens.SpaceS))
+                    TaskPlacementSectionTitle(R.string.task_group_by_custom)
+                }
+                item {
+                    TaskPlacementRow(
+                        icon = Icons.Outlined.AccountTree,
+                        label = ungroupedLabel,
+                        selected = task.groupId == null,
+                        saving = saving,
+                        onClick = { onSelect(task.listId, null) },
+                    )
+                }
+                items(taskGroups.sortedBy(TaskGroupItem::sortOrder), key = TaskGroupItem::id) { group ->
+                    TaskPlacementRow(
+                        icon = Icons.Outlined.AccountTree,
+                        label = group.name,
+                        selected = task.groupId == group.id,
+                        saving = saving,
+                        onClick = { onSelect(task.listId, group.id) },
+                    )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun TaskPlacementSectionTitle(labelRes: Int) {
+    Text(
+        text = stringResource(labelRes),
+        modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceS),
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun TaskPlacementRow(
+    icon: ImageVector,
+    label: String,
+    selected: Boolean,
+    saving: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .selectable(
+                selected = selected,
+                enabled = !saving && !selected,
+                role = Role.RadioButton,
+                onClick = onClick,
+            )
+            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            icon,
+            null,
+            tint = if (selected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(Dimens.SpaceM))
+        Text(label, modifier = Modifier.weight(1f))
+        if (selected) {
+            Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary)
         }
     }
 }
