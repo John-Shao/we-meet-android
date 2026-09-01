@@ -45,6 +45,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ListAlt
 import androidx.compose.material.icons.automirrored.outlined.Sort
@@ -2546,7 +2547,7 @@ private fun TaskDetailPage(
     onMore: (TaskItem) -> Unit,
 ) {
     var comment by remember(task.id) { mutableStateOf("") }
-    var showCommentDialog by remember(task.id) { mutableStateOf(false) }
+    var commentsExpanded by remember(task.id) { mutableStateOf(false) }
     var activityExpanded by remember(task.id) { mutableStateOf(false) }
     Scaffold(
         modifier = Modifier.testTag(TASK_DETAIL_TEST_TAG),
@@ -2821,30 +2822,49 @@ private fun TaskDetailPage(
                 }
             }
             item {
+                val comments = detail?.comments.orEmpty()
+                val canExpandComments = comments.isNotEmpty() || task.canComment
                 DetailSectionTitle(
-                    R.string.task_comments,
-                    detail?.comments.orEmpty().size.toString(),
-                    actionContentDescriptionRes = R.string.task_add_comment.takeIf {
-                        task.canComment
-                    },
-                    onAction = { showCommentDialog = true }.takeIf { task.canComment },
+                    labelRes = R.string.task_comments,
+                    value = comments.size.toString(),
+                    expanded = commentsExpanded.takeIf { canExpandComments },
+                    onClick = { commentsExpanded = !commentsExpanded },
                 )
-            }
-            items(detail?.comments.orEmpty(), key = { it.id }) { taskComment ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
-                    verticalAlignment = Alignment.Top,
-                ) {
-                    Avatar(
-                        name = taskComment.author,
-                        size = Dimens.AvatarS,
-                        avatarUrl = taskComment.authorAvatarUrl,
-                        stableId = taskComment.authorId.ifBlank { taskComment.id },
-                    )
-                    Spacer(Modifier.width(Dimens.SpaceM))
-                    Column(Modifier.weight(1f)) {
-                        Text(taskComment.author, fontWeight = FontWeight.SemiBold)
-                        Text(taskComment.content)
+                AnimatedVisibility(visible = commentsExpanded) {
+                    Column {
+                        comments.forEach { taskComment ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(vertical = Dimens.SpaceS),
+                                verticalAlignment = Alignment.Top,
+                            ) {
+                                Avatar(
+                                    name = taskComment.author,
+                                    size = Dimens.AvatarS,
+                                    avatarUrl = taskComment.authorAvatarUrl,
+                                    stableId = taskComment.authorId.ifBlank {
+                                        taskComment.id
+                                    },
+                                )
+                                Spacer(Modifier.width(Dimens.SpaceM))
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        taskComment.author,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    Text(taskComment.content)
+                                }
+                            }
+                        }
+                        if (task.canComment) {
+                            TaskCommentEditor(
+                                value = comment,
+                                onValueChange = { comment = it },
+                                onSend = {
+                                    onSendComment(task, comment) { comment = "" }
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -2878,22 +2898,6 @@ private fun TaskDetailPage(
                 }
             }
         }
-    }
-    if (showCommentDialog) {
-        TaskCommentDialog(
-            value = comment,
-            onValueChange = { comment = it },
-            onDismiss = {
-                comment = ""
-                showCommentDialog = false
-            },
-            onSend = {
-                onSendComment(task, comment) {
-                    comment = ""
-                    showCommentDialog = false
-                }
-            },
-        )
     }
 }
 
@@ -3527,8 +3531,6 @@ private fun DetailSectionTitle(
     value: String?,
     expanded: Boolean? = null,
     onClick: () -> Unit = {},
-    actionContentDescriptionRes: Int? = null,
-    onAction: (() -> Unit)? = null,
 ) {
     val modifier = if (expanded == null) {
         Modifier.fillMaxWidth()
@@ -3539,18 +3541,6 @@ private fun DetailSectionTitle(
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(labelRes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
         if (value != null) Text(value, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        if (actionContentDescriptionRes != null && onAction != null) {
-            Spacer(Modifier.width(Dimens.SpaceS))
-            Box(
-                modifier = Modifier.size(Dimens.MinTouchTarget).clickable(onClick = onAction),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.Filled.Add,
-                    contentDescription = stringResource(actionContentDescriptionRes),
-                )
-            }
-        }
         if (expanded != null) {
             Spacer(Modifier.width(Dimens.SpaceS))
             Icon(
@@ -3564,38 +3554,43 @@ private fun DetailSectionTitle(
 }
 
 @Composable
-private fun TaskCommentDialog(
+private fun TaskCommentEditor(
     value: String,
     onValueChange: (String) -> Unit,
-    onDismiss: () -> Unit,
     onSend: () -> Unit,
 ) {
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.task_add_comment)) },
-        text = {
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                placeholder = { Text(stringResource(R.string.task_comment_hint)) },
-                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
-                minLines = 3,
-                maxLines = 6,
+    val canSend = value.isNotBlank()
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = { Text(stringResource(R.string.task_comment_hint)) },
+            modifier = Modifier.weight(1f).focusRequester(focusRequester),
+            minLines = 2,
+            maxLines = 5,
+        )
+        Spacer(Modifier.width(Dimens.SpaceS))
+        Box(
+            modifier = Modifier.size(Dimens.MinTouchTarget)
+                .clickable(enabled = canSend, onClick = onSend),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.Send,
+                contentDescription = stringResource(R.string.task_send),
+                tint = if (canSend) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
             )
-        },
-        confirmButton = {
-            TextButton(onClick = onSend, enabled = value.isNotBlank()) {
-                Text(stringResource(R.string.task_send))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.task_cancel))
-            }
-        },
-    )
+        }
+    }
 }
 
 @Composable
