@@ -3810,34 +3810,50 @@ private fun DisplaySettingsSheet(
             Spacer(Modifier.height(Dimens.IconSmall))
             Text(stringResource(R.string.task_sorting), fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(Dimens.SpaceS))
-            FilterChip(
-                selected = selectedOrdering.sortField == null,
-                onClick = { selectedOrdering = TaskOrdering.Smart },
-                label = { Text(stringResource(R.string.task_sort_smart)) },
-                leadingIcon = {
-                    Icon(
-                        Icons.AutoMirrored.Outlined.Sort,
-                        null,
-                        Modifier.size(Dimens.IconSmall),
-                    )
-                },
-            )
-            TaskOrderingField.entries.forEach { field ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().heightIn(min = Dimens.MinTouchTarget),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(taskOrderingFieldText(field), modifier = Modifier.weight(1f))
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                item {
                     FilterChip(
-                        selected = selectedOrdering == TaskOrdering(
-                            field,
-                            TaskSortDirection.Ascending,
-                        ),
+                        selected = selectedOrdering.sortField == null,
+                        onClick = { selectedOrdering = TaskOrdering.Smart },
+                        label = { Text(stringResource(R.string.task_sort_smart)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.AutoMirrored.Outlined.Sort,
+                                null,
+                                Modifier.size(Dimens.IconSmall),
+                            )
+                        },
+                    )
+                }
+                items(TaskOrderingField.entries) { field ->
+                    FilterChip(
+                        selected = selectedOrdering.sortField == field,
                         onClick = {
                             selectedOrdering = TaskOrdering(
-                                field,
-                                TaskSortDirection.Ascending,
+                                sortField = field,
+                                direction = if (selectedOrdering.sortField == field) {
+                                    selectedOrdering.direction
+                                } else {
+                                    TaskSortDirection.Ascending
+                                },
                             )
+                        },
+                        label = { Text(taskOrderingFieldText(field)) },
+                    )
+                }
+            }
+            selectedOrdering.sortField?.let { field ->
+                Spacer(Modifier.height(Dimens.IconSmall))
+                Text(
+                    stringResource(R.string.task_sort_direction),
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(Modifier.height(Dimens.SpaceS))
+                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                    FilterChip(
+                        selected = selectedOrdering.direction == TaskSortDirection.Ascending,
+                        onClick = {
+                            selectedOrdering = TaskOrdering(field, TaskSortDirection.Ascending)
                         },
                         label = { Text(stringResource(R.string.task_sort_ascending)) },
                         leadingIcon = {
@@ -3848,17 +3864,10 @@ private fun DisplaySettingsSheet(
                             )
                         },
                     )
-                    Spacer(Modifier.width(Dimens.SpaceS))
                     FilterChip(
-                        selected = selectedOrdering == TaskOrdering(
-                            field,
-                            TaskSortDirection.Descending,
-                        ),
+                        selected = selectedOrdering.direction == TaskSortDirection.Descending,
                         onClick = {
-                            selectedOrdering = TaskOrdering(
-                                field,
-                                TaskSortDirection.Descending,
-                            )
+                            selectedOrdering = TaskOrdering(field, TaskSortDirection.Descending)
                         },
                         label = { Text(stringResource(R.string.task_sort_descending)) },
                         leadingIcon = {
