@@ -261,6 +261,8 @@
     <string name="task_navigation">Aufgabennavigation</string>
     <string name="task_filter">Aufgaben filtern</string>
     <string name="task_filter_and_sort">Filtern und sortieren</string>
+    <string name="task_filter_options">Filter</string>
+    <string name="task_group_and_sort">Gruppieren und sortieren</string>
     <string name="task_time_filter">Datum</string>
     <string name="task_time_all">Alle Daten</string>
     <string name="task_time_starting_today">Beginnt heute</string>
@@ -280,6 +282,8 @@
     <string name="task_sort_ascending">Aufsteigend</string>
     <string name="task_sort_descending">Absteigend</string>
     <string name="task_sort_created_at">Erstellt am</string>
+    <string name="task_sort_start_date">Startdatum</string>
+    <string name="task_sort_due_date">Fälligkeitsdatum</string>
     <string name="task_sort_due_time">Fälligkeit</string>
     <string name="task_sort_recently_created">Kürzlich erstellt</string>
     <string name="task_apply">Anwenden</string>

@@ -261,6 +261,8 @@
     <string name="task_navigation">Navigation des tâches</string>
     <string name="task_filter">Filtrer les tâches</string>
     <string name="task_filter_and_sort">Filtrer et trier</string>
+    <string name="task_filter_options">Filtres</string>
+    <string name="task_group_and_sort">Grouper et trier</string>
     <string name="task_time_filter">Date</string>
     <string name="task_time_all">Toutes les dates</string>
     <string name="task_time_starting_today">Commence aujourd’hui</string>
@@ -280,6 +282,8 @@
     <string name="task_sort_ascending">Croissant</string>
     <string name="task_sort_descending">Décroissant</string>
     <string name="task_sort_created_at">Date de création</string>
+    <string name="task_sort_start_date">Date de début</string>
+    <string name="task_sort_due_date">Date d’échéance</string>
     <string name="task_sort_due_time">Échéance</string>
     <string name="task_sort_recently_created">Créées récemment</string>
     <string name="task_apply">Appliquer</string>

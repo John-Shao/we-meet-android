@@ -271,6 +271,8 @@
     <string name="task_navigation">任务导航</string>
     <string name="task_filter">筛选任务</string>
     <string name="task_filter_and_sort">筛选与排序</string>
+    <string name="task_filter_options">筛选</string>
+    <string name="task_group_and_sort">分组与排序</string>
     <string name="task_time_filter">时间筛选</string>
     <string name="task_time_all">全部日期</string>
     <string name="task_time_starting_today">今天开始</string>
@@ -290,6 +292,8 @@
     <string name="task_sort_ascending">升序</string>
     <string name="task_sort_descending">降序</string>
     <string name="task_sort_created_at">创建时间</string>
+    <string name="task_sort_start_date">开始时间</string>
+    <string name="task_sort_due_date">截止时间</string>
     <string name="task_sort_due_time">截止时间</string>
     <string name="task_sort_recently_created">最近创建</string>
     <string name="task_apply">应用</string>

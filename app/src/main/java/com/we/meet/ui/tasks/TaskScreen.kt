@@ -240,6 +240,7 @@ fun TaskScreen(
     var selectedTaskId by remember { mutableStateOf<String?>(null) }
     var detailBackStack by remember { mutableStateOf<List<TaskItem>>(emptyList()) }
     var showFilter by remember { mutableStateOf(false) }
+    var showDisplaySettings by remember { mutableStateOf(false) }
     var showCreateSavedView by remember { mutableStateOf(false) }
     var showSavedViewActions by remember { mutableStateOf(false) }
     var confirmDeleteSavedView by remember { mutableStateOf(false) }
@@ -390,6 +391,7 @@ fun TaskScreen(
                 onSearch = { page = TaskPage.Search },
                 onSettings = onOpenSettings,
                 onFilter = { showFilter = true },
+                onDisplaySettings = { showDisplaySettings = true },
                 onSavedViewAction = {
                     if (ui.activeSavedView == null) {
                         showCreateSavedView = true
@@ -548,10 +550,27 @@ fun TaskScreen(
             status = ui.status,
             time = ui.time,
             priority = ui.priorityFilter,
+            onApply = { status, time, priority ->
+                vm.applyListFilter(status, time, priority, ui.grouping, ui.ordering)
+            },
+            onDismiss = { showFilter = false },
+        )
+    }
+
+    if (showDisplaySettings) {
+        DisplaySettingsSheet(
             grouping = ui.grouping,
             ordering = ui.ordering,
-            onApply = vm::applyListFilter,
-            onDismiss = { showFilter = false },
+            onApply = { grouping, ordering ->
+                vm.applyListFilter(
+                    ui.status,
+                    ui.time,
+                    ui.priorityFilter,
+                    grouping,
+                    ordering,
+                )
+            },
+            onDismiss = { showDisplaySettings = false },
         )
     }
 
@@ -1232,6 +1251,7 @@ private fun TaskListPage(
     onSearch: () -> Unit,
     onSettings: () -> Unit,
     onFilter: () -> Unit,
+    onDisplaySettings: () -> Unit,
     onSavedViewAction: () -> Unit,
     onCreate: () -> Unit,
     onTaskClick: (TaskItem) -> Unit,
@@ -1307,13 +1327,13 @@ private fun TaskListPage(
                 onSavedViewAction = onSavedViewAction,
             )
             TaskFilterBar(
-                view = view,
                 status = status,
                 time = time,
                 priorityFilter = priorityFilter,
                 grouping = grouping,
                 ordering = ordering,
                 onFilter = onFilter,
+                onDisplaySettings = onDisplaySettings,
             )
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
 
@@ -1438,13 +1458,13 @@ private fun TaskHomeHeader(
 
 @Composable
 private fun TaskFilterBar(
-    view: TaskView,
     status: TaskListStatus,
     time: TaskTimeFilter,
     priorityFilter: TaskPriority?,
     grouping: TaskGrouping,
     ordering: TaskOrdering,
     onFilter: () -> Unit,
+    onDisplaySettings: () -> Unit,
 ) {
     val statusText = when (status) {
         TaskListStatus.Open -> stringResource(R.string.task_incomplete)
@@ -1454,24 +1474,72 @@ private fun TaskFilterBar(
     val timeText = taskTimeFilterText(time)
     val priorityText = priorityFilter?.let { taskPriorityText(it) }
         ?: stringResource(R.string.task_search_all_priorities)
-    val groupingText = taskGroupingText(grouping)
+    val filterSummary = listOf(statusText, timeText, priorityText).joinToString(" · ")
+    val displaySummary = listOf(taskGroupingText(grouping), taskOrderingText(ordering))
+        .joinToString(" · ")
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = Dimens.MinTouchTarget)
-            .clickable(onClick = onFilter)
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            listOf(statusText, timeText, priorityText, groupingText, taskOrderingText(ordering))
-                .joinToString(" · "),
+        TaskControlEntry(
+            icon = Icons.Outlined.Tune,
+            label = stringResource(R.string.task_filter_options),
+            summary = filterSummary,
+            onClick = onFilter,
             modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
         )
-        Spacer(Modifier.width(Dimens.SpaceM))
-        Icon(Icons.Outlined.Tune, stringResource(R.string.task_filter))
+        Spacer(
+            Modifier.padding(horizontal = Dimens.SpaceS)
+                .width(Dimens.DividerThin)
+                .height(Dimens.IconLarge)
+                .background(MaterialTheme.colorScheme.outlineVariant),
+        )
+        TaskControlEntry(
+            icon = Icons.AutoMirrored.Outlined.Sort,
+            label = stringResource(R.string.task_group_and_sort),
+            summary = displaySummary,
+            onClick = onDisplaySettings,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun TaskControlEntry(
+    icon: ImageVector,
+    label: String,
+    summary: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.clip(RoundedCornerShape(Dimens.SpaceS))
+            .clickable(onClick = onClick)
+            .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            icon,
+            contentDescription = label,
+            modifier = Modifier.size(Dimens.IconSmall),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(Dimens.SpaceS))
+        Column(Modifier.weight(1f)) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                summary,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -3611,16 +3679,12 @@ private fun FilterSheet(
     status: TaskListStatus,
     time: TaskTimeFilter,
     priority: TaskPriority?,
-    grouping: TaskGrouping,
-    ordering: TaskOrdering,
-    onApply: (TaskListStatus, TaskTimeFilter, TaskPriority?, TaskGrouping, TaskOrdering) -> Unit,
+    onApply: (TaskListStatus, TaskTimeFilter, TaskPriority?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var selectedStatus by remember(status) { mutableStateOf(status) }
     var selectedTime by remember(time) { mutableStateOf(time) }
     var selectedPriority by remember(priority) { mutableStateOf(priority) }
-    var selectedGrouping by remember(grouping) { mutableStateOf(grouping) }
-    var selectedOrdering by remember(ordering) { mutableStateOf(ordering) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
@@ -3629,7 +3693,7 @@ private fun FilterSheet(
                 .padding(bottom = Dimens.IconLarge),
         ) {
             Text(
-                stringResource(R.string.task_filter_and_sort),
+                stringResource(R.string.task_filter_options),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
@@ -3684,7 +3748,45 @@ private fun FilterSheet(
                     )
                 }
             }
-            Spacer(Modifier.height(Dimens.IconSmall))
+            Spacer(Modifier.height(Dimens.SpaceXl))
+            Button(
+                onClick = {
+                    onApply(selectedStatus, selectedTime, selectedPriority)
+                    onDismiss()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                ),
+            ) {
+                Text(stringResource(R.string.task_apply))
+            }
+        }
+    }
+}
+
+@Composable
+private fun DisplaySettingsSheet(
+    grouping: TaskGrouping,
+    ordering: TaskOrdering,
+    onApply: (TaskGrouping, TaskOrdering) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var selectedGrouping by remember(grouping) { mutableStateOf(grouping) }
+    var selectedOrdering by remember(ordering) { mutableStateOf(ordering) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+                .padding(horizontal = Dimens.SpaceXl)
+                .padding(bottom = Dimens.IconLarge),
+        ) {
+            Text(
+                stringResource(R.string.task_group_and_sort),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(Dimens.SpaceXl))
             Text(stringResource(R.string.task_grouping), fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(Dimens.SpaceS))
             LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
@@ -3772,13 +3874,7 @@ private fun FilterSheet(
             Spacer(Modifier.height(Dimens.SpaceXl))
             Button(
                 onClick = {
-                    onApply(
-                        selectedStatus,
-                        selectedTime,
-                        selectedPriority,
-                        selectedGrouping,
-                        selectedOrdering,
-                    )
+                    onApply(selectedGrouping, selectedOrdering)
                     onDismiss()
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -3903,8 +3999,8 @@ private fun taskOrderingFieldText(field: TaskOrderingField): String = stringReso
     when (field) {
         TaskOrderingField.Assignee -> R.string.task_assignee
         TaskOrderingField.Priority -> R.string.task_priority
-        TaskOrderingField.StartDate -> R.string.task_group_by_start_date
-        TaskOrderingField.DueDate -> R.string.task_group_by_due_date
+        TaskOrderingField.StartDate -> R.string.task_sort_start_date
+        TaskOrderingField.DueDate -> R.string.task_sort_due_date
         TaskOrderingField.Creator -> R.string.task_creator
         TaskOrderingField.CreatedAt -> R.string.task_sort_created_at
     },
