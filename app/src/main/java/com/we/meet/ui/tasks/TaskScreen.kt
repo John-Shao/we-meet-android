@@ -3692,14 +3692,14 @@ private fun FilterSheet(
                     label = { Text(stringResource(R.string.task_incomplete)) },
                 )
                 FilterChip(
-                    selected = selectedStatus == TaskListStatus.All,
-                    onClick = { selectedStatus = TaskListStatus.All },
-                    label = { Text(stringResource(R.string.task_all_statuses)) },
-                )
-                FilterChip(
                     selected = selectedStatus == TaskListStatus.Completed,
                     onClick = { selectedStatus = TaskListStatus.Completed },
                     label = { Text(stringResource(R.string.task_completed)) },
+                )
+                FilterChip(
+                    selected = selectedStatus == TaskListStatus.All,
+                    onClick = { selectedStatus = TaskListStatus.All },
+                    label = { Text(stringResource(R.string.task_all_statuses)) },
                 )
             }
             Spacer(Modifier.height(Dimens.IconSmall))
