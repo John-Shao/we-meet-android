@@ -116,23 +116,6 @@ class TaskModelsTest {
     }
 
     @Test
-    fun detailDateRangeUsesCompactUnambiguousLabels() {
-        assertEquals(
-            "2026-08-24–29",
-            compactTaskDateRangeLabel("2026-08-24", "2026-08-29", "fallback"),
-        )
-        assertEquals(
-            "2026-08-24–09-02",
-            compactTaskDateRangeLabel("2026-08-24", "2026-09-02", "fallback"),
-        )
-        assertEquals(
-            "2026-08-24–2027-01-02",
-            compactTaskDateRangeLabel("2026-08-24", "2027-01-02", "fallback"),
-        )
-        assertEquals("No dates", compactTaskDateRangeLabel(null, null, "No dates"))
-    }
-
-    @Test
     fun taskMappingKeepsTheDisplayedAssigneeAvatar() {
         val creator = TaskUserDto(
             id = "creator",

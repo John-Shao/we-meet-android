@@ -307,8 +307,10 @@
     <string name="task_assignee">Responsable</string>
     <string name="task_creator">Créateur</string>
     <string name="task_due_time">Échéance</string>
-    <string name="task_date_range">Dates</string>
-    <string name="task_select_date_range">Sélectionner les dates</string>
+    <string name="task_start_date">Date de début</string>
+    <string name="task_due_date">Date d’échéance</string>
+    <string name="task_date_not_set">Non définie</string>
+    <string name="task_clear_date">Effacer la date</string>
     <string name="task_add_to_list">Ajouter à la liste</string>
     <string name="task_list">Liste de tâches</string>
     <string name="task_group">Groupe</string>
@@ -415,7 +417,6 @@
     <string name="task_group_name_hint">Nom du groupe</string>
     <string name="task_confirm">Confirmer</string>
     <string name="task_cancel">Annuler</string>
-    <string name="task_clear_dates">Effacer les dates</string>
     <string name="task_repeat_frequency">Fréquence</string>
     <string name="task_repeat_interval">Répéter tous les</string>
     <string name="task_repeat_ends">Fin</string>

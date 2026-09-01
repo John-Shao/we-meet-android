@@ -307,8 +307,10 @@
     <string name="task_assignee">Verantwoordelijke</string>
     <string name="task_creator">Maker</string>
     <string name="task_due_time">Deadline</string>
-    <string name="task_date_range">Datums</string>
-    <string name="task_select_date_range">Datums selecteren</string>
+    <string name="task_start_date">Startdatum</string>
+    <string name="task_due_date">Vervaldatum</string>
+    <string name="task_date_not_set">Niet ingesteld</string>
+    <string name="task_clear_date">Datum wissen</string>
     <string name="task_add_to_list">Aan lijst toevoegen</string>
     <string name="task_list">Takenlijst</string>
     <string name="task_group">Groep</string>
@@ -415,7 +417,6 @@
     <string name="task_group_name_hint">Groepsnaam</string>
     <string name="task_confirm">Bevestigen</string>
     <string name="task_cancel">Annuleren</string>
-    <string name="task_clear_dates">Datums wissen</string>
     <string name="task_repeat_frequency">Frequentie</string>
     <string name="task_repeat_interval">Herhalen om de</string>
     <string name="task_repeat_ends">Eindigt</string>

@@ -368,9 +368,14 @@ private fun ConversationTaskDetail(
             }
             item {
                 ConversationTaskDetailValue(R.string.task_assignee, task.assignee)
-                if (task.dueLabel.isNotBlank()) {
-                    ConversationTaskDetailValue(R.string.task_due_time, task.dueLabel)
-                }
+                ConversationTaskDetailValue(
+                    R.string.task_start_date,
+                    task.startDate ?: stringResource(R.string.task_date_not_set),
+                )
+                ConversationTaskDetailValue(
+                    R.string.task_due_date,
+                    task.dueDate ?: stringResource(R.string.task_date_not_set),
+                )
                 ConversationTaskDetailValue(
                     R.string.task_belongs_to_list,
                     task.listName.ifBlank { stringResource(R.string.task_standalone) },
