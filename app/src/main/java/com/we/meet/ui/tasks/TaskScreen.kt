@@ -2723,10 +2723,13 @@ private fun TaskDetailPage(
                         onClick = onEditDescription.takeIf { task.canEdit },
                     )
                     HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
-                    FormValueRow(
-                        Icons.Outlined.AttachFile,
-                        R.string.task_attachments,
-                        detail?.attachments.orEmpty().size.toString(),
+                    SummaryActionRow(
+                        icon = Icons.Outlined.AttachFile,
+                        labelRes = R.string.task_attachments,
+                        value = detail?.attachments.orEmpty().size.toString(),
+                        actionContentDescriptionRes = R.string.task_add_attachment,
+                        onAction = onAddAttachment.takeIf { task.canManageAttachments },
+                        actionLoading = detail?.uploadingAttachment == true,
                     )
                     detail?.attachments.orEmpty().forEach { attachment ->
                         val downloading = attachment.id in detail?.downloadingAttachmentIds.orEmpty()
@@ -2786,17 +2789,6 @@ private fun TaskDetailPage(
                             }
                         }
                     }
-                    if (task.canManageAttachments) {
-                        ActionRow(
-                            Icons.Filled.Add,
-                            if (detail?.uploadingAttachment == true) {
-                                R.string.task_uploading_attachment
-                            } else {
-                                R.string.task_add_attachment
-                            },
-                            onClick = onAddAttachment,
-                        )
-                    }
                 }
             }
             item {
@@ -2811,10 +2803,12 @@ private fun TaskDetailPage(
                         onEditParent.takeIf { canEditParent },
                     )
                     HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
-                    SubtaskSummaryRow(
-                        completed = subtasks.count { it.status == TaskStatus.Done },
-                        total = subtasks.size,
-                        onAdd = onAddSubtask.takeIf { task.canCreateSubtasks },
+                    SummaryActionRow(
+                        icon = Icons.Outlined.AccountTree,
+                        labelRes = R.string.task_subtasks,
+                        value = "${subtasks.count { it.status == TaskStatus.Done }}/${subtasks.size}",
+                        actionContentDescriptionRes = R.string.task_add_subtask,
+                        onAction = onAddSubtask.takeIf { task.canCreateSubtasks },
                     )
                     subtasks.forEach { subtask ->
                         TaskRow(
@@ -3233,10 +3227,13 @@ private fun FormValueRow(icon: ImageVector, labelRes: Int, value: String, onClic
 }
 
 @Composable
-private fun SubtaskSummaryRow(
-    completed: Int,
-    total: Int,
-    onAdd: (() -> Unit)?,
+private fun SummaryActionRow(
+    icon: ImageVector,
+    labelRes: Int,
+    value: String,
+    actionContentDescriptionRes: Int,
+    onAction: (() -> Unit)?,
+    actionLoading: Boolean = false,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = Dimens.MinTouchTarget)
@@ -3244,27 +3241,35 @@ private fun SubtaskSummaryRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            Icons.Outlined.AccountTree,
+            icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.width(Dimens.SpaceM))
         Text(
-            stringResource(R.string.task_subtasks),
+            stringResource(labelRes),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(Dimens.LabelColumnWidth),
         )
         Text(
-            "$completed/$total",
+            value,
             modifier = Modifier.weight(1f),
             fontWeight = FontWeight.Medium,
         )
-        onAdd?.let { add ->
+        onAction?.let { action ->
             Box(
-                modifier = Modifier.size(Dimens.MinTouchTarget).clickable(onClick = add),
+                modifier = Modifier.size(Dimens.MinTouchTarget)
+                    .clickable(enabled = !actionLoading, onClick = action),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Filled.Add, stringResource(R.string.task_add_subtask))
+                if (actionLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(Dimens.IconMedium),
+                        strokeWidth = Dimens.BorderEmphasis,
+                    )
+                } else {
+                    Icon(Icons.Filled.Add, stringResource(actionContentDescriptionRes))
+                }
             }
         }
     }
