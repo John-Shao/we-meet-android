@@ -381,6 +381,7 @@
     <string name="task_uploading_attachment">正在上传…</string>
     <string name="task_download_attachment">下载%1$s</string>
     <string name="task_comments">评论</string>
+    <string name="task_add_comment">添加评论</string>
     <string name="task_share_card_title">任务</string>
     <string name="task_view_details">查看详情</string>
     <string name="task_status">状态</string>

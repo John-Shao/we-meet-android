@@ -33,7 +33,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -44,10 +43,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ListAlt
 import androidx.compose.material.icons.automirrored.outlined.Sort
@@ -143,7 +140,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
@@ -2534,6 +2530,7 @@ private fun TaskDetailPage(
     onMore: (TaskItem) -> Unit,
 ) {
     var comment by remember(task.id) { mutableStateOf("") }
+    var showCommentDialog by remember(task.id) { mutableStateOf(false) }
     var activityExpanded by remember(task.id) { mutableStateOf(false) }
     Scaffold(
         modifier = Modifier.testTag(TASK_DETAIL_TEST_TAG),
@@ -2565,40 +2562,6 @@ private fun TaskDetailPage(
                     onClick = { onMore(task) },
                     modifier = Modifier.testTag(TASK_DETAIL_MORE_TEST_TAG),
                 ) { Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.task_more)) }
-            }
-        },
-        bottomBar = {
-            if (task.canComment) {
-                Surface(shadowElevation = Dimens.SpaceS) {
-                    Row(
-                        Modifier.fillMaxWidth().navigationBarsPadding().imePadding()
-                            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        OutlinedTextField(
-                            value = comment,
-                            onValueChange = { comment = it },
-                            placeholder = { Text(stringResource(R.string.task_comment_hint)) },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                            keyboardActions = KeyboardActions(
-                                onSend = { onSendComment(task, comment) { comment = "" } },
-                            ),
-                        )
-                        IconButton(
-                            onClick = { onSendComment(task, comment) { comment = "" } },
-                            enabled = comment.isNotBlank(),
-                        ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.Send,
-                                stringResource(R.string.task_send),
-                                tint = if (comment.isNotBlank()) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
             }
         },
     ) { padding ->
@@ -2860,6 +2823,8 @@ private fun TaskDetailPage(
                 DetailSectionTitle(
                     R.string.task_comments,
                     detail?.comments.orEmpty().size.toString(),
+                    actionLabelRes = R.string.task_add_comment.takeIf { task.canComment },
+                    onAction = { showCommentDialog = true }.takeIf { task.canComment },
                 )
             }
             items(detail?.comments.orEmpty(), key = { it.id }) { taskComment ->
@@ -2910,6 +2875,22 @@ private fun TaskDetailPage(
                 }
             }
         }
+    }
+    if (showCommentDialog) {
+        TaskCommentDialog(
+            value = comment,
+            onValueChange = { comment = it },
+            onDismiss = {
+                comment = ""
+                showCommentDialog = false
+            },
+            onSend = {
+                onSendComment(task, comment) {
+                    comment = ""
+                    showCommentDialog = false
+                }
+            },
+        )
     }
 }
 
@@ -3500,6 +3481,8 @@ private fun DetailSectionTitle(
     value: String?,
     expanded: Boolean? = null,
     onClick: () -> Unit = {},
+    actionLabelRes: Int? = null,
+    onAction: (() -> Unit)? = null,
 ) {
     val modifier = if (expanded == null) {
         Modifier.fillMaxWidth()
@@ -3510,6 +3493,18 @@ private fun DetailSectionTitle(
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(labelRes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
         if (value != null) Text(value, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (actionLabelRes != null && onAction != null) {
+            Spacer(Modifier.width(Dimens.SpaceS))
+            TextButton(onClick = onAction) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(Dimens.IconSmall),
+                )
+                Spacer(Modifier.width(Dimens.SpaceXs))
+                Text(stringResource(actionLabelRes))
+            }
+        }
         if (expanded != null) {
             Spacer(Modifier.width(Dimens.SpaceS))
             Icon(
@@ -3520,6 +3515,39 @@ private fun DetailSectionTitle(
         }
     }
     Spacer(Modifier.height(Dimens.SpaceS))
+}
+
+@Composable
+private fun TaskCommentDialog(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onSend: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.task_add_comment)) },
+        text = {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                placeholder = { Text(stringResource(R.string.task_comment_hint)) },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3,
+                maxLines = 6,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onSend, enabled = value.isNotBlank()) {
+                Text(stringResource(R.string.task_send))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.task_cancel))
+            }
+        },
+    )
 }
 
 @Composable

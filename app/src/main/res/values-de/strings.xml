@@ -371,6 +371,7 @@
     <string name="task_uploading_attachment">Wird hochgeladen…</string>
     <string name="task_download_attachment">%1$s herunterladen</string>
     <string name="task_comments">Kommentare</string>
+    <string name="task_add_comment">Kommentar hinzufügen</string>
     <string name="task_share_card_title">Aufgabe</string>
     <string name="task_view_details">Details anzeigen</string>
     <string name="task_status">Status</string>
