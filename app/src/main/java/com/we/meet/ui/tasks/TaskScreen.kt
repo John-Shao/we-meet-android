@@ -3740,7 +3740,15 @@ private fun FilterSheet(
                         label = { Text(stringResource(R.string.task_search_all_priorities)) },
                     )
                 }
-                items(TaskPriority.entries) { item ->
+                items(
+                    listOf(
+                        TaskPriority.Urgent,
+                        TaskPriority.High,
+                        TaskPriority.Medium,
+                        TaskPriority.Low,
+                        TaskPriority.None,
+                    ),
+                ) { item ->
                     FilterChip(
                         selected = selectedPriority == item,
                         onClick = { selectedPriority = item },
