@@ -167,6 +167,18 @@ class TaskModelsTest {
     }
 
     @Test
+    fun taskWithoutAnExplicitListUsesTheDefaultListPresentation() {
+        val task = TaskDto(
+            id = "default-list-task",
+            title = "Default list task",
+            creator = TaskUserDto(id = "creator", fullName = "Creator"),
+        ).toItem()
+
+        assertEquals(null, task.listId)
+        assertEquals("", task.listName)
+    }
+
+    @Test
     fun taskDateRangeLabelPreservesStartAndDueDates() {
         assertEquals("2026-08-28 – 2026-08-31", taskDateRangeLabel("2026-08-28", "2026-08-31"))
         assertEquals("2026-08-28", taskDateRangeLabel("2026-08-28", "2026-08-28"))

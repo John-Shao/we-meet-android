@@ -1970,7 +1970,7 @@ internal fun TaskDto.toItem(): TaskItem {
         assigneeAvatarUrl = people.firstOrNull()?.avatarUrl ?: creator.avatarUrl,
         dueLabel = taskDateRangeLabel(startDate, dueDate),
         listId = taskList?.id,
-        listName = taskList?.name ?: "—",
+        listName = taskList?.name.orEmpty(),
         section = group?.name ?: taskList?.name ?: "—",
         status = if (status == "completed") TaskStatus.Done else TaskStatus.Todo,
         timeState = timeState.toTaskTimeState(),
