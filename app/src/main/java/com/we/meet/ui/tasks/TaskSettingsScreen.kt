@@ -158,7 +158,7 @@ private fun TaskSettingsContent(
                     expanded = reminderMenu,
                     onDismissRequest = { reminderMenu = false },
                 ) {
-                    listOf(30, 60, 1440).forEach { minutes ->
+                    listOf(0, 1440, 4320).forEach { minutes ->
                         DropdownMenuItem(
                             text = { Text(defaultTaskReminderText(minutes)) },
                             leadingIcon = if (minutes == settings.defaultReminderMinutes) {
@@ -180,9 +180,9 @@ private fun TaskSettingsContent(
 
 @Composable
 private fun defaultTaskReminderText(minutes: Int): String = when (minutes) {
-    60 -> stringResource(R.string.calendar_reminder_hour)
-    1440 -> stringResource(R.string.calendar_reminder_day)
-    else -> stringResource(R.string.task_30_minutes_before)
+    1440 -> stringResource(R.string.task_reminder_one_day)
+    4320 -> stringResource(R.string.task_reminder_three_days)
+    else -> stringResource(R.string.task_reminder_due_date)
 }
 
 @Composable

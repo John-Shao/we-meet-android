@@ -215,6 +215,8 @@ private data class TaskCreateInput(
     val assigneeIds: List<String>?,
     val followerIds: List<String>,
     val priority: TaskPriority,
+    val reminderEnabled: Boolean,
+    val reminderMinutes: Int?,
     val subtaskTitle: String?,
     val attachmentUri: Uri?,
 )
@@ -421,6 +423,7 @@ fun TaskScreen(
                 selfUserId = app.tokenStore.userId,
                 taskLists = ui.taskLists.filter(TaskListItem::canCreateTasks),
                 taskGroups = ui.taskGroups,
+                taskSettings = ui.settings,
                 creating = ui.creating,
                 onClose = { page = TaskPage.List },
                 onCreate = { input ->
@@ -434,6 +437,8 @@ fun TaskScreen(
                         assigneeIds = input.assigneeIds,
                         followerIds = input.followerIds,
                         priority = input.priority,
+                        reminderEnabled = input.reminderEnabled,
+                        reminderMinutes = input.reminderMinutes,
                     ) { created ->
                         input.subtaskTitle?.let { vm.createSubtask(created, it) }
                         input.attachmentUri?.let { vm.uploadAttachment(created, it) }
@@ -473,6 +478,12 @@ fun TaskScreen(
                     onEditContent = { editContentTarget = task },
                     onEditStartDate = { startDateTarget = task },
                     onEditDueDate = { dueDateTarget = task },
+                    onReminderEnabledChange = { enabled ->
+                        vm.setTaskReminderEnabled(task, enabled)
+                    },
+                    onReminderMinutesChange = { minutes ->
+                        vm.setTaskReminderMinutes(task, minutes)
+                    },
                     onEditPriority = { priorityTarget = task },
                     onEditTaskList = { taskListTarget = task },
                     onEditGroup = { taskGroupTarget = task },
@@ -2182,6 +2193,7 @@ private fun CreateTaskPage(
     selfUserId: String?,
     taskLists: List<TaskListItem>,
     taskGroups: List<TaskGroupItem>,
+    taskSettings: TaskSettingsItem,
     creating: Boolean,
     onClose: () -> Unit,
     onCreate: (TaskCreateInput) -> Unit,
@@ -2195,6 +2207,8 @@ private fun CreateTaskPage(
     var selectedAssignees by remember { mutableStateOf<List<PickedMember>?>(null) }
     var selectedFollowers by remember { mutableStateOf<List<PickedMember>>(emptyList()) }
     var selectedPriority by remember { mutableStateOf(TaskPriority.Medium) }
+    var reminderEnabledOverride by remember { mutableStateOf<Boolean?>(null) }
+    var reminderMinutes by remember { mutableStateOf<Int?>(null) }
     var subtaskTitle by remember { mutableStateOf<String?>(null) }
     var attachmentUri by remember { mutableStateOf<Uri?>(null) }
     var showAssigneePicker by remember { mutableStateOf(false) }
@@ -2214,6 +2228,9 @@ private fun CreateTaskPage(
         ?.joinToString { it.displayName }
         ?.takeIf(String::isNotBlank)
         ?: owner
+    val reminderEnabled = reminderEnabledOverride ?: (
+        selectedAssignees?.any { it.userId == selfUserId } ?: true
+    )
     val followerLabel = selectedFollowers
         .joinToString { it.displayName }
         .takeIf(String::isNotBlank)
@@ -2246,6 +2263,8 @@ private fun CreateTaskPage(
                                 assigneeIds = selectedAssignees?.map(PickedMember::userId),
                                 followerIds = selectedFollowers.map(PickedMember::userId),
                                 priority = selectedPriority,
+                                reminderEnabled = reminderEnabled,
+                                reminderMinutes = reminderMinutes,
                                 subtaskTitle = subtaskTitle,
                                 attachmentUri = attachmentUri,
                             ),
@@ -2273,15 +2292,7 @@ private fun CreateTaskPage(
                 )
             }
             item {
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    placeholder = { Text(stringResource(R.string.task_description_hint)) },
-                    leadingIcon = { Icon(Icons.Outlined.Edit, null) },
-                    modifier = Modifier.fillMaxWidth().height(Dimens.Task.DescriptionFieldHeight),
-                )
-            }
-            item {
+                DetailSectionTitle(R.string.task_collaboration, null)
                 TaskFormCard {
                     FormValueRow(
                         Icons.Outlined.PersonOutline,
@@ -2289,6 +2300,16 @@ private fun CreateTaskPage(
                         assigneeLabel,
                     ) { showAssigneePicker = true }
                     HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    FormValueRow(
+                        Icons.Outlined.BookmarkBorder,
+                        R.string.task_followers,
+                        followerLabel,
+                    ) { showFollowerPicker = true }
+                }
+            }
+            item {
+                DetailSectionTitle(R.string.task_plan, null)
+                TaskFormCard {
                     FormValueRow(
                         Icons.Outlined.CalendarMonth,
                         R.string.task_start_date,
@@ -2305,6 +2326,44 @@ private fun CreateTaskPage(
                         showDueDatePicker = true
                     }
                     HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    TaskReminderRow(
+                        enabled = reminderEnabled,
+                        reminderMinutes = reminderMinutes,
+                        effectiveReminderMinutes = taskSettings.defaultReminderMinutes,
+                        globalRemindersEnabled = taskSettings.dailyReminderEnabled,
+                        saving = creating,
+                        onEnabledChange = { reminderEnabledOverride = it },
+                        onMinutesChange = { reminderMinutes = it },
+                    )
+                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    FormValueRow(
+                        Icons.Outlined.Flag,
+                        R.string.task_priority,
+                        priorityText(selectedPriority),
+                    ) { showPriorityPicker = true }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                    AssistChip(
+                        onClick = {
+                            startDate = today
+                            dueDate = today
+                        },
+                        label = { Text(stringResource(R.string.task_today)) },
+                        leadingIcon = { Icon(Icons.Outlined.CalendarMonth, null, Modifier.size(Dimens.IconSmall)) },
+                    )
+                    AssistChip(
+                        onClick = {
+                            startDate = tomorrow
+                            dueDate = tomorrow
+                        },
+                        label = { Text(stringResource(R.string.task_tomorrow)) },
+                        leadingIcon = { Icon(Icons.Outlined.Alarm, null, Modifier.size(Dimens.IconSmall)) },
+                    )
+                }
+            }
+            item {
+                DetailSectionTitle(R.string.task_placement, null)
+                TaskFormCard {
                     FormValueRow(
                         Icons.AutoMirrored.Outlined.ListAlt,
                         R.string.task_add_to_list,
@@ -2326,53 +2385,34 @@ private fun CreateTaskPage(
                             selectedGroupId = groupChoices[(current + 1) % groupChoices.size]
                         }
                     }
-                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                }
+            }
+            item {
+                DetailSectionTitle(R.string.task_content, null)
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    placeholder = { Text(stringResource(R.string.task_description_hint)) },
+                    leadingIcon = { Icon(Icons.Outlined.Edit, null) },
+                    modifier = Modifier.fillMaxWidth().height(Dimens.Task.DescriptionFieldHeight),
+                )
+                Spacer(Modifier.height(Dimens.SpaceM))
+                TaskFormCard {
                     FormValueRow(
-                        Icons.Outlined.Flag,
-                        R.string.task_priority,
-                        priorityText(selectedPriority),
-                    ) { showPriorityPicker = true }
+                        Icons.Outlined.AttachFile,
+                        R.string.task_add_attachment,
+                        attachmentLabel,
+                    ) { attachmentPicker.launch(arrayOf("*/*")) }
                 }
             }
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                    AssistChip(
-                        onClick = {
-                            startDate = today
-                            dueDate = today
-                        },
-                        label = { Text(stringResource(R.string.task_today)) },
-                        leadingIcon = { Icon(Icons.Outlined.CalendarMonth, null, Modifier.size(Dimens.IconSmall)) },
-                    )
-                    AssistChip(
-                        onClick = {
-                            startDate = tomorrow
-                            dueDate = tomorrow
-                        },
-                        label = { Text(stringResource(R.string.task_tomorrow)) },
-                        leadingIcon = { Icon(Icons.Outlined.Alarm, null, Modifier.size(Dimens.IconSmall)) },
-                    )
-                }
-            }
-            item {
+                DetailSectionTitle(R.string.task_related, null)
                 TaskFormCard {
                     FormValueRow(
                         Icons.Outlined.AccountTree,
                         R.string.task_add_subtask,
                         subtaskTitle ?: stringResource(R.string.task_priority_none),
                     ) { showSubtaskDialog = true }
-                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
-                    FormValueRow(
-                        Icons.Outlined.AttachFile,
-                        R.string.task_add_attachment,
-                        attachmentLabel,
-                    ) { attachmentPicker.launch(arrayOf("*/*")) }
-                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
-                    FormValueRow(
-                        Icons.Outlined.BookmarkBorder,
-                        R.string.task_followers,
-                        followerLabel,
-                    ) { showFollowerPicker = true }
                 }
             }
         }
@@ -2474,6 +2514,8 @@ private fun TaskDetailPage(
     onEditContent: () -> Unit,
     onEditStartDate: () -> Unit,
     onEditDueDate: () -> Unit,
+    onReminderEnabledChange: (Boolean) -> Unit,
+    onReminderMinutesChange: (Int?) -> Unit,
     onEditPriority: () -> Unit,
     onEditTaskList: () -> Unit,
     onEditGroup: () -> Unit,
@@ -2600,47 +2642,65 @@ private fun TaskDetailPage(
                 }
             }
             item {
-                Text(
-                    task.description.ifBlank { stringResource(R.string.task_description_hint) },
-                    color = if (task.description.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(start = Dimens.SpaceXxxl).then(
-                        if (task.canEdit) Modifier.clickable(onClick = onEditContent)
-                        else Modifier,
-                    ),
-                )
-            }
-            item {
+                DetailSectionTitle(R.string.task_collaboration, null)
                 TaskFormCard {
-                    FormValueRow(
+                    TaskPeopleRow(
                         Icons.Outlined.PersonOutline,
                         R.string.task_assignee,
-                        task.assignee,
-                        onEditAssignees.takeIf { task.canEdit },
+                        task.assignees,
+                        onClick = onEditAssignees.takeIf { task.canEdit },
                     )
+                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    TaskPeopleRow(
+                        Icons.Outlined.AlternateEmail,
+                        R.string.task_creator,
+                        listOf(
+                            TaskPersonItem(
+                                id = task.creatorId,
+                                name = task.creatorName,
+                                avatarUrl = task.creatorAvatarUrl,
+                            ),
+                        ),
+                    )
+                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    TaskPeopleRow(
+                        Icons.Outlined.BookmarkBorder,
+                        R.string.task_followers,
+                        task.followers,
+                        onClick = onAddFollowers.takeIf { task.canManageFollowers },
+                        onRemove = if (task.canManageFollowers) onRemoveFollower else null,
+                    )
+                }
+            }
+            item {
+                DetailSectionTitle(R.string.task_plan, null)
+                TaskFormCard {
                     FormValueRow(
                         Icons.Outlined.CalendarMonth,
                         R.string.task_start_date,
                         task.startDate ?: stringResource(R.string.task_date_not_set),
                         onEditStartDate.takeIf { task.canEdit },
                     )
+                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
                     FormValueRow(
                         Icons.Outlined.CalendarMonth,
                         R.string.task_due_date,
                         task.dueDate ?: stringResource(R.string.task_date_not_set),
                         onEditDueDate.takeIf { task.canEdit },
                     )
-                    FormValueRow(
-                        Icons.AutoMirrored.Outlined.ListAlt,
-                        R.string.task_belongs_to_list,
-                        task.listName.ifBlank { stringResource(R.string.task_standalone) },
-                        onEditTaskList.takeIf { task.canEdit },
-                    )
-                    FormValueRow(
-                        Icons.Outlined.AccountTree,
-                        R.string.task_belongs_to_group,
-                        task.groupName ?: stringResource(R.string.task_ungrouped),
-                        onEditGroup.takeIf { task.canEdit },
-                    )
+                    detail?.reminder?.takeIf { task.canManageReminder }?.let { reminder ->
+                        HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                        TaskReminderRow(
+                            enabled = reminder.enabled,
+                            reminderMinutes = reminder.reminderMinutes,
+                            effectiveReminderMinutes = reminder.effectiveReminderMinutes,
+                            globalRemindersEnabled = reminder.globalRemindersEnabled,
+                            saving = detail.reminderSaving,
+                            onEnabledChange = onReminderEnabledChange,
+                            onMinutesChange = onReminderMinutesChange,
+                        )
+                    }
+                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
                     FormValueRow(
                         Icons.Outlined.Flag,
                         R.string.task_priority,
@@ -2648,6 +2708,7 @@ private fun TaskDetailPage(
                         onEditPriority.takeIf { task.canEdit },
                     )
                     if (task.parentId == null) {
+                        HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
                         FormValueRow(
                             Icons.Outlined.Repeat,
                             R.string.calendar_field_repeat,
@@ -2655,135 +2716,143 @@ private fun TaskDetailPage(
                             onEditRecurrence.takeIf { canManageRecurrence },
                         )
                     }
+                }
+            }
+            item {
+                DetailSectionTitle(R.string.task_placement, null)
+                TaskFormCard {
+                    FormValueRow(
+                        Icons.AutoMirrored.Outlined.ListAlt,
+                        R.string.task_belongs_to_list,
+                        task.listName.ifBlank { stringResource(R.string.task_standalone) },
+                        onEditTaskList.takeIf { task.canEdit },
+                    )
+                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    FormValueRow(
+                        Icons.Outlined.AccountTree,
+                        R.string.task_belongs_to_group,
+                        task.groupName ?: stringResource(R.string.task_ungrouped),
+                        onEditGroup.takeIf { task.canEdit },
+                    )
+                }
+            }
+            item {
+                DetailSectionTitle(R.string.task_content, null)
+                TaskFormCard {
+                    TaskDescriptionRow(
+                        description = task.description,
+                        onClick = onEditContent.takeIf { task.canEdit },
+                    )
+                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    FormValueRow(
+                        Icons.Outlined.AttachFile,
+                        R.string.task_attachments,
+                        detail?.attachments.orEmpty().size.toString(),
+                    )
+                    detail?.attachments.orEmpty().forEach { attachment ->
+                        val downloading = attachment.id in detail?.downloadingAttachmentIds.orEmpty()
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .clickable(enabled = !downloading) {
+                                    onDownloadAttachment(attachment)
+                                }
+                                .padding(
+                                    start = Dimens.ListLeadingIcon,
+                                    end = Dimens.SpaceS,
+                                    top = Dimens.SpaceS,
+                                    bottom = Dimens.SpaceS,
+                                ),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Outlined.AttachFile, null)
+                            Spacer(Modifier.width(Dimens.SpaceM))
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    attachment.filename,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                attachment.size?.let { size ->
+                                    Text(
+                                        formatFileSize(size),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                            if (downloading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(Dimens.IconMedium),
+                                    strokeWidth = Dimens.BorderEmphasis,
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Outlined.Download,
+                                    stringResource(
+                                        R.string.task_download_attachment,
+                                        attachment.filename,
+                                    ),
+                                )
+                            }
+                            if (task.canManageAttachments) {
+                                IconButton(
+                                    onClick = { onDeleteAttachment(attachment) },
+                                    enabled = !downloading,
+                                ) {
+                                    Icon(
+                                        Icons.Filled.DeleteOutline,
+                                        stringResource(R.string.task_delete_attachment),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    if (task.canManageAttachments) {
+                        ActionRow(
+                            Icons.Filled.Add,
+                            if (detail?.uploadingAttachment == true) {
+                                R.string.task_uploading_attachment
+                            } else {
+                                R.string.task_add_attachment
+                            },
+                            onClick = onAddAttachment,
+                        )
+                    }
+                }
+            }
+            item {
+                val subtasks = detail?.subtasks.orEmpty()
+                val canReorderSubtasks = task.canEdit && subtasks.all(TaskItem::canEdit)
+                DetailSectionTitle(R.string.task_related, null)
+                TaskFormCard {
                     FormValueRow(
                         Icons.Outlined.AccountTree,
                         R.string.task_parent,
                         task.parentTitle ?: stringResource(R.string.task_no_parent),
                         onEditParent.takeIf { canEditParent },
                     )
-                }
-            }
-            item {
-                val subtasks = detail?.subtasks.orEmpty()
-                val canReorderSubtasks = task.canEdit && subtasks.all(TaskItem::canEdit)
-                DetailSectionTitle(
-                    R.string.task_subtasks,
-                    "${subtasks.count { it.status == TaskStatus.Done }}/${subtasks.size}",
-                )
-                Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(Dimens.SpaceM), modifier = Modifier.fillMaxWidth()) {
-                    Column {
-                        subtasks.forEach { subtask ->
-                            TaskRow(
-                                task = subtask,
-                                onClick = { onOpenSubtask(subtask) },
-                                onToggleDone = { onToggleSubtask(subtask) },
-                                onLongClick = {
-                                    if (canReorderSubtasks) onSubtaskAction(subtask)
-                                },
-                            )
-                        }
-                        if (task.canCreateSubtasks) {
-                            ActionRow(
-                                Icons.Filled.Add,
-                                R.string.task_add_subtask,
-                                onClick = onAddSubtask,
-                            )
-                        }
-                    }
-                }
-            }
-            item {
-                DetailSectionTitle(R.string.task_attachments, null)
-                detail?.attachments.orEmpty().forEach { attachment ->
-                    val downloading = attachment.id in detail?.downloadingAttachmentIds.orEmpty()
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
-                            .clickable(enabled = !downloading) {
-                                onDownloadAttachment(attachment)
-                            }
-                            .padding(vertical = Dimens.SpaceS),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.Outlined.AttachFile, null)
-                        Spacer(Modifier.width(Dimens.SpaceM))
-                        Column(Modifier.weight(1f)) {
-                            Text(attachment.filename, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            attachment.size?.let { size ->
-                                Text(
-                                    formatFileSize(size),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                        if (downloading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(Dimens.IconMedium),
-                                strokeWidth = Dimens.BorderEmphasis,
-                            )
-                        } else {
-                            Icon(
-                                Icons.Outlined.Download,
-                                stringResource(R.string.task_download_attachment, attachment.filename),
-                            )
-                        }
-                        if (task.canManageAttachments) {
-                            IconButton(
-                                onClick = { onDeleteAttachment(attachment) },
-                                enabled = !downloading,
-                            ) {
-                                Icon(Icons.Filled.DeleteOutline, stringResource(R.string.task_delete_attachment))
-                            }
-                        }
-                    }
-                }
-                if (task.canManageAttachments) {
-                    OutlinedButton(
-                        onClick = onAddAttachment,
-                        enabled = detail?.uploadingAttachment != true,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(Icons.Outlined.AttachFile, null)
-                        Spacer(Modifier.width(Dimens.SpaceS))
-                        Text(
-                            stringResource(
-                                if (detail?.uploadingAttachment == true) R.string.task_uploading_attachment
-                                else R.string.task_add_attachment,
-                            ),
+                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    FormValueRow(
+                        Icons.Outlined.AccountTree,
+                        R.string.task_subtasks,
+                        "${subtasks.count { it.status == TaskStatus.Done }}/${subtasks.size}",
+                    )
+                    subtasks.forEach { subtask ->
+                        TaskRow(
+                            task = subtask,
+                            onClick = { onOpenSubtask(subtask) },
+                            onToggleDone = { onToggleSubtask(subtask) },
+                            onLongClick = {
+                                if (canReorderSubtasks) onSubtaskAction(subtask)
+                            },
                         )
                     }
-                }
-            }
-            item {
-                DetailSectionTitle(R.string.task_followers, null)
-                task.followers.forEach { follower ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Avatar(
-                            name = follower.name,
-                            size = Dimens.AvatarS,
-                            avatarUrl = follower.avatarUrl,
-                            stableId = follower.id,
+                    if (task.canCreateSubtasks) {
+                        ActionRow(
+                            Icons.Filled.Add,
+                            R.string.task_add_subtask,
+                            onClick = onAddSubtask,
                         )
-                        Spacer(Modifier.width(Dimens.SpaceM))
-                        Text(follower.name, modifier = Modifier.weight(1f))
-                        if (task.canManageFollowers) {
-                            IconButton(onClick = { onRemoveFollower(follower) }) {
-                                Icon(
-                                    Icons.Filled.DeleteOutline,
-                                    stringResource(R.string.task_remove_follower),
-                                )
-                            }
-                        }
-                    }
-                }
-                if (task.canManageFollowers) {
-                    OutlinedButton(onClick = onAddFollowers, modifier = Modifier.fillMaxWidth()) {
-                        Icon(Icons.Filled.Add, null)
-                        Spacer(Modifier.width(Dimens.SpaceS))
-                        Text(stringResource(R.string.task_add_follower))
                     }
                 }
             }
@@ -3170,6 +3239,247 @@ private fun FormValueRow(icon: ImageVector, labelRes: Int, value: String, onClic
         if (onClick != null) Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
+
+@Composable
+private fun TaskDescriptionRow(description: String, onClick: (() -> Unit)? = null) {
+    Row(
+        modifier = Modifier.fillMaxWidth().then(
+            if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
+        ).padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceM),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Icon(
+            Icons.Outlined.Edit,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(Dimens.SpaceM))
+        Column(Modifier.weight(1f)) {
+            Text(
+                stringResource(R.string.task_description_field),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium,
+            )
+            Spacer(Modifier.height(Dimens.SpaceXs))
+            Text(
+                description.ifBlank { stringResource(R.string.task_description_hint) },
+                color = if (description.isBlank()) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        if (onClick != null) {
+            Icon(
+                Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TaskPeopleRow(
+    icon: ImageVector,
+    labelRes: Int,
+    people: List<TaskPersonItem>,
+    onClick: (() -> Unit)? = null,
+    onRemove: ((TaskPersonItem) -> Unit)? = null,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().then(
+            if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
+        ).padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceM),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.width(Dimens.SpaceM))
+        Text(
+            stringResource(labelRes),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(Dimens.LabelColumnWidth),
+        )
+        if (people.isEmpty()) {
+            Text(
+                stringResource(R.string.task_priority_none),
+                modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            LazyRow(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
+            ) {
+                items(people, key = TaskPersonItem::id) { person ->
+                    Surface(
+                        shape = RoundedCornerShape(Dimens.SpaceXl),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(
+                                start = Dimens.SpaceXs,
+                                end = if (onRemove == null) Dimens.SpaceM else Dimens.SpaceXs,
+                                top = Dimens.SpaceXs,
+                                bottom = Dimens.SpaceXs,
+                            ),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Avatar(
+                                name = person.name,
+                                size = Dimens.AvatarXs,
+                                avatarUrl = person.avatarUrl,
+                                stableId = person.id,
+                            )
+                            Spacer(Modifier.width(Dimens.SpaceS))
+                            Text(
+                                person.name,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                            )
+                            if (onRemove != null) {
+                                IconButton(
+                                    onClick = { onRemove(person) },
+                                    modifier = Modifier.size(Dimens.SpaceXxl),
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Close,
+                                        stringResource(R.string.task_remove_follower),
+                                        modifier = Modifier.size(Dimens.IconTiny),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (onClick != null) {
+            Icon(
+                Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TaskReminderRow(
+    enabled: Boolean,
+    reminderMinutes: Int?,
+    effectiveReminderMinutes: Int,
+    globalRemindersEnabled: Boolean,
+    saving: Boolean,
+    onEnabledChange: (Boolean) -> Unit,
+    onMinutesChange: (Int?) -> Unit,
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(
+            horizontal = Dimens.SpaceL,
+            vertical = Dimens.SpaceM,
+        ),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Outlined.NotificationsNone,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(Dimens.SpaceM))
+        Column(Modifier.weight(1f)) {
+            Text(
+                stringResource(R.string.task_my_reminder),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Box {
+                Text(
+                    text = taskReminderTimingText(
+                        reminderMinutes = reminderMinutes,
+                        effectiveReminderMinutes = effectiveReminderMinutes,
+                    ),
+                    modifier = Modifier.clip(RoundedCornerShape(Dimens.SpaceXs))
+                        .clickable(enabled = enabled && !saving) { menuExpanded = true }
+                        .padding(vertical = Dimens.SpaceXs),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (enabled) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                ) {
+                    listOf<Int?>(null, 0, 1440, 4320).forEach { minutes ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    if (minutes == null) {
+                                        stringResource(
+                                            R.string.task_reminder_follow_default,
+                                            taskReminderOptionText(effectiveReminderMinutes),
+                                        )
+                                    } else {
+                                        taskReminderOptionText(minutes)
+                                    },
+                                )
+                            },
+                            leadingIcon = if (minutes == reminderMinutes) {
+                                { Icon(Icons.Filled.Check, contentDescription = null) }
+                            } else {
+                                null
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onMinutesChange(minutes)
+                            },
+                        )
+                    }
+                }
+            }
+            if (!globalRemindersEnabled) {
+                Text(
+                    stringResource(R.string.task_reminder_global_disabled),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+        Switch(
+            checked = enabled,
+            onCheckedChange = onEnabledChange,
+            enabled = !saving,
+        )
+    }
+}
+
+@Composable
+private fun taskReminderTimingText(
+    reminderMinutes: Int?,
+    effectiveReminderMinutes: Int,
+): String = if (reminderMinutes == null) {
+    stringResource(
+        R.string.task_reminder_follow_default,
+        taskReminderOptionText(effectiveReminderMinutes),
+    )
+} else {
+    taskReminderOptionText(reminderMinutes)
+}
+
+@Composable
+private fun taskReminderOptionText(minutes: Int): String = stringResource(
+    when (minutes) {
+        1440 -> R.string.task_reminder_one_day
+        4320 -> R.string.task_reminder_three_days
+        else -> R.string.task_reminder_due_date
+    },
+)
 
 @Composable
 private fun ActionRow(icon: ImageVector, labelRes: Int, onClick: () -> Unit = {}) {

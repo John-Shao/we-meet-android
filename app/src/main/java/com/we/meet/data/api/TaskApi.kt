@@ -27,6 +27,7 @@ import com.we.meet.data.api.dto.TaskGroupDto
 import com.we.meet.data.api.dto.TaskRecurrenceRequest
 import com.we.meet.data.api.dto.TaskStatisticsDto
 import com.we.meet.data.api.dto.TaskSettingsDto
+import com.we.meet.data.api.dto.TaskReminderPreferenceDto
 import com.we.meet.data.api.dto.TaskSubtreeImpactDto
 import com.we.meet.data.api.dto.TaskAttachmentDto
 import com.we.meet.data.api.dto.TaskActivityDto
@@ -112,6 +113,15 @@ interface TaskApi {
         @Body body: PatchTaskRequest,
         @Query("shared_via") sharedVia: String? = null,
     ): TaskDto
+
+    @GET("api/v1.0/tasks/{id}/reminder/")
+    suspend fun getTaskReminder(@Path("id") id: String): TaskReminderPreferenceDto
+
+    @PATCH("api/v1.0/tasks/{id}/reminder/")
+    suspend fun patchTaskReminder(
+        @Path("id") id: String,
+        @Body body: RequestBody,
+    ): TaskReminderPreferenceDto
 
     @GET("api/v1.0/tasks/{id}/subtree-impact/")
     suspend fun getSubtreeImpact(

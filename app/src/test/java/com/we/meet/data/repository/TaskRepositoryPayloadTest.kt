@@ -52,6 +52,26 @@ class TaskRepositoryPayloadTest {
     }
 
     @Test
+    fun reminderPatchCanExplicitlyFollowTheSystemDefault() {
+        assertEquals(
+            "{\"reminder_minutes\":null}",
+            taskReminderPatchJson(
+                enabled = null,
+                reminderMinutes = null,
+                updateMinutes = true,
+            ),
+        )
+        assertEquals(
+            "{\"enabled\":false}",
+            taskReminderPatchJson(
+                enabled = false,
+                reminderMinutes = null,
+                updateMinutes = false,
+            ),
+        )
+    }
+
+    @Test
     fun ungroupedTaskListExplicitlyClearsListGroup() {
         val fields = taskListGroupPatchFields(null)
 

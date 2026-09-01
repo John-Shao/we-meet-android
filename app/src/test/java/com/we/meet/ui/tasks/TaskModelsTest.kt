@@ -148,6 +148,25 @@ class TaskModelsTest {
     }
 
     @Test
+    fun taskMappingKeepsCreatorAndReminderCapabilities() {
+        val creator = TaskUserDto(
+            id = "creator",
+            fullName = "Creator",
+            avatarUrl = "https://example.com/creator.png",
+        )
+
+        val task = TaskDto(
+            id = "reminded-task",
+            title = "Reminder task",
+            creator = creator,
+            canManageReminder = true,
+        ).toItem()
+
+        assertEquals(creator.avatarUrl, task.creatorAvatarUrl)
+        assertTrue(task.canManageReminder)
+    }
+
+    @Test
     fun taskDateRangeLabelPreservesStartAndDueDates() {
         assertEquals("2026-08-28 – 2026-08-31", taskDateRangeLabel("2026-08-28", "2026-08-31"))
         assertEquals("2026-08-28", taskDateRangeLabel("2026-08-28", "2026-08-28"))

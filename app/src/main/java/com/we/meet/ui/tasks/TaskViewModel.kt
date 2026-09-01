@@ -495,6 +495,8 @@ class TaskViewModel(
         assigneeIds: List<String>?,
         followerIds: List<String>,
         priority: TaskPriority,
+        reminderEnabled: Boolean,
+        reminderMinutes: Int?,
         onCreated: (TaskItem) -> Unit,
     ) {
         if (_ui.value.creating) return
@@ -510,6 +512,8 @@ class TaskViewModel(
                 priority = priority.takeUnless { it == TaskPriority.None }?.name?.lowercase(),
                 taskListId = taskListId,
                 groupId = groupId.takeIf { taskListId != null },
+                reminderEnabled = reminderEnabled,
+                reminderMinutes = reminderMinutes,
             ).fold(
                 onSuccess = { dto ->
                     val item = dto.toItem()
@@ -577,6 +581,61 @@ class TaskViewModel(
         val following = !item.followed
         mutateOptimistically(item, item.copy(followed = following)) {
             repository.setFollowing(item.id, following)
+        }
+    }
+
+    fun setTaskReminderEnabled(item: TaskItem, enabled: Boolean) {
+        updateTaskReminder(item, enabled = enabled)
+    }
+
+    fun setTaskReminderMinutes(item: TaskItem, minutes: Int?) {
+        updateTaskReminder(item, reminderMinutes = minutes, updateMinutes = true)
+    }
+
+    private fun updateTaskReminder(
+        item: TaskItem,
+        enabled: Boolean? = null,
+        reminderMinutes: Int? = null,
+        updateMinutes: Boolean = false,
+    ) {
+        val detail = _ui.value.detail?.takeIf { it.taskId == item.id } ?: return
+        if (!item.canManageReminder || detail.reminderSaving) return
+        _ui.update { it.copy(detail = detail.copy(reminderSaving = true), failure = null) }
+        viewModelScope.launch {
+            repository.updateTaskReminder(
+                taskId = item.id,
+                enabled = enabled,
+                reminderMinutes = reminderMinutes,
+                updateMinutes = updateMinutes,
+            ).fold(
+                onSuccess = { preference ->
+                    _ui.update { state ->
+                        val current = state.detail?.takeIf { it.taskId == item.id }
+                            ?: return@update state
+                        state.copy(
+                            detail = current.copy(
+                                reminder = TaskReminderItem(
+                                    enabled = preference.enabled,
+                                    reminderMinutes = preference.reminderMinutes,
+                                    effectiveReminderMinutes = preference.effectiveReminderMinutes,
+                                    globalRemindersEnabled = preference.globalRemindersEnabled,
+                                ),
+                                reminderSaving = false,
+                            ),
+                        )
+                    }
+                },
+                onFailure = {
+                    _ui.update { state ->
+                        val current = state.detail?.takeIf { it.taskId == item.id }
+                            ?: return@update state
+                        state.copy(
+                            detail = current.copy(reminderSaving = false),
+                            failure = TaskFailure.Save,
+                        )
+                    }
+                },
+            )
         }
     }
 
@@ -1892,6 +1951,7 @@ internal fun TaskDto.toItem(): TaskItem {
         id = id,
         creatorId = creator.id,
         creatorName = creator.displayName,
+        creatorAvatarUrl = creator.avatarUrl,
         title = title,
         description = description,
         assignee = people.joinToString { it.displayName }.ifBlank { creator.displayName },
@@ -1919,6 +1979,7 @@ internal fun TaskDto.toItem(): TaskItem {
         canCreateSubtasks = canCreateSubtasks,
         canEdit = canEdit,
         canManageFollowers = canManageFollowers,
+        canManageReminder = canManageReminder,
         assignees = people.map { person ->
             TaskPersonItem(person.id, person.displayName, person.avatarUrl)
         },
@@ -1981,6 +2042,14 @@ internal fun TaskRepository.Detail.toItem(taskId: String): TaskDetailItem {
         },
         activities = activities.map { activity ->
             activity.toItem()
+        },
+        reminder = reminder?.let { preference ->
+            TaskReminderItem(
+                enabled = preference.enabled,
+                reminderMinutes = preference.reminderMinutes,
+                effectiveReminderMinutes = preference.effectiveReminderMinutes,
+                globalRemindersEnabled = preference.globalRemindersEnabled,
+            )
         },
         parentCandidates = parentCandidates.map { candidate ->
             TaskParentCandidateItem(

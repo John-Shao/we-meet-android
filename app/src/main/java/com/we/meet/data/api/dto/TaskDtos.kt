@@ -180,6 +180,7 @@ data class TaskDto(
     @Json(name = "can_manage_attachments") val canManageAttachments: Boolean = false,
     @Json(name = "can_manage_followers") val canManageFollowers: Boolean = false,
     @Json(name = "can_create_subtasks") val canCreateSubtasks: Boolean = false,
+    @Json(name = "can_manage_reminder") val canManageReminder: Boolean = false,
     @Json(name = "is_following") val isFollowing: Boolean = false,
     @Json(name = "time_state") val timeState: String? = null,
     val recurrence: TaskRecurrenceDto? = null,
@@ -293,6 +294,13 @@ data class CreateTaskRequest(
     @Json(name = "task_list_id") val taskListId: String? = null,
     @Json(name = "group_id") val groupId: String? = null,
     @Json(name = "parent_id") val parentId: String? = null,
+    val reminder: TaskReminderInputDto? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class TaskReminderInputDto(
+    val enabled: Boolean,
+    @Json(name = "reminder_minutes") val reminderMinutes: Int? = null,
 )
 
 @JsonClass(generateAdapter = true)
@@ -363,6 +371,14 @@ data class TaskSettingsDto(
     @Json(name = "daily_reminder_enabled") val dailyReminderEnabled: Boolean = true,
     @Json(name = "overdue_marker_enabled") val overdueMarkerEnabled: Boolean = true,
     @Json(name = "default_reminder_minutes") val defaultReminderMinutes: Int = 0,
+)
+
+@JsonClass(generateAdapter = true)
+data class TaskReminderPreferenceDto(
+    val enabled: Boolean = true,
+    @Json(name = "reminder_minutes") val reminderMinutes: Int? = null,
+    @Json(name = "effective_reminder_minutes") val effectiveReminderMinutes: Int = 0,
+    @Json(name = "global_reminders_enabled") val globalRemindersEnabled: Boolean = true,
 )
 
 @JsonClass(generateAdapter = true)

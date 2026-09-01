@@ -309,6 +309,12 @@
     <string name="task_due_time">Fälligkeit</string>
     <string name="task_start_date">Startdatum</string>
     <string name="task_due_date">Fälligkeitsdatum</string>
+    <string name="task_my_reminder">Meine Erinnerung</string>
+    <string name="task_reminder_follow_default">Systemstandard · %1$s</string>
+    <string name="task_reminder_due_date">Am Fälligkeitstag</string>
+    <string name="task_reminder_one_day">1 Tag vorher</string>
+    <string name="task_reminder_three_days">3 Tage vorher</string>
+    <string name="task_reminder_global_disabled">Tägliche Erinnerungen sind in den Aufgabeneinstellungen deaktiviert</string>
     <string name="task_date_not_set">Nicht festgelegt</string>
     <string name="task_clear_date">Datum löschen</string>
     <string name="task_add_to_list">Zu Liste hinzufügen</string>
@@ -317,6 +323,10 @@
     <string name="task_belongs_to_list">Zugehörige Aufgabenliste</string>
     <string name="task_belongs_to_group">Zugehörige Gruppe</string>
     <string name="task_placement">Zuordnung</string>
+    <string name="task_collaboration">Zusammenarbeit</string>
+    <string name="task_plan">Plan</string>
+    <string name="task_content">Aufgabeninhalt</string>
+    <string name="task_related">Verknüpfte Aufgaben</string>
     <string name="task_today">Heute</string>
     <string name="task_tomorrow">Morgen</string>
     <string name="task_add_subtask">Unteraufgabe hinzufügen</string>

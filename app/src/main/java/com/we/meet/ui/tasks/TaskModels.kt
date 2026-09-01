@@ -165,7 +165,7 @@ data class TaskSavedViewItem(
 data class TaskSettingsItem(
     val dailyReminderEnabled: Boolean = true,
     val overdueMarkerEnabled: Boolean = true,
-    val defaultReminderMinutes: Int = 30,
+    val defaultReminderMinutes: Int = 0,
 )
 
 data class TaskPersonItem(
@@ -196,6 +196,7 @@ data class TaskItem(
     val canCreateSubtasks: Boolean = false,
     val canEdit: Boolean = false,
     val canManageFollowers: Boolean = false,
+    val canManageReminder: Boolean = false,
     val assignees: List<TaskPersonItem> = emptyList(),
     val followers: List<TaskPersonItem> = emptyList(),
     val startDate: String? = null,
@@ -204,12 +205,20 @@ data class TaskItem(
     val groupName: String? = null,
     val creatorId: String = "",
     val creatorName: String = "",
+    val creatorAvatarUrl: String = "",
     val completedAt: String? = null,
     val createdAt: String = "",
     val parentId: String? = null,
     val parentTitle: String? = null,
     val recurrence: TaskRecurrenceItem? = null,
     val assigneeAvatarUrl: String = "",
+)
+
+data class TaskReminderItem(
+    val enabled: Boolean = true,
+    val reminderMinutes: Int? = null,
+    val effectiveReminderMinutes: Int = 0,
+    val globalRemindersEnabled: Boolean = true,
 )
 
 internal fun TaskItem.filteredParentTitle(visibleTaskIds: Set<String>): String? =
@@ -251,6 +260,8 @@ data class TaskDetailItem(
     val comments: List<TaskCommentItem> = emptyList(),
     val attachments: List<TaskAttachmentItem> = emptyList(),
     val activities: List<TaskActivityItem> = emptyList(),
+    val reminder: TaskReminderItem? = null,
+    val reminderSaving: Boolean = false,
     val parentCandidates: List<TaskParentCandidateItem> = emptyList(),
     val subtreeNodeCount: Int = 1,
     val loading: Boolean = false,

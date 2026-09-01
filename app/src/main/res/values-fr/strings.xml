@@ -309,6 +309,12 @@
     <string name="task_due_time">Échéance</string>
     <string name="task_start_date">Date de début</string>
     <string name="task_due_date">Date d’échéance</string>
+    <string name="task_my_reminder">Mon rappel</string>
+    <string name="task_reminder_follow_default">Valeur système · %1$s</string>
+    <string name="task_reminder_due_date">Le jour de l’échéance</string>
+    <string name="task_reminder_one_day">1 jour avant</string>
+    <string name="task_reminder_three_days">3 jours avant</string>
+    <string name="task_reminder_global_disabled">Les rappels quotidiens sont désactivés dans les paramètres des tâches</string>
     <string name="task_date_not_set">Non définie</string>
     <string name="task_clear_date">Effacer la date</string>
     <string name="task_add_to_list">Ajouter à la liste</string>
@@ -317,6 +323,10 @@
     <string name="task_belongs_to_list">Liste associée</string>
     <string name="task_belongs_to_group">Groupe associé</string>
     <string name="task_placement">Organisation</string>
+    <string name="task_collaboration">Collaboration</string>
+    <string name="task_plan">Planification</string>
+    <string name="task_content">Contenu de la tâche</string>
+    <string name="task_related">Tâches associées</string>
     <string name="task_today">Aujourd’hui</string>
     <string name="task_tomorrow">Demain</string>
     <string name="task_add_subtask">Ajouter une sous-tâche</string>

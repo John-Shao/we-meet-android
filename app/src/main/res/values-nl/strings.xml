@@ -309,6 +309,12 @@
     <string name="task_due_time">Deadline</string>
     <string name="task_start_date">Startdatum</string>
     <string name="task_due_date">Vervaldatum</string>
+    <string name="task_my_reminder">Mijn herinnering</string>
+    <string name="task_reminder_follow_default">Systeemstandaard · %1$s</string>
+    <string name="task_reminder_due_date">Op de vervaldatum</string>
+    <string name="task_reminder_one_day">1 dag van tevoren</string>
+    <string name="task_reminder_three_days">3 dagen van tevoren</string>
+    <string name="task_reminder_global_disabled">Dagelijkse herinneringen zijn uitgeschakeld in de taakinstellingen</string>
     <string name="task_date_not_set">Niet ingesteld</string>
     <string name="task_clear_date">Datum wissen</string>
     <string name="task_add_to_list">Aan lijst toevoegen</string>
@@ -317,6 +323,10 @@
     <string name="task_belongs_to_list">Bijbehorende takenlijst</string>
     <string name="task_belongs_to_group">Bijbehorende groep</string>
     <string name="task_placement">Indeling</string>
+    <string name="task_collaboration">Samenwerking</string>
+    <string name="task_plan">Planning</string>
+    <string name="task_content">Taakinhoud</string>
+    <string name="task_related">Gerelateerde taken</string>
     <string name="task_today">Vandaag</string>
     <string name="task_tomorrow">Morgen</string>
     <string name="task_add_subtask">Subtaak toevoegen</string>

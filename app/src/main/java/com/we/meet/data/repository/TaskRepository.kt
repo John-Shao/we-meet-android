@@ -32,6 +32,8 @@ import com.we.meet.data.api.dto.TaskGroupDto
 import com.we.meet.data.api.dto.TaskRecurrenceRequest
 import com.we.meet.data.api.dto.TaskSubtreeImpactDto
 import com.we.meet.data.api.dto.TaskSettingsDto
+import com.we.meet.data.api.dto.TaskReminderInputDto
+import com.we.meet.data.api.dto.TaskReminderPreferenceDto
 import com.we.meet.data.api.dto.ShareTaskListRequest
 import com.we.meet.data.api.dto.UpdateTaskListAccessRequest
 import com.we.meet.data.api.dto.CreateTaskSavedViewRequest
@@ -76,6 +78,7 @@ class TaskRepository(
 
     data class Detail(
         val task: TaskDto,
+        val reminder: TaskReminderPreferenceDto?,
         val subtasks: List<TaskDto>,
         val comments: List<TaskCommentDto>,
         val attachments: List<TaskAttachmentDto>,
@@ -226,8 +229,14 @@ class TaskRepository(
                     api.listParentCandidates(taskId, sharedVia = sharedVia)
                 }
                 val subtreeImpact = async { api.getSubtreeImpact(taskId, sharedVia) }
+                val loadedTask = task.await()
                 Detail(
-                    task = task.await(),
+                    task = loadedTask,
+                    reminder = if (loadedTask.canManageReminder) {
+                        runCatching { api.getTaskReminder(taskId) }.getOrNull()
+                    } else {
+                        null
+                    },
                     subtasks = subtasks.await(),
                     comments = comments.await(),
                     attachments = attachments.await(),
@@ -249,6 +258,8 @@ class TaskRepository(
         priority: String?,
         taskListId: String?,
         groupId: String?,
+        reminderEnabled: Boolean = true,
+        reminderMinutes: Int? = null,
         parentId: String? = null,
     ): Result<TaskDto> = runCatching {
         withContext(Dispatchers.IO) {
@@ -264,6 +275,10 @@ class TaskRepository(
                     taskListId = taskListId,
                     groupId = groupId,
                     parentId = parentId,
+                    reminder = TaskReminderInputDto(
+                        enabled = reminderEnabled,
+                        reminderMinutes = reminderMinutes,
+                    ),
                 ),
             )
         }
@@ -321,6 +336,21 @@ class TaskRepository(
                 else api.unfollowTask(taskId, sharedVia)
             }
         }
+
+    suspend fun updateTaskReminder(
+        taskId: String,
+        enabled: Boolean? = null,
+        reminderMinutes: Int? = null,
+        updateMinutes: Boolean = false,
+    ): Result<TaskReminderPreferenceDto> = runCatching {
+        withContext(Dispatchers.IO) {
+            api.patchTaskReminder(
+                taskId,
+                taskReminderPatchJson(enabled, reminderMinutes, updateMinutes)
+                    .toRequestBody("application/json".toMediaType()),
+            )
+        }
+    }
 
     suspend fun updateTask(taskId: String, patch: PatchTaskRequest): Result<TaskDto> =
         runCatching {
@@ -765,3 +795,12 @@ internal fun taskListGroupPatchJson(listGroupId: String?): String =
             put(key, value ?: JSONObject.NULL)
         }
     }.toString()
+
+internal fun taskReminderPatchJson(
+    enabled: Boolean?,
+    reminderMinutes: Int?,
+    updateMinutes: Boolean,
+): String = buildList {
+    enabled?.let { add("\"enabled\":$it") }
+    if (updateMinutes) add("\"reminder_minutes\":${reminderMinutes ?: "null"}")
+}.joinToString(prefix = "{", postfix = "}")
