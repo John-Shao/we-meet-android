@@ -2,8 +2,6 @@ package com.we.meet.ui.tasks
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -34,7 +32,6 @@ class TaskFilterBarTest {
                 // complete entry on a 360dp screen.
                 Box(Modifier.width(155.dp)) {
                     TaskControlEntry(
-                        icon = Icons.Outlined.Tune,
                         label = "筛选",
                         summary = summary,
                         onClick = {},

@@ -1483,14 +1483,10 @@ private fun TaskFilterBar(
         verticalAlignment = Alignment.Top,
     ) {
         TaskControlEntry(
-            icon = Icons.Outlined.Tune,
             label = stringResource(R.string.task_filter_options),
             summary = filterSummary,
             onClick = onFilter,
-            // The filter summary has three fields while display settings has two.
-            // Giving both entries half the row made the last filter permanently
-            // ellipsized on phone-sized screens.
-            modifier = Modifier.weight(1.25f),
+            modifier = Modifier.weight(1f),
         )
         Spacer(
             Modifier.padding(horizontal = Dimens.SpaceS)
@@ -1499,48 +1495,36 @@ private fun TaskFilterBar(
                 .background(MaterialTheme.colorScheme.outlineVariant),
         )
         TaskControlEntry(
-            icon = Icons.AutoMirrored.Outlined.Sort,
             label = stringResource(R.string.task_group_and_sort),
             summary = displaySummary,
             onClick = onDisplaySettings,
-            modifier = Modifier.weight(0.75f),
+            modifier = Modifier.weight(1f),
         )
     }
 }
 
 @Composable
 internal fun TaskControlEntry(
-    icon: ImageVector,
     label: String,
     summary: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    Column(
         modifier = modifier.clip(RoundedCornerShape(Dimens.SpaceS))
             .clickable(onClick = onClick)
             .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            icon,
-            contentDescription = label,
-            modifier = Modifier.size(Dimens.IconSmall),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
         )
-        Spacer(Modifier.width(Dimens.SpaceS))
-        Column(Modifier.weight(1f)) {
-            Text(
-                label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                summary,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Text(
+            summary,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
