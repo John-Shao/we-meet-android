@@ -2811,10 +2811,10 @@ private fun TaskDetailPage(
                         onEditParent.takeIf { canEditParent },
                     )
                     HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
-                    FormValueRow(
-                        Icons.Outlined.AccountTree,
-                        R.string.task_subtasks,
-                        "${subtasks.count { it.status == TaskStatus.Done }}/${subtasks.size}",
+                    SubtaskSummaryRow(
+                        completed = subtasks.count { it.status == TaskStatus.Done },
+                        total = subtasks.size,
+                        onAdd = onAddSubtask.takeIf { task.canCreateSubtasks },
                     )
                     subtasks.forEach { subtask ->
                         TaskRow(
@@ -2824,13 +2824,6 @@ private fun TaskDetailPage(
                             onLongClick = {
                                 if (canReorderSubtasks) onSubtaskAction(subtask)
                             },
-                        )
-                    }
-                    if (task.canCreateSubtasks) {
-                        ActionRow(
-                            Icons.Filled.Add,
-                            R.string.task_add_subtask,
-                            onClick = onAddSubtask,
                         )
                     }
                 }
@@ -3234,6 +3227,44 @@ private fun FormValueRow(icon: ImageVector, labelRes: Int, value: String, onClic
         Text(stringResource(labelRes), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(Dimens.LabelColumnWidth))
         Text(value, modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium)
         if (onClick != null) Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun SubtaskSummaryRow(
+    completed: Int,
+    total: Int,
+    onAdd: (() -> Unit)?,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().heightIn(min = Dimens.MinTouchTarget)
+            .padding(start = Dimens.SpaceL, end = Dimens.SpaceS),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Outlined.AccountTree,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(Dimens.SpaceM))
+        Text(
+            stringResource(R.string.task_subtasks),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(Dimens.LabelColumnWidth),
+        )
+        Text(
+            "$completed/$total",
+            modifier = Modifier.weight(1f),
+            fontWeight = FontWeight.Medium,
+        )
+        onAdd?.let { add ->
+            Box(
+                modifier = Modifier.size(Dimens.MinTouchTarget).clickable(onClick = add),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Filled.Add, stringResource(R.string.task_add_subtask))
+            }
+        }
     }
 }
 
