@@ -1642,6 +1642,7 @@ internal fun TaskRow(
     onLongClick: () -> Unit,
     showOverdueMarker: Boolean = true,
     filteredParentTitle: String? = null,
+    showDivider: Boolean = true,
 ) {
     val done = task.status == TaskStatus.Done
     val overdue = showOverdueMarker && task.timeState == TaskTimeState.Overdue
@@ -1766,7 +1767,13 @@ internal fun TaskRow(
             )
         }
     }
-    HorizontalDivider(thickness = Dimens.DividerThin, modifier = Modifier.padding(start = Dimens.ButtonHeight))
+    if (showDivider) {
+        HorizontalDivider(
+            modifier = Modifier.padding(start = Dimens.ButtonHeight),
+            thickness = Dimens.DividerThin,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+        )
+    }
 }
 
 @Composable
@@ -2522,9 +2529,9 @@ private fun TaskDetailPage(
     var activityExpanded by remember(task.id) { mutableStateOf(false) }
     Scaffold(
         modifier = Modifier.testTag(TASK_DETAIL_TEST_TAG),
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        containerColor = WeMeetTheme.extras.groupedPageBackground,
         topBar = {
-            Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+            Surface(color = WeMeetTheme.extras.groupedPageBackground) {
                 Row(
                     modifier = Modifier.fillMaxWidth().height(Dimens.Task.TopBarHeight)
                         .padding(horizontal = Dimens.SpaceXs),
@@ -2617,7 +2624,7 @@ private fun TaskDetailPage(
                         task.assignees,
                         onClick = onEditAssignees.takeIf { task.canEdit },
                     )
-                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    TaskDetailDivider()
                     TaskPeopleRow(
                         Icons.Outlined.AlternateEmail,
                         R.string.task_creator,
@@ -2629,7 +2636,7 @@ private fun TaskDetailPage(
                             ),
                         ),
                     )
-                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    TaskDetailDivider()
                     TaskPeopleRow(
                         Icons.Outlined.BookmarkBorder,
                         R.string.task_followers,
@@ -2648,7 +2655,7 @@ private fun TaskDetailPage(
                         taskDateDisplayText(task.startDate),
                         onEditStartDate.takeIf { task.canEdit },
                     )
-                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    TaskDetailDivider()
                     FormValueRow(
                         Icons.Outlined.CalendarMonth,
                         R.string.task_due_date,
@@ -2656,7 +2663,7 @@ private fun TaskDetailPage(
                         onEditDueDate.takeIf { task.canEdit },
                     )
                     detail?.reminder?.takeIf { task.canManageReminder }?.let { reminder ->
-                        HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                        TaskDetailDivider()
                         TaskReminderRow(
                             enabled = reminder.enabled,
                             reminderMinutes = reminder.reminderMinutes,
@@ -2664,7 +2671,7 @@ private fun TaskDetailPage(
                             onChange = onReminderChange,
                         )
                     }
-                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    TaskDetailDivider()
                     FormValueRow(
                         Icons.Outlined.Flag,
                         R.string.task_priority,
@@ -2672,7 +2679,7 @@ private fun TaskDetailPage(
                         onEditPriority.takeIf { task.canEdit },
                     )
                     if (task.parentId == null) {
-                        HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                        TaskDetailDivider()
                         FormValueRow(
                             Icons.Outlined.Repeat,
                             R.string.calendar_field_repeat,
@@ -2691,7 +2698,7 @@ private fun TaskDetailPage(
                         task.listName.ifBlank { stringResource(R.string.task_standalone) },
                         onEditTaskList.takeIf { task.canEdit },
                     )
-                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    TaskDetailDivider()
                     FormValueRow(
                         Icons.Outlined.AccountTree,
                         R.string.task_belongs_to_group,
@@ -2707,7 +2714,7 @@ private fun TaskDetailPage(
                         description = task.description,
                         onClick = onEditDescription.takeIf { task.canEdit },
                     )
-                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    TaskDetailDivider()
                     SummaryActionRow(
                         icon = Icons.Outlined.AttachFile,
                         labelRes = R.string.task_attachments,
@@ -2716,6 +2723,7 @@ private fun TaskDetailPage(
                         actionLoading = detail?.uploadingAttachment == true,
                     )
                     detail?.attachments.orEmpty().forEach { attachment ->
+                        TaskDetailDivider()
                         val downloading = attachment.id in detail?.downloadingAttachmentIds.orEmpty()
                         Row(
                             modifier = Modifier.fillMaxWidth()
@@ -2786,14 +2794,15 @@ private fun TaskDetailPage(
                         task.parentTitle ?: stringResource(R.string.task_no_parent),
                         onEditParent.takeIf { canEditParent },
                     )
-                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    TaskDetailDivider()
                     SummaryActionRow(
                         icon = Icons.Outlined.AccountTree,
                         labelRes = R.string.task_subtasks,
                         actionContentDescriptionRes = R.string.task_add_subtask,
                         onAction = onAddSubtask.takeIf { task.canCreateSubtasks },
                     )
-                    subtasks.forEach { subtask ->
+                    if (subtasks.isNotEmpty()) TaskDetailDivider()
+                    subtasks.forEachIndexed { index, subtask ->
                         TaskRow(
                             task = subtask,
                             onClick = { onOpenSubtask(subtask) },
@@ -2801,6 +2810,7 @@ private fun TaskDetailPage(
                             onLongClick = {
                                 if (canReorderSubtasks) onSubtaskAction(subtask)
                             },
+                            showDivider = index < subtasks.lastIndex,
                         )
                     }
                 }
@@ -3236,6 +3246,15 @@ private fun TaskDetailCard(content: @Composable ColumnScope.() -> Unit) {
         shape = RoundedCornerShape(Dimens.CornerL),
         color = MaterialTheme.colorScheme.surface,
         content = { Column(content = content) },
+    )
+}
+
+@Composable
+private fun TaskDetailDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(start = Dimens.ListLeadingIcon),
+        thickness = Dimens.DividerThin,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
     )
 }
 

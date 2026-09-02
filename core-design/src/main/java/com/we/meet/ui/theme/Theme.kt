@@ -44,6 +44,8 @@ private val DarkColors = darkColorScheme(
 data class WeMeetExtras(
     /** Thin tinted band used to separate zones on the Home page. */
     val surfaceBand: Color,
+    /** Neutral canvas behind grouped cards on setting and detail pages. */
+    val groupedPageBackground: Color,
     /** 日历表态四态四色(见 [RsvpColors])。 */
     val rsvp: RsvpColors,
     /** 日历网格的其余专用色(见 [CalendarColors])。表态色在 [rsvp]。 */
@@ -307,6 +309,7 @@ data class RsvpColors(
 
 private val LightExtras = WeMeetExtras(
     surfaceBand = LightSurfaceBand,
+    groupedPageBackground = LightGroupedPageBackground,
     rsvp = RsvpColors(
         accepted = LightRsvpAccepted,
         acceptedText = LightRsvpAcceptedText,
@@ -350,6 +353,7 @@ private val LightExtras = WeMeetExtras(
 
 private val DarkExtras = WeMeetExtras(
     surfaceBand = DarkSurfaceBand,
+    groupedPageBackground = DarkGroupedPageBackground,
     rsvp = RsvpColors(
         accepted = DarkRsvpAccepted,
         acceptedText = DarkRsvpAcceptedText,

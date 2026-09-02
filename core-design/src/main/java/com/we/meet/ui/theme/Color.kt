@@ -38,6 +38,10 @@ val DarkBackground = Color(0xFF111418)
 val DarkSurface = Color(0xFF1A1C1E)
 val DarkOnSurface = Color(0xFFE2E2E5)
 
+/** Neutral grouped-page canvas used behind elevated setting/detail cards. */
+val LightGroupedPageBackground = Color(0xFFF5F5F5)
+val DarkGroupedPageBackground = DarkBackground
+
 // --- Semantic tokens not covered by Material 3's ColorScheme ---------------
 // These surface in [WeMeetExtras] and are resolved by [WeMeetTheme] based
 // on the active light/dark mode, so callers never branch on the theme.
