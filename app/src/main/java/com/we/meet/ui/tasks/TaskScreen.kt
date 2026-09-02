@@ -136,9 +136,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -146,8 +144,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.we.meet.R
 import com.we.meet.BuildConfig
 import com.we.meet.WeMeetApp
@@ -155,8 +151,8 @@ import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.ui.chat.ForwardCreateGroupFlow
 import com.we.meet.feature.im.ui.chat.ForwardPicker
 import com.we.meet.core.directory.ui.ContactPicker
-import com.we.meet.core.directory.ui.avatarCacheKey
 import com.we.meet.core.directory.ui.ContactPickerMode
+import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.core.directory.ui.PickedMember
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
@@ -1808,36 +1804,12 @@ private fun Avatar(
     avatarUrl: String? = null,
     stableId: String = name,
 ) {
-    val label = name.trim().firstOrNull()?.uppercase() ?: ""
-    var imageFailed by remember(avatarUrl) { mutableStateOf(false) }
-    val showImage = !avatarUrl.isNullOrBlank() && !imageFailed
-    val cacheKey = avatarCacheKey(avatarUrl, "task-avatar:$stableId")
-    Box(
-        modifier = Modifier.size(size).clip(CircleShape)
-            .background(if (showImage) Color.Transparent else MaterialTheme.colorScheme.primary),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (showImage) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(avatarUrl)
-                    .memoryCacheKey(cacheKey)
-                    .diskCacheKey(cacheKey)
-                    .build(),
-                contentDescription = name,
-                contentScale = ContentScale.Crop,
-                onError = { imageFailed = true },
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            Text(
-                label,
-                color = MaterialTheme.colorScheme.onPrimary,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.labelLarge,
-            )
-        }
-    }
+    MemberAvatar(
+        name = name,
+        url = avatarUrl,
+        cacheKey = "task-avatar:$stableId",
+        size = size,
+    )
 }
 
 @Composable
