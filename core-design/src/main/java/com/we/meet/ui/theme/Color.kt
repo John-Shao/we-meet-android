@@ -2,11 +2,13 @@ package com.we.meet.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Brand seed and a small handful of derived tones.  Material 3 will fill in
-// the rest of the palette via lightColorScheme/darkColorScheme.
-val Seed = Color(0xFF1F6FEB)
+// Material 3 does not derive omitted ColorScheme roles from a seed: omitted
+// values fall back to its stock purple palette. Keep every public M3 role
+// explicit here so Button/TextField/Chip/Badge/Snackbar cannot leak defaults.
+// These core values mirror ../we-meet/src/design-tokens/color.tokens.json.
+val Seed = Color(0xFF3370FF)
 
-val LightPrimary = Seed
+val LightPrimary = Color(0xFF2860D9)
 val LightOnPrimary = Color(0xFFFFFFFF)
 val LightPrimaryContainer = Color(0xFFD6E4FF)
 
@@ -20,15 +22,45 @@ val LightPrimaryContainer = Color(0xFFD6E4FF)
  * 数字、日视图全天条标题(12sp,更吃亏)、审批「已通过」标签、会中 AI
  * 气泡正文。
  *
- * `1A5FCC` 压在同一个底上 4.62:1,过线;图标那 7 处本来就过,只会更好。
+ * `1E4DB3` 压在同一个底上 5.93:1,过线;图标那 7 处本来就过,只会更好。
  * 深色那套没这个问题(`D6E4FF` on `1E3A7A` = 8.45:1)。
  *
  * ⚠️ 改这个值或 [LightPrimaryContainer] 之前先算对比度,4.5:1 是底线。
  */
-val LightOnPrimaryContainer = Color(0xFF1A5FCC)
-val LightBackground = Color(0xFFFCFCFD)
+val LightOnPrimaryContainer = Color(0xFF1E4DB3)
+val LightBackground = Color(0xFFF6F6F6)
 val LightSurface = Color(0xFFFFFFFF)
 val LightOnSurface = Color(0xFF1A1C1E)
+val LightOnSurfaceVariant = Color(0xFF666666)
+val LightOutline = Color(0xFF7C7C7C)
+val LightOutlineVariant = Color(0xFFE5E5E5)
+
+// The cross-client contract has one brand action and one selected-container
+// role. M3's secondary pair aliases those semantics instead of inventing a
+// second brand hue; default chips and compact labels consume this pair.
+val LightSecondary = LightOnPrimaryContainer
+val LightOnSecondary = LightOnPrimary
+val LightSecondaryContainer = LightPrimaryContainer
+val LightOnSecondaryContainer = LightOnPrimaryContainer
+
+// M3 tertiary is the positive/status accent. Product-specific colors remain
+// in WeMeetTheme.extras and must not be inferred from this slot.
+val LightTertiary = Color(0xFF00A344)
+val LightOnTertiary = LightOnSurface
+val LightTertiaryContainer = Color(0xFFD6F5E0)
+val LightOnTertiaryContainer = Color(0xFF005222)
+
+val LightSurfaceVariant = LightBackground
+val LightInverseSurface = Color(0xFF1A1C1E)
+val LightInverseOnSurface = Color(0xFFE2E2E5)
+val LightInversePrimary = Color(0xFF7BAAFB)
+val LightSurfaceDim = Color(0xFFE5E5E5)
+val LightSurfaceBright = LightSurface
+val LightSurfaceContainerLowest = LightSurface
+val LightSurfaceContainerLow = LightBackground
+val LightSurfaceContainer = LightBackground
+val LightSurfaceContainerHigh = Color(0xFFEDEDED)
+val LightSurfaceContainerHighest = LightSurfaceDim
 
 val DarkPrimary = Color(0xFF7BAAFB)
 val DarkOnPrimary = Color(0xFF002F69)
@@ -37,6 +69,30 @@ val DarkOnPrimaryContainer = Color(0xFFD6E4FF)
 val DarkBackground = Color(0xFF111418)
 val DarkSurface = Color(0xFF1A1C1E)
 val DarkOnSurface = Color(0xFFE2E2E5)
+val DarkOnSurfaceVariant = Color(0xFF929292)
+val DarkOutline = Color(0xFF7C7C7C)
+val DarkOutlineVariant = Color(0xFF2A2A2A)
+val DarkSecondary = DarkPrimary
+val DarkOnSecondary = DarkOnPrimary
+val DarkSecondaryContainer = DarkPrimaryContainer
+val DarkOnSecondaryContainer = DarkOnPrimaryContainer
+val DarkTertiary = Color(0xFF4ADE80)
+val DarkOnTertiary = DarkBackground
+val DarkTertiaryContainer = Color(0xFF12492A)
+val DarkOnTertiaryContainer = Color(0xFFD6F5E0)
+val DarkSurfaceVariant = Color(0xFF242424)
+val DarkInverseSurface = Color(0xFFE2E2E5)
+val DarkInverseOnSurface = DarkSurface
+val DarkInversePrimary = LightPrimary
+val DarkSurfaceDim = DarkBackground
+val DarkSurfaceBright = Color(0xFF2A2A2A)
+val DarkSurfaceContainerLowest = DarkBackground
+val DarkSurfaceContainerLow = DarkSurface
+val DarkSurfaceContainer = DarkSurfaceVariant
+val DarkSurfaceContainerHigh = DarkSurfaceBright
+val DarkSurfaceContainerHighest = Color(0xFF3A3A3A)
+
+val ThemeScrim = Color(0xFF000000)
 
 /** Neutral grouped-page canvas used behind elevated setting/detail cards. */
 val LightGroupedPageBackground = Color(0xFFF5F5F5)
@@ -82,10 +138,10 @@ val LightRsvpDeclinedText = Color(0xFF6B7280)
  * 装饰:用户会拿它对齐周次、点上月末那几天。
  *
  * 非本月日期仍然可以点击，也承担跨月对齐的信息，因此按普通文字的 4.5:1
- * 门槛处理，不能用“辅助信息”规避 WCAG。现在两套分别为 4.72:1 / 5.46:1；
+ * 门槛处理，不能用“辅助信息”规避 WCAG。现在两套分别为 4.54:1 / 5.46:1；
  * 视觉层级靠与主文字的亮度差保留，不靠把文字压到不可读。
  */
-val LightCalendarOutOfMonthDay = Color(0xFF766F7D)
+val LightCalendarOutOfMonthDay = Color(0xFF756E7C)
 val DarkCalendarOutOfMonthDay = Color(0xFF8F8999)
 
 val LightCalendarNowLine = Color(0xFFEF4444)

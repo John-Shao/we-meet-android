@@ -1,6 +1,7 @@
 package com.we.meet.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.max
@@ -13,8 +14,15 @@ class ColorContrastTest {
     fun coreLightPairsMeetWcagAa() {
         assertTextPair("primary", LightOnPrimary, LightPrimary)
         assertTextPair("primary container", LightOnPrimaryContainer, LightPrimaryContainer)
+        assertTextPair("secondary", LightOnSecondary, LightSecondary)
+        assertTextPair("secondary container", LightOnSecondaryContainer, LightSecondaryContainer)
+        assertTextPair("tertiary", LightOnTertiary, LightTertiary)
+        assertTextPair("tertiary container", LightOnTertiaryContainer, LightTertiaryContainer)
         assertTextPair("surface", LightOnSurface, LightSurface)
         assertTextPair("background", LightOnSurface, LightBackground)
+        assertTextPair("surface variant", LightOnSurfaceVariant, LightSurfaceVariant)
+        assertTextPair("inverse surface", LightInverseOnSurface, LightInverseSurface)
+        assertNonTextPair("outline", LightOutline, LightSurface)
 
         assertTextPair("danger", LightOnDanger, LightDanger)
         assertTextPair("danger container", LightOnDangerContainer, LightDangerContainer)
@@ -40,8 +48,15 @@ class ColorContrastTest {
     fun coreDarkPairsMeetWcagAa() {
         assertTextPair("primary", DarkOnPrimary, DarkPrimary)
         assertTextPair("primary container", DarkOnPrimaryContainer, DarkPrimaryContainer)
+        assertTextPair("secondary", DarkOnSecondary, DarkSecondary)
+        assertTextPair("secondary container", DarkOnSecondaryContainer, DarkSecondaryContainer)
+        assertTextPair("tertiary", DarkOnTertiary, DarkTertiary)
+        assertTextPair("tertiary container", DarkOnTertiaryContainer, DarkTertiaryContainer)
         assertTextPair("surface", DarkOnSurface, DarkSurface)
         assertTextPair("background", DarkOnSurface, DarkBackground)
+        assertTextPair("surface variant", DarkOnSurfaceVariant, DarkSurfaceVariant)
+        assertTextPair("inverse surface", DarkInverseOnSurface, DarkInverseSurface)
+        assertNonTextPair("outline", DarkOutline, DarkSurface)
 
         assertTextPair("danger", DarkOnDanger, DarkDanger)
         assertTextPair("danger container", DarkOnDangerContainer, DarkDangerContainer)
@@ -60,6 +75,25 @@ class ColorContrastTest {
         assertTextPair("RSVP declined", DarkRsvpDeclinedText, DarkSurface)
         assertTextPair("out-of-month day", DarkCalendarOutOfMonthDay, DarkBackground)
         assertNonTextPair("reminder icon", CalendarOnReminder, DarkCalendarReminder)
+    }
+
+    @Test
+    fun materialSchemesDoNotFallBackToMaterialDefaults() {
+        assertEquals(LightSecondary, LightColors.secondary)
+        assertEquals(LightTertiary, LightColors.tertiary)
+        assertEquals(LightOnSurfaceVariant, LightColors.onSurfaceVariant)
+        assertEquals(LightOutline, LightColors.outline)
+        assertEquals(LightDanger, LightColors.error)
+        assertEquals(LightInverseSurface, LightColors.inverseSurface)
+        assertEquals(LightSurfaceContainerLow, LightColors.surfaceContainerLow)
+
+        assertEquals(DarkSecondary, DarkColors.secondary)
+        assertEquals(DarkTertiary, DarkColors.tertiary)
+        assertEquals(DarkOnSurfaceVariant, DarkColors.onSurfaceVariant)
+        assertEquals(DarkOutline, DarkColors.outline)
+        assertEquals(DarkDanger, DarkColors.error)
+        assertEquals(DarkInverseSurface, DarkColors.inverseSurface)
+        assertEquals(DarkSurfaceContainerLow, DarkColors.surfaceContainerLow)
     }
 
     private fun assertTextPair(name: String, foreground: Color, background: Color) {
