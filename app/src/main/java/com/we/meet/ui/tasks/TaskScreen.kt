@@ -3421,37 +3421,36 @@ private fun TaskReminderRow(
     onChange: (Boolean, Int?) -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(
-            horizontal = Dimens.SpaceL,
-            vertical = Dimens.SpaceM,
-        ),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            Icons.Outlined.NotificationsNone,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.width(Dimens.SpaceM))
-        Column(Modifier.weight(1f)) {
+    val timingText = taskReminderTimingText(
+        enabled = enabled,
+        reminderMinutes = reminderMinutes,
+        effectiveReminderMinutes = effectiveReminderMinutes,
+        globalRemindersEnabled = globalRemindersEnabled,
+    )
+    Box {
+        Row(
+            modifier = Modifier.fillMaxWidth()
+                .clickable(enabled = !saving) { menuExpanded = true }
+                .padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceM),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Outlined.NotificationsNone,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.width(Dimens.SpaceM))
             Text(
                 stringResource(R.string.task_my_reminder),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.width(Dimens.LabelColumnWidth),
             )
-            Box {
+            Box(Modifier.weight(1f)) {
                 Text(
-                    text = taskReminderTimingText(
-                        enabled = enabled,
-                        reminderMinutes = reminderMinutes,
-                        effectiveReminderMinutes = effectiveReminderMinutes,
-                        globalRemindersEnabled = globalRemindersEnabled,
-                    ),
-                    modifier = Modifier.clip(RoundedCornerShape(Dimens.SpaceXs))
-                        .clickable(enabled = !saving) { menuExpanded = true }
-                        .padding(vertical = Dimens.SpaceXs),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    text = timingText,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 DropdownMenu(
                     expanded = menuExpanded,
@@ -3496,6 +3495,18 @@ private fun TaskReminderRow(
                             )
                         }
                 }
+            }
+            if (saving) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(Dimens.IconSmall),
+                    strokeWidth = Dimens.BorderEmphasis,
+                )
+            } else {
+                Icon(
+                    Icons.Outlined.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
