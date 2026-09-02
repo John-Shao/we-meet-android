@@ -2522,79 +2522,95 @@ private fun TaskDetailPage(
     var activityExpanded by remember(task.id) { mutableStateOf(false) }
     Scaffold(
         modifier = Modifier.testTag(TASK_DETAIL_TEST_TAG),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         topBar = {
-            Row(
-                modifier = Modifier.fillMaxWidth().height(Dimens.Task.TopBarHeight).padding(horizontal = Dimens.SpaceXs),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.task_back)) }
-                Spacer(Modifier.weight(1f))
-                IconButton(onClick = { onToggleFollow(task) }) {
-                    Icon(
-                        if (task.followed) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                        stringResource(
-                            if (task.followed) R.string.task_unfollow else R.string.task_follow,
-                        ),
-                        tint = if (task.followed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-                onShare?.let { share ->
-                    IconButton(onClick = share) {
-                        Icon(Icons.Outlined.Share, stringResource(R.string.task_share))
+            Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(Dimens.Task.TopBarHeight)
+                        .padding(horizontal = Dimens.SpaceXs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.task_back)) }
+                    Spacer(Modifier.weight(1f))
+                    IconButton(onClick = { onToggleFollow(task) }) {
+                        Icon(
+                            if (task.followed) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                            stringResource(
+                                if (task.followed) R.string.task_unfollow else R.string.task_follow,
+                            ),
+                            tint = if (task.followed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        )
                     }
+                    onShare?.let { share ->
+                        IconButton(onClick = share) {
+                            Icon(Icons.Outlined.Share, stringResource(R.string.task_share))
+                        }
+                    }
+                    IconButton(onClick = onCopyLink) {
+                        Icon(Icons.Outlined.ContentCopy, stringResource(R.string.task_copy))
+                    }
+                    IconButton(
+                        onClick = { onMore(task) },
+                        modifier = Modifier.testTag(TASK_DETAIL_MORE_TEST_TAG),
+                    ) { Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.task_more)) }
                 }
-                IconButton(onClick = onCopyLink) {
-                    Icon(Icons.Outlined.ContentCopy, stringResource(R.string.task_copy))
-                }
-                IconButton(
-                    onClick = { onMore(task) },
-                    modifier = Modifier.testTag(TASK_DETAIL_MORE_TEST_TAG),
-                ) { Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.task_more)) }
             }
         },
     ) { padding ->
         LazyColumn(
             modifier = Modifier.padding(padding).fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
-            verticalArrangement = Arrangement.spacedBy(Dimens.IconSmall),
+            contentPadding = PaddingValues(
+                horizontal = Dimens.ScreenPadding,
+                vertical = Dimens.SpaceL,
+            ),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXl),
         ) {
             if (detail?.loading == true) {
                 item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
             }
             item {
-                Row(verticalAlignment = Alignment.Top) {
-                    if (statusMutating) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.padding(top = Dimens.SpaceXs).size(Dimens.IconLarge),
-                            strokeWidth = Dimens.BorderEmphasis,
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier.padding(top = Dimens.SpaceXs).size(Dimens.IconLarge).clip(CircleShape)
-                                .testTag(taskDetailToggleTestTag(task.status == TaskStatus.Done))
-                                .border(Dimens.BorderEmphasis, if (task.status == TaskStatus.Done) WeMeetTheme.extras.status.success else MaterialTheme.colorScheme.outline, CircleShape)
-                                .background(if (task.status == TaskStatus.Done) WeMeetTheme.extras.status.successContainer else Color.Transparent)
-                                .clickable(enabled = task.canUpdateStatus) { onToggleDone(task) },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            if (task.status == TaskStatus.Done) Icon(Icons.Filled.Check, null, tint = WeMeetTheme.extras.status.onSuccessContainer, modifier = Modifier.size(Dimens.IconSmall))
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(Dimens.CornerL),
+                    color = MaterialTheme.colorScheme.surface,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(Dimens.SpaceL),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        if (statusMutating) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.padding(top = Dimens.SpaceXs).size(Dimens.IconLarge),
+                                strokeWidth = Dimens.BorderEmphasis,
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier.padding(top = Dimens.SpaceXs).size(Dimens.IconLarge).clip(CircleShape)
+                                    .testTag(taskDetailToggleTestTag(task.status == TaskStatus.Done))
+                                    .border(Dimens.BorderEmphasis, if (task.status == TaskStatus.Done) WeMeetTheme.extras.status.success else MaterialTheme.colorScheme.outline, CircleShape)
+                                    .background(if (task.status == TaskStatus.Done) WeMeetTheme.extras.status.successContainer else Color.Transparent)
+                                    .clickable(enabled = task.canUpdateStatus) { onToggleDone(task) },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                if (task.status == TaskStatus.Done) Icon(Icons.Filled.Check, null, tint = WeMeetTheme.extras.status.onSuccessContainer, modifier = Modifier.size(Dimens.IconSmall))
+                            }
                         }
+                        Spacer(Modifier.width(Dimens.SpaceM))
+                        Text(
+                            task.title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.testTag(TASK_DETAIL_TITLE_TEST_TAG).then(
+                                if (task.canEdit) Modifier.clickable(onClick = onEditTitle)
+                                else Modifier,
+                            ),
+                        )
                     }
-                    Spacer(Modifier.width(Dimens.SpaceM))
-                    Text(
-                        task.title,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.testTag(TASK_DETAIL_TITLE_TEST_TAG).then(
-                            if (task.canEdit) Modifier.clickable(onClick = onEditTitle)
-                            else Modifier,
-                        ),
-                    )
                 }
             }
             item {
-                DetailSectionTitle(R.string.task_collaboration, null)
-                TaskFormCard {
+                DetailSectionTitle(R.string.task_collaboration, null, subtle = true)
+                TaskDetailCard {
                     TaskPeopleRow(
                         Icons.Outlined.PersonOutline,
                         R.string.task_assignee,
@@ -2624,8 +2640,8 @@ private fun TaskDetailPage(
                 }
             }
             item {
-                DetailSectionTitle(R.string.task_plan, null)
-                TaskFormCard {
+                DetailSectionTitle(R.string.task_plan, null, subtle = true)
+                TaskDetailCard {
                     FormValueRow(
                         Icons.Outlined.CalendarMonth,
                         R.string.task_start_date,
@@ -2667,8 +2683,8 @@ private fun TaskDetailPage(
                 }
             }
             item {
-                DetailSectionTitle(R.string.task_placement, null)
-                TaskFormCard {
+                DetailSectionTitle(R.string.task_placement, null, subtle = true)
+                TaskDetailCard {
                     FormValueRow(
                         Icons.AutoMirrored.Outlined.ListAlt,
                         R.string.task_belongs_to_list,
@@ -2685,8 +2701,8 @@ private fun TaskDetailPage(
                 }
             }
             item {
-                DetailSectionTitle(R.string.task_content, null)
-                TaskFormCard {
+                DetailSectionTitle(R.string.task_content, null, subtle = true)
+                TaskDetailCard {
                     TaskDescriptionRow(
                         description = task.description,
                         onClick = onEditDescription.takeIf { task.canEdit },
@@ -2762,8 +2778,8 @@ private fun TaskDetailPage(
             item {
                 val subtasks = detail?.subtasks.orEmpty()
                 val canReorderSubtasks = task.canEdit && subtasks.all(TaskItem::canEdit)
-                DetailSectionTitle(R.string.task_related, null)
-                TaskFormCard {
+                DetailSectionTitle(R.string.task_related, null, subtle = true)
+                TaskDetailCard {
                     FormValueRow(
                         Icons.Outlined.AccountTree,
                         R.string.task_parent,
@@ -2797,40 +2813,48 @@ private fun TaskDetailPage(
                     value = comments.size.toString(),
                     expanded = commentsExpanded.takeIf { canExpandComments },
                     onClick = { commentsExpanded = !commentsExpanded },
+                    subtle = true,
                 )
                 AnimatedVisibility(visible = commentsExpanded) {
-                    Column {
-                        comments.forEach { taskComment ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth()
-                                    .padding(vertical = Dimens.SpaceS),
-                                verticalAlignment = Alignment.Top,
-                            ) {
-                                Avatar(
-                                    name = taskComment.author,
-                                    size = Dimens.AvatarS,
-                                    avatarUrl = taskComment.authorAvatarUrl,
-                                    stableId = taskComment.authorId.ifBlank {
-                                        taskComment.id
-                                    },
-                                )
-                                Spacer(Modifier.width(Dimens.SpaceM))
-                                Column(Modifier.weight(1f)) {
-                                    Text(
-                                        taskComment.author,
-                                        fontWeight = FontWeight.SemiBold,
+                    TaskDetailCard {
+                        Column(
+                            Modifier.padding(
+                                horizontal = Dimens.SpaceL,
+                                vertical = Dimens.SpaceS,
+                            ),
+                        ) {
+                            comments.forEach { taskComment ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth()
+                                        .padding(vertical = Dimens.SpaceS),
+                                    verticalAlignment = Alignment.Top,
+                                ) {
+                                    Avatar(
+                                        name = taskComment.author,
+                                        size = Dimens.AvatarS,
+                                        avatarUrl = taskComment.authorAvatarUrl,
+                                        stableId = taskComment.authorId.ifBlank {
+                                            taskComment.id
+                                        },
                                     )
-                                    Text(taskComment.content)
+                                    Spacer(Modifier.width(Dimens.SpaceM))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(
+                                            taskComment.author,
+                                            fontWeight = FontWeight.SemiBold,
+                                        )
+                                        Text(taskComment.content)
+                                    }
                                 }
                             }
-                        }
-                        if (task.canComment) {
-                            OutlinedButton(
-                                onClick = { showCommentDialog = true },
-                                modifier = Modifier.fillMaxWidth()
-                                    .padding(vertical = Dimens.SpaceS),
-                            ) {
-                                Text(stringResource(R.string.task_add_comment))
+                            if (task.canComment) {
+                                OutlinedButton(
+                                    onClick = { showCommentDialog = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                        .padding(vertical = Dimens.SpaceS),
+                                ) {
+                                    Text(stringResource(R.string.task_add_comment))
+                                }
                             }
                         }
                     }
@@ -2843,22 +2867,30 @@ private fun TaskDetailPage(
                     value = activities.size.toString(),
                     expanded = activityExpanded.takeIf { activities.isNotEmpty() },
                     onClick = { activityExpanded = !activityExpanded },
+                    subtle = true,
                 )
                 AnimatedVisibility(visible = activityExpanded) {
-                    Column {
-                        activities.forEach { activity ->
-                            Column(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS)) {
-                                Text(
-                                    activityText(activity),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-                                if (activity.createdAt.isNotBlank()) {
+                    TaskDetailCard {
+                        Column(
+                            Modifier.padding(
+                                horizontal = Dimens.SpaceL,
+                                vertical = Dimens.SpaceS,
+                            ),
+                        ) {
+                            activities.forEach { activity ->
+                                Column(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS)) {
                                     Text(
-                                        activity.createdAt.take(16).replace('T', ' '),
+                                        activityText(activity),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        style = MaterialTheme.typography.bodySmall,
+                                        style = MaterialTheme.typography.bodyMedium,
                                     )
+                                    if (activity.createdAt.isNotBlank()) {
+                                        Text(
+                                            activity.createdAt.take(16).replace('T', ' '),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -3198,6 +3230,16 @@ private fun TaskFormCard(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
+private fun TaskDetailCard(content: @Composable ColumnScope.() -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Dimens.CornerL),
+        color = MaterialTheme.colorScheme.surface,
+        content = { Column(content = content) },
+    )
+}
+
+@Composable
 private fun FormValueRow(icon: ImageVector, labelRes: Int, value: String, onClick: (() -> Unit)? = null) {
     Row(
         modifier = Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
@@ -3522,15 +3564,29 @@ private fun DetailSectionTitle(
     value: String?,
     expanded: Boolean? = null,
     onClick: () -> Unit = {},
+    subtle: Boolean = false,
 ) {
-    val modifier = if (expanded == null) {
+    val interactionModifier = if (expanded == null) {
         Modifier.fillMaxWidth()
     } else {
         Modifier.fillMaxWidth().clip(RoundedCornerShape(Dimens.SpaceS)).clickable(onClick = onClick)
             .padding(vertical = Dimens.SpaceXs)
     }
+    val modifier = interactionModifier.then(
+        if (subtle) Modifier.padding(horizontal = Dimens.SpaceM) else Modifier,
+    )
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(labelRes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+        Text(
+            stringResource(labelRes),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = if (subtle) FontWeight.Medium else FontWeight.Bold,
+            color = if (subtle) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+            modifier = Modifier.weight(1f),
+        )
         if (value != null) Text(value, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (expanded != null) {
             Spacer(Modifier.width(Dimens.SpaceS))
