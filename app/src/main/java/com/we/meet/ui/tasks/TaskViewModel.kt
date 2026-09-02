@@ -364,16 +364,15 @@ class TaskViewModel(
         }
     }
 
-    fun setDailyReminder(enabled: Boolean) = updateSettings(
-        PatchTaskSettingsRequest(dailyReminderEnabled = enabled),
-    )
-
     fun setOverdueMarker(enabled: Boolean) = updateSettings(
         PatchTaskSettingsRequest(overdueMarkerEnabled = enabled),
     )
 
-    fun setDefaultReminder(minutes: Int) = updateSettings(
-        PatchTaskSettingsRequest(defaultReminderMinutes = minutes),
+    fun setDefaultReminder(enabled: Boolean, minutes: Int?) = updateSettings(
+        PatchTaskSettingsRequest(
+            dailyReminderEnabled = enabled,
+            defaultReminderMinutes = minutes,
+        ),
     )
 
     private fun updateSettings(request: PatchTaskSettingsRequest) {
@@ -584,12 +583,13 @@ class TaskViewModel(
         }
     }
 
-    fun setTaskReminderEnabled(item: TaskItem, enabled: Boolean) {
-        updateTaskReminder(item, enabled = enabled)
-    }
-
-    fun setTaskReminderMinutes(item: TaskItem, minutes: Int?) {
-        updateTaskReminder(item, reminderMinutes = minutes, updateMinutes = true)
+    fun setTaskReminder(item: TaskItem, enabled: Boolean, minutes: Int?) {
+        updateTaskReminder(
+            item,
+            enabled = enabled,
+            reminderMinutes = minutes,
+            updateMinutes = enabled,
+        )
     }
 
     private fun updateTaskReminder(

@@ -310,7 +310,8 @@
     <string name="task_start_date">Startdatum</string>
     <string name="task_due_date">Fälligkeitsdatum</string>
     <string name="task_my_reminder">Meine Erinnerung</string>
-    <string name="task_reminder_follow_default">Systemstandard · %1$s</string>
+    <string name="task_reminder_follow_default">Systemeinstellung verwenden · %1$s</string>
+    <string name="task_reminder_none">Keine Erinnerung</string>
     <string name="task_reminder_due_date">Am Fälligkeitstag</string>
     <string name="task_reminder_one_day">1 Tag vorher</string>
     <string name="task_reminder_three_days">3 Tage vorher</string>
@@ -388,7 +389,7 @@
     <string name="task_overdue_marker">Überfällige markieren</string>
     <string name="task_overdue_marker_desc">Überfällige Aufgaben in der Liste hervorheben</string>
     <string name="task_default_reminder">Standarderinnerung</string>
-    <string name="task_default_reminder_desc">Standarderinnerung für neue Aufgaben</string>
+    <string name="task_default_reminder_desc">Wird verwendet, wenn eine Aufgabe den Systemeinstellungen folgt</string>
     <string name="task_30_minutes_before">30 Min. vorher</string>
     <string name="task_settings_failed">Aufgabeneinstellungen konnten nicht aktualisiert werden.</string>
     <string name="task_new_group">Neue Gruppe</string>

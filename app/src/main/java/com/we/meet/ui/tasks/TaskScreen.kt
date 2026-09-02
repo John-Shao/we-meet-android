@@ -478,11 +478,8 @@ fun TaskScreen(
                     onEditDescription = { editDescriptionTarget = task },
                     onEditStartDate = { startDateTarget = task },
                     onEditDueDate = { dueDateTarget = task },
-                    onReminderEnabledChange = { enabled ->
-                        vm.setTaskReminderEnabled(task, enabled)
-                    },
-                    onReminderMinutesChange = { minutes ->
-                        vm.setTaskReminderMinutes(task, minutes)
+                    onReminderChange = { enabled, minutes ->
+                        vm.setTaskReminder(task, enabled, minutes)
                     },
                     onEditPriority = { priorityTarget = task },
                     onEditTaskList = { taskListTarget = task },
@@ -2343,8 +2340,10 @@ private fun CreateTaskPage(
                         effectiveReminderMinutes = taskSettings.defaultReminderMinutes,
                         globalRemindersEnabled = taskSettings.dailyReminderEnabled,
                         saving = creating,
-                        onEnabledChange = { reminderEnabledOverride = it },
-                        onMinutesChange = { reminderMinutes = it },
+                        onChange = { enabled, minutes ->
+                            reminderEnabledOverride = enabled
+                            if (enabled) reminderMinutes = minutes
+                        },
                     )
                     HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
                     FormValueRow(
@@ -2526,8 +2525,7 @@ private fun TaskDetailPage(
     onEditDescription: () -> Unit,
     onEditStartDate: () -> Unit,
     onEditDueDate: () -> Unit,
-    onReminderEnabledChange: (Boolean) -> Unit,
-    onReminderMinutesChange: (Int?) -> Unit,
+    onReminderChange: (Boolean, Int?) -> Unit,
     onEditPriority: () -> Unit,
     onEditTaskList: () -> Unit,
     onEditGroup: () -> Unit,
@@ -2676,8 +2674,7 @@ private fun TaskDetailPage(
                             effectiveReminderMinutes = reminder.effectiveReminderMinutes,
                             globalRemindersEnabled = reminder.globalRemindersEnabled,
                             saving = detail.reminderSaving,
-                            onEnabledChange = onReminderEnabledChange,
-                            onMinutesChange = onReminderMinutesChange,
+                            onChange = onReminderChange,
                         )
                     }
                     HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
@@ -3421,8 +3418,7 @@ private fun TaskReminderRow(
     effectiveReminderMinutes: Int,
     globalRemindersEnabled: Boolean,
     saving: Boolean,
-    onEnabledChange: (Boolean) -> Unit,
-    onMinutesChange: (Int?) -> Unit,
+    onChange: (Boolean, Int?) -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     Row(
@@ -3446,74 +3442,83 @@ private fun TaskReminderRow(
             Box {
                 Text(
                     text = taskReminderTimingText(
+                        enabled = enabled,
                         reminderMinutes = reminderMinutes,
                         effectiveReminderMinutes = effectiveReminderMinutes,
+                        globalRemindersEnabled = globalRemindersEnabled,
                     ),
                     modifier = Modifier.clip(RoundedCornerShape(Dimens.SpaceXs))
-                        .clickable(enabled = enabled && !saving) { menuExpanded = true }
+                        .clickable(enabled = !saving) { menuExpanded = true }
                         .padding(vertical = Dimens.SpaceXs),
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (enabled) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
+                    color = MaterialTheme.colorScheme.primary,
                 )
                 DropdownMenu(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false },
                 ) {
-                    listOf<Int?>(null, 0, 1440, 4320).forEach { minutes ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    if (minutes == null) {
-                                        stringResource(
-                                            R.string.task_reminder_follow_default,
-                                            taskReminderOptionText(effectiveReminderMinutes),
-                                        )
-                                    } else {
-                                        taskReminderOptionText(minutes)
-                                    },
-                                )
-                            },
-                            leadingIcon = if (minutes == reminderMinutes) {
-                                { Icon(Icons.Filled.Check, contentDescription = null) }
+                    listOf<Int?>(TASK_REMINDER_DISABLED, null, 0, 1440, 4320)
+                        .forEach { minutes ->
+                            val optionEnabled = minutes != TASK_REMINDER_DISABLED
+                            val selected = if (optionEnabled) {
+                                enabled && minutes == reminderMinutes
                             } else {
-                                null
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onMinutesChange(minutes)
-                            },
-                        )
-                    }
+                                !enabled
+                            }
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        if (!optionEnabled) {
+                                            stringResource(R.string.task_reminder_none)
+                                        } else if (minutes == null) {
+                                            stringResource(
+                                                R.string.task_reminder_follow_default,
+                                                if (globalRemindersEnabled) {
+                                                    taskReminderOptionText(effectiveReminderMinutes)
+                                                } else {
+                                                    stringResource(R.string.task_reminder_none)
+                                                },
+                                            )
+                                        } else {
+                                            taskReminderOptionText(minutes)
+                                        },
+                                    )
+                                },
+                                leadingIcon = if (selected) {
+                                    { Icon(Icons.Filled.Check, contentDescription = null) }
+                                } else {
+                                    null
+                                },
+                                onClick = {
+                                    menuExpanded = false
+                                    onChange(optionEnabled, minutes.takeIf { optionEnabled })
+                                },
+                            )
+                        }
                 }
             }
-            if (!globalRemindersEnabled) {
-                Text(
-                    stringResource(R.string.task_reminder_global_disabled),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
         }
-        Switch(
-            checked = enabled,
-            onCheckedChange = onEnabledChange,
-            enabled = !saving,
-        )
     }
 }
 
+private const val TASK_REMINDER_DISABLED = -1
+
 @Composable
 private fun taskReminderTimingText(
+    enabled: Boolean,
     reminderMinutes: Int?,
     effectiveReminderMinutes: Int,
-): String = if (reminderMinutes == null) {
+    globalRemindersEnabled: Boolean,
+): String = if (!enabled) {
+    stringResource(R.string.task_reminder_none)
+} else if (reminderMinutes == null) {
     stringResource(
         R.string.task_reminder_follow_default,
-        taskReminderOptionText(effectiveReminderMinutes),
+        if (globalRemindersEnabled) {
+            taskReminderOptionText(effectiveReminderMinutes)
+        } else {
+            stringResource(R.string.task_reminder_none)
+        },
     )
 } else {
     taskReminderOptionText(reminderMinutes)

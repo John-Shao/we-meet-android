@@ -310,7 +310,8 @@
     <string name="task_start_date">Date de début</string>
     <string name="task_due_date">Date d’échéance</string>
     <string name="task_my_reminder">Mon rappel</string>
-    <string name="task_reminder_follow_default">Valeur système · %1$s</string>
+    <string name="task_reminder_follow_default">Suivre les réglages système · %1$s</string>
+    <string name="task_reminder_none">Aucun rappel</string>
     <string name="task_reminder_due_date">Le jour de l’échéance</string>
     <string name="task_reminder_one_day">1 jour avant</string>
     <string name="task_reminder_three_days">3 jours avant</string>
@@ -388,7 +389,7 @@
     <string name="task_overdue_marker">Marquer les retards</string>
     <string name="task_overdue_marker_desc">Mettre en évidence les tâches en retard</string>
     <string name="task_default_reminder">Rappel par défaut</string>
-    <string name="task_default_reminder_desc">Rappel par défaut des nouvelles tâches</string>
+    <string name="task_default_reminder_desc">Utilisé lorsqu’une tâche suit les réglages système</string>
     <string name="task_30_minutes_before">30 min avant</string>
     <string name="task_settings_failed">Impossible de mettre à jour les paramètres des tâches.</string>
     <string name="task_new_group">Nouveau groupe</string>

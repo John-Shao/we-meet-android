@@ -82,7 +82,6 @@ fun TaskSettingsScreen(
             settings = ui.settings,
             loading = ui.settingsLoading,
             saving = ui.settingsSaving,
-            onDailyReminderChange = viewModel::setDailyReminder,
             onOverdueMarkerChange = viewModel::setOverdueMarker,
             onDefaultReminderChange = viewModel::setDefaultReminder,
             modifier = Modifier.padding(padding),
@@ -95,9 +94,8 @@ private fun TaskSettingsContent(
     settings: TaskSettingsItem,
     loading: Boolean,
     saving: Boolean,
-    onDailyReminderChange: (Boolean) -> Unit,
     onOverdueMarkerChange: (Boolean) -> Unit,
-    onDefaultReminderChange: (Int) -> Unit,
+    onDefaultReminderChange: (Boolean, Int?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var reminderMenu by remember { mutableStateOf(false) }
@@ -110,15 +108,6 @@ private fun TaskSettingsContent(
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
     ) {
         if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
-        SettingsCard {
-            SettingsSwitchRow(
-                title = stringResource(R.string.task_daily_reminder),
-                subtitle = stringResource(R.string.task_daily_reminder_desc),
-                checked = settings.dailyReminderEnabled,
-                enabled = !loading && !saving,
-                onCheckedChange = onDailyReminderChange,
-            )
-        }
         SettingsCard {
             SettingsSwitchRow(
                 title = stringResource(R.string.task_overdue_marker),
@@ -149,7 +138,11 @@ private fun TaskSettingsContent(
                         )
                     }
                     Text(
-                        defaultTaskReminderText(settings.defaultReminderMinutes),
+                        if (settings.dailyReminderEnabled) {
+                            defaultTaskReminderText(settings.defaultReminderMinutes)
+                        } else {
+                            stringResource(R.string.task_reminder_none)
+                        },
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Icon(Icons.Outlined.ChevronRight, contentDescription = null)
@@ -158,17 +151,28 @@ private fun TaskSettingsContent(
                     expanded = reminderMenu,
                     onDismissRequest = { reminderMenu = false },
                 ) {
-                    listOf(0, 1440, 4320).forEach { minutes ->
+                    listOf<Int?>(null, 0, 1440, 4320).forEach { minutes ->
+                        val selected = if (minutes == null) {
+                            !settings.dailyReminderEnabled
+                        } else {
+                            settings.dailyReminderEnabled &&
+                                minutes == settings.defaultReminderMinutes
+                        }
                         DropdownMenuItem(
-                            text = { Text(defaultTaskReminderText(minutes)) },
-                            leadingIcon = if (minutes == settings.defaultReminderMinutes) {
+                            text = {
+                                Text(
+                                    minutes?.let { defaultTaskReminderText(it) }
+                                        ?: stringResource(R.string.task_reminder_none),
+                                )
+                            },
+                            leadingIcon = if (selected) {
                                 { Icon(Icons.Filled.Check, contentDescription = null) }
                             } else {
                                 null
                             },
                             onClick = {
                                 reminderMenu = false
-                                onDefaultReminderChange(minutes)
+                                onDefaultReminderChange(minutes != null, minutes)
                             },
                         )
                     }

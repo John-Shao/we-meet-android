@@ -54,10 +54,18 @@ class TaskRepositoryPayloadTest {
     @Test
     fun reminderPatchCanExplicitlyFollowTheSystemDefault() {
         assertEquals(
-            "{\"reminder_minutes\":null}",
+            "{\"enabled\":true, \"reminder_minutes\":null}",
             taskReminderPatchJson(
-                enabled = null,
+                enabled = true,
                 reminderMinutes = null,
+                updateMinutes = true,
+            ),
+        )
+        assertEquals(
+            "{\"enabled\":true, \"reminder_minutes\":1440}",
+            taskReminderPatchJson(
+                enabled = true,
+                reminderMinutes = 1440,
                 updateMinutes = true,
             ),
         )

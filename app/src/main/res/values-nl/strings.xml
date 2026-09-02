@@ -310,7 +310,8 @@
     <string name="task_start_date">Startdatum</string>
     <string name="task_due_date">Vervaldatum</string>
     <string name="task_my_reminder">Mijn herinnering</string>
-    <string name="task_reminder_follow_default">Systeemstandaard · %1$s</string>
+    <string name="task_reminder_follow_default">Systeeminstellingen volgen · %1$s</string>
+    <string name="task_reminder_none">Geen herinnering</string>
     <string name="task_reminder_due_date">Op de vervaldatum</string>
     <string name="task_reminder_one_day">1 dag van tevoren</string>
     <string name="task_reminder_three_days">3 dagen van tevoren</string>
@@ -388,7 +389,7 @@
     <string name="task_overdue_marker">Te late taken markeren</string>
     <string name="task_overdue_marker_desc">Markeer te late taken in de lijst</string>
     <string name="task_default_reminder">Standaardherinnering</string>
-    <string name="task_default_reminder_desc">Standaardherinnering voor nieuwe taken</string>
+    <string name="task_default_reminder_desc">Gebruikt wanneer een taak de systeeminstellingen volgt</string>
     <string name="task_30_minutes_before">30 min. ervoor</string>
     <string name="task_settings_failed">De taakinstellingen konden niet worden bijgewerkt.</string>
     <string name="task_new_group">Nieuwe groep</string>
