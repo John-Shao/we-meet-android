@@ -3457,7 +3457,7 @@ private fun TaskReminderRow(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false },
                 ) {
-                    listOf<Int?>(TASK_REMINDER_DISABLED, null, 0, 1440, 4320)
+                    (listOf<Int?>(TASK_REMINDER_DISABLED, null) + TASK_REMINDER_OPTIONS)
                         .forEach { minutes ->
                             val optionEnabled = minutes != TASK_REMINDER_DISABLED
                             val selected = if (optionEnabled) {
@@ -3527,9 +3527,11 @@ private fun taskReminderTimingText(
 @Composable
 private fun taskReminderOptionText(minutes: Int): String = stringResource(
     when (minutes) {
-        1440 -> R.string.task_reminder_one_day
-        4320 -> R.string.task_reminder_three_days
-        else -> R.string.task_reminder_due_date
+        TASK_REMINDER_DUE_DATE_1800 -> R.string.task_reminder_due_date_1800
+        TASK_REMINDER_ONE_DAY_0900 -> R.string.task_reminder_one_day_0900
+        TASK_REMINDER_TWO_DAYS_0900 -> R.string.task_reminder_two_days_0900
+        TASK_REMINDER_THREE_DAYS_0900 -> R.string.task_reminder_three_days_0900
+        else -> R.string.task_reminder_due_date_0900
     },
 )
 

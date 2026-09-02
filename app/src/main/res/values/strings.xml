@@ -322,9 +322,11 @@
     <string name="task_my_reminder">My reminder</string>
     <string name="task_reminder_follow_default">Follow system settings · %1$s</string>
     <string name="task_reminder_none">No reminders</string>
-    <string name="task_reminder_due_date">On the due date</string>
-    <string name="task_reminder_one_day">1 day before</string>
-    <string name="task_reminder_three_days">3 days before</string>
+    <string name="task_reminder_due_date_0900">Due date at 09:00</string>
+    <string name="task_reminder_due_date_1800">Due date at 18:00</string>
+    <string name="task_reminder_one_day_0900">1 day before at 09:00</string>
+    <string name="task_reminder_two_days_0900">2 days before at 09:00</string>
+    <string name="task_reminder_three_days_0900">3 days before at 09:00</string>
     <string name="task_reminder_global_disabled">Daily reminders are off in task settings</string>
     <string name="task_date_not_set">Not set</string>
     <string name="task_clear_date">Clear date</string>

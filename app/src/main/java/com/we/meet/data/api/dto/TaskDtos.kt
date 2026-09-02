@@ -370,14 +370,14 @@ data class PagedTaskActivitiesDto(
 data class TaskSettingsDto(
     @Json(name = "daily_reminder_enabled") val dailyReminderEnabled: Boolean = true,
     @Json(name = "overdue_marker_enabled") val overdueMarkerEnabled: Boolean = true,
-    @Json(name = "default_reminder_minutes") val defaultReminderMinutes: Int = 0,
+    @Json(name = "default_reminder_minutes") val defaultReminderMinutes: Int = 900,
 )
 
 @JsonClass(generateAdapter = true)
 data class TaskReminderPreferenceDto(
     val enabled: Boolean = true,
     @Json(name = "reminder_minutes") val reminderMinutes: Int? = null,
-    @Json(name = "effective_reminder_minutes") val effectiveReminderMinutes: Int = 0,
+    @Json(name = "effective_reminder_minutes") val effectiveReminderMinutes: Int = 900,
     @Json(name = "global_reminders_enabled") val globalRemindersEnabled: Boolean = true,
 )
 

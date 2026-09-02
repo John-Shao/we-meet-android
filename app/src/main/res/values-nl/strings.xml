@@ -312,9 +312,11 @@
     <string name="task_my_reminder">Mijn herinnering</string>
     <string name="task_reminder_follow_default">Systeeminstellingen volgen · %1$s</string>
     <string name="task_reminder_none">Geen herinnering</string>
-    <string name="task_reminder_due_date">Op de vervaldatum</string>
-    <string name="task_reminder_one_day">1 dag van tevoren</string>
-    <string name="task_reminder_three_days">3 dagen van tevoren</string>
+    <string name="task_reminder_due_date_0900">Op de vervaldatum om 09:00</string>
+    <string name="task_reminder_due_date_1800">Op de vervaldatum om 18:00</string>
+    <string name="task_reminder_one_day_0900">1 dag van tevoren om 09:00</string>
+    <string name="task_reminder_two_days_0900">2 dagen van tevoren om 09:00</string>
+    <string name="task_reminder_three_days_0900">3 dagen van tevoren om 09:00</string>
     <string name="task_reminder_global_disabled">Dagelijkse herinneringen zijn uitgeschakeld in de taakinstellingen</string>
     <string name="task_date_not_set">Niet ingesteld</string>
     <string name="task_clear_date">Datum wissen</string>

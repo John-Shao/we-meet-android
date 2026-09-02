@@ -62,10 +62,10 @@ class TaskRepositoryPayloadTest {
             ),
         )
         assertEquals(
-            "{\"enabled\":true, \"reminder_minutes\":1440}",
+            "{\"enabled\":true, \"reminder_minutes\":2340}",
             taskReminderPatchJson(
                 enabled = true,
-                reminderMinutes = 1440,
+                reminderMinutes = 2340,
                 updateMinutes = true,
             ),
         )

@@ -151,7 +151,7 @@ private fun TaskSettingsContent(
                     expanded = reminderMenu,
                     onDismissRequest = { reminderMenu = false },
                 ) {
-                    listOf<Int?>(null, 0, 1440, 4320).forEach { minutes ->
+                    (listOf<Int?>(null) + TASK_REMINDER_OPTIONS).forEach { minutes ->
                         val selected = if (minutes == null) {
                             !settings.dailyReminderEnabled
                         } else {
@@ -184,9 +184,11 @@ private fun TaskSettingsContent(
 
 @Composable
 private fun defaultTaskReminderText(minutes: Int): String = when (minutes) {
-    1440 -> stringResource(R.string.task_reminder_one_day)
-    4320 -> stringResource(R.string.task_reminder_three_days)
-    else -> stringResource(R.string.task_reminder_due_date)
+    TASK_REMINDER_DUE_DATE_1800 -> stringResource(R.string.task_reminder_due_date_1800)
+    TASK_REMINDER_ONE_DAY_0900 -> stringResource(R.string.task_reminder_one_day_0900)
+    TASK_REMINDER_TWO_DAYS_0900 -> stringResource(R.string.task_reminder_two_days_0900)
+    TASK_REMINDER_THREE_DAYS_0900 -> stringResource(R.string.task_reminder_three_days_0900)
+    else -> stringResource(R.string.task_reminder_due_date_0900)
 }
 
 @Composable

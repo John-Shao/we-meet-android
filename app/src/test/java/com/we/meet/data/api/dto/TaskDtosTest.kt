@@ -105,7 +105,7 @@ class TaskDtosTest {
                 groupId = "group-1",
                 reminder = TaskReminderInputDto(
                     enabled = true,
-                    reminderMinutes = 4320,
+                    reminderMinutes = 5220,
                 ),
             ),
         )
@@ -118,7 +118,7 @@ class TaskDtosTest {
         assertTrue(json.contains("\"group_id\":\"group-1\""))
         assertTrue(
             json.contains(
-                "\"reminder\":{\"enabled\":true,\"reminder_minutes\":4320}",
+                "\"reminder\":{\"enabled\":true,\"reminder_minutes\":5220}",
             ),
         )
     }
@@ -400,18 +400,18 @@ class TaskDtosTest {
                 {
                   "daily_reminder_enabled":false,
                   "overdue_marker_enabled":true,
-                  "default_reminder_minutes":60
+                  "default_reminder_minutes":900
                 }
             """.trimIndent(),
         )!!
         val patchJson = moshi.adapter(PatchTaskSettingsRequest::class.java).toJson(
-            PatchTaskSettingsRequest(defaultReminderMinutes = 1440),
+            PatchTaskSettingsRequest(defaultReminderMinutes = 3780),
         )
 
         assertEquals(false, settings.dailyReminderEnabled)
         assertTrue(settings.overdueMarkerEnabled)
-        assertEquals(60, settings.defaultReminderMinutes)
-        assertEquals("{\"default_reminder_minutes\":1440}", patchJson)
+        assertEquals(900, settings.defaultReminderMinutes)
+        assertEquals("{\"default_reminder_minutes\":3780}", patchJson)
     }
 
     @Test
@@ -421,7 +421,7 @@ class TaskDtosTest {
                 {
                   "enabled":true,
                   "reminder_minutes":null,
-                  "effective_reminder_minutes":1440,
+                  "effective_reminder_minutes":2340,
                   "global_reminders_enabled":false
                 }
             """.trimIndent(),
@@ -429,7 +429,7 @@ class TaskDtosTest {
 
         assertTrue(preference.enabled)
         assertEquals(null, preference.reminderMinutes)
-        assertEquals(1440, preference.effectiveReminderMinutes)
+        assertEquals(2340, preference.effectiveReminderMinutes)
         assertEquals(false, preference.globalRemindersEnabled)
     }
 

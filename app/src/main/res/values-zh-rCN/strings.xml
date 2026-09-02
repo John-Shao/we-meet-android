@@ -322,9 +322,11 @@
     <string name="task_my_reminder">我的提醒</string>
     <string name="task_reminder_follow_default">跟随系统设置 · %1$s</string>
     <string name="task_reminder_none">不提醒</string>
-    <string name="task_reminder_due_date">截止当天</string>
-    <string name="task_reminder_one_day">提前 1 天</string>
-    <string name="task_reminder_three_days">提前 3 天</string>
+    <string name="task_reminder_due_date_0900">当天 09:00</string>
+    <string name="task_reminder_due_date_1800">当天 18:00</string>
+    <string name="task_reminder_one_day_0900">截止前 1 天 09:00</string>
+    <string name="task_reminder_two_days_0900">截止前 2 天 09:00</string>
+    <string name="task_reminder_three_days_0900">截止前 3 天 09:00</string>
     <string name="task_reminder_global_disabled">任务设置中的每日提醒已关闭</string>
     <string name="task_date_not_set">未设置</string>
     <string name="task_clear_date">清除日期</string>

@@ -165,7 +165,20 @@ data class TaskSavedViewItem(
 data class TaskSettingsItem(
     val dailyReminderEnabled: Boolean = true,
     val overdueMarkerEnabled: Boolean = true,
-    val defaultReminderMinutes: Int = 0,
+    val defaultReminderMinutes: Int = TASK_REMINDER_DUE_DATE_0900,
+)
+
+const val TASK_REMINDER_DUE_DATE_0900 = 900
+const val TASK_REMINDER_DUE_DATE_1800 = 360
+const val TASK_REMINDER_ONE_DAY_0900 = 2340
+const val TASK_REMINDER_TWO_DAYS_0900 = 3780
+const val TASK_REMINDER_THREE_DAYS_0900 = 5220
+val TASK_REMINDER_OPTIONS = listOf(
+    TASK_REMINDER_DUE_DATE_0900,
+    TASK_REMINDER_DUE_DATE_1800,
+    TASK_REMINDER_ONE_DAY_0900,
+    TASK_REMINDER_TWO_DAYS_0900,
+    TASK_REMINDER_THREE_DAYS_0900,
 )
 
 data class TaskPersonItem(
@@ -217,7 +230,7 @@ data class TaskItem(
 data class TaskReminderItem(
     val enabled: Boolean = true,
     val reminderMinutes: Int? = null,
-    val effectiveReminderMinutes: Int = 0,
+    val effectiveReminderMinutes: Int = TASK_REMINDER_DUE_DATE_0900,
     val globalRemindersEnabled: Boolean = true,
 )
 
