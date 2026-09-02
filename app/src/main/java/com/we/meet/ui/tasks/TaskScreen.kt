@@ -164,6 +164,7 @@ import java.time.LocalDate
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlin.math.roundToInt
 import org.json.JSONArray
 import org.json.JSONObject
@@ -1318,6 +1319,7 @@ private fun TaskListPage(
     var collapsedSections by rememberSaveable { mutableStateOf(emptyList<String>()) }
     val ungroupedLabel = stringResource(R.string.task_ungrouped)
     val noDateLabel = stringResource(R.string.task_group_no_date)
+    val locale = LocalConfiguration.current.locales[0]
     val sections = when (grouping) {
         TaskGrouping.None -> listOf(
             TaskDisplaySection(stringResource(R.string.task_all_tasks), visible),
@@ -1345,10 +1347,10 @@ private fun TaskListPage(
             }
         }
         TaskGrouping.StartDate -> visible.groupBy(TaskItem::startDate).map { (date, tasks) ->
-            TaskDisplaySection(date ?: noDateLabel, tasks)
+            TaskDisplaySection(date?.localizedTaskDate(locale) ?: noDateLabel, tasks)
         }
         TaskGrouping.DueDate -> visible.groupBy(TaskItem::dueDate).map { (date, tasks) ->
-            TaskDisplaySection(date ?: noDateLabel, tasks)
+            TaskDisplaySection(date?.localizedTaskDate(locale) ?: noDateLabel, tasks)
         }
         TaskGrouping.Creator -> visible.groupBy(TaskItem::creatorId).map { (_, tasks) ->
             TaskDisplaySection(tasks.first().creatorName.ifBlank { "—" }, tasks)
@@ -1648,6 +1650,7 @@ internal fun TaskRow(
     val done = task.status == TaskStatus.Done
     val overdue = showOverdueMarker && task.timeState == TaskTimeState.Overdue
     val hasDate = task.startDate != null || task.dueDate != null
+    val dateLabel = taskDateRangeDisplayText(task.startDate, task.dueDate)
     val hasMetadata = hasDate || task.subtaskProgress != null || task.commentCount > 0
     val emphasizedPriority = task.priority == TaskPriority.High ||
         task.priority == TaskPriority.Urgent
@@ -1716,7 +1719,7 @@ internal fun TaskRow(
                         )
                         Spacer(Modifier.width(Dimens.SpaceXs))
                         Text(
-                            task.dueLabel,
+                            dateLabel,
                             style = MaterialTheme.typography.bodySmall,
                             color = if (overdue && !done) MaterialTheme.colorScheme.error
                             else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -3803,14 +3806,28 @@ internal fun taskDateDisplayText(value: String?): String {
     val locale = LocalConfiguration.current.locales[0]
     val notSetLabel = stringResource(R.string.task_date_not_set)
     return remember(value, locale, notSetLabel) {
-        value?.let { date ->
-            runCatching {
-                val pattern = DateFormat.getBestDateTimePattern(locale, "MMMd")
-                LocalDate.parse(date).format(DateTimeFormatter.ofPattern(pattern, locale))
-            }.getOrDefault(date)
-        } ?: notSetLabel
+        value?.localizedTaskDate(locale) ?: notSetLabel
     }
 }
+
+@Composable
+internal fun taskDateRangeDisplayText(startDate: String?, dueDate: String?): String {
+    val locale = LocalConfiguration.current.locales[0]
+    return remember(startDate, dueDate, locale) {
+        when {
+            startDate != null && dueDate != null && startDate != dueDate ->
+                "${startDate.localizedTaskDate(locale)} – ${dueDate.localizedTaskDate(locale)}"
+            dueDate != null -> dueDate.localizedTaskDate(locale)
+            startDate != null -> startDate.localizedTaskDate(locale)
+            else -> ""
+        }
+    }
+}
+
+private fun String.localizedTaskDate(locale: Locale): String = runCatching {
+    val pattern = DateFormat.getBestDateTimePattern(locale, "MMMd")
+    LocalDate.parse(this).format(DateTimeFormatter.ofPattern(pattern, locale))
+}.getOrDefault(this)
 
 @Composable
 private fun TaskSingleDateDialog(

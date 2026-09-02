@@ -188,6 +188,8 @@ private fun ConversationTaskRow(
     onToggleCompleted: () -> Unit,
 ) {
     val done = task.status == TaskStatus.Done
+    val hasDate = task.startDate != null || task.dueDate != null
+    val dateLabel = taskDateRangeDisplayText(task.startDate, task.dueDate)
     Row(
         modifier = Modifier.fillMaxWidth()
             .clickable(onClick = onOpen)
@@ -232,7 +234,7 @@ private fun ConversationTaskRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (task.dueLabel.isNotBlank()) {
+            if (hasDate) {
                 Spacer(Modifier.height(Dimens.SpaceXs))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -243,7 +245,7 @@ private fun ConversationTaskRow(
                     )
                     Spacer(Modifier.width(Dimens.SpaceXs))
                     Text(
-                        task.dueLabel,
+                        dateLabel,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
