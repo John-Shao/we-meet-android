@@ -9,7 +9,8 @@ import androidx.compose.ui.unit.dp
  * CompositionLocal), these values are theme-independent constants, so a plain
  * object is the simplest correct home. Prefer these over inline `.dp` literals
  * so button heights, screen padding, and the 8dp spacing grid stay consistent
- * across screens.
+ * across screens. The core Space* scale mirrors the cross-client contract in
+ * `we-meet/src/design-tokens/spacing.tokens.json` (DTCG px maps 1:1 to dp).
  */
 object Dimens {
 
@@ -26,6 +27,8 @@ object Dimens {
     val SpaceXxl = 32.dp
     /** 撑开整屏留白用(空态上下、预览页两侧),不用于常规排版。 */
     val SpaceXxxl = 48.dp
+    /** 超大版面分区留白；普通页面和卡片不得使用。 */
+    val SpaceXxxxl = 64.dp
 
     /**
      * Standard horizontal content inset (screen bodies, dialogs, sheets, list

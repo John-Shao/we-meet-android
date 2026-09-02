@@ -6,27 +6,43 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 /**
- * App 字体阶梯 = Material 3 默认 type scale,一个字号也不改。
+ * 跨端字体契约的 Android 映射。
  *
- * 保持默认是有意的:M3 的 15 档已经覆盖了会议 App 的全部层级,自己重写一遍
- * 只会引入视觉回归。这里包一层是为了给「换字体」和「CJK 字距微调」留一个
- * 唯一入口 —— 要改就在这改,别在页面里 `.copy(fontSize = …)`。
- *
- * 对应关系(挑常用的记):
- * ```
- * headlineSmall  24sp  页面大标题(登录页、空页面主文案)
- * titleLarge     22sp  TopAppBar 标题
- * titleMedium    16sp  卡片/列表行主标题
- * titleSmall     14sp  分组小标题
- * bodyLarge      16sp  正文
- * bodyMedium     14sp  次要正文、列表行副标题
- * bodySmall      12sp  辅助说明、时间戳
- * labelLarge     14sp  按钮文字
- * labelMedium    12sp  标签
- * labelSmall     11sp  最小可读标签
- * ```
+ * 15 档遵循 Material 3 type scale,值与 Web 仓库
+ * `src/design-tokens/typography.tokens.json` 一一对应。这里显式列出而不是依赖
+ * Compose 默认值,避免升级 Material 后 App 字阶静默变化。字体族仍采用 Android
+ * 系统默认(Roboto/Noto CJK),Web 则采用自己的 system-ui fallback；共享的是语义、
+ * 字号、行高、字重与字距,不是强迫两个平台加载同一份字体文件。
  */
-val JusiTypography: Typography = Typography()
+val JusiTypography: Typography = Typography(
+    displayLarge = weMeetTextStyle(57, 64, letterSpacing = -0.25f),
+    displayMedium = weMeetTextStyle(45, 52),
+    displaySmall = weMeetTextStyle(36, 44),
+    headlineLarge = weMeetTextStyle(32, 40),
+    headlineMedium = weMeetTextStyle(28, 36),
+    headlineSmall = weMeetTextStyle(24, 32),
+    titleLarge = weMeetTextStyle(22, 28, FontWeight.Medium),
+    titleMedium = weMeetTextStyle(16, 24, FontWeight.Medium, 0.15f),
+    titleSmall = weMeetTextStyle(14, 20, FontWeight.Medium, 0.1f),
+    bodyLarge = weMeetTextStyle(16, 24, letterSpacing = 0.5f),
+    bodyMedium = weMeetTextStyle(14, 20, letterSpacing = 0.25f),
+    bodySmall = weMeetTextStyle(12, 16, letterSpacing = 0.4f),
+    labelLarge = weMeetTextStyle(14, 20, FontWeight.Medium, 0.1f),
+    labelMedium = weMeetTextStyle(12, 16, FontWeight.Medium, 0.5f),
+    labelSmall = weMeetTextStyle(11, 16, FontWeight.Medium, 0.5f),
+)
+
+private fun weMeetTextStyle(
+    fontSize: Int,
+    lineHeight: Int,
+    fontWeight: FontWeight = FontWeight.Normal,
+    letterSpacing: Float = 0f,
+): TextStyle = TextStyle(
+    fontSize = fontSize.sp,
+    lineHeight = lineHeight.sp,
+    fontWeight = fontWeight,
+    letterSpacing = letterSpacing.sp,
+)
 
 /**
  * M3 阶梯够不到的几档,补在这里。
