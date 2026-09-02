@@ -3607,8 +3607,12 @@ private fun DetailSectionTitle(
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(
             stringResource(labelRes),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = if (subtle) FontWeight.Medium else FontWeight.Bold,
+            style = if (subtle) {
+                MaterialTheme.typography.bodyMedium
+            } else {
+                MaterialTheme.typography.titleMedium
+            },
+            fontWeight = if (subtle) FontWeight.Normal else FontWeight.Bold,
             color = if (subtle) {
                 MaterialTheme.colorScheme.onSurfaceVariant
             } else {
