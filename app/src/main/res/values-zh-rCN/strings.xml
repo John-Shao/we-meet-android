@@ -320,7 +320,7 @@
     <string name="task_start_date">开始日期</string>
     <string name="task_due_date">截止日期</string>
     <string name="task_my_reminder">我的提醒</string>
-    <string name="task_reminder_follow_default">跟随系统设置 · %1$s</string>
+    <string name="task_reminder_follow_default">跟随系统设置</string>
     <string name="task_reminder_none">不提醒</string>
     <string name="task_reminder_due_date_0900">当天 09:00</string>
     <string name="task_reminder_due_date_1800">当天 18:00</string>

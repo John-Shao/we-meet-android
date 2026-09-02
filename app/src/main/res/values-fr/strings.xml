@@ -310,7 +310,7 @@
     <string name="task_start_date">Date de début</string>
     <string name="task_due_date">Date d’échéance</string>
     <string name="task_my_reminder">Mon rappel</string>
-    <string name="task_reminder_follow_default">Suivre les réglages système · %1$s</string>
+    <string name="task_reminder_follow_default">Suivre les réglages système</string>
     <string name="task_reminder_none">Aucun rappel</string>
     <string name="task_reminder_due_date_0900">Le jour de l’échéance à 09:00</string>
     <string name="task_reminder_due_date_1800">Le jour de l’échéance à 18:00</string>

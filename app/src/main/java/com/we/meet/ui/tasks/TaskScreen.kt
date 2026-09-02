@@ -422,7 +422,6 @@ fun TaskScreen(
                 selfUserId = app.tokenStore.userId,
                 taskLists = ui.taskLists.filter(TaskListItem::canCreateTasks),
                 taskGroups = ui.taskGroups,
-                taskSettings = ui.settings,
                 creating = ui.creating,
                 onClose = { page = TaskPage.List },
                 onCreate = { input ->
@@ -2201,7 +2200,6 @@ private fun CreateTaskPage(
     selfUserId: String?,
     taskLists: List<TaskListItem>,
     taskGroups: List<TaskGroupItem>,
-    taskSettings: TaskSettingsItem,
     creating: Boolean,
     onClose: () -> Unit,
     onCreate: (TaskCreateInput) -> Unit,
@@ -2337,8 +2335,6 @@ private fun CreateTaskPage(
                     TaskReminderRow(
                         enabled = reminderEnabled,
                         reminderMinutes = reminderMinutes,
-                        effectiveReminderMinutes = taskSettings.defaultReminderMinutes,
-                        globalRemindersEnabled = taskSettings.dailyReminderEnabled,
                         saving = creating,
                         onChange = { enabled, minutes ->
                             reminderEnabledOverride = enabled
@@ -2671,8 +2667,6 @@ private fun TaskDetailPage(
                         TaskReminderRow(
                             enabled = reminder.enabled,
                             reminderMinutes = reminder.reminderMinutes,
-                            effectiveReminderMinutes = reminder.effectiveReminderMinutes,
-                            globalRemindersEnabled = reminder.globalRemindersEnabled,
                             saving = detail.reminderSaving,
                             onChange = onReminderChange,
                         )
@@ -3415,8 +3409,6 @@ private fun TaskPeopleRow(
 private fun TaskReminderRow(
     enabled: Boolean,
     reminderMinutes: Int?,
-    effectiveReminderMinutes: Int,
-    globalRemindersEnabled: Boolean,
     saving: Boolean,
     onChange: (Boolean, Int?) -> Unit,
 ) {
@@ -3424,8 +3416,6 @@ private fun TaskReminderRow(
     val timingText = taskReminderTimingText(
         enabled = enabled,
         reminderMinutes = reminderMinutes,
-        effectiveReminderMinutes = effectiveReminderMinutes,
-        globalRemindersEnabled = globalRemindersEnabled,
     )
     Box {
         Row(
@@ -3470,14 +3460,7 @@ private fun TaskReminderRow(
                                         if (!optionEnabled) {
                                             stringResource(R.string.task_reminder_none)
                                         } else if (minutes == null) {
-                                            stringResource(
-                                                R.string.task_reminder_follow_default,
-                                                if (globalRemindersEnabled) {
-                                                    taskReminderOptionText(effectiveReminderMinutes)
-                                                } else {
-                                                    stringResource(R.string.task_reminder_none)
-                                                },
-                                            )
+                                            stringResource(R.string.task_reminder_follow_default)
                                         } else {
                                             taskReminderOptionText(minutes)
                                         },
@@ -3518,19 +3501,10 @@ private const val TASK_REMINDER_DISABLED = -1
 private fun taskReminderTimingText(
     enabled: Boolean,
     reminderMinutes: Int?,
-    effectiveReminderMinutes: Int,
-    globalRemindersEnabled: Boolean,
 ): String = if (!enabled) {
     stringResource(R.string.task_reminder_none)
 } else if (reminderMinutes == null) {
-    stringResource(
-        R.string.task_reminder_follow_default,
-        if (globalRemindersEnabled) {
-            taskReminderOptionText(effectiveReminderMinutes)
-        } else {
-            stringResource(R.string.task_reminder_none)
-        },
-    )
+    stringResource(R.string.task_reminder_follow_default)
 } else {
     taskReminderOptionText(reminderMinutes)
 }
