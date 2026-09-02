@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -165,10 +166,16 @@ private fun TaskSettingsContent(
                                         ?: stringResource(R.string.task_reminder_none),
                                 )
                             },
-                            leadingIcon = if (selected) {
-                                { Icon(Icons.Filled.Check, contentDescription = null) }
-                            } else {
-                                null
+                            leadingIcon = {
+                                if (selected) {
+                                    Icon(
+                                        Icons.Filled.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(Dimens.IconMedium),
+                                    )
+                                } else {
+                                    Spacer(Modifier.size(Dimens.IconMedium))
+                                }
                             },
                             onClick = {
                                 reminderMenu = false

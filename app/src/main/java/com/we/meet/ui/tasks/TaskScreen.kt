@@ -3466,10 +3466,16 @@ private fun TaskReminderRow(
                                         },
                                     )
                                 },
-                                leadingIcon = if (selected) {
-                                    { Icon(Icons.Filled.Check, contentDescription = null) }
-                                } else {
-                                    null
+                                leadingIcon = {
+                                    if (selected) {
+                                        Icon(
+                                            Icons.Filled.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(Dimens.IconMedium),
+                                        )
+                                    } else {
+                                        Spacer(Modifier.size(Dimens.IconMedium))
+                                    }
                                 },
                                 onClick = {
                                     menuExpanded = false
