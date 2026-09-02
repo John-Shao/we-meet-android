@@ -94,10 +94,6 @@ val DarkSurfaceContainerHighest = Color(0xFF3A3A3A)
 
 val ThemeScrim = Color(0xFF000000)
 
-/** Neutral grouped-page canvas used behind elevated setting/detail cards. */
-val LightGroupedPageBackground = Color(0xFFF5F5F5)
-val DarkGroupedPageBackground = DarkBackground
-
 // --- Semantic tokens not covered by Material 3's ColorScheme ---------------
 // These surface in [WeMeetExtras] and are resolved by [WeMeetTheme] based
 // on the active light/dark mode, so callers never branch on the theme.

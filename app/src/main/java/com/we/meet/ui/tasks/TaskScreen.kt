@@ -2537,9 +2537,9 @@ private fun TaskDetailPage(
     var activityExpanded by remember(task.id) { mutableStateOf(false) }
     Scaffold(
         modifier = Modifier.testTag(TASK_DETAIL_TEST_TAG),
-        containerColor = WeMeetTheme.extras.groupedPageBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Surface(color = WeMeetTheme.extras.groupedPageBackground) {
+            Surface(color = MaterialTheme.colorScheme.background) {
                 Row(
                     modifier = Modifier.fillMaxWidth().height(Dimens.Task.TopBarHeight)
                         .padding(horizontal = Dimens.SpaceXs),
