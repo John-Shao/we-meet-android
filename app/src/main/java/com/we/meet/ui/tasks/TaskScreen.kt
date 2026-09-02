@@ -12,6 +12,7 @@ import android.content.ContentResolver
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.text.format.DateFormat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -136,6 +137,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -161,6 +163,7 @@ import com.we.meet.ui.theme.WeMeetTheme
 import java.time.LocalDate
 import java.time.Instant
 import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 import org.json.JSONArray
 import org.json.JSONObject
@@ -2246,7 +2249,6 @@ private fun CreateTaskPage(
     } ?: stringResource(R.string.task_priority_none)
     val today = LocalDate.now().toString()
     val tomorrow = LocalDate.now().plusDays(1).toString()
-    val dateNotSetLabel = stringResource(R.string.task_date_not_set)
 
     Scaffold(
         modifier = Modifier.testTag(TASK_CREATE_PAGE_TEST_TAG),
@@ -2319,7 +2321,7 @@ private fun CreateTaskPage(
                     FormValueRow(
                         Icons.Outlined.CalendarMonth,
                         R.string.task_start_date,
-                        startDate ?: dateNotSetLabel,
+                        taskDateDisplayText(startDate),
                     ) {
                         showStartDatePicker = true
                     }
@@ -2327,7 +2329,7 @@ private fun CreateTaskPage(
                     FormValueRow(
                         Icons.Outlined.CalendarMonth,
                         R.string.task_due_date,
-                        dueDate ?: dateNotSetLabel,
+                        taskDateDisplayText(dueDate),
                     ) {
                         showDueDatePicker = true
                     }
@@ -2652,14 +2654,14 @@ private fun TaskDetailPage(
                     FormValueRow(
                         Icons.Outlined.CalendarMonth,
                         R.string.task_start_date,
-                        task.startDate ?: stringResource(R.string.task_date_not_set),
+                        taskDateDisplayText(task.startDate),
                         onEditStartDate.takeIf { task.canEdit },
                     )
                     HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
                     FormValueRow(
                         Icons.Outlined.CalendarMonth,
                         R.string.task_due_date,
-                        task.dueDate ?: stringResource(R.string.task_date_not_set),
+                        taskDateDisplayText(task.dueDate),
                         onEditDueDate.takeIf { task.canEdit },
                     )
                     detail?.reminder?.takeIf { task.canManageReminder }?.let { reminder ->
@@ -3795,6 +3797,20 @@ private fun String?.toUtcDateMillis(): Long? = runCatching {
 
 private fun Long.toUtcDateString(): String =
     Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate().toString()
+
+@Composable
+internal fun taskDateDisplayText(value: String?): String {
+    val locale = LocalConfiguration.current.locales[0]
+    val notSetLabel = stringResource(R.string.task_date_not_set)
+    return remember(value, locale, notSetLabel) {
+        value?.let { date ->
+            runCatching {
+                val pattern = DateFormat.getBestDateTimePattern(locale, "MMMd")
+                LocalDate.parse(date).format(DateTimeFormatter.ofPattern(pattern, locale))
+            }.getOrDefault(date)
+        } ?: notSetLabel
+    }
+}
 
 @Composable
 private fun TaskSingleDateDialog(

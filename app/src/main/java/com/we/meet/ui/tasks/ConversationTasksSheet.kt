@@ -370,11 +370,11 @@ private fun ConversationTaskDetail(
                 ConversationTaskDetailValue(R.string.task_assignee, task.assignee)
                 ConversationTaskDetailValue(
                     R.string.task_start_date,
-                    task.startDate ?: stringResource(R.string.task_date_not_set),
+                    taskDateDisplayText(task.startDate),
                 )
                 ConversationTaskDetailValue(
                     R.string.task_due_date,
-                    task.dueDate ?: stringResource(R.string.task_date_not_set),
+                    taskDateDisplayText(task.dueDate),
                 )
                 ConversationTaskDetailValue(
                     R.string.task_belongs_to_list,
