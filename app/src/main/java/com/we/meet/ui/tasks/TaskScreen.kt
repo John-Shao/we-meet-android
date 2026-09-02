@@ -140,6 +140,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
@@ -3340,23 +3342,16 @@ private fun TaskDescriptionRow(description: String, onClick: (() -> Unit)? = nul
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.width(Dimens.SpaceM))
-        Column(Modifier.weight(1f)) {
-            Text(
-                stringResource(R.string.task_description_field),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.labelMedium,
-            )
-            Spacer(Modifier.height(Dimens.SpaceXs))
-            Text(
-                description.ifBlank { stringResource(R.string.task_description_hint) },
-                color = if (description.isBlank()) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
+        Text(
+            description.ifBlank { stringResource(R.string.task_description_hint) },
+            color = if (description.isBlank()) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+        )
         if (onClick != null) {
             Icon(
                 Icons.Outlined.ChevronRight,
@@ -3759,6 +3754,7 @@ private fun EditTaskDescriptionDialog(
 ) {
     var description by remember(task.id) { mutableStateOf(task.description) }
     val focusRequester = remember { FocusRequester() }
+    val descriptionFieldLabel = stringResource(R.string.task_description_field)
     LaunchedEffect(task.id) { focusRequester.requestFocus() }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -3767,8 +3763,9 @@ private fun EditTaskDescriptionDialog(
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text(stringResource(R.string.task_description_field)) },
-                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                modifier = Modifier.fillMaxWidth()
+                    .focusRequester(focusRequester)
+                    .semantics { contentDescription = descriptionFieldLabel },
                 minLines = 3,
                 maxLines = 8,
             )
