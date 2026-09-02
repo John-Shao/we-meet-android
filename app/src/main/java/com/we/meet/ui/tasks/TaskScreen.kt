@@ -144,6 +144,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import com.we.meet.R
 import com.we.meet.BuildConfig
 import com.we.meet.WeMeetApp
@@ -1643,6 +1644,8 @@ internal fun TaskRow(
     showOverdueMarker: Boolean = true,
     filteredParentTitle: String? = null,
     showDivider: Boolean = true,
+    contentStartPadding: Dp = Dimens.ScreenPadding,
+    dividerStartPadding: Dp = Dimens.ButtonHeight,
 ) {
     val done = task.status == TaskStatus.Done
     val overdue = showOverdueMarker && task.timeState == TaskTimeState.Overdue
@@ -1655,7 +1658,12 @@ internal fun TaskRow(
         modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)
             .testTag(taskRowTestTag(task.id))
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceL),
+            .padding(
+                start = contentStartPadding,
+                end = Dimens.ScreenPadding,
+                top = Dimens.SpaceL,
+                bottom = Dimens.SpaceL,
+            ),
         verticalAlignment = Alignment.Top,
     ) {
         Box(
@@ -1769,7 +1777,7 @@ internal fun TaskRow(
     }
     if (showDivider) {
         HorizontalDivider(
-            modifier = Modifier.padding(start = Dimens.ButtonHeight),
+            modifier = Modifier.padding(start = dividerStartPadding),
             thickness = Dimens.DividerThin,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
         )
@@ -2811,6 +2819,8 @@ private fun TaskDetailPage(
                                 if (canReorderSubtasks) onSubtaskAction(subtask)
                             },
                             showDivider = index < subtasks.lastIndex,
+                            contentStartPadding = Dimens.ListLeadingIcon,
+                            dividerStartPadding = Dimens.ListLeadingIcon,
                         )
                     }
                 }
