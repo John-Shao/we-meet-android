@@ -283,7 +283,7 @@ private fun ReminderSection(
                     modifier = Modifier
                         .weight(1f)
                         .background(
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                            MaterialTheme.colorScheme.primaryContainer,
                             RoundedCornerShape(Dimens.CornerS),
                         )
                         .clickable { onEventClick(e.id) }
@@ -293,7 +293,7 @@ private fun ReminderSection(
                         text = e.title,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -301,7 +301,7 @@ private fun ReminderSection(
                         text = if (e.allDay) stringResource(R.string.calendar_all_day)
                         else "${e.start.format(timeFmt)} - ${e.end.format(timeFmt)}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
             }

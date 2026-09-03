@@ -1076,7 +1076,7 @@ private fun MessageInputBar(
                 commands.forEachIndexed { index, command ->
                     Row(
                         Modifier.fillMaxWidth().clickable { executeCommand(command) }
-                            .background(if (index == commandIndex) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface)
+                            .background(if (index == commandIndex) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
                             .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -1125,7 +1125,7 @@ private fun MessageInputBar(
         ) {
             Surface(
                     shape = RoundedCornerShape(if (expanded) Dimens.CornerL else Dimens.CornerL),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1290,7 +1290,7 @@ private fun EmojiPanel(
         modifier = Modifier
             .fillMaxWidth()
             .height(Dimens.Chat.CardMinWidth)
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .padding(Dimens.SpaceS),
     ) {
         if (recentUnicode.isNotEmpty() || recentCustom.isNotEmpty()) {
@@ -1361,7 +1361,7 @@ private fun PlusPanel(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(max = Dimens.Chat.BubbleMaxWidth)
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .padding(vertical = Dimens.SpaceM),
     ) {
         items(items) { item ->
@@ -1443,7 +1443,7 @@ private fun applyMention(
 @Composable
 private fun MentionDropdown(names: List<String>, onPick: (String) -> Unit) {
     androidx.compose.material3.Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier.fillMaxWidth(),
     ) {
         androidx.compose.foundation.lazy.LazyColumn(

@@ -41,7 +41,7 @@ internal fun RichTextBubble(
     val bubbleColor = if (isOwn) {
         MaterialTheme.colorScheme.primary
     } else {
-        MaterialTheme.colorScheme.surfaceVariant
+        MaterialTheme.colorScheme.surface
     }
     val textColor = if (isOwn) {
         MaterialTheme.colorScheme.onPrimary

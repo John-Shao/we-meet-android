@@ -45,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.R
 import com.we.meet.data.api.dto.ApprovalInstanceDto
 
@@ -398,7 +399,8 @@ private fun StatusBadge(status: String) {
     val (bg, fg) = when (status) {
         "approved" -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
         "rejected", "needs_assignment" -> MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
-        "cancelled" -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+        "cancelled" -> WeMeetTheme.extras.status.neutralContainer to
+            WeMeetTheme.extras.status.onNeutralContainer
         else -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
     }
     Surface(color = bg, shape = MaterialTheme.shapes.small) {

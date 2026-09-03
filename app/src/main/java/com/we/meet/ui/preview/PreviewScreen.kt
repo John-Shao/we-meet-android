@@ -306,7 +306,7 @@ fun PreviewScreen(
                     .fillMaxWidth()
                     .weight(1f)
                     .clip(RoundedCornerShape(Dimens.CornerL))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                 contentAlignment = Alignment.Center,
             ) {
                 when {
@@ -540,7 +540,7 @@ private fun AudioOutputSheet(
                     .height(Dimens.IconIllustration),
                 shape = RoundedCornerShape(Dimens.CornerM),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                     contentColor = MaterialTheme.colorScheme.onSurface,
                 ),
             ) {
@@ -607,7 +607,7 @@ private fun ToggleCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .clip(RoundedCornerShape(Dimens.CornerM))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .clickable(onClick = onClick)
             .padding(vertical = Dimens.SpaceM),
     ) {

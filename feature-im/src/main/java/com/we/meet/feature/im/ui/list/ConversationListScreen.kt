@@ -389,7 +389,7 @@ private fun ConversationRow(
     onLongClick: () -> Unit,
 ) {
     Surface(
-        color = if (row.pinned) MaterialTheme.colorScheme.surfaceVariant
+        color = if (row.pinned) MaterialTheme.colorScheme.surfaceContainerHigh
         else MaterialTheme.colorScheme.surface,
     ) {
         Row(

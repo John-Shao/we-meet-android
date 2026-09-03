@@ -324,7 +324,7 @@ private fun TextBubble(
 ) {
     Surface(
         color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceVariant,
+        else MaterialTheme.colorScheme.surface,
         shape = bubbleShape,
     ) {
         Text(
@@ -399,7 +399,7 @@ private fun ImageBubble(
             .widthIn(max = Dimens.Chat.CardMinWidth)
             .heightIn(min = Dimens.Chat.ImageMinHeight, max = Dimens.Chat.ImageMaxHeight))
             .clip(bubbleShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .combinedClickable(onClick = onClick, onLongClick = onLongPress),
         contentAlignment = Alignment.Center,
     ) {
@@ -439,7 +439,7 @@ private fun FileBubble(
 ) {
     Surface(
         color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceVariant,
+        else MaterialTheme.colorScheme.surface,
         shape = bubbleShape,
         modifier = Modifier.combinedClickable(onClick = onClick, onLongClick = onLongPress),
     ) {
@@ -511,7 +511,7 @@ private fun VoiceBubble(
 
     Surface(
         color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceVariant,
+        else MaterialTheme.colorScheme.surface,
         shape = bubbleShape,
         modifier = Modifier.combinedClickable(onClick = onToggle, onLongClick = onLongPress),
     ) {
@@ -572,7 +572,7 @@ private fun QuoteBubble(
 ) {
     Surface(
         color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceVariant,
+        else MaterialTheme.colorScheme.surface,
         shape = bubbleShape,
     ) {
         Column(
@@ -611,7 +611,7 @@ private fun MergedBubble(content: MessageContent.Merged, isOwn: Boolean, onLongP
     var showDialog by remember { mutableStateOf(false) }
     Surface(
         color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceVariant,
+        else MaterialTheme.colorScheme.surface,
         shape = bubbleShape,
         modifier = Modifier.combinedClickable(
             onClick = { showDialog = true },
@@ -692,7 +692,7 @@ private fun ReactionChips(reactions: Map<String, List<String>>) {
     ) {
         reactions.forEach { (emoji, uids) ->
             Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 shape = RoundedCornerShape(Dimens.CornerS),
             ) {
                 Text(
@@ -742,7 +742,7 @@ private fun CallLogBubble(content: MessageContent.CallLog, isOwn: Boolean) {
     }
     Surface(
         color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceVariant,
+        else MaterialTheme.colorScheme.surface,
         shape = bubbleShape,
     ) {
         Row(
@@ -772,7 +772,7 @@ private fun GroupCallBubble(
     onJoin: ((slug: String) -> Unit)?,
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = MaterialTheme.colorScheme.surface,
         shape = bubbleShape,
         modifier = if (!ended && onJoin != null) {
             Modifier.clickable { onJoin(content.slug) }
@@ -815,7 +815,7 @@ private fun GroupCallBubble(
 private fun UnsupportedBubble(isOwn: Boolean) {
     Surface(
         color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceVariant,
+        else MaterialTheme.colorScheme.surface,
         shape = bubbleShape,
     ) {
         Text(

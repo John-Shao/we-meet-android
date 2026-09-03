@@ -1781,7 +1781,7 @@ internal fun TaskRow(
         HorizontalDivider(
             modifier = Modifier.padding(start = dividerStartPadding),
             thickness = Dimens.DividerThin,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+            color = MaterialTheme.colorScheme.outlineVariant,
         )
     }
 }
@@ -3266,7 +3266,7 @@ private fun TaskDetailDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(start = Dimens.ListLeadingIcon),
         thickness = Dimens.DividerThin,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+        color = MaterialTheme.colorScheme.outlineVariant,
     )
 }
 

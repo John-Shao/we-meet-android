@@ -859,7 +859,7 @@ private fun MeetingInfoBlock(slug: String) {
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                MaterialTheme.colorScheme.surface,
                 RoundedCornerShape(Dimens.CornerM),
             )
             .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
@@ -920,7 +920,7 @@ private fun SummaryEntryBlock(summary: SummaryDto, onOpen: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onOpen)
             .background(
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                MaterialTheme.colorScheme.surface,
                 RoundedCornerShape(Dimens.CornerM),
             )
             .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),

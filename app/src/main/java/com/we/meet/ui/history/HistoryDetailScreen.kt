@@ -613,7 +613,7 @@ private fun ActionItemsTab(state: MeetingDetailViewModel.LoadState<List<ActionIt
                             .clip(RoundedCornerShape(Dimens.CornerS))
                             .background(
                                 if (item.is_completed)
-                                    MaterialTheme.colorScheme.surfaceVariant
+                                    MaterialTheme.colorScheme.surfaceContainerHigh
                                 else MaterialTheme.colorScheme.surface
                             )
                             .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
@@ -686,7 +686,7 @@ private fun TranscriptTab(state: MeetingDetailViewModel.LoadState<List<Transcrip
                             .fillMaxWidth()
                             .padding(start = Dimens.SpaceM)
                             .background(
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                                 shape = RoundedCornerShape(Dimens.CornerXs),
                             )
                             .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),

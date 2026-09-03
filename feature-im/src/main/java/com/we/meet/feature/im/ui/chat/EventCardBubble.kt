@@ -179,7 +179,7 @@ internal fun EventCardBubble(
                         modifier = Modifier
                             .padding(top = Dimens.SpaceXs)
                             .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
+                                MaterialTheme.colorScheme.surfaceContainerHigh,
                                 RoundedCornerShape(Dimens.CornerXs),
                             )
                             .padding(horizontal = Dimens.SpaceXs, vertical = Dimens.BorderThin),

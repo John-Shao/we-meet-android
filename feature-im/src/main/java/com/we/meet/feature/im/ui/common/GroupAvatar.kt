@@ -101,7 +101,7 @@ fun GroupAvatar(
         modifier = modifier
             .size(size)
             .clip(RoundedCornerShape(size * 0.2f))
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
         val density = LocalDensity.current
         val sizePx = with(density) { size.toPx() }

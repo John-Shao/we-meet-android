@@ -971,7 +971,7 @@ private fun CalendarAttendeeRow(
             .clip(RoundedCornerShape(Dimens.CornerS))
             .background(
                 if (isBusy) MaterialTheme.colorScheme.errorContainer
-                else MaterialTheme.colorScheme.surfaceVariant,
+                else MaterialTheme.colorScheme.surfaceContainerHigh,
             )
             .padding(start = Dimens.SpaceS, top = Dimens.SpaceXs, bottom = Dimens.SpaceXs),
     ) {

@@ -88,14 +88,14 @@ fun MessagesPanel(
                 .imePadding(),
         ) {
             Header()
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             MessageList(
                 messages = messages,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
             )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             InputBar(onSend = onSend)
         }
     }
