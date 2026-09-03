@@ -113,8 +113,10 @@ class ColorContrastTest {
     fun calendarSurfacesExposeVisibleHierarchy() {
         assertNotEquals(LightCalendarGridBackground, LightCalendarNonWorkingSurface)
         assertNotEquals(LightCalendarGridBackground, LightCalendarUnavailableSurface)
+        assertNotEquals(LightCalendarGridBackground, LightCalendarFocusedDaySurface)
         assertNotEquals(DarkCalendarGridBackground, DarkCalendarNonWorkingSurface)
         assertNotEquals(DarkCalendarGridBackground, DarkCalendarUnavailableSurface)
+        assertNotEquals(DarkCalendarGridBackground, DarkCalendarFocusedDaySurface)
     }
 
     private fun assertTextPair(name: String, foreground: Color, background: Color) {

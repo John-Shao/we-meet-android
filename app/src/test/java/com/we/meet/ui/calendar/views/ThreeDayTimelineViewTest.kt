@@ -64,4 +64,12 @@ class ThreeDayTimelineViewTest {
             ),
         )
     }
+
+    @Test
+    fun compactBlocksKeepTimeOnlyWhenThereIsRoomForASecondLine() {
+        assertFalse(shouldShowBlockTime(true, 45, "09:00 – 09:45"))
+        assertTrue(shouldShowBlockTime(true, 60, "09:00 – 10:00"))
+        assertTrue(shouldShowBlockTime(false, 30, "09:00 – 09:30"))
+        assertFalse(shouldShowBlockTime(true, 60, null))
+    }
 }

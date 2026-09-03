@@ -148,6 +148,8 @@ val LightCalendarReminder = Color(0xFFFF8800)
 // 基础值，业务视图只消费语义名称，不再现场拼透明黑或描边灰。
 val LightCalendarGridBackground = LightSurface
 val LightCalendarGridLine = LightOutlineVariant
+// 三日视图当前焦点日期的整列浅底；比事件容器更弱，只承担导航层级。
+val LightCalendarFocusedDaySurface = Color(0xFFF3F7FF)
 val LightCalendarNonWorkingSurface = LightSurfaceContainerLow
 val LightCalendarUnavailableSurface = LightSurfaceContainerHigh
 val LightCalendarBusyContainer = LightSurfaceContainerHighest
@@ -183,6 +185,7 @@ val DarkCalendarConflict = Color(0xFFF87171)
 val DarkCalendarReminder = Color(0xFFFFA640)
 val DarkCalendarGridBackground = DarkSurface
 val DarkCalendarGridLine = DarkOutlineVariant
+val DarkCalendarFocusedDaySurface = Color(0xFF1D2636)
 val DarkCalendarNonWorkingSurface = DarkSurfaceContainerLowest
 val DarkCalendarUnavailableSurface = DarkSurfaceContainerHigh
 val DarkCalendarBusyContainer = DarkSurfaceContainerHighest

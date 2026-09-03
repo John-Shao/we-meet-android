@@ -339,6 +339,8 @@ data class CalendarColors(
     val gridBackground: Color,
     /** 时间与日期分隔线；仅表达结构，不承担文字语义。 */
     val gridLine: Color,
+    /** 多日视图中当前焦点日期列的浅色 surface。 */
+    val focusedDaySurface: Color,
     /** 工作时间以外的区域底色。 */
     val nonWorkingSurface: Color,
     /** 不可用日期/成员列的底色。 */
@@ -402,6 +404,7 @@ private val LightExtras = WeMeetExtras(
     calendar = CalendarColors(
         gridBackground = LightCalendarGridBackground,
         gridLine = LightCalendarGridLine,
+        focusedDaySurface = LightCalendarFocusedDaySurface,
         nonWorkingSurface = LightCalendarNonWorkingSurface,
         unavailableSurface = LightCalendarUnavailableSurface,
         busyContainer = LightCalendarBusyContainer,
@@ -458,6 +461,7 @@ private val DarkExtras = WeMeetExtras(
     calendar = CalendarColors(
         gridBackground = DarkCalendarGridBackground,
         gridLine = DarkCalendarGridLine,
+        focusedDaySurface = DarkCalendarFocusedDaySurface,
         nonWorkingSurface = DarkCalendarNonWorkingSurface,
         unavailableSurface = DarkCalendarUnavailableSurface,
         busyContainer = DarkCalendarBusyContainer,

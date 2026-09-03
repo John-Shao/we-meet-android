@@ -131,6 +131,16 @@ internal const val SHORT_BLOCK_MIN = 45
 /** 无标题的忙闲块:≥这么长才写得下时段文字(更短的靠点击提示)。 */
 private const val BUSY_TIME_LABEL_MIN = 30
 
+/**
+ * 日视图始终保留时间；三日视图只在块高足以容纳第二行时展示，避免窄列里
+ * 一小时日程只剩标题、同时也避免 45 分钟及以下的短块发生文字拥挤。
+ */
+internal fun shouldShowBlockTime(
+    compactBlocks: Boolean,
+    durationMinutes: Int,
+    timeLabel: String?,
+): Boolean = timeLabel != null && (!compactBlocks || durationMinutes > SHORT_BLOCK_MIN)
+
 private fun fmtMin(min: Int): String = "%02d:%02d".format(min / 60, min % 60)
 
 internal fun hourRailLabelMinutes(
@@ -382,9 +392,11 @@ fun TimelineScaffold(
     /** Fixed content above the hour rail, such as the device timezone label. */
     railHeader: (@Composable () -> Unit)? = null,
     columnHeader: (@Composable (colIndex: Int) -> Unit)? = null,
-    /** 窄列(三日视图等多列布局)块内只显标题,不显时间 —— 时刻由纵向位置 +
-     *  左侧刻度传达;日视图单宽列仍标题 + 时间。 */
+    /** 窄列(三日视图等多列布局)压缩块内信息；短块由纵向位置 + 左侧刻度
+     *  传达时刻，高度足够的块仍保留第二行时间。 */
     compactBlocks: Boolean = false,
+    /** 多日视图的焦点日期列。日视图保持默认值，不改变现有视觉。 */
+    focusedColumn: (Int) -> Boolean = { false },
     /** 非空时一屏恰好铺 [visibleColumnCount] 列。只有实际列数更多时，列头与
      *  网格才挂载横向滚动节点；列数未超出时保持纯固定宽度布局。 */
     visibleColumnCount: Int? = null,
@@ -900,6 +912,17 @@ fun TimelineScaffold(
                                     }
                                 },
                         ) {
+                            // 三日视图把日期头的选中态延伸到工作时间网格。浅底只承担
+                            // 导航层级，事件卡片仍用更强的日历色容器位于其上方。
+                            for (c in 0 until n) {
+                                if (focusedColumn(c)) {
+                                    drawRect(
+                                        color = calendarColors.focusedDaySurface,
+                                        topLeft = Offset(c * colWidthPx, 0f),
+                                        size = Size(colWidthPx, size.height),
+                                    )
+                                }
+                            }
                             // 工作时间(09–18)以外整行淡阴影。
                             fun shade(from: Int, to: Int) {
                                 val start = maxOf(from, rangeStart)
@@ -1096,9 +1119,13 @@ fun TimelineScaffold(
                                             )
                                             val durationMinutes = b.endMin - b.startMin
                                             val short = durationMinutes <= SHORT_BLOCK_MIN
-                                            // 窄列(compactBlocks)不显时间;短块仅一行,
-                                            // 长块标题可占两行,把腾出的行留给标题。
-                                            val showTime = !compactBlocks && b.timeLabel != null
+                                            // 三日视图的一小时及以上块恢复时间辅助行；短块
+                                            // 仍只显示标题，避免窄列拥挤。
+                                            val showTime = shouldShowBlockTime(
+                                                compactBlocks = compactBlocks,
+                                                durationMinutes = durationMinutes,
+                                                timeLabel = b.timeLabel,
+                                            )
                                             Box(
                                                 modifier = Modifier
                                                     .weight(1f)
