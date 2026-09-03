@@ -526,7 +526,11 @@ fun TimelineScaffold(
 
         Column(modifier = Modifier.fillMaxSize()) {
             if (railHeader != null || columnHeader != null) {
-                Row(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(calendarColors.gridBackground),
+                ) {
                     Box(
                         contentAlignment = Alignment.BottomEnd,
                         modifier = Modifier

@@ -131,8 +131,11 @@ internal fun MeetingRoomWeekStrip(
         onWeekSwipe = { weekDelta ->
             onSelectDate(selectedDate.plusWeeks(weekDelta))
         },
-        modifier = Modifier.testTag("meeting-room-week-strip"),
+        modifier = Modifier
+            .background(WeMeetTheme.extras.calendar.gridBackground)
+            .testTag("meeting-room-week-strip"),
     )
+    HorizontalDivider(color = WeMeetTheme.extras.calendar.gridLine)
 }
 
 @Composable
