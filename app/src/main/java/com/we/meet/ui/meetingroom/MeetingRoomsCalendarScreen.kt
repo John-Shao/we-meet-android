@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -506,24 +507,32 @@ private fun MeetingRoomOverview(
     onOpenRoom: (String) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        RoomDateToolbar(
-            date = ui.selectedDate,
-            onSelectDate = onSelectDate,
-            onToday = { onSelectDate(today) },
-        )
-        CalendarPrimaryToolbar(
-            current = CalendarPrimaryPage.MEETING_ROOMS,
-            onSelect = { page ->
-                if (page == CalendarPrimaryPage.CALENDAR) onShowCalendar()
-            },
-            onOpenManagement = onOpenSettings,
-        )
-        MeetingRoomWeekStrip(
-            selectedDate = ui.selectedDate,
-            firstDayOfWeek = firstDayOfWeek,
-            onSelectDate = onSelectDate,
-            today = today,
-        )
+        // 与日历页共用一个连续的 header surface，避免父级 canvas 从组件间隙
+        // 透出后，让相同的 Tab / 日期 token 看起来像两套颜色。
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface),
+        ) {
+            RoomDateToolbar(
+                date = ui.selectedDate,
+                onSelectDate = onSelectDate,
+                onToday = { onSelectDate(today) },
+            )
+            CalendarPrimaryToolbar(
+                current = CalendarPrimaryPage.MEETING_ROOMS,
+                onSelect = { page ->
+                    if (page == CalendarPrimaryPage.CALENDAR) onShowCalendar()
+                },
+                onOpenManagement = onOpenSettings,
+            )
+            MeetingRoomWeekStrip(
+                selectedDate = ui.selectedDate,
+                firstDayOfWeek = firstDayOfWeek,
+                onSelectDate = onSelectDate,
+                today = today,
+            )
+        }
         MeetingRoomFilterBar(
             ui = ui,
             onOpenFilter = onOpenFilter,
