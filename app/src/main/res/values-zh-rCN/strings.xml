@@ -917,7 +917,6 @@
     <string name="meeting_room_refresh">刷新会议室</string>
     <string name="meeting_room_open_schedule">查看会议室日程</string>
     <string name="meeting_room_availability_summary">忙闲时间轴，共 %1$d 个预订</string>
-    <string name="meeting_room_list_hint">选择会议室查看日程，并预订空闲时段。</string>
     <string name="meeting_room_schedule_back">返回会议室列表</string>
     <string name="meeting_room_room_info">会议室详情</string>
     <string name="meeting_room_filters_reset">重置</string>

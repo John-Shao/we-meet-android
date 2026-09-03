@@ -542,12 +542,6 @@ private fun MeetingRoomOverview(
             onOpenFilter = onOpenFilter,
             onRefresh = onRefresh,
         )
-        Text(
-            text = stringResource(R.string.meeting_room_list_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = Dimens.SpaceM),
-        )
         if (outsideCount > 0) {
             TextButton(
                 onClick = onShowFullDay,

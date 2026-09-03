@@ -829,7 +829,6 @@
     <string name="meeting_room_refresh">Actualiser les salles</string>
     <string name="meeting_room_open_schedule">Ouvrir le planning de la salle</string>
     <string name="meeting_room_availability_summary">Disponibilités avec %1$d réservations</string>
-    <string name="meeting_room_list_hint">Sélectionnez une salle pour consulter son planning.</string>
     <string name="meeting_room_schedule_back">Retour aux salles</string>
     <string name="meeting_room_room_info">Détails de la salle</string>
     <string name="meeting_room_filters_reset">Réinitialiser</string>

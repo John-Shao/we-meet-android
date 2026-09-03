@@ -829,7 +829,6 @@
     <string name="meeting_room_refresh">Vergaderruimtes vernieuwen</string>
     <string name="meeting_room_open_schedule">Ruimteagenda openen</string>
     <string name="meeting_room_availability_summary">Beschikbaarheid met %1$d boekingen</string>
-    <string name="meeting_room_list_hint">Kies een ruimte om de agenda en vrije tijden te bekijken.</string>
     <string name="meeting_room_schedule_back">Terug naar vergaderruimtes</string>
     <string name="meeting_room_room_info">Ruimtedetails</string>
     <string name="meeting_room_filters_reset">Resetten</string>

@@ -917,7 +917,6 @@
     <string name="meeting_room_refresh">Refresh meeting rooms</string>
     <string name="meeting_room_open_schedule">Open room schedule</string>
     <string name="meeting_room_availability_summary">Availability timeline with %1$d bookings</string>
-    <string name="meeting_room_list_hint">Select a room to view its schedule and reserve a time.</string>
     <string name="meeting_room_schedule_back">Back to meeting rooms</string>
     <string name="meeting_room_room_info">Meeting room details</string>
     <string name="meeting_room_filters_reset">Reset</string>

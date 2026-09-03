@@ -829,7 +829,6 @@
     <string name="meeting_room_refresh">Besprechungsräume aktualisieren</string>
     <string name="meeting_room_open_schedule">Raumkalender öffnen</string>
     <string name="meeting_room_availability_summary">Verfügbarkeit mit %1$d Buchungen</string>
-    <string name="meeting_room_list_hint">Raum auswählen, um Kalender und freie Zeiten zu sehen.</string>
     <string name="meeting_room_schedule_back">Zurück zu den Besprechungsräumen</string>
     <string name="meeting_room_room_info">Raumdetails</string>
     <string name="meeting_room_filters_reset">Zurücksetzen</string>
