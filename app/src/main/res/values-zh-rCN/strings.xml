@@ -250,6 +250,7 @@
     <string name="task_saved_view_delete_title">删除自定义视图？</string>
     <string name="task_saved_view_delete_confirm">删除“%1$s”？任务不会被删除。</string>
     <string name="task_saved_view_invalid">清单不可用</string>
+    <string name="task_saved_view_group_invalid">分组不可用</string>
     <string name="task_save">保存</string>
     <string name="task_all_tasks">全部任务</string>
     <string name="task_created_by_me">我创建的</string>
@@ -462,7 +463,12 @@
     <string name="task_new_group_above">在上方新建分组</string>
     <string name="task_new_group_below">在下方新建分组</string>
     <string name="task_manage_group_order">管理分组排序</string>
-    <string name="task_new_task_group">新建任务分组</string>
+    <string name="task_custom_groups">自定义分组</string>
+    <string name="task_manage_custom_groups">管理自定义分组</string>
+    <string name="task_custom_groups_empty">还没有自定义分组</string>
+    <string name="task_custom_group_invalid">自定义分组已不可用，已切换到全部相关任务。</string>
+    <string name="task_custom_group_task_count">%1$d 个任务</string>
+    <string name="task_new_task_group">新建分组</string>
     <string name="task_delete_task_group_confirm">删除“%1$s”？仅空分组可以删除。</string>
     <string name="task_move_up">上移</string>
     <string name="task_move_down">下移</string>

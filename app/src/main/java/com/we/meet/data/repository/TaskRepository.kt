@@ -135,6 +135,7 @@ class TaskRepository(
         scope: String,
         status: String,
         taskListId: String?,
+        groupId: String? = null,
         query: String? = null,
         time: String = "all",
         priority: String = "all",
@@ -146,6 +147,7 @@ class TaskRepository(
                     scope = scope,
                     status = status,
                     taskList = taskListId ?: "all",
+                    group = groupId ?: "all",
                     query = query?.takeIf(String::isNotBlank),
                     time = time,
                     priority = priority,
@@ -690,6 +692,26 @@ class TaskRepository(
                 }
             }
         }
+
+    suspend fun swapTaskGroups(
+        firstId: String,
+        firstSortOrder: Int,
+        secondId: String,
+        secondSortOrder: Int,
+    ): Result<List<TaskGroupDto>> = runCatching {
+        withContext(Dispatchers.IO) {
+            listOf(
+                api.patchTaskGroup(
+                    firstId,
+                    PatchTaskGroupRequest(sortOrder = secondSortOrder),
+                ),
+                api.patchTaskGroup(
+                    secondId,
+                    PatchTaskGroupRequest(sortOrder = firstSortOrder),
+                ),
+            )
+        }
+    }
 
     suspend fun deleteTaskGroup(id: String): Result<Unit> = runCatching {
         withContext(Dispatchers.IO) { api.deleteTaskGroup(id) }

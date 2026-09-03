@@ -250,6 +250,7 @@
     <string name="task_saved_view_delete_title">Delete saved view?</string>
     <string name="task_saved_view_delete_confirm">Delete “%1$s”? This won’t delete any tasks.</string>
     <string name="task_saved_view_invalid">List unavailable</string>
+    <string name="task_saved_view_group_invalid">Group unavailable</string>
     <string name="task_save">Save</string>
     <string name="task_all_tasks">All tasks</string>
     <string name="task_created_by_me">Created by me</string>
@@ -462,7 +463,12 @@
     <string name="task_new_group_above">Create group above</string>
     <string name="task_new_group_below">Create group below</string>
     <string name="task_manage_group_order">Manage group order</string>
-    <string name="task_new_task_group">New task group</string>
+    <string name="task_custom_groups">Custom groups</string>
+    <string name="task_manage_custom_groups">Manage custom groups</string>
+    <string name="task_custom_groups_empty">No custom groups yet</string>
+    <string name="task_custom_group_invalid">The custom group is unavailable. Showing all related tasks.</string>
+    <string name="task_custom_group_task_count">%1$d tasks</string>
+    <string name="task_new_task_group">New custom group</string>
     <string name="task_delete_task_group_confirm">Delete “%1$s”? Only empty groups can be deleted.</string>
     <string name="task_move_up">Move up</string>
     <string name="task_move_down">Move down</string>

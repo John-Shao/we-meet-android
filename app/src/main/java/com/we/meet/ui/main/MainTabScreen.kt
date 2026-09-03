@@ -442,6 +442,8 @@ fun MainTabScreen(
                                 activeSavedViewId = ui.activeSavedViewId,
                                 taskLists = ui.taskLists,
                                 listGroups = ui.listGroups,
+                                taskGroups = ui.taskGroups,
+                                selectedGroupId = ui.selectedGroupId,
                                 assignedCount = ui.navigationCounts.assigned,
                                 followingCount = ui.navigationCounts.following,
                                 createdCount = ui.navigationCounts.created,
@@ -454,6 +456,18 @@ fun MainTabScreen(
                                 },
                                 onSelectSavedView = {
                                     c.vm.openSavedView(it)
+                                    taskNavScope.launch { taskNavDrawerState.close() }
+                                },
+                                onSelectTaskGroup = {
+                                    c.vm.selectGroup(it.id)
+                                    taskNavScope.launch { taskNavDrawerState.close() }
+                                },
+                                onNewTaskGroup = {
+                                    c.onNewTaskGroup()
+                                    taskNavScope.launch { taskNavDrawerState.close() }
+                                },
+                                onManageTaskGroups = {
+                                    c.onManageTaskGroups()
                                     taskNavScope.launch { taskNavDrawerState.close() }
                                 },
                                 onOpenActivity = {

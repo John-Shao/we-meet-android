@@ -215,6 +215,7 @@ class TaskModelsTest {
                 time = "starting_today",
                 priority = "urgent",
                 taskList = "list-1",
+                group = "group-1",
                 ordering = "-created_at",
                 grouping = "creator",
             ),
@@ -225,11 +226,13 @@ class TaskModelsTest {
         assertEquals(TaskTimeFilter.StartingToday, item.preferences.time)
         assertEquals(TaskPriority.Urgent, item.preferences.priority)
         assertEquals(TaskGrouping.Creator, item.preferences.grouping)
+        assertEquals("group-1", item.groupId)
         assertEquals("-created_at", item.preferences.ordering.apiValue)
 
         val config = TaskUiState(
             view = item.scope,
             selectedListId = item.taskListId,
+            selectedGroupId = item.groupId,
             status = item.preferences.status,
             time = item.preferences.time,
             priorityFilter = item.preferences.priority,
@@ -237,7 +240,38 @@ class TaskModelsTest {
             ordering = item.preferences.ordering,
         ).toSavedViewConfig(item)
         assertEquals("list-1", config.taskList)
+        assertEquals("group-1", config.group)
+        assertEquals(4, config.version)
         assertEquals("urgent", config.priority)
         assertEquals("creator", config.grouping)
+    }
+
+    @Test
+    fun customGroupSelectionResetsCompetingNavigationAndFilters() {
+        val selected = TaskUiState(
+            view = TaskView.Created,
+            status = TaskListStatus.Completed,
+            time = TaskTimeFilter.Overdue,
+            priorityFilter = TaskPriority.Urgent,
+            grouping = TaskGrouping.Creator,
+            ordering = TaskOrdering(
+                TaskOrderingField.DueDate,
+                TaskSortDirection.Descending,
+            ),
+            selectedListId = "list-1",
+            activeSavedViewId = "view-1",
+            invalidGroupSelection = true,
+        ).forCustomGroup("group-1")
+
+        assertEquals(TaskView.All, selected.view)
+        assertEquals(TaskListStatus.Open, selected.status)
+        assertEquals(TaskTimeFilter.All, selected.time)
+        assertEquals(null, selected.priorityFilter)
+        assertEquals(TaskGrouping.None, selected.grouping)
+        assertEquals(TaskOrdering.Smart, selected.ordering)
+        assertEquals(null, selected.selectedListId)
+        assertEquals(null, selected.activeSavedViewId)
+        assertEquals("group-1", selected.selectedGroupId)
+        assertTrue(!selected.invalidGroupSelection)
     }
 }

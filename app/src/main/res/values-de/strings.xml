@@ -240,6 +240,7 @@
     <string name="task_saved_view_delete_title">Gespeicherte Ansicht löschen?</string>
     <string name="task_saved_view_delete_confirm">„%1$s“ löschen? Aufgaben werden nicht gelöscht.</string>
     <string name="task_saved_view_invalid">Liste nicht verfügbar</string>
+    <string name="task_saved_view_group_invalid">Gruppe nicht verfügbar</string>
     <string name="task_save">Speichern</string>
     <string name="task_all_tasks">Alle Aufgaben</string>
     <string name="task_created_by_me">Von mir erstellt</string>
@@ -452,7 +453,12 @@
     <string name="task_new_group_above">Gruppe darüber erstellen</string>
     <string name="task_new_group_below">Gruppe darunter erstellen</string>
     <string name="task_manage_group_order">Gruppenreihenfolge verwalten</string>
-    <string name="task_new_task_group">Neue Aufgabengruppe</string>
+    <string name="task_custom_groups">Benutzerdefinierte Gruppen</string>
+    <string name="task_manage_custom_groups">Benutzerdefinierte Gruppen verwalten</string>
+    <string name="task_custom_groups_empty">Noch keine benutzerdefinierten Gruppen</string>
+    <string name="task_custom_group_invalid">Die benutzerdefinierte Gruppe ist nicht verfügbar. Alle zugehörigen Aufgaben werden angezeigt.</string>
+    <string name="task_custom_group_task_count">%1$d Aufgaben</string>
+    <string name="task_new_task_group">Neue benutzerdefinierte Gruppe</string>
     <string name="task_delete_task_group_confirm">„%1$s“ löschen? Nur leere Gruppen können gelöscht werden.</string>
     <string name="task_move_up">Nach oben</string>
     <string name="task_move_down">Nach unten</string>

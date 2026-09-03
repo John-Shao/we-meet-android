@@ -215,12 +215,13 @@ data class StandaloneTaskCountDto(
 
 @JsonClass(generateAdapter = true)
 data class TaskSavedViewConfigDto(
-    val version: Int = 3,
+    val version: Int = 4,
     val scope: String = "all",
     val status: String = "open",
     val time: String = "all",
     val priority: String = "all",
     @Json(name = "task_list") val taskList: String = "all",
+    val group: String = "all",
     val ordering: String = "",
     val view: String = "list",
     val grouping: String = "none",
@@ -238,6 +239,7 @@ data class TaskSavedViewDto(
     @Json(name = "is_pinned") val isPinned: Boolean = false,
     @Json(name = "is_default") val isDefault: Boolean = false,
     @Json(name = "invalid_task_list") val invalidTaskList: Boolean = false,
+    @Json(name = "invalid_task_group") val invalidTaskGroup: Boolean = false,
     @Json(name = "created_at") val createdAt: String = "",
     @Json(name = "updated_at") val updatedAt: String = "",
 )

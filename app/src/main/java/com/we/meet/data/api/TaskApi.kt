@@ -57,6 +57,7 @@ interface TaskApi {
         @Query("scope") scope: String,
         @Query("status") status: String,
         @Query("task_list") taskList: String = "all",
+        @Query("group") group: String = "all",
         @Query("q") query: String? = null,
         @Query("creator_ids") creatorIds: String? = null,
         @Query("assignee_ids") assigneeIds: String? = null,
@@ -76,6 +77,7 @@ interface TaskApi {
         @Query("scope") scope: String,
         @Query("status") status: String = "all",
         @Query("task_list") taskList: String = "all",
+        @Query("group") group: String = "all",
     ): TaskStatisticsDto
 
     @GET("api/v1.0/tasks/standalone-count/")

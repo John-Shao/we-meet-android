@@ -240,6 +240,7 @@
     <string name="task_saved_view_delete_title">Supprimer la vue enregistrée ?</string>
     <string name="task_saved_view_delete_confirm">Supprimer « %1$s » ? Aucune tâche ne sera supprimée.</string>
     <string name="task_saved_view_invalid">Liste indisponible</string>
+    <string name="task_saved_view_group_invalid">Groupe indisponible</string>
     <string name="task_save">Enregistrer</string>
     <string name="task_all_tasks">Toutes les tâches</string>
     <string name="task_created_by_me">Créées par moi</string>
@@ -452,7 +453,12 @@
     <string name="task_new_group_above">Créer un groupe au-dessus</string>
     <string name="task_new_group_below">Créer un groupe en dessous</string>
     <string name="task_manage_group_order">Gérer l’ordre des groupes</string>
-    <string name="task_new_task_group">Nouveau groupe de tâches</string>
+    <string name="task_custom_groups">Groupes personnalisés</string>
+    <string name="task_manage_custom_groups">Gérer les groupes personnalisés</string>
+    <string name="task_custom_groups_empty">Aucun groupe personnalisé</string>
+    <string name="task_custom_group_invalid">Le groupe personnalisé n’est plus disponible. Toutes les tâches associées sont affichées.</string>
+    <string name="task_custom_group_task_count">%1$d tâches</string>
+    <string name="task_new_task_group">Nouveau groupe personnalisé</string>
     <string name="task_delete_task_group_confirm">Supprimer « %1$s » ? Seuls les groupes vides peuvent être supprimés.</string>
     <string name="task_move_up">Déplacer vers le haut</string>
     <string name="task_move_down">Déplacer vers le bas</string>

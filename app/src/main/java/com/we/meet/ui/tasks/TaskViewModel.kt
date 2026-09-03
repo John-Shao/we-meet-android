@@ -49,7 +49,9 @@ data class TaskUiState(
     val grouping: TaskGrouping = TaskGrouping.None,
     val ordering: TaskOrdering = TaskOrdering.Smart,
     val selectedListId: String? = null,
+    val selectedGroupId: String? = null,
     val activeSavedViewId: String? = null,
+    val invalidGroupSelection: Boolean = false,
     val loading: Boolean = true,
     val creating: Boolean = false,
     val navigationMutating: Boolean = false,
@@ -74,9 +76,25 @@ data class TaskUiState(
     val selectedList: TaskListItem?
         get() = taskLists.firstOrNull { it.id == selectedListId }
 
+    val selectedGroup: TaskGroupItem?
+        get() = taskGroups.firstOrNull { it.id == selectedGroupId }
+
     val activeSavedView: TaskSavedViewItem?
         get() = savedViews.firstOrNull { it.id == activeSavedViewId }
 }
+
+internal fun TaskUiState.forCustomGroup(groupId: String): TaskUiState = copy(
+    view = TaskView.All,
+    selectedListId = null,
+    selectedGroupId = groupId,
+    activeSavedViewId = null,
+    invalidGroupSelection = false,
+    status = TaskListStatus.Open,
+    time = TaskTimeFilter.All,
+    priorityFilter = null,
+    grouping = TaskGrouping.None,
+    ordering = TaskOrdering.Smart,
+)
 
 class TaskViewModel(
     private val repository: TaskRepository,
@@ -99,14 +117,21 @@ class TaskViewModel(
     }
 
     fun setView(view: TaskView) {
-        if (_ui.value.view == view && _ui.value.selectedListId == null) return
+        if (
+            _ui.value.view == view &&
+            _ui.value.selectedListId == null &&
+            _ui.value.selectedGroupId == null &&
+            _ui.value.activeSavedViewId == null
+        ) return
         rememberCurrentViewPreferences()
         val preferences = viewPreferences[view.preferenceKey] ?: TaskViewPreferences()
         _ui.update {
             it.copy(
                 view = view,
                 selectedListId = null,
+                selectedGroupId = null,
                 activeSavedViewId = null,
+                invalidGroupSelection = false,
                 status = preferences.status,
                 time = preferences.time,
                 priorityFilter = preferences.priority,
@@ -118,14 +143,20 @@ class TaskViewModel(
     }
 
     fun selectList(listId: String?) {
-        if (_ui.value.selectedListId == listId) return
+        if (
+            _ui.value.selectedListId == listId &&
+            _ui.value.selectedGroupId == null &&
+            _ui.value.activeSavedViewId == null
+        ) return
         rememberCurrentViewPreferences()
         val targetKey = listId?.let { "task-list:$it" } ?: _ui.value.view.preferenceKey
         val preferences = viewPreferences[targetKey] ?: TaskViewPreferences()
         _ui.update {
             it.copy(
                 selectedListId = listId,
+                selectedGroupId = null,
                 activeSavedViewId = null,
+                invalidGroupSelection = false,
                 view = if (listId != null && it.view == TaskView.Standalone) {
                     TaskView.Assigned
                 } else {
@@ -139,6 +170,17 @@ class TaskViewModel(
             )
         }
         refresh()
+    }
+
+    fun selectGroup(groupId: String) {
+        if (_ui.value.selectedGroupId == groupId && _ui.value.activeSavedViewId == null) return
+        rememberCurrentViewPreferences()
+        _ui.update { it.forCustomGroup(groupId) }
+        refresh()
+    }
+
+    fun clearInvalidGroupSelection() {
+        _ui.update { it.copy(invalidGroupSelection = false) }
     }
 
     private fun rememberCurrentViewPreferences() {
@@ -155,7 +197,9 @@ class TaskViewModel(
             it.copy(
                 view = if (standalone) TaskView.Standalone else savedView.scope,
                 selectedListId = configuredListId?.takeUnless { id -> id == "unassigned" },
+                selectedGroupId = savedView.groupId,
                 activeSavedViewId = savedView.id,
+                invalidGroupSelection = savedView.invalidTaskGroup,
                 status = savedView.preferences.status,
                 time = savedView.preferences.time,
                 priorityFilter = savedView.preferences.priority,
@@ -234,6 +278,7 @@ class TaskViewModel(
                             savedViews = it.savedViews.filterNot { view -> view.id == savedViewId },
                             activeSavedViewId = null,
                             selectedListId = null,
+                            selectedGroupId = null,
                             view = TaskView.All,
                             status = preferences.status,
                             time = preferences.time,
@@ -294,6 +339,7 @@ class TaskViewModel(
                 } else {
                     snapshot.selectedListId
                 },
+                groupId = snapshot.selectedGroupId,
                 ordering = snapshot.ordering.apiValue,
                 time = snapshot.time.apiValue,
                 priority = snapshot.priorityFilter?.name?.lowercase() ?: "all",
@@ -312,11 +358,17 @@ class TaskViewModel(
     fun refreshNavigation() {
         viewModelScope.launch {
             repository.loadNavigation().onSuccess { navigation ->
+                val customGroups = navigation.taskGroups.sortedBy { it.sortOrder }
+                    .map(TaskGroupDto::toItem)
+                var invalidSelection = false
                 _ui.update { state ->
+                    invalidSelection = state.selectedGroupId != null &&
+                        customGroups.none { it.id == state.selectedGroupId }
+                    val fallbackPreferences = viewPreferences[TaskView.All.preferenceKey]
+                        ?: TaskViewPreferences()
                     state.copy(
                         taskLists = navigation.lists.map(TaskListDto::toItem),
-                        taskGroups = navigation.taskGroups.sortedBy { it.sortOrder }
-                            .map(TaskGroupDto::toItem),
+                        taskGroups = customGroups,
                         listGroups = navigation.groups.sortedBy { it.sortOrder }
                             .map(TaskListGroupDto::toItem),
                         savedViews = navigation.savedViews.map(TaskSavedViewDto::toItem)
@@ -329,8 +381,31 @@ class TaskViewModel(
                             completed = navigation.counts.completed,
                             standalone = navigation.counts.standalone,
                         ),
+                        selectedGroupId = state.selectedGroupId.takeUnless { invalidSelection },
+                        activeSavedViewId = state.activeSavedViewId.takeUnless { invalidSelection },
+                        invalidGroupSelection = state.invalidGroupSelection || invalidSelection,
+                        view = if (invalidSelection) TaskView.All else state.view,
+                        selectedListId = if (invalidSelection) null else state.selectedListId,
+                        status = if (invalidSelection) fallbackPreferences.status else state.status,
+                        time = if (invalidSelection) fallbackPreferences.time else state.time,
+                        priorityFilter = if (invalidSelection) {
+                            fallbackPreferences.priority
+                        } else {
+                            state.priorityFilter
+                        },
+                        grouping = if (invalidSelection) {
+                            fallbackPreferences.grouping
+                        } else {
+                            state.grouping
+                        },
+                        ordering = if (invalidSelection) {
+                            fallbackPreferences.ordering
+                        } else {
+                            state.ordering
+                        },
                     )
                 }
+                if (invalidSelection) refresh()
                 if (!initialDefaultViewApplied) {
                     initialDefaultViewApplied = true
                     navigation.savedViews.firstOrNull(TaskSavedViewDto::isDefault)
@@ -510,7 +585,7 @@ class TaskViewModel(
                 dueDate = dueDate,
                 priority = priority.takeUnless { it == TaskPriority.None }?.name?.lowercase(),
                 taskListId = taskListId,
-                groupId = groupId.takeIf { taskListId != null },
+                groupId = groupId,
                 reminderEnabled = reminderEnabled,
                 reminderMinutes = reminderMinutes,
             ).fold(
@@ -541,7 +616,7 @@ class TaskViewModel(
                 priority = item.priority.takeUnless { it == TaskPriority.None }
                     ?.name?.lowercase(),
                 taskListId = list?.id,
-                groupId = item.groupId.takeIf { list != null },
+                groupId = item.groupId,
             ).fold(
                 onSuccess = { created ->
                     val copy = created.toItem()
@@ -1691,6 +1766,7 @@ class TaskViewModel(
                             taskLists = state.taskLists.filterNot { it.id == list.id },
                         )
                     }
+                    refreshNavigation()
                     if (wasSelected) refresh()
                 },
                 onFailure = { navigationMutationFailed() },
@@ -1746,6 +1822,110 @@ class TaskViewModel(
                         },
                         onFailure = { navigationMutationFailed() },
                     )
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
+    }
+
+    fun renameTaskGroup(group: TaskGroupItem, name: String) {
+        if (!group.canManage || name.isBlank() || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.renameTaskGroup(group.id, name.trim()).fold(
+                onSuccess = { updated ->
+                    _ui.update { state ->
+                        state.copy(
+                            navigationMutating = false,
+                            taskGroups = state.taskGroups.map {
+                                if (it.id == group.id) updated.toItem() else it
+                            },
+                            tasks = state.tasks.map {
+                                if (it.groupId == group.id) {
+                                    it.copy(groupName = updated.name)
+                                } else {
+                                    it
+                                }
+                            },
+                        )
+                    }
+                },
+                onFailure = { navigationMutationFailed() },
+            )
+        }
+    }
+
+    fun moveTaskGroup(group: TaskGroupItem, direction: Int) {
+        val groups = _ui.value.taskGroups.sortedBy(TaskGroupItem::sortOrder)
+        val index = groups.indexOfFirst { it.id == group.id }
+        val target = groups.getOrNull(index + direction) ?: return
+        if (!group.canManage || !target.canManage || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.swapTaskGroups(
+                group.id,
+                group.sortOrder,
+                target.id,
+                target.sortOrder,
+            ).fold(
+                onSuccess = { serverGroups ->
+                    val updated = serverGroups.associateBy(TaskGroupDto::id)
+                    _ui.update { state ->
+                        state.copy(
+                            navigationMutating = false,
+                            taskGroups = state.taskGroups.map { item ->
+                                updated[item.id]?.toItem() ?: item
+                            }.sortedBy(TaskGroupItem::sortOrder),
+                        )
+                    }
+                },
+                onFailure = {
+                    navigationMutationFailed()
+                    refreshNavigation()
+                },
+            )
+        }
+    }
+
+    fun deleteTaskGroup(group: TaskGroupItem) {
+        if (!group.canManage || !group.canDelete || _ui.value.navigationMutating) return
+        _ui.update { it.copy(navigationMutating = true, failure = null) }
+        viewModelScope.launch {
+            repository.deleteTaskGroup(group.id).fold(
+                onSuccess = {
+                    val wasSelected = _ui.value.selectedGroupId == group.id
+                    val fallbackPreferences = viewPreferences[TaskView.All.preferenceKey]
+                        ?: TaskViewPreferences()
+                    _ui.update { state ->
+                        state.copy(
+                            navigationMutating = false,
+                            taskGroups = state.taskGroups.filterNot { it.id == group.id },
+                            selectedGroupId = state.selectedGroupId.takeUnless { wasSelected },
+                            activeSavedViewId = state.activeSavedViewId.takeUnless { wasSelected },
+                            invalidGroupSelection = state.invalidGroupSelection || wasSelected,
+                            view = if (wasSelected) TaskView.All else state.view,
+                            selectedListId = if (wasSelected) null else state.selectedListId,
+                            status = if (wasSelected) fallbackPreferences.status else state.status,
+                            time = if (wasSelected) fallbackPreferences.time else state.time,
+                            priorityFilter = if (wasSelected) {
+                                fallbackPreferences.priority
+                            } else {
+                                state.priorityFilter
+                            },
+                            grouping = if (wasSelected) {
+                                fallbackPreferences.grouping
+                            } else {
+                                state.grouping
+                            },
+                            ordering = if (wasSelected) {
+                                fallbackPreferences.ordering
+                            } else {
+                                state.ordering
+                            },
+                        )
+                    }
+                    refreshNavigation()
+                    if (wasSelected) refresh()
                 },
                 onFailure = { navigationMutationFailed() },
             )
@@ -1853,7 +2033,9 @@ private val TaskView.preferenceKey: String
     get() = if (this == TaskView.Standalone) "standalone" else "quick:${apiScope}"
 
 private val TaskUiState.preferenceKey: String
-    get() = selectedListId?.let { "task-list:$it" } ?: view.preferenceKey
+    get() = selectedGroupId?.let { "task-group:$it" }
+        ?: selectedListId?.let { "task-list:$it" }
+        ?: view.preferenceKey
 
 private val TaskUiState.preferences: TaskViewPreferences
     get() = TaskViewPreferences(status, time, priorityFilter, grouping, ordering)
@@ -1923,10 +2105,12 @@ internal fun TaskSavedViewDto.toItem(): TaskSavedViewItem = TaskSavedViewItem(
         ordering = TaskOrdering.fromApiValue(config.ordering),
     ),
     taskListId = config.taskList.takeUnless { it == "all" },
+    groupId = config.group.takeUnless { it == "all" },
     position = position,
     isPinned = isPinned,
     isDefault = isDefault,
     invalidTaskList = invalidTaskList,
+    invalidTaskGroup = invalidTaskGroup,
     version = config.version,
     columns = config.columns,
     columnOrder = config.columnOrder,
@@ -1935,12 +2119,13 @@ internal fun TaskSavedViewDto.toItem(): TaskSavedViewItem = TaskSavedViewItem(
 internal fun TaskUiState.toSavedViewConfig(
     existing: TaskSavedViewItem? = null,
 ): TaskSavedViewConfigDto = TaskSavedViewConfigDto(
-    version = 3,
+    version = 4,
     scope = view.apiScope,
     status = status.apiValue,
     time = time.apiValue,
     priority = priorityFilter?.name?.lowercase() ?: "all",
     taskList = if (view == TaskView.Standalone) "unassigned" else selectedListId ?: "all",
+    group = selectedGroupId ?: "all",
     ordering = ordering.apiValue.orEmpty(),
     view = "list",
     grouping = grouping.apiValue,

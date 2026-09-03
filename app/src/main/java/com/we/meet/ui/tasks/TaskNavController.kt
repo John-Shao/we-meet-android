@@ -16,6 +16,8 @@ package com.we.meet.ui.tasks
 class TaskNavController(
     val vm: TaskViewModel,
     val onOpenActivity: () -> Unit,
+    val onNewTaskGroup: () -> Unit,
+    val onManageTaskGroups: () -> Unit,
     val onNewGroup: () -> Unit,
     val onNewList: () -> Unit,
     val onOpenArchivedLists: () -> Unit,
