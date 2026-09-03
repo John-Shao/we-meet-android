@@ -6,9 +6,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
@@ -66,6 +68,54 @@ class ThreeDayTimelineUiTest {
             assertEquals(expectedWidth, bounds.width, 1f)
         }
         assertEquals(viewBounds.right, headerBounds.last().right, 1f)
+    }
+
+    @Test
+    fun tappingSecondColumnAfterPagingSelectsSecondRenderedDate() {
+        val anchor = LocalDate.of(2026, 9, 10)
+        var currentAnchor by mutableStateOf(anchor.minusDays(3))
+        var tappedDate: LocalDate? = null
+        var draft by mutableStateOf<DraftSlot?>(null)
+        composeRule.setContent {
+            WeMeetTheme {
+                Box(Modifier.size(width = 360.dp, height = 640.dp)) {
+                    ThreeDayTimelineView(
+                        anchorDate = currentAnchor,
+                        eventsByDay = emptyMap(),
+                        onEventClick = {},
+                        onDayClick = {},
+                        onSlotTap = { date, minute ->
+                            tappedDate = date
+                            draft = draftSlotAt(date, minute, 60, 14 * 60, 20 * 60)
+                        },
+                        onDateSwipe = { currentAnchor = it },
+                        visibleStartMin = 14 * 60,
+                        visibleEndMin = 20 * 60,
+                        draft = draft,
+                        draftLabel = "Add event",
+                    )
+                }
+            }
+        }
+
+        val view = composeRule.onNodeWithTag(THREE_DAY_VIEW_TEST_TAG)
+        view.performTouchInput { swipeLeft() }
+        composeRule.runOnIdle { assertEquals(anchor, currentAnchor) }
+
+        val viewBounds = view.fetchSemanticsNode().boundsInRoot
+        val secondHeaderBounds = composeRule
+            .onNodeWithTag(threeDayHeaderTestTag(anchor.plusDays(1)))
+            .fetchSemanticsNode().boundsInRoot
+        view.performTouchInput {
+            click(
+                Offset(
+                    x = secondHeaderBounds.center.x - viewBounds.left,
+                    y = viewBounds.height * 0.55f,
+                ),
+            )
+        }
+
+        composeRule.runOnIdle { assertEquals(anchor.plusDays(1), tappedDate) }
     }
 
     @Test

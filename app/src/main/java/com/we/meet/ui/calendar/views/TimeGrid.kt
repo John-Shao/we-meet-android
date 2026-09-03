@@ -480,6 +480,8 @@ fun TimelineScaffold(
     val adjustNow = rememberUpdatedState(onDraftAdjust)
     val confirmNow = rememberUpdatedState(onDraftConfirm)
     val columnsNow = rememberUpdatedState(columns)
+    val slotTapNow = rememberUpdatedState(onSlotTap)
+    val blockTapNow = rememberUpdatedState(onBlockTap)
     val moveNow = rememberUpdatedState(onBlockMove)
     val selectedNow = rememberUpdatedState(selectedBlockKey)
     val selectNow = rememberUpdatedState(onBlockSelect)
@@ -892,7 +894,7 @@ fun TimelineScaffold(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(calendarColors.gridBackground)
-                                .pointerInput(n, hourHeightPx, colWidthPx, columns) {
+                                .pointerInput(n, hourHeightPx, colWidthPx) {
                                     detectTapGestures { off ->
                                         val col =
                                             (off.x / colWidthPx).toInt().coerceIn(0, n - 1)
@@ -911,13 +913,14 @@ fun TimelineScaffold(
                                             confirm(d)
                                             return@detectTapGestures
                                         }
-                                        val hit = columns[col].firstOrNull {
+                                        val hit = columnsNow.value.getOrNull(col)?.firstOrNull {
                                             minute >= it.startMin && minute < it.endMin
                                         }
-                                        if (hit != null && onBlockTap != null) {
-                                            onBlockTap(col, hit.key)
+                                        val blockTap = blockTapNow.value
+                                        if (hit != null && blockTap != null) {
+                                            blockTap(col, hit.key)
                                         } else {
-                                            onSlotTap?.invoke(col, minute)
+                                            slotTapNow.value?.invoke(col, minute)
                                         }
                                     }
                                 },
