@@ -493,6 +493,7 @@ fun WeMeetTheme(
         MaterialTheme(
             colorScheme = if (darkTheme) DarkColors else LightColors,
             typography = JusiTypography,
+            shapes = JusiShapes,
             content = content,
         )
     }

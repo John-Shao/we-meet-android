@@ -64,6 +64,8 @@ object Dimens {
     val CornerM = 12.dp
     /** 大面板、底部弹层。 */
     val CornerL = 16.dp
+    /** 对话框与超大容器；对应 Material 3 extraLarge。 */
+    val CornerXl = 24.dp
 
     // ---- 描边 ----
     /** 列表行之间的细分隔线。比 [BorderThin] 更轻,免得长列表显得像表格。 */
@@ -74,10 +76,18 @@ object Dimens {
     val BorderEmphasis = 2.dp
 
     // ---- 高程 ----
+    /** 不需要视觉抬升的普通内容。 */
+    val ElevationFlat = 0.dp
     /** 卡片与背景之间最轻微的一档色调抬升。 */
     val ElevationSubtle = 1.dp
+    /** Tooltip、悬浮控件等轻量浮起元素。 */
+    val ElevationRaised = 3.dp
+    /** 菜单、Popover 等临时浮层。 */
+    val ElevationOverlay = 6.dp
     /** 吸顶/吸底条压在滚动内容之上的投影。 */
     val ElevationSticky = 8.dp
+    /** 位于普通浮层之上的对话框与模态面板。 */
+    val ElevationModal = 12.dp
 
     // ---- 头像 ----
     /** 内联在文字流里的极小头像(已选参会人的小胶囊)。 */

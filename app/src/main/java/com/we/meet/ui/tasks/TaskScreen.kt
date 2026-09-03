@@ -1578,7 +1578,7 @@ internal fun TaskControlEntry(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.clip(RoundedCornerShape(Dimens.SpaceS))
+        modifier = modifier.clip(MaterialTheme.shapes.small)
             .clickable(onClick = onClick)
             .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
     ) {
@@ -1858,7 +1858,7 @@ fun TaskNavigationDrawer(
             Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceXl),
             verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Surface(shape = RoundedCornerShape(Dimens.SpaceM), color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(Dimens.ListLeadingIcon)) {
+                    Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(Dimens.ListLeadingIcon)) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(Icons.Outlined.TaskAlt, null, tint = MaterialTheme.colorScheme.onPrimary)
                         }
@@ -2027,7 +2027,7 @@ private fun SavedViewDrawerItem(
 ) {
     Surface(
         color = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-        shape = RoundedCornerShape(Dimens.SpaceM),
+        shape = MaterialTheme.shapes.medium,
         modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceM)
             .selectable(selected = selected, onClick = onClick, role = Role.Tab),
     ) {
@@ -2075,7 +2075,7 @@ private fun DrawerItem(
 ) {
     Surface(
         color = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-        shape = RoundedCornerShape(Dimens.SpaceM),
+        shape = MaterialTheme.shapes.medium,
         modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceM)
             .selectable(selected = selected, onClick = onClick, role = Role.Tab),
     ) {
@@ -2141,7 +2141,7 @@ private fun DrawerGroup(
                         } else {
                             Color.Transparent
                         },
-                        shape = RoundedCornerShape(Dimens.SpaceM),
+                        shape = MaterialTheme.shapes.medium,
                         modifier = Modifier.fillMaxWidth().clickable { onSelectList(list) },
                     ) {
                         Row(
@@ -2246,7 +2246,7 @@ private fun CreateTaskPage(
         modifier = Modifier.testTag(TASK_CREATE_PAGE_TEST_TAG),
         topBar = { TaskPageTopBar(stringResource(R.string.task_create), onClose) },
         bottomBar = {
-            Surface(shadowElevation = Dimens.SpaceS) {
+            Surface(shadowElevation = Dimens.ElevationSticky) {
                 Button(
                     modifier = Modifier.fillMaxWidth().navigationBarsPadding()
                         .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM)
@@ -2588,7 +2588,7 @@ private fun TaskDetailPage(
             item {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(Dimens.CornerL),
+                    shape = MaterialTheme.shapes.large,
                     color = MaterialTheme.colorScheme.surface,
                 ) {
                     Row(
@@ -3245,7 +3245,7 @@ private fun TaskPageTopBar(title: String, onBack: () -> Unit) {
 private fun TaskFormCard(content: @Composable ColumnScope.() -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(Dimens.SpaceL),
+        shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         content = { Column(content = content) },
     )
@@ -3255,7 +3255,7 @@ private fun TaskFormCard(content: @Composable ColumnScope.() -> Unit) {
 private fun TaskDetailCard(content: @Composable ColumnScope.() -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(Dimens.CornerL),
+        shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surface,
         content = { Column(content = content) },
     )
@@ -3396,7 +3396,7 @@ private fun TaskPeopleRow(
             ) {
                 items(people, key = TaskPersonItem::id) { person ->
                     Surface(
-                        shape = RoundedCornerShape(Dimens.SpaceXl),
+                        shape = MaterialTheme.shapes.extraLarge,
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     ) {
                         Row(
@@ -3593,7 +3593,7 @@ private fun DetailSectionTitle(
     val interactionModifier = if (expanded == null) {
         Modifier.fillMaxWidth()
     } else {
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Dimens.SpaceS)).clickable(onClick = onClick)
+        Modifier.fillMaxWidth().clip(MaterialTheme.shapes.small).clickable(onClick = onClick)
             .padding(vertical = Dimens.SpaceXs)
     }
     val modifier = interactionModifier.then(

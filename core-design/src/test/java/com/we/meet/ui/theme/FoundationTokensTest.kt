@@ -1,7 +1,9 @@
 package com.we.meet.ui.theme
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -27,6 +29,28 @@ class FoundationTokensTest {
         assertEquals(32f, Dimens.SpaceXxl.value)
         assertEquals(48f, Dimens.SpaceXxxl.value)
         assertEquals(64f, Dimens.SpaceXxxxl.value)
+    }
+
+    @Test
+    fun shapeAndElevationScalesMatchCrossClientContract() {
+        assertEquals(4f, Dimens.CornerXs.value)
+        assertEquals(8f, Dimens.CornerS.value)
+        assertEquals(12f, Dimens.CornerM.value)
+        assertEquals(16f, Dimens.CornerL.value)
+        assertEquals(24f, Dimens.CornerXl.value)
+
+        assertEquals(RoundedCornerShape(4.dp), JusiShapes.extraSmall)
+        assertEquals(RoundedCornerShape(8.dp), JusiShapes.small)
+        assertEquals(RoundedCornerShape(12.dp), JusiShapes.medium)
+        assertEquals(RoundedCornerShape(16.dp), JusiShapes.large)
+        assertEquals(RoundedCornerShape(24.dp), JusiShapes.extraLarge)
+
+        assertEquals(0f, Dimens.ElevationFlat.value)
+        assertEquals(1f, Dimens.ElevationSubtle.value)
+        assertEquals(3f, Dimens.ElevationRaised.value)
+        assertEquals(6f, Dimens.ElevationOverlay.value)
+        assertEquals(8f, Dimens.ElevationSticky.value)
+        assertEquals(12f, Dimens.ElevationModal.value)
     }
 
     @Test
