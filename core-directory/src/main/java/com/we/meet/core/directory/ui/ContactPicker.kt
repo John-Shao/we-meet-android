@@ -79,6 +79,10 @@ fun ContactPicker(
     excludeUserIds: Set<String> = emptySet(),
     /** Multi 模式下预勾选的 userId(如从直聊「新建群聊」带入对端);加载到即选中一次。 */
     preselectUserIds: Set<String> = emptySet(),
+    /** 已知的完整初始选择；无需等待成员页加载，适合编辑已有成员集合。 */
+    initialSelection: List<PickedMember> = emptyList(),
+    /** 允许确认空集合，用于清空可选成员。 */
+    allowEmptySelection: Boolean = false,
     /** P5 统一邀请面板:成员列表与确认钮之间的自定义区(会议号/复制链接等)。
      * 默认 null——既有调用方零变化。 */
     footer: (@Composable () -> Unit)? = null,
@@ -98,7 +102,11 @@ fun ContactPicker(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf(false) }
     var reloadTick by remember { mutableStateOf(0) }
-    val selected = remember { mutableStateOf<Map<String, PickedMember>>(linkedMapOf()) }
+    val selected = remember(initialSelection) {
+        mutableStateOf<Map<String, PickedMember>>(
+            initialSelection.associateByTo(linkedMapOf(), PickedMember::userId),
+        )
+    }
 
     // 预勾选:成员加载到后,把 preselectUserIds 里出现的成员选中一次(seeded 后不再
     // 重复,尊重用户随后的取消)。仅 Multi 模式有意义(Single 点选即确认)。
@@ -246,7 +254,7 @@ fun ContactPicker(
             if (mode == ContactPickerMode.Multi) {
                 Button(
                     onClick = { onConfirm(selected.value.values.toList()) },
-                    enabled = enabled && selected.value.isNotEmpty(),
+                    enabled = enabled && (allowEmptySelection || selected.value.isNotEmpty()),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = Dimens.SpaceM),

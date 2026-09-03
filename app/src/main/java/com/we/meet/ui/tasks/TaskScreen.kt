@@ -493,7 +493,6 @@ fun TaskScreen(
                     onEditParent = { parentPickerTarget = task },
                     onEditAssignees = { assigneeTarget = task },
                     onAddFollowers = { followerTarget = task },
-                    onRemoveFollower = { follower -> vm.removeFollower(task, follower.id) },
                     onAddAttachment = { attachmentPicker.launch(arrayOf("*/*")) },
                     onDownloadAttachment = { attachment ->
                         pendingAttachmentDownload = attachment
@@ -1205,9 +1204,17 @@ fun TaskScreen(
             mode = ContactPickerMode.Multi,
             enabled = task.id !in ui.mutatingIds,
             excludeSelf = false,
-            excludeUserIds = task.followers.mapTo(mutableSetOf()) { it.id },
+            initialSelection = task.followers.map { person ->
+                PickedMember(
+                    userId = person.id,
+                    displayName = person.name,
+                    email = null,
+                    avatarUrl = person.avatarUrl,
+                )
+            },
+            allowEmptySelection = true,
             onConfirm = { picked ->
-                vm.addFollowers(task, picked.map { it.userId })
+                vm.updateFollowers(task, picked.map { it.userId })
                 followerTarget = null
             },
             onDismiss = { followerTarget = null },
@@ -2525,7 +2532,6 @@ private fun TaskDetailPage(
     onEditParent: () -> Unit,
     onEditAssignees: () -> Unit,
     onAddFollowers: () -> Unit,
-    onRemoveFollower: (TaskPersonItem) -> Unit,
     onAddAttachment: () -> Unit,
     onDownloadAttachment: (TaskAttachmentItem) -> Unit,
     onDeleteAttachment: (TaskAttachmentItem) -> Unit,
@@ -2652,7 +2658,6 @@ private fun TaskDetailPage(
                         R.string.task_followers,
                         task.followers,
                         onClick = onAddFollowers.takeIf { task.canManageFollowers },
-                        onRemove = if (task.canManageFollowers) onRemoveFollower else null,
                     )
                 }
             }
@@ -3368,7 +3373,6 @@ private fun TaskPeopleRow(
     labelRes: Int,
     people: List<TaskPersonItem>,
     onClick: (() -> Unit)? = null,
-    onRemove: ((TaskPersonItem) -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().then(
@@ -3402,7 +3406,7 @@ private fun TaskPeopleRow(
                         Row(
                             modifier = Modifier.padding(
                                 start = Dimens.SpaceXs,
-                                end = if (onRemove == null) Dimens.SpaceM else Dimens.SpaceXs,
+                                end = Dimens.SpaceM,
                                 top = Dimens.SpaceXs,
                                 bottom = Dimens.SpaceXs,
                             ),
@@ -3421,18 +3425,6 @@ private fun TaskPeopleRow(
                                 fontWeight = FontWeight.Medium,
                                 maxLines = 1,
                             )
-                            if (onRemove != null) {
-                                IconButton(
-                                    onClick = { onRemove(person) },
-                                    modifier = Modifier.size(Dimens.SpaceXxl),
-                                ) {
-                                    Icon(
-                                        Icons.Filled.Close,
-                                        stringResource(R.string.task_remove_follower),
-                                        modifier = Modifier.size(Dimens.IconTiny),
-                                    )
-                                }
-                            }
                         }
                     }
                 }

@@ -776,63 +776,56 @@ class TaskViewModel(
         }
     }
 
-    fun addFollowers(item: TaskItem, userIds: List<String>) {
-        if (!item.canManageFollowers || userIds.isEmpty() || item.id in _ui.value.mutatingIds) {
-            return
-        }
-        _ui.update { it.copy(mutatingIds = it.mutatingIds + item.id, failure = null) }
-        viewModelScope.launch {
-            repository.addFollowers(item.id, userIds).fold(
-                onSuccess = { updated ->
-                    val confirmed = updated.toItem()
-                    _ui.update {
-                        it.copy(
-                            tasks = it.tasks.replace(item.id, confirmed),
-                            searchResults = it.searchResults.replace(item.id, confirmed),
-                            mutatingIds = it.mutatingIds - item.id,
-                        )
-                    }
-                },
-                onFailure = {
-                    _ui.update {
-                        it.copy(
-                            mutatingIds = it.mutatingIds - item.id,
-                            failure = TaskFailure.Save,
-                        )
-                    }
-                },
-            )
-        }
-    }
-
-    fun removeFollower(item: TaskItem, followerId: String) {
+    fun updateFollowers(item: TaskItem, userIds: List<String>) {
         if (!item.canManageFollowers || item.id in _ui.value.mutatingIds) return
+        val selectedIds = userIds.distinct()
+        val currentIds = item.followers.map(TaskPersonItem::id)
+        val toAdd = selectedIds.filterNot(currentIds::contains)
+        val toRemove = currentIds.filterNot(selectedIds::contains)
+        if (toAdd.isEmpty() && toRemove.isEmpty()) return
+
         _ui.update { it.copy(mutatingIds = it.mutatingIds + item.id, failure = null) }
         viewModelScope.launch {
-            repository.removeFollower(item.id, followerId).fold(
-                onSuccess = {
-                    val updated = item.copy(
-                        followers = item.followers.filterNot { it.id == followerId },
-                        followed = item.followed && followerId != selfUserId,
-                    )
-                    _ui.update {
-                        it.copy(
-                            tasks = it.tasks.replace(item.id, updated),
-                            searchResults = it.searchResults.replace(item.id, updated),
-                            detail = it.detail?.replace(item.id, updated),
-                            mutatingIds = it.mutatingIds - item.id,
-                        )
-                    }
-                },
-                onFailure = {
+            var confirmed = item
+            if (toAdd.isNotEmpty()) {
+                val addResult = repository.addFollowers(item.id, toAdd)
+                if (addResult.isFailure) {
                     _ui.update {
                         it.copy(
                             mutatingIds = it.mutatingIds - item.id,
                             failure = TaskFailure.Save,
                         )
                     }
-                },
-            )
+                    loadDetail(item.id)
+                    return@launch
+                }
+                confirmed = requireNotNull(addResult.getOrNull()).toItem()
+            }
+            for (followerId in toRemove) {
+                if (repository.removeFollower(item.id, followerId).isFailure) {
+                    _ui.update {
+                        it.copy(
+                            mutatingIds = it.mutatingIds - item.id,
+                            failure = TaskFailure.Save,
+                        )
+                    }
+                    loadDetail(item.id)
+                    return@launch
+                }
+                confirmed = confirmed.copy(
+                    followers = confirmed.followers.filterNot { it.id == followerId },
+                    followed = confirmed.followed && followerId != selfUserId,
+                )
+            }
+            _ui.update {
+                it.copy(
+                    tasks = it.tasks.replace(item.id, confirmed),
+                    searchResults = it.searchResults.replace(item.id, confirmed),
+                    detail = it.detail?.replace(item.id, confirmed),
+                    mutatingIds = it.mutatingIds - item.id,
+                )
+            }
+            loadDetail(item.id)
         }
     }
 
