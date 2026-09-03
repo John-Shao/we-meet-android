@@ -278,6 +278,7 @@ fun ThreeDayTimelineView(
             onRailTap = onRailTap,
             compactBlocks = true,
             focusedColumn = { i -> days[i] == renderedAnchor },
+            showHeaderDivider = true,
             visibleColumnCount = THREE_DAY_VIEW_DAYS,
             horizontalContentOffsetPx = { pageWidthPx - dragOffsetPx },
             contentKey = renderedAnchor,

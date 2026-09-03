@@ -25,6 +25,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -392,6 +393,8 @@ fun TimelineScaffold(
     /** Fixed content above the hour rail, such as the device timezone label. */
     railHeader: (@Composable () -> Unit)? = null,
     columnHeader: (@Composable (colIndex: Int) -> Unit)? = null,
+    /** 使用日历语义分隔色为列头收口；按视图开启，避免改变既有时间轴。 */
+    showHeaderDivider: Boolean = false,
     /** 窄列(三日视图等多列布局)压缩块内信息；短块由纵向位置 + 左侧刻度
      *  传达时刻，高度足够的块仍保留第二行时间。 */
     compactBlocks: Boolean = false,
@@ -572,6 +575,9 @@ fun TimelineScaffold(
                     } else {
                         Spacer(Modifier.weight(1f))
                     }
+                }
+                if (showHeaderDivider) {
+                    HorizontalDivider(color = calendarColors.gridLine)
                 }
             }
             Row(
