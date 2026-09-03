@@ -241,16 +241,6 @@
     <string name="task_activity_load_more">Load more</string>
     <string name="task_activity_load_failed">Couldn’t load task activity. Check your connection and try again.</string>
     <string name="task_quick_access">Quick access</string>
-    <string name="task_saved_views">Saved views</string>
-    <string name="task_saved_view_create">Save current view</string>
-    <string name="task_saved_view_manage">Manage saved view</string>
-    <string name="task_saved_view_manage_description">Update this saved view with the current filters, grouping, and sorting, or delete it.</string>
-    <string name="task_saved_view_name">View name</string>
-    <string name="task_saved_view_update">Update view</string>
-    <string name="task_saved_view_delete_title">Delete saved view?</string>
-    <string name="task_saved_view_delete_confirm">Delete “%1$s”? This won’t delete any tasks.</string>
-    <string name="task_saved_view_invalid">List unavailable</string>
-    <string name="task_saved_view_group_invalid">Group unavailable</string>
     <string name="task_save">Save</string>
     <string name="task_all_tasks">All tasks</string>
     <string name="task_created_by_me">Created by me</string>

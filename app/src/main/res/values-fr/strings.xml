@@ -231,16 +231,6 @@
     <string name="task_activity_load_more">Charger plus</string>
     <string name="task_activity_load_failed">Impossible de charger l’activité des tâches.</string>
     <string name="task_quick_access">Accès rapide</string>
-    <string name="task_saved_views">Vues enregistrées</string>
-    <string name="task_saved_view_create">Enregistrer la vue actuelle</string>
-    <string name="task_saved_view_manage">Gérer la vue enregistrée</string>
-    <string name="task_saved_view_manage_description">Mettre à jour cette vue avec les filtres, le regroupement et le tri actuels, ou la supprimer.</string>
-    <string name="task_saved_view_name">Nom de la vue</string>
-    <string name="task_saved_view_update">Mettre à jour la vue</string>
-    <string name="task_saved_view_delete_title">Supprimer la vue enregistrée ?</string>
-    <string name="task_saved_view_delete_confirm">Supprimer « %1$s » ? Aucune tâche ne sera supprimée.</string>
-    <string name="task_saved_view_invalid">Liste indisponible</string>
-    <string name="task_saved_view_group_invalid">Groupe indisponible</string>
     <string name="task_save">Enregistrer</string>
     <string name="task_all_tasks">Toutes les tâches</string>
     <string name="task_created_by_me">Créées par moi</string>

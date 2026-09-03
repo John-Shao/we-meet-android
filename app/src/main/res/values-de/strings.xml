@@ -231,16 +231,6 @@
     <string name="task_activity_load_more">Mehr laden</string>
     <string name="task_activity_load_failed">Aufgabenaktivitäten konnten nicht geladen werden.</string>
     <string name="task_quick_access">Schnellzugriff</string>
-    <string name="task_saved_views">Gespeicherte Ansichten</string>
-    <string name="task_saved_view_create">Aktuelle Ansicht speichern</string>
-    <string name="task_saved_view_manage">Gespeicherte Ansicht verwalten</string>
-    <string name="task_saved_view_manage_description">Diese Ansicht mit den aktuellen Filtern, Gruppierungen und Sortierungen aktualisieren oder löschen.</string>
-    <string name="task_saved_view_name">Name der Ansicht</string>
-    <string name="task_saved_view_update">Ansicht aktualisieren</string>
-    <string name="task_saved_view_delete_title">Gespeicherte Ansicht löschen?</string>
-    <string name="task_saved_view_delete_confirm">„%1$s“ löschen? Aufgaben werden nicht gelöscht.</string>
-    <string name="task_saved_view_invalid">Liste nicht verfügbar</string>
-    <string name="task_saved_view_group_invalid">Gruppe nicht verfügbar</string>
     <string name="task_save">Speichern</string>
     <string name="task_all_tasks">Alle Aufgaben</string>
     <string name="task_created_by_me">Von mir erstellt</string>

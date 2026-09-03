@@ -231,16 +231,6 @@
     <string name="task_activity_load_more">Meer laden</string>
     <string name="task_activity_load_failed">Taakactiviteit kon niet worden geladen.</string>
     <string name="task_quick_access">Snelle toegang</string>
-    <string name="task_saved_views">Opgeslagen weergaven</string>
-    <string name="task_saved_view_create">Huidige weergave opslaan</string>
-    <string name="task_saved_view_manage">Opgeslagen weergave beheren</string>
-    <string name="task_saved_view_manage_description">Werk deze weergave bij met de huidige filters, groepering en sortering, of verwijder deze.</string>
-    <string name="task_saved_view_name">Naam van weergave</string>
-    <string name="task_saved_view_update">Weergave bijwerken</string>
-    <string name="task_saved_view_delete_title">Opgeslagen weergave verwijderen?</string>
-    <string name="task_saved_view_delete_confirm">‘%1$s’ verwijderen? Er worden geen taken verwijderd.</string>
-    <string name="task_saved_view_invalid">Lijst niet beschikbaar</string>
-    <string name="task_saved_view_group_invalid">Groep niet beschikbaar</string>
     <string name="task_save">Opslaan</string>
     <string name="task_all_tasks">Alle taken</string>
     <string name="task_created_by_me">Door mij gemaakt</string>

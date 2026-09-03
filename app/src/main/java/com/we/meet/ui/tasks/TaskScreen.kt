@@ -240,9 +240,6 @@ fun TaskScreen(
     var detailBackStack by remember { mutableStateOf<List<TaskItem>>(emptyList()) }
     var showFilter by remember { mutableStateOf(false) }
     var showDisplaySettings by remember { mutableStateOf(false) }
-    var showCreateSavedView by remember { mutableStateOf(false) }
-    var showSavedViewActions by remember { mutableStateOf(false) }
-    var confirmDeleteSavedView by remember { mutableStateOf(false) }
     var showNewGroup by remember { mutableStateOf(false) }
     var showTaskGroupManager by remember { mutableStateOf(false) }
     var managedTaskGroupRenaming by remember { mutableStateOf<TaskGroupItem?>(null) }
@@ -402,7 +399,6 @@ fun TaskScreen(
                 priorityFilter = ui.priorityFilter,
                 grouping = ui.grouping,
                 ordering = ui.ordering,
-                savedViewName = ui.activeSavedView?.name,
                 loading = ui.loading,
                 showOverdueMarker = ui.settings.overdueMarkerEnabled,
                 onOpenDrawer = {
@@ -413,13 +409,6 @@ fun TaskScreen(
                 onSettings = onOpenSettings,
                 onFilter = { showFilter = true },
                 onDisplaySettings = { showDisplaySettings = true },
-                onSavedViewAction = {
-                    if (ui.activeSavedView == null) {
-                        showCreateSavedView = true
-                    } else {
-                        showSavedViewActions = true
-                    }
-                },
                 onCreate = { page = TaskPage.Create },
                 onTaskClick = {
                     selectedTaskId = it.id
@@ -600,65 +589,6 @@ fun TaskScreen(
                 )
             },
             onDismiss = { showDisplaySettings = false },
-        )
-    }
-
-    if (showCreateSavedView) {
-        SavedViewNameDialog(
-            saving = ui.navigationMutating,
-            onDismiss = { showCreateSavedView = false },
-            onSave = { name ->
-                vm.createSavedView(name) { showCreateSavedView = false }
-            },
-        )
-    }
-
-    if (showSavedViewActions && ui.activeSavedView != null) {
-        SavedViewActionsDialog(
-            name = ui.activeSavedView!!.name,
-            saving = ui.navigationMutating,
-            onDismiss = { showSavedViewActions = false },
-            onUpdate = {
-                vm.updateActiveSavedView { showSavedViewActions = false }
-            },
-            onDelete = {
-                showSavedViewActions = false
-                confirmDeleteSavedView = true
-            },
-        )
-    }
-
-    if (confirmDeleteSavedView && ui.activeSavedView != null) {
-        AlertDialog(
-            onDismissRequest = { confirmDeleteSavedView = false },
-            title = { Text(stringResource(R.string.task_saved_view_delete_title)) },
-            text = {
-                Text(
-                    stringResource(
-                        R.string.task_saved_view_delete_confirm,
-                        ui.activeSavedView!!.name,
-                    ),
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = !ui.navigationMutating,
-                    onClick = {
-                        vm.deleteActiveSavedView { confirmDeleteSavedView = false }
-                    },
-                ) {
-                    Text(
-                        stringResource(R.string.task_delete),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    enabled = !ui.navigationMutating,
-                    onClick = { confirmDeleteSavedView = false },
-                ) { Text(stringResource(R.string.task_cancel)) }
-            },
         )
     }
 
@@ -1363,7 +1293,6 @@ private fun TaskListPage(
     priorityFilter: TaskPriority?,
     grouping: TaskGrouping,
     ordering: TaskOrdering,
-    savedViewName: String?,
     loading: Boolean,
     showOverdueMarker: Boolean,
     onOpenDrawer: () -> Unit,
@@ -1371,7 +1300,6 @@ private fun TaskListPage(
     onSettings: () -> Unit,
     onFilter: () -> Unit,
     onDisplaySettings: () -> Unit,
-    onSavedViewAction: () -> Unit,
     onCreate: () -> Unit,
     onTaskClick: (TaskItem) -> Unit,
     onToggleDone: (TaskItem) -> Unit,
@@ -1438,14 +1366,12 @@ private fun TaskListPage(
         Column(Modifier.fillMaxSize().padding(padding)) {
             TaskHomeHeader(
                 view = view,
-                savedViewName = savedViewName,
                 selectedList = selectedList?.name
                     ?: standaloneLabel.takeIf { view == TaskView.Standalone },
                 selectedGroup = selectedGroup?.name,
                 onOpenDrawer = onOpenDrawer,
                 onSearch = onSearch,
                 onSettings = onSettings,
-                onSavedViewAction = onSavedViewAction,
             )
             TaskFilterBar(
                 status = status,
@@ -1526,13 +1452,11 @@ private fun TaskHomeHeader(
     view: TaskView,
     selectedList: String?,
     selectedGroup: String?,
-    savedViewName: String?,
     onOpenDrawer: () -> Unit,
     onSearch: () -> Unit,
     onSettings: () -> Unit,
-    onSavedViewAction: () -> Unit,
 ) {
-    val title = savedViewName ?: selectedGroup ?: selectedList ?: when (view) {
+    val title = selectedGroup ?: selectedList ?: when (view) {
         TaskView.Assigned -> stringResource(R.string.task_assigned_to_me)
         TaskView.Following -> stringResource(R.string.task_following)
         TaskView.Created -> stringResource(R.string.task_created_by_me)
@@ -1559,18 +1483,6 @@ private fun TaskHomeHeader(
         )
         IconButton(onClick = onSearch) {
             Icon(Icons.Outlined.Search, stringResource(R.string.task_search))
-        }
-        IconButton(onClick = onSavedViewAction) {
-            Icon(
-                if (savedViewName == null) Icons.Outlined.BookmarkBorder else Icons.Outlined.MoreVert,
-                stringResource(
-                    if (savedViewName == null) {
-                        R.string.task_saved_view_create
-                    } else {
-                        R.string.task_saved_view_manage
-                    },
-                ),
-            )
         }
         IconButton(onClick = onSettings) {
             Icon(Icons.Outlined.Settings, stringResource(R.string.task_settings))
@@ -1902,8 +1814,6 @@ private fun Avatar(
 fun TaskNavigationDrawer(
     selectedView: TaskView,
     selectedList: String?,
-    savedViews: List<TaskSavedViewItem>,
-    activeSavedViewId: String?,
     taskLists: List<TaskListItem>,
     listGroups: List<TaskListGroupItem>,
     taskGroups: List<TaskGroupItem>,
@@ -1915,7 +1825,6 @@ fun TaskNavigationDrawer(
     standaloneCount: Int,
     onDismiss: () -> Unit,
     onSelectView: (TaskView) -> Unit,
-    onSelectSavedView: (TaskSavedViewItem) -> Unit,
     onSelectTaskGroup: (TaskGroupItem) -> Unit,
     onNewTaskGroup: () -> Unit,
     onManageTaskGroups: () -> Unit,
@@ -1952,8 +1861,7 @@ fun TaskNavigationDrawer(
                             Icons.Outlined.PersonOutline,
                             R.string.task_assigned_to_me,
                             assignedCount.toString(),
-                            selected = activeSavedViewId == null && selectedList == null &&
-                                selectedGroupId == null &&
+                            selected = selectedList == null && selectedGroupId == null &&
                                 selectedView == TaskView.Assigned,
                         ) {
                             onSelectView(TaskView.Assigned)
@@ -1962,8 +1870,7 @@ fun TaskNavigationDrawer(
                             Icons.Outlined.BookmarkBorder,
                             R.string.task_following,
                             followingCount.toString(),
-                            selected = activeSavedViewId == null && selectedList == null &&
-                                selectedGroupId == null &&
+                            selected = selectedList == null && selectedGroupId == null &&
                                 selectedView == TaskView.Following,
                         ) {
                             onSelectView(TaskView.Following)
@@ -1985,8 +1892,7 @@ fun TaskNavigationDrawer(
                             Icons.Outlined.TaskAlt,
                             R.string.task_all_tasks,
                             allCount.toString(),
-                            selected = activeSavedViewId == null && selectedList == null &&
-                                selectedGroupId == null &&
+                            selected = selectedList == null && selectedGroupId == null &&
                                 selectedView == TaskView.All,
                         ) {
                             onSelectView(TaskView.All)
@@ -1995,35 +1901,10 @@ fun TaskNavigationDrawer(
                             Icons.Outlined.PersonOutline,
                             R.string.task_created_by_me,
                             createdCount.toString(),
-                            selected = activeSavedViewId == null && selectedList == null &&
-                                selectedGroupId == null &&
+                            selected = selectedList == null && selectedGroupId == null &&
                                 selectedView == TaskView.Created,
                         ) {
                             onSelectView(TaskView.Created)
-                        }
-                        if (savedViews.isNotEmpty()) {
-                            HorizontalDivider(
-                                Modifier.padding(
-                                    horizontal = Dimens.SpaceXl,
-                                    vertical = Dimens.SpaceM,
-                                ),
-                            )
-                            Text(
-                                stringResource(R.string.task_saved_views),
-                                modifier = Modifier.padding(
-                                    horizontal = Dimens.SpaceXl,
-                                    vertical = Dimens.SpaceM,
-                                ),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            savedViews.forEach { savedView ->
-                                SavedViewDrawerItem(
-                                    savedView = savedView,
-                                    selected = savedView.id == activeSavedViewId,
-                                    onClick = { onSelectSavedView(savedView) },
-                                )
-                            }
                         }
                         HorizontalDivider(
                             Modifier.padding(
@@ -2072,8 +1953,7 @@ fun TaskNavigationDrawer(
                             taskGroups.sortedBy(TaskGroupItem::sortOrder).forEach { group ->
                                 CustomGroupDrawerItem(
                                     group = group,
-                                    selected = activeSavedViewId == null &&
-                                        selectedGroupId == group.id,
+                                    selected = selectedGroupId == group.id,
                                     onClick = { onSelectTaskGroup(group) },
                                 )
                             }
@@ -2124,8 +2004,7 @@ fun TaskNavigationDrawer(
                                 Icons.AutoMirrored.Outlined.ListAlt,
                                 R.string.task_standalone,
                                 standaloneCount.toString(),
-                                selected = activeSavedViewId == null && selectedList == null &&
-                                    selectedGroupId == null &&
+                                selected = selectedList == null && selectedGroupId == null &&
                                     selectedView == TaskView.Standalone,
                             ) {
                                 onSelectView(TaskView.Standalone)
@@ -2149,60 +2028,6 @@ fun TaskNavigationDrawer(
                     }
                 }
             }
-}
-
-@Composable
-private fun SavedViewDrawerItem(
-    savedView: TaskSavedViewItem,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    Surface(
-        color = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-        shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceM)
-            .selectable(selected = selected, onClick = onClick, role = Role.Tab),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceM),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            val contentColor = when {
-                savedView.invalidTaskList || savedView.invalidTaskGroup -> {
-                    MaterialTheme.colorScheme.error
-                }
-                selected -> MaterialTheme.colorScheme.primary
-                else -> MaterialTheme.colorScheme.onSurfaceVariant
-            }
-            Icon(
-                if (savedView.isPinned) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                null,
-                tint = contentColor,
-            )
-            Spacer(Modifier.width(Dimens.SpaceL))
-            Text(
-                savedView.name,
-                modifier = Modifier.weight(1f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = contentColor,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            )
-            if (savedView.invalidTaskList || savedView.invalidTaskGroup) {
-                Text(
-                    stringResource(
-                        if (savedView.invalidTaskGroup) {
-                            R.string.task_saved_view_group_invalid
-                        } else {
-                            R.string.task_saved_view_invalid
-                        },
-                    ),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = contentColor,
-                )
-            }
-        }
-    }
 }
 
 @Composable
@@ -4750,72 +4575,6 @@ private fun DisplaySettingsSheet(
             }
         }
     }
-}
-
-@Composable
-private fun SavedViewNameDialog(
-    saving: Boolean,
-    onDismiss: () -> Unit,
-    onSave: (String) -> Unit,
-) {
-    var name by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = { if (!saving) onDismiss() },
-        title = { Text(stringResource(R.string.task_saved_view_create)) },
-        text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                label = { Text(stringResource(R.string.task_saved_view_name)) },
-            )
-        },
-        confirmButton = {
-            TextButton(
-                enabled = name.isNotBlank() && !saving,
-                onClick = { onSave(name) },
-            ) { Text(stringResource(R.string.task_save)) }
-        },
-        dismissButton = {
-            TextButton(enabled = !saving, onClick = onDismiss) {
-                Text(stringResource(R.string.task_cancel))
-            }
-        },
-    )
-}
-
-@Composable
-private fun SavedViewActionsDialog(
-    name: String,
-    saving: Boolean,
-    onDismiss: () -> Unit,
-    onUpdate: () -> Unit,
-    onDelete: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = { if (!saving) onDismiss() },
-        title = { Text(name) },
-        text = { Text(stringResource(R.string.task_saved_view_manage_description)) },
-        confirmButton = {
-            TextButton(enabled = !saving, onClick = onUpdate) {
-                Text(stringResource(R.string.task_saved_view_update))
-            }
-        },
-        dismissButton = {
-            Row {
-                TextButton(enabled = !saving, onClick = onDelete) {
-                    Text(
-                        stringResource(R.string.task_delete),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-                TextButton(enabled = !saving, onClick = onDismiss) {
-                    Text(stringResource(R.string.task_cancel))
-                }
-            }
-        },
-    )
 }
 
 @Composable

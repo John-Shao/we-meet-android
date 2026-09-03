@@ -241,16 +241,6 @@
     <string name="task_activity_load_more">加载更多</string>
     <string name="task_activity_load_failed">任务动态加载失败，请检查网络后重试。</string>
     <string name="task_quick_access">快速访问</string>
-    <string name="task_saved_views">自定义视图</string>
-    <string name="task_saved_view_create">保存当前视图</string>
-    <string name="task_saved_view_manage">管理自定义视图</string>
-    <string name="task_saved_view_manage_description">用当前筛选、分组和排序更新此视图，或删除此视图。</string>
-    <string name="task_saved_view_name">视图名称</string>
-    <string name="task_saved_view_update">更新视图</string>
-    <string name="task_saved_view_delete_title">删除自定义视图？</string>
-    <string name="task_saved_view_delete_confirm">删除“%1$s”？任务不会被删除。</string>
-    <string name="task_saved_view_invalid">清单不可用</string>
-    <string name="task_saved_view_group_invalid">分组不可用</string>
     <string name="task_save">保存</string>
     <string name="task_all_tasks">全部任务</string>
     <string name="task_created_by_me">我创建的</string>

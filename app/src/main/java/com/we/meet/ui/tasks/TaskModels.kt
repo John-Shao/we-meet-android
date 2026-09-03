@@ -147,23 +147,6 @@ data class TaskViewPreferences(
     val ordering: TaskOrdering = TaskOrdering.Smart,
 )
 
-data class TaskSavedViewItem(
-    val id: String,
-    val name: String,
-    val scope: TaskView,
-    val preferences: TaskViewPreferences,
-    val taskListId: String? = null,
-    val groupId: String? = null,
-    val position: Int = 0,
-    val isPinned: Boolean = false,
-    val isDefault: Boolean = false,
-    val invalidTaskList: Boolean = false,
-    val invalidTaskGroup: Boolean = false,
-    val version: Int = 4,
-    val columns: List<String> = emptyList(),
-    val columnOrder: List<String> = emptyList(),
-)
-
 data class TaskSettingsItem(
     val dailyReminderEnabled: Boolean = true,
     val overdueMarkerEnabled: Boolean = true,
