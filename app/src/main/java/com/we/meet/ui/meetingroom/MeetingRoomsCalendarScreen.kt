@@ -506,7 +506,11 @@ private fun MeetingRoomOverview(
     onShowFullDay: () -> Unit,
     onOpenRoom: (String) -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
         // 与日历页共用一个连续的 header surface，避免父级 canvas 从组件间隙
         // 透出后，让相同的 Tab / 日期 token 看起来像两套颜色。
         Column(

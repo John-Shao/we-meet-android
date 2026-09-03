@@ -114,9 +114,13 @@ class ColorContrastTest {
         assertNotEquals(LightCalendarGridBackground, LightCalendarNonWorkingSurface)
         assertNotEquals(LightCalendarGridBackground, LightCalendarUnavailableSurface)
         assertNotEquals(LightCalendarGridBackground, LightCalendarFocusedDaySurface)
+        assertNotEquals(LightCalendarNonWorkingSurface, LightCalendarUnavailableSurface)
+        assertNotEquals(LightCalendarUnavailableSurface, LightCalendarBusyContainer)
         assertNotEquals(DarkCalendarGridBackground, DarkCalendarNonWorkingSurface)
         assertNotEquals(DarkCalendarGridBackground, DarkCalendarUnavailableSurface)
         assertNotEquals(DarkCalendarGridBackground, DarkCalendarFocusedDaySurface)
+        assertNotEquals(DarkCalendarNonWorkingSurface, DarkCalendarUnavailableSurface)
+        assertNotEquals(DarkCalendarUnavailableSurface, DarkCalendarBusyContainer)
     }
 
     private fun assertTextPair(name: String, foreground: Color, background: Color) {

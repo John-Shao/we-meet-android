@@ -2,6 +2,7 @@ package com.we.meet.ui.meetingroom
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -217,8 +218,9 @@ internal fun MeetingRoomOverviewList(
     onOpenRoom: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val calendarColors = WeMeetTheme.extras.calendar
     LazyColumn(
-        modifier = modifier,
+        modifier = modifier.background(calendarColors.gridBackground),
         contentPadding = PaddingValues(bottom = Dimens.Calendar.FabClearance),
     ) {
         items(rooms, key = { it.id }) { room ->
@@ -235,7 +237,7 @@ internal fun MeetingRoomOverviewList(
             )
             HorizontalDivider(
                 thickness = Dimens.DividerThin,
-                color = MaterialTheme.colorScheme.outlineVariant,
+                color = calendarColors.gridLine,
             )
         }
     }
@@ -316,21 +318,23 @@ private fun CompactAvailabilityStrip(
     modifier: Modifier = Modifier,
 ) {
     val span = (visibleEndMin - visibleStartMin).coerceAtLeast(1)
-    // Keep the whole 24-hour rail visible. Painting the working window with
-    // `surface` made it disappear into the light page background and left the
-    // two off-work sections looking like disconnected bars.
-    val availableTrack = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-    val offWork = MaterialTheme.colorScheme.surfaceVariant
-    val busy = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.32f)
-    val nowLine = WeMeetTheme.extras.calendar.nowLine
+    val calendarColors = WeMeetTheme.extras.calendar
+    // 概览轨道沿用时间网格的 surface 层级：列表 surface → 可用底 → 非工作
+    // 时段 → 忙碌块逐级加深。浅色下不再把半透明灰叠到同色页面底上。
+    val availableTrack = calendarColors.nonWorkingSurface
+    val offWork = calendarColors.unavailableSurface
+    val busy = calendarColors.busyContainer
+    val nowLine = calendarColors.nowLine
     val summary = stringResource(R.string.meeting_room_availability_summary, bounds.size)
+    val trackShape = RoundedCornerShape(Dimens.CornerXs)
 
     Column(modifier = modifier.semantics { contentDescription = summary }) {
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(Dimens.SpaceXl)
-                .clip(RoundedCornerShape(Dimens.CornerXs)),
+                .clip(trackShape)
+                .border(Dimens.DividerThin, calendarColors.gridLine, trackShape),
         ) {
             drawRect(availableTrack)
             listOf(
