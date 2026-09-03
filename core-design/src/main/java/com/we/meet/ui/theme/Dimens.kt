@@ -264,6 +264,8 @@ object Dimens {
         val AgendaAccentBarWidth = 4.dp
         /** App 日历 RSVP glyph 的占位尺寸。 */
         val RsvpGlyphSize = 12.dp
+        /** RSVP glyph 的圆形承载底，隔离日历归属色并增强状态辨识。 */
+        val RsvpBadgeSize = 18.dp
         /** 议程行左侧时间列的宽度,要放得下「全天」和「23:59」。 */
         val TimeLabelWidth = 52.dp
         /** 忙闲对比里压在头像右上角的冲突红点,及其与头像隔开的描边环。 */

@@ -349,14 +349,15 @@ private fun CalendarShareHeader(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     color: String? = null,
 ) {
+    val eventColors = calendarEventColors(color)
     Surface(
         shape = RoundedCornerShape(Dimens.CornerM),
-        color = (parseCalendarColor(color) ?: MaterialTheme.colorScheme.primary).copy(alpha = 0.14f),
+        color = eventColors.container,
     ) {
         ListItem(
             headlineContent = { Text(calendarName, style = MaterialTheme.typography.titleMedium) },
             supportingContent = owner?.let { name -> { Text(name) } },
-            leadingContent = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+            leadingContent = { Icon(icon, contentDescription = null, tint = eventColors.accent) },
         )
     }
 }

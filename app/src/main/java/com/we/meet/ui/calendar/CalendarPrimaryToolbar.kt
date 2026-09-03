@@ -1,5 +1,6 @@
 package com.we.meet.ui.calendar
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.R
 import com.we.meet.ui.calendar.views.CalendarViewMode
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 
 enum class CalendarPrimaryPage { CALENDAR, MEETING_ROOMS }
 
@@ -53,7 +55,8 @@ fun CalendarPrimaryToolbar(
     calendarViewMode: CalendarViewMode = CalendarViewMode.AGENDA,
 ) {
     val actionIsSettings = current == CalendarPrimaryPage.MEETING_ROOMS
-    Column {
+    val calendarColors = WeMeetTheme.extras.calendar
+    Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -90,7 +93,7 @@ fun CalendarPrimaryToolbar(
                         HorizontalDivider(
                             thickness = Dimens.BorderEmphasis,
                             color = if (selected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.surface,
+                            else calendarColors.gridLine,
                         )
                     }
                 }
@@ -115,6 +118,6 @@ fun CalendarPrimaryToolbar(
                 )
             }
         }
-        HorizontalDivider()
+        HorizontalDivider(color = calendarColors.gridLine)
     }
 }

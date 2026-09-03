@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -29,7 +28,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.calendar.EventUi
-import com.we.meet.ui.calendar.parseCalendarColor
+import com.we.meet.ui.calendar.calendarEventColors
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -283,16 +282,20 @@ fun ThreeDayTimelineView(
             contentKey = renderedAnchor,
             columnHeader = { i ->
                 val date = days[i]
+                val dateEvents = eventsByDay[date].orEmpty()
+                val indicatorColor = if (dateEvents.isEmpty()) {
+                    null
+                } else {
+                    calendarEventColors(
+                        dateEvents.firstOrNull { !it.calendarColor.isNullOrBlank() }
+                            ?.calendarColor,
+                    ).accent
+                }
                 WeekDayHeader(
                     date = date,
                     isToday = date == today,
                     isAnchor = date == renderedAnchor,
-                    indicatorColor = eventsByDay[date]
-                        ?.takeIf { it.isNotEmpty() }
-                        ?.firstNotNullOfOrNull { parseCalendarColor(it.calendarColor) }
-                        ?: MaterialTheme.colorScheme.tertiary.takeIf {
-                            eventsByDay[date]?.isNotEmpty() == true
-                        },
+                    indicatorColor = indicatorColor,
                     onClick = { onDayClick(date) },
                 )
             },

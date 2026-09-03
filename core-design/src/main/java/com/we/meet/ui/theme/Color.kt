@@ -144,6 +144,18 @@ val LightCalendarNowLine = Color(0xFFEF4444)
 val LightCalendarConflict = Color(0xFFDC2626)
 val LightCalendarReminder = Color(0xFFFF8800)
 
+// 日历页面层级角色。全部复用 Color System 的 Material surface/on-surface
+// 基础值，业务视图只消费语义名称，不再现场拼透明黑或描边灰。
+val LightCalendarGridBackground = LightSurface
+val LightCalendarGridLine = LightOutlineVariant
+val LightCalendarNonWorkingSurface = LightSurfaceContainerLow
+val LightCalendarUnavailableSurface = LightSurfaceContainerHigh
+val LightCalendarBusyContainer = LightSurfaceContainerHighest
+val LightCalendarPastEventContainer = LightSurfaceContainerLow
+val LightCalendarStatusBadgeContainer = LightSurface
+val LightCalendarEventContent = LightOnSurface
+val LightCalendarEventSupportingContent = LightOnSurfaceVariant
+
 /**
  * 压在提醒橙**实底**上的前景(消息列表提醒行的日历图标)。
  *
@@ -169,6 +181,15 @@ val LightCalendarReminderText = Color(0xFF9A5200)
 val DarkCalendarNowLine = Color(0xFFFF7A7A)
 val DarkCalendarConflict = Color(0xFFF87171)
 val DarkCalendarReminder = Color(0xFFFFA640)
+val DarkCalendarGridBackground = DarkSurface
+val DarkCalendarGridLine = DarkOutlineVariant
+val DarkCalendarNonWorkingSurface = DarkSurfaceContainerLowest
+val DarkCalendarUnavailableSurface = DarkSurfaceContainerHigh
+val DarkCalendarBusyContainer = DarkSurfaceContainerHighest
+val DarkCalendarPastEventContainer = DarkSurfaceContainer
+val DarkCalendarStatusBadgeContainer = DarkSurface
+val DarkCalendarEventContent = DarkOnSurface
+val DarkCalendarEventSupportingContent = DarkOnSurfaceVariant
 
 val DarkRsvpAccepted = Color(0xFF86EFAC)
 val DarkRsvpAcceptedText = Color(0xFF86EFAC)

@@ -3,6 +3,7 @@ package com.we.meet.ui.calendar
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -241,7 +242,11 @@ fun CalendarTabScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // 首页只保留年月跳转、今天和日历/会议室主 Tab；视图切换位于管理页。
             CalendarHeader(
@@ -645,7 +650,11 @@ private fun CalendarHeader(
     onShowMeetingRooms: () -> Unit,
     onOpenManagement: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface),
+    ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -709,20 +718,25 @@ private fun CalendarDayStrip(
     today: LocalDate,
     onSelectDate: (LocalDate) -> Unit,
 ) {
-    val fallbackIndicator = MaterialTheme.colorScheme.tertiary
     CalendarWeekDateStrip(
         selectedDate = selectedDate,
         firstDayOfWeek = firstDayOfWeek,
         onSelectDate = onSelectDate,
         today = today,
         eventIndicatorColor = { date ->
-            eventsByDay[date]
-                ?.takeIf { it.isNotEmpty() }
-                ?.firstNotNullOfOrNull { parseCalendarColor(it.calendarColor) }
-                ?: fallbackIndicator.takeIf { eventsByDay[date]?.isNotEmpty() == true }
+            val events = eventsByDay[date].orEmpty()
+            if (events.isEmpty()) {
+                null
+            } else {
+                calendarEventColors(
+                    events.firstOrNull { !it.calendarColor.isNullOrBlank() }
+                        ?.calendarColor,
+                ).accent
+            }
         },
+        modifier = Modifier.background(WeMeetTheme.extras.calendar.gridBackground),
     )
-    HorizontalDivider()
+    HorizontalDivider(color = WeMeetTheme.extras.calendar.gridLine)
 }
 
 @Composable
@@ -745,7 +759,8 @@ private fun MonthGrid(
     val todayDescription = stringResource(R.string.calendar_today)
     val eventsDescription = stringResource(R.string.calendar_has_events)
 
-    Column(modifier = modifier) {
+    val calendarColors = WeMeetTheme.extras.calendar
+    Column(modifier = modifier.background(calendarColors.gridBackground)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -761,7 +776,7 @@ private fun MonthGrid(
                 )
             }
         }
-        HorizontalDivider()
+        HorizontalDivider(color = calendarColors.gridLine)
         repeat(6) { week ->
             Row(
                 modifier = Modifier
@@ -774,6 +789,15 @@ private fun MonthGrid(
                     val isSelected = date == selected
                     val isToday = date == today
                     val hasEvents = eventsByDay[date]?.isNotEmpty() == true
+                    val eventIndicator = if (hasEvents) {
+                        calendarEventColors(
+                            eventsByDay[date]
+                                ?.firstOrNull { !it.calendarColor.isNullOrBlank() }
+                                ?.calendarColor,
+                        ).accent
+                    } else {
+                        null
+                    }
                     val dateDescription = buildList {
                         add(dateFormatter.format(date))
                         if (isToday) add(todayDescription)
@@ -837,9 +861,8 @@ private fun MonthGrid(
                                         color = if (isSelected) {
                                             MaterialTheme.colorScheme.onPrimary
                                         } else {
-                                            eventsByDay[date]?.firstNotNullOfOrNull {
-                                                parseCalendarColor(it.calendarColor)
-                                            } ?: MaterialTheme.colorScheme.tertiary
+                                            eventIndicator
+                                                ?: MaterialTheme.colorScheme.primary
                                         },
                                         shape = CircleShape,
                                     ),
@@ -867,6 +890,8 @@ internal fun AgendaCard(
     // 色条表示日历归属,回复状态由 ✓/…/?/× 徽标表示;拒绝再加删除线。
     val visual = rsvpVisualOf(event.myRsvp)
     val declined = visual == RsvpVisual.DECLINED
+    val calendarColors = WeMeetTheme.extras.calendar
+    val eventColors = calendarEventColors(event.calendarColor)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -880,10 +905,15 @@ internal fun AgendaCard(
             // 页面底上,等于向页面底混合 50%,卡片自然退后,文字保持原色。
             .background(
                 if (dimmed) {
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    calendarColors.pastEventContainer
                 } else {
-                    MaterialTheme.colorScheme.surfaceVariant
+                    eventColors.container
                 },
+            )
+            .border(
+                Dimens.DividerThin,
+                calendarColors.gridLine,
+                RoundedCornerShape(Dimens.CornerM),
             )
             .clickable(onClick = onClick),
     ) {
@@ -892,8 +922,7 @@ internal fun AgendaCard(
                 .width(Dimens.Calendar.AgendaAccentBarWidth)
                 .fillMaxHeight()
                 .background(
-                    parseCalendarColor(event.calendarColor)
-                        ?: MaterialTheme.colorScheme.primary,
+                    eventColors.accent,
                 ),
         )
         Box(
@@ -934,7 +963,7 @@ internal fun AgendaCard(
                         fontWeight = FontWeight.Medium,
                         color = if (declined) {
                             rsvpTextColor(RsvpVisual.DECLINED)
-                        } else MaterialTheme.colorScheme.onSurface,
+                        } else eventColors.content,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         textDecoration = if (event.cancelled || declined) {
@@ -945,7 +974,7 @@ internal fun AgendaCard(
                         Text(
                             text = organizer,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = eventColors.supportingContent,
                             maxLines = 1,
                         )
                     }

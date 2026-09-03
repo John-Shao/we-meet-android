@@ -72,7 +72,7 @@ import androidx.compose.ui.unit.IntOffset
 import com.we.meet.ui.calendar.EventUi
 import com.we.meet.ui.calendar.RsvpVisual
 import com.we.meet.ui.calendar.RsvpStatusBadge
-import com.we.meet.ui.calendar.parseCalendarColor
+import com.we.meet.ui.calendar.calendarEventColors
 import com.we.meet.ui.calendar.rsvpStatusLabel
 import com.we.meet.ui.calendar.rsvpTextColor
 import com.we.meet.ui.calendar.rsvpVisualOf
@@ -307,10 +307,12 @@ fun HourRail(
 ) {
     val rangeMinutes = (visibleEndMin - visibleStartMin).coerceAtLeast(DRAFT_MIN_DURATION)
     val labels = hourRailLabelMinutes(visibleStartMin, visibleEndMin)
+    val calendarColors = WeMeetTheme.extras.calendar
     Box(
         modifier = modifier
             .width(HOUR_RAIL_WIDTH)
-            .height(hourHeight * (rangeMinutes / 60f)),
+            .height(hourHeight * (rangeMinutes / 60f))
+            .background(calendarColors.gridBackground),
     ) {
         labels.forEach { min ->
             Text(
@@ -339,7 +341,7 @@ fun HourRail(
                         )
                         .fillMaxWidth()
                         .centerOnAnchorY()
-                        .background(MaterialTheme.colorScheme.surface),
+                        .background(calendarColors.gridBackground),
                 )
             }
     }
@@ -435,14 +437,14 @@ fun TimelineScaffold(
     val rangeStart = visibleStartMin.coerceIn(0, 24 * 60 - DRAFT_MIN_DURATION)
     val rangeEnd = visibleEndMin.coerceIn(rangeStart + DRAFT_MIN_DURATION, 24 * 60)
     val rangeMinutes = rangeEnd - rangeStart
-    val nowLineColor = WeMeetTheme.extras.calendar.nowLine
-    val selectionConflictColor = WeMeetTheme.extras.calendar.conflict
-    val gridLine = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
-    val offWorkShade = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.03f)
-    val busyColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f)
+    val calendarColors = WeMeetTheme.extras.calendar
+    val nowLineColor = calendarColors.nowLine
+    val selectionConflictColor = calendarColors.conflict
+    val gridLine = calendarColors.gridLine
+    val offWorkShade = calendarColors.nonWorkingSurface
+    val busyColor = calendarColors.busyContainer
     // 色相只表示日历/用户归属;RSVP 由图形徽标表示。忙闲块(label == null)
     // 没有日历归属,继续使用中性 busyColor。
-    val calendarFillAlpha = if (WeMeetTheme.isDark) 0.24f else 0.14f
     // 短块「标题,时间」分隔符:中文全角逗号(对齐 Web),其他语言半角。
     val titleTimeSep = if (Locale.getDefault().language == "zh") "，" else ", "
     val busyA11yLabel = stringResource(R.string.freebusy_busy)
@@ -867,6 +869,7 @@ fun TimelineScaffold(
                         Canvas(
                             modifier = Modifier
                                 .fillMaxSize()
+                                .background(calendarColors.gridBackground)
                                 .pointerInput(n, hourHeightPx, colWidthPx, columns) {
                                     detectTapGestures { off ->
                                         val col =
@@ -949,8 +952,7 @@ fun TimelineScaffold(
                                         .width(colWidth)
                                         .fillMaxHeight()
                                         .background(
-                                            MaterialTheme.colorScheme.onSurface
-                                                .copy(alpha = 0.06f),
+                                            calendarColors.unavailableSurface,
                                         ),
                                 )
                             }
@@ -968,9 +970,8 @@ fun TimelineScaffold(
                                 // RSVP 使用 ✓/…/?/× 徽标,拒绝额外保留删除线。
                                 val visual = rsvpVisualOf(b.rsvp)
                                 val declined = visual == RsvpVisual.DECLINED
-                                val calendarAccent =
-                                    parseCalendarColor(b.calendarColor)
-                                        ?: MaterialTheme.colorScheme.primary
+                                val eventColors = calendarEventColors(b.calendarColor)
+                                val calendarAccent = eventColors.accent
                                 // 正在被拖走的块:原位留一层虚影,落点画预览。
                                 val ghost = movePreview?.key == b.key
                                 /**
@@ -985,7 +986,6 @@ fun TimelineScaffold(
                                  * 底离文字更远了,对比度反而升到 6.8:1 / 8.0:1。
                                  * 归属色条不跟着压,确保不同日历仍可辨识。
                                  */
-                                val fillDim = if (b.dimmed) 0.5f else 1f
                                 // 长按选中态:主色描边提示「这块现在可拖」。
                                 val picked = b.key == selectedBlockKey && b.movable
                                 val blockDescription = buildList {
@@ -1051,15 +1051,10 @@ fun TimelineScaffold(
                                         .clip(RoundedCornerShape(Dimens.CornerXs))
                                         .background(
                                             color = when {
-                                                b.label == null -> busyColor.copy(
-                                                    alpha = busyColor.alpha * fillDim,
-                                                )
-                                                b.faded -> calendarAccent.copy(
-                                                    alpha = calendarFillAlpha * 0.45f * fillDim,
-                                                )
-                                                else -> calendarAccent.copy(
-                                                    alpha = calendarFillAlpha * fillDim,
-                                                )
+                                                b.label == null -> busyColor
+                                                b.faded || b.dimmed ->
+                                                    calendarColors.pastEventContainer
+                                                else -> eventColors.container
                                             },
                                         )
                                         // 未回复:斜纹 + 虚线框(飞书同款「还没定」)。
@@ -1116,7 +1111,7 @@ fun TimelineScaffold(
                                                 val fg = if (declined) {
                                                     rsvpTextColor(RsvpVisual.DECLINED)
                                                 } else {
-                                                    MaterialTheme.colorScheme.onSurface
+                                                    eventColors.content
                                                 }
                                                 // 拒绝与取消同样划掉:两者都是「这场我不去」。
                                                 val strike =
@@ -1144,7 +1139,7 @@ fun TimelineScaffold(
                                                         Text(
                                                             text = b.timeLabel!!,
                                                             style = WeMeetTextStyles.LabelMicro,
-                                                            color = fg.copy(alpha = 0.8f),
+                                                            color = eventColors.supportingContent,
                                                             maxLines = 1,
                                                             overflow = TextOverflow.Ellipsis,
                                                             textDecoration = strike,
@@ -1169,7 +1164,7 @@ fun TimelineScaffold(
                                         Text(
                                             text = b.timeLabel,
                                             style = WeMeetTextStyles.LabelMicro,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            color = calendarColors.eventSupportingContent,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                             modifier = Modifier.padding(
@@ -1224,9 +1219,7 @@ fun TimelineScaffold(
                                     .height(mvHeight)
                                     .padding(horizontal = Dimens.Calendar.ChipInset)
                                     .clip(RoundedCornerShape(Dimens.CornerXs))
-                                    .background(
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-                                    )
+                                    .background(calendarColors.selectionContainer)
                                     .border(
                                         Dimens.BorderThin,
                                         MaterialTheme.colorScheme.primary,
@@ -1237,7 +1230,7 @@ fun TimelineScaffold(
                                     text = "${fmtMin(mv.startMin)} – ${fmtMin(mv.endMin)}",
                                     style = WeMeetTextStyles.LabelTiny,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    color = calendarColors.onSelectionContainer,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
@@ -1256,6 +1249,12 @@ fun TimelineScaffold(
                             val draftAccent = if (draftConflict) {
                                 selectionConflictColor
                             } else MaterialTheme.colorScheme.primary
+                            val draftContainer = if (draftConflict) {
+                                calendarColors.conflictContainer
+                            } else calendarColors.selectionContainer
+                            val draftContent = if (draftConflict) {
+                                calendarColors.onConflictContainer
+                            } else calendarColors.onSelectionContainer
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
@@ -1264,9 +1263,7 @@ fun TimelineScaffold(
                                     .height(dHeight)
                                     .padding(horizontal = Dimens.Calendar.ChipInset)
                                     .clip(RoundedCornerShape(Dimens.CornerS))
-                                    .background(
-                                        draftAccent.copy(alpha = 0.12f),
-                                    )
+                                    .background(draftContainer)
                                     .border(
                                         Dimens.BorderThin,
                                         draftAccent,
@@ -1276,7 +1273,7 @@ fun TimelineScaffold(
                                 Text(
                                     text = draftLabel,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = draftAccent,
+                                    color = draftContent,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.padding(horizontal = Dimens.SpaceXxs),
@@ -1337,6 +1334,9 @@ fun TimelineScaffold(
                             val selAccent = if (selectionConflict) {
                                 selectionConflictColor
                             } else MaterialTheme.colorScheme.primary
+                            val selContainer = if (selectionConflict) {
+                                calendarColors.conflictContainer
+                            } else calendarColors.selectionContainer
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -1344,7 +1344,7 @@ fun TimelineScaffold(
                                     .height(selHeight)
                                     .padding(horizontal = Dimens.BorderThin)
                                     .background(
-                                        color = selAccent.copy(alpha = 0.18f),
+                                        color = selContainer,
                                         shape = RoundedCornerShape(Dimens.CornerXs),
                                     )
                                     .then(

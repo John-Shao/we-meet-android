@@ -1,7 +1,11 @@
 package com.we.meet.ui.calendar
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -54,7 +58,7 @@ fun rsvpStatusLabel(visual: RsvpVisual): String = stringResource(
     },
 )
 
-/** App 日历统一使用无圆圈底的 RSVP glyph;contentDescription 补足文字语义。 */
+/** App 日历统一使用带中性承载底的 RSVP glyph;contentDescription 补足文字语义。 */
 @Composable
 fun RsvpStatusBadge(
     visual: RsvpVisual,
@@ -67,17 +71,25 @@ fun RsvpStatusBadge(
         RsvpVisual.TENTATIVE -> "?"
         RsvpVisual.DECLINED -> "×"
     }
-    Box(
-        contentAlignment = Alignment.Center,
+    val calendarColors = WeMeetTheme.extras.calendar
+    Surface(
+        color = calendarColors.statusBadgeContainer,
+        shape = CircleShape,
+        border = BorderStroke(Dimens.DividerThin, calendarColors.gridLine),
         modifier = modifier
-            .size(Dimens.Calendar.RsvpGlyphSize)
+            .size(Dimens.Calendar.RsvpBadgeSize)
             .semantics { contentDescription = label },
     ) {
-        Text(
-            text = glyph,
-            color = rsvpTextColor(visual),
-            style = WeMeetTextStyles.LabelMicro,
-            maxLines = 1,
-        )
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            Text(
+                text = glyph,
+                color = rsvpTextColor(visual),
+                style = WeMeetTextStyles.LabelMicro,
+                maxLines = 1,
+            )
+        }
     }
 }

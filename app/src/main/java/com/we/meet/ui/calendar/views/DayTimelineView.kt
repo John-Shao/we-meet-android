@@ -46,11 +46,10 @@ import com.we.meet.R
 import com.we.meet.ui.calendar.EventUi
 import com.we.meet.ui.calendar.RsvpStatusBadge
 import com.we.meet.ui.calendar.RsvpVisual
-import com.we.meet.ui.calendar.parseCalendarColor
+import com.we.meet.ui.calendar.calendarEventColors
 import com.we.meet.ui.calendar.rsvpTextColor
 import com.we.meet.ui.calendar.rsvpVisualOf
 import com.we.meet.ui.theme.Dimens
-import com.we.meet.ui.theme.WeMeetTheme
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
@@ -322,8 +321,7 @@ private fun DayAllDayEvents(
         events.forEach { event ->
             val visual = rsvpVisualOf(event.myRsvp)
             val declined = visual == RsvpVisual.DECLINED
-            val calendarAccent = parseCalendarColor(event.calendarColor)
-                ?: MaterialTheme.colorScheme.primary
+            val eventColors = calendarEventColors(event.calendarColor)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -331,14 +329,14 @@ private fun DayAllDayEvents(
                     .height(IntrinsicSize.Min)
                     .padding(vertical = Dimens.Calendar.ChipInset)
                     .clip(RoundedCornerShape(Dimens.CornerXs))
-                    .background(calendarAccent.copy(alpha = if (WeMeetTheme.isDark) 0.24f else 0.14f))
+                    .background(eventColors.container)
                     .clickable { onEventClick(event.id) }
             ) {
                 androidx.compose.foundation.layout.Box(
                     modifier = Modifier
                         .width(Dimens.Calendar.BlockAccentBarWidth)
                         .fillMaxHeight()
-                        .background(calendarAccent),
+                        .background(eventColors.accent),
                 )
                 Spacer(Modifier.width(Dimens.SpaceXs))
                 Text(
@@ -347,7 +345,7 @@ private fun DayAllDayEvents(
                     color = if (declined) {
                         rsvpTextColor(RsvpVisual.DECLINED)
                     } else {
-                        MaterialTheme.colorScheme.onSurface
+                        eventColors.content
                     },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

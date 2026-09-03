@@ -2,6 +2,7 @@ package com.we.meet.ui.theme
 
 import androidx.compose.ui.graphics.Color
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.max
@@ -35,10 +36,16 @@ class ColorContrastTest {
         )
         assertTextPair("neutral container", LightOnNeutralContainer, LightNeutralContainer)
 
-        assertTextPair("RSVP accepted", LightRsvpAcceptedText, LightSurface)
-        assertTextPair("RSVP needs action", LightRsvpNeedsText, LightSurface)
-        assertTextPair("RSVP tentative", LightRsvpTentativeText, LightSurface)
-        assertTextPair("RSVP declined", LightRsvpDeclinedText, LightSurface)
+        assertTextPair("RSVP accepted", LightRsvpAcceptedText, LightCalendarStatusBadgeContainer)
+        assertTextPair("RSVP needs action", LightRsvpNeedsText, LightCalendarStatusBadgeContainer)
+        assertTextPair("RSVP tentative", LightRsvpTentativeText, LightCalendarStatusBadgeContainer)
+        assertTextPair("RSVP declined", LightRsvpDeclinedText, LightCalendarStatusBadgeContainer)
+        assertTextPair("calendar event", LightCalendarEventContent, LightCalendarGridBackground)
+        assertTextPair(
+            "calendar event supporting",
+            LightCalendarEventSupportingContent,
+            LightCalendarGridBackground,
+        )
         assertTextPair("out-of-month day", LightCalendarOutOfMonthDay, LightBackground)
         assertTextPair("reminder label", LightCalendarReminderText, Color(0xFFFCECDA))
         assertNonTextPair("reminder icon", CalendarOnReminder, LightCalendarReminder)
@@ -69,10 +76,16 @@ class ColorContrastTest {
         )
         assertTextPair("neutral container", DarkOnNeutralContainer, DarkNeutralContainer)
 
-        assertTextPair("RSVP accepted", DarkRsvpAcceptedText, DarkSurface)
-        assertTextPair("RSVP needs action", DarkRsvpNeedsText, DarkSurface)
-        assertTextPair("RSVP tentative", DarkRsvpTentativeText, DarkSurface)
-        assertTextPair("RSVP declined", DarkRsvpDeclinedText, DarkSurface)
+        assertTextPair("RSVP accepted", DarkRsvpAcceptedText, DarkCalendarStatusBadgeContainer)
+        assertTextPair("RSVP needs action", DarkRsvpNeedsText, DarkCalendarStatusBadgeContainer)
+        assertTextPair("RSVP tentative", DarkRsvpTentativeText, DarkCalendarStatusBadgeContainer)
+        assertTextPair("RSVP declined", DarkRsvpDeclinedText, DarkCalendarStatusBadgeContainer)
+        assertTextPair("calendar event", DarkCalendarEventContent, DarkCalendarGridBackground)
+        assertTextPair(
+            "calendar event supporting",
+            DarkCalendarEventSupportingContent,
+            DarkCalendarGridBackground,
+        )
         assertTextPair("out-of-month day", DarkCalendarOutOfMonthDay, DarkBackground)
         assertNonTextPair("reminder icon", CalendarOnReminder, DarkCalendarReminder)
     }
@@ -94,6 +107,14 @@ class ColorContrastTest {
         assertEquals(DarkDanger, DarkColors.error)
         assertEquals(DarkInverseSurface, DarkColors.inverseSurface)
         assertEquals(DarkSurfaceContainerLow, DarkColors.surfaceContainerLow)
+    }
+
+    @Test
+    fun calendarSurfacesExposeVisibleHierarchy() {
+        assertNotEquals(LightCalendarGridBackground, LightCalendarNonWorkingSurface)
+        assertNotEquals(LightCalendarGridBackground, LightCalendarUnavailableSurface)
+        assertNotEquals(DarkCalendarGridBackground, DarkCalendarNonWorkingSurface)
+        assertNotEquals(DarkCalendarGridBackground, DarkCalendarUnavailableSurface)
     }
 
     private fun assertTextPair(name: String, foreground: Color, background: Color) {

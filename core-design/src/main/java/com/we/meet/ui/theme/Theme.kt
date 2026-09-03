@@ -335,6 +335,30 @@ private val SharedRoomColors = RoomColors(
  * 标注,不是「点下去会造成损失」。语义不同,不共用 token。
  */
 data class CalendarColors(
+    /** 工作时间网格的基础 surface。 */
+    val gridBackground: Color,
+    /** 时间与日期分隔线；仅表达结构，不承担文字语义。 */
+    val gridLine: Color,
+    /** 工作时间以外的区域底色。 */
+    val nonWorkingSurface: Color,
+    /** 不可用日期/成员列的底色。 */
+    val unavailableSurface: Color,
+    /** 不公开标题的忙碌时段中性底色。 */
+    val busyContainer: Color,
+    /** 已结束、已取消日程的退后层级底色。 */
+    val pastEventContainer: Color,
+    /** RSVP glyph 的承载底，隔离用户日历色。 */
+    val statusBadgeContainer: Color,
+    /** 日程标题前景。 */
+    val eventContent: Color,
+    /** 日程时间、组织者等辅助前景。 */
+    val eventSupportingContent: Color,
+    /** 新建、拖动和忙闲选择框的品牌浅底及其前景。 */
+    val selectionContainer: Color,
+    val onSelectionContainer: Color,
+    /** 时间冲突选择框的浅底及其前景。 */
+    val conflictContainer: Color,
+    val onConflictContainer: Color,
     /** 「当前时间」横线。 */
     val nowLine: Color,
     /** 时间冲突标记(忙闲对比的红点、网格里的冲突选区)。 */
@@ -376,6 +400,19 @@ private val LightExtras = WeMeetExtras(
         declinedText = LightRsvpDeclinedText,
     ),
     calendar = CalendarColors(
+        gridBackground = LightCalendarGridBackground,
+        gridLine = LightCalendarGridLine,
+        nonWorkingSurface = LightCalendarNonWorkingSurface,
+        unavailableSurface = LightCalendarUnavailableSurface,
+        busyContainer = LightCalendarBusyContainer,
+        pastEventContainer = LightCalendarPastEventContainer,
+        statusBadgeContainer = LightCalendarStatusBadgeContainer,
+        eventContent = LightCalendarEventContent,
+        eventSupportingContent = LightCalendarEventSupportingContent,
+        selectionContainer = LightPrimaryContainer,
+        onSelectionContainer = LightOnPrimaryContainer,
+        conflictContainer = LightDangerContainer,
+        onConflictContainer = LightOnDangerContainer,
         outOfMonthDay = LightCalendarOutOfMonthDay,
         nowLine = LightCalendarNowLine,
         conflict = LightCalendarConflict,
@@ -419,6 +456,19 @@ private val DarkExtras = WeMeetExtras(
         declinedText = DarkRsvpDeclinedText,
     ),
     calendar = CalendarColors(
+        gridBackground = DarkCalendarGridBackground,
+        gridLine = DarkCalendarGridLine,
+        nonWorkingSurface = DarkCalendarNonWorkingSurface,
+        unavailableSurface = DarkCalendarUnavailableSurface,
+        busyContainer = DarkCalendarBusyContainer,
+        pastEventContainer = DarkCalendarPastEventContainer,
+        statusBadgeContainer = DarkCalendarStatusBadgeContainer,
+        eventContent = DarkCalendarEventContent,
+        eventSupportingContent = DarkCalendarEventSupportingContent,
+        selectionContainer = DarkPrimaryContainer,
+        onSelectionContainer = DarkOnPrimaryContainer,
+        conflictContainer = DarkDangerContainer,
+        onConflictContainer = DarkOnDangerContainer,
         outOfMonthDay = DarkCalendarOutOfMonthDay,
         nowLine = DarkCalendarNowLine,
         conflict = DarkCalendarConflict,

@@ -73,7 +73,7 @@ internal fun CalendarWeekDateStrip(
     onSelectDate: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
     today: LocalDate? = null,
-    eventIndicatorColor: (LocalDate) -> Color? = { null },
+    eventIndicatorColor: @Composable (LocalDate) -> Color? = { null },
     onWeekSwipe: ((Long) -> Unit)? = null,
 ) {
     if (onWeekSwipe == null) {
@@ -236,7 +236,7 @@ private fun CalendarWeekDateStripPage(
     firstDayOfWeek: DayOfWeek,
     onSelectDate: (LocalDate) -> Unit,
     today: LocalDate?,
-    eventIndicatorColor: (LocalDate) -> Color?,
+    eventIndicatorColor: @Composable (LocalDate) -> Color?,
     modifier: Modifier = Modifier,
 ) {
     val days = remember(selectedDate, firstDayOfWeek) {

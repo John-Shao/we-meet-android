@@ -102,6 +102,7 @@ import com.we.meet.ui.calendar.views.THREE_DAY_VIEW_DAYS
 import com.we.meet.ui.meetingroom.meetingRoomMetadata
 import com.we.meet.ui.meetingroom.meetingRoomScheduleTitle
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -403,17 +404,22 @@ private fun CalendarManagementList(
 
 @Composable
 fun CalendarAvatar(name: String, colorValue: String?, enabled: Boolean = true) {
-    val color = parseCalendarColor(colorValue) ?: MaterialTheme.colorScheme.primary
+    val eventColors = calendarEventColors(colorValue)
+    val calendarColors = WeMeetTheme.extras.calendar
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .size(Dimens.AvatarM)
             .clip(CircleShape)
-            .background(color.copy(alpha = if (enabled) 0.18f else 0.08f)),
+            .background(
+                if (enabled) eventColors.container
+                else calendarColors.pastEventContainer,
+            ),
     ) {
         Text(
             name.trim().take(1).ifBlank { "·" },
-            color = if (enabled) color else MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (enabled) eventColors.accent
+            else calendarColors.eventSupportingContent,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
@@ -460,7 +466,7 @@ fun CalendarColorSheet(selected: String, onDismiss: () -> Unit, onSelect: (Strin
                                 .background(color),
                         )
                         if (value.equals(selected, ignoreCase = true)) {
-                            Text("✓", color = MaterialTheme.colorScheme.onPrimary)
+                            Text("✓", color = calendarSwatchContentColor(value))
                         }
                     }
                 }
