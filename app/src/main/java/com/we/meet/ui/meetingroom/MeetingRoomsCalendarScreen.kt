@@ -100,6 +100,7 @@ import com.we.meet.ui.calendar.views.dayPagerDays
 import com.we.meet.ui.calendar.views.draftSlotAt
 import com.we.meet.ui.calendar.views.isHorizontalDateSwipe
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -812,6 +813,7 @@ private fun RoomScheduleToolbar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXs),
     ) {
         IconButton(
@@ -861,6 +863,7 @@ private fun RoomScheduleToolbar(
             }
         }
     }
+    HorizontalDivider(color = WeMeetTheme.extras.calendar.gridLine)
 
     if (showDatePicker) {
         val state = rememberDatePickerState(
