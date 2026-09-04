@@ -444,6 +444,7 @@ fun MainTabScreen(
                                 restoringArchivedTaskList = ui.navigationMutating,
                                 listGroups = ui.listGroups,
                                 taskGroups = ui.taskGroups,
+                                taskGroupMutating = ui.navigationMutating,
                                 selectedGroupId = ui.selectedGroupId,
                                 assignedCount = ui.navigationCounts.assigned,
                                 followingCount = ui.navigationCounts.following,
@@ -459,13 +460,15 @@ fun MainTabScreen(
                                     c.vm.selectGroup(it.id)
                                     taskNavScope.launch { taskNavDrawerState.close() }
                                 },
-                                onNewTaskGroup = {
-                                    c.onNewTaskGroup()
-                                    taskNavScope.launch { taskNavDrawerState.close() }
+                                onCreateTaskGroup = { name, onCreated ->
+                                    c.vm.createTaskGroup(name, onCreated = onCreated)
                                 },
-                                onManageTaskGroups = {
-                                    c.onManageTaskGroups()
-                                    taskNavScope.launch { taskNavDrawerState.close() }
+                                onRenameTaskGroup = { group, name, onRenamed ->
+                                    c.vm.renameTaskGroup(group, name, onRenamed)
+                                },
+                                onMoveTaskGroup = c.vm::moveTaskGroup,
+                                onDeleteTaskGroup = { group, onDeleted ->
+                                    c.vm.deleteTaskGroup(group, onDeleted)
                                 },
                                 onOpenActivity = {
                                     c.onOpenActivity()

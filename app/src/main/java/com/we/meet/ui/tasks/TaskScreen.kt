@@ -44,6 +44,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -143,6 +144,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -189,7 +191,7 @@ internal fun taskDetailToggleTestTag(done: Boolean) =
 
 private enum class TaskRecurrenceEndMode { Never, Date, Count }
 
-private data class TaskGroupInsertion(val list: TaskListItem?, val index: Int)
+private data class TaskGroupInsertion(val list: TaskListItem, val index: Int)
 
 private data class TaskListGroupInsertion(val index: Int)
 
@@ -241,9 +243,6 @@ fun TaskScreen(
     var showFilter by remember { mutableStateOf(false) }
     var showDisplaySettings by remember { mutableStateOf(false) }
     var showNewGroup by remember { mutableStateOf(false) }
-    var showTaskGroupManager by remember { mutableStateOf(false) }
-    var managedTaskGroupRenaming by remember { mutableStateOf<TaskGroupItem?>(null) }
-    var managedTaskGroupDeleting by remember { mutableStateOf<TaskGroupItem?>(null) }
     var showNewList by remember { mutableStateOf(false) }
     var groupActionTarget by remember { mutableStateOf<TaskListGroupItem?>(null) }
     var listGroupInsertion by remember { mutableStateOf<TaskListGroupInsertion?>(null) }
@@ -293,10 +292,6 @@ fun TaskScreen(
                 page = TaskPage.Activity
                 vm.refreshActivityFeed()
             },
-            onNewTaskGroup = {
-                taskGroupInsertion = TaskGroupInsertion(null, vm.ui.value.taskGroups.size)
-            },
-            onManageTaskGroups = { showTaskGroupManager = true },
             onNewGroup = { showNewGroup = true },
             onNewList = { showNewList = true },
             onGroupAction = { groupActionTarget = it },
@@ -413,9 +408,6 @@ fun TaskScreen(
                 onToggleDone = vm::toggleCompleted,
                 onTaskAction = { actionTarget = it },
                 onSectionAction = { sectionMenu = it },
-                onNewTaskGroup = {
-                    taskGroupInsertion = TaskGroupInsertion(null, ui.taskGroups.size)
-                },
             )
 
             TaskPage.Create -> CreateTaskPage(
@@ -587,49 +579,6 @@ fun TaskScreen(
         )
     }
 
-    if (showTaskGroupManager) {
-        CustomTaskGroupManagerDialog(
-            groups = ui.taskGroups,
-            saving = ui.navigationMutating,
-            onDismiss = { showTaskGroupManager = false },
-            onCreate = {
-                showTaskGroupManager = false
-                taskGroupInsertion = TaskGroupInsertion(null, ui.taskGroups.size)
-            },
-            onRename = {
-                showTaskGroupManager = false
-                managedTaskGroupRenaming = it
-            },
-            onDelete = {
-                showTaskGroupManager = false
-                managedTaskGroupDeleting = it
-            },
-            onMove = vm::moveTaskGroup,
-        )
-    }
-    managedTaskGroupRenaming?.let { group ->
-        RenameNavigationDialog(
-            initialName = group.name,
-            saving = ui.navigationMutating,
-            onDismiss = { managedTaskGroupRenaming = null },
-            onConfirm = { name ->
-                vm.renameTaskGroup(group, name)
-                managedTaskGroupRenaming = null
-            },
-        )
-    }
-    managedTaskGroupDeleting?.let { group ->
-        DeleteNavigationDialog(
-            message = stringResource(R.string.task_delete_task_group_confirm, group.name),
-            deleting = ui.navigationMutating,
-            onDismiss = { managedTaskGroupDeleting = null },
-            onConfirm = {
-                vm.deleteTaskGroup(group)
-                managedTaskGroupDeleting = null
-            },
-        )
-    }
-
     actionTarget?.let { target ->
         TaskActionSheet(
             task = target,
@@ -738,11 +687,8 @@ fun TaskScreen(
             saving = ui.navigationMutating,
             onDismiss = { taskGroupInsertion = null },
             onCreate = { name ->
-                val onCreated = { taskGroupInsertion = null }
-                if (target.list == null) {
-                    vm.createTaskGroup(name, target.index, onCreated)
-                } else {
-                    vm.createTaskGroup(target.list, name, target.index, onCreated)
+                vm.createTaskGroup(target.list, name, target.index) {
+                    taskGroupInsertion = null
                 }
             },
         )
@@ -1291,7 +1237,6 @@ private fun TaskListPage(
     onToggleDone: (TaskItem) -> Unit,
     onTaskAction: (TaskItem) -> Unit,
     onSectionAction: (TaskGroupItem) -> Unit,
-    onNewTaskGroup: () -> Unit,
 ) {
     val visible = tasks.visibleFor(view, TaskFilter(status = status), selectedList?.name)
     val visibleTaskIds = visible.mapTo(mutableSetOf(), TaskItem::id)
@@ -1417,18 +1362,6 @@ private fun TaskListPage(
                                     onLongClick = { onTaskAction(task) },
                                 )
                             }
-                        }
-                    }
-                }
-                if (grouping == TaskGrouping.Custom) {
-                    item {
-                        TextButton(
-                            onClick = onNewTaskGroup,
-                            modifier = Modifier.padding(horizontal = Dimens.ScreenPadding),
-                        ) {
-                            Icon(Icons.Filled.Add, null)
-                            Spacer(Modifier.width(Dimens.SpaceS))
-                            Text(stringResource(R.string.task_new_task_group))
                         }
                     }
                 }
@@ -1819,6 +1752,7 @@ fun TaskNavigationDrawer(
     restoringArchivedTaskList: Boolean,
     listGroups: List<TaskListGroupItem>,
     taskGroups: List<TaskGroupItem>,
+    taskGroupMutating: Boolean,
     selectedGroupId: String?,
     assignedCount: Int,
     followingCount: Int,
@@ -1828,8 +1762,10 @@ fun TaskNavigationDrawer(
     onDismiss: () -> Unit,
     onSelectView: (TaskView) -> Unit,
     onSelectTaskGroup: (TaskGroupItem) -> Unit,
-    onNewTaskGroup: () -> Unit,
-    onManageTaskGroups: () -> Unit,
+    onCreateTaskGroup: (String, () -> Unit) -> Unit,
+    onRenameTaskGroup: (TaskGroupItem, String, () -> Unit) -> Unit,
+    onMoveTaskGroup: (TaskGroupItem, Int) -> Unit,
+    onDeleteTaskGroup: (TaskGroupItem, () -> Unit) -> Unit,
     onOpenActivity: () -> Unit,
     onSelectList: (TaskListItem) -> Unit,
     onNewGroup: () -> Unit,
@@ -1841,7 +1777,11 @@ fun TaskNavigationDrawer(
 ) {
     var taskListSettingsExpanded by remember { mutableStateOf(false) }
     var showArchivedTaskLists by rememberSaveable { mutableStateOf(false) }
+    var creatingTaskGroup by rememberSaveable { mutableStateOf(false) }
+    var editingTaskGroupId by rememberSaveable { mutableStateOf<String?>(null) }
+    var deletingTaskGroupId by rememberSaveable { mutableStateOf<String?>(null) }
     val showArchivedTaskListsLabel = stringResource(R.string.task_show_archived_lists)
+    val orderedTaskGroups = taskGroups.sortedBy(TaskGroupItem::sortOrder)
     val displayedTaskLists = if (showArchivedTaskLists) {
         (taskLists + archivedTaskLists).distinctBy(TaskListItem::id)
     } else {
@@ -1940,20 +1880,31 @@ fun TaskNavigationDrawer(
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.weight(1f),
                             )
-                            IconButton(onClick = onManageTaskGroups) {
-                                Icon(
-                                    Icons.Outlined.Settings,
-                                    stringResource(R.string.task_manage_custom_groups),
-                                )
-                            }
-                            IconButton(onClick = onNewTaskGroup) {
+                            IconButton(
+                                onClick = {
+                                    creatingTaskGroup = true
+                                    editingTaskGroupId = null
+                                    deletingTaskGroupId = null
+                                },
+                                enabled = !taskGroupMutating && !creatingTaskGroup,
+                            ) {
                                 Icon(
                                     Icons.Filled.Add,
                                     stringResource(R.string.task_new_task_group),
                                 )
                             }
                         }
-                        if (taskGroups.isEmpty()) {
+                        if (creatingTaskGroup) {
+                            TaskGroupInlineEditor(
+                                initialValue = "",
+                                saving = taskGroupMutating,
+                                onCancel = { creatingTaskGroup = false },
+                                onSave = { name ->
+                                    onCreateTaskGroup(name) { creatingTaskGroup = false }
+                                },
+                            )
+                        }
+                        if (orderedTaskGroups.isEmpty() && !creatingTaskGroup) {
                             Text(
                                 stringResource(R.string.task_custom_groups_empty),
                                 modifier = Modifier.padding(
@@ -1964,12 +1915,53 @@ fun TaskNavigationDrawer(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         } else {
-                            taskGroups.sortedBy(TaskGroupItem::sortOrder).forEach { group ->
-                                CustomGroupDrawerItem(
-                                    group = group,
-                                    selected = selectedGroupId == group.id,
-                                    onClick = { onSelectTaskGroup(group) },
-                                )
+                            orderedTaskGroups.forEachIndexed { index, group ->
+                                when (group.id) {
+                                    editingTaskGroupId -> TaskGroupInlineEditor(
+                                        initialValue = group.name,
+                                        saving = taskGroupMutating,
+                                        onCancel = { editingTaskGroupId = null },
+                                        onSave = { name ->
+                                            onRenameTaskGroup(group, name) {
+                                                editingTaskGroupId = null
+                                            }
+                                        },
+                                    )
+
+                                    deletingTaskGroupId -> TaskGroupInlineDeleteConfirmation(
+                                        group = group,
+                                        deleting = taskGroupMutating,
+                                        onCancel = { deletingTaskGroupId = null },
+                                        onDelete = {
+                                            onDeleteTaskGroup(group) {
+                                                deletingTaskGroupId = null
+                                            }
+                                        },
+                                    )
+
+                                    else -> CustomGroupDrawerItem(
+                                        group = group,
+                                        selected = selectedGroupId == group.id,
+                                        mutating = taskGroupMutating,
+                                        canMoveUp = orderedTaskGroups.getOrNull(index - 1)
+                                            ?.canManage == true,
+                                        canMoveDown = orderedTaskGroups.getOrNull(index + 1)
+                                            ?.canManage == true,
+                                        onClick = { onSelectTaskGroup(group) },
+                                        onMoveUp = { onMoveTaskGroup(group, -1) },
+                                        onMoveDown = { onMoveTaskGroup(group, 1) },
+                                        onRename = {
+                                            creatingTaskGroup = false
+                                            deletingTaskGroupId = null
+                                            editingTaskGroupId = group.id
+                                        },
+                                        onDelete = {
+                                            creatingTaskGroup = false
+                                            editingTaskGroupId = null
+                                            deletingTaskGroupId = group.id
+                                        },
+                                    )
+                                }
                             }
                         }
                         HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM))
@@ -2091,8 +2083,16 @@ fun TaskNavigationDrawer(
 private fun CustomGroupDrawerItem(
     group: TaskGroupItem,
     selected: Boolean,
+    mutating: Boolean,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
     onClick: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    onRename: () -> Unit,
+    onDelete: () -> Unit,
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
     Surface(
         color = if (selected) {
             MaterialTheme.colorScheme.primaryContainer
@@ -2127,6 +2127,162 @@ private fun CustomGroupDrawerItem(
                 color = contentColor,
                 style = MaterialTheme.typography.labelMedium,
             )
+            if (group.canManage) {
+                Box {
+                    IconButton(
+                        onClick = { menuExpanded = true },
+                        enabled = !mutating,
+                    ) {
+                        Icon(
+                            Icons.Outlined.MoreHoriz,
+                            stringResource(R.string.task_more),
+                            tint = contentColor,
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.task_move_up)) },
+                            leadingIcon = { Icon(Icons.Outlined.ArrowUpward, null) },
+                            enabled = !mutating && canMoveUp,
+                            onClick = {
+                                menuExpanded = false
+                                onMoveUp()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.task_move_down)) },
+                            leadingIcon = { Icon(Icons.Outlined.ArrowDownward, null) },
+                            enabled = !mutating && canMoveDown,
+                            onClick = {
+                                menuExpanded = false
+                                onMoveDown()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.task_rename)) },
+                            leadingIcon = { Icon(Icons.Outlined.Edit, null) },
+                            enabled = !mutating,
+                            onClick = {
+                                menuExpanded = false
+                                onRename()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    stringResource(R.string.task_delete_navigation_item),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Filled.DeleteOutline,
+                                    null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                )
+                            },
+                            enabled = !mutating && group.canDelete,
+                            onClick = {
+                                menuExpanded = false
+                                onDelete()
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TaskGroupInlineEditor(
+    initialValue: String,
+    saving: Boolean,
+    onCancel: () -> Unit,
+    onSave: (String) -> Unit,
+) {
+    var value by remember(initialValue) { mutableStateOf(initialValue) }
+    val focusRequester = remember { FocusRequester() }
+    val submit = {
+        value.trim().takeIf(String::isNotEmpty)?.let(onSave)
+        Unit
+    }
+
+    LaunchedEffect(initialValue) { focusRequester.requestFocus() }
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(
+            start = Dimens.SpaceXl,
+            end = Dimens.SpaceM,
+            bottom = Dimens.SpaceS,
+        ),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = { value = it },
+            modifier = Modifier.weight(1f).focusRequester(focusRequester),
+            placeholder = { Text(stringResource(R.string.task_group_name_hint)) },
+            singleLine = true,
+            enabled = !saving,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { submit() }),
+        )
+        IconButton(onClick = onCancel, enabled = !saving) {
+            Icon(Icons.Filled.Close, stringResource(R.string.task_cancel))
+        }
+        IconButton(
+            onClick = submit,
+            enabled = !saving && value.isNotBlank(),
+        ) {
+            if (saving) {
+                CircularProgressIndicator(Modifier.size(Dimens.IconSmall))
+            } else {
+                Icon(Icons.Filled.Check, stringResource(R.string.common_save))
+            }
+        }
+    }
+}
+
+@Composable
+private fun TaskGroupInlineDeleteConfirmation(
+    group: TaskGroupItem,
+    deleting: Boolean,
+    onCancel: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceM),
+    ) {
+        Column(Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS)) {
+            Text(
+                stringResource(R.string.task_delete_task_group_confirm, group.name),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(onClick = onCancel, enabled = !deleting) {
+                    Text(stringResource(R.string.task_cancel))
+                }
+                TextButton(onClick = onDelete, enabled = !deleting) {
+                    if (deleting) {
+                        CircularProgressIndicator(Modifier.size(Dimens.IconSmall))
+                    } else {
+                        Text(
+                            stringResource(R.string.task_delete_navigation_item),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -4963,100 +5119,6 @@ private fun TaskGroupOrderDialog(
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !saving) {
                 Text(stringResource(R.string.task_cancel))
-            }
-        },
-    )
-}
-
-@Composable
-private fun CustomTaskGroupManagerDialog(
-    groups: List<TaskGroupItem>,
-    saving: Boolean,
-    onDismiss: () -> Unit,
-    onCreate: () -> Unit,
-    onRename: (TaskGroupItem) -> Unit,
-    onDelete: (TaskGroupItem) -> Unit,
-    onMove: (TaskGroupItem, Int) -> Unit,
-) {
-    val ordered = groups.sortedBy(TaskGroupItem::sortOrder)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.task_manage_custom_groups)) },
-        text = {
-            if (ordered.isEmpty()) {
-                Text(stringResource(R.string.task_custom_groups_empty))
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth()
-                        .heightIn(max = Dimens.SheetContentMaxHeight),
-                ) {
-                    itemsIndexed(ordered, key = { _, group -> group.id }) { index, group ->
-                        val previous = ordered.getOrNull(index - 1)
-                        val next = ordered.getOrNull(index + 1)
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(group.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text(
-                                    stringResource(
-                                        R.string.task_custom_group_task_count,
-                                        group.taskCount,
-                                    ),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            IconButton(
-                                onClick = { onMove(group, -1) },
-                                enabled = !saving && group.canManage && previous?.canManage == true,
-                            ) {
-                                Icon(
-                                    Icons.Outlined.ArrowUpward,
-                                    stringResource(R.string.task_move_up),
-                                )
-                            }
-                            IconButton(
-                                onClick = { onMove(group, 1) },
-                                enabled = !saving && group.canManage && next?.canManage == true,
-                            ) {
-                                Icon(
-                                    Icons.Outlined.ArrowDownward,
-                                    stringResource(R.string.task_move_down),
-                                )
-                            }
-                            IconButton(
-                                onClick = { onRename(group) },
-                                enabled = !saving && group.canManage,
-                            ) {
-                                Icon(
-                                    Icons.Outlined.Edit,
-                                    stringResource(R.string.task_rename),
-                                )
-                            }
-                            IconButton(
-                                onClick = { onDelete(group) },
-                                enabled = !saving && group.canManage && group.canDelete,
-                            ) {
-                                Icon(
-                                    Icons.Filled.DeleteOutline,
-                                    stringResource(R.string.task_delete),
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onCreate, enabled = !saving) {
-                Text(stringResource(R.string.task_new_task_group))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !saving) {
-                Text(stringResource(R.string.task_close))
             }
         },
     )

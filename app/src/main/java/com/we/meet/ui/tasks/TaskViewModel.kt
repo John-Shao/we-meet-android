@@ -1695,7 +1695,11 @@ class TaskViewModel(
         }
     }
 
-    fun renameTaskGroup(group: TaskGroupItem, name: String) {
+    fun renameTaskGroup(
+        group: TaskGroupItem,
+        name: String,
+        onRenamed: () -> Unit = {},
+    ) {
         if (!group.canManage || name.isBlank() || _ui.value.navigationMutating) return
         _ui.update { it.copy(navigationMutating = true, failure = null) }
         viewModelScope.launch {
@@ -1716,6 +1720,7 @@ class TaskViewModel(
                             },
                         )
                     }
+                    onRenamed()
                 },
                 onFailure = { navigationMutationFailed() },
             )
@@ -1754,7 +1759,10 @@ class TaskViewModel(
         }
     }
 
-    fun deleteTaskGroup(group: TaskGroupItem) {
+    fun deleteTaskGroup(
+        group: TaskGroupItem,
+        onDeleted: () -> Unit = {},
+    ) {
         if (!group.canManage || !group.canDelete || _ui.value.navigationMutating) return
         _ui.update { it.copy(navigationMutating = true, failure = null) }
         viewModelScope.launch {
@@ -1790,6 +1798,7 @@ class TaskViewModel(
                             },
                         )
                     }
+                    onDeleted()
                     refreshNavigation()
                     if (wasSelected) refresh()
                 },
