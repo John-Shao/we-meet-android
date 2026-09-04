@@ -37,20 +37,30 @@ object Dimens {
     val ScreenPadding = 16.dp
 
     // ---- Controls ----
+    /** Cross-client visible control scale; mirrors component.tokens.json. */
+    val ControlCompact = 32.dp
+    val ControlDefault = 40.dp
+    val ControlLarge = 48.dp
+
     /** Shared height for primary/full-width buttons across the app. */
     val ButtonHeight = 52.dp
 
     /** Google/Material minimum interactive target for accessibility. */
-    val MinTouchTarget = 48.dp
+    val MinTouchTarget = ControlLarge
 
     /** 底部弹层顶部标题栏的高度(消息、AI 等各 sheet 共用)。 */
     val SheetHeaderHeight = 40.dp
 
     // ---- Icons ----
+    /** Cross-client control glyph scale; Android may retain documented intermediate sizes. */
+    val ComponentIconSmall = 16.dp
+    val ComponentIconMedium = 20.dp
+    val ComponentIconLarge = 24.dp
+
     /** 徽标/角标内的小图标(画面块上的麦克风、举手)。 */
-    val IconTiny = 16.dp
+    val IconTiny = ComponentIconSmall
     val IconSmall = 18.dp
-    val IconMedium = 24.dp
+    val IconMedium = ComponentIconLarge
     val IconLarge = 28.dp
     /** 功能入口方块里那种大一号的图标。 */
     val IconXl = 32.dp

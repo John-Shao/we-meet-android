@@ -32,6 +32,17 @@ class FoundationTokensTest {
     }
 
     @Test
+    fun componentSizesMatchCrossClientContract() {
+        assertEquals(32f, Dimens.ControlCompact.value)
+        assertEquals(40f, Dimens.ControlDefault.value)
+        assertEquals(48f, Dimens.ControlLarge.value)
+        assertEquals(Dimens.ControlLarge, Dimens.MinTouchTarget)
+        assertEquals(16f, Dimens.ComponentIconSmall.value)
+        assertEquals(20f, Dimens.ComponentIconMedium.value)
+        assertEquals(24f, Dimens.ComponentIconLarge.value)
+    }
+
+    @Test
     fun shapeAndElevationScalesMatchCrossClientContract() {
         assertEquals(4f, Dimens.CornerXs.value)
         assertEquals(8f, Dimens.CornerS.value)
