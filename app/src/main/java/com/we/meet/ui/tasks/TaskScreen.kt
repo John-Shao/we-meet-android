@@ -1894,16 +1894,6 @@ fun TaskNavigationDrawer(
                                 )
                             }
                         }
-                        if (creatingTaskGroup) {
-                            TaskGroupInlineEditor(
-                                initialValue = "",
-                                saving = taskGroupMutating,
-                                onCancel = { creatingTaskGroup = false },
-                                onSave = { name ->
-                                    onCreateTaskGroup(name) { creatingTaskGroup = false }
-                                },
-                            )
-                        }
                         if (orderedTaskGroups.isEmpty() && !creatingTaskGroup) {
                             Text(
                                 stringResource(R.string.task_custom_groups_empty),
@@ -1963,6 +1953,16 @@ fun TaskNavigationDrawer(
                                     )
                                 }
                             }
+                        }
+                        if (creatingTaskGroup) {
+                            TaskGroupInlineEditor(
+                                initialValue = "",
+                                saving = taskGroupMutating,
+                                onCancel = { creatingTaskGroup = false },
+                                onSave = { name ->
+                                    onCreateTaskGroup(name) { creatingTaskGroup = false }
+                                },
+                            )
                         }
                         HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM))
                         Row(
