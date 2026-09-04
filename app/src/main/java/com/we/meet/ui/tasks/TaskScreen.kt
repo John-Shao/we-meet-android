@@ -1813,7 +1813,7 @@ private fun Avatar(
 @Composable
 fun TaskNavigationDrawer(
     selectedView: TaskView,
-    selectedList: String?,
+    selectedListId: String?,
     taskLists: List<TaskListItem>,
     listGroups: List<TaskListGroupItem>,
     taskGroups: List<TaskGroupItem>,
@@ -1857,11 +1857,29 @@ fun TaskNavigationDrawer(
                     contentPadding = PaddingValues(bottom = Dimens.SpaceXl),
                 ) {
                     item {
+                        Text(
+                            stringResource(R.string.task_views),
+                            modifier = Modifier.padding(
+                                horizontal = Dimens.SpaceXl,
+                                vertical = Dimens.SpaceS,
+                            ),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        DrawerItem(
+                            Icons.Outlined.TaskAlt,
+                            R.string.task_all_tasks,
+                            allCount.toString(),
+                            selected = selectedListId == null && selectedGroupId == null &&
+                                selectedView == TaskView.All,
+                        ) {
+                            onSelectView(TaskView.All)
+                        }
                         DrawerItem(
                             Icons.Outlined.PersonOutline,
                             R.string.task_assigned_to_me,
                             assignedCount.toString(),
-                            selected = selectedList == null && selectedGroupId == null &&
+                            selected = selectedListId == null && selectedGroupId == null &&
                                 selectedView == TaskView.Assigned,
                         ) {
                             onSelectView(TaskView.Assigned)
@@ -1870,10 +1888,19 @@ fun TaskNavigationDrawer(
                             Icons.Outlined.BookmarkBorder,
                             R.string.task_following,
                             followingCount.toString(),
-                            selected = selectedList == null && selectedGroupId == null &&
+                            selected = selectedListId == null && selectedGroupId == null &&
                                 selectedView == TaskView.Following,
                         ) {
                             onSelectView(TaskView.Following)
+                        }
+                        DrawerItem(
+                            Icons.Outlined.PersonOutline,
+                            R.string.task_created_by_me,
+                            createdCount.toString(),
+                            selected = selectedListId == null && selectedGroupId == null &&
+                                selectedView == TaskView.Created,
+                        ) {
+                            onSelectView(TaskView.Created)
                         }
                         DrawerItem(
                             Icons.Outlined.History,
@@ -1881,31 +1908,6 @@ fun TaskNavigationDrawer(
                             null,
                             onClick = onOpenActivity,
                         )
-                        HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM))
-                        Text(
-                            stringResource(R.string.task_quick_access),
-                            modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        DrawerItem(
-                            Icons.Outlined.TaskAlt,
-                            R.string.task_all_tasks,
-                            allCount.toString(),
-                            selected = selectedList == null && selectedGroupId == null &&
-                                selectedView == TaskView.All,
-                        ) {
-                            onSelectView(TaskView.All)
-                        }
-                        DrawerItem(
-                            Icons.Outlined.PersonOutline,
-                            R.string.task_created_by_me,
-                            createdCount.toString(),
-                            selected = selectedList == null && selectedGroupId == null &&
-                                selectedView == TaskView.Created,
-                        ) {
-                            onSelectView(TaskView.Created)
-                        }
                         HorizontalDivider(
                             Modifier.padding(
                                 horizontal = Dimens.SpaceXl,
@@ -1972,12 +1974,13 @@ fun TaskNavigationDrawer(
                         }
                     }
                     val groupedIds = listGroups.map(TaskListGroupItem::id).toSet()
-                    listGroups.forEach { group ->
+                    listGroups.sortedBy(TaskListGroupItem::sortOrder).forEach { group ->
                         item {
                             DrawerGroup(
+                                groupKey = group.id,
                                 title = group.name,
                                 lists = taskLists.filter { it.groupId == group.id },
-                                selectedList = selectedList,
+                                selectedListId = selectedListId,
                                 onSelectList = onSelectList,
                                 onGroupAction = { onGroupAction(group) }.takeIf {
                                     group.canManage
@@ -1990,9 +1993,10 @@ fun TaskNavigationDrawer(
                     if (ungrouped.isNotEmpty()) {
                         item {
                             DrawerGroup(
+                                groupKey = "default",
                                 title = stringResource(R.string.task_ungrouped),
                                 lists = ungrouped,
-                                selectedList = selectedList,
+                                selectedListId = selectedListId,
                                 onSelectList = onSelectList,
                                 onListAction = onListAction,
                             )
@@ -2004,7 +2008,7 @@ fun TaskNavigationDrawer(
                                 Icons.AutoMirrored.Outlined.ListAlt,
                                 R.string.task_standalone,
                                 standaloneCount.toString(),
-                                selected = selectedList == null && selectedGroupId == null &&
+                                selected = selectedListId == null && selectedGroupId == null &&
                                     selectedView == TaskView.Standalone,
                             ) {
                                 onSelectView(TaskView.Standalone)
@@ -2113,14 +2117,15 @@ private fun DrawerItem(
 
 @Composable
 private fun DrawerGroup(
+    groupKey: String,
     title: String,
     lists: List<TaskListItem>,
-    selectedList: String?,
+    selectedListId: String?,
     onSelectList: (TaskListItem) -> Unit,
     onGroupAction: (() -> Unit)? = null,
     onListAction: (TaskListItem) -> Unit,
 ) {
-    var expanded by rememberSaveable(title) { mutableStateOf(true) }
+    var expanded by rememberSaveable(groupKey) { mutableStateOf(true) }
     Column(Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs)) {
         Row(
             modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
@@ -2142,8 +2147,20 @@ private fun DrawerGroup(
         }
         AnimatedVisibility(visible = expanded) {
             Column {
+                if (lists.isEmpty()) {
+                    Text(
+                        stringResource(R.string.task_list_group_empty),
+                        modifier = Modifier.padding(
+                            start = Dimens.SpaceXxxl,
+                            end = Dimens.SpaceM,
+                            bottom = Dimens.SpaceS,
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 lists.forEach { list ->
-                    val selected = selectedList == list.name
+                    val selected = selectedListId == list.id
                     Surface(
                         color = if (selected) {
                             MaterialTheme.colorScheme.primaryContainer

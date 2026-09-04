@@ -230,7 +230,7 @@
     <string name="task_activity_empty">Aucune activité de tâche</string>
     <string name="task_activity_load_more">Charger plus</string>
     <string name="task_activity_load_failed">Impossible de charger l’activité des tâches.</string>
-    <string name="task_quick_access">Accès rapide</string>
+    <string name="task_views">Vues des tâches</string>
     <string name="task_save">Enregistrer</string>
     <string name="task_all_tasks">Toutes les tâches</string>
     <string name="task_created_by_me">Créées par moi</string>
@@ -241,6 +241,7 @@
     <string name="task_mark_incomplete">Marquer comme non terminée</string>
     <string name="task_standalone">Liste par défaut</string>
     <string name="task_lists">Listes de tâches</string>
+    <string name="task_list_group_empty">Aucune liste de tâches dans ce groupe</string>
     <string name="task_group_product">Produit</string>
     <string name="task_group_team">Équipe</string>
     <string name="task_create">Nouvelle tâche</string>

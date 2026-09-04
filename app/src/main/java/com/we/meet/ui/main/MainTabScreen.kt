@@ -437,7 +437,7 @@ fun MainTabScreen(
                             val ui by c.vm.ui.collectAsStateWithLifecycle()
                             TaskNavigationDrawer(
                                 selectedView = ui.view,
-                                selectedList = ui.selectedList?.name,
+                                selectedListId = ui.selectedList?.id,
                                 taskLists = ui.taskLists,
                                 listGroups = ui.listGroups,
                                 taskGroups = ui.taskGroups,

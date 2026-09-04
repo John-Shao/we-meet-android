@@ -230,7 +230,7 @@
     <string name="task_activity_empty">Noch keine Aufgabenaktivitäten</string>
     <string name="task_activity_load_more">Mehr laden</string>
     <string name="task_activity_load_failed">Aufgabenaktivitäten konnten nicht geladen werden.</string>
-    <string name="task_quick_access">Schnellzugriff</string>
+    <string name="task_views">Aufgabenansichten</string>
     <string name="task_save">Speichern</string>
     <string name="task_all_tasks">Alle Aufgaben</string>
     <string name="task_created_by_me">Von mir erstellt</string>
@@ -241,6 +241,7 @@
     <string name="task_mark_incomplete">Als unerledigt markieren</string>
     <string name="task_standalone">Standardliste</string>
     <string name="task_lists">Aufgabenlisten</string>
+    <string name="task_list_group_empty">Keine Aufgabenlisten in dieser Gruppe</string>
     <string name="task_group_product">Produkt</string>
     <string name="task_group_team">Team</string>
     <string name="task_create">Neue Aufgabe</string>

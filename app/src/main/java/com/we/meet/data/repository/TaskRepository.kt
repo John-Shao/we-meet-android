@@ -116,7 +116,7 @@ class TaskRepository(
                         assigned = assignedSummary?.openCount ?: 0,
                         following = followingSummary?.openCount ?: 0,
                         created = createdSummary?.openCount ?: 0,
-                        all = allSummary?.total ?: 0,
+                        all = allSummary?.openCount ?: 0,
                         completed = allSummary?.completed ?: 0,
                         standalone = standalone.await(),
                     ),

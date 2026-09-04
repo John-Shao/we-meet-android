@@ -230,7 +230,7 @@
     <string name="task_activity_empty">Nog geen taakactiviteit</string>
     <string name="task_activity_load_more">Meer laden</string>
     <string name="task_activity_load_failed">Taakactiviteit kon niet worden geladen.</string>
-    <string name="task_quick_access">Snelle toegang</string>
+    <string name="task_views">Taakweergaven</string>
     <string name="task_save">Opslaan</string>
     <string name="task_all_tasks">Alle taken</string>
     <string name="task_created_by_me">Door mij gemaakt</string>
@@ -241,6 +241,7 @@
     <string name="task_mark_incomplete">Als onvoltooid markeren</string>
     <string name="task_standalone">Standaardlijst</string>
     <string name="task_lists">Takenlijsten</string>
+    <string name="task_list_group_empty">Geen takenlijsten in deze groep</string>
     <string name="task_group_product">Product</string>
     <string name="task_group_team">Team</string>
     <string name="task_create">Nieuwe taak</string>

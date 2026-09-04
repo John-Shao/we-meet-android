@@ -240,7 +240,7 @@
     <string name="task_activity_empty">暂无任务动态</string>
     <string name="task_activity_load_more">加载更多</string>
     <string name="task_activity_load_failed">任务动态加载失败，请检查网络后重试。</string>
-    <string name="task_quick_access">快速访问</string>
+    <string name="task_views">任务视图</string>
     <string name="task_save">保存</string>
     <string name="task_all_tasks">全部任务</string>
     <string name="task_created_by_me">我创建的</string>
@@ -251,6 +251,7 @@
     <string name="task_mark_incomplete">标记为未完成</string>
     <string name="task_standalone">默认清单</string>
     <string name="task_lists">任务清单</string>
+    <string name="task_list_group_empty">此分组暂无任务清单</string>
     <string name="task_group_product">产品</string>
     <string name="task_group_team">团队</string>
     <string name="task_create">新建任务</string>
