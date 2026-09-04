@@ -1258,7 +1258,9 @@ private fun TaskListPage(
             val grouped = visible.filter { it.groupId != null }.groupBy { it.groupId!! }
             buildList {
                 knownGroups.values.sortedBy(TaskGroupItem::sortOrder).forEach { group ->
-                    add(TaskDisplaySection(group.name, grouped[group.id].orEmpty(), group))
+                    grouped[group.id]?.let { groupTasks ->
+                        add(TaskDisplaySection(group.name, groupTasks, group))
+                    }
                 }
                 grouped.filterKeys { it !in knownGroups }.forEach { (_, tasks) ->
                     add(TaskDisplaySection(tasks.first().groupName ?: ungroupedLabel, tasks))
