@@ -3,6 +3,7 @@ package com.we.meet.ui.tasks
 import com.we.meet.data.api.dto.TaskDto
 import com.we.meet.data.api.dto.TaskUserDto
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -12,6 +13,13 @@ class TaskModelsTest {
         TaskItem("2", "Review permissions", assignee = "Sam", dueLabel = "Friday", listName = "Team", section = "Later"),
         TaskItem("3", "Released", assignee = "Alex", dueLabel = "Done", listName = "Product", section = "Done", status = TaskStatus.Done, followed = true),
     )
+
+    @Test
+    fun ungroupedViewDoesNotShowSectionHeaders() {
+        assertFalse(TaskGrouping.None.showsSectionHeaders())
+        assertTrue(TaskGrouping.Custom.showsSectionHeaders())
+        assertTrue(TaskGrouping.List.showsSectionHeaders())
+    }
 
     @Test
     fun followingViewOnlyIncludesFollowedIncompleteTasks() {

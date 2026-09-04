@@ -1315,9 +1315,7 @@ private fun TaskListPage(
     val noDateLabel = stringResource(R.string.task_group_no_date)
     val locale = LocalConfiguration.current.locales[0]
     val sections = when (grouping) {
-        TaskGrouping.None -> listOf(
-            TaskDisplaySection(stringResource(R.string.task_all_tasks), visible),
-        )
+        TaskGrouping.None -> emptyList()
         TaskGrouping.List -> visible.groupBy(TaskItem::listId).map { (listId, groupedTasks) ->
             TaskDisplaySection(
                 title = if (listId == null) standaloneLabel else groupedTasks.first().listName,
@@ -1388,7 +1386,20 @@ private fun TaskListPage(
                 modifier = Modifier.fillMaxWidth().weight(1f).testTag(TASK_LIST_TEST_TAG),
                 contentPadding = PaddingValues(bottom = Dimens.Calendar.FabClearance),
             ) {
-                if (!loading && sections.isEmpty()) {
+                if (!loading && visible.isEmpty() && !grouping.showsSectionHeaders()) {
+                    item { TaskEmptyState(onCreate) }
+                } else if (!grouping.showsSectionHeaders()) {
+                    items(visible, key = { it.id }) { task ->
+                        TaskRow(
+                            task = task,
+                            filteredParentTitle = task.filteredParentTitle(visibleTaskIds),
+                            showOverdueMarker = showOverdueMarker,
+                            onClick = { onTaskClick(task) },
+                            onToggleDone = { onToggleDone(task) },
+                            onLongClick = { onTaskAction(task) },
+                        )
+                    }
+                } else if (!loading && sections.isEmpty()) {
                     item { TaskEmptyState(onCreate) }
                 } else {
                     sections.forEach { section ->
@@ -1446,6 +1457,8 @@ private data class TaskDisplaySection(
     val group: TaskGroupItem? = null,
     val key: String = title,
 )
+
+internal fun TaskGrouping.showsSectionHeaders(): Boolean = this != TaskGrouping.None
 
 @Composable
 private fun TaskHomeHeader(
