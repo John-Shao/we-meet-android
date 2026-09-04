@@ -392,7 +392,6 @@
     <string name="task_archive_list_title">Archiver la liste de tâches</string>
     <string name="task_archive_list_confirm">Archiver « %1$s » ? Elle sera masquée de la navigation et ne pourra plus recevoir de nouvelles tâches.</string>
     <string name="task_archived_lists">Listes de tâches archivées</string>
-    <string name="task_archived_empty">Aucune liste de tâches archivée</string>
     <string name="task_restore">Restaurer</string>
     <string name="task_list_display_settings">Paramètres d’affichage des listes</string>
     <string name="task_show_archived_lists">Afficher les listes de tâches archivées</string>

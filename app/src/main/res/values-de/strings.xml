@@ -392,7 +392,6 @@
     <string name="task_archive_list_title">Aufgabenliste archivieren</string>
     <string name="task_archive_list_confirm">„%1$s“ archivieren? Sie wird aus der Navigation ausgeblendet und kann keine neuen Aufgaben aufnehmen.</string>
     <string name="task_archived_lists">Archivierte Aufgabenlisten</string>
-    <string name="task_archived_empty">Keine archivierten Aufgabenlisten</string>
     <string name="task_restore">Wiederherstellen</string>
     <string name="task_list_display_settings">Anzeigeeinstellungen für Aufgabenlisten</string>
     <string name="task_show_archived_lists">Archivierte Aufgabenlisten anzeigen</string>

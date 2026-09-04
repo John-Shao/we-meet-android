@@ -402,7 +402,6 @@
     <string name="task_archive_list_title">归档任务清单</string>
     <string name="task_archive_list_confirm">归档“%1$s”？它将从导航中隐藏，且不能再添加新任务。</string>
     <string name="task_archived_lists">已归档清单</string>
-    <string name="task_archived_empty">暂无已归档清单</string>
     <string name="task_restore">取消归档</string>
     <string name="task_list_display_settings">任务清单显示设置</string>
     <string name="task_show_archived_lists">显示已归档任务清单</string>

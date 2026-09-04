@@ -2062,18 +2062,6 @@ fun TaskNavigationDrawer(
                                 Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl),
                             )
                         }
-                    } else if (showArchivedTaskLists && archivedTaskLists.isEmpty()) {
-                        item {
-                            Text(
-                                stringResource(R.string.task_archived_empty),
-                                modifier = Modifier.padding(
-                                    horizontal = Dimens.SpaceXl,
-                                    vertical = Dimens.SpaceS,
-                                ),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
                     }
                     if (standaloneCount > 0) {
                         item {
