@@ -394,6 +394,8 @@
     <string name="task_archived_lists">Archivierte Aufgabenlisten</string>
     <string name="task_archived_empty">Keine archivierten Aufgabenlisten</string>
     <string name="task_restore">Wiederherstellen</string>
+    <string name="task_list_display_settings">Anzeigeeinstellungen für Aufgabenlisten</string>
+    <string name="task_show_archived_lists">Archivierte Aufgabenlisten anzeigen</string>
     <string name="task_list_share">Mitwirkende verwalten</string>
     <string name="task_list_share_title">Mitwirkende · %1$s</string>
     <string name="task_add_collaborator">Mitwirkende hinzufügen</string>

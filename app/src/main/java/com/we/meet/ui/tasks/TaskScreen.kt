@@ -245,7 +245,6 @@ fun TaskScreen(
     var managedTaskGroupRenaming by remember { mutableStateOf<TaskGroupItem?>(null) }
     var managedTaskGroupDeleting by remember { mutableStateOf<TaskGroupItem?>(null) }
     var showNewList by remember { mutableStateOf(false) }
-    var showArchivedLists by remember { mutableStateOf(false) }
     var groupActionTarget by remember { mutableStateOf<TaskListGroupItem?>(null) }
     var listGroupInsertion by remember { mutableStateOf<TaskListGroupInsertion?>(null) }
     var orderListGroups by remember { mutableStateOf(false) }
@@ -300,10 +299,6 @@ fun TaskScreen(
             onManageTaskGroups = { showTaskGroupManager = true },
             onNewGroup = { showNewGroup = true },
             onNewList = { showNewList = true },
-            onOpenArchivedLists = {
-                showArchivedLists = true
-                vm.loadArchivedTaskLists()
-            },
             onGroupAction = { groupActionTarget = it },
             onListAction = { listActionTarget = it },
         )
@@ -947,15 +942,6 @@ fun TaskScreen(
                 vm.archiveTaskList(list)
                 archiveListTarget = null
             },
-        )
-    }
-    if (showArchivedLists) {
-        ArchivedTaskListsSheet(
-            lists = ui.archivedTaskLists,
-            loading = ui.archivedListsLoading,
-            restoring = ui.navigationMutating,
-            onDismiss = { showArchivedLists = false },
-            onRestore = vm::restoreTaskList,
         )
     }
     shareListTarget?.takeIf { memberPickerListTarget == null }?.let { list ->
@@ -1828,6 +1814,9 @@ fun TaskNavigationDrawer(
     selectedView: TaskView,
     selectedListId: String?,
     taskLists: List<TaskListItem>,
+    archivedTaskLists: List<TaskListItem>,
+    archivedTaskListsLoading: Boolean,
+    restoringArchivedTaskList: Boolean,
     listGroups: List<TaskListGroupItem>,
     taskGroups: List<TaskGroupItem>,
     selectedGroupId: String?,
@@ -1845,10 +1834,20 @@ fun TaskNavigationDrawer(
     onSelectList: (TaskListItem) -> Unit,
     onNewGroup: () -> Unit,
     onNewList: () -> Unit,
-    onOpenArchivedLists: () -> Unit,
+    onShowArchivedTaskListsChange: (Boolean) -> Unit,
+    onRestoreArchivedTaskList: (TaskListItem) -> Unit,
     onGroupAction: (TaskListGroupItem) -> Unit,
     onListAction: (TaskListItem) -> Unit,
 ) {
+    var taskListSettingsExpanded by remember { mutableStateOf(false) }
+    var showArchivedTaskLists by rememberSaveable { mutableStateOf(false) }
+    val showArchivedTaskListsLabel = stringResource(R.string.task_show_archived_lists)
+    val displayedTaskLists = if (showArchivedTaskLists) {
+        (taskLists + archivedTaskLists).distinctBy(TaskListItem::id)
+    } else {
+        taskLists
+    }
+
     Column {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceXl),
@@ -1981,6 +1980,42 @@ fun TaskNavigationDrawer(
                             Icon(Icons.Outlined.FolderOpen, null)
                             Spacer(Modifier.width(Dimens.SpaceM))
                             Text(stringResource(R.string.task_lists), fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            Box {
+                                IconButton(onClick = { taskListSettingsExpanded = true }) {
+                                    Icon(
+                                        Icons.Outlined.Settings,
+                                        stringResource(R.string.task_list_display_settings),
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = taskListSettingsExpanded,
+                                    onDismissRequest = { taskListSettingsExpanded = false },
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(
+                                            horizontal = Dimens.SpaceL,
+                                            vertical = Dimens.SpaceS,
+                                        ),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(
+                                            showArchivedTaskListsLabel,
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                        Spacer(Modifier.width(Dimens.SpaceL))
+                                        Switch(
+                                            checked = showArchivedTaskLists,
+                                            onCheckedChange = { show ->
+                                                showArchivedTaskLists = show
+                                                onShowArchivedTaskListsChange(show)
+                                            },
+                                            modifier = Modifier.semantics {
+                                                contentDescription = showArchivedTaskListsLabel
+                                            },
+                                        )
+                                    }
+                                }
+                            }
                             IconButton(onClick = onNewList) {
                                 Icon(Icons.Filled.Add, stringResource(R.string.task_new_list))
                             }
@@ -1992,17 +2027,21 @@ fun TaskNavigationDrawer(
                             DrawerGroup(
                                 groupKey = group.id,
                                 title = group.name,
-                                lists = taskLists.filter { it.groupId == group.id },
+                                lists = displayedTaskLists.filter { it.groupId == group.id },
                                 selectedListId = selectedListId,
                                 onSelectList = onSelectList,
                                 onGroupAction = { onGroupAction(group) }.takeIf {
                                     group.canManage
                                 },
                                 onListAction = onListAction,
+                                restoringArchivedTaskList = restoringArchivedTaskList,
+                                onRestoreArchivedTaskList = onRestoreArchivedTaskList,
                             )
                         }
                     }
-                    val ungrouped = taskLists.filter { it.groupId == null || it.groupId !in groupedIds }
+                    val ungrouped = displayedTaskLists.filter {
+                        it.groupId == null || it.groupId !in groupedIds
+                    }
                     if (ungrouped.isNotEmpty()) {
                         item {
                             DrawerGroup(
@@ -2012,6 +2051,27 @@ fun TaskNavigationDrawer(
                                 selectedListId = selectedListId,
                                 onSelectList = onSelectList,
                                 onListAction = onListAction,
+                                restoringArchivedTaskList = restoringArchivedTaskList,
+                                onRestoreArchivedTaskList = onRestoreArchivedTaskList,
+                            )
+                        }
+                    }
+                    if (showArchivedTaskLists && archivedTaskListsLoading) {
+                        item {
+                            LinearProgressIndicator(
+                                Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl),
+                            )
+                        }
+                    } else if (showArchivedTaskLists && archivedTaskLists.isEmpty()) {
+                        item {
+                            Text(
+                                stringResource(R.string.task_archived_empty),
+                                modifier = Modifier.padding(
+                                    horizontal = Dimens.SpaceXl,
+                                    vertical = Dimens.SpaceS,
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -2027,14 +2087,6 @@ fun TaskNavigationDrawer(
                                 onSelectView(TaskView.Standalone)
                             }
                         }
-                    }
-                    item {
-                        DrawerItem(
-                            Icons.Outlined.Archive,
-                            R.string.task_archived_lists,
-                            null,
-                            onClick = onOpenArchivedLists,
-                        )
                     }
                     item {
                         TextButton(onClick = onNewGroup, modifier = Modifier.padding(horizontal = Dimens.SpaceM)) {
@@ -2137,6 +2189,8 @@ private fun DrawerGroup(
     onSelectList: (TaskListItem) -> Unit,
     onGroupAction: (() -> Unit)? = null,
     onListAction: (TaskListItem) -> Unit,
+    restoringArchivedTaskList: Boolean,
+    onRestoreArchivedTaskList: (TaskListItem) -> Unit,
 ) {
     var expanded by rememberSaveable(groupKey) { mutableStateOf(true) }
     Column(Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs)) {
@@ -2174,6 +2228,7 @@ private fun DrawerGroup(
                 }
                 lists.forEach { list ->
                     val selected = selectedListId == list.id
+                    var archivedMenuExpanded by remember(list.id) { mutableStateOf(false) }
                     Surface(
                         color = if (selected) {
                             MaterialTheme.colorScheme.primaryContainer
@@ -2181,7 +2236,13 @@ private fun DrawerGroup(
                             Color.Transparent
                         },
                         shape = MaterialTheme.shapes.medium,
-                        modifier = Modifier.fillMaxWidth().clickable { onSelectList(list) },
+                        modifier = Modifier.fillMaxWidth().then(
+                            if (list.isArchived) {
+                                Modifier
+                            } else {
+                                Modifier.clickable { onSelectList(list) }
+                            },
+                        ),
                     ) {
                         Row(
                             Modifier.padding(
@@ -2193,15 +2254,25 @@ private fun DrawerGroup(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
-                                Icons.AutoMirrored.Outlined.ListAlt,
+                                if (list.isArchived) {
+                                    Icons.Outlined.Archive
+                                } else {
+                                    Icons.AutoMirrored.Outlined.ListAlt
+                                },
                                 null,
-                                tint = taskListColor(list.color),
+                                tint = if (list.isArchived) {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                } else {
+                                    taskListColor(list.color)
+                                },
                             )
                             Spacer(Modifier.width(Dimens.SpaceM))
                             Text(
                                 list.name,
                                 color = if (selected) {
                                     MaterialTheme.colorScheme.primary
+                                } else if (list.isArchived) {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
                                 } else {
                                     MaterialTheme.colorScheme.onSurface
                                 },
@@ -2211,7 +2282,38 @@ private fun DrawerGroup(
                                 list.taskCount.toString(),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            if (list.canManage || list.canShare || list.canRemove || list.canDelete) {
+                            if (list.isArchived && list.canArchive) {
+                                Box {
+                                    IconButton(
+                                        onClick = { archivedMenuExpanded = true },
+                                        enabled = !restoringArchivedTaskList,
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.MoreVert,
+                                            stringResource(R.string.task_more),
+                                        )
+                                    }
+                                    DropdownMenu(
+                                        expanded = archivedMenuExpanded,
+                                        onDismissRequest = { archivedMenuExpanded = false },
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.task_restore)) },
+                                            leadingIcon = {
+                                                Icon(Icons.Outlined.Archive, null)
+                                            },
+                                            enabled = !restoringArchivedTaskList,
+                                            onClick = {
+                                                archivedMenuExpanded = false
+                                                onRestoreArchivedTaskList(list)
+                                            },
+                                        )
+                                    }
+                                }
+                            } else if (
+                                !list.isArchived &&
+                                (list.canManage || list.canShare || list.canRemove || list.canDelete)
+                            ) {
                                 IconButton(onClick = { onListAction(list) }) {
                                     Icon(
                                         Icons.Outlined.MoreVert,
@@ -5518,64 +5620,6 @@ private fun ArchiveTaskListDialog(
             }
         },
     )
-}
-
-@Composable
-private fun ArchivedTaskListsSheet(
-    lists: List<TaskListItem>,
-    loading: Boolean,
-    restoring: Boolean,
-    onDismiss: () -> Unit,
-    onRestore: (TaskListItem) -> Unit,
-) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl)
-                .padding(bottom = Dimens.SpaceXl),
-        ) {
-            Text(
-                stringResource(R.string.task_archived_lists),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(Modifier.height(Dimens.SpaceL))
-            when {
-                loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
-                lists.isEmpty() -> Text(
-                    stringResource(R.string.task_archived_empty),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = Dimens.SpaceXl),
-                )
-                else -> LazyColumn(
-                    Modifier.fillMaxWidth().heightIn(max = Dimens.SheetContentMaxHeight),
-                ) {
-                    items(lists, key = TaskListItem::id) { list ->
-                        Row(
-                            Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(Icons.AutoMirrored.Outlined.ListAlt, null)
-                            Spacer(Modifier.width(Dimens.SpaceM))
-                            Text(
-                                list.name,
-                                modifier = Modifier.weight(1f),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            if (list.canArchive) {
-                                TextButton(
-                                    onClick = { onRestore(list) },
-                                    enabled = !restoring,
-                                ) {
-                                    Text(stringResource(R.string.task_restore))
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 @Composable

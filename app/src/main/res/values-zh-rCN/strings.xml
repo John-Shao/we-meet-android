@@ -404,6 +404,8 @@
     <string name="task_archived_lists">已归档清单</string>
     <string name="task_archived_empty">暂无已归档清单</string>
     <string name="task_restore">取消归档</string>
+    <string name="task_list_display_settings">任务清单显示设置</string>
+    <string name="task_show_archived_lists">显示已归档任务清单</string>
     <string name="task_list_share">管理协作者</string>
     <string name="task_list_share_title">协作者 · %1$s</string>
     <string name="task_add_collaborator">添加协作者</string>

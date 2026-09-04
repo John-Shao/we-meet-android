@@ -20,7 +20,6 @@ class TaskNavController(
     val onManageTaskGroups: () -> Unit,
     val onNewGroup: () -> Unit,
     val onNewList: () -> Unit,
-    val onOpenArchivedLists: () -> Unit,
     val onGroupAction: (TaskListGroupItem) -> Unit,
     val onListAction: (TaskListItem) -> Unit,
 )

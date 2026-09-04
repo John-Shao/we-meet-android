@@ -394,6 +394,8 @@
     <string name="task_archived_lists">Gearchiveerde takenlijsten</string>
     <string name="task_archived_empty">Geen gearchiveerde takenlijsten</string>
     <string name="task_restore">Herstellen</string>
+    <string name="task_list_display_settings">Weergave-instellingen voor takenlijsten</string>
+    <string name="task_show_archived_lists">Gearchiveerde takenlijsten tonen</string>
     <string name="task_list_share">Medewerkers beheren</string>
     <string name="task_list_share_title">Medewerkers · %1$s</string>
     <string name="task_add_collaborator">Medewerker toevoegen</string>

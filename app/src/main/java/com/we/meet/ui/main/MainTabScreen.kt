@@ -439,6 +439,9 @@ fun MainTabScreen(
                                 selectedView = ui.view,
                                 selectedListId = ui.selectedList?.id,
                                 taskLists = ui.taskLists,
+                                archivedTaskLists = ui.archivedTaskLists,
+                                archivedTaskListsLoading = ui.archivedListsLoading,
+                                restoringArchivedTaskList = ui.navigationMutating,
                                 listGroups = ui.listGroups,
                                 taskGroups = ui.taskGroups,
                                 selectedGroupId = ui.selectedGroupId,
@@ -474,10 +477,10 @@ fun MainTabScreen(
                                 },
                                 onNewGroup = { c.onNewGroup() },
                                 onNewList = { c.onNewList() },
-                                onOpenArchivedLists = {
-                                    c.onOpenArchivedLists()
-                                    taskNavScope.launch { taskNavDrawerState.close() }
+                                onShowArchivedTaskListsChange = { show ->
+                                    if (show) c.vm.loadArchivedTaskLists()
                                 },
+                                onRestoreArchivedTaskList = c.vm::restoreTaskList,
                                 onGroupAction = { c.onGroupAction(it) },
                                 onListAction = { c.onListAction(it) },
                             )

@@ -404,6 +404,8 @@
     <string name="task_archived_lists">Archived task lists</string>
     <string name="task_archived_empty">No archived task lists</string>
     <string name="task_restore">Restore</string>
+    <string name="task_list_display_settings">Task list display settings</string>
+    <string name="task_show_archived_lists">Show archived task lists</string>
     <string name="task_list_share">Manage collaborators</string>
     <string name="task_list_share_title">Collaborators · %1$s</string>
     <string name="task_add_collaborator">Add collaborator</string>
