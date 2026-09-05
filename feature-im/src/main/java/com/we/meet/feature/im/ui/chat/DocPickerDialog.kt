@@ -18,10 +18,10 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -43,6 +44,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.data.DocHit
+import com.we.meet.ui.components.WeMeetEmptyState
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetInlineErrorState
+import com.we.meet.ui.components.WeMeetLoading
 
 /**
  * 分享云文档到聊天(入口 A):聊天「+」面板「云文档」弹出的文档选择器——
@@ -64,9 +69,10 @@ fun DocPickerDialog(
         var docs by remember { mutableStateOf<List<DocHit>>(emptyList()) }
         var loading by remember { mutableStateOf(true) }
         var error by remember { mutableStateOf(false) }
-        var selected by remember { mutableStateOf<Set<String>>(emptySet()) }
+        var reloadTick by rememberSaveable { mutableIntStateOf(0) }
+        var selected by remember { mutableStateOf<Map<String, DocHit>>(emptyMap()) }
 
-        LaunchedEffect(query) {
+        LaunchedEffect(query, reloadTick) {
             loading = true
             error = false
             runCatching { fetchDocs(query) }
@@ -109,30 +115,37 @@ fun DocPickerDialog(
 
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     when {
-                        error -> Text(
-                            text = stringResource(R.string.im_doc_picker_error),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.align(Alignment.Center).padding(Dimens.SpaceXl),
+                        error && docs.isEmpty() -> WeMeetErrorState(
+                            onRetry = { reloadTick++ },
+                            message = stringResource(R.string.im_doc_picker_error),
                         )
-                        loading && docs.isEmpty() -> CircularProgressIndicator(
-                            modifier = Modifier.align(Alignment.Center),
+                        loading && docs.isEmpty() -> WeMeetLoading()
+                        docs.isEmpty() -> WeMeetEmptyState(
+                            title = stringResource(R.string.im_doc_picker_empty),
                         )
-                        docs.isEmpty() -> Text(
-                            text = stringResource(R.string.im_doc_picker_empty),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.align(Alignment.Center).padding(Dimens.SpaceXl),
-                        )
-                        else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            items(docs.size) { i ->
-                                val d = docs[i]
-                                DocPickerRow(
-                                    doc = d,
-                                    checked = d.id in selected,
-                                    onClick = {
-                                        selected = if (d.id in selected) selected - d.id
-                                        else selected + d.id
-                                    },
+                        else -> Column(Modifier.fillMaxSize()) {
+                            if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
+                            if (error) {
+                                WeMeetInlineErrorState(
+                                    onRetry = { reloadTick++ },
+                                    message = stringResource(R.string.im_doc_picker_error),
                                 )
+                            }
+                            LazyColumn(modifier = Modifier.weight(1f)) {
+                                items(docs.size) { i ->
+                                    val d = docs[i]
+                                    DocPickerRow(
+                                        doc = d,
+                                        checked = d.id in selected,
+                                        onClick = {
+                                            selected = if (d.id in selected) {
+                                                selected - d.id
+                                            } else {
+                                                selected + (d.id to d)
+                                            }
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
@@ -152,7 +165,7 @@ fun DocPickerDialog(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Button(
-                            onClick = { onSend(docs.filter { it.id in selected }) },
+                            onClick = { onSend(selected.values.toList()) },
                             enabled = selected.isNotEmpty(),
                         ) {
                             Text(stringResource(R.string.im_doc_picker_send, selected.size))
