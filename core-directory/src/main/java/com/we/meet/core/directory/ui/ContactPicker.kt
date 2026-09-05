@@ -44,6 +44,9 @@ import com.we.meet.core.directory.data.DirectoryRepository
 import com.we.meet.core.directory.data.MemberDto
 import com.we.meet.core.directory.net.DirectoryNetwork
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -125,29 +128,37 @@ fun ContactPicker(
         snapshotFlow { query }
             .debounce(300)
             .distinctUntilChanged()
-            .collect { q ->
+            .collectLatest { q ->
                 loading = true
                 error = false
-                val result = if (q.isBlank()) repository.allMembers() else repository.searchMembers(q)
-                val external = if (includeExternal) {
-                    repository.listExternalContacts().getOrDefault(emptyList())
-                        .filter { contact ->
+                val memberResult = if (q.isBlank()) {
+                    repository.allMembers()
+                } else {
+                    repository.searchMembers(q)
+                }
+                currentCoroutineContext().ensureActive()
+                val externalResult = if (includeExternal) {
+                    repository.listExternalContacts().map { contacts ->
+                        contacts.filter { contact ->
                             q.isBlank() || listOf(
                                 contact.displayName,
                                 contact.organization?.name.orEmpty(),
                             ).any { it.contains(q, ignoreCase = true) }
-                        }
-                        .map { it.toMember() }
-                } else {
-                    emptyList()
-                }
-                result
-                    .onSuccess { page ->
-                        members = (page.members + external).distinctBy { it.id }.filter { m ->
-                            (!excludeSelf || !m.isSelf) && m.id !in excludeUserIds
-                        }
+                        }.map { it.toMember() }
                     }
-                    .onFailure { error = true }
+                } else {
+                    Result.success(emptyList())
+                }
+                currentCoroutineContext().ensureActive()
+                if (memberResult.isSuccess && externalResult.isSuccess) {
+                    val page = memberResult.getOrThrow()
+                    val external = externalResult.getOrThrow()
+                    members = (page.members + external).distinctBy { it.id }.filter { m ->
+                            (!excludeSelf || !m.isSelf) && m.id !in excludeUserIds
+                    }
+                } else {
+                    error = true
+                }
                 loading = false
             }
     }
@@ -164,7 +175,10 @@ fun ContactPicker(
         ) {
             OutlinedTextField(
                 value = query,
-                onValueChange = { query = it },
+                onValueChange = {
+                    query = it
+                    loading = true
+                },
                 enabled = enabled,
                 placeholder = { Text(stringResource(R.string.picker_search_hint)) },
                 singleLine = true,
