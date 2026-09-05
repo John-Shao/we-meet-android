@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -867,7 +868,10 @@ private fun AiAskPanel(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(vertical = Dimens.SpaceS),
                     ) {
-                        CircularProgressIndicator(Modifier.width(Dimens.IconSmall))
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(Dimens.IconSmall),
+                            strokeWidth = Dimens.BorderEmphasis,
+                        )
                         Text(
                             text = stringResource(R.string.im_search_ai_asking),
                             style = MaterialTheme.typography.bodyMedium,

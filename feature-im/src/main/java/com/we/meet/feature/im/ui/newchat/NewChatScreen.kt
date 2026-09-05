@@ -3,6 +3,7 @@ package com.we.meet.feature.im.ui.newchat
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
@@ -24,6 +25,7 @@ import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.userMessageRes
+import com.we.meet.ui.theme.Dimens
 import kotlinx.coroutines.launch
 
 /**
@@ -128,7 +130,10 @@ fun NewChatScreen(
                     enabled = name.trim().isNotEmpty() && !creating,
                 ) {
                     if (creating) {
-                        CircularProgressIndicator(modifier = Modifier)
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(Dimens.IconSmall),
+                            strokeWidth = Dimens.BorderEmphasis,
+                        )
                     } else {
                         Text(stringResource(R.string.im_action_confirm))
                     }
