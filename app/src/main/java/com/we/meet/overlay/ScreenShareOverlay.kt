@@ -37,20 +37,16 @@ private const val TAG = "ScreenShareOverlay"
  * the user just loses the desktop affordance and can stop from the system
  * notification or by returning to the app.
  */
-object ScreenShareOverlay {
+class ScreenShareOverlay(context: Context) {
 
     @Volatile private var sharing: Boolean = false
     @Volatile private var activityForeground: Boolean = true
 
     private var view: View? = null
-    private var appContext: Context? = null
+    private val appContext: Context = context.applicationContext
 
     private val _stopRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val stopRequests: SharedFlow<Unit> = _stopRequests.asSharedFlow()
-
-    fun init(context: Context) {
-        appContext = context.applicationContext
-    }
 
     fun setSharing(active: Boolean) {
         sharing = active
@@ -69,24 +65,23 @@ object ScreenShareOverlay {
     }
 
     private fun refresh() {
-        val ctx = appContext ?: return
         val shouldShow = sharing && !activityForeground
-        if (shouldShow) show(ctx) else hide(ctx)
+        if (shouldShow) show() else hide()
     }
 
-    private fun show(ctx: Context) {
+    private fun show() {
         if (view != null) return
-        if (!canDrawOverlays(ctx)) {
+        if (!canDrawOverlays(appContext)) {
             Log.i(TAG, "show: SYSTEM_ALERT_WINDOW not granted, skipping bubble")
             return
         }
 
-        val wm = ctx.getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return
-        val density = ctx.resources.displayMetrics.density
+        val wm = appContext.getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return
+        val density = appContext.resources.displayMetrics.density
         val sizePx = (56 * density).toInt()
         val iconPx = (28 * density).toInt()
 
-        val bubble = FrameLayout(ctx).apply {
+        val bubble = FrameLayout(appContext).apply {
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(0xFFFFFFFF.toInt())
@@ -104,11 +99,11 @@ object ScreenShareOverlay {
                 // they're done sharing and want to return to the meeting —
                 // leaving them stranded on the desktop would be rude.
                 _stopRequests.tryEmit(Unit)
-                bringAppToFront(ctx)
+                bringAppToFront(appContext)
             }
         }
         bubble.addView(
-            ImageView(ctx).apply {
+            ImageView(appContext).apply {
                 setImageResource(R.drawable.ic_overlay_stop_share)
                 // Red icon on white bubble — keeps the "stop" semantic colour
                 // while staying readable through the bubble-wide 50% alpha.
@@ -143,11 +138,12 @@ object ScreenShareOverlay {
             .onFailure { Log.w(TAG, "addView failed", it) }
     }
 
-    private fun hide(ctx: Context) {
+    private fun hide() {
         val v = view ?: return
-        val wm = ctx.getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return
-        runCatching { wm.removeView(v) }
-        view = null
+        val wm = appContext.getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return
+        runCatching { wm.removeViewImmediate(v) }
+            .onFailure { Log.w(TAG, "removeView failed", it) }
+            .also { view = null }
     }
 
     /**

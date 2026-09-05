@@ -49,6 +49,9 @@ val LocalIsInPipMode = compositionLocalOf { false }
 
 class MainActivity : AppCompatActivity() {
 
+    private val screenShareOverlay: ScreenShareOverlay
+        get() = (application as WeMeetApp).screenShareOverlay
+
     /**
      * `true` while the user is actually in a connected meeting. RoomScreen
      * flips this via a DisposableEffect. Used by [onUserLeaveHint] (pre-12
@@ -150,13 +153,13 @@ class MainActivity : AppCompatActivity() {
     // the meeting UI they already have the in-app stop controls.
     override fun onStart() {
         super.onStart()
-        ScreenShareOverlay.setForeground(true)
+        screenShareOverlay.setForeground(true)
         (application as? WeMeetApp)?.isForeground = true
     }
 
     override fun onStop() {
         super.onStop()
-        ScreenShareOverlay.setForeground(false)
+        screenShareOverlay.setForeground(false)
         (application as? WeMeetApp)?.isForeground = false
     }
 

@@ -146,7 +146,6 @@ import com.we.meet.feature.im.call.MeetInviteTracker
 import com.we.meet.feature.im.ui.call.CallGridParticipant
 import com.we.meet.feature.im.ui.call.MinimalVideoCallScreen
 import com.we.meet.feature.im.ui.call.MinimalVoiceCallScreen
-import com.we.meet.overlay.ScreenShareOverlay
 import io.livekit.android.compose.ui.ScaleType
 import io.livekit.android.compose.ui.VideoTrackView
 import kotlinx.coroutines.delay
@@ -829,6 +828,7 @@ private fun RoomContent(
     onRefreshSuggested: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val screenShareOverlay = (context.applicationContext as WeMeetApp).screenShareOverlay
     val scope = rememberCoroutineScope()
     val audioOutputController = remember(context, room) {
         AudioOutputController(
@@ -934,14 +934,14 @@ private fun RoomContent(
     val mainActivity = context as? MainActivity
     LaunchedEffect(state.localScreenSharing) {
         if (!state.localScreenSharing) mainActivity?.setScreenSharing(false)
-        ScreenShareOverlay.setSharing(state.localScreenSharing)
+        screenShareOverlay.setSharing(state.localScreenSharing)
     }
 
     // Tap on the desktop bubble → funnel into the same stop path as every
     // other entry point. Keeping the collection here (rather than inside
     // RoomViewModel) means RoomViewModel stays agnostic of the overlay.
     LaunchedEffect(Unit) {
-        ScreenShareOverlay.stopRequests.collect { onStopScreenShare() }
+        screenShareOverlay.stopRequests.collect { onStopScreenShare() }
     }
 
     val requestScreenCapture: () -> Unit = {
@@ -1442,7 +1442,7 @@ private fun RoomContent(
                 // SYSTEM_ALERT_WINDOW granted. After they come back, a
                 // second tap on "共享屏幕" proceeds straight to capture.
                 if (!overlayPermissionPrompted &&
-                    !ScreenShareOverlay.canDrawOverlays(context)) {
+                    !screenShareOverlay.canDrawOverlays(context)) {
                     overlayPermissionPrompted = true
                     android.widget.Toast.makeText(
                         context,
