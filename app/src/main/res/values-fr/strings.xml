@@ -809,7 +809,8 @@
     <string name="special_alert_title">Alertes spéciales</string>
     <string name="special_alert_add">Ajouter</string>
     <string name="special_alert_remove">Désactiver</string>
-    <string name="special_alert_empty">Personne pour le moment. Activez les alertes spéciales sur un contact pour que ses messages vous parviennent aussi pendant les heures calmes.</string>
+    <string name="special_alert_empty">Aucun contact avec alerte spéciale</string>
+    <string name="special_alert_empty_description">Activez les alertes spéciales dans les détails d’un contact pour recevoir ses messages pendant les heures calmes.</string>
     <string name="special_alert_entry_hint">Ces contacts vous joignent même pendant les heures calmes. Le réglage par personne se trouve sur sa fiche.</string>
     <string name="calendar_settings_working_start">Début du travail</string>
     <string name="calendar_settings_working_end">Fin du travail</string>

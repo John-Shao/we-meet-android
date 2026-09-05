@@ -44,6 +44,8 @@ import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.core.directory.ui.avatarCacheKey
 import androidx.lifecycle.AndroidViewModel
@@ -96,9 +98,18 @@ class MemberDetailViewModel(
     val chatReady: SharedFlow<String> = _chatReady.asSharedFlow()
 
     init {
+        loadMember()
+    }
+
+    fun retry() = loadMember()
+
+    private fun loadMember() {
+        _ui.update { it.copy(loading = true, error = false) }
         viewModelScope.launch {
             weMeetApp.directoryRepository.getMember(userId)
-                .onSuccess { m -> _ui.update { it.copy(member = m, loading = false) } }
+                .onSuccess { m ->
+                    _ui.update { it.copy(member = m, loading = false, error = false) }
+                }
                 .onFailure { _ui.update { it.copy(loading = false, error = true) } }
         }
     }
@@ -202,11 +213,10 @@ fun MemberDetailScreen(
                 .padding(padding),
         ) {
             when {
-                ui.loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                ui.error || ui.member == null -> Text(
-                    text = stringResource(R.string.contacts_load_error),
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.align(Alignment.Center),
+                ui.loading -> WeMeetLoading()
+                ui.error || ui.member == null -> WeMeetErrorState(
+                    onRetry = vm::retry,
+                    message = stringResource(R.string.contacts_load_error),
                 )
                 else -> MemberDetailBody(
                     member = ui.member!!,

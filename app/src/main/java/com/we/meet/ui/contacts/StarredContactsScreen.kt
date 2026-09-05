@@ -14,7 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -36,6 +36,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.components.WeMeetEmptyState
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.core.directory.data.MemberDto
@@ -68,10 +71,11 @@ fun StarredContactsScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf(false) }
     var picking by remember { mutableStateOf(false) }
+    var reloadKey by remember { mutableStateOf(0) }
 
     // 卡片信息(名字/头像/部门)每次进页面重拉:ContactPrefs 只存 id,存卡片
     // 只会变陈旧。starredIds 变化(本页取消、或详情页打了星标)后一并重拉。
-    LaunchedEffect(starredIds) {
+    LaunchedEffect(starredIds, reloadKey) {
         loading = members.isEmpty()
         app.directoryRepository.listStarred()
             .onSuccess { members = it; error = false }
@@ -98,18 +102,21 @@ fun StarredContactsScreen(
                 .padding(padding),
         ) {
             when {
-                loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                loading -> WeMeetLoading()
 
-                error && members.isEmpty() -> Text(
-                    text = stringResource(R.string.contacts_load_error),
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.align(Alignment.Center),
+                error && members.isEmpty() -> WeMeetErrorState(
+                    onRetry = { reloadKey += 1 },
+                    message = stringResource(R.string.contacts_load_error),
                 )
 
-                members.isEmpty() -> Text(
-                    text = stringResource(R.string.starred_empty),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.align(Alignment.Center),
+                members.isEmpty() -> WeMeetEmptyState(
+                    title = stringResource(R.string.starred_empty),
+                    icon = Icons.Filled.Star,
+                    action = {
+                        Button(onClick = { picking = true }) {
+                            Text(stringResource(R.string.starred_add))
+                        }
+                    },
                 )
 
                 else -> LazyColumn(modifier = Modifier.fillMaxSize()) {

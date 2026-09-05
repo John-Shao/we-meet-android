@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,7 +20,6 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -44,6 +42,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.R
 import com.we.meet.WeMeetApp
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.core.directory.data.DepartmentDto
 import com.we.meet.core.directory.data.MemberDto
@@ -95,23 +95,12 @@ fun ContactsTabScreen(
         }
 
         when {
-            ui.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
+            ui.loading -> WeMeetLoading()
 
-            ui.error -> Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Spacer(Modifier.height(Dimens.SpaceXxxl))
-                Text(
-                    stringResource(R.string.contacts_load_error),
-                    color = MaterialTheme.colorScheme.error,
-                )
-                Button(onClick = { vm.retry() }, modifier = Modifier.padding(top = Dimens.SpaceS)) {
-                    Text(stringResource(R.string.contacts_retry))
-                }
-            }
+            ui.error -> WeMeetErrorState(
+                onRetry = vm::retry,
+                message = stringResource(R.string.contacts_load_error),
+            )
 
             else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                 // 星标联系人:只在组织根层级露出(钻进部门/搜索时是另一个上下文),

@@ -809,7 +809,8 @@
     <string name="special_alert_title">Speciale meldingen</string>
     <string name="special_alert_add">Toevoegen</string>
     <string name="special_alert_remove">Uitzetten</string>
-    <string name="special_alert_empty">Nog niemand. Zet speciale meldingen aan bij een contact zodat zijn berichten je ook tijdens stille uren bereiken.</string>
+    <string name="special_alert_empty">Nog geen contacten met speciale meldingen</string>
+    <string name="special_alert_empty_description">Schakel speciale meldingen in bij de contactdetails om berichten tijdens stille uren te ontvangen.</string>
     <string name="special_alert_entry_hint">Deze contacten bereiken je ook tijdens stille uren. De schakelaar per persoon staat op zijn profiel.</string>
     <string name="calendar_settings_working_start">Begin werktijd</string>
     <string name="calendar_settings_working_end">Einde werktijd</string>

@@ -809,7 +809,8 @@
     <string name="special_alert_title">Sonderhinweise</string>
     <string name="special_alert_add">Hinzufügen</string>
     <string name="special_alert_remove">Ausschalten</string>
-    <string name="special_alert_empty">Noch niemand. Aktiviere den Sonderhinweis bei einem Kontakt, damit seine Nachrichten dich auch in den Ruhezeiten erreichen.</string>
+    <string name="special_alert_empty">Noch keine Kontakte mit Sonderhinweis</string>
+    <string name="special_alert_empty_description">Aktiviere den Sonderhinweis in den Kontaktdetails, um Nachrichten auch während der Ruhezeiten zu erhalten.</string>
     <string name="special_alert_entry_hint">Diese Kontakte erreichen dich auch in den Ruhezeiten. Der Schalter pro Person steht in seinem Profil.</string>
     <string name="calendar_settings_working_start">Arbeitsbeginn</string>
     <string name="calendar_settings_working_end">Arbeitsende</string>

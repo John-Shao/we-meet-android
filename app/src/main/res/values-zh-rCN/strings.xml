@@ -897,7 +897,8 @@
     <string name="special_alert_title">消息特别提醒</string>
     <string name="special_alert_add">添加</string>
     <string name="special_alert_remove">关闭</string>
-    <string name="special_alert_empty">还没有人。在联系人页开启「他的消息特别提醒」，他的消息在免打扰时段也能送到你。</string>
+    <string name="special_alert_empty">暂无特别提醒联系人</string>
+    <string name="special_alert_empty_description">在联系人详情中开启「他的消息特别提醒」，对方的消息在免打扰时段也能送达。</string>
     <string name="special_alert_entry_hint">名单里的人在免打扰时段也会通知你。逐个人的开关在各自的联系人页上。</string>
     <string name="calendar_settings_working_start">工作开始时间</string>
     <string name="calendar_settings_working_end">工作结束时间</string>

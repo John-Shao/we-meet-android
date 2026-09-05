@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -36,6 +35,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.components.WeMeetEmptyState
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.core.directory.data.ContactPrefs
@@ -75,10 +77,11 @@ fun SpecialAlertContactsScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf(false) }
     var picking by remember { mutableStateOf(false) }
+    var reloadKey by remember { mutableStateOf(0) }
 
     // 卡片信息(名字/头像/部门)每次进页面重拉:ContactPrefs 只存 id,存卡片只会
     // 变陈旧。alertIds 变化(本页移除、或详情页开了开关)后一并重拉。
-    LaunchedEffect(alertIds) {
+    LaunchedEffect(alertIds, reloadKey) {
         loading = members.isEmpty()
         app.directoryRepository.listSpecialAlert()
             .onSuccess { members = it; error = false }
@@ -105,28 +108,22 @@ fun SpecialAlertContactsScreen(
                 .padding(padding),
         ) {
             when {
-                loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                loading -> WeMeetLoading()
 
-                error && members.isEmpty() -> Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = stringResource(R.string.contacts_load_error),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                    Button(
-                        onClick = { ContactPrefs.refresh() },
-                        modifier = Modifier.padding(top = Dimens.SpaceS),
-                    ) { Text(stringResource(R.string.contacts_retry)) }
-                }
+                error && members.isEmpty() -> WeMeetErrorState(
+                    onRetry = { reloadKey += 1 },
+                    message = stringResource(R.string.contacts_load_error),
+                )
 
-                members.isEmpty() -> Text(
-                    text = stringResource(R.string.special_alert_empty),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(horizontal = Dimens.SpaceXxl),
+                members.isEmpty() -> WeMeetEmptyState(
+                    title = stringResource(R.string.special_alert_empty),
+                    description = stringResource(R.string.special_alert_empty_description),
+                    icon = Icons.Filled.NotificationsActive,
+                    action = {
+                        Button(onClick = { picking = true }) {
+                            Text(stringResource(R.string.special_alert_add))
+                        }
+                    },
                 )
 
                 else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
