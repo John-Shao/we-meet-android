@@ -50,6 +50,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.components.WeMeetEmptyState
 import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetInlineErrorState
+import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
@@ -193,10 +195,13 @@ fun ApprovalScreen(
                         if (state.hasMore) {
                             item {
                                 Box(Modifier.fillMaxWidth().padding(Dimens.SpaceS), contentAlignment = Alignment.Center) {
-                                    if (state.loadingMore) {
-                                        CircularProgressIndicator(Modifier.padding(Dimens.SpaceS))
-                                    } else {
-                                        OutlinedButton(onClick = { vm.loadMore() }) {
+                                    when {
+                                        state.loadingMore -> WeMeetInlineLoading()
+                                        state.loadMoreError -> WeMeetInlineErrorState(
+                                            onRetry = vm::loadMore,
+                                            message = stringResource(R.string.approval_load_error),
+                                        )
+                                        else -> OutlinedButton(onClick = vm::loadMore) {
                                             Text(stringResource(R.string.approval_load_more))
                                         }
                                     }

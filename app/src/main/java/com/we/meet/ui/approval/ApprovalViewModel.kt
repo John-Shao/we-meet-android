@@ -20,6 +20,7 @@ data class ApprovalListState(
     val items: List<ApprovalInstanceDto> = emptyList(),
     val loading: Boolean = false,
     val loadingMore: Boolean = false,
+    val loadMoreError: Boolean = false,
     val hasMore: Boolean = false,
     val error: Boolean = false,
     val loaded: Boolean = false,
@@ -67,7 +68,7 @@ class ApprovalViewModel(app: Application) : AndroidViewModel(app) {
     fun refresh() = loadFirst(_ui.value.tab)
 
     private fun loadFirst(tab: ApprovalTab) {
-        updateTab(tab) { it.copy(loading = true, error = false) }
+        updateTab(tab) { it.copy(loading = true, error = false, loadMoreError = false) }
         viewModelScope.launch {
             runCatching { api.listApprovals(role = tab.role, page = 1) }
                 .onSuccess { page ->
@@ -95,7 +96,7 @@ class ApprovalViewModel(app: Application) : AndroidViewModel(app) {
         val tab = _ui.value.tab
         val state = _ui.value.current
         if (state.loadingMore || !state.hasMore) return
-        updateTab(tab) { it.copy(loadingMore = true) }
+        updateTab(tab) { it.copy(loadingMore = true, loadMoreError = false) }
         viewModelScope.launch {
             runCatching { api.listApprovals(role = tab.role, page = state.nextPage) }
                 .onSuccess { page ->
@@ -103,12 +104,16 @@ class ApprovalViewModel(app: Application) : AndroidViewModel(app) {
                         it.copy(
                             items = (it.items + page.results).distinctBy { d -> d.id },
                             loadingMore = false,
+                            loadMoreError = false,
                             hasMore = page.next != null,
                             nextPage = it.nextPage + 1,
                         )
                     }
                 }
-                .onFailure { updateTab(tab) { it.copy(loadingMore = false) } }
+                .onFailure { error ->
+                    Log.w(TAG, "approval pagination failed", error)
+                    updateTab(tab) { it.copy(loadingMore = false, loadMoreError = true) }
+                }
         }
     }
 
