@@ -86,6 +86,8 @@
     <string name="room_subtitles_processing">字幕启动中…</string>
     <string name="room_host_only">仅主持人可用</string>
     <string name="room_hand_action_failed">举手状态更新失败，请重试</string>
+    <string name="room_microphone_action_failed">麦克风状态更新失败，请重试</string>
+    <string name="room_camera_action_failed">摄像头状态更新失败，请重试</string>
     <string name="room_screen_share_failed">无法开始屏幕共享，请重试</string>
     <string name="room_screen_share_stop_failed">无法停止屏幕共享，请重试</string>
     <string name="room_subtitles_failed">无法启动字幕，请重试</string>

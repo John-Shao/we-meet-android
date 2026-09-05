@@ -24,7 +24,10 @@ import io.livekit.android.room.track.Track
 import io.livekit.android.room.track.VideoTrack
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.update
@@ -86,6 +89,8 @@ data class RoomUiState(
     val participants: List<ParticipantUi> = emptyList(),
     val micEnabled: Boolean = true,
     val cameraEnabled: Boolean = true,
+    val micPending: Boolean = false,
+    val cameraPending: Boolean = false,
     val errorMessage: String? = null,
     /** Identity of the participant pinned to the focus (big) tile; null = Gallery mode. */
     val focusIdentity: String? = null,
@@ -166,6 +171,8 @@ data class RoomUiState(
     enum class Phase { Connecting, Connected, Error, Disconnected }
 }
 
+enum class RoomMediaActionFailure { Microphone, Camera }
+
 /**
  * A single transcription line emitted by the LiveKit agent. We keep
  * what the UI actually needs:
@@ -242,6 +249,12 @@ class RoomViewModel(
         ),
     )
     val state: StateFlow<RoomUiState> = _state.asStateFlow()
+
+    private val _mediaActionFailures = MutableSharedFlow<RoomMediaActionFailure>(
+        extraBufferCapacity = 1,
+    )
+    val mediaActionFailures: SharedFlow<RoomMediaActionFailure> =
+        _mediaActionFailures.asSharedFlow()
 
     /**
      * Subtitle segments accumulated since the agent started pushing
@@ -628,22 +641,38 @@ class RoomViewModel(
     }
 
     fun toggleMic() {
+        if (_state.value.micPending) return
         val next = !_state.value.micEnabled
         // Optimistic UI — flip the toolbar immediately, then ask LiveKit.
-        _state.update { it.copy(micEnabled = next) }
+        _state.update { it.copy(micEnabled = next, micPending = true) }
         viewModelScope.launch {
-            runCatching { controller.setMicrophoneEnabled(next) }
-                .onFailure { _state.update { it.copy(micEnabled = !next) } }
+            runCatching {
+                check(controller.setMicrophoneEnabled(next)) {
+                    "LiveKit rejected the microphone update"
+                }
+            }.onFailure {
+                _state.update { it.copy(micEnabled = !next) }
+                _mediaActionFailures.tryEmit(RoomMediaActionFailure.Microphone)
+            }
+            _state.update { it.copy(micPending = false) }
             refreshParticipants()
         }
     }
 
     fun toggleCamera() {
+        if (_state.value.cameraPending) return
         val next = !_state.value.cameraEnabled
-        _state.update { it.copy(cameraEnabled = next) }
+        _state.update { it.copy(cameraEnabled = next, cameraPending = true) }
         viewModelScope.launch {
-            runCatching { controller.setCameraEnabled(next) }
-                .onFailure { _state.update { it.copy(cameraEnabled = !next) } }
+            runCatching {
+                check(controller.setCameraEnabled(next)) {
+                    "LiveKit rejected the camera update"
+                }
+            }.onFailure {
+                _state.update { it.copy(cameraEnabled = !next) }
+                _mediaActionFailures.tryEmit(RoomMediaActionFailure.Camera)
+            }
+            _state.update { it.copy(cameraPending = false) }
             refreshParticipants()
         }
     }

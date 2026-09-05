@@ -195,6 +195,18 @@ fun RoomScreen(
     val subtitleSegments by viewModel.subtitleSegments.collectAsStateWithLifecycle()
     val aiMessages by viewModel.aiMessages.collectAsStateWithLifecycle()
     val aiAsking by viewModel.aiAsking.collectAsStateWithLifecycle()
+    val microphoneActionFailedText = stringResource(R.string.room_microphone_action_failed)
+    val cameraActionFailedText = stringResource(R.string.room_camera_action_failed)
+
+    LaunchedEffect(viewModel) {
+        viewModel.mediaActionFailures.collect { failure ->
+            val message = when (failure) {
+                RoomMediaActionFailure.Microphone -> microphoneActionFailedText
+                RoomMediaActionFailure.Camera -> cameraActionFailedText
+            }
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     // Host-ended-meeting auto-leave. When the server tells us the room was
     // deleted (not a local leave), pop back to Home and let AppNav show the
@@ -1064,6 +1076,8 @@ private fun RoomContent(
             BottomToolbar(
                 micEnabled = state.micEnabled,
                 cameraEnabled = state.cameraEnabled,
+                micPending = state.micPending,
+                cameraPending = state.cameraPending,
                 audioOutput = audioOutput,
                 onToggleMic = onToggleMic,
                 onToggleCamera = onToggleCamera,
@@ -1585,6 +1599,8 @@ private fun TopToolbar(
 private fun BottomToolbar(
     micEnabled: Boolean,
     cameraEnabled: Boolean,
+    micPending: Boolean,
+    cameraPending: Boolean,
     audioOutput: AudioOutput,
     onToggleMic: () -> Unit,
     onToggleCamera: () -> Unit,
@@ -1610,6 +1626,8 @@ private fun BottomToolbar(
             label = stringResource(R.string.room_action_mic),
             isOn = micEnabled,
             onClick = onToggleMic,
+            enabled = !micPending,
+            loading = micPending,
             modifier = Modifier.weight(1f),
             iconSize = RoomToolbarIconSize,
             iconButtonSize = BottomToolbarIconButtonSize,
@@ -1620,6 +1638,8 @@ private fun BottomToolbar(
             label = stringResource(R.string.room_action_camera),
             isOn = cameraEnabled,
             onClick = onToggleCamera,
+            enabled = !cameraPending,
+            loading = cameraPending,
             modifier = Modifier.weight(1f),
             iconSize = RoomToolbarIconSize,
             iconButtonSize = BottomToolbarIconButtonSize,

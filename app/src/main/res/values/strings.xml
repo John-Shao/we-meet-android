@@ -86,6 +86,8 @@
     <string name="room_subtitles_processing">Starting subtitles…</string>
     <string name="room_host_only">Host only</string>
     <string name="room_hand_action_failed">Couldn\'t update your hand status. Try again.</string>
+    <string name="room_microphone_action_failed">Couldn\'t update the microphone. Try again.</string>
+    <string name="room_camera_action_failed">Couldn\'t update the camera. Try again.</string>
     <string name="room_screen_share_failed">Couldn\'t start screen sharing. Try again.</string>
     <string name="room_screen_share_stop_failed">Couldn\'t stop screen sharing. Try again.</string>
     <string name="room_subtitles_failed">Couldn\'t start subtitles. Try again.</string>
