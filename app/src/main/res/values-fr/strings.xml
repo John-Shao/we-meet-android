@@ -32,6 +32,8 @@
     <string name="qr_scan_confirm_button">Confirmer la connexion</string>
     <string name="qr_scan_cancel_button">Annuler</string>
     <string name="qr_scan_back_button">Retour</string>
+    <string name="qr_scan_retry_button">Réessayer</string>
+    <string name="qr_scan_rescan_button">Scanner à nouveau</string>
     <string name="qr_scan_error_invalid">Ce QR code n\'est pas une connexion we-meet.</string>
     <string name="qr_scan_error_scan_failed">Impossible de vérifier le QR. Il a peut-être expiré — veuillez réessayer.</string>
     <string name="qr_scan_error_confirm_failed">Connexion échouée, veuillez réessayer.</string>

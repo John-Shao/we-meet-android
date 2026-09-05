@@ -32,6 +32,8 @@
     <string name="qr_scan_confirm_button">确认登录</string>
     <string name="qr_scan_cancel_button">取消</string>
     <string name="qr_scan_back_button">返回</string>
+    <string name="qr_scan_retry_button">重试</string>
+    <string name="qr_scan_rescan_button">重新扫描</string>
     <string name="qr_scan_error_invalid">该二维码不是 we-meet 登录二维码。</string>
     <string name="qr_scan_error_scan_failed">二维码校验失败，可能已过期，请重试。</string>
     <string name="qr_scan_error_confirm_failed">登录失败，请重试。</string>

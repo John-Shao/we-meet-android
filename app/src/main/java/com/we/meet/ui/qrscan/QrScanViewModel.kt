@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
  * The screen calls [onScanned] from inside the ActivityResult callback,
  * [confirm] / [cancel] from button presses, and observes [state] to render
  * the right UI. Terminal states are absorbing — the screen routes back to
- * Home on any of them.
+ * Home after confirmed/cancelled; errors retain enough context for an in-place retry.
  */
 class QrScanViewModel(
     private val qrLoginRepository: QrLoginRepository,
@@ -49,6 +49,10 @@ class QrScanViewModel(
             _state.value = QrScanState.Error(reason = ErrorReason.INVALID_QR)
             return
         }
+        scanToken(token)
+    }
+
+    private fun scanToken(token: String) {
         _state.value = QrScanState.Scanning(token = token)
         viewModelScope.launch {
             qrLoginRepository.scan(token).fold(
@@ -56,7 +60,10 @@ class QrScanViewModel(
                     _state.value = QrScanState.ReadyToConfirm(token = token, user = user)
                 },
                 onFailure = {
-                    _state.value = QrScanState.Error(reason = ErrorReason.SCAN_FAILED)
+                    _state.value = QrScanState.Error(
+                        reason = ErrorReason.SCAN_FAILED,
+                        token = token,
+                    )
                 },
             )
         }
@@ -70,10 +77,32 @@ class QrScanViewModel(
             qrLoginRepository.confirm(current.token).fold(
                 onSuccess = { _state.value = QrScanState.Confirmed },
                 onFailure = {
-                    _state.value = QrScanState.Error(reason = ErrorReason.CONFIRM_FAILED)
+                    _state.value = QrScanState.Error(
+                        reason = ErrorReason.CONFIRM_FAILED,
+                        token = current.token,
+                        user = current.user,
+                    )
                 },
             )
         }
+    }
+
+    fun retry() {
+        val error = _state.value as? QrScanState.Error ?: return
+        when (error.reason) {
+            ErrorReason.INVALID_QR -> Unit
+            ErrorReason.SCAN_FAILED -> error.token?.let(::scanToken)
+            ErrorReason.CONFIRM_FAILED -> {
+                val token = error.token ?: return
+                val user = error.user ?: return
+                _state.value = QrScanState.ReadyToConfirm(token = token, user = user)
+                confirm()
+            }
+        }
+    }
+
+    fun prepareForRescan() {
+        _state.value = QrScanState.Idle
     }
 
     /** Decline the login. Best-effort fire-and-forget on the server. */
@@ -110,7 +139,11 @@ sealed class QrScanState {
 
     object Confirmed : QrScanState()
     object Cancelled : QrScanState()
-    data class Error(val reason: ErrorReason) : QrScanState()
+    data class Error(
+        val reason: ErrorReason,
+        val token: String? = null,
+        val user: QrScanUser? = null,
+    ) : QrScanState()
 }
 
 enum class ErrorReason { INVALID_QR, SCAN_FAILED, CONFIRM_FAILED }

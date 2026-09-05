@@ -49,8 +49,8 @@ import com.we.meet.ui.theme.Dimens
  *      in the logged-in home.
  *   4. User taps "取消" or backs out → /cancel/ best-effort.
  *
- * Any terminal state ([QrScanState.Confirmed], [Cancelled], [Error]) routes
- * back to [onDone] — the caller can show a toast based on which one.
+ * Confirmed and cancelled states route back through [onDone]. Errors remain
+ * visible so users can retry in place or explicitly leave the flow.
  */
 @Composable
 fun QrScanScreen(onDone: (QrScanResult) -> Unit) {
@@ -143,6 +143,14 @@ fun QrScanScreen(onDone: (QrScanResult) -> Unit) {
                 )
                 is QrScanState.Error -> ErrorCard(
                     reason = s.reason,
+                    onRetry = {
+                        if (s.reason == ErrorReason.INVALID_QR) {
+                            vm.prepareForRescan()
+                            launchScanner()
+                        } else {
+                            vm.retry()
+                        }
+                    },
                     onDismiss = { onDone(QrScanResult.Error(s.reason)) },
                 )
                 // Confirmed / Cancelled handled by the LaunchedEffect above —
@@ -224,7 +232,11 @@ private fun ConfirmCard(
 }
 
 @Composable
-private fun ErrorCard(reason: ErrorReason, onDismiss: () -> Unit) {
+private fun ErrorCard(
+    reason: ErrorReason,
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     val message = when (reason) {
         ErrorReason.INVALID_QR -> stringResource(R.string.qr_scan_error_invalid)
         ErrorReason.SCAN_FAILED -> stringResource(R.string.qr_scan_error_scan_failed)
@@ -242,6 +254,17 @@ private fun ErrorCard(reason: ErrorReason, onDismiss: () -> Unit) {
             textAlign = TextAlign.Center,
         )
         Button(
+            onClick = onRetry,
+            modifier = Modifier.fillMaxWidth().height(Dimens.ButtonHeight),
+        ) {
+            Text(
+                stringResource(
+                    if (reason == ErrorReason.INVALID_QR) R.string.qr_scan_rescan_button
+                    else R.string.qr_scan_retry_button,
+                ),
+            )
+        }
+        OutlinedButton(
             onClick = onDismiss,
             modifier = Modifier.fillMaxWidth().height(Dimens.ButtonHeight),
         ) {

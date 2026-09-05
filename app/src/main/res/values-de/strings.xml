@@ -32,6 +32,8 @@
     <string name="qr_scan_confirm_button">Anmeldung bestätigen</string>
     <string name="qr_scan_cancel_button">Abbrechen</string>
     <string name="qr_scan_back_button">Zurück</string>
+    <string name="qr_scan_retry_button">Erneut versuchen</string>
+    <string name="qr_scan_rescan_button">Erneut scannen</string>
     <string name="qr_scan_error_invalid">Dieser QR-Code ist keine we-meet-Anmeldung.</string>
     <string name="qr_scan_error_scan_failed">QR konnte nicht geprüft werden. Möglicherweise abgelaufen — bitte erneut versuchen.</string>
     <string name="qr_scan_error_confirm_failed">Anmeldung fehlgeschlagen, bitte erneut versuchen.</string>

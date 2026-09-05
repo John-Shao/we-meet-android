@@ -32,6 +32,8 @@
     <string name="qr_scan_confirm_button">Aanmelding bevestigen</string>
     <string name="qr_scan_cancel_button">Annuleren</string>
     <string name="qr_scan_back_button">Terug</string>
+    <string name="qr_scan_retry_button">Opnieuw proberen</string>
+    <string name="qr_scan_rescan_button">Opnieuw scannen</string>
     <string name="qr_scan_error_invalid">Deze QR-code is geen we-meet aanmelding.</string>
     <string name="qr_scan_error_scan_failed">Kan de QR niet controleren. Mogelijk verlopen — probeer opnieuw.</string>
     <string name="qr_scan_error_confirm_failed">Aanmelding mislukt, probeer opnieuw.</string>

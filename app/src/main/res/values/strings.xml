@@ -32,6 +32,8 @@
     <string name="qr_scan_confirm_button">Confirm sign-in</string>
     <string name="qr_scan_cancel_button">Cancel</string>
     <string name="qr_scan_back_button">Back</string>
+    <string name="qr_scan_retry_button">Retry</string>
+    <string name="qr_scan_rescan_button">Scan again</string>
     <string name="qr_scan_error_invalid">This QR code isn\'t a we-meet sign-in.</string>
     <string name="qr_scan_error_scan_failed">Couldn\'t check the QR. It may have expired — please try again.</string>
     <string name="qr_scan_error_confirm_failed">Sign-in failed, please try again.</string>
