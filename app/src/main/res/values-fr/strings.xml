@@ -266,6 +266,7 @@
     <string name="task_search_hint">Rechercher titres, descriptions, personnes et listes</string>
     <plurals name="task_search_results">
         <item quantity="one">%1$d résultat</item>
+        <item quantity="many">%1$d de résultats</item>
         <item quantity="other">%1$d résultats</item>
     </plurals>
     <string name="task_search_empty">Aucune tâche correspondante</string>
@@ -458,6 +459,7 @@
     <string name="task_repeat_occurrences">Nombre maximal d’occurrences</string>
     <plurals name="task_repeat_min_occurrences">
         <item quantity="one">Au moins %1$d occurrence a déjà été générée.</item>
+        <item quantity="many">Au moins %1$d d’occurrences ont déjà été générées.</item>
         <item quantity="other">Au moins %1$d occurrences ont déjà été générées.</item>
     </plurals>
     <string name="task_repeat_save">Enregistrer la récurrence</string>
@@ -474,6 +476,7 @@
     <string name="task_custom_group_invalid">Le groupe personnalisé n’est plus disponible. Toutes les tâches associées sont affichées.</string>
     <plurals name="task_custom_group_task_count">
         <item quantity="one">%1$d tâche</item>
+        <item quantity="many">%1$d de tâches</item>
         <item quantity="other">%1$d tâches</item>
     </plurals>
     <string name="task_new_task_group">Nouveau groupe personnalisé</string>
@@ -485,12 +488,14 @@
     <string name="task_move_subtree_title">Déplacer l’arborescence ?</string>
     <plurals name="task_move_subtree_message">
         <item quantity="one">Cette action déplace %1$d tâche de cette arborescence.</item>
+        <item quantity="many">Cette action déplace les %1$d tâches de cette arborescence.</item>
         <item quantity="other">Cette action déplace les %1$d tâches de cette arborescence.</item>
     </plurals>
     <string name="task_delete_confirm_title">Supprimer la tâche ?</string>
     <string name="task_delete_confirm_single">Supprimer « %1$s » ? Cette action est irréversible.</string>
     <plurals name="task_delete_confirm_tree">
         <item quantity="one">Supprimer « %1$s » et %2$d tâche de son arborescence ? Cette action est irréversible.</item>
+        <item quantity="many">Supprimer « %1$s » et les %2$d tâches de son arborescence ? Cette action est irréversible.</item>
         <item quantity="other">Supprimer « %1$s » et les %2$d tâches de son arborescence ? Cette action est irréversible.</item>
     </plurals>
     <string name="task_search_filter_me">%1$s : moi</string>
