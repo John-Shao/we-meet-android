@@ -156,7 +156,10 @@ private fun MessageList(
 
 @Composable
 private fun MessageRow(message: ChatMessageUi) {
-    val maxBubbleWidth = LocalConfiguration.current.screenWidthDp.dp * 0.72f
+    val configuration = LocalConfiguration.current
+    val maxBubbleWidth = configuration.screenWidthDp.dp * 0.72f
+    val locale = configuration.locales[0]
+    val timeFormatter = remember(locale) { SimpleDateFormat("HH:mm", locale) }
     Row(verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()) {
         Avatar(name = message.senderName, identity = message.senderIdentity)
         Spacer(Modifier.width(Dimens.SpaceS))
@@ -173,7 +176,7 @@ private fun MessageRow(message: ChatMessageUi) {
                 }
                 Spacer(Modifier.width(Dimens.SpaceS))
                 Text(
-                    text = formatTime(message.timestampMs),
+                    text = timeFormatter.format(Date(message.timestampMs)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 )
@@ -299,7 +302,3 @@ private fun avatarInitials(name: String): String {
         trimmed.first().uppercase(Locale.getDefault())
     }
 }
-
-private val timeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
-
-private fun formatTime(timestampMs: Long): String = timeFormatter.format(Date(timestampMs))
