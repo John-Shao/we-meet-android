@@ -2538,9 +2538,6 @@ private fun CreateTaskPage(
     val attachmentLabel = attachmentUri?.let {
         contentDisplayName(app.contentResolver, it)
     } ?: stringResource(R.string.task_priority_none)
-    val today = LocalDate.now().toString()
-    val tomorrow = LocalDate.now().plusDays(1).toString()
-
     Scaffold(
         modifier = Modifier.testTag(TASK_CREATE_PAGE_TEST_TAG),
         containerColor = MaterialTheme.colorScheme.background,
@@ -2671,27 +2668,6 @@ private fun CreateTaskPage(
                         R.string.task_priority,
                         priorityText(selectedPriority),
                     ) { showPriorityPicker = true }
-                }
-                Row(
-                    modifier = Modifier.padding(horizontal = Dimens.SpaceM),
-                    horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
-                ) {
-                    AssistChip(
-                        onClick = {
-                            startDate = today
-                            dueDate = today
-                        },
-                        label = { Text(stringResource(R.string.task_today)) },
-                        leadingIcon = { Icon(Icons.Outlined.CalendarMonth, null, Modifier.size(Dimens.IconSmall)) },
-                    )
-                    AssistChip(
-                        onClick = {
-                            startDate = tomorrow
-                            dueDate = tomorrow
-                        },
-                        label = { Text(stringResource(R.string.task_tomorrow)) },
-                        leadingIcon = { Icon(Icons.Outlined.Alarm, null, Modifier.size(Dimens.IconSmall)) },
-                    )
                 }
             }
             item {
@@ -3688,18 +3664,19 @@ private fun SummaryActionRow(
 
 @Composable
 private fun TaskDescriptionRow(description: String, onClick: (() -> Unit)? = null) {
-    Row(
-        modifier = Modifier.fillMaxWidth().then(
-            if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
-        ).padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceM),
-        verticalAlignment = Alignment.Top,
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = Dimens.Task.DescriptionFieldHeight)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceM),
     ) {
         Icon(
             Icons.Outlined.Edit,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.align(Alignment.CenterStart),
         )
-        Spacer(Modifier.width(Dimens.SpaceM))
         Text(
             description.ifBlank { stringResource(R.string.task_description_hint) },
             color = if (description.isBlank()) {
@@ -3708,15 +3685,10 @@ private fun TaskDescriptionRow(description: String, onClick: (() -> Unit)? = nul
                 MaterialTheme.colorScheme.onSurface
             },
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = Dimens.IconMedium + Dimens.SpaceM),
         )
-        if (onClick != null) {
-            Icon(
-                Icons.Outlined.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
     }
 }
 
