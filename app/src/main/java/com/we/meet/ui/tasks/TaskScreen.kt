@@ -161,6 +161,9 @@ import com.we.meet.core.directory.ui.ContactPicker
 import com.we.meet.core.directory.ui.ContactPickerMode
 import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.core.directory.ui.PickedMember
+import com.we.meet.ui.components.WeMeetEmptyState
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 import java.time.LocalDate
@@ -542,8 +545,10 @@ fun TaskScreen(
                 activities = ui.activityFeed,
                 loading = ui.activityLoading,
                 loadingMore = ui.activityLoadingMore,
+                failed = ui.activityFailed,
                 hasMore = ui.activityHasMore,
                 onBack = { page = TaskPage.List },
+                onRetry = vm::refreshActivityFeed,
                 onLoadMore = vm::loadMoreActivityFeed,
                 onOpenTask = { activity ->
                     selectedTaskId = activity.taskId
@@ -3276,37 +3281,28 @@ private fun TaskActivityPage(
     activities: List<TaskActivityItem>,
     loading: Boolean,
     loadingMore: Boolean,
+    failed: Boolean,
     hasMore: Boolean,
     onBack: () -> Unit,
+    onRetry: () -> Unit,
     onLoadMore: () -> Unit,
     onOpenTask: (TaskActivityItem) -> Unit,
 ) {
     Scaffold(topBar = { TaskPageTopBar(stringResource(R.string.task_activity), onBack) }) { padding ->
         when {
-            loading -> Box(
-                Modifier.padding(padding).fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
+            loading && activities.isEmpty() -> WeMeetLoading(Modifier.padding(padding))
 
-            activities.isEmpty() -> Column(
-                Modifier.padding(padding).fillMaxSize().padding(Dimens.SpaceXl),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Icon(
-                    Icons.Outlined.History,
-                    null,
-                    modifier = Modifier.size(Dimens.AvatarS),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(Dimens.SpaceM))
-                Text(
-                    stringResource(R.string.task_activity_empty),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            failed && activities.isEmpty() -> WeMeetErrorState(
+                onRetry = onRetry,
+                modifier = Modifier.padding(padding),
+                message = stringResource(R.string.task_activity_load_failed),
+            )
+
+            activities.isEmpty() -> WeMeetEmptyState(
+                title = stringResource(R.string.task_activity_empty),
+                modifier = Modifier.padding(padding),
+                icon = Icons.Outlined.History,
+            )
 
             else -> LazyColumn(
                 modifier = Modifier.padding(padding).fillMaxSize(),

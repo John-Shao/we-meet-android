@@ -59,6 +59,7 @@ data class TaskUiState(
     val activityFeed: List<TaskActivityItem> = emptyList(),
     val activityLoading: Boolean = false,
     val activityLoadingMore: Boolean = false,
+    val activityFailed: Boolean = false,
     val activityPage: Int = 0,
     val activityHasMore: Boolean = false,
     val settings: TaskSettingsItem = TaskSettingsItem(),
@@ -348,6 +349,7 @@ class TaskViewModel(
             it.copy(
                 activityLoading = reset,
                 activityLoadingMore = !reset,
+                activityFailed = false,
                 failure = null,
             )
         }
@@ -364,6 +366,7 @@ class TaskViewModel(
                             },
                             activityLoading = false,
                             activityLoadingMore = false,
+                            activityFailed = false,
                             activityPage = page,
                             activityHasMore = response.next != null,
                         )
@@ -375,6 +378,7 @@ class TaskViewModel(
                         it.copy(
                             activityLoading = false,
                             activityLoadingMore = false,
+                            activityFailed = true,
                             failure = TaskFailure.Activity,
                         )
                     }
