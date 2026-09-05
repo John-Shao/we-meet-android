@@ -68,6 +68,37 @@ fun WeMeetInlineLoading(modifier: Modifier = Modifier) {
     }
 }
 
+/** Compact empty state for a section, card, or sheet within an existing page. */
+@Composable
+fun WeMeetInlineEmptyState(
+    title: String,
+    modifier: Modifier = Modifier,
+    description: String? = null,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = Dimens.SpaceL),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        if (description != null) {
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
 /**
  * 空态:没有内容,但也没出错。
  *

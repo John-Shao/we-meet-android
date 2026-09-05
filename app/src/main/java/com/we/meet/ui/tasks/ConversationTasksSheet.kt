@@ -57,6 +57,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.R
 import com.we.meet.WeMeetApp
+import com.we.meet.ui.components.WeMeetInlineEmptyState
+import com.we.meet.ui.components.WeMeetInlineErrorState
+import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -139,39 +142,35 @@ fun ConversationTasksSheet(
                 }
                 Spacer(Modifier.height(Dimens.SpaceL))
                 when {
-                    ui.loading -> CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                    ui.loading && ui.tasks.isEmpty() -> WeMeetInlineLoading()
+                    ui.failed && ui.tasks.isEmpty() -> WeMeetInlineErrorState(
+                        onRetry = vm::refresh,
+                        message = stringResource(R.string.task_load_failed),
                     )
-                    ui.failed -> Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
-                    ) {
-                        Text(
-                            stringResource(R.string.task_load_failed),
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        OutlinedButton(onClick = vm::refresh) {
-                            Text(stringResource(R.string.task_retry))
-                        }
-                    }
-                    ui.tasks.isEmpty() -> Text(
-                        stringResource(R.string.task_conversation_empty),
-                        modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceXl),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ui.tasks.isEmpty() -> WeMeetInlineEmptyState(
+                        title = stringResource(R.string.task_conversation_empty),
                     )
-                    else -> LazyColumn(
-                        modifier = Modifier.fillMaxWidth()
-                            .heightIn(max = Dimens.Chat.SheetListMaxHeight),
-                        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
-                    ) {
-                        items(ui.tasks, key = TaskItem::id) { task ->
-                            ConversationTaskRow(
-                                task = task,
-                                mutating = task.id in ui.mutatingIds,
-                                onOpen = { vm.openTask(task) },
-                                onToggleCompleted = { vm.toggleCompleted(task) },
+                    else -> {
+                        if (ui.loading) LinearProgressIndicator(Modifier.fillMaxWidth())
+                        if (ui.failed) {
+                            WeMeetInlineErrorState(
+                                onRetry = vm::refresh,
+                                message = stringResource(R.string.task_save_failed),
                             )
+                        }
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth()
+                                .heightIn(max = Dimens.Chat.SheetListMaxHeight),
+                            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
+                        ) {
+                            items(ui.tasks, key = TaskItem::id) { task ->
+                                ConversationTaskRow(
+                                    task = task,
+                                    mutating = task.id in ui.mutatingIds,
+                                    onOpen = { vm.openTask(task) },
+                                    onToggleCompleted = { vm.toggleCompleted(task) },
+                                )
+                            }
                         }
                     }
                 }
@@ -332,14 +331,10 @@ private fun ConversationTaskDetail(
     }
     if (detail.loading) LinearProgressIndicator(Modifier.fillMaxWidth())
     if (failed) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceL),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
-        ) {
-            Text(stringResource(R.string.task_load_failed), color = MaterialTheme.colorScheme.error)
-            OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.task_retry)) }
-        }
+        WeMeetInlineErrorState(
+            onRetry = onRetry,
+            message = stringResource(R.string.task_load_failed),
+        )
     }
     actionFailure?.let { failure ->
         Text(
