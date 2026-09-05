@@ -215,24 +215,30 @@ class GroupInfoViewModel internal constructor(
     }
 
     /** Toggle per-conversation pin (P10). */
-    fun togglePin() {
-        val next = !_ui.value.pinned
-        _ui.update { it.copy(pinned = next) }
-        session.conversations.setPinned(cid, next)
+    fun togglePin() = mutate {
+        val previous = _ui.value.pinned
+        _ui.update { it.copy(pinned = !previous) }
+        session.conversations.setPinned(cid, !previous).onFailure {
+            _ui.update { state -> state.copy(pinned = previous) }
+        }.getOrThrow()
     }
 
     /** Toggle per-conversation mute (P10). */
-    fun toggleMute() {
-        val next = !_ui.value.muted
-        _ui.update { it.copy(muted = next) }
-        session.conversations.setMuted(cid, next)
+    fun toggleMute() = mutate {
+        val previous = _ui.value.muted
+        _ui.update { it.copy(muted = !previous) }
+        session.conversations.setMuted(cid, !previous).onFailure {
+            _ui.update { state -> state.copy(muted = previous) }
+        }.getOrThrow()
     }
 
     /** Toggle @all notification suppression (P10). */
-    fun toggleMuteAtAll() {
-        val next = !_ui.value.muteAtAll
-        _ui.update { it.copy(muteAtAll = next) }
-        session.conversations.setMuteAtAll(cid, next)
+    fun toggleMuteAtAll() = mutate {
+        val previous = _ui.value.muteAtAll
+        _ui.update { it.copy(muteAtAll = !previous) }
+        session.conversations.setMuteAtAll(cid, !previous).onFailure {
+            _ui.update { state -> state.copy(muteAtAll = previous) }
+        }.getOrThrow()
     }
 
     // ---- internals ----
@@ -261,8 +267,9 @@ class GroupInfoViewModel internal constructor(
     }
 
     private fun mutate(block: suspend () -> Unit) {
+        if (_ui.value.busy) return
+        _ui.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
-            _ui.update { it.copy(busy = true, error = null) }
             try {
                 block()
                 _ui.update { it.copy(busy = false) }

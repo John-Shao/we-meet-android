@@ -183,12 +183,14 @@ fun DirectChatSettingsScreen(
             ImSwitchRow(
                 label = stringResource(R.string.im_menu_pin),
                 checked = ui.pinned,
+                enabled = !ui.busy,
                 onToggle = { vm.togglePin() },
             )
             // Mute toggle.
             ImSwitchRow(
                 label = stringResource(R.string.im_menu_mute),
                 checked = ui.muted,
+                enabled = !ui.busy,
                 onToggle = { vm.toggleMute() },
             )
 

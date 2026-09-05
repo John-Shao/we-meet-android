@@ -284,16 +284,19 @@ fun GroupInfoScreen(
                     ImSwitchRow(
                         label = stringResource(R.string.im_menu_pin),
                         checked = ui.pinned,
+                        enabled = !ui.busy,
                         onToggle = { vm.togglePin() },
                     )
                     ImSwitchRow(
                         label = stringResource(R.string.im_menu_mute),
                         checked = ui.muted,
+                        enabled = !ui.busy,
                         onToggle = { vm.toggleMute() },
                     )
                     ImSwitchRow(
                         label = stringResource(R.string.im_menu_mute_at_all),
                         checked = ui.muteAtAll,
+                        enabled = !ui.busy,
                         onToggle = { vm.toggleMuteAtAll() },
                     )
                     HorizontalDivider()

@@ -108,15 +108,30 @@ internal class ConversationRepository(
         }
     }
 
-    /** Optimistic local patch + server settings write. */
-    fun setPinned(cid: String, pinned: Boolean) = patchSettings(cid) { it.copy(pinned = pinned) }
-        .also { scope.launch { runCatching { client.setConversationSettings(cid, pinned = pinned) } } }
+    /** Optimistic local patch + server write, with field-scoped rollback. */
+    suspend fun setPinned(cid: String, pinned: Boolean): Result<Unit> = updateSetting(
+        cid = cid,
+        value = pinned,
+        read = { it.pinned },
+        patch = { conversation, value -> conversation.copy(pinned = value) },
+        write = { client.setConversationSettings(cid, pinned = pinned) },
+    )
 
-    fun setMuted(cid: String, muted: Boolean) = patchSettings(cid) { it.copy(muted = muted) }
-        .also { scope.launch { runCatching { client.setConversationSettings(cid, muted = muted) } } }
+    suspend fun setMuted(cid: String, muted: Boolean): Result<Unit> = updateSetting(
+        cid = cid,
+        value = muted,
+        read = { it.muted },
+        patch = { conversation, value -> conversation.copy(muted = value) },
+        write = { client.setConversationSettings(cid, muted = muted) },
+    )
 
-    fun setMuteAtAll(cid: String, muteAtAll: Boolean) = patchSettings(cid) { it.copy(muteAtAll = muteAtAll) }
-        .also { scope.launch { runCatching { client.setConversationSettings(cid, muteAtAll = muteAtAll) } } }
+    suspend fun setMuteAtAll(cid: String, muteAtAll: Boolean): Result<Unit> = updateSetting(
+        cid = cid,
+        value = muteAtAll,
+        read = { it.muteAtAll },
+        patch = { conversation, value -> conversation.copy(muteAtAll = value) },
+        write = { client.setConversationSettings(cid, muteAtAll = muteAtAll) },
+    )
 
     /** Delete/leave; on success the row disappears locally right away. */
     suspend fun deleteOrLeave(cid: String, transferTo: String? = null): Result<Unit> =
@@ -150,6 +165,27 @@ internal class ConversationRepository(
 
     private fun patchSettings(cid: String, patch: (ConversationSummary) -> ConversationSummary) {
         mutate { list -> list.map { if (it.cid == cid) patch(it) else it } }
+    }
+
+    private suspend fun updateSetting(
+        cid: String,
+        value: Boolean,
+        read: (ConversationSummary) -> Boolean,
+        patch: (ConversationSummary, Boolean) -> ConversationSummary,
+        write: suspend () -> Unit,
+    ): Result<Unit> {
+        val previous = _conversations.value.firstOrNull { it.cid == cid }?.let(read)
+            ?: return Result.failure(IllegalStateException("Conversation not found"))
+        if (previous == value) return Result.success(Unit)
+
+        patchSettings(cid) { patch(it, value) }
+        return runCatching { write() }.onFailure {
+            // Do not overwrite a newer user action if another update completed
+            // while this request was in flight.
+            patchSettings(cid) { current ->
+                if (read(current) == value) patch(current, previous) else current
+            }
+        }
     }
 
     /** Apply + re-sort + recompute the badge in one pass. */

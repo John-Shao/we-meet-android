@@ -142,14 +142,27 @@ class ConversationListViewModel internal constructor(
 
     fun retryConnection() = session.retry()
 
-    fun togglePin(row: ConversationRowUi) =
+    fun togglePin(row: ConversationRowUi) = updateSetting {
         session.conversations.setPinned(row.cid, !row.pinned)
+    }
 
-    fun toggleMute(row: ConversationRowUi) =
+    fun toggleMute(row: ConversationRowUi) = updateSetting {
         session.conversations.setMuted(row.cid, !row.muted)
+    }
 
-    fun toggleMuteAtAll(row: ConversationRowUi) =
+    fun toggleMuteAtAll(row: ConversationRowUi) = updateSetting {
         session.conversations.setMuteAtAll(row.cid, !row.muteAtAll)
+    }
+
+    private fun updateSetting(action: suspend () -> Result<Unit>) {
+        viewModelScope.launch {
+            _actionError.value = null
+            action().onFailure {
+                Log.w(TAG, "conversation setting update failed", it)
+                _actionError.value = it.userMessageRes()
+            }
+        }
+    }
 
     /**
      * Direct → hide; group member → leave; group owner → server auto-transfers
