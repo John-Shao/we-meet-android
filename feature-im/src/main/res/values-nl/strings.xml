@@ -229,6 +229,7 @@
     <string name="im_search_cat_meetings">Vergaderingen</string>
     <string name="im_search_cat_messages">Berichten</string>
     <string name="im_search_cat_docs">Documenten</string>
+    <string name="im_search_category_no_results">Geen overeenkomende resultaten voor %1$s</string>
 
     <!-- P1-4 M3 App AI 问答 -->
     <string name="im_search_cat_ai">Vraag AI</string>

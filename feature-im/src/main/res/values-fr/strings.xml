@@ -229,6 +229,7 @@
     <string name="im_search_cat_meetings">Réunions</string>
     <string name="im_search_cat_messages">Messages</string>
     <string name="im_search_cat_docs">Documents</string>
+    <string name="im_search_category_no_results">Aucun résultat correspondant pour %1$s</string>
 
     <!-- P1-4 M3 App AI 问答 -->
     <string name="im_search_cat_ai">Demander à l’IA</string>

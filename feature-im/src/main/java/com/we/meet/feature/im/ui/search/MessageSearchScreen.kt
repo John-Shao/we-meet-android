@@ -52,6 +52,7 @@ import com.we.meet.feature.im.data.GroupTile
 import com.we.meet.feature.im.data.ImSearchItem
 import com.we.meet.feature.im.ui.common.GroupAvatar
 import com.we.meet.feature.im.ui.common.previewText
+import com.we.meet.ui.components.WeMeetInlineEmptyState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.design.R as DesignR
@@ -145,8 +146,23 @@ fun MessageSearchScreen(
     var loadingMoreFailed by remember { mutableStateOf(false) }
     var searchedOnce by remember { mutableStateOf(false) }
     var contacts by remember { mutableStateOf<List<GlobalSearchContact>>(emptyList()) }
+    var contactsLoading by remember { mutableStateOf(false) }
+    var contactsFailed by remember { mutableStateOf(false) }
+    var contactsSearched by remember { mutableStateOf(false) }
+    var contactsRetryNonce by remember { mutableStateOf(0) }
+    var contactsResultQuery by remember { mutableStateOf("") }
     var meetings by remember { mutableStateOf<List<GlobalSearchMeeting>>(emptyList()) }
+    var meetingsLoading by remember { mutableStateOf(false) }
+    var meetingsFailed by remember { mutableStateOf(false) }
+    var meetingsSearched by remember { mutableStateOf(false) }
+    var meetingsRetryNonce by remember { mutableStateOf(0) }
+    var meetingsResultQuery by remember { mutableStateOf("") }
     var docs by remember { mutableStateOf<List<GlobalSearchDoc>>(emptyList()) }
+    var docsLoading by remember { mutableStateOf(false) }
+    var docsFailed by remember { mutableStateOf(false) }
+    var docsSearched by remember { mutableStateOf(false) }
+    var docsRetryNonce by remember { mutableStateOf(0) }
+    var docsResultQuery by remember { mutableStateOf("") }
     // AI 问答:仅显式触发(按钮/回车),绝不随输入自动发起(成本闸门,同 Web)。
     var ask by remember { mutableStateOf(AskUiState()) }
     var askJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
@@ -252,31 +268,98 @@ fun MessageSearchScreen(
     }
 
     // 联系人/会议:轻量源,同样 300ms debounce(q≥1)。
-    LaunchedEffect(query) {
+    LaunchedEffect(query, contactsRetryNonce) {
         val q = query.trim()
-        if (q.isEmpty()) {
+        if (q.isEmpty() || searchContacts == null) {
             contacts = emptyList()
-            meetings = emptyList()
+            contactsLoading = false
+            contactsFailed = false
+            contactsSearched = false
+            contactsResultQuery = ""
             return@LaunchedEffect
         }
-        delay(300)
-        if (searchContacts != null) {
-            contacts = runCatching { searchContacts(q) }.getOrDefault(emptyList())
+        if (q != contactsResultQuery) {
+            contacts = emptyList()
+            contactsSearched = false
+            contactsResultQuery = q
         }
-        if (searchMeetings != null) {
-            meetings = runCatching { searchMeetings(q) }.getOrDefault(emptyList())
+        delay(300)
+        contactsLoading = true
+        contactsFailed = false
+        try {
+            contacts = searchContacts(q)
+            contactsSearched = true
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (_: Throwable) {
+            contactsFailed = true
+            contactsSearched = true
+        } finally {
+            contactsLoading = false
+        }
+    }
+
+    LaunchedEffect(query, meetingsRetryNonce) {
+        val q = query.trim()
+        if (q.isEmpty() || searchMeetings == null) {
+            meetings = emptyList()
+            meetingsLoading = false
+            meetingsFailed = false
+            meetingsSearched = false
+            meetingsResultQuery = ""
+            return@LaunchedEffect
+        }
+        if (q != meetingsResultQuery) {
+            meetings = emptyList()
+            meetingsSearched = false
+            meetingsResultQuery = q
+        }
+        delay(300)
+        meetingsLoading = true
+        meetingsFailed = false
+        try {
+            meetings = searchMeetings(q)
+            meetingsSearched = true
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (_: Throwable) {
+            meetingsFailed = true
+            meetingsSearched = true
+        } finally {
+            meetingsLoading = false
         }
     }
 
     // 文档:网络源,q≥2(与后端校验一致)。
-    LaunchedEffect(query) {
+    LaunchedEffect(query, docsRetryNonce) {
         val q = query.trim()
         if (q.length < 2 || searchDocs == null) {
             docs = emptyList()
+            docsLoading = false
+            docsFailed = false
+            docsSearched = false
+            docsResultQuery = ""
             return@LaunchedEffect
         }
+        if (q != docsResultQuery) {
+            docs = emptyList()
+            docsSearched = false
+            docsResultQuery = q
+        }
         delay(300)
-        docs = runCatching { searchDocs(q) }.getOrDefault(emptyList())
+        docsLoading = true
+        docsFailed = false
+        try {
+            docs = searchDocs(q)
+            docsSearched = true
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (_: Throwable) {
+            docsFailed = true
+            docsSearched = true
+        } finally {
+            docsLoading = false
+        }
     }
 
     val loadMore: () -> Unit = {
@@ -459,6 +542,26 @@ fun MessageSearchScreen(
                     }
                 }
 
+                if (
+                    category == SearchCategory.CONTACTS && query.trim().isNotEmpty() &&
+                    contacts.isEmpty()
+                ) {
+                    item(key = "contacts-state") {
+                        when {
+                            contactsLoading -> WeMeetInlineLoading()
+                            contactsFailed -> WeMeetInlineErrorState(
+                                onRetry = { contactsRetryNonce += 1 },
+                            )
+                            contactsSearched -> WeMeetInlineEmptyState(
+                                title = stringResource(
+                                    R.string.im_search_category_no_results,
+                                    labelFor(SearchCategory.CONTACTS),
+                                ),
+                            )
+                        }
+                    }
+                }
+
                 if (showContacts && contacts.isNotEmpty()) {
                     val shown = if (inAll) contacts.take(3) else contacts
                     item(key = "sec-contacts") {
@@ -478,6 +581,26 @@ fun MessageSearchScreen(
                                 }
                             },
                         )
+                    }
+                }
+
+                if (
+                    category == SearchCategory.MEETINGS && query.trim().isNotEmpty() &&
+                    meetings.isEmpty()
+                ) {
+                    item(key = "meetings-state") {
+                        when {
+                            meetingsLoading -> WeMeetInlineLoading()
+                            meetingsFailed -> WeMeetInlineErrorState(
+                                onRetry = { meetingsRetryNonce += 1 },
+                            )
+                            meetingsSearched -> WeMeetInlineEmptyState(
+                                title = stringResource(
+                                    R.string.im_search_category_no_results,
+                                    labelFor(SearchCategory.MEETINGS),
+                                ),
+                            )
+                        }
                     }
                 }
 
@@ -598,6 +721,26 @@ fun MessageSearchScreen(
                                         .padding(Dimens.SpaceL),
                                 )
                             }
+                        }
+                    }
+                }
+
+                if (
+                    category == SearchCategory.DOCS && query.trim().length >= 2 &&
+                    docs.isEmpty()
+                ) {
+                    item(key = "docs-state") {
+                        when {
+                            docsLoading -> WeMeetInlineLoading()
+                            docsFailed -> WeMeetInlineErrorState(
+                                onRetry = { docsRetryNonce += 1 },
+                            )
+                            docsSearched -> WeMeetInlineEmptyState(
+                                title = stringResource(
+                                    R.string.im_search_category_no_results,
+                                    labelFor(SearchCategory.DOCS),
+                                ),
+                            )
                         }
                     }
                 }
