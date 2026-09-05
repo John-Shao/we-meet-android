@@ -1,6 +1,5 @@
 # 设计规范违规基线 —— 由 ./gradlew checkDesignTokens -Pdesign.baseline 生成
 # 格式: 规则|文件路径|数量。数字只许降不许升,详见 docs/设计规范.md
-raw-color-named|app/src/main/java/com/we/meet/ui/profile/AvatarCropDialog.kt|9
 raw-color-named|app/src/main/java/com/we/meet/ui/room/ParticipantTile.kt|8
 raw-color-named|app/src/main/java/com/we/meet/ui/room/PipLayout.kt|1
 raw-color-named|app/src/main/java/com/we/meet/ui/room/RoomScreen.kt|17

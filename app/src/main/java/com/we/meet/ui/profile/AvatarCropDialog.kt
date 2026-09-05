@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -32,10 +34,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -47,6 +49,7 @@ import coil.request.SuccessResult
 import com.we.meet.R
 import com.we.meet.design.R as DesignR
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.OnMediaOverlay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -139,7 +142,7 @@ fun ImageCropDialog(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black),
+                .background(MaterialTheme.colorScheme.scrim),
         ) {
             Box(modifier = Modifier.weight(1f)) {
                 val bmp = bitmap
@@ -156,14 +159,19 @@ fun ImageCropDialog(
                     ) {
                         Text(
                             text = stringResource(R.string.profile_image_error_upload),
-                            color = Color.White,
+                            color = OnMediaOverlay,
                         )
-                        TextButton(onClick = { loadRetryNonce += 1 }) {
+                        TextButton(
+                            onClick = { loadRetryNonce += 1 },
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = OnMediaOverlay,
+                            ),
+                        ) {
                             Text(stringResource(DesignR.string.common_retry))
                         }
                     }
                     else -> CircularProgressIndicator(
-                        color = Color.White,
+                        color = OnMediaOverlay,
                         modifier = Modifier.align(Alignment.Center),
                     )
                 }
@@ -172,9 +180,9 @@ fun ImageCropDialog(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.5f)),
+                            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f)),
                         contentAlignment = Alignment.Center,
-                    ) { CircularProgressIndicator(color = Color.White) }
+                    ) { CircularProgressIndicator(color = OnMediaOverlay) }
                 }
             }
 
@@ -185,8 +193,12 @@ fun ImageCropDialog(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(onClick = onCancel, enabled = !rendering) {
-                    Text(stringResource(R.string.cancel), color = Color.White)
+                TextButton(
+                    onClick = onCancel,
+                    enabled = !rendering,
+                    colors = ButtonDefaults.textButtonColors(contentColor = OnMediaOverlay),
+                ) {
+                    Text(stringResource(R.string.cancel))
                 }
                 TextButton(
                     onClick = {
@@ -201,8 +213,9 @@ fun ImageCropDialog(
                         }
                     },
                     enabled = bitmap != null && state.ready && !rendering,
+                    colors = ButtonDefaults.textButtonColors(contentColor = OnMediaOverlay),
                 ) {
-                    Text(stringResource(R.string.ok), color = Color.White)
+                    Text(stringResource(R.string.ok))
                 }
             }
         }
@@ -211,6 +224,7 @@ fun ImageCropDialog(
 
 @Composable
 private fun CropCanvas(bitmap: Bitmap, aspect: Float, state: CropState) {
+    val overlayScrim = MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f)
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val areaW = constraints.maxWidth.toFloat()
         val areaH = constraints.maxHeight.toFloat()
@@ -276,22 +290,21 @@ private fun CropCanvas(bitmap: Bitmap, aspect: Float, state: CropState) {
                 canvas.nativeCanvas.drawBitmap(bitmap, m, PREVIEW_PAINT)
             }
             // Dim everything outside the crop window.
-            val scrim = Color.Black.copy(alpha = 0.5f)
-            drawRect(scrim, topLeft = Offset.Zero, size = Size(size.width, winTop))
+            drawRect(overlayScrim, topLeft = Offset.Zero, size = Size(size.width, winTop))
             drawRect(
-                scrim,
+                overlayScrim,
                 topLeft = Offset(0f, winTop + winH),
                 size = Size(size.width, size.height - winTop - winH),
             )
-            drawRect(scrim, topLeft = Offset(0f, winTop), size = Size(winLeft, winH))
+            drawRect(overlayScrim, topLeft = Offset(0f, winTop), size = Size(winLeft, winH))
             drawRect(
-                scrim,
+                overlayScrim,
                 topLeft = Offset(winLeft + winW, winTop),
                 size = Size(size.width - winLeft - winW, winH),
             )
             // Window outline.
             drawRect(
-                color = Color.White,
+                color = OnMediaOverlay,
                 topLeft = Offset(winLeft, winTop),
                 size = Size(winW, winH),
                 style = Stroke(width = 2f),
@@ -314,7 +327,7 @@ private fun renderCrop(bitmap: Bitmap, state: CropState, outW: Int, outH: Int): 
     val out = Bitmap.createBitmap(outW, outH, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(out)
     // Flatten any transparency (PNG source) onto white before JPEG encoding.
-    canvas.drawColor(android.graphics.Color.WHITE)
+    canvas.drawColor(OnMediaOverlay.toArgb())
     val outScale = outW / state.winW
     val m = Matrix().apply {
         setScale(state.scale * outScale, state.scale * outScale)
