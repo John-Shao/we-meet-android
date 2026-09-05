@@ -1050,12 +1050,16 @@ private fun RoomContent(
     // so the dismiss + sheet teardown ordering stays predictable, and so
     // the dialog survives if the user navigates away from the sheet.
     var showRenameDialog by remember { mutableStateOf(false) }
+    var renameSaving by remember { mutableStateOf(false) }
+    var renameError by remember { mutableStateOf(false) }
 
     // Kick-confirmation candidate. The sheet immediately closes when the
     // host picks "踢出" so the confirm dialog reads on the meeting back-
     // drop, not under a half-opened sheet. `candidate` carries both
     // identity (for the API call) and display name (for the prompt).
     var kickCandidate by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var kickSaving by remember { mutableStateOf(false) }
+    val removeFailedText = stringResource(R.string.room_host_remove_failed)
 
     // Participants bottom sheet
     if (showParticipants) {
@@ -1074,6 +1078,7 @@ private fun RoomContent(
             },
             onRenameSelfClick = {
                 showParticipants = false
+                renameError = false
                 showRenameDialog = true
             },
             onMuteClick = { identity ->
@@ -1081,6 +1086,7 @@ private fun RoomContent(
             },
             onRemoveClick = { identity, name ->
                 showParticipants = false
+                kickSaving = false
                 kickCandidate = identity to name
             },
             onDismiss = { showParticipants = false },
@@ -1091,22 +1097,54 @@ private fun RoomContent(
         val initialName = state.participants.firstOrNull { it.isLocal }?.name.orEmpty()
         RenameDialog(
             initial = initialName,
+            inFlight = renameSaving,
+            error = renameError,
             onConfirm = { newName ->
-                scope.launch { onRenameSelf(newName) }
-                showRenameDialog = false
+                if (!renameSaving) {
+                    renameSaving = true
+                    renameError = false
+                    scope.launch {
+                        onRenameSelf(newName)
+                            .onSuccess {
+                                renameSaving = false
+                                showRenameDialog = false
+                            }
+                            .onFailure {
+                                renameSaving = false
+                                renameError = true
+                            }
+                    }
+                }
             },
-            onDismiss = { showRenameDialog = false },
+            onDismiss = { if (!renameSaving) showRenameDialog = false },
         )
     }
 
     kickCandidate?.let { (identity, name) ->
         KickConfirmDialog(
             participantName = name,
+            inFlight = kickSaving,
             onConfirm = {
-                scope.launch { onRemoveParticipant(identity) }
-                kickCandidate = null
+                if (!kickSaving) {
+                    kickSaving = true
+                    scope.launch {
+                        onRemoveParticipant(identity)
+                            .onSuccess {
+                                kickSaving = false
+                                kickCandidate = null
+                            }
+                            .onFailure {
+                                kickSaving = false
+                                Toast.makeText(
+                                    context,
+                                    removeFailedText,
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                    }
+                }
             },
-            onDismiss = { kickCandidate = null },
+            onDismiss = { if (!kickSaving) kickCandidate = null },
         )
     }
 
@@ -1926,23 +1964,35 @@ private fun ParticipantHostMenu(
 @Composable
 private fun KickConfirmDialog(
     participantName: String,
+    inFlight: Boolean,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!inFlight) onDismiss() },
         title = { Text(stringResource(R.string.room_host_remove_title)) },
         text = { Text(stringResource(R.string.room_host_remove_message, participantName)) },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
+                enabled = !inFlight,
                 colors = ButtonDefaults.textButtonColors(
                     contentColor = WeMeetTheme.extras.status.danger,
                 ),
-            ) { Text(stringResource(R.string.room_host_remove)) }
+            ) {
+                if (inFlight) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(Dimens.IconSmall),
+                        strokeWidth = Dimens.BorderEmphasis,
+                        color = WeMeetTheme.extras.status.danger,
+                    )
+                } else {
+                    Text(stringResource(R.string.room_host_remove))
+                }
+            }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !inFlight) {
                 Text(stringResource(R.string.room_rename_cancel))
             }
         },
@@ -1952,6 +2002,8 @@ private fun KickConfirmDialog(
 @Composable
 private fun RenameDialog(
     initial: String,
+    inFlight: Boolean,
+    error: Boolean,
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -1960,24 +2012,43 @@ private fun RenameDialog(
     // (matches web's silent no-op rather than a noisy validation error).
     var value by remember(initial) { mutableStateOf(initial) }
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!inFlight) onDismiss() },
         title = { Text(stringResource(R.string.room_rename_title)) },
         text = {
-            OutlinedTextField(
-                value = value,
-                onValueChange = { value = it.take(80) },
-                singleLine = true,
-                label = { Text(stringResource(R.string.room_rename_label)) },
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = { value = it.take(80) },
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.room_rename_label)) },
+                    enabled = !inFlight,
+                )
+                if (error) {
+                    Text(
+                        text = stringResource(R.string.room_rename_failed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
         },
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(value.trim()) },
-                enabled = value.trim().isNotEmpty() && value.trim() != initial.trim(),
-            ) { Text(stringResource(R.string.room_rename_confirm)) }
+                enabled = !inFlight && value.trim().isNotEmpty() && value.trim() != initial.trim(),
+            ) {
+                if (inFlight) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(Dimens.IconSmall),
+                        strokeWidth = Dimens.BorderEmphasis,
+                    )
+                } else {
+                    Text(stringResource(R.string.room_rename_confirm))
+                }
+            }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !inFlight) {
                 Text(stringResource(R.string.room_rename_cancel))
             }
         },
