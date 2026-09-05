@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
-import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import android.view.Gravity
@@ -59,10 +58,7 @@ class ScreenShareOverlay(context: Context) {
     }
 
     /** True when the host OS lets us draw overlays right now. */
-    fun canDrawOverlays(context: Context): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
-        return Settings.canDrawOverlays(context)
-    }
+    fun canDrawOverlays(context: Context): Boolean = Settings.canDrawOverlays(context)
 
     private fun refresh() {
         val shouldShow = sharing && !activityForeground
@@ -112,16 +108,9 @@ class ScreenShareOverlay(context: Context) {
             },
         )
 
-        @Suppress("DEPRECATION")
-        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        } else {
-            WindowManager.LayoutParams.TYPE_PHONE
-        }
-
         val params = WindowManager.LayoutParams(
             sizePx, sizePx,
-            type,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT,
         ).apply {

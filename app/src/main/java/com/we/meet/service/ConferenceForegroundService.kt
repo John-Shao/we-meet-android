@@ -36,23 +36,19 @@ class ConferenceForegroundService : Service() {
         val roomName = intent?.getStringExtra(EXTRA_ROOM_NAME).orEmpty()
         val notification = buildNotification(roomName)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // Declare each type we actually use. The OS verifies against the
-            // manifest's foregroundServiceType AND the runtime
-            // FOREGROUND_SERVICE_* permissions.
-            val types = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-            } else {
-                // Camera and microphone service types were added in API 30;
-                // API 29 can only declare the media-playback portion here.
+        // Declare each type we actually use. The OS verifies against the
+        // manifest's foregroundServiceType AND the runtime
+        // FOREGROUND_SERVICE_* permissions.
+        val types = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-            }
-            startForeground(NOTIFICATION_ID, notification, types)
         } else {
-            startForeground(NOTIFICATION_ID, notification)
+            // Camera and microphone service types were added in API 30;
+            // API 29 can only declare the media-playback portion here.
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
         }
+        startForeground(NOTIFICATION_ID, notification, types)
 
         // Don't auto-restart a meeting service the OS killed — by the time
         // we'd be re-summoned the room is almost certainly gone.
@@ -81,7 +77,6 @@ class ConferenceForegroundService : Service() {
     }
 
     private fun ensureChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val nm = getSystemService(NotificationManager::class.java) ?: return
         if (nm.getNotificationChannel(CHANNEL_ID) != null) return
         val channel = NotificationChannel(

@@ -34,6 +34,11 @@ livekitCompose = "2.2.1"
 
 # Image loading
 coil = "2.7.0"
+getuiSdk = "3.3.15.0"
+getuiCore = "3.3.3.0"
+zxingEmbedded = "4.3.0"
+androidxTestExtJunit = "1.2.1"
+androidxTestRunner = "1.6.2"
 
 # Testing (JVM unit tests). org.json 是**故意**引进来的:MessageContentParser 用
 # android.jar 里的 org.json,而那份在 JVM 单测里全是 `throw RuntimeException("Stub!")`。
@@ -88,10 +93,18 @@ livekit-android-compose-components = { module = "io.livekit:livekit-android-comp
 
 # Image loading
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+getui-sdk = { module = "com.getui:gtsdk", version.ref = "getuiSdk" }
+getui-core = { module = "com.getui:gtc", version.ref = "getuiCore" }
+zxing-android-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxingEmbedded" }
+jusi-lightim-sdk-im = { module = "com.jusi.lightim:sdk-im" }
 
 # Testing
 junit = { module = "junit:junit", version.ref = "junit" }
 org-json = { module = "org.json:json", version.ref = "orgJson" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
+androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -5,7 +5,6 @@ import android.media.AudioAttributes
 import android.media.AudioDeviceInfo
 import android.media.AudioTrack
 import android.media.MediaRecorder
-import android.os.Build
 import android.util.Log
 import livekit.org.webrtc.audio.JavaAudioDeviceModule
 
@@ -67,8 +66,8 @@ class CallAudioDeviceModule(context: Context) {
         // Match LiveKit's own defaults for VoIP:
         .setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION)
         .setAudioAttributes(attrs)
-        .setUseHardwareAcousticEchoCanceler(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-        .setUseHardwareNoiseSuppressor(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+        .setUseHardwareAcousticEchoCanceler(true)
+        .setUseHardwareNoiseSuppressor(true)
         // Disable LOW_LATENCY so the AudioTrack honors system routing changes
         // (LOW_LATENCY tracks get pinned to the fast-mixer speaker path).
         .setUseLowLatency(false)

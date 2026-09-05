@@ -14,17 +14,9 @@
     <string name="login_error_otp_format">请输入 6 位短信验证码。</string>
 
     <!-- Home screen -->
-    <string name="home_title">We Meet</string>
-    <string name="home_room_label">会议号</string>
-    <string name="home_room_hint">例如 499707</string>
     <string name="home_create_meeting">快速会议</string>
     <string name="home_join_meeting">加入会议</string>
     <string name="home_create_later_meeting">预约会议</string>
-    <string name="home_join">加入</string>
-    <string name="home_logout">退出登录</string>
-    <string name="home_signed_in_as">已登录：%1$s</string>
-    <string name="home_settings">设置</string>
-    <string name="home_scan_qr">扫一扫</string>
 
     <!-- 扫码登录确认页 -->
     <string name="qr_scan_confirm_title">网页端登录</string>
@@ -80,10 +72,8 @@
     <string name="room_more_lower_hand">放下手</string>
     <string name="room_more_share">共享</string>
     <string name="room_more_record">录制</string>
-    <string name="room_more_interpret">同传</string>
     <string name="room_more_settings">设置</string>
     <string name="room_more_coming_soon">功能开发中</string>
-    <string name="room_subtitles_processing">字幕启动中…</string>
     <string name="room_host_only">仅主持人可用</string>
     <string name="room_hand_action_failed">举手状态更新失败，请重试</string>
     <string name="room_microphone_action_failed">麦克风状态更新失败，请重试</string>
@@ -108,10 +98,8 @@
     <string name="room_end_meeting">结束会议</string>
     <string name="room_end_meeting_confirm">结束会议将让所有人退出，确定继续？</string>
     <string name="room_leave_hint">如果不想结束会议，\n请在离开会议前指定新的主持人。</string>
-    <string name="room_participants">参会成员（%1$d）</string>
     <string name="room_participant_me">（我）</string>
     <string name="room_permission_required">需要摄像头与麦克风权限才能加入会议。</string>
-    <string name="room_grant_permissions">授予权限</string>
     <string name="room_no_video">无视频</string>
     <string name="room_pin_participant">置顶</string>
     <string name="room_unpin_participant">取消置顶</string>
@@ -153,7 +141,6 @@
     <string name="waiting_denied_title">主持人拒绝了你的请求</string>
     <string name="waiting_denied_subtitle">你可以稍后重试，或直接联系主持人。</string>
     <string name="waiting_error_title">无法连接到会议</string>
-    <string name="room_more_host_settings">主持人设置</string>
     <string name="room_host_settings_title">主持人设置</string>
     <string name="room_host_settings_subtitle">仅主持人可访问以下控制项。</string>
     <string name="room_host_access_section">会议访问</string>
@@ -190,10 +177,7 @@
     <!-- 历史记录 -->
     <string name="history_section_title">历史会议</string>
     <string name="history_today_prefix">今天</string>
-    <string name="history_empty">暂无历史记录</string>
-    <string name="history_row_more">更多</string>
     <string name="history_action_delete">删除</string>
-    <string name="room_more_record_stop">停止录制</string>
     <string name="room_recording_banner">正在录制</string>
     <string name="room_more_subtitles_on">实时字幕</string>
     <string name="room_more_subtitles_off">关闭字幕</string>
@@ -206,14 +190,8 @@
     <string name="room_ai_send">发送</string>
     <string name="history_delete_confirm_title">删除会议？</string>
     <string name="history_delete_confirm_text">将"%1$s"从列表移除。若您是该会议的发起人，将同时删除所有人的此条记录。</string>
-    <string name="history_delete_confirm_ok">删除</string>
-    <string name="history_detail_meeting_id">会议号：%1$s</string>
-    <string name="history_detail_host">发起人：%1$s</string>
-    <string name="history_detail_participants">参会人</string>
-    <string name="history_detail_timeline_today">今天</string>
     <string name="history_detail_joined">加入会议</string>
     <string name="history_detail_left">离开会议</string>
-    <string name="history_unknown_host">—</string>
 
     <!-- 会议详情 -->
     <string name="meeting_detail_title">会议详情</string>
@@ -221,8 +199,6 @@
     <string name="meeting_detail_tab_summary">纪要</string>
     <string name="meeting_detail_tab_action_items">行动项</string>
     <string name="meeting_detail_tab_transcript">字幕</string>
-    <string name="meeting_detail_loading">加载中…</string>
-    <string name="meeting_detail_load_failed">加载失败</string>
     <string name="meeting_detail_info_name">名称</string>
     <string name="meeting_detail_info_time">时间</string>
     <string name="meeting_detail_info_code">会议号</string>
@@ -234,7 +210,6 @@
     <string name="meeting_detail_summary_empty">尚未生成会议纪要。</string>
     <string name="meeting_detail_summary_regenerate">重新生成</string>
     <string name="meeting_detail_summary_regenerating">生成中…</string>
-    <string name="meeting_detail_summary_failed">纪要生成失败。</string>
     <string name="meeting_detail_action_items_empty">暂无行动项。</string>
     <string name="meeting_detail_action_items_owner">负责人</string>
     <string name="meeting_detail_action_items_due">截止时间</string>
@@ -248,10 +223,8 @@
     <string name="tab_contacts">通讯录</string>
     <string name="tab_docs">云文档</string>
     <string name="tab_tasks">任务</string>
-    <string name="tab_profile">我的</string>
     <string name="task_title">任务</string>
     <string name="task_demo_owner">我</string>
-    <string name="task_list_subtitle">任务清单</string>
     <string name="task_assigned_to_me">我负责的</string>
     <string name="task_following">我关注的</string>
     <string name="task_activity">动态</string>
@@ -259,7 +232,6 @@
     <string name="task_activity_load_more">加载更多</string>
     <string name="task_activity_load_failed">任务动态加载失败，请检查网络后重试。</string>
     <string name="task_views">任务视图</string>
-    <string name="task_save">保存</string>
     <string name="task_all_tasks">全部任务</string>
     <string name="task_created_by_me">我创建的</string>
     <string name="task_completed">已完成</string>
@@ -270,8 +242,6 @@
     <string name="task_standalone">默认清单</string>
     <string name="task_lists">任务清单</string>
     <string name="task_list_group_empty">此分组暂无任务清单</string>
-    <string name="task_group_product">产品</string>
-    <string name="task_group_team">团队</string>
     <string name="task_create">新建任务</string>
     <string name="task_create_action">创建任务</string>
     <string name="task_search">搜索任务</string>
@@ -282,8 +252,6 @@
     <string name="task_search_empty">没有找到匹配的任务</string>
     <string name="task_settings">任务设置</string>
     <string name="task_navigation">任务导航</string>
-    <string name="task_filter">筛选任务</string>
-    <string name="task_filter_and_sort">筛选与排序</string>
     <string name="task_filter_options">筛选</string>
     <string name="task_group_and_sort">分组与排序</string>
     <string name="task_summary_status_open">未完成</string>
@@ -317,8 +285,6 @@
     <string name="task_sort_created_at">创建时间</string>
     <string name="task_sort_start_date">开始时间</string>
     <string name="task_sort_due_date">截止时间</string>
-    <string name="task_sort_due_time">截止时间</string>
-    <string name="task_sort_recently_created">最近创建</string>
     <string name="task_apply">应用</string>
     <string name="task_more">更多操作</string>
     <string name="task_empty_title">事情都处理完了</string>
@@ -340,12 +306,8 @@
     <string name="task_reminder_one_day_0900">截止前 1 天 09:00</string>
     <string name="task_reminder_two_days_0900">截止前 2 天 09:00</string>
     <string name="task_reminder_three_days_0900">截止前 3 天 09:00</string>
-    <string name="task_reminder_global_disabled">任务设置中的每日提醒已关闭</string>
     <string name="task_date_not_set">未设置</string>
     <string name="task_clear_date">清除日期</string>
-    <string name="task_add_to_list">添加至清单</string>
-    <string name="task_list">任务清单</string>
-    <string name="task_group">分组</string>
     <string name="task_belongs_to_list">所属清单</string>
     <string name="task_belongs_to_group">所属分组</string>
     <string name="task_placement">任务归属</string>
@@ -357,12 +319,8 @@
     <string name="task_tomorrow">明天</string>
     <string name="task_add_subtask">添加子任务</string>
     <string name="task_add_attachment">添加附件</string>
-    <string name="task_add_follower">添加关注人</string>
-    <string name="task_remove_follower">移除关注人</string>
-    <string name="task_edit_details">编辑任务详情</string>
     <string name="task_edit_title">编辑任务标题</string>
     <string name="task_edit_description">编辑任务描述</string>
-    <string name="task_title_field">标题</string>
     <string name="task_description_field">描述</string>
     <string name="task_unknown_actor">某位成员</string>
     <string name="task_activity_created">%1$s 创建了任务</string>
@@ -379,7 +337,6 @@
     <string name="task_copy">复制链接</string>
     <string name="task_duplicate">复制任务</string>
     <string name="task_copy_title">%1$s（副本）</string>
-    <string name="task_set_milestone">设为里程碑</string>
     <string name="task_delete">删除任务</string>
     <string name="task_priority">优先级</string>
     <string name="task_priority_low">低</string>
@@ -408,21 +365,16 @@
     <string name="task_followers">关注人</string>
     <string name="task_comment_hint">输入评论</string>
     <string name="task_send">发送</string>
-    <string name="task_created_activity">%1$s 创建了任务 · 今天 09:14</string>
-    <string name="task_daily_reminder">每日提醒</string>
-    <string name="task_daily_reminder_desc">每天固定时间提醒最近“我负责的”任务摘要</string>
     <string name="task_overdue_marker">逾期标记</string>
     <string name="task_overdue_marker_desc">在列表中突出显示已逾期任务</string>
     <string name="task_default_reminder">任务默认提醒时间</string>
     <string name="task_default_reminder_desc">任务选择“跟随系统设置”时采用此提醒</string>
-    <string name="task_30_minutes_before">截止前 30 分钟</string>
     <string name="task_settings_failed">任务设置更新失败，请重试。</string>
     <string name="task_new_group">新建分组</string>
     <string name="task_new_list">新建清单</string>
     <string name="task_archive">归档</string>
     <string name="task_archive_list_title">归档任务清单</string>
     <string name="task_archive_list_confirm">归档“%1$s”？它将从导航中隐藏，且不能再添加新任务。</string>
-    <string name="task_archived_lists">已归档清单</string>
     <string name="task_restore">取消归档</string>
     <string name="task_list_display_settings">任务清单显示设置</string>
     <string name="task_show_archived_lists">显示已归档任务清单</string>
@@ -479,12 +431,8 @@
     <string name="task_new_group_below">在下方新建分组</string>
     <string name="task_manage_group_order">管理分组排序</string>
     <string name="task_custom_groups">自定义分组</string>
-    <string name="task_manage_custom_groups">管理自定义分组</string>
     <string name="task_custom_groups_empty">还没有自定义分组</string>
     <string name="task_custom_group_invalid">自定义分组已不可用，已切换到全部相关任务。</string>
-    <plurals name="task_custom_group_task_count">
-        <item quantity="other">%1$d 个任务</item>
-    </plurals>
     <string name="task_new_task_group">新建分组</string>
     <string name="task_delete_task_group_confirm">删除“%1$s”？仅空分组可以删除。</string>
     <string name="task_move_up">上移</string>
@@ -521,7 +469,6 @@
     <string name="contacts_empty_dept">该部门暂无成员</string>
     <string name="contacts_empty_search">未找到匹配的成员</string>
     <string name="contacts_load_error">通讯录加载失败</string>
-    <string name="contacts_retry">重试</string>
     <string name="contacts_load_more">加载更多</string>
     <string name="external_contacts_title">外部联系人</string>
     <string name="external_contacts_tag">外部</string>
@@ -546,7 +493,6 @@
     <string name="member_message_failed">发起会话失败</string>
 
     <!-- Calendar (日历) -->
-    <string name="calendar_title">日历</string>
     <string name="calendar_today">今天</string>
     <string name="calendar_has_events">有日程</string>
     <string name="calendar_no_events">当天暂无日程</string>
@@ -554,16 +500,11 @@
     <string name="calendar_load_error">日程加载失败</string>
     <string name="calendar_retry">重试</string>
     <!-- P8: calendar view modes + agenda view -->
-    <string name="calendar_view_switch">切换视图</string>
     <string name="calendar_view_agenda">列表</string>
     <string name="calendar_view_day">日</string>
     <string name="calendar_view_week">周</string>
     <string name="calendar_view_month">月</string>
-    <string name="calendar_week_range">第%1$d周,%2$s - %3$s</string>
-    <string name="calendar_agenda_anchor_year">%1$s 起一年</string>
     <string name="calendar_agenda_empty_today">暂无日程安排</string>
-    <string name="calendar_agenda_load_prev">加载上一月</string>
-    <string name="calendar_agenda_load_next">加载下一月</string>
     <!-- P8: free/busy compare screen -->
     <string name="freebusy_title">日程</string>
     <string name="freebusy_group_title">日程</string>
@@ -606,23 +547,6 @@
     <string name="calendar_settings_fixed_timezone">固定时区</string>
     <string name="calendar_timezone_auto">自动（跟随设备）</string>
     <string name="calendar_timezone_fixed">固定（跨设备同步）</string>
-    <string name="calendar_sharing_title">日历共享</string>
-    <string name="calendar_sharing_manage">管理</string>
-    <string name="calendar_sharing_org_default">组织内默认权限</string>
-    <string name="calendar_sharing_org_default_hint">设置同事默认可见范围；单独共享给某人时以单独权限为准。</string>
-    <string name="calendar_sharing_grants">已共享给</string>
-    <string name="calendar_sharing_add_grant">添加</string>
-    <string name="calendar_sharing_no_grants">暂无单独共享对象</string>
-    <string name="calendar_sharing_subscriptions">已订阅日历</string>
-    <string name="calendar_sharing_add_subscription">订阅</string>
-    <string name="calendar_sharing_no_subscriptions">暂无订阅日历</string>
-    <string name="calendar_sharing_none">不可见</string>
-    <string name="calendar_sharing_free_busy">仅忙闲</string>
-    <string name="calendar_sharing_details">完整详情</string>
-    <string name="calendar_sharing_load_failed">无法加载日历共享设置</string>
-    <string name="calendar_sharing_save_failed">日历权限保存失败</string>
-    <string name="action_close">关闭</string>
-    <string name="action_remove">移除</string>
     <string name="calendar_settings_reminder_entry">在消息列表提醒日程</string>
     <string name="calendar_settings_week_start">每周的第一天</string>
     <string name="calendar_settings_default_duration">日程默认时长</string>
@@ -650,7 +574,6 @@
     <string name="calendar_field_timezone">日程时区</string>
     <string name="calendar_all_day_timezone_hint">全天日程按日期保存，切换时区不会跨日。</string>
     <string name="calendar_field_end">结束</string>
-    <string name="calendar_field_all_day">全天</string>
     <string name="calendar_field_reminder">提醒</string>
     <string name="calendar_reminder_none">不提醒</string>
     <string name="calendar_reminder_at_time">日程开始时</string>
@@ -663,12 +586,10 @@
     <plurals name="calendar_reminder_days">
         <item quantity="other">提前 %1$d 天</item>
     </plurals>
-    <string name="calendar_field_attendees">参与人</string>
     <string name="calendar_add_attendees">添加参与者</string>
     <string name="calendar_attendee_required">必选</string>
     <string name="calendar_attendee_optional">可选</string>
     <string name="calendar_private_event">私密日程</string>
-    <string name="calendar_private_event_hint">非参与者只能看到忙碌时间，无法查看详情和入会信息</string>
     <string name="calendar_visibility_label">日程公开范围</string>
     <string name="calendar_visibility_default">默认的公开范围</string>
     <string name="calendar_visibility_public">公开</string>
@@ -720,10 +641,8 @@
     <string name="profile_intro_hint">最长 100 个字符</string>
     <string name="profile_intro_counter">%1$d/%2$d</string>
     <string name="profile_avatar">头像</string>
-    <string name="profile_change_avatar">更换头像</string>
     <string name="profile_cover">封面</string>
     <string name="profile_change_cover">更换封面</string>
-    <string name="profile_image_uploading">上传中…</string>
     <string name="profile_image_error_mime">仅支持 JPG / PNG / WEBP 格式</string>
     <string name="profile_image_error_size">图片大小不能超过 2 MB</string>
     <string name="profile_image_error_upload">上传失败，请稍后再试</string>
@@ -792,7 +711,6 @@
     <string name="approval_create">发起申请</string>
     <string name="approval_tab_pending">待我审批</string>
     <string name="approval_tab_mine">我发起的</string>
-    <string name="approval_empty">暂无内容</string>
     <string name="approval_empty_pending">没有待处理的审批</string>
     <string name="approval_empty_pending_description">新的审批请求会显示在这里。</string>
     <string name="approval_empty_mine">还没有发起审批</string>
@@ -844,7 +762,6 @@
     <string name="member_phone_reveal">显示</string>
     <string name="member_phone_call">拨打</string>
     <string name="member_reveal_failed">获取手机号失败，请重试。</string>
-    <string name="room_more_invite_members">邀请成员</string>
 
     <!-- P0-M3 消息免打扰 -->
     <string name="settings_quiet_hours">消息免打扰</string>
@@ -889,7 +806,6 @@
     <string name="room_invite_state_timeout">无应答</string>
     <string name="room_invite_state_failed">呼叫失败</string>
     <string name="room_meeting_code_label">会议号:%1$s</string>
-    <string name="room_invite_more_share">更多分享方式</string>
 
     <!-- P9 会议室(实体会议室;LiveKit 视频房间用 room_* 前缀,勿混) -->
     <string name="meeting_room_field_label">会议室</string>
@@ -963,7 +879,6 @@
         <item quantity="other">工作时间外有 %1$d 个日程</item>
     </plurals>
     <string name="meeting_rooms_title">会议室</string>
-    <string name="meeting_room_filters">筛选</string>
     <string name="meeting_room_filter_location">位置</string>
     <string name="meeting_room_filter_capacity">容纳人数</string>
     <string name="meeting_room_filter_facility_count">设施（%1$d）</string>
@@ -977,21 +892,11 @@
     <string name="meeting_room_room_info">会议室详情</string>
     <string name="meeting_room_filters_reset">重置</string>
     <string name="meeting_room_filters_done">确定</string>
-    <string name="meeting_room_calendar_hint">点击空白时段进行预选；可拖动调整，再次点击即可新建日程。</string>
     <string name="meeting_room_draft_conflict">该会议室在所选时段已被预订</string>
     <plurals name="meeting_room_outside_working_hours">
         <item quantity="other">工作时间外有 %1$d 个预订</item>
     </plurals>
     <string name="meeting_room_scope_too_large">范围过大，请选择园区或楼栋。</string>
-    <string name="meeting_room_filters_clear">清除</string>
-    <string name="meeting_room_location_level">位置层级 %1$d</string>
-    <string name="meeting_room_location_country_region">国家/地区</string>
-    <string name="meeting_room_location_city">城市</string>
-    <string name="meeting_room_location_campus">园区</string>
-    <string name="meeting_room_location_building">楼栋</string>
-    <string name="meeting_room_filter_all_country_regions">全部国家/地区</string>
-    <string name="meeting_room_filter_all_cities">全部城市</string>
-    <string name="meeting_room_filter_all_campuses">全部园区</string>
     <string name="meeting_room_filter_all_buildings">全部楼栋</string>
     <string name="meeting_room_select_building">选择楼栋</string>
     <string name="meeting_room_search_building">搜索楼栋</string>
@@ -1003,9 +908,7 @@
     <string name="meeting_room_organizer">组织者：%1$s</string>
     <string name="meeting_room_view_event">查看日程</string>
     <string name="meeting_room_prefill_failed">无法加载所选会议室</string>
-    <string name="calendar_management_title">我的日历</string>
     <string name="calendar_add">添加日历</string>
-    <string name="calendar_load_failed_retry">加载失败，重试</string>
     <string name="calendar_targets_load_failed">无法加载可写日历</string>
     <string name="calendar_group_managed">我管理的</string>
     <string name="calendar_group_subscribed">我订阅的</string>
@@ -1016,30 +919,20 @@
     <string name="calendar_discover_contacts">联系人</string>
     <string name="calendar_discover_rooms">会议室</string>
     <string name="calendar_discover_public">公共日历</string>
-    <string name="calendar_discover_new">新建</string>
     <string name="calendar_name">日历名称</string>
-    <string name="calendar_name_short">名称</string>
     <string name="calendar_description">描述</string>
     <string name="calendar_create">创建</string>
-    <string name="calendar_search">搜索</string>
     <string name="calendar_subscribed">已订阅</string>
     <string name="calendar_subscribe">订阅</string>
     <string name="calendar_operation_failed">操作失败</string>
-    <string name="calendar_external_private">组织外固定为私密</string>
     <string name="calendar_save">保存</string>
-    <string name="calendar_members">共享人</string>
     <string name="calendar_remove">移除</string>
-    <string name="calendar_add_member">添加共享人</string>
     <string name="calendar_delete_recoverable">删除日历（30 天内可恢复）</string>
     <string name="calendar_save_failed">保存失败</string>
     <string name="calendar_share_title">分享日历</string>
-    <string name="calendar_share_hint">分享只邀请订阅；编辑权限需在共享人中单独授予。</string>
     <string name="calendar_share_qr">日历订阅二维码</string>
     <string name="calendar_copy_link">复制链接</string>
-    <string name="calendar_share_to_conversation">分享至会话</string>
     <string name="calendar_reset_link">重置链接</string>
-    <string name="calendar_choose_conversation">选择会话</string>
-    <string name="calendar_unnamed_conversation">未命名会话</string>
     <string name="calendar_export_title">导出日历</string>
     <string name="calendar_start_date">开始日期</string>
     <string name="calendar_end_date">结束日期</string>
@@ -1047,7 +940,6 @@
     <string name="calendar_export_submitted">任务已提交</string>
     <string name="calendar_export_submit_failed">提交失败</string>
     <string name="calendar_confirm">确定</string>
-    <string name="calendar_close">关闭</string>
     <string name="calendar_cancel">取消</string>
     <string name="calendar_access_private">私密</string>
     <string name="calendar_access_free_busy">游客</string>
@@ -1085,7 +977,6 @@
     <string name="calendar_discover_empty_rooms">没有匹配的会议室日历</string>
     <string name="calendar_discover_empty_public">当前没有可订阅的公共日历</string>
     <string name="calendar_discover_search_hint">搜索日历</string>
-    <string name="calendar_room_code">会议室 %1$s</string>
     <string name="calendar_editor_basic">基本信息</string>
     <string name="calendar_editor_permissions">默认权限</string>
     <string name="calendar_editor_members">共享人</string>
@@ -1093,7 +984,6 @@
     <string name="calendar_editor_org_access">组织内</string>
     <string name="calendar_editor_external_access">组织外</string>
     <string name="calendar_editor_external_private">私密</string>
-    <string name="calendar_editor_owner_badge">所有者</string>
     <string name="calendar_editor_primary_name_hint">主日历名称跟随个人资料</string>
     <string name="calendar_share_tab_conversations">分享至会话</string>
     <string name="calendar_share_tab_link">日历链接</string>
@@ -1118,7 +1008,6 @@
     <string name="calendar_settings_group_defaults">日程默认值</string>
     <string name="calendar_settings_group_display">显示选项</string>
     <string name="calendar_settings_group_reminders">提醒</string>
-    <string name="calendar_choose_date">选择日期</string>
     <string name="calendar_month_year">%2$d年%1$d月</string>
     <string name="calendar_busy_saving">正在保存…</string>
     <string name="waiting_no_token">主持人已同意你加入，但连接信息缺失，请重试。</string>

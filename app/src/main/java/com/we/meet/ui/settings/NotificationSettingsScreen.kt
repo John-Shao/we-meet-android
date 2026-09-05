@@ -26,6 +26,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -71,7 +72,7 @@ fun NotificationSettingsScreen(
 
     var loaded by remember { mutableStateOf(false) }
     var loadFailed by remember { mutableStateOf(false) }
-    var reloadKey by remember { mutableStateOf(0) }
+    var reloadKey by remember { mutableIntStateOf(0) }
     var saving by remember { mutableStateOf(false) }
     var enabled by remember { mutableStateOf(false) }
     var start by remember { mutableStateOf("22:00") }

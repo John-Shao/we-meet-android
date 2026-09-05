@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,7 +37,7 @@ fun AddMembersScreen(
 
     var excludeIds by remember { mutableStateOf<Set<String>?>(null) }
     var rosterLoadFailed by remember { mutableStateOf(false) }
-    var rosterReloadTick by remember { mutableStateOf(0) }
+    var rosterReloadTick by remember { mutableIntStateOf(0) }
     var submitting by remember { mutableStateOf(false) }
 
     LaunchedEffect(cid, rosterReloadTick) {

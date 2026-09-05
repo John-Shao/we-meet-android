@@ -90,7 +90,6 @@ object CallNotifier {
     private fun notifyId(callId: String) = callId.hashCode()
 
     private fun ensureChannel(context: Context, nm: NotificationManager) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         if (nm.getNotificationChannel(CHANNEL_ID) != null) return
         val ringtone = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
         nm.createNotificationChannel(

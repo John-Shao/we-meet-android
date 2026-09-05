@@ -12,7 +12,6 @@ import android.util.Rational
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
@@ -206,7 +205,6 @@ class MainActivity : AppCompatActivity() {
      * only makes sense when we're in a meeting AND not screen-sharing.
      */
     private fun applyPipParams() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val autoEnter = inMeeting && !screenSharing
         runCatching { setPictureInPictureParams(buildPipParams(autoEnter)) }
             .onFailure { Log.w(TAG, "setPictureInPictureParams failed", it) }
@@ -217,7 +215,6 @@ class MainActivity : AppCompatActivity() {
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         if (!inMeeting || screenSharing) return
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) return
         runCatching { enterPictureInPictureMode(buildPipParams(autoEnter = false)) }
             .onFailure { Log.w(TAG, "enterPictureInPictureMode failed", it) }
@@ -226,7 +223,6 @@ class MainActivity : AppCompatActivity() {
     /** Called by the in-meeting "缩小" toolbar button to collapse into PiP. */
     fun enterPipNow() {
         if (!inMeeting || screenSharing) return
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         runCatching { enterPictureInPictureMode(buildPipParams(autoEnter = true)) }
             .onFailure { Log.w(TAG, "enterPictureInPictureMode failed", it) }
     }
@@ -239,7 +235,6 @@ class MainActivity : AppCompatActivity() {
         pipModeState.value = isInPictureInPictureMode
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun buildPipParams(autoEnter: Boolean): PictureInPictureParams {
         val builder = PictureInPictureParams.Builder()
             .setAspectRatio(Rational(3, 4))

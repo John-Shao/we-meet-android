@@ -14,17 +14,9 @@
     <string name="login_error_otp_format">Voer de 6-cijferige sms-code in.</string>
 
     <!-- Home screen -->
-    <string name="home_title">We Meet</string>
-    <string name="home_room_label">Vergader-ID</string>
-    <string name="home_room_hint">bv. 499707</string>
     <string name="home_create_meeting">Directe vergadering</string>
     <string name="home_join_meeting">Deelnemen aan vergadering</string>
     <string name="home_create_later_meeting">Vergadering plannen</string>
-    <string name="home_join">Deelnemen</string>
-    <string name="home_logout">Afmelden</string>
-    <string name="home_signed_in_as">Aangemeld als %1$s</string>
-    <string name="home_settings">Instellingen</string>
-    <string name="home_scan_qr">QR scannen</string>
 
     <!-- QR scan / web sign-in confirmation -->
     <string name="qr_scan_confirm_title">Aanmelden op het web</string>
@@ -85,7 +77,6 @@
     <string name="room_more_lower_hand">Hand laten zakken</string>
     <string name="room_more_share">Delen</string>
     <string name="room_more_record">Opnemen</string>
-    <string name="room_more_interpret">Tolken</string>
     <string name="room_more_settings">Instellingen</string>
     <string name="room_more_coming_soon">Binnenkort beschikbaar</string>
     <string name="room_tile_hand_raised">Hand omhoog</string>
@@ -101,10 +92,8 @@
     <string name="room_leave">Vergadering verlaten</string>
     <string name="room_end_meeting">Vergadering beëindigen</string>
     <string name="room_leave_hint">Als je de vergadering niet wilt beëindigen, wijs voor vertrek een nieuwe host aan.</string>
-    <string name="room_participants">Leden (%1$d)</string>
     <string name="room_participant_me"> (Ik)</string>
     <string name="room_permission_required">Camera- en microfoontoestemming zijn vereist om deel te nemen.</string>
-    <string name="room_grant_permissions">Toestemmingen verlenen</string>
     <string name="room_no_video">Geen video</string>
     <string name="room_pin_participant">Vastpinnen</string>
     <string name="room_unpin_participant">Losmaken</string>
@@ -147,7 +136,6 @@
     <string name="waiting_denied_title">De host heeft je verzoek geweigerd</string>
     <string name="waiting_denied_subtitle">Je kunt het later opnieuw proberen of de host direct benaderen.</string>
     <string name="waiting_error_title">Vergadering niet bereikbaar</string>
-    <string name="room_more_host_settings">Host-instellingen</string>
     <string name="room_host_settings_title">Host-instellingen</string>
     <string name="room_host_settings_subtitle">Alleen de host kan dit wijzigen.</string>
     <string name="room_host_settings_load_failed">Instellingen voor toegang tot de vergadering konden niet worden geladen</string>
@@ -182,10 +170,7 @@
 
     <!-- History -->
     <string name="history_section_title">Eerdere vergaderingen</string>
-    <string name="history_empty">Nog geen geschiedenis</string>
-    <string name="history_row_more">Meer</string>
     <string name="history_action_delete">Verwijderen</string>
-    <string name="room_more_record_stop">Opname stoppen</string>
     <string name="room_recording_banner">Opname loopt</string>
     <string name="room_more_subtitles_on">Ondertitels</string>
     <string name="room_more_subtitles_off">Ondertitels verbergen</string>
@@ -198,14 +183,8 @@
     <string name="room_ai_send">Versturen</string>
     <string name="history_delete_confirm_title">Vergadering verwijderen?</string>
     <string name="history_delete_confirm_text">„%1$s” uit je lijst verwijderen. Als je de host bent, wordt het ook voor anderen verwijderd.</string>
-    <string name="history_delete_confirm_ok">Verwijderen</string>
-    <string name="history_detail_meeting_id">Vergader-ID: %1$s</string>
-    <string name="history_detail_host">Host: %1$s</string>
-    <string name="history_detail_participants">Deelnemers</string>
-    <string name="history_detail_timeline_today">Vandaag</string>
     <string name="history_detail_joined">Vergadering bijgewoond</string>
     <string name="history_detail_left">Vergadering verlaten</string>
-    <string name="history_unknown_host">—</string>
 
     <!-- Meeting detail -->
     <string name="meeting_detail_title">Vergaderdetail</string>
@@ -213,8 +192,6 @@
     <string name="meeting_detail_tab_summary">Samenvatting</string>
     <string name="meeting_detail_tab_action_items">Acties</string>
     <string name="meeting_detail_tab_transcript">Transcriptie</string>
-    <string name="meeting_detail_loading">Laden…</string>
-    <string name="meeting_detail_load_failed">Laden mislukt.</string>
     <string name="meeting_detail_info_name">Naam</string>
     <string name="meeting_detail_info_time">Tijd</string>
     <string name="meeting_detail_info_code">Vergader-ID</string>
@@ -226,7 +203,6 @@
     <string name="meeting_detail_summary_empty">Er is nog geen samenvatting gegenereerd.</string>
     <string name="meeting_detail_summary_regenerate">Opnieuw genereren</string>
     <string name="meeting_detail_summary_regenerating">Opnieuw aan het genereren…</string>
-    <string name="meeting_detail_summary_failed">Samenvatting mislukt.</string>
     <string name="meeting_detail_action_items_empty">Geen acties.</string>
     <string name="meeting_detail_action_items_owner">Verantwoordelijke</string>
     <string name="meeting_detail_action_items_due">Deadline</string>
@@ -242,7 +218,6 @@
     <string name="tab_tasks">Taken</string>
     <string name="task_title">Taken</string>
     <string name="task_demo_owner">Ik</string>
-    <string name="task_list_subtitle">Takenlijst</string>
     <string name="task_assigned_to_me">Aan mij toegewezen</string>
     <string name="task_following">Gevolgd</string>
     <string name="task_activity">Activiteit</string>
@@ -250,7 +225,6 @@
     <string name="task_activity_load_more">Meer laden</string>
     <string name="task_activity_load_failed">Taakactiviteit kon niet worden geladen.</string>
     <string name="task_views">Taakweergaven</string>
-    <string name="task_save">Opslaan</string>
     <string name="task_all_tasks">Alle taken</string>
     <string name="task_created_by_me">Door mij gemaakt</string>
     <string name="task_completed">Voltooid</string>
@@ -261,8 +235,6 @@
     <string name="task_standalone">Standaardlijst</string>
     <string name="task_lists">Takenlijsten</string>
     <string name="task_list_group_empty">Geen takenlijsten in deze groep</string>
-    <string name="task_group_product">Product</string>
-    <string name="task_group_team">Team</string>
     <string name="task_create">Nieuwe taak</string>
     <string name="task_create_action">Taak maken</string>
     <string name="task_search">Taken zoeken</string>
@@ -274,8 +246,6 @@
     <string name="task_search_empty">Geen overeenkomende taken gevonden</string>
     <string name="task_settings">Taakinstellingen</string>
     <string name="task_navigation">Taaknavigatie</string>
-    <string name="task_filter">Taken filteren</string>
-    <string name="task_filter_and_sort">Filteren en sorteren</string>
     <string name="task_filter_options">Filters</string>
     <string name="task_group_and_sort">Groeperen en sorteren</string>
     <string name="task_summary_status_open">Open</string>
@@ -309,8 +279,6 @@
     <string name="task_sort_created_at">Aangemaakt op</string>
     <string name="task_sort_start_date">Startdatum</string>
     <string name="task_sort_due_date">Vervaldatum</string>
-    <string name="task_sort_due_time">Deadline</string>
-    <string name="task_sort_recently_created">Onlangs gemaakt</string>
     <string name="task_apply">Toepassen</string>
     <string name="task_more">Meer acties</string>
     <string name="task_empty_title">Alles is afgehandeld</string>
@@ -332,12 +300,8 @@
     <string name="task_reminder_one_day_0900">1 dag van tevoren om 09:00</string>
     <string name="task_reminder_two_days_0900">2 dagen van tevoren om 09:00</string>
     <string name="task_reminder_three_days_0900">3 dagen van tevoren om 09:00</string>
-    <string name="task_reminder_global_disabled">Dagelijkse herinneringen zijn uitgeschakeld in de taakinstellingen</string>
     <string name="task_date_not_set">Niet ingesteld</string>
     <string name="task_clear_date">Datum wissen</string>
-    <string name="task_add_to_list">Aan lijst toevoegen</string>
-    <string name="task_list">Takenlijst</string>
-    <string name="task_group">Groep</string>
     <string name="task_belongs_to_list">Bijbehorende takenlijst</string>
     <string name="task_belongs_to_group">Bijbehorende groep</string>
     <string name="task_placement">Indeling</string>
@@ -349,12 +313,8 @@
     <string name="task_tomorrow">Morgen</string>
     <string name="task_add_subtask">Subtaak toevoegen</string>
     <string name="task_add_attachment">Bijlage toevoegen</string>
-    <string name="task_add_follower">Volger toevoegen</string>
-    <string name="task_remove_follower">Volger verwijderen</string>
-    <string name="task_edit_details">Taakdetails bewerken</string>
     <string name="task_edit_title">Taaktitel bewerken</string>
     <string name="task_edit_description">Taakbeschrijving bewerken</string>
-    <string name="task_title_field">Titel</string>
     <string name="task_description_field">Beschrijving</string>
     <string name="task_unknown_actor">Iemand</string>
     <string name="task_activity_created">%1$s heeft deze taak gemaakt</string>
@@ -371,7 +331,6 @@
     <string name="task_copy">Link kopiëren</string>
     <string name="task_duplicate">Taak dupliceren</string>
     <string name="task_copy_title">%1$s (kopie)</string>
-    <string name="task_set_milestone">Als mijlpaal instellen</string>
     <string name="task_delete">Taak verwijderen</string>
     <string name="task_priority">Prioriteit</string>
     <string name="task_priority_low">Laag</string>
@@ -400,21 +359,16 @@
     <string name="task_followers">Volgers</string>
     <string name="task_comment_hint">Schrijf een opmerking</string>
     <string name="task_send">Verzenden</string>
-    <string name="task_created_activity">%1$s heeft deze taak gemaakt · vandaag 09:14</string>
-    <string name="task_daily_reminder">Dagelijks overzicht</string>
-    <string name="task_daily_reminder_desc">Ontvang dagelijks een overzicht van uw taken</string>
     <string name="task_overdue_marker">Te late taken markeren</string>
     <string name="task_overdue_marker_desc">Markeer te late taken in de lijst</string>
     <string name="task_default_reminder">Standaardherinnering</string>
     <string name="task_default_reminder_desc">Gebruikt wanneer een taak de systeeminstellingen volgt</string>
-    <string name="task_30_minutes_before">30 min. ervoor</string>
     <string name="task_settings_failed">De taakinstellingen konden niet worden bijgewerkt.</string>
     <string name="task_new_group">Nieuwe groep</string>
     <string name="task_new_list">Nieuwe lijst</string>
     <string name="task_archive">Archiveren</string>
     <string name="task_archive_list_title">Takenlijst archiveren</string>
     <string name="task_archive_list_confirm">‘%1$s’ archiveren? De lijst wordt verborgen in de navigatie en kan geen nieuwe taken ontvangen.</string>
-    <string name="task_archived_lists">Gearchiveerde takenlijsten</string>
     <string name="task_restore">Herstellen</string>
     <string name="task_list_display_settings">Weergave-instellingen voor takenlijsten</string>
     <string name="task_show_archived_lists">Gearchiveerde takenlijsten tonen</string>
@@ -472,13 +426,8 @@
     <string name="task_new_group_below">Groep eronder maken</string>
     <string name="task_manage_group_order">Groepsvolgorde beheren</string>
     <string name="task_custom_groups">Aangepaste groepen</string>
-    <string name="task_manage_custom_groups">Aangepaste groepen beheren</string>
     <string name="task_custom_groups_empty">Nog geen aangepaste groepen</string>
     <string name="task_custom_group_invalid">De aangepaste groep is niet beschikbaar. Alle gerelateerde taken worden getoond.</string>
-    <plurals name="task_custom_group_task_count">
-        <item quantity="one">%1$d taak</item>
-        <item quantity="other">%1$d taken</item>
-    </plurals>
     <string name="task_new_task_group">Nieuwe aangepaste groep</string>
     <string name="task_delete_task_group_confirm">‘%1$s’ verwijderen? Alleen lege groepen kunnen worden verwijderd.</string>
     <string name="task_move_up">Omhoog verplaatsen</string>
@@ -504,7 +453,6 @@
     <string name="task_search_no_due">Geen vervaldatum</string>
     <string name="task_search_all_priorities">Alle prioriteiten</string>
     <string name="task_clear_filters">Filters wissen</string>
-    <string name="tab_profile">Ik</string>
 
     <!-- WebView Keycloak login -->
     <string name="web_login_error">Inloggen mislukt</string>
@@ -518,7 +466,6 @@
     <string name="contacts_empty_dept">Geen leden in deze afdeling</string>
     <string name="contacts_empty_search">Geen overeenkomende leden</string>
     <string name="contacts_load_error">Adresboek laden mislukt</string>
-    <string name="contacts_retry">Opnieuw proberen</string>
     <string name="contacts_load_more">Meer laden</string>
     <string name="member_detail_title">Persoonlijke info</string>
     <string name="member_action_message">Bericht</string>
@@ -528,7 +475,6 @@
     <string name="member_message_failed">Kan de chat niet starten</string>
 
     <!-- Calendar -->
-    <string name="calendar_title">Agenda</string>
     <string name="calendar_today">Vandaag</string>
     <string name="calendar_has_events">Heeft afspraken</string>
     <string name="calendar_no_events">Geen afspraken op deze dag</string>
@@ -536,15 +482,11 @@
     <string name="calendar_load_error">Afspraken laden mislukt</string>
     <string name="calendar_retry">Opnieuw proberen</string>
     <!-- P8: calendar view modes + agenda view -->
-    <string name="calendar_view_switch">Weergave wisselen</string>
     <string name="calendar_view_agenda">Lijst</string>
     <string name="calendar_view_day">Day</string>
     <string name="calendar_view_week">Week</string>
     <string name="calendar_view_month">Month</string>
-    <string name="calendar_week_range">Week %1$d, %2$s - %3$s</string>
     <string name="calendar_agenda_empty_today">Geen afspraken</string>
-    <string name="calendar_agenda_load_prev">Vorige maand laden</string>
-    <string name="calendar_agenda_load_next">Volgende maand laden</string>
     <!-- P8: free/busy compare screen -->
     <string name="freebusy_title">Agenda</string>
     <string name="freebusy_group_title">Agenda</string>
@@ -589,23 +531,6 @@
     <string name="calendar_settings_fixed_timezone">Vaste tijdzone</string>
     <string name="calendar_timezone_auto">Automatisch (apparaat)</string>
     <string name="calendar_timezone_fixed">Vast op alle apparaten</string>
-    <string name="calendar_sharing_title">Agenda delen</string>
-    <string name="calendar_sharing_manage">Beheren</string>
-    <string name="calendar_sharing_org_default">Organisatiestandaard</string>
-    <string name="calendar_sharing_org_default_hint">Bepaalt wat collega’s zonder persoonlijke machtiging zien.</string>
-    <string name="calendar_sharing_grants">Gedeeld met</string>
-    <string name="calendar_sharing_add_grant">Toevoegen</string>
-    <string name="calendar_sharing_no_grants">Geen individuele machtigingen</string>
-    <string name="calendar_sharing_subscriptions">Geabonneerde agenda’s</string>
-    <string name="calendar_sharing_add_subscription">Abonneren</string>
-    <string name="calendar_sharing_no_subscriptions">Geen geabonneerde agenda’s</string>
-    <string name="calendar_sharing_none">Geen toegang</string>
-    <string name="calendar_sharing_free_busy">Vrij/bezet</string>
-    <string name="calendar_sharing_details">Alle details</string>
-    <string name="calendar_sharing_load_failed">Kan agenda delen niet laden</string>
-    <string name="calendar_sharing_save_failed">Kan deze agenda-machtiging niet opslaan</string>
-    <string name="action_close">Sluiten</string>
-    <string name="action_remove">Verwijderen</string>
     <string name="calendar_settings_reminder_entry">Afspraakherinnering tonen in berichtenlijst</string>
     <string name="calendar_settings_week_start">Eerste dag van de week</string>
     <string name="calendar_settings_default_duration">Standaard afspraakduur</string>
@@ -624,7 +549,6 @@
     <string name="calendar_field_timezone">Tijdzone van afspraak</string>
     <string name="calendar_all_day_timezone_hint">Datums van afspraken voor de hele dag blijven gelijk in andere tijdzones.</string>
     <string name="calendar_field_end">Einde</string>
-    <string name="calendar_field_all_day">Hele dag</string>
     <string name="calendar_field_reminder">Herinnering</string>
     <string name="calendar_reminder_none">Geen</string>
     <string name="calendar_reminder_at_time">Bij aanvang</string>
@@ -640,12 +564,10 @@
         <item quantity="one">%1$d dag van tevoren</item>
         <item quantity="other">%1$d dagen van tevoren</item>
     </plurals>
-    <string name="calendar_field_attendees">Deelnemers</string>
     <string name="calendar_add_attendees">Deelnemers toevoegen</string>
     <string name="calendar_attendee_required">Verplicht</string>
     <string name="calendar_attendee_optional">Optioneel</string>
     <string name="calendar_private_event">Privéafspraak</string>
-    <string name="calendar_private_event_hint">Niet-deelnemers zien alleen de bezette tijd, zonder details of deelnamelink</string>
     <string name="calendar_visibility_label">Zichtbaarheid van afspraak</string>
     <string name="calendar_visibility_default">Standaardzichtbaarheid</string>
     <string name="calendar_visibility_public">Openbaar</string>
@@ -697,10 +619,8 @@
     <string name="profile_intro_hint">Tot 100 tekens</string>
     <string name="profile_intro_counter">%1$d/%2$d</string>
     <string name="profile_avatar">Avatar</string>
-    <string name="profile_change_avatar">Avatar wijzigen</string>
     <string name="profile_cover">Omslag</string>
     <string name="profile_change_cover">Omslag wijzigen</string>
-    <string name="profile_image_uploading">Bezig met uploaden…</string>
     <string name="profile_image_error_mime">Alleen JPG-/PNG-/WEBP-afbeeldingen zijn toegestaan</string>
     <string name="profile_image_error_size">Afbeelding mag maximaal 2 MB zijn</string>
     <string name="profile_image_error_upload">Upload mislukt, probeer opnieuw</string>
@@ -751,7 +671,6 @@
     <string name="approval_create">Nieuw verzoek</string>
     <string name="approval_tab_pending">Te beoordelen</string>
     <string name="approval_tab_mine">Ingediend</string>
-    <string name="approval_empty">Nog niets</string>
     <string name="approval_empty_pending">Geen goedkeuringen om te beoordelen</string>
     <string name="approval_empty_pending_description">Nieuwe goedkeuringsverzoeken verschijnen hier.</string>
     <string name="approval_empty_mine">Je hebt nog geen goedkeuring ingediend</string>
@@ -789,7 +708,6 @@
     <string name="approval_no_templates">Geen sjablonen beschikbaar</string>
     <string name="approval_submit_failed">Verzenden mislukt</string>
     <string name="profile_approval_entry">Goedkeuringen</string>
-    <string name="room_more_invite_members">Leden uitnodigen</string>
 
     <!-- P0-M3 消息免打扰 -->
     <string name="settings_quiet_hours">Niet storen (berichten)</string>
@@ -890,7 +808,6 @@
         <item quantity="other">%1$d afspraken buiten werktijd</item>
     </plurals>
     <string name="meeting_rooms_title">Vergaderruimtes</string>
-    <string name="meeting_room_filters">Filters</string>
     <string name="meeting_room_filter_location">Locatie</string>
     <string name="meeting_room_filter_capacity">Capaciteit</string>
     <string name="meeting_room_filter_facility_count">Faciliteiten (%1$d)</string>
@@ -905,22 +822,12 @@
     <string name="meeting_room_room_info">Ruimtedetails</string>
     <string name="meeting_room_filters_reset">Resetten</string>
     <string name="meeting_room_filters_done">Gereed</string>
-    <string name="meeting_room_calendar_hint">Tik op een vrij tijdvak om het te selecteren. Sleep om aan te passen en tik opnieuw om een afspraak te maken.</string>
     <string name="meeting_room_draft_conflict">Deze ruimte is op het geselecteerde tijdstip al geboekt</string>
     <plurals name="meeting_room_outside_working_hours">
         <item quantity="one">%1$d boeking buiten werktijd</item>
         <item quantity="other">%1$d boekingen buiten werktijd</item>
     </plurals>
     <string name="meeting_room_scope_too_large">Dit bereik bevat te veel ruimtes. Kies een campus of gebouw.</string>
-    <string name="meeting_room_filters_clear">Wissen</string>
-    <string name="meeting_room_location_level">Locatieniveau %1$d</string>
-    <string name="meeting_room_location_country_region">Land/regio</string>
-    <string name="meeting_room_location_city">Stad</string>
-    <string name="meeting_room_location_campus">Campus</string>
-    <string name="meeting_room_location_building">Gebouw</string>
-    <string name="meeting_room_filter_all_country_regions">Alle landen/regio’s</string>
-    <string name="meeting_room_filter_all_cities">Alle steden</string>
-    <string name="meeting_room_filter_all_campuses">Alle campussen</string>
     <string name="meeting_room_filter_all_buildings">Alle gebouwen</string>
     <string name="meeting_room_select_building">Gebouw kiezen</string>
     <string name="meeting_room_search_building">Gebouwen zoeken</string>
@@ -935,7 +842,6 @@
     <!-- Volledigheid van de Nederlandse vertaling -->
     <string name="qr_scan_permission_denied">Cameratoestemming is vereist om de QR-code te scannen.</string>
     <string name="preview_open_settings">Instellingen openen</string>
-    <string name="room_subtitles_processing">Ondertiteling wordt gestart…</string>
     <string name="room_host_only">Alleen host</string>
     <string name="room_badge_coming_soon">Binnenkort</string>
     <string name="subtitle_speaker_prefix">%1$s: </string>
@@ -957,7 +863,6 @@
     <string name="external_contacts_already">Al een contact</string>
     <string name="external_contacts_remove">Verwijderen</string>
     <string name="external_contacts_action_failed">Het externe contact kon niet worden bijgewerkt.</string>
-    <string name="calendar_agenda_anchor_year">%1$s · 1 jaar</string>
     <string name="reminder_load_error">Herinneringen konden niet worden geladen</string>
     <string name="calendar_field_title_required">Een titel is verplicht</string>
     <string name="calendar_char_count">%1$d/%2$d</string>
@@ -1011,11 +916,8 @@
     <string name="room_invite_state_timeout">Geen antwoord</string>
     <string name="room_invite_state_failed">Oproep mislukt</string>
     <string name="room_meeting_code_label">Vergadercode: %1$s</string>
-    <string name="room_invite_more_share">Meer deelopties</string>
     <string name="contacts_my_groups">Mijn groepen</string>
-    <string name="calendar_management_title">Mijn agenda’s</string>
     <string name="calendar_add">Agenda toevoegen</string>
-    <string name="calendar_load_failed_retry">Agenda’s konden niet worden geladen. Opnieuw proberen</string>
     <string name="calendar_targets_load_failed">Beschrijfbare agenda’s konden niet worden geladen</string>
     <string name="calendar_group_managed">Door mij beheerd</string>
     <string name="calendar_group_subscribed">Geabonneerd</string>
@@ -1026,30 +928,20 @@
     <string name="calendar_discover_contacts">Contacten</string>
     <string name="calendar_discover_rooms">Ruimtes</string>
     <string name="calendar_discover_public">Openbaar</string>
-    <string name="calendar_discover_new">Nieuw</string>
     <string name="calendar_name">Agendanaam</string>
-    <string name="calendar_name_short">Naam</string>
     <string name="calendar_description">Beschrijving</string>
     <string name="calendar_create">Maken</string>
-    <string name="calendar_search">Zoeken</string>
     <string name="calendar_subscribed">Geabonneerd</string>
     <string name="calendar_subscribe">Abonneren</string>
     <string name="calendar_operation_failed">Bewerking mislukt</string>
-    <string name="calendar_external_private">Toegang vanuit externe organisaties is altijd privé</string>
     <string name="calendar_save">Opslaan</string>
-    <string name="calendar_members">Leden met toegang</string>
     <string name="calendar_remove">Verwijderen</string>
-    <string name="calendar_add_member">Lid met toegang toevoegen</string>
     <string name="calendar_delete_recoverable">Agenda verwijderen (30 dagen herstelbaar)</string>
     <string name="calendar_save_failed">Opslaan niet mogelijk</string>
     <string name="calendar_share_title">Agenda delen</string>
-    <string name="calendar_share_hint">Door te delen nodig je mensen uit zich te abonneren. Geef bewerkingsrechten afzonderlijk bij leden met toegang.</string>
     <string name="calendar_share_qr">QR-code voor agenda-abonnement</string>
     <string name="calendar_copy_link">Link kopiëren</string>
-    <string name="calendar_share_to_conversation">Delen in gesprek</string>
     <string name="calendar_reset_link">Link opnieuw instellen</string>
-    <string name="calendar_choose_conversation">Gesprek kiezen</string>
-    <string name="calendar_unnamed_conversation">Naamloos gesprek</string>
     <string name="calendar_export_title">Agenda exporteren</string>
     <string name="calendar_start_date">Begindatum</string>
     <string name="calendar_end_date">Einddatum</string>
@@ -1057,7 +949,6 @@
     <string name="calendar_export_submitted">Export aangevraagd</string>
     <string name="calendar_export_submit_failed">Export kon niet worden aangevraagd</string>
     <string name="calendar_confirm">Bevestigen</string>
-    <string name="calendar_close">Sluiten</string>
     <string name="calendar_cancel">Annuleren</string>
     <string name="calendar_access_private">Privé</string>
     <string name="calendar_access_free_busy">Vrij/bezet</string>
@@ -1096,7 +987,6 @@
     <string name="calendar_discover_empty_rooms">Geen overeenkomende vergaderruimteagenda’s</string>
     <string name="calendar_discover_empty_public">Geen openbare agenda’s beschikbaar</string>
     <string name="calendar_discover_search_hint">Agenda’s zoeken</string>
-    <string name="calendar_room_code">Ruimte %1$s</string>
     <string name="calendar_editor_basic">Basisinformatie</string>
     <string name="calendar_editor_permissions">Standaardrechten</string>
     <string name="calendar_editor_members">Leden met toegang</string>
@@ -1104,7 +994,6 @@
     <string name="calendar_editor_org_access">Binnen de organisatie</string>
     <string name="calendar_editor_external_access">Buiten de organisatie</string>
     <string name="calendar_editor_external_private">Privé</string>
-    <string name="calendar_editor_owner_badge">Eigenaar</string>
     <string name="calendar_editor_primary_name_hint">De naam van de primaire agenda volgt je profiel</string>
     <string name="calendar_share_tab_conversations">Gesprekken</string>
     <string name="calendar_share_tab_link">Agendalink</string>
@@ -1130,7 +1019,6 @@
     <string name="calendar_settings_group_defaults">Standaardwaarden voor afspraken</string>
     <string name="calendar_settings_group_display">Weergave</string>
     <string name="calendar_settings_group_reminders">Herinneringen</string>
-    <string name="calendar_choose_date">Datum kiezen</string>
     <string name="calendar_month_year">%1$d/%2$d</string>
     <string name="calendar_busy_saving">Opslaan…</string>
     <string name="waiting_no_token">De host heeft je verzoek goedgekeurd, maar de verbindingsgegevens ontbreken. Probeer het opnieuw.</string>

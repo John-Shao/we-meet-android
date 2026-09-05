@@ -323,7 +323,7 @@ class SettingsStore(
             if (prefs.getString(KEY_CALENDAR_CACHE_ACCOUNT, null) == accountKey) return true
             val editor = prefs.edit()
             CALENDAR_ACCOUNT_KEYS.forEach(editor::remove)
-            editor.putString(KEY_CALENDAR_CACHE_ACCOUNT, accountKey).commit()
+            editor.putString(KEY_CALENDAR_CACHE_ACCOUNT, accountKey).apply()
 
             _imReminderEntry.value = true
             _calendarWeekStart.value = CalendarWeekStart.MONDAY

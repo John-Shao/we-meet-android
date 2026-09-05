@@ -43,6 +43,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -175,7 +176,7 @@ fun CreateEventScreen(
     var targetCalendarId by remember { mutableStateOf("") }
     var calendarsLoading by remember { mutableStateOf(!isEdit) }
     var calendarsLoadFailed by remember { mutableStateOf(false) }
-    var calendarsReloadNonce by remember { mutableStateOf(0) }
+    var calendarsReloadNonce by remember { mutableIntStateOf(0) }
     var eventTimezone by remember { mutableStateOf(calendarZone.id) }
     // P8:编辑态标记重复日程(加载详情时置位)——重复日程不开放参与者编辑。
     var editIsRecurring by remember { mutableStateOf(false) }
@@ -200,7 +201,7 @@ fun CreateEventScreen(
     // Edit and copy modes start not-ready until the source event loads.
     var loaded by remember { mutableStateOf(sourceEventId == null) }
     var sourceLoadFailed by remember { mutableStateOf(false) }
-    var sourceLoadRetryNonce by remember { mutableStateOf(0) }
+    var sourceLoadRetryNonce by remember { mutableIntStateOf(0) }
     var showDiscardConfirm by remember { mutableStateOf(false) }
 
     androidx.compose.runtime.LaunchedEffect(calendarZone.id, isEdit) {

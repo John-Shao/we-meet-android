@@ -26,6 +26,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -105,7 +106,7 @@ fun ContactPicker(
     var members by remember { mutableStateOf<List<MemberDto>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf(false) }
-    var reloadTick by remember { mutableStateOf(0) }
+    var reloadTick by remember { mutableIntStateOf(0) }
     val selected = remember(initialSelection) {
         mutableStateOf<Map<String, PickedMember>>(
             initialSelection.associateByTo(linkedMapOf(), PickedMember::userId),

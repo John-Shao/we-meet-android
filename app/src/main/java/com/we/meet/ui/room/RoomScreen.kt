@@ -101,6 +101,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -1797,7 +1798,7 @@ private fun ParticipantsSheet(
     // keeps re-calls/joins from other devices from going stale.
     LaunchedEffect(Unit) { onRefreshSuggested() }
 
-    var tab by rememberSaveable { mutableStateOf(0) }
+    var tab by rememberSaveable { mutableIntStateOf(0) }
     var query by rememberSaveable { mutableStateOf("") }
 
     // Presence diff: a suggestion whose sub is a live identity has "moved to

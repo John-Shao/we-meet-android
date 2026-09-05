@@ -169,21 +169,21 @@ dependencies {
     // Getui (个推) unified push SDK — offline IM notifications (P0). Versions
     // pinned to what actually exists on mvn.getui.com (checked maven-metadata):
     // gtsdk latest 3.3.15.0, gtc (core runtime) latest 3.3.3.0.
-    implementation("com.getui:gtsdk:3.3.15.0")
-    implementation("com.getui:gtc:3.3.3.0")
+    implementation(libs.getui.sdk)
+    implementation(libs.getui.core)
 
     // QR scanning — self-contained CaptureActivity + ScanContract for the
     // Activity Result API. Pulled in as a direct coordinate rather than via
     // libs.versions.toml because it's the only ZXing-derived dep we use.
-    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    implementation(libs.zxing.android.embedded)
 
     // JVM 单测。这个模块此前一个测试都没有 —— 加它是因为提醒角标的窗口口径
     // 必须和 Web / 服务端三处对齐,而「对齐」这种事只有测试守得住。
     // 先例:feature-im 的 build.gradle.kts。
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test:runner:1.6.2")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

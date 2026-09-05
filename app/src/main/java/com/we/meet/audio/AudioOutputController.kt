@@ -249,17 +249,12 @@ class AudioOutputController(
     }
 
     private fun setSystemMute(muted: Boolean) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            runCatching {
-                audioManager.adjustStreamVolume(
-                    AudioManager.STREAM_VOICE_CALL,
-                    if (muted) AudioManager.ADJUST_MUTE else AudioManager.ADJUST_UNMUTE,
-                    0,
-                )
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            runCatching { audioManager.setStreamMute(AudioManager.STREAM_VOICE_CALL, muted) }
+        runCatching {
+            audioManager.adjustStreamVolume(
+                AudioManager.STREAM_VOICE_CALL,
+                if (muted) AudioManager.ADJUST_MUTE else AudioManager.ADJUST_UNMUTE,
+                0,
+            )
         }
     }
 

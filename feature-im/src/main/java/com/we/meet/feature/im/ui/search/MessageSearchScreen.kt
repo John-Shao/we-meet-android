@@ -35,6 +35,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -144,7 +145,7 @@ fun MessageSearchScreen(
     var nextBeforeMid by remember { mutableStateOf<Long?>(null) }
     var searching by remember { mutableStateOf(false) }
     var searchFailed by remember { mutableStateOf(false) }
-    var searchRetryNonce by remember { mutableStateOf(0) }
+    var searchRetryNonce by remember { mutableIntStateOf(0) }
     var resultQuery by remember { mutableStateOf("") }
     var loadingMore by remember { mutableStateOf(false) }
     var loadingMoreFailed by remember { mutableStateOf(false) }
@@ -153,19 +154,19 @@ fun MessageSearchScreen(
     var contactsLoading by remember { mutableStateOf(false) }
     var contactsFailed by remember { mutableStateOf(false) }
     var contactsSearched by remember { mutableStateOf(false) }
-    var contactsRetryNonce by remember { mutableStateOf(0) }
+    var contactsRetryNonce by remember { mutableIntStateOf(0) }
     var contactsResultQuery by remember { mutableStateOf("") }
     var meetings by remember { mutableStateOf<List<GlobalSearchMeeting>>(emptyList()) }
     var meetingsLoading by remember { mutableStateOf(false) }
     var meetingsFailed by remember { mutableStateOf(false) }
     var meetingsSearched by remember { mutableStateOf(false) }
-    var meetingsRetryNonce by remember { mutableStateOf(0) }
+    var meetingsRetryNonce by remember { mutableIntStateOf(0) }
     var meetingsResultQuery by remember { mutableStateOf("") }
     var docs by remember { mutableStateOf<List<GlobalSearchDoc>>(emptyList()) }
     var docsLoading by remember { mutableStateOf(false) }
     var docsFailed by remember { mutableStateOf(false) }
     var docsSearched by remember { mutableStateOf(false) }
-    var docsRetryNonce by remember { mutableStateOf(0) }
+    var docsRetryNonce by remember { mutableIntStateOf(0) }
     var docsResultQuery by remember { mutableStateOf("") }
     var openingContactId by remember { mutableStateOf<String?>(null) }
     val createChatFailedMessage = stringResource(R.string.im_create_chat_failed)

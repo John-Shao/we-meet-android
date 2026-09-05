@@ -40,6 +40,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -136,7 +137,7 @@ fun FreeBusyCompareScreen(
     var checked by remember { mutableStateOf<Set<String>>(emptySet()) }
     var identityLoading by remember { mutableStateOf(true) }
     var identityError by remember { mutableStateOf(false) }
-    var identityReloadKey by remember { mutableStateOf(0) }
+    var identityReloadKey by remember { mutableIntStateOf(0) }
     LaunchedEffect(userIds, identityReloadKey) {
         identityLoading = true
         identityError = false
@@ -183,7 +184,7 @@ fun FreeBusyCompareScreen(
     // old code degraded failures to emptyMap(), which read as unavailable and
     // offered no retry. Keep busyMap null on failure and flag the error.
     var busyError by remember { mutableStateOf(false) }
-    var busyReloadKey by remember { mutableStateOf(0) }
+    var busyReloadKey by remember { mutableIntStateOf(0) }
     val checkedPeople = remember(people, checked) {
         people.filter { checked.contains(it.userId) }
     }
@@ -213,7 +214,7 @@ fun FreeBusyCompareScreen(
     // 看到,不是新增泄露。拉失败就退回纯灰块,不影响忙闲主流程。 ──
     var myEvents by remember { mutableStateOf<List<CalendarEventDto>>(emptyList()) }
     var myEventsError by remember { mutableStateOf(false) }
-    var myEventsReloadKey by remember { mutableStateOf(0) }
+    var myEventsReloadKey by remember { mutableIntStateOf(0) }
     LaunchedEffect(day, busyReloadKey, myEventsReloadKey) {
         // Never carry the previous day's event metadata into a newly selected day.
         myEvents = emptyList()

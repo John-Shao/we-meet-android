@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -108,7 +109,7 @@ fun ImageCropDialog(
 
     var bitmap by remember(uri) { mutableStateOf<Bitmap?>(null) }
     var loadFailed by remember(uri) { mutableStateOf(false) }
-    var loadRetryNonce by remember(uri) { mutableStateOf(0) }
+    var loadRetryNonce by remember(uri) { mutableIntStateOf(0) }
     var rendering by remember(uri) { mutableStateOf(false) }
     val state = remember(uri) { CropState() }
 

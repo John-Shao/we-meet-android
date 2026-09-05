@@ -14,17 +14,9 @@
     <string name="login_error_otp_format">Bitte gib den 6-stelligen SMS-Code ein.</string>
 
     <!-- Home screen -->
-    <string name="home_title">We Meet</string>
-    <string name="home_room_label">Meeting-ID</string>
-    <string name="home_room_hint">z. B. 499707</string>
     <string name="home_create_meeting">Sofortmeeting</string>
     <string name="home_join_meeting">Meeting beitreten</string>
     <string name="home_create_later_meeting">Meeting planen</string>
-    <string name="home_join">Beitreten</string>
-    <string name="home_logout">Abmelden</string>
-    <string name="home_signed_in_as">Angemeldet als %1$s</string>
-    <string name="home_settings">Einstellungen</string>
-    <string name="home_scan_qr">QR scannen</string>
 
     <!-- QR scan / web sign-in confirmation -->
     <string name="qr_scan_confirm_title">Im Web anmelden</string>
@@ -85,7 +77,6 @@
     <string name="room_more_lower_hand">Hand senken</string>
     <string name="room_more_share">Teilen</string>
     <string name="room_more_record">Aufnehmen</string>
-    <string name="room_more_interpret">Dolmetschen</string>
     <string name="room_more_settings">Einstellungen</string>
     <string name="room_more_coming_soon">Bald verfügbar</string>
     <string name="room_tile_hand_raised">Hand erhoben</string>
@@ -101,10 +92,8 @@
     <string name="room_leave">Meeting verlassen</string>
     <string name="room_end_meeting">Meeting beenden</string>
     <string name="room_leave_hint">Wenn du das Meeting nicht beenden möchtest, weise vor dem Verlassen einen neuen Host zu.</string>
-    <string name="room_participants">Teilnehmer (%1$d)</string>
     <string name="room_participant_me"> (Ich)</string>
     <string name="room_permission_required">Kamera- und Mikrofonberechtigung sind erforderlich, um einem Meeting beizutreten.</string>
-    <string name="room_grant_permissions">Berechtigungen erteilen</string>
     <string name="room_no_video">Kein Video</string>
     <string name="room_pin_participant">Anheften</string>
     <string name="room_unpin_participant">Lösen</string>
@@ -147,7 +136,6 @@
     <string name="waiting_denied_title">Der Host hat deine Anfrage abgelehnt</string>
     <string name="waiting_denied_subtitle">Du kannst es später erneut versuchen oder den Host direkt kontaktieren.</string>
     <string name="waiting_error_title">Meeting nicht erreichbar</string>
-    <string name="room_more_host_settings">Host-Einstellungen</string>
     <string name="room_host_settings_title">Host-Einstellungen</string>
     <string name="room_host_settings_subtitle">Nur der Host kann diese ändern.</string>
     <string name="room_host_settings_load_failed">Meeting-Zugriffseinstellungen konnten nicht geladen werden</string>
@@ -182,10 +170,7 @@
 
     <!-- History -->
     <string name="history_section_title">Vergangene Besprechungen</string>
-    <string name="history_empty">Kein Verlauf</string>
-    <string name="history_row_more">Mehr</string>
     <string name="history_action_delete">Löschen</string>
-    <string name="room_more_record_stop">Aufnahme stoppen</string>
     <string name="room_recording_banner">Aufnahme läuft</string>
     <string name="room_more_subtitles_on">Untertitel</string>
     <string name="room_more_subtitles_off">Untertitel ausblenden</string>
@@ -198,14 +183,8 @@
     <string name="room_ai_send">Senden</string>
     <string name="history_delete_confirm_title">Meeting löschen?</string>
     <string name="history_delete_confirm_text">„%1$s“ aus deiner Liste entfernen. Wenn du der Host bist, wird es auch für alle anderen gelöscht.</string>
-    <string name="history_delete_confirm_ok">Löschen</string>
-    <string name="history_detail_meeting_id">Meeting-ID: %1$s</string>
-    <string name="history_detail_host">Host: %1$s</string>
-    <string name="history_detail_participants">Teilnehmer</string>
-    <string name="history_detail_timeline_today">Heute</string>
     <string name="history_detail_joined">Meeting beigetreten</string>
     <string name="history_detail_left">Meeting verlassen</string>
-    <string name="history_unknown_host">—</string>
 
     <!-- Meeting detail -->
     <string name="meeting_detail_title">Meeting-Details</string>
@@ -213,8 +192,6 @@
     <string name="meeting_detail_tab_summary">Zusammenfassung</string>
     <string name="meeting_detail_tab_action_items">Aufgaben</string>
     <string name="meeting_detail_tab_transcript">Transkript</string>
-    <string name="meeting_detail_loading">Lädt…</string>
-    <string name="meeting_detail_load_failed">Laden fehlgeschlagen.</string>
     <string name="meeting_detail_info_name">Name</string>
     <string name="meeting_detail_info_time">Zeit</string>
     <string name="meeting_detail_info_code">Meeting-ID</string>
@@ -226,7 +203,6 @@
     <string name="meeting_detail_summary_empty">Es wurde noch keine Zusammenfassung erstellt.</string>
     <string name="meeting_detail_summary_regenerate">Neu generieren</string>
     <string name="meeting_detail_summary_regenerating">Wird generiert…</string>
-    <string name="meeting_detail_summary_failed">Zusammenfassung fehlgeschlagen.</string>
     <string name="meeting_detail_action_items_empty">Keine Aufgaben.</string>
     <string name="meeting_detail_action_items_owner">Verantwortlich</string>
     <string name="meeting_detail_action_items_due">Fällig</string>
@@ -242,7 +218,6 @@
     <string name="tab_tasks">Aufgaben</string>
     <string name="task_title">Aufgaben</string>
     <string name="task_demo_owner">Ich</string>
-    <string name="task_list_subtitle">Aufgabenliste</string>
     <string name="task_assigned_to_me">Mir zugewiesen</string>
     <string name="task_following">Beobachtet</string>
     <string name="task_activity">Aktivität</string>
@@ -250,7 +225,6 @@
     <string name="task_activity_load_more">Mehr laden</string>
     <string name="task_activity_load_failed">Aufgabenaktivitäten konnten nicht geladen werden.</string>
     <string name="task_views">Aufgabenansichten</string>
-    <string name="task_save">Speichern</string>
     <string name="task_all_tasks">Alle Aufgaben</string>
     <string name="task_created_by_me">Von mir erstellt</string>
     <string name="task_completed">Erledigt</string>
@@ -261,8 +235,6 @@
     <string name="task_standalone">Standardliste</string>
     <string name="task_lists">Aufgabenlisten</string>
     <string name="task_list_group_empty">Keine Aufgabenlisten in dieser Gruppe</string>
-    <string name="task_group_product">Produkt</string>
-    <string name="task_group_team">Team</string>
     <string name="task_create">Neue Aufgabe</string>
     <string name="task_create_action">Aufgabe erstellen</string>
     <string name="task_search">Aufgaben suchen</string>
@@ -274,8 +246,6 @@
     <string name="task_search_empty">Keine passenden Aufgaben gefunden</string>
     <string name="task_settings">Aufgabeneinstellungen</string>
     <string name="task_navigation">Aufgabennavigation</string>
-    <string name="task_filter">Aufgaben filtern</string>
-    <string name="task_filter_and_sort">Filtern und sortieren</string>
     <string name="task_filter_options">Filter</string>
     <string name="task_group_and_sort">Gruppieren und sortieren</string>
     <string name="task_summary_status_open">Offen</string>
@@ -309,8 +279,6 @@
     <string name="task_sort_created_at">Erstellt am</string>
     <string name="task_sort_start_date">Startdatum</string>
     <string name="task_sort_due_date">Fälligkeitsdatum</string>
-    <string name="task_sort_due_time">Fälligkeit</string>
-    <string name="task_sort_recently_created">Kürzlich erstellt</string>
     <string name="task_apply">Anwenden</string>
     <string name="task_more">Weitere Aktionen</string>
     <string name="task_empty_title">Alles erledigt</string>
@@ -332,12 +300,8 @@
     <string name="task_reminder_one_day_0900">1 Tag vorher um 09:00</string>
     <string name="task_reminder_two_days_0900">2 Tage vorher um 09:00</string>
     <string name="task_reminder_three_days_0900">3 Tage vorher um 09:00</string>
-    <string name="task_reminder_global_disabled">Tägliche Erinnerungen sind in den Aufgabeneinstellungen deaktiviert</string>
     <string name="task_date_not_set">Nicht festgelegt</string>
     <string name="task_clear_date">Datum löschen</string>
-    <string name="task_add_to_list">Zu Liste hinzufügen</string>
-    <string name="task_list">Aufgabenliste</string>
-    <string name="task_group">Gruppe</string>
     <string name="task_belongs_to_list">Zugehörige Aufgabenliste</string>
     <string name="task_belongs_to_group">Zugehörige Gruppe</string>
     <string name="task_placement">Zuordnung</string>
@@ -349,12 +313,8 @@
     <string name="task_tomorrow">Morgen</string>
     <string name="task_add_subtask">Unteraufgabe hinzufügen</string>
     <string name="task_add_attachment">Anhang hinzufügen</string>
-    <string name="task_add_follower">Beobachter hinzufügen</string>
-    <string name="task_remove_follower">Beobachter entfernen</string>
-    <string name="task_edit_details">Aufgabendetails bearbeiten</string>
     <string name="task_edit_title">Aufgabentitel bearbeiten</string>
     <string name="task_edit_description">Aufgabenbeschreibung bearbeiten</string>
-    <string name="task_title_field">Titel</string>
     <string name="task_description_field">Beschreibung</string>
     <string name="task_unknown_actor">Jemand</string>
     <string name="task_activity_created">%1$s hat diese Aufgabe erstellt</string>
@@ -371,7 +331,6 @@
     <string name="task_copy">Link kopieren</string>
     <string name="task_duplicate">Aufgabe duplizieren</string>
     <string name="task_copy_title">%1$s (Kopie)</string>
-    <string name="task_set_milestone">Als Meilenstein festlegen</string>
     <string name="task_delete">Aufgabe löschen</string>
     <string name="task_priority">Priorität</string>
     <string name="task_priority_low">Niedrig</string>
@@ -400,21 +359,16 @@
     <string name="task_followers">Beobachter</string>
     <string name="task_comment_hint">Kommentar schreiben</string>
     <string name="task_send">Senden</string>
-    <string name="task_created_activity">%1$s hat diese Aufgabe erstellt · heute 09:14</string>
-    <string name="task_daily_reminder">Tägliche Übersicht</string>
-    <string name="task_daily_reminder_desc">Tägliche Übersicht Ihrer Aufgaben erhalten</string>
     <string name="task_overdue_marker">Überfällige markieren</string>
     <string name="task_overdue_marker_desc">Überfällige Aufgaben in der Liste hervorheben</string>
     <string name="task_default_reminder">Standarderinnerung</string>
     <string name="task_default_reminder_desc">Wird verwendet, wenn eine Aufgabe den Systemeinstellungen folgt</string>
-    <string name="task_30_minutes_before">30 Min. vorher</string>
     <string name="task_settings_failed">Aufgabeneinstellungen konnten nicht aktualisiert werden.</string>
     <string name="task_new_group">Neue Gruppe</string>
     <string name="task_new_list">Neue Liste</string>
     <string name="task_archive">Archivieren</string>
     <string name="task_archive_list_title">Aufgabenliste archivieren</string>
     <string name="task_archive_list_confirm">„%1$s“ archivieren? Sie wird aus der Navigation ausgeblendet und kann keine neuen Aufgaben aufnehmen.</string>
-    <string name="task_archived_lists">Archivierte Aufgabenlisten</string>
     <string name="task_restore">Wiederherstellen</string>
     <string name="task_list_display_settings">Anzeigeeinstellungen für Aufgabenlisten</string>
     <string name="task_show_archived_lists">Archivierte Aufgabenlisten anzeigen</string>
@@ -472,13 +426,8 @@
     <string name="task_new_group_below">Gruppe darunter erstellen</string>
     <string name="task_manage_group_order">Gruppenreihenfolge verwalten</string>
     <string name="task_custom_groups">Benutzerdefinierte Gruppen</string>
-    <string name="task_manage_custom_groups">Benutzerdefinierte Gruppen verwalten</string>
     <string name="task_custom_groups_empty">Noch keine benutzerdefinierten Gruppen</string>
     <string name="task_custom_group_invalid">Die benutzerdefinierte Gruppe ist nicht verfügbar. Alle zugehörigen Aufgaben werden angezeigt.</string>
-    <plurals name="task_custom_group_task_count">
-        <item quantity="one">%1$d Aufgabe</item>
-        <item quantity="other">%1$d Aufgaben</item>
-    </plurals>
     <string name="task_new_task_group">Neue benutzerdefinierte Gruppe</string>
     <string name="task_delete_task_group_confirm">„%1$s“ löschen? Nur leere Gruppen können gelöscht werden.</string>
     <string name="task_move_up">Nach oben</string>
@@ -504,7 +453,6 @@
     <string name="task_search_no_due">Kein Fälligkeitsdatum</string>
     <string name="task_search_all_priorities">Alle Prioritäten</string>
     <string name="task_clear_filters">Filter löschen</string>
-    <string name="tab_profile">Ich</string>
 
     <!-- WebView Keycloak login -->
     <string name="web_login_error">Anmeldung fehlgeschlagen</string>
@@ -518,7 +466,6 @@
     <string name="contacts_empty_dept">Keine Mitglieder in dieser Abteilung</string>
     <string name="contacts_empty_search">Keine passenden Mitglieder</string>
     <string name="contacts_load_error">Verzeichnis konnte nicht geladen werden</string>
-    <string name="contacts_retry">Erneut versuchen</string>
     <string name="contacts_load_more">Mehr laden</string>
     <string name="member_detail_title">Persönliche Info</string>
     <string name="member_action_message">Nachricht</string>
@@ -528,7 +475,6 @@
     <string name="member_message_failed">Chat konnte nicht gestartet werden</string>
 
     <!-- Calendar -->
-    <string name="calendar_title">Kalender</string>
     <string name="calendar_today">Heute</string>
     <string name="calendar_has_events">Termine vorhanden</string>
     <string name="calendar_no_events">Keine Termine an diesem Tag</string>
@@ -536,15 +482,11 @@
     <string name="calendar_load_error">Termine konnten nicht geladen werden</string>
     <string name="calendar_retry">Erneut versuchen</string>
     <!-- P8: calendar view modes + agenda view -->
-    <string name="calendar_view_switch">Ansicht wechseln</string>
     <string name="calendar_view_agenda">Liste</string>
     <string name="calendar_view_day">Day</string>
     <string name="calendar_view_week">Week</string>
     <string name="calendar_view_month">Month</string>
-    <string name="calendar_week_range">Woche %1$d, %2$s - %3$s</string>
     <string name="calendar_agenda_empty_today">Keine Termine</string>
-    <string name="calendar_agenda_load_prev">Vorherigen Monat laden</string>
-    <string name="calendar_agenda_load_next">Nächsten Monat laden</string>
     <!-- P8: free/busy compare screen -->
     <string name="freebusy_title">Kalender</string>
     <string name="freebusy_group_title">Kalender</string>
@@ -589,23 +531,6 @@
     <string name="calendar_settings_fixed_timezone">Feste Zeitzone</string>
     <string name="calendar_timezone_auto">Automatisch (Gerät)</string>
     <string name="calendar_timezone_fixed">Geräteübergreifend fest</string>
-    <string name="calendar_sharing_title">Kalenderfreigabe</string>
-    <string name="calendar_sharing_manage">Verwalten</string>
-    <string name="calendar_sharing_org_default">Organisationsstandard</string>
-    <string name="calendar_sharing_org_default_hint">Legt fest, was Kollegen ohne individuelle Berechtigung sehen.</string>
-    <string name="calendar_sharing_grants">Freigegeben für</string>
-    <string name="calendar_sharing_add_grant">Hinzufügen</string>
-    <string name="calendar_sharing_no_grants">Keine individuellen Freigaben</string>
-    <string name="calendar_sharing_subscriptions">Abonnierte Kalender</string>
-    <string name="calendar_sharing_add_subscription">Abonnieren</string>
-    <string name="calendar_sharing_no_subscriptions">Keine abonnierten Kalender</string>
-    <string name="calendar_sharing_none">Kein Zugriff</string>
-    <string name="calendar_sharing_free_busy">Frei/Belegt</string>
-    <string name="calendar_sharing_details">Alle Details</string>
-    <string name="calendar_sharing_load_failed">Kalenderfreigabe konnte nicht geladen werden</string>
-    <string name="calendar_sharing_save_failed">Kalenderberechtigung konnte nicht gespeichert werden</string>
-    <string name="action_close">Schließen</string>
-    <string name="action_remove">Entfernen</string>
     <string name="calendar_settings_reminder_entry">Terminerinnerung in der Nachrichtenliste anzeigen</string>
     <string name="calendar_settings_week_start">Erster Tag der Woche</string>
     <string name="calendar_settings_default_duration">Standarddauer für Termine</string>
@@ -624,7 +549,6 @@
     <string name="calendar_field_timezone">Terminzeitzone</string>
     <string name="calendar_all_day_timezone_hint">Ganztägige Datumsangaben bleiben beim Zeitzonenwechsel unverändert.</string>
     <string name="calendar_field_end">Ende</string>
-    <string name="calendar_field_all_day">Ganztägig</string>
     <string name="calendar_field_reminder">Erinnerung</string>
     <string name="calendar_reminder_none">Keine</string>
     <string name="calendar_reminder_at_time">Zum Terminbeginn</string>
@@ -640,12 +564,10 @@
         <item quantity="one">%1$d Tag vorher</item>
         <item quantity="other">%1$d Tage vorher</item>
     </plurals>
-    <string name="calendar_field_attendees">Teilnehmer</string>
     <string name="calendar_add_attendees">Teilnehmer hinzufügen</string>
     <string name="calendar_attendee_required">Erforderlich</string>
     <string name="calendar_attendee_optional">Optional</string>
     <string name="calendar_private_event">Privater Termin</string>
-    <string name="calendar_private_event_hint">Nichtteilnehmer sehen nur die Belegungszeit, keine Details oder Einwahlinformationen</string>
     <string name="calendar_visibility_label">Sichtbarkeit des Termins</string>
     <string name="calendar_visibility_default">Standardsichtbarkeit</string>
     <string name="calendar_visibility_public">Öffentlich</string>
@@ -697,10 +619,8 @@
     <string name="profile_intro_hint">Bis zu 100 Zeichen</string>
     <string name="profile_intro_counter">%1$d/%2$d</string>
     <string name="profile_avatar">Avatar</string>
-    <string name="profile_change_avatar">Avatar ändern</string>
     <string name="profile_cover">Titelbild</string>
     <string name="profile_change_cover">Titelbild ändern</string>
-    <string name="profile_image_uploading">Wird hochgeladen…</string>
     <string name="profile_image_error_mime">Nur JPG-/PNG-/WEBP-Bilder sind erlaubt</string>
     <string name="profile_image_error_size">Bild darf höchstens 2 MB groß sein</string>
     <string name="profile_image_error_upload">Upload fehlgeschlagen, bitte erneut versuchen</string>
@@ -751,7 +671,6 @@
     <string name="approval_create">Neuer Antrag</string>
     <string name="approval_tab_pending">Zu prüfen</string>
     <string name="approval_tab_mine">Eingereicht</string>
-    <string name="approval_empty">Noch nichts vorhanden</string>
     <string name="approval_empty_pending">Keine Genehmigungen zu prüfen</string>
     <string name="approval_empty_pending_description">Neue Genehmigungsanfragen werden hier angezeigt.</string>
     <string name="approval_empty_mine">Noch keine Genehmigung eingereicht</string>
@@ -789,7 +708,6 @@
     <string name="approval_no_templates">Keine Vorlagen verfügbar</string>
     <string name="approval_submit_failed">Senden fehlgeschlagen</string>
     <string name="profile_approval_entry">Genehmigungen</string>
-    <string name="room_more_invite_members">Mitglieder einladen</string>
 
     <!-- P0-M3 消息免打扰 -->
     <string name="settings_quiet_hours">Nachrichten-Ruhemodus</string>
@@ -890,7 +808,6 @@
         <item quantity="other">%1$d Termine außerhalb der Arbeitszeit</item>
     </plurals>
     <string name="meeting_rooms_title">Besprechungsräume</string>
-    <string name="meeting_room_filters">Filter</string>
     <string name="meeting_room_filter_location">Standort</string>
     <string name="meeting_room_filter_capacity">Kapazität</string>
     <string name="meeting_room_filter_facility_count">Ausstattung (%1$d)</string>
@@ -905,22 +822,12 @@
     <string name="meeting_room_room_info">Raumdetails</string>
     <string name="meeting_room_filters_reset">Zurücksetzen</string>
     <string name="meeting_room_filters_done">Fertig</string>
-    <string name="meeting_room_calendar_hint">Tippen Sie auf einen freien Zeitraum. Ziehen Sie zum Anpassen und tippen Sie erneut, um einen Termin zu erstellen.</string>
     <string name="meeting_room_draft_conflict">Dieser Raum ist im ausgewählten Zeitraum bereits gebucht</string>
     <plurals name="meeting_room_outside_working_hours">
         <item quantity="one">%1$d Buchung außerhalb der Arbeitszeit</item>
         <item quantity="other">%1$d Buchungen außerhalb der Arbeitszeit</item>
     </plurals>
     <string name="meeting_room_scope_too_large">Dieser Bereich enthält zu viele Räume. Wählen Sie einen Campus oder ein Gebäude.</string>
-    <string name="meeting_room_filters_clear">Löschen</string>
-    <string name="meeting_room_location_level">Standortebene %1$d</string>
-    <string name="meeting_room_location_country_region">Land/Region</string>
-    <string name="meeting_room_location_city">Stadt</string>
-    <string name="meeting_room_location_campus">Campus</string>
-    <string name="meeting_room_location_building">Gebäude</string>
-    <string name="meeting_room_filter_all_country_regions">Alle Länder/Regionen</string>
-    <string name="meeting_room_filter_all_cities">Alle Städte</string>
-    <string name="meeting_room_filter_all_campuses">Alle Campus-Standorte</string>
     <string name="meeting_room_filter_all_buildings">Alle Gebäude</string>
     <string name="meeting_room_select_building">Gebäude auswählen</string>
     <string name="meeting_room_search_building">Gebäude suchen</string>
@@ -935,7 +842,6 @@
     <!-- Vollständigkeit der deutschen Übersetzung -->
     <string name="qr_scan_permission_denied">Zum Scannen des QR-Codes ist die Kameraberechtigung erforderlich.</string>
     <string name="preview_open_settings">Einstellungen öffnen</string>
-    <string name="room_subtitles_processing">Untertitel werden gestartet…</string>
     <string name="room_host_only">Nur Host</string>
     <string name="room_badge_coming_soon">Demnächst</string>
     <string name="subtitle_speaker_prefix">%1$s: </string>
@@ -957,7 +863,6 @@
     <string name="external_contacts_already">Bereits ein Kontakt</string>
     <string name="external_contacts_remove">Entfernen</string>
     <string name="external_contacts_action_failed">Der externe Kontakt konnte nicht aktualisiert werden.</string>
-    <string name="calendar_agenda_anchor_year">%1$s · 1 Jahr</string>
     <string name="reminder_load_error">Erinnerungen konnten nicht geladen werden</string>
     <string name="calendar_field_title_required">Ein Titel ist erforderlich</string>
     <string name="calendar_char_count">%1$d/%2$d</string>
@@ -1011,11 +916,8 @@
     <string name="room_invite_state_timeout">Keine Antwort</string>
     <string name="room_invite_state_failed">Anruf fehlgeschlagen</string>
     <string name="room_meeting_code_label">Meetingcode: %1$s</string>
-    <string name="room_invite_more_share">Weitere Freigabeoptionen</string>
     <string name="contacts_my_groups">Meine Gruppen</string>
-    <string name="calendar_management_title">Meine Kalender</string>
     <string name="calendar_add">Kalender hinzufügen</string>
-    <string name="calendar_load_failed_retry">Kalender konnten nicht geladen werden. Erneut versuchen</string>
     <string name="calendar_targets_load_failed">Beschreibbare Kalender konnten nicht geladen werden</string>
     <string name="calendar_group_managed">Von mir verwaltet</string>
     <string name="calendar_group_subscribed">Abonniert</string>
@@ -1026,30 +928,20 @@
     <string name="calendar_discover_contacts">Kontakte</string>
     <string name="calendar_discover_rooms">Räume</string>
     <string name="calendar_discover_public">Öffentlich</string>
-    <string name="calendar_discover_new">Neu</string>
     <string name="calendar_name">Kalendername</string>
-    <string name="calendar_name_short">Name</string>
     <string name="calendar_description">Beschreibung</string>
     <string name="calendar_create">Erstellen</string>
-    <string name="calendar_search">Suchen</string>
     <string name="calendar_subscribed">Abonniert</string>
     <string name="calendar_subscribe">Abonnieren</string>
     <string name="calendar_operation_failed">Vorgang fehlgeschlagen</string>
-    <string name="calendar_external_private">Der Zugriff externer Organisationen ist immer privat</string>
     <string name="calendar_save">Speichern</string>
-    <string name="calendar_members">Freigegebene Mitglieder</string>
     <string name="calendar_remove">Entfernen</string>
-    <string name="calendar_add_member">Freigegebenes Mitglied hinzufügen</string>
     <string name="calendar_delete_recoverable">Kalender löschen (30 Tage lang wiederherstellbar)</string>
     <string name="calendar_save_failed">Speichern nicht möglich</string>
     <string name="calendar_share_title">Kalender teilen</string>
-    <string name="calendar_share_hint">Durch das Teilen können andere Personen den Kalender abonnieren. Bearbeitungsrechte werden separat unter „Freigegebene Mitglieder“ vergeben.</string>
     <string name="calendar_share_qr">QR-Code für das Kalenderabonnement</string>
     <string name="calendar_copy_link">Link kopieren</string>
-    <string name="calendar_share_to_conversation">In Unterhaltung teilen</string>
     <string name="calendar_reset_link">Link zurücksetzen</string>
-    <string name="calendar_choose_conversation">Unterhaltung auswählen</string>
-    <string name="calendar_unnamed_conversation">Unbenannte Unterhaltung</string>
     <string name="calendar_export_title">Kalender exportieren</string>
     <string name="calendar_start_date">Startdatum</string>
     <string name="calendar_end_date">Enddatum</string>
@@ -1057,7 +949,6 @@
     <string name="calendar_export_submitted">Export angefordert</string>
     <string name="calendar_export_submit_failed">Export konnte nicht angefordert werden</string>
     <string name="calendar_confirm">Bestätigen</string>
-    <string name="calendar_close">Schließen</string>
     <string name="calendar_cancel">Abbrechen</string>
     <string name="calendar_access_private">Privat</string>
     <string name="calendar_access_free_busy">Frei/Belegt</string>
@@ -1096,7 +987,6 @@
     <string name="calendar_discover_empty_rooms">Keine passenden Besprechungsraumkalender</string>
     <string name="calendar_discover_empty_public">Keine öffentlichen Kalender verfügbar</string>
     <string name="calendar_discover_search_hint">Kalender durchsuchen</string>
-    <string name="calendar_room_code">Raum %1$s</string>
     <string name="calendar_editor_basic">Grundlegende Informationen</string>
     <string name="calendar_editor_permissions">Standardberechtigungen</string>
     <string name="calendar_editor_members">Freigegebene Mitglieder</string>
@@ -1104,7 +994,6 @@
     <string name="calendar_editor_org_access">Innerhalb der Organisation</string>
     <string name="calendar_editor_external_access">Außerhalb der Organisation</string>
     <string name="calendar_editor_external_private">Privat</string>
-    <string name="calendar_editor_owner_badge">Eigentümer</string>
     <string name="calendar_editor_primary_name_hint">Der Name des primären Kalenders entspricht Ihrem Profil</string>
     <string name="calendar_share_tab_conversations">Unterhaltungen</string>
     <string name="calendar_share_tab_link">Kalenderlink</string>
@@ -1130,7 +1019,6 @@
     <string name="calendar_settings_group_defaults">Terminstandardwerte</string>
     <string name="calendar_settings_group_display">Anzeige</string>
     <string name="calendar_settings_group_reminders">Erinnerungen</string>
-    <string name="calendar_choose_date">Datum auswählen</string>
     <string name="calendar_month_year">%1$d/%2$d</string>
     <string name="calendar_busy_saving">Wird gespeichert…</string>
     <string name="waiting_no_token">Der Host hat deine Anfrage genehmigt, aber die Verbindungsdaten fehlen. Bitte versuche es erneut.</string>

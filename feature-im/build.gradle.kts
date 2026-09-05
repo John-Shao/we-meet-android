@@ -95,7 +95,7 @@ dependencies {
     // jusi-light-im SDK — composite-built from ../jusi-light-im/sdk/android.
     // The dependency-substitution rule in settings.gradle.kts maps this coordinate
     // to the local `:sdk-im` Gradle project.
-    implementation("com.jusi.lightim:sdk-im")
+    implementation(libs.jusi.lightim.sdk.im)
 
     // Shared org-directory data layer + ContactPicker (new-chat / add-members flows).
     implementation(project(":core-directory"))

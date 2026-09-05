@@ -29,6 +29,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -77,7 +78,7 @@ fun ReminderScreen(
     // first paint (the poll loop only handled onSuccess).
     var loadFailed by remember { mutableStateOf(false) }
     var now by remember(calendarZone) { mutableStateOf(ZonedDateTime.now(calendarZone)) }
-    var refreshKey by remember { mutableStateOf(0) }
+    var refreshKey by remember { mutableIntStateOf(0) }
 
     LifecycleResumeEffect(Unit) {
         refreshKey += 1

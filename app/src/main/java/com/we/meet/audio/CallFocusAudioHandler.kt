@@ -37,28 +37,17 @@ class CallFocusAudioHandler(context: Context) : AudioHandler {
         savedMode = audioManager.mode
         runCatching { audioManager.mode = AudioManager.MODE_IN_COMMUNICATION }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val request = android.media.AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                .setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                        .build(),
-                )
-                .setOnAudioFocusChangeListener(focusListener)
-                .build()
-            audioRequest = request
-            runCatching { audioManager.requestAudioFocus(request) }
-        } else {
-            @Suppress("DEPRECATION")
-            runCatching {
-                audioManager.requestAudioFocus(
-                    focusListener,
-                    AudioManager.STREAM_VOICE_CALL,
-                    AudioManager.AUDIOFOCUS_GAIN,
-                )
-            }
-        }
+        val request = android.media.AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build(),
+            )
+            .setOnAudioFocusChangeListener(focusListener)
+            .build()
+        audioRequest = request
+        runCatching { audioManager.requestAudioFocus(request) }
         started = true
     }
 
@@ -67,13 +56,8 @@ class CallFocusAudioHandler(context: Context) : AudioHandler {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             runCatching { audioManager.clearCommunicationDevice() }
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            audioRequest?.let { runCatching { audioManager.abandonAudioFocusRequest(it) } }
-            audioRequest = null
-        } else {
-            @Suppress("DEPRECATION")
-            runCatching { audioManager.abandonAudioFocus(focusListener) }
-        }
+        audioRequest?.let { runCatching { audioManager.abandonAudioFocusRequest(it) } }
+        audioRequest = null
         runCatching { audioManager.mode = savedMode }
         started = false
     }

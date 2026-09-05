@@ -40,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -165,7 +166,7 @@ fun ChatScreen(
     val scope = rememberCoroutineScope()
     val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
     var lightboxKey by remember { mutableStateOf<String?>(null) }
-    var dismissInputMenusSignal by remember(cid) { mutableStateOf(0) }
+    var dismissInputMenusSignal by remember(cid) { mutableIntStateOf(0) }
     var showReceipts by remember { mutableStateOf(false) }
     // Long-press target for the action menu; and the message being replied to.
     var actionTarget by remember { mutableStateOf<com.jusi.lightim.Message?>(null) }
@@ -1009,7 +1010,7 @@ private fun MessageInputBar(
         onRememberEmoji(ImRecentEmojiDto(kind = "unicode", value = e))
     }
 
-    var commandIndex by remember { mutableStateOf(0) }
+    var commandIndex by remember { mutableIntStateOf(0) }
     var commandMenuDismissed by remember(conversationKey) { mutableStateOf(true) }
     LaunchedEffect(dismissMenusSignal) {
         if (dismissMenusSignal > 0) commandMenuDismissed = true

@@ -25,6 +25,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -71,7 +72,7 @@ fun StarredContactsScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf(false) }
     var picking by remember { mutableStateOf(false) }
-    var reloadKey by remember { mutableStateOf(0) }
+    var reloadKey by remember { mutableIntStateOf(0) }
 
     // 卡片信息(名字/头像/部门)每次进页面重拉:ContactPrefs 只存 id,存卡片
     // 只会变陈旧。starredIds 变化(本页取消、或详情页打了星标)后一并重拉。
