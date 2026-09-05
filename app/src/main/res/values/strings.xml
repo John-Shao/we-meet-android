@@ -957,6 +957,7 @@
     <string name="calendar_management_title">My calendars</string>
     <string name="calendar_add">Add calendar</string>
     <string name="calendar_load_failed_retry">Could not load calendars. Retry</string>
+    <string name="calendar_targets_load_failed">Could not load writable calendars</string>
     <string name="calendar_group_managed">Managed by me</string>
     <string name="calendar_group_subscribed">Subscribed</string>
     <string name="calendar_show_only">Show only</string>

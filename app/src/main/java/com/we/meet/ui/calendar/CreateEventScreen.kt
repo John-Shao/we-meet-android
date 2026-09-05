@@ -31,6 +31,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -56,6 +57,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.R
 import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
@@ -170,6 +172,9 @@ fun CreateEventScreen(
     var visibility by remember { mutableStateOf("default") }
     var writableCalendars by remember { mutableStateOf<List<UnifiedCalendarDto>>(emptyList()) }
     var targetCalendarId by remember { mutableStateOf("") }
+    var calendarsLoading by remember { mutableStateOf(!isEdit) }
+    var calendarsLoadFailed by remember { mutableStateOf(false) }
+    var calendarsReloadNonce by remember { mutableStateOf(0) }
     var eventTimezone by remember { mutableStateOf(calendarZone.id) }
     // P8:编辑态标记重复日程(加载详情时置位)——重复日程不开放参与者编辑。
     var editIsRecurring by remember { mutableStateOf(false) }
@@ -387,16 +392,27 @@ fun CreateEventScreen(
             attendees = attendees.filterNot { it.userId == me.id }
             attendeeRoles = attendeeRoles - me.id
         }
-        writableCalendars = runCatching { app.apiClient.calendarApi.listCalendars() }
-            .getOrDefault(emptyList())
-            .filter { it.capabilities.canWrite }
-        if (!isEdit) {
-            val sourceIsWritable = writableCalendars.any { it.id == targetCalendarId }
-            if (!sourceIsWritable) {
-                targetCalendarId = writableCalendars.firstOrNull { it.enabled }?.id
-                    ?: writableCalendars.firstOrNull()?.id.orEmpty()
+    }
+
+    androidx.compose.runtime.LaunchedEffect(isEdit, calendarsReloadNonce) {
+        if (isEdit) return@LaunchedEffect
+        calendarsLoading = true
+        calendarsLoadFailed = false
+        runCatching { app.apiClient.calendarApi.listCalendars() }
+            .onSuccess { calendars ->
+                writableCalendars = calendars.filter { it.capabilities.canWrite }
+                val sourceIsWritable = writableCalendars.any { it.id == targetCalendarId }
+                if (!sourceIsWritable) {
+                    targetCalendarId = writableCalendars.firstOrNull { it.enabled }?.id
+                        ?: writableCalendars.firstOrNull()?.id.orEmpty()
+                }
+                calendarsLoadFailed = writableCalendars.isEmpty()
             }
-        }
+            .onFailure {
+                writableCalendars = emptyList()
+                calendarsLoadFailed = true
+            }
+        calendarsLoading = false
     }
 
     androidx.compose.runtime.LaunchedEffect(writableCalendars, loaded, isEdit) {
@@ -576,6 +592,10 @@ fun CreateEventScreen(
         }
     }
 
+    val calendarTargetReady = isEdit || (
+        !calendarsLoading && !calendarsLoadFailed && targetCalendarId.isNotBlank()
+    )
+
     Scaffold(
         topBar = {
             WeMeetTopBar(
@@ -586,7 +606,7 @@ fun CreateEventScreen(
                 actions = {
                     TextButton(
                         onClick = { submit() },
-                        enabled = title.isNotBlank() && !submitting && loaded,
+                        enabled = title.isNotBlank() && !submitting && loaded && calendarTargetReady,
                     ) {
                         if (submitting) {
                             CircularProgressIndicator(
@@ -663,12 +683,25 @@ fun CreateEventScreen(
                 onChange = { end = it },
             )
 
-            if (!isEdit && writableCalendars.isNotEmpty()) {
-                TargetCalendarDropdown(
-                    calendars = writableCalendars,
-                    selectedId = targetCalendarId,
-                    onSelect = { targetCalendarId = it },
-                )
+            if (!isEdit) {
+                when {
+                    calendarsLoading -> LinearProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = Dimens.SpaceS),
+                    )
+
+                    calendarsLoadFailed -> WeMeetInlineErrorState(
+                        message = stringResource(R.string.calendar_targets_load_failed),
+                        onRetry = { calendarsReloadNonce += 1 },
+                    )
+
+                    else -> TargetCalendarDropdown(
+                        calendars = writableCalendars,
+                        selectedId = targetCalendarId,
+                        onSelect = { targetCalendarId = it },
+                    )
+                }
                 HorizontalDivider()
             }
             TimezoneDropdown(

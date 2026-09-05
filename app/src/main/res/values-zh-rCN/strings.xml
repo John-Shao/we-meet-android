@@ -957,6 +957,7 @@
     <string name="calendar_management_title">我的日历</string>
     <string name="calendar_add">添加日历</string>
     <string name="calendar_load_failed_retry">加载失败，重试</string>
+    <string name="calendar_targets_load_failed">无法加载可写日历</string>
     <string name="calendar_group_managed">我管理的</string>
     <string name="calendar_group_subscribed">我订阅的</string>
     <string name="calendar_show_only">仅显示</string>

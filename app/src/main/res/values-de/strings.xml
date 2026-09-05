@@ -949,6 +949,7 @@
     <string name="calendar_management_title">Meine Kalender</string>
     <string name="calendar_add">Kalender hinzufügen</string>
     <string name="calendar_load_failed_retry">Kalender konnten nicht geladen werden. Erneut versuchen</string>
+    <string name="calendar_targets_load_failed">Beschreibbare Kalender konnten nicht geladen werden</string>
     <string name="calendar_group_managed">Von mir verwaltet</string>
     <string name="calendar_group_subscribed">Abonniert</string>
     <string name="calendar_show_only">Nur diesen anzeigen</string>

@@ -949,6 +949,7 @@
     <string name="calendar_management_title">Mes calendriers</string>
     <string name="calendar_add">Ajouter un calendrier</string>
     <string name="calendar_load_failed_retry">Impossible de charger les calendriers. Réessayer</string>
+    <string name="calendar_targets_load_failed">Impossible de charger les calendriers modifiables</string>
     <string name="calendar_group_managed">Gérés par moi</string>
     <string name="calendar_group_subscribed">Abonnements</string>
     <string name="calendar_show_only">Afficher uniquement</string>

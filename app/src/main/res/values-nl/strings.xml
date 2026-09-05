@@ -949,6 +949,7 @@
     <string name="calendar_management_title">Mijn agenda’s</string>
     <string name="calendar_add">Agenda toevoegen</string>
     <string name="calendar_load_failed_retry">Agenda’s konden niet worden geladen. Opnieuw proberen</string>
+    <string name="calendar_targets_load_failed">Beschrijfbare agenda’s konden niet worden geladen</string>
     <string name="calendar_group_managed">Door mij beheerd</string>
     <string name="calendar_group_subscribed">Geabonneerd</string>
     <string name="calendar_show_only">Alleen deze tonen</string>
