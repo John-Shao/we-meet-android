@@ -1007,7 +1007,12 @@ fun TimelineScaffold(
                                 val visual = rsvpVisualOf(b.rsvp)
                                 val declined = visual == RsvpVisual.DECLINED
                                 val eventColors = calendarEventColors(b.calendarColor)
-                                val calendarAccent = eventColors.accent
+                                val past = b.faded || b.dimmed
+                                val calendarAccent = if (past) {
+                                    eventColors.pastAccent
+                                } else {
+                                    eventColors.accent
+                                }
                                 // 正在被拖走的块:原位留一层虚影,落点画预览。
                                 val ghost = movePreview?.key == b.key
                                 /**
@@ -1088,8 +1093,7 @@ fun TimelineScaffold(
                                         .background(
                                             color = when {
                                                 b.label == null -> busyColor
-                                                b.faded || b.dimmed ->
-                                                    calendarColors.pastEventContainer
+                                                past -> eventColors.pastContainer
                                                 else -> eventColors.container
                                             },
                                         )

@@ -11,8 +11,9 @@ import com.we.meet.ui.theme.WeMeetTheme
 import kotlin.math.max
 import kotlin.math.min
 
-private const val LIGHT_EVENT_CONTAINER_ALPHA = 0.18f
-private const val DARK_EVENT_CONTAINER_ALPHA = 0.28f
+private const val LIGHT_EVENT_CONTAINER_ALPHA = 0.12f
+private const val DARK_EVENT_CONTAINER_ALPHA = 0.22f
+private const val PAST_EVENT_STRENGTH = 0.45f
 private const val MIN_ACCENT_CONTRAST = 3f
 
 /** Stable payload values accepted by the existing calendar subscription API. */
@@ -54,6 +55,8 @@ fun validCalendarColorOrDefault(value: String?): String =
 data class CalendarEventColors(
     val accent: Color,
     val container: Color,
+    val pastAccent: Color,
+    val pastContainer: Color,
     val content: Color,
     val supportingContent: Color,
 )
@@ -61,9 +64,11 @@ data class CalendarEventColors(
 /**
  * Turns a user/server calendar color into a predictable event-card palette.
  *
- * The hue still identifies the calendar. The container is a light tint over the
- * Color System's calendar surface, while the accent is adjusted toward the
- * theme foreground only when needed to reach WCAG's 3:1 non-text boundary.
+ * The hue still identifies the calendar. Like Web, containers stay translucent
+ * so the grid's working-hours shading remains visible through an event. Past
+ * events retain the hue at 45% of the normal strength instead of switching to
+ * a neutral surface. The accent is adjusted toward the theme foreground only
+ * when needed to reach WCAG's 3:1 non-text boundary.
  */
 @Composable
 @ReadOnlyComposable
@@ -114,24 +119,27 @@ internal fun resolveCalendarEventColors(
     supportingContent: Color,
     fillAlpha: Float,
 ): CalendarEventColors {
-    val container = rawAccent
-        .copy(alpha = fillAlpha.coerceIn(0f, 1f))
-        .compositeOver(containerBase)
+    val container = rawAccent.copy(alpha = fillAlpha.coerceIn(0f, 1f))
+    val resolvedContainer = container.compositeOver(containerBase)
     val accent = ensureContrast(
         source = rawAccent,
-        background = container,
+        background = resolvedContainer,
         toward = content,
         minimum = MIN_ACCENT_CONTRAST,
     )
     val safeSupportingContent = ensureContrast(
         source = supportingContent,
-        background = container,
+        background = resolvedContainer,
         toward = content,
         minimum = 4.5f,
     )
     return CalendarEventColors(
         accent = accent,
         container = container,
+        pastAccent = accent.copy(alpha = PAST_EVENT_STRENGTH),
+        pastContainer = rawAccent.copy(
+            alpha = (fillAlpha * PAST_EVENT_STRENGTH).coerceIn(0f, 1f),
+        ),
         content = content,
         supportingContent = safeSupportingContent,
     )

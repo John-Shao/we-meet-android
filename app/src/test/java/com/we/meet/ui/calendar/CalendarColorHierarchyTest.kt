@@ -1,5 +1,6 @@
 package com.we.meet.ui.calendar
 
+import androidx.compose.ui.graphics.compositeOver
 import com.we.meet.ui.theme.DarkCalendarEventContent
 import com.we.meet.ui.theme.DarkCalendarEventSupportingContent
 import com.we.meet.ui.theme.DarkSurfaceContainerLow
@@ -17,7 +18,7 @@ class CalendarColorHierarchyTest {
             containerBase = LightCalendarGridBackground,
             content = LightCalendarEventContent,
             supportingContent = LightCalendarEventSupportingContent,
-            fillAlpha = 0.18f,
+            fillAlpha = 0.12f,
         )
     }
 
@@ -27,7 +28,7 @@ class CalendarColorHierarchyTest {
             containerBase = DarkSurfaceContainerLow,
             content = DarkCalendarEventContent,
             supportingContent = DarkCalendarEventSupportingContent,
-            fillAlpha = 0.28f,
+            fillAlpha = 0.22f,
         )
     }
 
@@ -46,18 +47,28 @@ class CalendarColorHierarchyTest {
                 supportingContent = supportingContent,
                 fillAlpha = fillAlpha,
             )
+            val resolvedContainer = colors.container.compositeOver(containerBase)
+            val resolvedPastContainer = colors.pastContainer.compositeOver(containerBase)
 
             assertTrue(
                 "$value accent must reach 3:1 against its event container",
-                colorContrastRatio(colors.accent, colors.container) >= 3f,
+                colorContrastRatio(colors.accent, resolvedContainer) >= 3f,
             )
             assertTrue(
                 "$value title must reach 4.5:1 against its event container",
-                colorContrastRatio(colors.content, colors.container) >= 4.5f,
+                colorContrastRatio(colors.content, resolvedContainer) >= 4.5f,
             )
             assertTrue(
                 "$value supporting text must reach 4.5:1 against its event container",
-                colorContrastRatio(colors.supportingContent, colors.container) >= 4.5f,
+                colorContrastRatio(colors.supportingContent, resolvedContainer) >= 4.5f,
+            )
+            assertTrue(
+                "$value past event must use a lighter translucent tint",
+                colors.pastContainer.alpha < colors.container.alpha,
+            )
+            assertTrue(
+                "$value past event tint must remain visible against the grid",
+                resolvedPastContainer != containerBase,
             )
         }
     }

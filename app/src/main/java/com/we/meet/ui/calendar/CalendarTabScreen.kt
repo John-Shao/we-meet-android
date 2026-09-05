@@ -889,12 +889,10 @@ internal fun AgendaCard(
             // 给色条的 fillMaxHeight 一个确定高度(Row 本身高度不定)。
             .height(IntrinsicSize.Min)
             .clip(RoundedCornerShape(Dimens.CornerM))
-            // 已结束只压卡片底,不压文字 —— 理由同 TimeGrid 里的 fillDim:
-            // 原先整卡 .alpha(0.5f) 把标题一起压了,读不清。底色半透明铺在
-            // 页面底上,等于向页面底混合 50%,卡片自然退后,文字保持原色。
+            // 与 Web 一致：已结束时保留日历归属色，只降低半透明色底强度，文字不变。
             .background(
                 if (dimmed) {
-                    calendarColors.pastEventContainer
+                    eventColors.pastContainer
                 } else {
                     eventColors.container
                 },
@@ -911,7 +909,7 @@ internal fun AgendaCard(
                 .width(Dimens.Calendar.AgendaAccentBarWidth)
                 .fillMaxHeight()
                 .background(
-                    eventColors.accent,
+                    if (dimmed) eventColors.pastAccent else eventColors.accent,
                 ),
         )
         Box(
