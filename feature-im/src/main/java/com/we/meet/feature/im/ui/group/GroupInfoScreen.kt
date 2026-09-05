@@ -49,6 +49,8 @@ import com.we.meet.feature.im.vm.GroupInfoEvent
 import com.we.meet.feature.im.vm.GroupInfoViewModel
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.components.DestructiveConfirmDialog
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 
 /** Group management — roster, rename, add/remove, transfer, clear, leave. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,12 +100,19 @@ fun GroupInfoScreen(
             )
         },
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-        ) {
-            ui.error?.let { ErrorBanner(stringResource(it)) }
+        when {
+            ui.loading && ui.members.isEmpty() -> WeMeetLoading(Modifier.padding(padding))
+            ui.error != null && ui.members.isEmpty() -> WeMeetErrorState(
+                onRetry = vm::refresh,
+                modifier = Modifier.padding(padding),
+                message = stringResource(ui.error!!),
+            )
+            else -> Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            ) {
+                ui.error?.let { ErrorBanner(stringResource(it)) }
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 item {
@@ -303,6 +312,7 @@ fun GroupInfoScreen(
                         destructive = true,
                     ) { confirmLeave = true }
                     Spacer(Modifier.height(Dimens.SpaceXl))
+                }
                 }
             }
         }

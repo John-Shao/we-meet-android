@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /** One roster entry with its resolved display identity. */
@@ -52,6 +53,7 @@ data class GroupInfoUiState(
     val pinned: Boolean = false,
     val muted: Boolean = false,
     val muteAtAll: Boolean = false,
+    val loading: Boolean = true,
     val busy: Boolean = false,
     /** Localized message resource, not raw exception text — see [userMessageRes]. */
     @StringRes val error: Int? = null,
@@ -87,6 +89,7 @@ class GroupInfoViewModel internal constructor(
     // 每个成员在本会话的群昵称(P10):uid → 非空昵称。昵称优先于目录名显示,
     // 与 Web GroupInfoPanel 的 nameOf 口径一致;随 refresh() 重新拉取而更新。
     private var nicknames: Map<String, String> = emptyMap()
+    private var refreshJob: Job? = null
 
     init {
         refresh()
@@ -101,7 +104,9 @@ class GroupInfoViewModel internal constructor(
     }
 
     fun refresh() {
-        viewModelScope.launch {
+        refreshJob?.cancel()
+        _ui.update { it.copy(loading = it.members.isEmpty(), error = null) }
+        refreshJob = viewModelScope.launch {
             val summary = session.conversations.conversations.value.firstOrNull { it.cid == cid }
             val meta = summary?.meta as? Map<*, *>
             _ui.update {
@@ -131,10 +136,11 @@ class GroupInfoViewModel internal constructor(
                     _ui.update { it.copy(myNickname = myNick) }
                     session.userDirectory.requestResolve(rosterUids)
                     rebuildRoster()
+                    _ui.update { it.copy(loading = false, error = null) }
                 }
                 .onFailure { e ->
                     Log.w(TAG, "group info refresh failed", e)
-                    _ui.update { it.copy(error = e.userMessageRes()) }
+                    _ui.update { it.copy(loading = false, error = e.userMessageRes()) }
                 }
             // 机器人计数。**失败不报错、不清空**:这一行没有数字照样能点进去,
             // 为一个角标把整屏推进错误态不值当。装/删机器人会让 jusi 发

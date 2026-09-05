@@ -41,6 +41,8 @@ import com.we.meet.feature.im.vm.GroupInfoViewModel
 import com.we.meet.ui.components.DestructiveConfirmDialog
 import com.we.meet.feature.im.vm.GroupMemberUi
 import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.theme.Dimens
 
 /**
@@ -90,12 +92,19 @@ fun GroupMembersScreen(
             )
         },
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-        ) {
-            ui.error?.let { ErrorBanner(stringResource(it)) }
+        when {
+            ui.loading && ui.members.isEmpty() -> WeMeetLoading(Modifier.padding(padding))
+            ui.error != null && ui.members.isEmpty() -> WeMeetErrorState(
+                onRetry = vm::refresh,
+                modifier = Modifier.padding(padding),
+                message = stringResource(ui.error!!),
+            )
+            else -> Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            ) {
+                ui.error?.let { ErrorBanner(stringResource(it)) }
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 item {
@@ -197,6 +206,7 @@ fun GroupMembersScreen(
                             }
                         }
                     }
+                }
                 }
             }
         }
