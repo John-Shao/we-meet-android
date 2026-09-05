@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Live conversation-list state — port of the web client's useConversations.ts.
@@ -31,6 +32,10 @@ internal class ConversationRepository(
 ) {
     private val _conversations = MutableStateFlow<List<ConversationSummary>>(emptyList())
     val conversations: StateFlow<List<ConversationSummary>> = _conversations.asStateFlow()
+
+    private val activeRefreshes = AtomicInteger(0)
+    private val _loading = MutableStateFlow(true)
+    val loading: StateFlow<Boolean> = _loading.asStateFlow()
 
     /** Sum of unread across conversations (muted ones excluded from the badge). */
     val totalUnread: StateFlow<Long>
@@ -86,15 +91,21 @@ internal class ConversationRepository(
     }
 
     suspend fun refresh() {
-        runCatching { client.listConversations() }
-            .onSuccess { list ->
-                _error.value = null
-                mutate { list }
-            }
-            .onFailure { e ->
-                Log.w(TAG, "conversation refresh failed", e)
-                _error.value = e.userMessageRes()
-            }
+        activeRefreshes.incrementAndGet()
+        _loading.value = true
+        try {
+            runCatching { client.listConversations() }
+                .onSuccess { list ->
+                    _error.value = null
+                    mutate { list }
+                }
+                .onFailure { e ->
+                    Log.w(TAG, "conversation refresh failed", e)
+                    _error.value = e.userMessageRes()
+                }
+        } finally {
+            if (activeRefreshes.decrementAndGet() == 0) _loading.value = false
+        }
     }
 
     /** Optimistic local patch + server settings write. */
@@ -134,6 +145,7 @@ internal class ConversationRepository(
         _conversations.value = emptyList()
         _totalUnread.value = 0
         _error.value = null
+        _loading.value = true
     }
 
     private fun patchSettings(cid: String, patch: (ConversationSummary) -> ConversationSummary) {

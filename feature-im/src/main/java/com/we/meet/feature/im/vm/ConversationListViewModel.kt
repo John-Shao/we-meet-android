@@ -73,6 +73,8 @@ class ConversationListViewModel internal constructor(
 
     val connectionState: StateFlow<ConnectionState> = session.connectionState
 
+    val loading: StateFlow<Boolean> = session.conversations.loading
+
     /** Localized message resources, not raw exception text — see [userMessageRes]. */
     val error: StateFlow<Int?> = session.conversations.error
 
