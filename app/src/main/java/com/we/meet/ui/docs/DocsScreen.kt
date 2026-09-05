@@ -26,27 +26,21 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
-import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.BuildConfig
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.DocsSessionRequest
-import com.we.meet.design.R as DesignR
 import java.util.Locale
 
 private const val TAG = "WeMeetDocs"
@@ -540,20 +534,11 @@ fun DocsTabScreen(webView: WebView) {
 @Composable
 internal fun DocsLoadStateOverlay(loading: Boolean, error: Boolean, onRetry: () -> Unit) {
     when {
-        error -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    stringResource(R.string.docs_load_error),
-                    color = MaterialTheme.colorScheme.error,
-                )
-                Button(onClick = onRetry, modifier = Modifier.padding(top = Dimens.SpaceS)) {
-                    Text(stringResource(DesignR.string.common_retry))
-                }
-            }
-        }
-        loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
+        error -> WeMeetErrorState(
+            onRetry = onRetry,
+            message = stringResource(R.string.docs_load_error),
+        )
+        loading -> WeMeetLoading()
     }
 }
 
