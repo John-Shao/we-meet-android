@@ -832,7 +832,10 @@ private fun RoomContent(
     var showWaitingList by remember { mutableStateOf(false) }
     var waitingActionIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var admittingAll by remember { mutableStateOf(false) }
+    var handPending by remember { mutableStateOf(false) }
     val lobbyActionFailedText = stringResource(R.string.room_lobby_action_failed)
+    val handActionFailedText = stringResource(R.string.room_hand_action_failed)
+    val screenShareFailedText = stringResource(R.string.room_screen_share_failed)
     var showHostSettings by remember { mutableStateOf(false) }
     var accessLoading by remember { mutableStateOf(false) }
     var accessLoadFailed by remember { mutableStateOf(false) }
@@ -894,6 +897,11 @@ private fun RoomContent(
                     }
                 } else {
                     mainActivity?.setScreenSharing(false)
+                    Toast.makeText(
+                        context,
+                        screenShareFailedText,
+                        Toast.LENGTH_SHORT,
+                    ).show()
                 }
             }
         }
@@ -1247,14 +1255,28 @@ private fun RoomContent(
         MoreActionsSheet(
             isAdmin = state.isAdmin,
             handRaised = handRaised,
+            handPending = handPending,
             localScreenSharing = state.localScreenSharing,
             isRecording = state.isRecording,
             recordingPending = state.recordingPending,
             subtitlesOverlayOn = state.subtitlesOverlayOn,
             subtitlesPending = state.subtitlesPending,
             onRaiseHandClick = {
-                showMore = false
-                scope.launch { onToggleHand() }
+                if (!handPending) {
+                    handPending = true
+                    scope.launch {
+                        onToggleHand()
+                            .onSuccess { showMore = false }
+                            .onFailure {
+                                Toast.makeText(
+                                    context,
+                                    handActionFailedText,
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                        handPending = false
+                    }
+                }
             },
             onShareClick = {
                 showMore = false
@@ -2485,6 +2507,7 @@ private fun AccessLevelOption(
 private fun MoreActionsSheet(
     isAdmin: Boolean,
     handRaised: Boolean,
+    handPending: Boolean,
     localScreenSharing: Boolean,
     isRecording: Boolean,
     recordingPending: Boolean,
@@ -2503,13 +2526,6 @@ private fun MoreActionsSheet(
     val comingSoon = stringResource(R.string.room_more_coming_soon)
     val showStub: () -> Unit = {
         android.widget.Toast.makeText(context, comingSoon, android.widget.Toast.LENGTH_SHORT).show()
-    }
-    // Distinct messages for states that aren't actually "unimplemented": a
-    // subtitle that's still starting up, and a host-only control tapped by a
-    // non-host. Reusing "coming soon" for these misled users.
-    val subtitlesProcessing = stringResource(R.string.room_subtitles_processing)
-    val showSubtitlesProcessing: () -> Unit = {
-        android.widget.Toast.makeText(context, subtitlesProcessing, android.widget.Toast.LENGTH_SHORT).show()
     }
     val hostOnly = stringResource(R.string.room_host_only)
     val showHostOnly: () -> Unit = {
@@ -2557,6 +2573,8 @@ private fun MoreActionsSheet(
                     ),
                     isOn = true,
                     onClick = onRaiseHandClick,
+                    enabled = !handPending,
+                    loading = handPending,
                     labelColor = handTint,
                     iconBgColor = handBg,
                     iconTintColor = handTint,
@@ -2597,7 +2615,9 @@ private fun MoreActionsSheet(
                         else R.string.room_more_subtitles_on
                     ),
                     isOn = true,
-                    onClick = if (subtitlesPending) showSubtitlesProcessing else onSubtitlesClick,
+                    onClick = onSubtitlesClick,
+                    enabled = !subtitlesPending,
+                    loading = subtitlesPending,
                     labelColor = subtitlesTint,
                     iconBgColor = subtitlesBg,
                     iconTintColor = subtitlesTint,
@@ -2949,6 +2969,8 @@ internal fun ControlButton(
     isOn: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    loading: Boolean = false,
     /** Unimplemented stub: dim the button and show a "开发中" badge so it no
      *  longer looks fully available before the "coming soon" toast fires. */
     comingSoon: Boolean = false,
@@ -2974,10 +2996,10 @@ internal fun ControlButton(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled && !loading, onClick = onClick)
             .padding(vertical = Dimens.SpaceXs)
             // Dim stub controls so they don't read as fully available.
-            .alpha(if (comingSoon) 0.55f else 1f),
+            .alpha(if (comingSoon || !enabled) 0.55f else 1f),
     ) {
         Box(contentAlignment = Alignment.TopEnd) {
             Box(
@@ -2987,12 +3009,20 @@ internal fun ControlButton(
                     .background(bgColor),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = label,
-                    tint = iconTint,
-                    modifier = Modifier.size(iconSize),
-                )
+                if (loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(iconSize),
+                        color = iconTint,
+                        strokeWidth = Dimens.ProgressStroke,
+                    )
+                } else {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = label,
+                        tint = iconTint,
+                        modifier = Modifier.size(iconSize),
+                    )
+                }
             }
             if (comingSoon) {
                 Text(
