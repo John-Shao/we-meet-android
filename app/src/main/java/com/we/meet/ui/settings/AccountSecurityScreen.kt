@@ -83,8 +83,10 @@ fun AccountSecurityScreen(
         ) {
             PhoneSection(phone = phone)
             DeregisterSection(
-                onDeregisterClick = { showDeregisterDialog = true },
-                errorMessage = deregisterError,
+                onDeregisterClick = {
+                    deregisterError = null
+                    showDeregisterDialog = true
+                },
             )
         }
     }
@@ -93,6 +95,7 @@ fun AccountSecurityScreen(
         DeregisterDialog(
             expectedPhone = phone,
             inFlight = deregistering,
+            errorMessage = deregisterError,
             onConfirm = {
                 deregistering = true
                 deregisterError = null
@@ -107,12 +110,14 @@ fun AccountSecurityScreen(
                         .onFailure {
                             deregistering = false
                             deregisterError = deregisterFailedText
-                            showDeregisterDialog = false
                         }
                 }
             },
             onDismiss = {
-                if (!deregistering) showDeregisterDialog = false
+                if (!deregistering) {
+                    deregisterError = null
+                    showDeregisterDialog = false
+                }
             },
         )
     }
@@ -154,7 +159,6 @@ private fun PhoneSection(phone: String) {
 @Composable
 private fun DeregisterSection(
     onDeregisterClick: () -> Unit,
-    errorMessage: String?,
 ) {
     Box(
         modifier = Modifier
@@ -179,15 +183,6 @@ private fun DeregisterSection(
         }
     }
 
-    if (errorMessage != null) {
-        Spacer(Modifier.height(Dimens.SpaceS))
-        Text(
-            text = errorMessage,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.padding(horizontal = Dimens.SpaceXl),
-        )
-    }
     Spacer(Modifier.height(Dimens.SpaceL))
 }
 
@@ -200,6 +195,7 @@ private fun DeregisterSection(
 private fun DeregisterDialog(
     expectedPhone: String,
     inFlight: Boolean,
+    errorMessage: String?,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -226,6 +222,13 @@ private fun DeregisterDialog(
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !inFlight,
                 )
+                if (errorMessage != null) {
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         },
         confirmButton = {
