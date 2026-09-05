@@ -87,6 +87,8 @@
     <string name="room_host_only">Host only</string>
     <string name="room_hand_action_failed">Couldn\'t update your hand status. Try again.</string>
     <string name="room_screen_share_failed">Couldn\'t start screen sharing. Try again.</string>
+    <string name="room_screen_share_stop_failed">Couldn\'t stop screen sharing. Try again.</string>
+    <string name="room_subtitles_failed">Couldn\'t start subtitles. Try again.</string>
     <string name="room_badge_coming_soon">Soon</string>
     <string name="room_tile_hand_raised">Hand raised</string>
     <string name="subtitle_speaker_prefix">%1$s: </string>

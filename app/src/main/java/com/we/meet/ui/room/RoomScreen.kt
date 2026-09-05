@@ -778,7 +778,7 @@ private fun RoomContent(
     onUnpinParticipant: () -> Unit,
     onSendMessage: (String) -> Unit,
     onStartScreenShare: suspend (Intent) -> Boolean,
-    onStopScreenShare: () -> Unit,
+    onStopScreenShare: suspend () -> Result<Unit>,
     onRenameSelf: suspend (String) -> Result<Unit>,
     onToggleHand: suspend () -> Result<Unit>,
     onMuteParticipant: suspend (String) -> Result<Unit>,
@@ -787,7 +787,7 @@ private fun RoomContent(
     onRefreshAccessLevel: suspend () -> Result<Unit>,
     onUpdateAccessLevel: suspend (String) -> Result<Unit>,
     onToggleRecording: () -> Unit,
-    onToggleSubtitles: () -> Unit,
+    onToggleSubtitles: suspend () -> Result<Unit>,
     subtitleSegments: List<SubtitleSegment>,
     aiMessages: List<RoomAiMessage>,
     aiAsking: Boolean,
@@ -833,9 +833,12 @@ private fun RoomContent(
     var waitingActionIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var admittingAll by remember { mutableStateOf(false) }
     var handPending by remember { mutableStateOf(false) }
+    var screenSharePending by remember { mutableStateOf(false) }
     val lobbyActionFailedText = stringResource(R.string.room_lobby_action_failed)
     val handActionFailedText = stringResource(R.string.room_hand_action_failed)
     val screenShareFailedText = stringResource(R.string.room_screen_share_failed)
+    val screenShareStopFailedText = stringResource(R.string.room_screen_share_stop_failed)
+    val subtitlesFailedText = stringResource(R.string.room_subtitles_failed)
     var showHostSettings by remember { mutableStateOf(false) }
     var accessLoading by remember { mutableStateOf(false) }
     var accessLoadFailed by remember { mutableStateOf(false) }
@@ -982,7 +985,17 @@ private fun RoomContent(
                 showPinButtons = toolbarsVisible,
                 onPin = onPinParticipant,
                 onUnpin = onUnpinParticipant,
-                onStopScreenShare = onStopScreenShare,
+                onStopScreenShare = {
+                    scope.launch {
+                        onStopScreenShare().onFailure {
+                            Toast.makeText(
+                                context,
+                                screenShareStopFailedText,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                    }
+                },
             )
         }
 
@@ -1257,6 +1270,7 @@ private fun RoomContent(
             handRaised = handRaised,
             handPending = handPending,
             localScreenSharing = state.localScreenSharing,
+            screenSharePending = screenSharePending,
             isRecording = state.isRecording,
             recordingPending = state.recordingPending,
             subtitlesOverlayOn = state.subtitlesOverlayOn,
@@ -1279,10 +1293,24 @@ private fun RoomContent(
                 }
             },
             onShareClick = {
-                showMore = false
                 if (state.localScreenSharing) {
-                    onStopScreenShare()
+                    if (!screenSharePending) {
+                        screenSharePending = true
+                        scope.launch {
+                            onStopScreenShare()
+                                .onSuccess { showMore = false }
+                                .onFailure {
+                                    Toast.makeText(
+                                        context,
+                                        screenShareStopFailedText,
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
+                            screenSharePending = false
+                        }
+                    }
                 } else {
+                    showMore = false
                     showShareChooser = true
                 }
             },
@@ -1291,8 +1319,17 @@ private fun RoomContent(
                 onToggleRecording()
             },
             onSubtitlesClick = {
-                showMore = false
-                onToggleSubtitles()
+                scope.launch {
+                    onToggleSubtitles()
+                        .onSuccess { showMore = false }
+                        .onFailure {
+                            Toast.makeText(
+                                context,
+                                subtitlesFailedText,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                }
             },
             onAiClick = {
                 showMore = false
@@ -2509,6 +2546,7 @@ private fun MoreActionsSheet(
     handRaised: Boolean,
     handPending: Boolean,
     localScreenSharing: Boolean,
+    screenSharePending: Boolean,
     isRecording: Boolean,
     recordingPending: Boolean,
     subtitlesOverlayOn: Boolean,
@@ -2589,6 +2627,8 @@ private fun MoreActionsSheet(
                     ),
                     isOn = true,
                     onClick = onShareClick,
+                    enabled = !screenSharePending,
+                    loading = screenSharePending,
                     labelColor = shareTint,
                     iconBgColor = sheetBg,
                     iconTintColor = shareTint,

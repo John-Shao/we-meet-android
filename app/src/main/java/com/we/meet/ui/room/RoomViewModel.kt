@@ -680,7 +680,14 @@ class RoomViewModel(
                     // Fires when MediaProjection is revoked outside our
                     // control (user taps "Stop" on the system notification,
                     // screen lock, etc.). Reconcile UI.
-                    viewModelScope.launch { stopScreenShare() }
+                    viewModelScope.launch {
+                        stopScreenShare().onFailure {
+                            // MediaProjection already told us capture ended;
+                            // keep the UI truthful even if SDK cleanup fails.
+                            _state.update { state -> state.copy(localScreenSharing = false) }
+                            refreshParticipants()
+                        }
+                    }
                 },
             )
         }.onFailure { e ->
@@ -689,14 +696,18 @@ class RoomViewModel(
         }.getOrDefault(false)
     }
 
-    fun stopScreenShare() {
-        if (!_state.value.localScreenSharing) return
-        viewModelScope.launch {
-            runCatching { controller.setScreenShareEnabled(enabled = false) }
-                .onFailure { Log.w(TAG, "stopScreenShare failed", it) }
+    suspend fun stopScreenShare(): Result<Unit> {
+        if (!_state.value.localScreenSharing) return Result.success(Unit)
+        return runCatching {
+            check(controller.setScreenShareEnabled(enabled = false)) {
+                "LiveKit rejected the screen-share stop request"
+            }
+        }.onSuccess {
             _state.update { it.copy(localScreenSharing = false) }
             refreshParticipants()
-        }
+        }.onFailure {
+            Log.w(TAG, "stopScreenShare failed", it)
+        }.map { Unit }
     }
 
     fun onLifecycleStop() {
@@ -1234,33 +1245,33 @@ class RoomViewModel(
      * — the backend authorises off the LiveKit token rather than the
      * Keycloak session, so anyone in the room is allowed.
      */
-    fun toggleSubtitles() {
+    suspend fun toggleSubtitles(): Result<Unit> {
         val current = _state.value
-        if (current.subtitlesPending) return
+        if (current.subtitlesPending) return Result.success(Unit)
         // Just hiding the overlay — no network round-trip.
         if (current.subtitlesOverlayOn) {
             _state.update { it.copy(subtitlesOverlayOn = false) }
-            return
+            return Result.success(Unit)
         }
         // Showing the overlay: lazy-start the backend agent if we
         // haven't already this session.
         if (subtitlesStartedOnBackend) {
             _state.update { it.copy(subtitlesOverlayOn = true) }
-            return
+            return Result.success(Unit)
         }
         _state.update { it.copy(subtitlesPending = true) }
-        viewModelScope.launch {
-            val result = roomRepository.startSubtitle(roomId, livekitToken)
-            if (result.isSuccess) {
+        return roomRepository.startSubtitle(roomId, livekitToken)
+            .onSuccess {
                 subtitlesStartedOnBackend = true
                 com.we.meet.analytics.Analytics.capture(
                     com.we.meet.analytics.Analytics.EVENT_SUBTITLE_START,
                 )
                 _state.update { it.copy(subtitlesPending = false, subtitlesOverlayOn = true) }
-            } else {
+            }
+            .onFailure {
                 _state.update { it.copy(subtitlesPending = false) }
             }
-        }
+            .map { Unit }
     }
 
     /**
