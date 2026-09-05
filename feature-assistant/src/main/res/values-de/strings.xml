@@ -51,4 +51,6 @@
     <string name="assistant_cd_hang_up">Auflegen</string>
     <string name="assistant_cd_start_call">Anruf starten</string>
     <string name="assistant_cd_toggle_video">Videomodus umschalten</string>
+    <string name="assistant_mic_action_failed">Mikrofon konnte nicht aktualisiert werden. Bitte erneut versuchen.</string>
+    <string name="assistant_camera_switch_failed">Kamera konnte nicht gewechselt werden. Bitte erneut versuchen.</string>
 </resources>

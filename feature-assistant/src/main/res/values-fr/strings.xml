@@ -51,4 +51,6 @@
     <string name="assistant_cd_hang_up">Raccrocher</string>
     <string name="assistant_cd_start_call">Démarrer l\'appel</string>
     <string name="assistant_cd_toggle_video">Basculer le mode vidéo</string>
+    <string name="assistant_mic_action_failed">Impossible de mettre à jour le microphone. Réessayez.</string>
+    <string name="assistant_camera_switch_failed">Impossible de changer de caméra. Réessayez.</string>
 </resources>

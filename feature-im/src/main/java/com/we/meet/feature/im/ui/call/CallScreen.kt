@@ -355,7 +355,7 @@ private fun RingtoneAndVibration() {
                     .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) isLooping = true
+                isLooping = true
                 play()
             }
         }.getOrNull()

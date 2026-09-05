@@ -51,4 +51,6 @@
     <string name="assistant_cd_hang_up">Ophangen</string>
     <string name="assistant_cd_start_call">Oproep starten</string>
     <string name="assistant_cd_toggle_video">Videomodus wisselen</string>
+    <string name="assistant_mic_action_failed">Microfoon kon niet worden bijgewerkt. Probeer opnieuw.</string>
+    <string name="assistant_camera_switch_failed">Kon niet van camera wisselen. Probeer opnieuw.</string>
 </resources>

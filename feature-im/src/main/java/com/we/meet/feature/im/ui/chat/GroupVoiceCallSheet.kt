@@ -19,6 +19,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,7 +71,7 @@ fun GroupVoiceCallSheet(
                 }.toMap()
             }
     }
-    val selfUid = session.selfUid.value
+    val selfUid by session.selfUid.collectAsState()
     // 保留 uid,以便用会话昵称覆盖显示名(resolved 仅含目录信息)。
     val candidates = memberUids
         .filter { it != selfUid }
