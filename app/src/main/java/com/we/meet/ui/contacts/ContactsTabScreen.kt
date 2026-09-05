@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +42,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetInlineErrorState
+import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.core.directory.data.DepartmentDto
@@ -152,16 +153,18 @@ fun ContactsTabScreen(
                     }
                     if (ui.hasMore) {
                         item {
-                            TextButton(
-                                onClick = { vm.loadMore() },
-                                enabled = !ui.loadingMore,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = Dimens.SpaceXs),
-                            ) {
-                                if (ui.loadingMore) {
-                                    CircularProgressIndicator(modifier = Modifier.size(Dimens.IconSmall))
-                                } else {
+                            when {
+                                ui.loadingMore -> WeMeetInlineLoading()
+                                ui.loadMoreError -> WeMeetInlineErrorState(
+                                    onRetry = vm::loadMore,
+                                    message = stringResource(R.string.contacts_load_error),
+                                )
+                                else -> TextButton(
+                                    onClick = vm::loadMore,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = Dimens.SpaceXs),
+                                ) {
                                     Text(stringResource(R.string.contacts_load_more))
                                 }
                             }

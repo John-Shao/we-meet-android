@@ -27,6 +27,7 @@ data class ContactsUiState(
     val members: List<MemberDto> = emptyList(),
     val loading: Boolean = false,
     val loadingMore: Boolean = false,
+    val loadMoreError: Boolean = false,
     val hasMore: Boolean = false,
     val query: String = "",
     val error: Boolean = false,
@@ -97,7 +98,7 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
     fun loadMore() {
         val state = _ui.value
         if (state.loadingMore || !state.hasMore) return
-        _ui.update { it.copy(loadingMore = true) }
+        _ui.update { it.copy(loadingMore = true, loadMoreError = false) }
         viewModelScope.launch {
             fetchPage(nextPage)
                 .onSuccess { page ->
@@ -107,10 +108,13 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
                             members = (it.members + page.members).distinctBy { m -> m.id },
                             hasMore = page.hasMore,
                             loadingMore = false,
+                            loadMoreError = false,
                         )
                     }
                 }
-                .onFailure { _ui.update { it.copy(loadingMore = false) } }
+                .onFailure {
+                    _ui.update { it.copy(loadingMore = false, loadMoreError = true) }
+                }
         }
     }
 
@@ -127,7 +131,7 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun loadMembersForCurrentNode() {
         loadJob?.cancel()
-        _ui.update { it.copy(loading = true, error = false) }
+        _ui.update { it.copy(loading = true, error = false, loadMoreError = false) }
         loadJob = viewModelScope.launch {
             fetchPage(1)
                 .onSuccess { page ->
