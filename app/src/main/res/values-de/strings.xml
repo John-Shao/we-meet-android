@@ -700,6 +700,10 @@
     <string name="approval_tab_pending">Zu prüfen</string>
     <string name="approval_tab_mine">Eingereicht</string>
     <string name="approval_empty">Noch nichts vorhanden</string>
+    <string name="approval_empty_pending">Keine Genehmigungen zu prüfen</string>
+    <string name="approval_empty_pending_description">Neue Genehmigungsanfragen werden hier angezeigt.</string>
+    <string name="approval_empty_mine">Noch keine Genehmigung eingereicht</string>
+    <string name="approval_empty_mine_description">Erstellen Sie eine Genehmigungsanfrage und verfolgen Sie hier den Fortschritt.</string>
     <string name="approval_load_error">Laden fehlgeschlagen</string>
     <string name="approval_retry">Erneut</string>
     <string name="approval_load_more">Mehr laden</string>

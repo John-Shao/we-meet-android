@@ -700,6 +700,10 @@
     <string name="approval_tab_pending">Te beoordelen</string>
     <string name="approval_tab_mine">Ingediend</string>
     <string name="approval_empty">Nog niets</string>
+    <string name="approval_empty_pending">Geen goedkeuringen om te beoordelen</string>
+    <string name="approval_empty_pending_description">Nieuwe goedkeuringsverzoeken verschijnen hier.</string>
+    <string name="approval_empty_mine">Je hebt nog geen goedkeuring ingediend</string>
+    <string name="approval_empty_mine_description">Maak een goedkeuringsverzoek en volg hier de voortgang.</string>
     <string name="approval_load_error">Laden mislukt</string>
     <string name="approval_retry">Opnieuw</string>
     <string name="approval_load_more">Meer laden</string>

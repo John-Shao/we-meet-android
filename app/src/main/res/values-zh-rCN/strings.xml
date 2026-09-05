@@ -752,6 +752,10 @@
     <string name="approval_tab_pending">待我审批</string>
     <string name="approval_tab_mine">我发起的</string>
     <string name="approval_empty">暂无内容</string>
+    <string name="approval_empty_pending">没有待处理的审批</string>
+    <string name="approval_empty_pending_description">新的审批请求会显示在这里。</string>
+    <string name="approval_empty_mine">还没有发起审批</string>
+    <string name="approval_empty_mine_description">创建审批申请后，可以在这里查看进度。</string>
     <string name="approval_load_error">加载失败</string>
     <string name="approval_retry">重试</string>
     <string name="approval_load_more">加载更多</string>

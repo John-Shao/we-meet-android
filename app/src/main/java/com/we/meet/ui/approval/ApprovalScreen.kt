@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -23,6 +24,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -44,6 +48,9 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.components.WeMeetEmptyState
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.R
@@ -59,6 +66,9 @@ fun ApprovalScreen(
     val vm: ApprovalViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val loadFailedText = stringResource(R.string.approval_load_error)
+    val retryText = stringResource(R.string.approval_retry)
 
     // A submit made on the create screen should reflect on return.
     LifecycleResumeEffect(Unit) {
@@ -82,6 +92,16 @@ fun ApprovalScreen(
         }
     }
 
+    LaunchedEffect(ui.current.error, ui.current.items.isNotEmpty(), ui.tab) {
+        if (ui.current.error && ui.current.items.isNotEmpty()) {
+            val result = snackbarHostState.showSnackbar(
+                message = loadFailedText,
+                actionLabel = retryText,
+            )
+            if (result == SnackbarResult.ActionPerformed) vm.refresh()
+        }
+    }
+
     Scaffold(
         topBar = {
             WeMeetTopBar(
@@ -94,6 +114,7 @@ fun ApprovalScreen(
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.approval_create))
             }
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             TabRow(selectedTabIndex = ui.tab.ordinal) {
@@ -119,23 +140,40 @@ fun ApprovalScreen(
             Box(Modifier.fillMaxSize()) {
                 when {
                     state.loading && state.items.isEmpty() ->
-                        CircularProgressIndicator(Modifier.align(Alignment.Center))
-                    state.error && state.items.isEmpty() -> Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            stringResource(R.string.approval_load_error),
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        TextButton(onClick = { vm.refresh() }) {
-                            Text(stringResource(R.string.approval_retry))
-                        }
-                    }
-                    state.items.isEmpty() -> Text(
-                        stringResource(R.string.approval_empty),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.align(Alignment.Center),
+                        WeMeetLoading()
+                    state.error && state.items.isEmpty() -> WeMeetErrorState(
+                        onRetry = vm::refresh,
+                        message = stringResource(R.string.approval_load_error),
+                    )
+                    state.items.isEmpty() -> WeMeetEmptyState(
+                        title = stringResource(
+                            if (ui.tab == ApprovalTab.Pending) {
+                                R.string.approval_empty_pending
+                            } else {
+                                R.string.approval_empty_mine
+                            },
+                        ),
+                        description = stringResource(
+                            if (ui.tab == ApprovalTab.Pending) {
+                                R.string.approval_empty_pending_description
+                            } else {
+                                R.string.approval_empty_mine_description
+                            },
+                        ),
+                        icon = if (ui.tab == ApprovalTab.Pending) {
+                            Icons.Filled.CheckCircle
+                        } else {
+                            Icons.Filled.Add
+                        },
+                        action = if (ui.tab == ApprovalTab.Mine) {
+                            {
+                                Button(onClick = onCreate) {
+                                    Text(stringResource(R.string.approval_create))
+                                }
+                            }
+                        } else {
+                            null
+                        },
                     )
                     else -> LazyColumn(
                         modifier = Modifier.fillMaxSize(),

@@ -47,6 +47,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.components.WeMeetEmptyState
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.WeMeetApp
@@ -153,32 +156,28 @@ fun SubmitApprovalScreen(
             )
         },
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Dimens.ScreenPadding),
+                .padding(padding),
         ) {
             when {
-                ui.loading -> CircularProgressIndicator(Modifier.padding(Dimens.SpaceXl))
+                ui.loading -> WeMeetLoading()
                 // Load failure ≠ genuinely-empty: show an error + retry instead
                 // of the misleading "no templates available".
-                ui.error && ui.templates.isEmpty() -> Column(Modifier.padding(Dimens.SpaceXl)) {
-                    Text(
-                        stringResource(R.string.approval_load_error),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                    TextButton(onClick = { vm.loadTemplates() }) {
-                        Text(stringResource(R.string.approval_retry))
-                    }
-                }
-                ui.templates.isEmpty() -> Text(
-                    stringResource(R.string.approval_no_templates),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(Dimens.SpaceXl),
+                ui.error && ui.templates.isEmpty() -> WeMeetErrorState(
+                    onRetry = vm::loadTemplates,
+                    message = stringResource(R.string.approval_load_error),
                 )
-                else -> {
+                ui.templates.isEmpty() -> WeMeetEmptyState(
+                    title = stringResource(R.string.approval_no_templates),
+                )
+                else -> Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = Dimens.ScreenPadding),
+                ) {
                     // Template picker.
                     ExposedDropdownMenuBox(
                         expanded = menuOpen,

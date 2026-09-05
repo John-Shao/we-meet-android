@@ -752,6 +752,10 @@
     <string name="approval_tab_pending">To review</string>
     <string name="approval_tab_mine">Submitted</string>
     <string name="approval_empty">Nothing here yet</string>
+    <string name="approval_empty_pending">No approvals to review</string>
+    <string name="approval_empty_pending_description">New approval requests will appear here.</string>
+    <string name="approval_empty_mine">You haven’t submitted an approval yet</string>
+    <string name="approval_empty_mine_description">Create an approval request and track its progress here.</string>
     <string name="approval_load_error">Failed to load</string>
     <string name="approval_retry">Retry</string>
     <string name="approval_load_more">Load more</string>

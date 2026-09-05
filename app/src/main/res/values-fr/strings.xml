@@ -700,6 +700,10 @@
     <string name="approval_tab_pending">À traiter</string>
     <string name="approval_tab_mine">Envoyées</string>
     <string name="approval_empty">Rien pour le moment</string>
+    <string name="approval_empty_pending">Aucune approbation à examiner</string>
+    <string name="approval_empty_pending_description">Les nouvelles demandes d’approbation apparaîtront ici.</string>
+    <string name="approval_empty_mine">Vous n’avez encore soumis aucune approbation</string>
+    <string name="approval_empty_mine_description">Créez une demande d’approbation et suivez sa progression ici.</string>
     <string name="approval_load_error">Échec du chargement</string>
     <string name="approval_retry">Réessayer</string>
     <string name="approval_load_more">Charger plus</string>
