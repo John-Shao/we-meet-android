@@ -103,6 +103,7 @@ class TaskDtosTest {
                 priority = "high",
                 taskListId = "list-1",
                 groupId = "group-1",
+                parentId = "parent-1",
                 reminder = TaskReminderInputDto(
                     enabled = true,
                     reminderMinutes = 5220,
@@ -116,6 +117,7 @@ class TaskDtosTest {
         assertTrue(json.contains("\"priority\":\"high\""))
         assertTrue(json.contains("\"task_list_id\":\"list-1\""))
         assertTrue(json.contains("\"group_id\":\"group-1\""))
+        assertTrue(json.contains("\"parent_id\":\"parent-1\""))
         assertTrue(
             json.contains(
                 "\"reminder\":{\"enabled\":true,\"reminder_minutes\":5220}",

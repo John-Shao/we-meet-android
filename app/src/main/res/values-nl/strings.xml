@@ -294,7 +294,7 @@
     <string name="task_empty_body">Maak een taak of pas de filters aan.</string>
     <string name="task_close">Sluiten</string>
     <string name="task_back">Terug</string>
-    <string name="task_title_hint">Wat moet er gebeuren?</string>
+    <string name="task_title_hint">Taaktitel</string>
     <string name="task_description_hint">Beschrijving toevoegen</string>
     <string name="task_assignee">Verantwoordelijke</string>
     <string name="task_creator">Maker</string>

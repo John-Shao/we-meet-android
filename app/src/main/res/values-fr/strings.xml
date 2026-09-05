@@ -294,7 +294,7 @@
     <string name="task_empty_body">Créez une tâche ou modifiez les filtres.</string>
     <string name="task_close">Fermer</string>
     <string name="task_back">Retour</string>
-    <string name="task_title_hint">Que faut-il faire ?</string>
+    <string name="task_title_hint">Titre de la tâche</string>
     <string name="task_description_hint">Ajouter une description</string>
     <string name="task_assignee">Responsable</string>
     <string name="task_creator">Créateur</string>

@@ -294,7 +294,7 @@
     <string name="task_empty_body">Erstellen Sie eine Aufgabe oder ändern Sie die Filter.</string>
     <string name="task_close">Schließen</string>
     <string name="task_back">Zurück</string>
-    <string name="task_title_hint">Was ist zu erledigen?</string>
+    <string name="task_title_hint">Aufgabentitel</string>
     <string name="task_description_hint">Beschreibung hinzufügen</string>
     <string name="task_assignee">Verantwortlich</string>
     <string name="task_creator">Erstellt von</string>

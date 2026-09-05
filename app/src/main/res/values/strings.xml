@@ -304,7 +304,7 @@
     <string name="task_empty_body">Create a task or adjust your filters.</string>
     <string name="task_close">Close</string>
     <string name="task_back">Back</string>
-    <string name="task_title_hint">What needs to be done?</string>
+    <string name="task_title_hint">Task title</string>
     <string name="task_description_hint">Add a description</string>
     <string name="task_assignee">Assignee</string>
     <string name="task_creator">Creator</string>

@@ -178,6 +178,31 @@ class TaskRepository(
         }
     }
 
+    suspend fun loadCreateParentCandidates(): Result<List<TaskParentCandidateDto>> = runCatching {
+        withContext(Dispatchers.IO) {
+            collectTaskPages { page, pageSize ->
+                api.listTasks(
+                    scope = "all",
+                    status = "all",
+                    page = page,
+                    pageSize = pageSize,
+                )
+            }.asSequence()
+                .filter(TaskDto::canEdit)
+                .map { task ->
+                    TaskParentCandidateDto(
+                        id = task.id,
+                        title = task.title,
+                        depth = (task.ancestorPath.size - 1).coerceAtLeast(0),
+                        ancestorPath = task.ancestorPath,
+                    )
+                }
+                .sortedBy { it.title.lowercase() }
+                .take(20)
+                .toList()
+        }
+    }
+
     suspend fun loadConversationTasks(conversationId: String): Result<List<TaskDto>> =
         runCatching {
             withContext(Dispatchers.IO) { api.listConversationTasks(conversationId) }

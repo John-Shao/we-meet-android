@@ -304,7 +304,7 @@
     <string name="task_empty_body">新建一条任务，或调整当前筛选条件。</string>
     <string name="task_close">关闭</string>
     <string name="task_back">返回</string>
-    <string name="task_title_hint">要完成什么？</string>
+    <string name="task_title_hint">任务标题</string>
     <string name="task_description_hint">添加描述</string>
     <string name="task_assignee">负责人</string>
     <string name="task_creator">创建人</string>

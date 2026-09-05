@@ -222,7 +222,7 @@ private data class TaskCreateInput(
     val priority: TaskPriority,
     val reminderEnabled: Boolean,
     val reminderMinutes: Int?,
-    val subtaskTitle: String?,
+    val parentId: String?,
     val attachmentUri: Uri?,
 )
 
@@ -401,7 +401,10 @@ fun TaskScreen(
                 onSettings = onOpenSettings,
                 onFilter = { showFilter = true },
                 onDisplaySettings = { showDisplaySettings = true },
-                onCreate = { page = TaskPage.Create },
+                onCreate = {
+                    vm.loadCreateParentCandidates()
+                    page = TaskPage.Create
+                },
                 onTaskClick = {
                     selectedTaskId = it.id
                     detailBackStack = listOf(it)
@@ -419,6 +422,8 @@ fun TaskScreen(
                 taskLists = ui.taskLists.filter(TaskListItem::canCreateTasks),
                 taskGroups = ui.taskGroups,
                 defaultGroupId = ui.selectedGroupId,
+                parentCandidates = ui.createParentCandidates,
+                parentCandidatesLoading = ui.createParentCandidatesLoading,
                 creating = ui.creating,
                 onClose = { page = TaskPage.List },
                 onCreate = { input ->
@@ -434,8 +439,8 @@ fun TaskScreen(
                         priority = input.priority,
                         reminderEnabled = input.reminderEnabled,
                         reminderMinutes = input.reminderMinutes,
+                        parentId = input.parentId,
                     ) { created ->
-                        input.subtaskTitle?.let { vm.createSubtask(created, it) }
                         input.attachmentUri?.let { vm.uploadAttachment(created, it) }
                         selectedTaskId = created.id
                         detailBackStack = listOf(created)
@@ -1077,7 +1082,7 @@ fun TaskScreen(
     parentPickerTarget?.let { task ->
         val detail = ui.detail?.takeIf { it.taskId == task.id }
         TaskParentSheet(
-            task = task,
+            selectedParentId = task.parentId,
             candidates = detail?.parentCandidates.orEmpty(),
             saving = task.id in ui.mutatingIds,
             onDismiss = { parentPickerTarget = null },
@@ -2485,6 +2490,8 @@ private fun CreateTaskPage(
     taskLists: List<TaskListItem>,
     taskGroups: List<TaskGroupItem>,
     defaultGroupId: String?,
+    parentCandidates: List<TaskParentCandidateItem>,
+    parentCandidatesLoading: Boolean,
     creating: Boolean,
     onClose: () -> Unit,
     onCreate: (TaskCreateInput) -> Unit,
@@ -2500,12 +2507,12 @@ private fun CreateTaskPage(
     var selectedPriority by remember { mutableStateOf(TaskPriority.Medium) }
     var reminderEnabledOverride by remember { mutableStateOf<Boolean?>(null) }
     var reminderMinutes by remember { mutableStateOf<Int?>(null) }
-    var subtaskTitle by remember { mutableStateOf<String?>(null) }
+    var selectedParentId by remember { mutableStateOf<String?>(null) }
     var attachmentUri by remember { mutableStateOf<Uri?>(null) }
     var showAssigneePicker by remember { mutableStateOf(false) }
     var showFollowerPicker by remember { mutableStateOf(false) }
     var showPriorityPicker by remember { mutableStateOf(false) }
-    var showSubtaskDialog by remember { mutableStateOf(false) }
+    var showParentPicker by remember { mutableStateOf(false) }
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showDueDatePicker by remember { mutableStateOf(false) }
     var showListPicker by remember { mutableStateOf(false) }
@@ -2516,6 +2523,7 @@ private fun CreateTaskPage(
     val selectedList = taskLists.firstOrNull { it.id == selectedListId }
     val allTaskGroups = taskGroups
     val selectedGroup = allTaskGroups.firstOrNull { it.id == selectedGroupId }
+    val selectedParent = parentCandidates.firstOrNull { it.id == selectedParentId }
     val assigneeLabel = selectedAssignees
         ?.joinToString { it.displayName }
         ?.takeIf(String::isNotBlank)
@@ -2564,7 +2572,7 @@ private fun CreateTaskPage(
                                 priority = selectedPriority,
                                 reminderEnabled = reminderEnabled,
                                 reminderMinutes = reminderMinutes,
-                                subtaskTitle = subtaskTitle,
+                                parentId = selectedParentId,
                                 attachmentUri = attachmentUri,
                             ),
                         )
@@ -2608,8 +2616,7 @@ private fun CreateTaskPage(
                             fontWeight = FontWeight.Bold,
                         ),
                         modifier = Modifier.fillMaxWidth().testTag(TASK_CREATE_TITLE_TEST_TAG),
-                        minLines = 2,
-                        maxLines = 4,
+                        singleLine = true,
                         colors = taskEditorTextFieldColors(),
                     )
                 }
@@ -2692,17 +2699,15 @@ private fun CreateTaskPage(
                 TaskDetailCard {
                     FormValueRow(
                         Icons.AutoMirrored.Outlined.ListAlt,
-                        R.string.task_add_to_list,
-                        selectedList?.name ?: stringResource(R.string.task_ungrouped),
+                        R.string.task_belongs_to_list,
+                        selectedList?.name ?: stringResource(R.string.task_standalone),
                     ) { showListPicker = true }
-                    if (allTaskGroups.isNotEmpty()) {
-                        TaskDetailDivider()
-                        FormValueRow(
-                            Icons.Outlined.AccountTree,
-                            R.string.task_grouping,
-                            selectedGroup?.name ?: stringResource(R.string.task_ungrouped),
-                        ) { showGroupPicker = true }
-                    }
+                    TaskDetailDivider()
+                    FormValueRow(
+                        Icons.Outlined.AccountTree,
+                        R.string.task_belongs_to_group,
+                        selectedGroup?.name ?: stringResource(R.string.task_ungrouped),
+                    ) { showGroupPicker = true }
                 }
             }
             item {
@@ -2737,9 +2742,9 @@ private fun CreateTaskPage(
                 TaskDetailCard {
                     FormValueRow(
                         Icons.Outlined.AccountTree,
-                        R.string.task_add_subtask,
-                        subtaskTitle ?: stringResource(R.string.task_priority_none),
-                    ) { showSubtaskDialog = true }
+                        R.string.task_parent,
+                        selectedParent?.title ?: stringResource(R.string.task_no_parent),
+                    ) { showParentPicker = true }
                 }
             }
         }
@@ -2837,13 +2842,15 @@ private fun CreateTaskPage(
             },
         )
     }
-    if (showSubtaskDialog) {
-        NewSubtaskDialog(
-            initialTitle = subtaskTitle.orEmpty(),
-            onDismiss = { showSubtaskDialog = false },
-            onCreate = {
-                subtaskTitle = it
-                showSubtaskDialog = false
+    if (showParentPicker) {
+        TaskParentSheet(
+            selectedParentId = selectedParentId,
+            candidates = parentCandidates,
+            saving = creating || parentCandidatesLoading,
+            onDismiss = { showParentPicker = false },
+            onSelect = { parentId ->
+                selectedParentId = parentId
+                showParentPicker = false
             },
         )
     }
@@ -4586,7 +4593,7 @@ private fun TaskRecurrenceSheet(
 
 @Composable
 private fun TaskParentSheet(
-    task: TaskItem,
+    selectedParentId: String?,
     candidates: List<TaskParentCandidateItem>,
     saving: Boolean,
     onDismiss: () -> Unit,
@@ -4600,27 +4607,32 @@ private fun TaskParentSheet(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
-            ParentChoiceRow(
-                label = stringResource(R.string.task_no_parent),
-                selected = task.parentId == null,
-                enabled = !saving,
-                onClick = {
-                    if (task.parentId == null) onDismiss() else onSelect(null)
-                },
-            )
-            candidates.forEach { candidate ->
-                ParentChoiceRow(
-                    label = buildString {
-                        repeat(candidate.depth) { append("— ") }
-                        append(candidate.title)
-                    },
-                    selected = task.parentId == candidate.id,
-                    enabled = !saving,
-                    onClick = {
-                        if (task.parentId == candidate.id) onDismiss()
-                        else onSelect(candidate.id)
-                    },
-                )
+            if (saving) LinearProgressIndicator(Modifier.fillMaxWidth())
+            LazyColumn(Modifier.fillMaxWidth().heightIn(max = Dimens.SheetContentMaxHeight)) {
+                item {
+                    ParentChoiceRow(
+                        label = stringResource(R.string.task_no_parent),
+                        selected = selectedParentId == null,
+                        enabled = !saving,
+                        onClick = {
+                            if (selectedParentId == null) onDismiss() else onSelect(null)
+                        },
+                    )
+                }
+                items(candidates, key = TaskParentCandidateItem::id) { candidate ->
+                    ParentChoiceRow(
+                        label = buildString {
+                            repeat(candidate.depth) { append("— ") }
+                            append(candidate.title)
+                        },
+                        selected = selectedParentId == candidate.id,
+                        enabled = !saving,
+                        onClick = {
+                            if (selectedParentId == candidate.id) onDismiss()
+                            else onSelect(candidate.id)
+                        },
+                    )
+                }
             }
         }
     }

@@ -54,6 +54,8 @@ data class TaskUiState(
     val searchFilter: TaskSearchFilter = TaskSearchFilter(),
     val searchResults: List<TaskItem> = emptyList(),
     val searching: Boolean = false,
+    val createParentCandidates: List<TaskParentCandidateItem> = emptyList(),
+    val createParentCandidatesLoading: Boolean = false,
     val activityFeed: List<TaskActivityItem> = emptyList(),
     val activityLoading: Boolean = false,
     val activityLoadingMore: Boolean = false,
@@ -438,6 +440,7 @@ class TaskViewModel(
         priority: TaskPriority,
         reminderEnabled: Boolean,
         reminderMinutes: Int?,
+        parentId: String?,
         onCreated: (TaskItem) -> Unit,
     ) {
         if (_ui.value.creating) return
@@ -455,6 +458,7 @@ class TaskViewModel(
                 groupId = groupId,
                 reminderEnabled = reminderEnabled,
                 reminderMinutes = reminderMinutes,
+                parentId = parentId,
             ).fold(
                 onSuccess = { dto ->
                     val item = dto.toItem()
@@ -463,6 +467,42 @@ class TaskViewModel(
                     onCreated(item)
                 },
                 onFailure = { _ui.update { it.copy(creating = false, failure = TaskFailure.Save) } },
+            )
+        }
+    }
+
+    fun loadCreateParentCandidates() {
+        if (_ui.value.createParentCandidatesLoading) return
+        _ui.update {
+            it.copy(
+                createParentCandidates = emptyList(),
+                createParentCandidatesLoading = true,
+            )
+        }
+        viewModelScope.launch {
+            repository.loadCreateParentCandidates().fold(
+                onSuccess = { candidates ->
+                    _ui.update {
+                        it.copy(
+                            createParentCandidates = candidates.map { candidate ->
+                                TaskParentCandidateItem(
+                                    id = candidate.id,
+                                    title = candidate.title,
+                                    depth = candidate.depth,
+                                )
+                            },
+                            createParentCandidatesLoading = false,
+                        )
+                    }
+                },
+                onFailure = {
+                    _ui.update { state ->
+                        state.copy(
+                            createParentCandidatesLoading = false,
+                            failure = TaskFailure.Load,
+                        )
+                    }
+                },
             )
         }
     }
