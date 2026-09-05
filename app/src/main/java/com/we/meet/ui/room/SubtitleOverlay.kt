@@ -3,7 +3,6 @@ package com.we.meet.ui.room
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,7 +13,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.OnMediaOverlay
@@ -22,8 +25,9 @@ import com.we.meet.ui.theme.WeMeetTheme
 
 /**
  * Bottom-anchored realtime subtitle strip — shows up to [MAX_VISIBLE_ROWS]
- * "rows", where consecutive segments from the same speaker collapse into
- * a single row (matches the Web layout's `transcriptionRows` grouping).
+ * speaker turns. A turn only keeps its latest stable segment because this is
+ * a live caption overlay, not transcript history. Each turn is also capped at
+ * [MAX_LINES_PER_ROW] visual lines so long meetings can never cover the room.
  *
  * Render is intentionally minimal: white text on a semi-translucent
  * black background, sized for readability over arbitrary participant
@@ -54,56 +58,62 @@ fun SubtitleOverlay(
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
     ) {
         visible.forEach { row ->
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = stringResource(R.string.subtitle_speaker_prefix, row.speaker.ifBlank { "—" }),
-                    color = WeMeetTheme.extras.room.subtitleText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = row.text,
-                    color = OnMediaOverlay,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
+            val speakerPrefix = stringResource(
+                R.string.subtitle_speaker_prefix,
+                row.speaker.ifBlank { "—" },
+            )
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(
+                        SpanStyle(
+                            color = WeMeetTheme.extras.room.subtitleText,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                    ) {
+                        append(speakerPrefix)
+                    }
+                    append(row.text)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                color = OnMediaOverlay,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = MAX_LINES_PER_ROW,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
 
-private data class SubtitleRow(val speaker: String, val text: String)
+internal data class SubtitleRow(val speaker: String, val text: String)
 
 /**
- * Collapse consecutive same-speaker segments into one row. The text is
- * concatenated with single spaces. Web does the same via the
- * `currentRow` accumulator in Subtitles.tsx.
+ * Collapse consecutive same-speaker segments into one turn, retaining only
+ * that turn's latest non-blank segment. Keeping the full accumulated turn is
+ * what previously allowed one speaker to grow this overlay to full-screen.
  */
-private fun groupRows(segments: List<SubtitleSegment>): List<SubtitleRow> {
-    if (segments.isEmpty()) return emptyList()
+internal fun groupRows(segments: List<SubtitleSegment>): List<SubtitleRow> {
     val rows = mutableListOf<SubtitleRow>()
-    var currentSpeaker = ""
-    val currentText = StringBuilder()
-    fun flush() {
-        if (currentText.isNotEmpty()) {
-            rows.add(SubtitleRow(currentSpeaker, currentText.toString()))
-        }
-    }
+    var currentIdentity: String? = null
+
     for (seg in segments) {
-        if (seg.participantIdentity != currentSpeaker && currentText.isNotEmpty()) {
-            flush()
-            currentText.clear()
+        val text = seg.text.trim()
+        if (text.isEmpty()) continue
+
+        val nextRow = SubtitleRow(
+            speaker = seg.participantName.ifBlank { seg.participantIdentity },
+            text = text,
+        )
+        if (seg.participantIdentity == currentIdentity && rows.isNotEmpty()) {
+            // A subtitle turn is a live snapshot: replace its previous packet
+            // instead of accumulating an ever-growing transcript paragraph.
+            rows[rows.lastIndex] = nextRow
+        } else {
+            rows.add(nextRow)
+            currentIdentity = seg.participantIdentity
         }
-        if (currentText.isNotEmpty()) currentText.append(' ')
-        currentText.append(seg.text)
-        currentSpeaker = seg.participantIdentity
-        // Use the latest participant name we saw — handles renames mid-row.
-        rows.lastOrNull()?.let { /* name lives in `speaker` of the next flush */ }
     }
-    flush()
-    // Replace speaker identity with the display name from the last
-    // segment we observed for that identity.
-    val identityToName = segments.associate { it.participantIdentity to it.participantName }
-    return rows.map { it.copy(speaker = identityToName[it.speaker] ?: it.speaker) }
+    return rows
 }
 
 private const val MAX_VISIBLE_ROWS = 3
+private const val MAX_LINES_PER_ROW = 2

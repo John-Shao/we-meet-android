@@ -177,8 +177,8 @@ object Dimens {
         /** 画廊分页的页码圆点,当前页略大。 */
         val PageDotActive = 8.dp
         val PageDotInactive = 6.dp
-        /** 字幕条距底的避让量,让它落在底部工具栏之上。 */
-        val SubtitleBottomInset = 96.dp
+        /** 会议画面底部为实时字幕预留的固定区域高度。 */
+        val SubtitleAreaHeight = 152.dp
         /**
          * 顶栏居中标题两侧的留白。
          *

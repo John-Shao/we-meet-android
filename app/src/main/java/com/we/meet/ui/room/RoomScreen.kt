@@ -979,6 +979,11 @@ private fun RoomContent(
             if (toolbarsVisible) navBottom + Dimens.Room.BottomToolbarHeight + gap else Dimens.SpaceNone,
         label = "bottomInset",
     )
+    val subtitleInset = if (state.subtitlesOverlayOn) {
+        Dimens.Room.SubtitleAreaHeight + gap
+    } else {
+        Dimens.SpaceNone
+    }
 
     Box(
         modifier = Modifier
@@ -992,7 +997,7 @@ private fun RoomContent(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = topInset, bottom = bottomInset),
+                .padding(top = topInset, bottom = bottomInset + subtitleInset),
         ) {
             VideoGrid(
                 state = state,
@@ -1056,16 +1061,22 @@ private fun RoomContent(
             }
         }
 
-        // Subtitle overlay — sits just above the bottom toolbar when
-        // the user has enabled captions. Always visible (regardless of
-        // toolbar fade-out) so subtitles don't blink with the controls.
+        // Fixed subtitle region. The video grid reserves the same height via
+        // subtitleInset, so captions never draw over participant video. The
+        // region follows the bottom toolbar while it is visible and moves to
+        // the screen bottom with the toolbar hidden.
         if (state.subtitlesOverlayOn) {
-            Column(
+            Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = Dimens.Room.SubtitleBottomInset),
+                    .padding(bottom = bottomInset)
+                    .fillMaxWidth()
+                    .height(Dimens.Room.SubtitleAreaHeight),
             ) {
-                SubtitleOverlay(segments = subtitleSegments)
+                SubtitleOverlay(
+                    segments = subtitleSegments,
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
             }
         }
 
