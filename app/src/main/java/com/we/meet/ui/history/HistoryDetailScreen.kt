@@ -1,5 +1,6 @@
 package com.we.meet.ui.history
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -55,6 +58,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
+import retrofit2.HttpException
 
 /**
  * Meeting-detail screen. Mirrors the Web frontend's MeetingDetail page —
@@ -84,6 +88,7 @@ fun HistoryDetailScreen(
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var confirmDelete by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
+    val deleteFailedText = stringResource(R.string.event_delete_failed)
 
     LaunchedEffect(roomId) { viewModel.load(roomId) }
 
@@ -114,33 +119,53 @@ fun HistoryDetailScreen(
     // P8 操作收进详情(对标飞书/Web):列表长按删除已移除,这里是唯一入口。
     if (confirmDelete) {
         androidx.compose.material3.AlertDialog(
-            onDismissRequest = { confirmDelete = false },
+            onDismissRequest = { if (!deleting) confirmDelete = false },
             title = { Text(stringResource(R.string.history_delete_confirm_title)) },
             text = {
                 Text(stringResource(R.string.history_delete_confirm_text, deleteName))
             },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {
-                    confirmDelete = false
                     if (!deleting) {
                         deleting = true
                         scope.launch {
                             val id = room?.slug?.takeIf { it.isNotBlank() } ?: roomId
-                            app.roomRepository.deleteRoom(id)
-                            app.historyStore.remove(id)
-                            handleBack()
+                            val result = app.roomRepository.deleteRoom(id)
+                            val alreadyDeleted = (result.exceptionOrNull() as? HttpException)
+                                ?.code() == 404
+                            if (result.isSuccess || alreadyDeleted) {
+                                confirmDelete = false
+                                app.historyStore.remove(id)
+                                handleBack()
+                            } else {
+                                deleting = false
+                                Toast.makeText(
+                                    app,
+                                    deleteFailedText,
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
                         }
                     }
-                }) {
-                    Text(
-                        stringResource(R.string.history_action_delete),
-                        color = MaterialTheme.colorScheme.error,
-                    )
+                }, enabled = !deleting) {
+                    if (deleting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(Dimens.IconSmall),
+                            strokeWidth = Dimens.BorderEmphasis,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    } else {
+                        Text(
+                            stringResource(R.string.history_action_delete),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
                 }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(
                     onClick = { confirmDelete = false },
+                    enabled = !deleting,
                 ) {
                     Text(stringResource(R.string.cancel))
                 }

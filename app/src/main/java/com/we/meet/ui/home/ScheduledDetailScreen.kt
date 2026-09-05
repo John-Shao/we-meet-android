@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,6 +62,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import retrofit2.HttpException
 
 /**
  * P8 预约会议详情页(对标飞书/Web MeetingDetailPanel):点预约会议行打开,
@@ -89,6 +92,7 @@ fun ScheduledDetailScreen(
     var meetingName by remember(name) { mutableStateOf(name) }
     var editedName by remember(name) { mutableStateOf(name) }
     val imSession = remember { ImSession.get(app) }
+    val deleteFailedText = stringResource(R.string.event_delete_failed)
 
     val title = meetingName.ifBlank { formatSlugDigits(slug) }
     val link = BuildConfig.WE_MEET_BASE_URL.trimEnd('/') + "/" + slug
@@ -100,31 +104,50 @@ fun ScheduledDetailScreen(
 
     if (confirmDelete) {
         AlertDialog(
-            onDismissRequest = { confirmDelete = false },
+            onDismissRequest = { if (!deleting) confirmDelete = false },
             title = { Text(stringResource(R.string.history_delete_confirm_title)) },
             text = { Text(stringResource(R.string.history_delete_confirm_text, title)) },
             confirmButton = {
                 TextButton(onClick = {
-                    confirmDelete = false
                     if (!deleting) {
                         deleting = true
                         scope.launch {
                             // 与 HomeViewModel.deleteMeeting 同语义:服务端删房
                             // (非房主 403 也无妨)+ 清本机记录;列表 resume 自愈。
-                            app.roomRepository.deleteRoom(slug)
-                            app.historyStore.remove(slug)
-                            onBack()
+                            val result = app.roomRepository.deleteRoom(slug)
+                            val responseCode = (result.exceptionOrNull() as? HttpException)?.code()
+                            val mayRemoveLocally = result.isSuccess || responseCode in setOf(403, 404)
+                            if (mayRemoveLocally) {
+                                confirmDelete = false
+                                app.historyStore.remove(slug)
+                                onBack()
+                            } else {
+                                deleting = false
+                                Toast.makeText(
+                                    context,
+                                    deleteFailedText,
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
                         }
                     }
-                }) {
-                    Text(
-                        stringResource(R.string.history_action_delete),
-                        color = MaterialTheme.colorScheme.error,
-                    )
+                }, enabled = !deleting) {
+                    if (deleting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(Dimens.IconSmall),
+                            strokeWidth = Dimens.BorderEmphasis,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    } else {
+                        Text(
+                            stringResource(R.string.history_action_delete),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) {
+                TextButton(onClick = { confirmDelete = false }, enabled = !deleting) {
                     Text(stringResource(R.string.cancel))
                 }
             },
