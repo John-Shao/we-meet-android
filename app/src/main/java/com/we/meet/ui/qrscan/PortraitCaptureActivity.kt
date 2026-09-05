@@ -35,7 +35,7 @@ class PortraitCaptureActivity : CaptureActivity() {
 
     private fun addCloseButtonOverlay() {
         val density = resources.displayMetrics.density
-        val size = (44 * density).toInt()
+        val size = (48 * density).toInt()
         val sideMargin = (12 * density).toInt()
         // Fallback top offset until the inset listener fires (e.g. on devices
         // that haven't dispatched insets yet). Matches typical status bar height.
@@ -46,7 +46,7 @@ class PortraitCaptureActivity : CaptureActivity() {
             setBackgroundResource(R.drawable.bg_scanner_back_button)
             setColorFilter(Color.WHITE)
             contentDescription = getString(R.string.cancel)
-            val pad = (10 * density).toInt()
+            val pad = (12 * density).toInt()
             setPadding(pad, pad, pad, pad)
             setOnClickListener { finish() }
         }

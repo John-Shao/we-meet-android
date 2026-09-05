@@ -53,4 +53,11 @@
     <string name="assistant_cd_toggle_video">Basculer le mode vidéo</string>
     <string name="assistant_mic_action_failed">Impossible de mettre à jour le microphone. Réessayez.</string>
     <string name="assistant_camera_switch_failed">Impossible de changer de caméra. Réessayez.</string>
+    <string name="assistant_cd_interrupt">Interrompre l’IA</string>
+    <string name="assistant_cd_switch_to_video">Passer à l’appel vidéo</string>
+    <string name="assistant_cd_switch_to_voice">Passer à l’appel audio</string>
+    <string name="assistant_state_muted">Micro coupé</string>
+    <string name="assistant_state_unmuted">Micro activé</string>
+    <string name="assistant_state_video">Appel vidéo</string>
+    <string name="assistant_state_voice">Appel audio</string>
 </resources>

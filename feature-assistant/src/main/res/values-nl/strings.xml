@@ -53,4 +53,11 @@
     <string name="assistant_cd_toggle_video">Videomodus wisselen</string>
     <string name="assistant_mic_action_failed">Microfoon kon niet worden bijgewerkt. Probeer opnieuw.</string>
     <string name="assistant_camera_switch_failed">Kon niet van camera wisselen. Probeer opnieuw.</string>
+    <string name="assistant_cd_interrupt">AI onderbreken</string>
+    <string name="assistant_cd_switch_to_video">Overschakelen naar videogesprek</string>
+    <string name="assistant_cd_switch_to_voice">Overschakelen naar spraakgesprek</string>
+    <string name="assistant_state_muted">Gedempt</string>
+    <string name="assistant_state_unmuted">Microfoon ingeschakeld</string>
+    <string name="assistant_state_video">Videogesprek</string>
+    <string name="assistant_state_voice">Spraakgesprek</string>
 </resources>

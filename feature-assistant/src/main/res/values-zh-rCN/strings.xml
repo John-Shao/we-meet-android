@@ -47,4 +47,11 @@
     <string name="assistant_cd_hang_up">挂断</string>
     <string name="assistant_cd_start_call">开始通话</string>
     <string name="assistant_cd_toggle_video">切换视频模式</string>
+    <string name="assistant_cd_interrupt">打断 AI</string>
+    <string name="assistant_cd_switch_to_video">切换到视频通话</string>
+    <string name="assistant_cd_switch_to_voice">切换到语音通话</string>
+    <string name="assistant_state_muted">已静音</string>
+    <string name="assistant_state_unmuted">麦克风已开启</string>
+    <string name="assistant_state_video">视频通话</string>
+    <string name="assistant_state_voice">语音通话</string>
 </resources>

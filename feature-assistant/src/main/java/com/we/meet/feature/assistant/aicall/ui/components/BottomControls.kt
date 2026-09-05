@@ -7,6 +7,7 @@ import com.we.meet.feature.assistant.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -26,7 +27,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.semantics
 import com.we.meet.feature.assistant.aicall.model.AiCallMode
 import com.we.meet.feature.assistant.aicall.model.AiCallStatus
 
@@ -103,12 +107,27 @@ private fun MicButton(
         muted -> hangUp
         else -> controls.onSurface
     }
+    val actionLabel = stringResource(
+        if (muted) R.string.assistant_cd_unmute else R.string.assistant_cd_mute,
+    )
+    val stateLabel = stringResource(
+        if (muted) R.string.assistant_state_muted else R.string.assistant_state_unmuted,
+    )
     Box(
         modifier = Modifier
             .size(Dimens.AiCall.ControlButton)
             .clip(CircleShape)
             .background(bg)
-            .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),
+            .toggleable(
+                value = muted,
+                enabled = enabled,
+                role = Role.Switch,
+                onValueChange = { onClick() },
+            )
+            .semantics {
+                contentDescription = actionLabel
+                stateDescription = stateLabel
+            },
         contentAlignment = Alignment.Center,
     ) {
         if (loading) {
@@ -120,9 +139,7 @@ private fun MicButton(
         } else {
             Icon(
                 imageVector = if (muted) Icons.Filled.MicOff else Icons.Filled.Mic,
-                contentDescription = stringResource(
-                    if (muted) R.string.assistant_cd_unmute else R.string.assistant_cd_mute,
-                ),
+                contentDescription = null,
                 tint = tint,
             )
         }
@@ -134,19 +151,25 @@ private fun CallButton(isActive: Boolean, onClick: () -> Unit) {
     val palette = WeMeetTheme.extras.aiCall
     val bg = if (isActive) palette.hangUp else palette.startCall
     val icon = if (isActive) Icons.Filled.CallEnd else Icons.Filled.Call
+    val actionLabel = stringResource(
+        if (isActive) R.string.assistant_cd_hang_up else R.string.assistant_cd_start_call,
+    )
     Box(
         modifier = Modifier
             .size(Dimens.AiCall.CallButton)
             .clip(CircleShape)
             .background(bg)
-            .clickable(onClick = onClick),
+            .clickable(
+                role = Role.Button,
+                onClickLabel = actionLabel,
+                onClick = onClick,
+            )
+            .semantics { contentDescription = actionLabel },
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = stringResource(
-                if (isActive) R.string.assistant_cd_hang_up else R.string.assistant_cd_start_call,
-            ),
+            contentDescription = null,
             tint = palette.onCallAction,
         )
     }
@@ -169,17 +192,32 @@ private fun VideoToggleButton(
         selected -> controls.onSelected
         else -> controls.onSurface
     }
+    val actionLabel = stringResource(
+        if (selected) R.string.assistant_cd_switch_to_voice else R.string.assistant_cd_switch_to_video,
+    )
+    val stateLabel = stringResource(
+        if (selected) R.string.assistant_state_video else R.string.assistant_state_voice,
+    )
     Box(
         modifier = Modifier
             .size(Dimens.AiCall.ControlButton)
             .clip(CircleShape)
             .background(bg)
-            .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),
+            .toggleable(
+                value = selected,
+                enabled = enabled,
+                role = Role.Switch,
+                onValueChange = { onClick() },
+            )
+            .semantics {
+                contentDescription = actionLabel
+                stateDescription = stateLabel
+            },
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = Icons.Filled.Videocam,
-            contentDescription = stringResource(R.string.assistant_cd_toggle_video),
+            contentDescription = null,
             tint = tint,
         )
     }

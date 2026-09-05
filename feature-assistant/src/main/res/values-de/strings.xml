@@ -53,4 +53,11 @@
     <string name="assistant_cd_toggle_video">Videomodus umschalten</string>
     <string name="assistant_mic_action_failed">Mikrofon konnte nicht aktualisiert werden. Bitte erneut versuchen.</string>
     <string name="assistant_camera_switch_failed">Kamera konnte nicht gewechselt werden. Bitte erneut versuchen.</string>
+    <string name="assistant_cd_interrupt">KI unterbrechen</string>
+    <string name="assistant_cd_switch_to_video">Zum Videoanruf wechseln</string>
+    <string name="assistant_cd_switch_to_voice">Zum Sprachanruf wechseln</string>
+    <string name="assistant_state_muted">Stummgeschaltet</string>
+    <string name="assistant_state_unmuted">Mikrofon eingeschaltet</string>
+    <string name="assistant_state_video">Videoanruf</string>
+    <string name="assistant_state_voice">Sprachanruf</string>
 </resources>

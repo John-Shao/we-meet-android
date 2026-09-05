@@ -225,6 +225,8 @@ fun AssistantCallScreen(
                         isVideoActive -> Unit // video fills the background
                         else -> AnimatedSphere(
                             audioLevel = { state.agentAudioLevel },
+                            contentDescription = stringResource(R.string.assistant_cd_interrupt),
+                            enabled = state.status is AiCallStatus.Active,
                             onTap = vm::onTapToInterrupt,
                         )
                     }

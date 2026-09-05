@@ -53,4 +53,11 @@
     <string name="assistant_cd_hang_up">Hang up</string>
     <string name="assistant_cd_start_call">Start call</string>
     <string name="assistant_cd_toggle_video">Toggle video mode</string>
+    <string name="assistant_cd_interrupt">Interrupt AI</string>
+    <string name="assistant_cd_switch_to_video">Switch to video call</string>
+    <string name="assistant_cd_switch_to_voice">Switch to voice call</string>
+    <string name="assistant_state_muted">Muted</string>
+    <string name="assistant_state_unmuted">Microphone on</string>
+    <string name="assistant_state_video">Video call</string>
+    <string name="assistant_state_voice">Voice call</string>
 </resources>
