@@ -89,6 +89,7 @@ fun ScheduledDetailScreen(
     var showShare by remember { mutableStateOf(false) }
     var showShareGroup by remember { mutableStateOf(false) }
     var showEdit by remember { mutableStateOf(false) }
+    var renaming by remember { mutableStateOf(false) }
     var meetingName by remember(name) { mutableStateOf(name) }
     var editedName by remember(name) { mutableStateOf(name) }
     val imSession = remember { ImSession.get(app) }
@@ -157,23 +158,53 @@ fun ScheduledDetailScreen(
     val saveFailedMsg = stringResource(R.string.scheduled_edit_failed)
     if (showEdit) {
         AlertDialog(
-            onDismissRequest = { showEdit = false },
+            onDismissRequest = { if (!renaming) showEdit = false },
             title = { Text(stringResource(R.string.scheduled_edit_title)) },
-            text = { OutlinedTextField(value = editedName, onValueChange = { editedName = it }, label = { Text(stringResource(R.string.scheduled_edit_name_label)) }) },
-            confirmButton = { TextButton(onClick = {
-                val newName = editedName.trim()
-                if (newName.isNotBlank()) {
-                    scope.launch {
-                        app.roomRepository.renameRoom(slug, newName)
-                            .onSuccess { meetingName = newName }
-                            .onFailure {
-                                Toast.makeText(context, saveFailedMsg, Toast.LENGTH_SHORT).show()
+            text = {
+                OutlinedTextField(
+                    value = editedName,
+                    onValueChange = { editedName = it },
+                    enabled = !renaming,
+                    label = { Text(stringResource(R.string.scheduled_edit_name_label)) },
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val newName = editedName.trim()
+                        if (newName.isNotBlank() && !renaming) {
+                            renaming = true
+                            scope.launch {
+                                app.roomRepository.renameRoom(slug, newName)
+                                    .onSuccess {
+                                        meetingName = newName
+                                        renaming = false
+                                        showEdit = false
+                                    }
+                                    .onFailure {
+                                        renaming = false
+                                        Toast.makeText(context, saveFailedMsg, Toast.LENGTH_SHORT).show()
+                                    }
                             }
+                        }
+                    },
+                    enabled = editedName.isNotBlank() && !renaming,
+                ) {
+                    if (renaming) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(Dimens.IconSmall),
+                            strokeWidth = Dimens.BorderEmphasis,
+                        )
+                    } else {
+                        Text(stringResource(R.string.common_save))
                     }
-                    showEdit = false
                 }
-            }) { Text(stringResource(R.string.common_save)) } },
-            dismissButton = { TextButton(onClick = { showEdit = false }) { Text(stringResource(R.string.common_cancel)) } },
+            },
+            dismissButton = {
+                TextButton(onClick = { showEdit = false }, enabled = !renaming) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
         )
     }
 
@@ -184,7 +215,11 @@ fun ScheduledDetailScreen(
                 onBack = onBack,
                 actions = {
                     IconButton(onClick = { showShare = true }) { Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.invite_share_to_chat)) }
-                    IconButton(onClick = { editedName = meetingName; showEdit = true }) { Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.scheduled_edit_title)) }
+                    IconButton(onClick = {
+                        editedName = meetingName
+                        renaming = false
+                        showEdit = true
+                    }) { Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.scheduled_edit_title)) }
                     Box {
                         IconButton(onClick = { showMore = true }) { Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.cd_more)) }
                         DropdownMenu(expanded = showMore, onDismissRequest = { showMore = false }) {
