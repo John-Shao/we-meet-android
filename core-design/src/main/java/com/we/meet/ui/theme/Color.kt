@@ -309,19 +309,12 @@ val ImConnOfflineFg = Color(0xFF444444)
 /** 群头像无图时的底色调色板。与人物头像的 [AvatarFallbackPalette] 分开 ——
  *  群和人在列表里混排,配色不同才好一眼区分。
  *
- *  ⚠️ **已知欠账:这一组配白字有 3 档不过 4.5:1** —— `EA580C` 3.56:1、
- *  `16A34A` 3.30:1、`0891B2` 3.68:1(`2563EB` 5.17 / `7C3AED` 5.70 /
- *  `DB2777` 4.60 通过)。和 [AvatarFallbackPalette] 是同一类问题,但**没有**
- *  跟着一起修,因为这六个值在 Web 侧还有三份拷贝(`features/contacts/
- *  components/MemberAvatar.tsx`、`features/im/components/Avatar.tsx`、
- *  `features/im/components/GroupAvatar.tsx`),且 Web 也是白字 —— 单改 App
- *  会让两端分叉。要修得连 Web 一起,顺带把那三份合并成一份。
- *
- *  压深到刚好过线的值算好了:`CD4D0B` / `12883D` / `07819F`。
+ *  六档均按白字 4.5:1 的门槛校验；顺序不能改变，否则按名称哈希得到的颜色
+ *  会整体重排。Web 端共享相同的六档值，调整时必须跨端同步。
  */
 val GroupAvatarPalette = listOf(
     Color(0xFF2563EB), Color(0xFF7C3AED), Color(0xFFDB2777),
-    Color(0xFFEA580C), Color(0xFF16A34A), Color(0xFF0891B2),
+    Color(0xFFCD4D0B), Color(0xFF12883D), Color(0xFF07819F),
 )
 
 /**

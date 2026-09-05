@@ -72,7 +72,14 @@ fun calendarEventColors(value: String?): CalendarEventColors {
     val rawAccent = parseCalendarColor(value) ?: MaterialTheme.colorScheme.primary
     return resolveCalendarEventColors(
         rawAccent = rawAccent,
-        containerBase = calendar.gridBackground,
+        // In dark mode the grid and page share the same near-black surface.
+        // Lift event cards one surface step before applying the calendar hue so
+        // their bounds remain visible without adding a decorative outline.
+        containerBase = if (WeMeetTheme.isDark) {
+            MaterialTheme.colorScheme.surfaceContainerLow
+        } else {
+            calendar.gridBackground
+        },
         content = calendar.eventContent,
         supportingContent = calendar.eventSupportingContent,
         fillAlpha = if (WeMeetTheme.isDark) {

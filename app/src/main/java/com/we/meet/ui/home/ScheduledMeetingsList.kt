@@ -77,9 +77,8 @@ private fun ScheduledRow(
                 modifier = Modifier
                     .size(Dimens.ListThumbnail)
                     .clip(RoundedCornerShape(Dimens.CornerS))
-                    // Match HistoryList's primary-container palette so
-                    // both lists read as one visual family — the icon
-                    // shape (Event vs Videocam) is what tells them apart.
+                    // Keep future meetings emphasized; history rows use a
+                    // neutral surface so the two sections keep a clear hierarchy.
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center,
             ) {

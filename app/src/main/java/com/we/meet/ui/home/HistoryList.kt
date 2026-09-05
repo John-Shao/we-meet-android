@@ -72,13 +72,13 @@ private fun HistoryRow(
                 modifier = Modifier
                     .size(Dimens.ListThumbnail)
                     .clip(RoundedCornerShape(Dimens.CornerS))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Default.Videocam,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    tint = MaterialTheme.colorScheme.primary,
                 )
             }
             Spacer(Modifier.size(Dimens.SpaceM))

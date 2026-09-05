@@ -1617,7 +1617,19 @@ internal fun TaskRow(
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (emphasizedPriority) {
-                    Box(Modifier.size(Dimens.SpaceS).clip(CircleShape).background(MaterialTheme.colorScheme.error))
+                    Icon(
+                        Icons.Outlined.Flag,
+                        contentDescription = null,
+                        modifier = Modifier.size(Dimens.SpaceL),
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                    Spacer(Modifier.width(Dimens.SpaceXxs))
+                    Text(
+                        text = priorityText(task.priority),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.error,
+                    )
                     Spacer(Modifier.width(Dimens.SpaceS))
                 }
                 Text(

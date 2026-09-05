@@ -2,7 +2,7 @@ package com.we.meet.ui.calendar
 
 import com.we.meet.ui.theme.DarkCalendarEventContent
 import com.we.meet.ui.theme.DarkCalendarEventSupportingContent
-import com.we.meet.ui.theme.DarkCalendarGridBackground
+import com.we.meet.ui.theme.DarkSurfaceContainerLow
 import com.we.meet.ui.theme.LightCalendarEventContent
 import com.we.meet.ui.theme.LightCalendarEventSupportingContent
 import com.we.meet.ui.theme.LightCalendarGridBackground
@@ -24,7 +24,7 @@ class CalendarColorHierarchyTest {
     @Test
     fun calendarPaletteProducesAccessibleDarkEventColors() {
         assertCalendarPalette(
-            containerBase = DarkCalendarGridBackground,
+            containerBase = DarkSurfaceContainerLow,
             content = DarkCalendarEventContent,
             supportingContent = DarkCalendarEventSupportingContent,
             fillAlpha = 0.28f,

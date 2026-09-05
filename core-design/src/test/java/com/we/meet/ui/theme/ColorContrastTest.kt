@@ -123,6 +123,13 @@ class ColorContrastTest {
         assertNotEquals(DarkCalendarUnavailableSurface, DarkCalendarBusyContainer)
     }
 
+    @Test
+    fun groupAvatarFallbacksMeetWcagAaWithWhiteInitials() {
+        GroupAvatarPalette.forEachIndexed { index, background ->
+            assertTextPair("group avatar fallback $index", AvatarOnFallback, background)
+        }
+    }
+
     private fun assertTextPair(name: String, foreground: Color, background: Color) {
         assertContrast(name, foreground, background, minimum = 4.5)
     }

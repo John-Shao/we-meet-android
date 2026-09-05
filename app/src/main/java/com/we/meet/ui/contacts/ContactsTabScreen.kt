@@ -325,7 +325,9 @@ private fun DepartmentRow(dept: DepartmentDto, onClick: () -> Unit) {
         Icon(
             Icons.Filled.Folder,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
+            // Ordinary departments are navigation content, not primary actions.
+            // Reserve brand blue for the fixed high-value entries above.
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(Dimens.IconMedium),
         )
         Text(
