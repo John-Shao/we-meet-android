@@ -178,6 +178,8 @@ fun MemberDetailScreen(
     // 两个 flag 都读共享集合而非卡片快照:在别处改了也会立刻反映。
     val starredIds by ContactPrefs.starredIds.collectAsStateWithLifecycle()
     val alertIds by ContactPrefs.specialAlertIds.collectAsStateWithLifecycle()
+    val starredUpdatingIds by ContactPrefs.starredUpdatingIds.collectAsStateWithLifecycle()
+    val alertUpdatingIds by ContactPrefs.specialAlertUpdatingIds.collectAsStateWithLifecycle()
 
     LaunchedEffect(vm) {
         vm.chatReady.collect { cid -> onOpenChat(cid) }
@@ -227,6 +229,7 @@ fun MemberDetailScreen(
                     revealing = ui.revealing,
                     onRevealPhone = { vm.revealPhone() },
                     starred = userId in starredIds,
+                    starredUpdating = userId in starredUpdatingIds,
                     onToggleStarred = { next ->
                         ContactPrefs.setStarred(userId, next) {
                             android.widget.Toast.makeText(
@@ -237,6 +240,7 @@ fun MemberDetailScreen(
                         }
                     },
                     specialAlert = userId in alertIds,
+                    specialAlertUpdating = userId in alertUpdatingIds,
                     onToggleSpecialAlert = { next ->
                         ContactPrefs.setSpecialAlert(userId, next) {
                             android.widget.Toast.makeText(
@@ -262,8 +266,10 @@ private fun MemberDetailBody(
     revealing: Boolean,
     onRevealPhone: () -> Unit,
     starred: Boolean,
+    starredUpdating: Boolean,
     onToggleStarred: (Boolean) -> Unit,
     specialAlert: Boolean,
+    specialAlertUpdating: Boolean,
     onToggleSpecialAlert: (Boolean) -> Unit,
 ) {
     // Only a real photo is worth enlarging — the initials fallback isn't, so the
@@ -311,8 +317,10 @@ private fun MemberDetailBody(
         if (!member.isSelf) {
             ContactPrefRows(
                 starred = starred,
+                starredUpdating = starredUpdating,
                 onToggleStarred = onToggleStarred,
                 specialAlert = specialAlert,
+                specialAlertUpdating = specialAlertUpdating,
                 onToggleSpecialAlert = onToggleSpecialAlert,
             )
         }
@@ -406,8 +414,10 @@ private fun AvatarViewerDialog(
 @Composable
 private fun ContactPrefRows(
     starred: Boolean,
+    starredUpdating: Boolean,
     onToggleStarred: (Boolean) -> Unit,
     specialAlert: Boolean,
+    specialAlertUpdating: Boolean,
     onToggleSpecialAlert: (Boolean) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -415,6 +425,7 @@ private fun ContactPrefRows(
             label = stringResource(R.string.starred_toggle),
             hint = stringResource(R.string.starred_toggle_hint),
             checked = starred,
+            enabled = !starredUpdating,
             onCheckedChange = onToggleStarred,
         )
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -422,6 +433,7 @@ private fun ContactPrefRows(
             label = stringResource(R.string.special_alert_toggle),
             hint = stringResource(R.string.special_alert_toggle_hint),
             checked = specialAlert,
+            enabled = !specialAlertUpdating,
             onCheckedChange = onToggleSpecialAlert,
         )
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -434,6 +446,7 @@ private fun SwitchRow(
     label: String,
     hint: String,
     checked: Boolean,
+    enabled: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -445,7 +458,11 @@ private fun SwitchRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(text = label, style = MaterialTheme.typography.bodyMedium)
-            Switch(checked = checked, onCheckedChange = onCheckedChange)
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                enabled = enabled,
+            )
         }
         Text(
             text = hint,

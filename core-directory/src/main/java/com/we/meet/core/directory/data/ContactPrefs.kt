@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -29,12 +30,18 @@ object ContactPrefs {
 
     private val _starredIds = MutableStateFlow<Set<String>>(emptySet())
     private val _specialAlertIds = MutableStateFlow<Set<String>>(emptySet())
+    private val _starredUpdatingIds = MutableStateFlow<Set<String>>(emptySet())
+    private val _specialAlertUpdatingIds = MutableStateFlow<Set<String>>(emptySet())
 
     /** 星标联系人 id。首次 [refresh] 成功前为空。 */
     val starredIds: StateFlow<Set<String>> = _starredIds.asStateFlow()
 
     /** 开了「他的消息特别提醒」的联系人 id。首次 [refresh] 成功前为空。 */
     val specialAlertIds: StateFlow<Set<String>> = _specialAlertIds.asStateFlow()
+
+    /** Contact ids whose preference write is still in flight. */
+    val starredUpdatingIds: StateFlow<Set<String>> = _starredUpdatingIds.asStateFlow()
+    val specialAlertUpdatingIds: StateFlow<Set<String>> = _specialAlertUpdatingIds.asStateFlow()
 
     @Volatile
     private var repository: DirectoryRepository? = null
@@ -72,7 +79,7 @@ object ContactPrefs {
      * 只发 `is_starred`,所以服务端不会顺手动「特别提醒」。
      */
     fun setStarred(userId: String, starred: Boolean, onError: (Throwable) -> Unit = {}) =
-        update(_starredIds, userId, starred, onError) { id, value ->
+        update(_starredIds, _starredUpdatingIds, userId, starred, onError) { id, value ->
             repository?.setContactPref(id, isStarred = value)
         }
 
@@ -84,25 +91,41 @@ object ContactPrefs {
         userId: String,
         enabled: Boolean,
         onError: (Throwable) -> Unit = {},
-    ) = update(_specialAlertIds, userId, enabled, onError) { id, value ->
+    ) = update(
+        _specialAlertIds,
+        _specialAlertUpdatingIds,
+        userId,
+        enabled,
+        onError,
+    ) { id, value ->
         repository?.setContactPref(id, specialAlert = value)
     }
 
     /** 乐观改集合 → 落库 → 失败回滚。两个 flag 唯一的差别是发哪个字段。 */
     private fun update(
         target: MutableStateFlow<Set<String>>,
+        updating: MutableStateFlow<Set<String>>,
         userId: String,
         value: Boolean,
         onError: (Throwable) -> Unit,
         write: suspend (String, Boolean) -> Result<MemberDto>?,
     ) {
         if (repository == null) return
-        val previous = target.value
-        target.value = if (value) previous + userId else previous - userId
+        if (userId in updating.value) return
+        updating.update { it + userId }
+        target.update { current -> if (value) current + userId else current - userId }
         scope.launch {
-            write(userId, value)?.onFailure { e ->
-                target.value = previous
-                onError(e)
+            try {
+                write(userId, value)?.onFailure { e ->
+                    // Roll back only this contact. Restoring a whole snapshot
+                    // would erase concurrent successful updates for other ids.
+                    target.update { current ->
+                        if (value) current - userId else current + userId
+                    }
+                    onError(e)
+                }
+            } finally {
+                updating.update { it - userId }
             }
         }
     }
@@ -142,5 +165,7 @@ object ContactPrefs {
     fun clear() {
         _starredIds.value = emptySet()
         _specialAlertIds.value = emptySet()
+        _starredUpdatingIds.value = emptySet()
+        _specialAlertUpdatingIds.value = emptySet()
     }
 }
