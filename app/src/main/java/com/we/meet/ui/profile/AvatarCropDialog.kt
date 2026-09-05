@@ -45,8 +45,10 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.we.meet.R
+import com.we.meet.design.R as DesignR
 import com.we.meet.ui.theme.Dimens
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -103,22 +105,31 @@ fun ImageCropDialog(
 
     var bitmap by remember(uri) { mutableStateOf<Bitmap?>(null) }
     var loadFailed by remember(uri) { mutableStateOf(false) }
+    var loadRetryNonce by remember(uri) { mutableStateOf(0) }
     var rendering by remember(uri) { mutableStateOf(false) }
     val state = remember(uri) { CropState() }
 
-    LaunchedEffect(uri) {
+    LaunchedEffect(uri, loadRetryNonce) {
+        bitmap = null
+        loadFailed = false
         // Coil applies EXIF orientation + downsampling and yields a software
         // bitmap we can draw onto a Canvas.
-        val result = withContext(Dispatchers.IO) {
-            val request = ImageRequest.Builder(context)
-                .data(uri)
-                .allowHardware(false)
-                .size(MAX_DECODE_PX)
-                .build()
-            context.imageLoader.execute(request) as? SuccessResult
+        try {
+            val result = withContext(Dispatchers.IO) {
+                val request = ImageRequest.Builder(context)
+                    .data(uri)
+                    .allowHardware(false)
+                    .size(MAX_DECODE_PX)
+                    .build()
+                context.imageLoader.execute(request) as? SuccessResult
+            }
+            val bmp = (result?.drawable as? BitmapDrawable)?.bitmap
+            if (bmp != null) bitmap = bmp else loadFailed = true
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (_: Throwable) {
+            loadFailed = true
         }
-        val bmp = (result?.drawable as? BitmapDrawable)?.bitmap
-        if (bmp != null) bitmap = bmp else loadFailed = true
     }
 
     Dialog(
@@ -138,11 +149,19 @@ fun ImageCropDialog(
                         aspect = outputWidth.toFloat() / outputHeight.toFloat(),
                         state = state,
                     )
-                    loadFailed -> Text(
-                        text = stringResource(R.string.profile_image_error_upload),
-                        color = Color.White,
+                    loadFailed -> Column(
                         modifier = Modifier.align(Alignment.Center),
-                    )
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.profile_image_error_upload),
+                            color = Color.White,
+                        )
+                        TextButton(onClick = { loadRetryNonce += 1 }) {
+                            Text(stringResource(DesignR.string.common_retry))
+                        }
+                    }
                     else -> CircularProgressIndicator(
                         color = Color.White,
                         modifier = Modifier.align(Alignment.Center),
