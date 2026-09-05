@@ -52,9 +52,12 @@ import com.we.meet.feature.im.data.GroupTile
 import com.we.meet.feature.im.data.ImSearchItem
 import com.we.meet.feature.im.ui.common.GroupAvatar
 import com.we.meet.feature.im.ui.common.previewText
+import com.we.meet.ui.components.WeMeetInlineErrorState
+import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.design.R as DesignR
 import java.text.DateFormat
 import java.util.Date
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -135,7 +138,11 @@ fun MessageSearchScreen(
     var items by remember { mutableStateOf<List<ImSearchItem>>(emptyList()) }
     var nextBeforeMid by remember { mutableStateOf<Long?>(null) }
     var searching by remember { mutableStateOf(false) }
+    var searchFailed by remember { mutableStateOf(false) }
+    var searchRetryNonce by remember { mutableStateOf(0) }
+    var resultQuery by remember { mutableStateOf("") }
     var loadingMore by remember { mutableStateOf(false) }
+    var loadingMoreFailed by remember { mutableStateOf(false) }
     var searchedOnce by remember { mutableStateOf(false) }
     var contacts by remember { mutableStateOf<List<GlobalSearchContact>>(emptyList()) }
     var meetings by remember { mutableStateOf<List<GlobalSearchMeeting>>(emptyList()) }
@@ -208,22 +215,40 @@ fun MessageSearchScreen(
     }
 
     // 消息:300ms debounce 的服务端检索(P1-M3 原状)。
-    LaunchedEffect(query) {
+    LaunchedEffect(query, searchRetryNonce) {
         val q = query.trim()
         if (q.length < 2) {
             items = emptyList()
             nextBeforeMid = null
             searchedOnce = false
+            searchFailed = false
+            resultQuery = ""
             return@LaunchedEffect
         }
         delay(300)
+        if (q != resultQuery) {
+            items = emptyList()
+            nextBeforeMid = null
+            searchedOnce = false
+            resultQuery = q
+        }
         searching = true
-        val res = runCatching { session.bridge.searchMessages(q, limit = 20) }.getOrNull()
-        searching = false
-        searchedOnce = true
-        items = res?.items ?: emptyList()
-        nextBeforeMid = res?.nextBeforeMid
-        session.userDirectory.requestResolve(items.map { it.senderUid }.distinct())
+        searchFailed = false
+        loadingMoreFailed = false
+        try {
+            val res = session.bridge.searchMessages(q, limit = 20)
+            searchedOnce = true
+            items = res.items
+            nextBeforeMid = res.nextBeforeMid
+            session.userDirectory.requestResolve(items.map { it.senderUid }.distinct())
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (_: Throwable) {
+            searchedOnce = true
+            searchFailed = true
+        } finally {
+            searching = false
+        }
     }
 
     // 联系人/会议:轻量源,同样 300ms debounce(q≥1)。
@@ -258,6 +283,7 @@ fun MessageSearchScreen(
         val before = nextBeforeMid
         val q = query.trim()
         if (before != null && !loadingMore && q.length >= 2) {
+            loadingMoreFailed = false
             loadingMore = true
         }
     }
@@ -270,16 +296,19 @@ fun MessageSearchScreen(
             loadingMore = false
             return@LaunchedEffect
         }
-        val res = runCatching {
-            session.bridge.searchMessages(q, limit = 20, beforeMid = before)
-        }.getOrNull()
-        if (res != null) {
+        try {
+            val res = session.bridge.searchMessages(q, limit = 20, beforeMid = before)
             val seen = items.map { it.mid }.toSet()
             items = items + res.items.filter { it.mid !in seen }
             nextBeforeMid = res.nextBeforeMid
             session.userDirectory.requestResolve(res.items.map { it.senderUid }.distinct())
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (_: Throwable) {
+            loadingMoreFailed = true
+        } finally {
+            loadingMore = false
         }
-        loadingMore = false
     }
 
     // 分类可见性:provider 缺失的分类不出现(向后兼容宿主未接线的场景)。
@@ -480,20 +509,21 @@ fun MessageSearchScreen(
 
                 // 「全部」下零命中的消息组整组隐藏(对齐 Web 只渲染非空组);
                 // 「消息」分类保留 spinner/空态反馈。
-                val hideEmptyMsgSection =
-                    inAll && !searching && searchedOnce && items.isEmpty()
+                val hideEmptyMsgSection = inAll && !searching && !searchFailed &&
+                    searchedOnce && items.isEmpty()
                 if (showMessages && query.trim().length >= 2 && !hideEmptyMsgSection) {
                     item(key = "sec-msg") {
                         SectionHeader(stringResource(R.string.im_msg_search_sec_messages))
                     }
                     if (searching && items.isEmpty()) {
                         item(key = "spinner") {
-                            Row(
-                                horizontalArrangement = Arrangement.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(Dimens.SpaceL),
-                            ) { CircularProgressIndicator(Modifier.width(Dimens.IconMedium)) }
+                            WeMeetInlineLoading()
+                        }
+                    } else if (searchFailed && items.isEmpty()) {
+                        item(key = "error") {
+                            WeMeetInlineErrorState(
+                                onRetry = { searchRetryNonce += 1 },
+                            )
                         }
                     } else if (items.isEmpty() && searchedOnce) {
                         item(key = "empty") {
@@ -552,18 +582,22 @@ fun MessageSearchScreen(
                     }
                     if (nextBeforeMid != null && !inAll) {
                         item(key = "more") {
-                            Text(
-                                text = stringResource(
-                                    if (loadingMore) R.string.im_msg_search_loading
-                                    else R.string.im_msg_search_more
-                                ),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable(enabled = !loadingMore) { loadMore() }
-                                    .padding(Dimens.SpaceL),
-                            )
+                            if (loadingMoreFailed) {
+                                WeMeetInlineErrorState(onRetry = loadMore)
+                            } else {
+                                Text(
+                                    text = stringResource(
+                                        if (loadingMore) R.string.im_msg_search_loading
+                                        else R.string.im_msg_search_more
+                                    ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable(enabled = !loadingMore) { loadMore() }
+                                        .padding(Dimens.SpaceL),
+                                )
+                            }
                         }
                     }
                 }
