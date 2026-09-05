@@ -27,12 +27,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.zIndex
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.OnMediaOverlay
 import com.we.meet.ui.theme.WeMeetTheme
 import io.livekit.android.compose.ui.ScaleType
 import io.livekit.android.compose.ui.VideoTrackView
@@ -146,7 +146,7 @@ fun ParticipantTile(
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = OnMediaOverlay,
                         modifier = Modifier.size(side * 0.6f),
                     )
                 }
@@ -164,7 +164,10 @@ fun ParticipantTile(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(Dimens.SpaceS)
-                .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(Dimens.CornerS))
+                .background(
+                    roomColors.overlayScrim.copy(alpha = 0.4f),
+                    RoundedCornerShape(Dimens.CornerS),
+                )
                 .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
@@ -173,7 +176,7 @@ fun ParticipantTile(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ScreenShare,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = OnMediaOverlay,
                     modifier = Modifier.size(Dimens.IconTiny),
                 )
             } else {
@@ -182,13 +185,17 @@ fun ParticipantTile(
                     contentDescription = stringResource(
                         if (participant.isMicEnabled) R.string.cd_mic_on else R.string.cd_mic_off,
                     ),
-                    tint = if (participant.isMicEnabled) Color.White else WeMeetTheme.extras.status.danger,
+                    tint = if (participant.isMicEnabled) {
+                        OnMediaOverlay
+                    } else {
+                        roomColors.dangerOnOverlay
+                    },
                     modifier = Modifier.size(Dimens.IconTiny),
                 )
             }
             Text(
                 text = participant.name,
-                color = Color.White,
+                color = OnMediaOverlay,
                 style = MaterialTheme.typography.labelMedium,
             )
         }
@@ -206,13 +213,13 @@ fun ParticipantTile(
                     .padding(Dimens.SpaceXs)
                     .size(Dimens.IconLarge)
                     .clip(CircleShape)
-                    .background(WeMeetTheme.extras.status.warning),
+                    .background(roomColors.warningFill),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Default.PanTool,
                     contentDescription = stringResource(R.string.room_tile_hand_raised),
-                    tint = Color.White,
+                    tint = roomColors.onWarningFill,
                     modifier = Modifier.size(Dimens.IconTiny),
                 )
             }
@@ -234,7 +241,7 @@ fun ParticipantTile(
                     .clickable { pinCallback() }
                     .padding(Dimens.SpaceXs)
                     .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.45f)),
+                    .background(roomColors.overlayScrim.copy(alpha = 0.45f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -243,7 +250,7 @@ fun ParticipantTile(
                         if (isPinned) R.string.room_unpin_participant
                         else R.string.room_pin_participant
                     ),
-                    tint = if (isPinned) roomColors.speakingRing else Color.White,
+                    tint = if (isPinned) roomColors.speakingRing else OnMediaOverlay,
                     modifier = Modifier.size(Dimens.IconSmall),
                 )
             }
