@@ -1,23 +1,20 @@
 package com.we.meet.ui.contacts
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -38,6 +35,11 @@ import com.we.meet.R
 import com.we.meet.core.directory.data.DirectoryRepository
 import com.we.meet.core.directory.data.ExternalContactDto
 import com.we.meet.core.directory.ui.MemberAvatar
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetInlineEmptyState
+import com.we.meet.ui.components.WeMeetInlineErrorState
+import com.we.meet.ui.components.WeMeetInlineLoading
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.theme.Dimens
 import kotlinx.coroutines.launch
 
@@ -53,30 +55,49 @@ fun ExternalContactsSheet(
     var contacts by remember { mutableStateOf<List<ExternalContactDto>>(emptyList()) }
     var requests by remember { mutableStateOf<List<ExternalContactDto>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf(false) }
+    var loadFailed by remember { mutableStateOf(false) }
+    var actionFailed by remember { mutableStateOf(false) }
     var refresh by remember { mutableIntStateOf(0) }
     var adding by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     var searching by remember { mutableStateOf(false) }
+    var searchCompleted by remember { mutableStateOf(false) }
+    var searchFailed by remember { mutableStateOf(false) }
     var searchResults by remember { mutableStateOf<List<ExternalContactDto>>(emptyList()) }
 
     LaunchedEffect(repository, refresh) {
         loading = true
-        error = false
+        loadFailed = false
+        actionFailed = false
         val accepted = repository.listExternalContacts()
         val pending = repository.listExternalContactRequests()
         if (accepted.isSuccess && pending.isSuccess) {
             contacts = accepted.getOrDefault(emptyList())
             requests = pending.getOrDefault(emptyList())
         } else {
-            error = true
+            loadFailed = true
         }
         loading = false
     }
 
     fun mutate(block: suspend () -> Result<*>) {
         scope.launch {
-            if (block().isSuccess) refresh++ else error = true
+            if (block().isSuccess) refresh++ else actionFailed = true
+        }
+    }
+
+    fun search() {
+        val submittedQuery = query.trim()
+        if (submittedQuery.isEmpty() || searching) return
+        scope.launch {
+            searching = true
+            searchCompleted = false
+            searchFailed = false
+            repository.searchExternalAccounts(submittedQuery)
+                .onSuccess { searchResults = it }
+                .onFailure { searchFailed = true }
+            searchCompleted = true
+            searching = false
         }
     }
 
@@ -123,122 +144,135 @@ fun ExternalContactsSheet(
                 ) {
                     OutlinedTextField(
                         value = query,
-                        onValueChange = { query = it },
+                        onValueChange = {
+                            query = it
+                            searchCompleted = false
+                            searchFailed = false
+                            searchResults = emptyList()
+                        },
                         placeholder = { Text(stringResource(R.string.external_contacts_search_hint)) },
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                     )
                     Button(
                         enabled = query.isNotBlank() && !searching,
-                        onClick = {
-                            scope.launch {
-                                searching = true
-                                repository.searchExternalAccounts(query)
-                                    .onSuccess { searchResults = it }
-                                    .onFailure { error = true }
-                                searching = false
-                            }
-                        },
+                        onClick = ::search,
                     ) { Text(stringResource(R.string.external_contacts_search)) }
                 }
-                if (searching) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                } else {
-                    LazyColumn {
-                        items(searchResults, key = { it.id }) { contact ->
-                            ExternalContactRow(contact = contact) {
-                                when {
-                                    contact.status == "accepted" -> Text(
-                                        stringResource(R.string.external_contacts_already),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    contact.direction == "incoming" -> Button(
-                                        onClick = {
-                                            mutate {
-                                                repository.acceptExternalContactRequest(
-                                                    contact.relationshipId!!,
-                                                )
-                                            }
-                                            adding = false
-                                        },
-                                    ) { Text(stringResource(R.string.external_contacts_accept)) }
-                                    contact.direction == "outgoing" -> Text(
-                                        stringResource(R.string.external_contacts_pending),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    else -> Button(
-                                        onClick = {
-                                            mutate { repository.sendExternalContactRequest(contact.id) }
-                                            adding = false
-                                        },
-                                    ) { Text(stringResource(R.string.external_contacts_send)) }
+                when {
+                    searching -> WeMeetInlineLoading()
+                    searchFailed -> WeMeetInlineErrorState(
+                        onRetry = ::search,
+                        message = stringResource(R.string.contacts_load_error),
+                    )
+                    searchCompleted && searchResults.isEmpty() -> WeMeetInlineEmptyState(
+                        title = stringResource(R.string.contacts_empty_search),
+                    )
+                    else -> {
+                        LazyColumn {
+                            items(searchResults, key = { it.id }) { contact ->
+                                ExternalContactRow(contact = contact) {
+                                    when {
+                                        contact.status == "accepted" -> Text(
+                                            stringResource(R.string.external_contacts_already),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        contact.direction == "incoming" -> Button(
+                                            onClick = {
+                                                mutate {
+                                                    repository.acceptExternalContactRequest(
+                                                        contact.relationshipId!!,
+                                                    )
+                                                }
+                                                adding = false
+                                            },
+                                        ) { Text(stringResource(R.string.external_contacts_accept)) }
+                                        contact.direction == "outgoing" -> Text(
+                                            stringResource(R.string.external_contacts_pending),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        else -> Button(
+                                            onClick = {
+                                                mutate {
+                                                    repository.sendExternalContactRequest(contact.id)
+                                                }
+                                                adding = false
+                                            },
+                                        ) { Text(stringResource(R.string.external_contacts_send)) }
+                                    }
                                 }
                             }
                         }
                     }
                 }
             } else when {
-                loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-                error -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    OutlinedButton(onClick = { refresh++ }) {
-                        Text(stringResource(R.string.contacts_retry))
+                loading && contacts.isEmpty() && requests.isEmpty() -> WeMeetLoading()
+                loadFailed && contacts.isEmpty() && requests.isEmpty() -> WeMeetErrorState(
+                    onRetry = { refresh++ },
+                    message = stringResource(R.string.contacts_load_error),
+                )
+                else -> {
+                    if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
+                    if (loadFailed || actionFailed) {
+                        WeMeetInlineErrorState(
+                            onRetry = { refresh++ },
+                            message = stringResource(
+                                if (actionFailed) R.string.external_contacts_action_failed
+                                else R.string.contacts_load_error,
+                            ),
+                        )
                     }
-                }
-                else -> LazyColumn {
-                    if (requests.isNotEmpty()) {
-                        item {
-                            Text(
-                                stringResource(R.string.external_contacts_requests),
-                                style = MaterialTheme.typography.labelLarge,
-                                modifier = Modifier.padding(top = Dimens.SpaceM),
-                            )
-                        }
-                        items(requests, key = { it.relationshipId ?: it.id }) { contact ->
-                            ExternalContactRow(contact = contact) {
-                                if (contact.direction == "incoming") {
-                                    Button(onClick = {
-                                        mutate {
-                                            repository.acceptExternalContactRequest(
-                                                contact.relationshipId!!,
-                                            )
-                                        }
-                                    }) { Text(stringResource(R.string.external_contacts_accept)) }
-                                    TextButton(onClick = {
-                                        mutate {
-                                            repository.declineExternalContactRequest(
-                                                contact.relationshipId!!,
-                                            )
-                                        }
-                                    }) { Text(stringResource(R.string.external_contacts_decline)) }
-                                } else {
-                                    Text(stringResource(R.string.external_contacts_pending))
+                    LazyColumn {
+                        if (requests.isNotEmpty()) {
+                            item {
+                                Text(
+                                    stringResource(R.string.external_contacts_requests),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    modifier = Modifier.padding(top = Dimens.SpaceM),
+                                )
+                            }
+                            items(requests, key = { it.relationshipId ?: it.id }) { contact ->
+                                ExternalContactRow(contact = contact) {
+                                    if (contact.direction == "incoming") {
+                                        Button(onClick = {
+                                            mutate {
+                                                repository.acceptExternalContactRequest(
+                                                    contact.relationshipId!!,
+                                                )
+                                            }
+                                        }) { Text(stringResource(R.string.external_contacts_accept)) }
+                                        TextButton(onClick = {
+                                            mutate {
+                                                repository.declineExternalContactRequest(
+                                                    contact.relationshipId!!,
+                                                )
+                                            }
+                                        }) { Text(stringResource(R.string.external_contacts_decline)) }
+                                    } else {
+                                        Text(stringResource(R.string.external_contacts_pending))
+                                    }
                                 }
                             }
                         }
-                    }
-                    if (contacts.isEmpty() && requests.isEmpty()) {
-                        item {
-                            Box(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = Dimens.SpaceXxxl),
-                                contentAlignment = Alignment.Center,
-                            ) { Text(stringResource(R.string.external_contacts_empty)) }
+                        if (contacts.isEmpty() && requests.isEmpty()) {
+                            item {
+                                WeMeetInlineEmptyState(
+                                    title = stringResource(R.string.external_contacts_empty),
+                                )
+                            }
                         }
-                    }
-                    items(contacts, key = { it.relationshipId ?: it.id }) { contact ->
-                        ExternalContactRow(contact = contact) {
-                            Text(
-                                stringResource(R.string.external_contacts_tag),
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                            TextButton(onClick = {
-                                mutate { repository.removeExternalContact(contact.relationshipId!!) }
-                            }) { Text(stringResource(R.string.external_contacts_remove)) }
+                        items(contacts, key = { it.relationshipId ?: it.id }) { contact ->
+                            ExternalContactRow(contact = contact) {
+                                Text(
+                                    stringResource(R.string.external_contacts_tag),
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                                TextButton(onClick = {
+                                    mutate {
+                                        repository.removeExternalContact(contact.relationshipId!!)
+                                    }
+                                }) { Text(stringResource(R.string.external_contacts_remove)) }
+                            }
                         }
                     }
                 }

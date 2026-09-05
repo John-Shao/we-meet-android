@@ -884,6 +884,7 @@
     <string name="external_contacts_send">Verzoek sturen</string>
     <string name="external_contacts_already">Al een contact</string>
     <string name="external_contacts_remove">Verwijderen</string>
+    <string name="external_contacts_action_failed">Het externe contact kon niet worden bijgewerkt.</string>
     <string name="calendar_agenda_anchor_year">%1$s · 1 jaar</string>
     <string name="reminder_load_error">Herinneringen konden niet worden geladen</string>
     <string name="calendar_field_title_required">Een titel is verplicht</string>

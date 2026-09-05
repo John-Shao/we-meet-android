@@ -884,6 +884,7 @@
     <string name="external_contacts_send">Envoyer la demande</string>
     <string name="external_contacts_already">Déjà dans vos contacts</string>
     <string name="external_contacts_remove">Supprimer</string>
+    <string name="external_contacts_action_failed">Impossible de mettre à jour le contact externe.</string>
     <string name="calendar_agenda_anchor_year">%1$s · 1 an</string>
     <string name="reminder_load_error">Impossible de charger les rappels</string>
     <string name="calendar_field_title_required">Le titre est obligatoire</string>
