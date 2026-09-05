@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.core.directory.data.DirectoryRepository
 import com.we.meet.core.directory.data.MemberDto
 import com.we.meet.core.directory.net.DirectoryNetwork
@@ -88,6 +89,7 @@ fun ForwardPicker(
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
         val session = remember(deps) { ImSession.get(deps) }
+        val groupAvatarVersion by session.groupAvatars.version.collectAsStateWithLifecycle()
         val repo = remember(deps) { DirectoryRepository(DirectoryNetwork.directoryApi(deps)) }
 
         var multi by rememberSaveable { mutableStateOf(false) }
@@ -101,10 +103,19 @@ fun ForwardPicker(
         var resolving by remember { mutableStateOf(false) }
         var hits by remember { mutableStateOf<List<MemberDto>>(emptyList()) }
 
-        val visible = remember(targets, query) {
+        LaunchedEffect(targets) {
+            session.groupAvatars.requestResolve(targets.filter { it.isGroup }.map { it.cid })
+        }
+
+        val visible = remember(targets, query, groupAvatarVersion) {
             val q = query.trim()
-            if (q.isBlank()) targets
-            else targets.filter { it.title.contains(q, ignoreCase = true) }
+            val current = targets.map { target ->
+                if (target.isGroup) {
+                    target.copy(avatarUrl = session.groupAvatars.get(target.cid))
+                } else target
+            }
+            if (q.isBlank()) current
+            else current.filter { it.title.contains(q, ignoreCase = true) }
         }
 
         // 通讯录候选:仅在搜索时拉(不搜索时列表就是「最近对话」,塞进整本通讯录
@@ -431,7 +442,12 @@ private fun ForwardRow(
             Spacer(Modifier.width(Dimens.SpaceS))
         }
         if (target.isGroup) {
-            GroupAvatar(tiles = target.memberTiles, size = Dimens.ListLeadingIcon)
+            GroupAvatar(
+                tiles = target.memberTiles,
+                customAvatarUrl = target.avatarUrl,
+                avatarKey = target.cid,
+                size = Dimens.ListLeadingIcon,
+            )
         } else {
             MemberAvatar(
                 name = target.title,

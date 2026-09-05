@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.vm
 
+import android.net.Uri
 import android.util.Log
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
@@ -38,6 +39,8 @@ data class GroupInfoUiState(
     val cid: String = "",
     val name: String = "",
     val description: String = "",
+    /** Short-lived custom avatar URL; null restores the generated member mosaic. */
+    val avatarUrl: String? = null,
     val members: List<GroupMemberUi> = emptyList(),
     /**
      * 群里装了几个机器人(对标飞书:入口右侧带数字)。
@@ -101,11 +104,17 @@ class GroupInfoViewModel internal constructor(
         viewModelScope.launch {
             session.userDirectory.version.collect { rebuildRoster() }
         }
+        viewModelScope.launch {
+            session.groupAvatars.version.collect {
+                _ui.update { state -> state.copy(avatarUrl = session.groupAvatars.get(cid)) }
+            }
+        }
     }
 
     fun refresh() {
         refreshJob?.cancel()
         _ui.update { it.copy(loading = it.members.isEmpty(), error = null) }
+        session.groupAvatars.requestResolve(listOf(cid), force = true)
         refreshJob = viewModelScope.launch {
             val summary = session.conversations.conversations.value.firstOrNull { it.cid == cid }
             val meta = summary?.meta as? Map<*, *>
@@ -191,6 +200,20 @@ class GroupInfoViewModel internal constructor(
             kind = "description",
         )
         _ui.update { it.copy(description = newDesc) }
+        session.conversations.refresh()
+    }
+
+    fun uploadAvatar(uri: Uri) = mutate {
+        val url = session.uploads.uploadGroupAvatar(cid, uri)
+        session.groupAvatars.update(cid, url)
+        _ui.update { it.copy(avatarUrl = url.takeIf(String::isNotBlank)) }
+        session.conversations.refresh()
+    }
+
+    fun removeAvatar() = mutate {
+        session.uploads.removeGroupAvatar(cid)
+        session.groupAvatars.update(cid, null)
+        _ui.update { it.copy(avatarUrl = null) }
         session.conversations.refresh()
     }
 

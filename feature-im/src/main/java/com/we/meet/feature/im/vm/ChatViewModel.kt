@@ -344,7 +344,7 @@ class ChatViewModel internal constructor(
         val cid: String,
         val title: String,
         val isGroup: Boolean,
-        /** Direct-chat peer avatar (null for groups). */
+        /** Direct peer avatar, or the group's resolved custom avatar. */
         val avatarUrl: String?,
         /** Stable avatar cache identity (peer uid for directs, cid otherwise). */
         val avatarKey: String,
@@ -373,7 +373,8 @@ class ChatViewModel internal constructor(
                     cid = c.cid,
                     title = title,
                     isGroup = isGroup,
-                    avatarUrl = if (!isGroup) peer?.avatarUrl?.takeIf { it.isNotBlank() } else null,
+                    avatarUrl = if (isGroup) session.groupAvatars.get(c.cid)
+                    else peer?.avatarUrl?.takeIf { it.isNotBlank() },
                     avatarKey = peerUid ?: c.cid,
                     memberTiles = if (isGroup) c.members.take(9).map { uid ->
                         val info = session.userDirectory.get(uid)

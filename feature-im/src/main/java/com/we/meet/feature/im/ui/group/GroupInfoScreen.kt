@@ -1,5 +1,8 @@
 package com.we.meet.feature.im.ui.group
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import com.we.meet.feature.im.ui.common.ImActionRow
 import com.we.meet.feature.im.ui.common.ImNavRow
 import com.we.meet.feature.im.ui.common.ImSwitchRow
@@ -20,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -44,7 +48,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.R
+import com.we.meet.feature.im.data.GroupTile
 import com.we.meet.feature.im.ui.common.ErrorBanner
+import com.we.meet.feature.im.ui.common.GroupAvatar
 import com.we.meet.feature.im.vm.GroupInfoEvent
 import com.we.meet.feature.im.vm.GroupInfoViewModel
 import com.we.meet.ui.components.WeMeetTopBar
@@ -77,6 +83,10 @@ fun GroupInfoScreen(
     var showNickname by remember { mutableStateOf(false) }
     var confirmLeave by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
+    var confirmAvatarRemove by remember { mutableStateOf(false) }
+    val avatarPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+    ) { uri -> uri?.let(vm::uploadAvatar) }
 
     // 成员页有自己的 GroupInfoViewModel 实例(新 NavBackStackEntry = 新
     // ViewModelStore),所以在那边踢人之后,这一页只能靠自己重新拉一次才知道 ——
@@ -116,6 +126,62 @@ fun GroupInfoScreen(
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 item {
+                    // Custom group avatar. Owners can replace/remove it; all
+                    // members see the generated mosaic when no custom image exists.
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = ui.isOwner && !ui.busy) {
+                                avatarPicker.launch(
+                                    PickVisualMediaRequest(
+                                        ActivityResultContracts.PickVisualMedia.ImageOnly,
+                                    ),
+                                )
+                            }
+                            .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.ScreenPadding),
+                    ) {
+                        GroupAvatar(
+                            tiles = ui.members.take(9).map { member ->
+                                GroupTile(member.uid, member.displayName, member.avatarUrl)
+                            },
+                            customAvatarUrl = ui.avatarUrl,
+                            avatarKey = cid,
+                            size = Dimens.AvatarM,
+                        )
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = Dimens.SpaceM),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.im_group_avatar_label),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            if (ui.isOwner) {
+                                Text(
+                                    text = stringResource(R.string.im_group_avatar_hint),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        if (ui.busy) {
+                            CircularProgressIndicator(modifier = Modifier.size(Dimens.IconMedium))
+                        } else if (ui.isOwner && ui.avatarUrl != null) {
+                            TextButton(onClick = { confirmAvatarRemove = true }) {
+                                Text(stringResource(R.string.im_group_avatar_remove))
+                            }
+                        } else if (ui.isOwner) {
+                            Text(
+                                text = stringResource(R.string.im_group_avatar_change),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                    HorizontalDivider()
                     // Group name row (owner taps to rename).
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -416,6 +482,20 @@ fun GroupInfoScreen(
                 confirmClear = false
             },
             onDismiss = { confirmClear = false },
+        )
+    }
+
+    if (confirmAvatarRemove) {
+        DestructiveConfirmDialog(
+            title = stringResource(R.string.im_group_avatar_remove),
+            message = stringResource(R.string.im_group_avatar_remove_confirm),
+            confirmLabel = stringResource(R.string.im_group_avatar_remove),
+            dismissLabel = stringResource(R.string.im_action_cancel),
+            onConfirm = {
+                vm.removeAvatar()
+                confirmAvatarRemove = false
+            },
+            onDismiss = { confirmAvatarRemove = false },
         )
     }
 

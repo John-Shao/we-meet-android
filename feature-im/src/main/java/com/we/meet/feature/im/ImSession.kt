@@ -14,6 +14,7 @@ import com.we.meet.feature.im.data.DocHit
 import com.we.meet.feature.im.data.DocsApi
 import com.we.meet.feature.im.data.ImApi
 import com.we.meet.feature.im.data.ImBridgeRepository
+import com.we.meet.feature.im.data.GroupAvatarDirectory
 import com.we.meet.feature.im.data.MediaResolver
 import com.we.meet.feature.im.data.ImInputStateStore
 import com.we.meet.feature.im.data.UserDirectory
@@ -158,7 +159,8 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
                 cid = c.cid,
                 title = title,
                 isGroup = isGroup,
-                avatarUrl = if (!isGroup) peer?.avatarUrl?.takeIf { it.isNotBlank() } else null,
+                avatarUrl = if (isGroup) groupAvatars.get(c.cid)
+                else peer?.avatarUrl?.takeIf { it.isNotBlank() },
                 avatarKey = peerUid ?: c.cid,
                 memberTiles = if (isGroup) c.members.take(9).map { uid ->
                     val info = userDirectory.get(uid)
@@ -183,6 +185,7 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
     /** P4 通话中拉人 — parallel escalation-invite fan-out (the 1:1 machine above stays untouched). */
     val meetInvites = com.we.meet.feature.im.call.MeetInviteTracker(client, scope, bridge)
     internal val userDirectory = UserDirectory(bridge, scope)
+    internal val groupAvatars = GroupAvatarDirectory(bridge, scope)
     internal val mediaResolver = MediaResolver(bridge)
     internal val uploads = ChatUploadRepository(bridge, appContext.contentResolver)
 
@@ -211,6 +214,29 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
 
     init {
         conversations.start()
+        // Custom avatars live outside jusi metadata. Resolve every visible group
+        // in one authenticated batch whenever the conversation set changes.
+        scope.launch {
+            conversations.conversations.collect { items ->
+                groupAvatars.requestResolve(
+                    items.filter { it.type == "group" }.map { it.cid },
+                )
+            }
+        }
+        // Avatar updates are announced as system messages. Force-resolving that
+        // one group makes changes from Web/another phone appear immediately,
+        // while ordinary chat traffic continues to use the 60s cache.
+        scope.launch {
+            client.messages.collect { message ->
+                if (message.contentType == "system") {
+                    val summary = conversations.conversations.value
+                        .firstOrNull { it.cid == message.cid }
+                    if (summary?.type == "group") {
+                        groupAvatars.requestResolve(listOf(message.cid), force = true)
+                    }
+                }
+            }
+        }
         // @-mention detection: an inbound group message from someone else that
         // names me or @everyone (unless muted / mute-at-all) flags the
         // conversation. Which content types get scanned — and how — is decided
@@ -263,6 +289,12 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
                     ConnectionState.CONNECTED -> if (sawReconnect) {
                         sawReconnect = false
                         conversations.refresh()
+                        groupAvatars.requestResolve(
+                            conversations.conversations.value
+                                .filter { it.type == "group" }
+                                .map { it.cid },
+                            force = true,
+                        )
                         _onResynced.tryEmit(Unit)
                     }
                     else -> Unit
@@ -313,6 +345,7 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
         client.close()
         conversations.clear()
         userDirectory.clear()
+        groupAvatars.clear()
         mediaResolver.clear()
         scope.cancel()
     }

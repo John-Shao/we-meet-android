@@ -131,7 +131,12 @@ fun MyGroupsScreen(
                                 androidx.compose.foundation.layout.Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    GroupAvatar(tiles = row.memberTiles, size = Dimens.AvatarM)
+                                    GroupAvatar(
+                                        tiles = row.memberTiles,
+                                        customAvatarUrl = row.avatarUrl,
+                                        avatarKey = row.cid,
+                                        size = Dimens.AvatarM,
+                                    )
                                     Column(
                                         modifier = Modifier
                                             .weight(1f)

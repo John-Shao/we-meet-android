@@ -119,6 +119,11 @@
     <string name="im_calllog_busy_peer">Verpasst (besetzt)</string>
     <string name="im_calllog_unreachable_peer">Verpasst (offline)</string>
     <string name="im_group_name_label">Gruppenname</string>
+    <string name="im_group_avatar_label">Gruppenbild</string>
+    <string name="im_group_avatar_hint">Tippen, um ein JPG-, PNG- oder WebP-Bild auszuwählen</string>
+    <string name="im_group_avatar_change">Ändern</string>
+    <string name="im_group_avatar_remove">Entfernen</string>
+    <string name="im_group_avatar_remove_confirm">Benutzerdefiniertes Gruppenbild entfernen und Mitgliedermosaik wiederherstellen?</string>
     <string name="im_group_announce_label">Ankündigung</string>
     <string name="im_group_announce_empty">Keine Ankündigung</string>
     <string name="im_group_announce_hint">Gruppenankündigung eingeben (optional)</string>

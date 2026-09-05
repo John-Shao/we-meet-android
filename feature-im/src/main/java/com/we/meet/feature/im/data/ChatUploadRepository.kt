@@ -62,6 +62,37 @@ internal class ChatUploadRepository(
         presigned.objectKey
     }
 
+    /**
+     * Centre-crop a selected image to a 600px JPEG, upload it to the private
+     * avatar bucket, then confirm the object key with the owner-only endpoint.
+     * Returns the short-lived URL from that authoritative confirmation.
+     */
+    suspend fun uploadGroupAvatar(cid: String, uri: Uri): String = withContext(Dispatchers.IO) {
+        val mime = contentResolver.getType(uri) ?: "image/jpeg"
+        if (mime !in ALLOWED_GROUP_AVATAR_TYPES) {
+            throw ChatUploadException(ChatUploadException.Code.InvalidType)
+        }
+        val original = contentResolver.openInputStream(uri)?.use {
+            it.readBytesCapped(GROUP_AVATAR_SOURCE_MAX_BYTES)
+        } ?: throw ChatUploadException(ChatUploadException.Code.UploadError, "unreadable uri")
+        val bytes = prepareSquareJpeg(original)
+        if (bytes.size > GROUP_AVATAR_MAX_BYTES) {
+            throw ChatUploadException(ChatUploadException.Code.TooLarge)
+        }
+
+        val presigned = runCatching {
+            bridge.groupAvatarUploadUrl(cid, GROUP_AVATAR_CONTENT_TYPE, bytes.size.toLong())
+        }.getOrElse { throw ChatUploadException(ChatUploadException.Code.UploadError, it.message) }
+        put(presigned, bytes, GROUP_AVATAR_CONTENT_TYPE)
+        runCatching { bridge.updateGroupAvatar(cid, presigned.objectKey).avatarUrl }
+            .getOrElse { throw ChatUploadException(ChatUploadException.Code.UploadError, it.message) }
+    }
+
+    /** Remove the custom image and restore the generated member mosaic. */
+    suspend fun removeGroupAvatar(cid: String): String = withContext(Dispatchers.IO) {
+        bridge.updateGroupAvatar(cid, "").avatarUrl
+    }
+
     /** Upload a document; returns the metadata to JSON-encode as the message body. */
     suspend fun uploadFile(uri: Uri): ChatFileMeta = withContext(Dispatchers.IO) {
         val (name, size) = queryNameAndSize(uri)
@@ -145,6 +176,42 @@ internal class ChatUploadRepository(
         return sample
     }
 
+    private fun prepareSquareJpeg(original: ByteArray): ByteArray {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(original, 0, original.size, bounds)
+        val shortest = minOf(bounds.outWidth, bounds.outHeight)
+        if (shortest <= 0) throw ChatUploadException(ChatUploadException.Code.InvalidType)
+
+        var sample = 1
+        while (shortest / (sample * 2) >= GROUP_AVATAR_EDGE) sample *= 2
+        val decoded = BitmapFactory.decodeByteArray(
+            original,
+            0,
+            original.size,
+            BitmapFactory.Options().apply { inSampleSize = sample },
+        ) ?: throw ChatUploadException(ChatUploadException.Code.InvalidType)
+
+        val side = minOf(decoded.width, decoded.height)
+        val cropped = Bitmap.createBitmap(
+            decoded,
+            (decoded.width - side) / 2,
+            (decoded.height - side) / 2,
+            side,
+            side,
+        )
+        if (cropped !== decoded) decoded.recycle()
+        val scaled = if (side == GROUP_AVATAR_EDGE) cropped else {
+            Bitmap.createScaledBitmap(cropped, GROUP_AVATAR_EDGE, GROUP_AVATAR_EDGE, true)
+                .also { cropped.recycle() }
+        }
+
+        val out = ByteArrayOutputStream()
+        val ok = scaled.compress(Bitmap.CompressFormat.JPEG, GROUP_AVATAR_JPEG_QUALITY, out)
+        scaled.recycle()
+        if (!ok) throw ChatUploadException(ChatUploadException.Code.UploadError, "jpeg encode failed")
+        return out.toByteArray()
+    }
+
     private fun put(presigned: UploadUrlResponse, bytes: ByteArray, contentType: String) {
         val builder = Request.Builder()
             .url(presigned.uploadUrl)
@@ -199,5 +266,11 @@ internal class ChatUploadRepository(
         const val MAX_EDGE = 1600
         const val RECODE_SIZE_THRESHOLD = 2 * 1024 * 1024
         const val WEBP_QUALITY = 85
+        val ALLOWED_GROUP_AVATAR_TYPES = setOf("image/jpeg", "image/png", "image/webp")
+        const val GROUP_AVATAR_SOURCE_MAX_BYTES = 10 * 1024 * 1024
+        const val GROUP_AVATAR_MAX_BYTES = 2 * 1024 * 1024
+        const val GROUP_AVATAR_EDGE = 600
+        const val GROUP_AVATAR_JPEG_QUALITY = 90
+        const val GROUP_AVATAR_CONTENT_TYPE = "image/jpeg"
     }
 }

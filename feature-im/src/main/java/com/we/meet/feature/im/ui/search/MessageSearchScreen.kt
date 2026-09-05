@@ -135,6 +135,7 @@ fun MessageSearchScreen(
     val session = remember(deps) { ImSession.get(deps) }
     val summaries by session.conversations.conversations.collectAsStateWithLifecycle()
     val directoryVersion by session.userDirectory.version.collectAsStateWithLifecycle()
+    val groupAvatarVersion by session.groupAvatars.version.collectAsStateWithLifecycle()
     val selfUid by session.selfUid.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -216,6 +217,11 @@ fun MessageSearchScreen(
 
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    LaunchedEffect(summaries) {
+        session.groupAvatars.requestResolve(
+            summaries.filter { it.type == "group" }.map { it.cid },
+        )
+    }
 
     // 会话名:群用 meta 名,直聊解析对端目录名(缺失时先 uid,resolve 后重组)。
     val titleOf: (cid: String) -> String = { cid ->
@@ -528,6 +534,9 @@ fun MessageSearchScreen(
                         val title = titleOf(s.cid).ifBlank {
                             stringResource(R.string.im_untitled_chat)
                         }
+                        val groupAvatarUrl = remember(s.cid, groupAvatarVersion) {
+                            if (s.type == "group") session.groupAvatars.get(s.cid) else null
+                        }
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
@@ -537,6 +546,8 @@ fun MessageSearchScreen(
                         ) {
                             GroupAvatar(
                                 tiles = listOf(GroupTile(s.cid, title, null)),
+                                customAvatarUrl = groupAvatarUrl,
+                                avatarKey = s.cid,
                                 size = Dimens.AvatarM,
                             )
                             Text(

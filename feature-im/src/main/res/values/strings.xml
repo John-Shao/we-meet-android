@@ -134,6 +134,11 @@
     <string name="im_calllog_busy_peer">Missed (busy)</string>
     <string name="im_calllog_unreachable_peer">Missed (offline)</string>
     <string name="im_group_name_label">Group name</string>
+    <string name="im_group_avatar_label">Group avatar</string>
+    <string name="im_group_avatar_hint">Tap to choose a JPG, PNG, or WebP image</string>
+    <string name="im_group_avatar_change">Change</string>
+    <string name="im_group_avatar_remove">Remove</string>
+    <string name="im_group_avatar_remove_confirm">Remove the custom avatar and restore the member mosaic?</string>
     <string name="im_group_announce_label">Announcement</string>
     <string name="im_group_announce_empty">No announcement</string>
     <string name="im_group_announce_hint">Enter a group announcement (optional)</string>

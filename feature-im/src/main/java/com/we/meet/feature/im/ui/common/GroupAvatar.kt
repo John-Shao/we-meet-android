@@ -66,9 +66,34 @@ private fun initialOf(name: String): String =
 @Composable
 fun GroupAvatar(
     tiles: List<GroupTile>,
+    customAvatarUrl: String? = null,
+    avatarKey: String = "group",
     size: Dp = Dimens.ListLeadingIcon,
     modifier: Modifier = Modifier,
 ) {
+    val customKey = com.we.meet.core.directory.ui.avatarCacheKey(
+        customAvatarUrl,
+        "group-avatar:$avatarKey",
+    )
+    var customImageFailed by remember(customKey) { mutableStateOf(false) }
+    if (!customAvatarUrl.isNullOrBlank() && !customImageFailed) {
+        AsyncImage(
+            model = ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                .data(customAvatarUrl)
+                .memoryCacheKey(customKey)
+                .diskCacheKey(customKey)
+                .crossfade(true)
+                .build(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+                .size(size)
+                .clip(RoundedCornerShape(size * 0.2f)),
+            onError = { customImageFailed = true },
+        )
+        return
+    }
+
     val members = tiles.take(9)
     val n = members.size
 

@@ -129,6 +129,11 @@
     <string name="im_calllog_busy_peer">忙线未接</string>
     <string name="im_calllog_unreachable_peer">离线未接</string>
     <string name="im_group_name_label">群名称</string>
+    <string name="im_group_avatar_label">群头像</string>
+    <string name="im_group_avatar_hint">点击选择 JPG、PNG 或 WebP 图片</string>
+    <string name="im_group_avatar_change">更换</string>
+    <string name="im_group_avatar_remove">移除</string>
+    <string name="im_group_avatar_remove_confirm">移除自定义群头像并恢复成员九宫格？</string>
     <string name="im_group_announce_label">群公告</string>
     <string name="im_group_announce_empty">暂无群公告</string>
     <string name="im_group_announce_hint">输入群公告(选填)</string>

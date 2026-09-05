@@ -119,6 +119,11 @@
     <string name="im_calllog_busy_peer">Gemist (in gesprek)</string>
     <string name="im_calllog_unreachable_peer">Gemist (offline)</string>
     <string name="im_group_name_label">Groepsnaam</string>
+    <string name="im_group_avatar_label">Groepsafbeelding</string>
+    <string name="im_group_avatar_hint">Tik om een JPG-, PNG- of WebP-afbeelding te kiezen</string>
+    <string name="im_group_avatar_change">Wijzigen</string>
+    <string name="im_group_avatar_remove">Verwijderen</string>
+    <string name="im_group_avatar_remove_confirm">Aangepaste groepsafbeelding verwijderen en het ledenmozaïek herstellen?</string>
     <string name="im_group_announce_label">Aankondiging</string>
     <string name="im_group_announce_empty">Geen aankondiging</string>
     <string name="im_group_announce_hint">Groepsaankondiging invoeren (optioneel)</string>

@@ -86,6 +86,13 @@ internal data class UploadUrlResponse(
     val headers: Map<String, String> = emptyMap(),
 )
 
+/** Result of confirming or removing a group's custom avatar. */
+@JsonClass(generateAdapter = true)
+internal data class GroupAvatarResponse(
+    val cid: String,
+    @Json(name = "avatar_url") val avatarUrl: String = "",
+)
+
 @JsonClass(generateAdapter = true)
 data class ImDraftReplyDto(
     val mid: String = "",

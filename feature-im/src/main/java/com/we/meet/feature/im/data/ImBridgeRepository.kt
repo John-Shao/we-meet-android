@@ -59,6 +59,21 @@ internal class ImBridgeRepository(private val api: ImApi) {
         )
     }
 
+    suspend fun groupAvatarUploadUrl(
+        cid: String,
+        contentType: String,
+        size: Long,
+    ): UploadUrlResponse = api.groupAvatarUploadUrl(
+        mapOf("cid" to cid, "content_type" to contentType, "size" to size),
+    )
+
+    suspend fun updateGroupAvatar(cid: String, objectKey: String): GroupAvatarResponse =
+        api.updateGroupAvatar(mapOf("cid" to cid, "object_key" to objectKey))
+
+    suspend fun resolveGroupAvatars(cids: Collection<String>): Map<String, String> =
+        if (cids.isEmpty()) emptyMap()
+        else api.resolveGroupAvatars(mapOf("cids" to cids.distinct().take(200)))
+
     /** Best-effort "left the group" system message; call while still a member. */
     suspend fun announceLeave(cid: String) {
         runCatching { api.announceLeave(mapOf("cid" to cid)) }

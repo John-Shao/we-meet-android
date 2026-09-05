@@ -27,8 +27,9 @@ data class ConversationRowUi(
     val cid: String,
     val isGroup: Boolean,
     val title: String,
+    /** Direct peer avatar, or the group's resolved custom avatar. */
     val avatarUrl: String?,
-    /** Stable identity for the avatar cache (peer uid for directs). */
+    /** Stable identity for the avatar cache (peer uid for directs, cid for groups). */
     val avatarKey: String,
     /** Group member IM uids — used by the 9-grid group avatar. */
     val memberUids: List<String> = emptyList(),
@@ -94,13 +95,17 @@ class ConversationListViewModel internal constructor(
 
     private val _drafts = MutableStateFlow<Map<String, String>>(emptyMap())
     private val listExtras = combine(contactMarks, _drafts) { marks, drafts -> marks to drafts }
+    private val avatarVersions = combine(
+        session.userDirectory.version,
+        session.groupAvatars.version,
+    ) { _, _ -> Unit }
 
     init { refreshDrafts() }
 
     val rows: StateFlow<List<ConversationRowUi>> =
         combine(
             session.conversations.conversations,
-            session.userDirectory.version,
+            avatarVersions,
             session.selfUid,
             session.mentionedCids,
             // 两个 flag 都是 we-meet user id 的集合(共享单例),而会话只有 IM uid
@@ -131,6 +136,12 @@ class ConversationListViewModel internal constructor(
 
     fun refresh() {
         viewModelScope.launch { session.conversations.refresh() }
+        session.groupAvatars.requestResolve(
+            session.conversations.conversations.value
+                .filter { it.type == "group" }
+                .map { it.cid },
+            force = true,
+        )
         refreshDrafts()
     }
 
@@ -219,7 +230,8 @@ class ConversationListViewModel internal constructor(
             cid = cid,
             isGroup = isGroup,
             title = title,
-            avatarUrl = if (!isGroup) peer?.avatarUrl?.takeIf { it.isNotBlank() } else null,
+            avatarUrl = if (isGroup) session.groupAvatars.get(cid)
+            else peer?.avatarUrl?.takeIf { it.isNotBlank() },
             avatarKey = peerUid ?: cid,
             memberUids = if (isGroup) members else emptyList(),
             memberTiles = if (isGroup) members.take(9).map { uid ->

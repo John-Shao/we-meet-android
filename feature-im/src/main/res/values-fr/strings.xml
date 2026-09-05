@@ -119,6 +119,11 @@
     <string name="im_calllog_busy_peer">Manqué (occupé)</string>
     <string name="im_calllog_unreachable_peer">Manqué (hors ligne)</string>
     <string name="im_group_name_label">Nom du groupe</string>
+    <string name="im_group_avatar_label">Image du groupe</string>
+    <string name="im_group_avatar_hint">Touchez pour choisir une image JPG, PNG ou WebP</string>
+    <string name="im_group_avatar_change">Modifier</string>
+    <string name="im_group_avatar_remove">Supprimer</string>
+    <string name="im_group_avatar_remove_confirm">Supprimer l’image personnalisée et restaurer la mosaïque des membres ?</string>
     <string name="im_group_announce_label">Annonce</string>
     <string name="im_group_announce_empty">Aucune annonce</string>
     <string name="im_group_announce_hint">Saisir une annonce de groupe (facultatif)</string>

@@ -81,6 +81,24 @@ internal interface ImApi {
     @POST("api/v1.0/im/conversations/update/")
     suspend fun updateGroupMeta(@Body body: Map<String, String>): Map<String, Any>
 
+    /** Owner-only presigned PUT for a custom group avatar. */
+    @POST("api/v1.0/im/conversations/avatar-upload-url/")
+    suspend fun groupAvatarUploadUrl(
+        @Body body: Map<String, @JvmSuppressWildcards Any>,
+    ): UploadUrlResponse
+
+    /** Confirm an uploaded object key, or pass an empty key to restore the mosaic. */
+    @PATCH("api/v1.0/im/conversations/avatar/")
+    suspend fun updateGroupAvatar(
+        @Body body: Map<String, String>,
+    ): GroupAvatarResponse
+
+    /** Resolve visible group cids to short-lived custom-avatar URLs. */
+    @POST("api/v1.0/im/conversations/avatars/resolve/")
+    suspend fun resolveGroupAvatars(
+        @Body body: Map<String, @JvmSuppressWildcards Any>,
+    ): Map<String, String>
+
     /** P9.1: post an "X 退出群聊" system message just before leaving. Best-effort. */
     @POST("api/v1.0/im/conversations/announce-leave/")
     suspend fun announceLeave(@Body body: Map<String, String>): Map<String, Any>

@@ -5,6 +5,7 @@ import com.jusi.lightim.AuthException
 import com.jusi.lightim.NetworkException
 import com.jusi.lightim.ProtocolException
 import com.jusi.lightim.TimeoutException
+import com.we.meet.feature.im.data.ChatUploadException
 
 /**
  * Maps a failure to a localized, user-facing message resource.
@@ -21,6 +22,11 @@ import com.jusi.lightim.TimeoutException
  */
 @StringRes
 fun Throwable.userMessageRes(): Int = when (this) {
+    is ChatUploadException -> when (code) {
+        ChatUploadException.Code.InvalidType -> R.string.im_upload_invalid_type
+        ChatUploadException.Code.TooLarge -> R.string.im_upload_too_large
+        ChatUploadException.Code.UploadError -> R.string.im_upload_failed
+    }
     is NetworkException -> R.string.im_error_network
     is TimeoutException -> R.string.im_error_timeout
     is AuthException -> R.string.im_error_auth

@@ -422,6 +422,8 @@ private fun ConversationRow(
             if (row.isGroup) {
                 GroupAvatar(
                     tiles = row.memberTiles,
+                    customAvatarUrl = row.avatarUrl,
+                    avatarKey = row.cid,
                 )
             } else {
                 MemberAvatar(
