@@ -527,6 +527,8 @@ fun TaskScreen(
             TaskPage.Search -> TaskSearchPage(
                 tasks = ui.searchResults,
                 searching = ui.searching,
+                failed = ui.searchFailed,
+                completed = ui.searchCompleted,
                 query = ui.searchQuery,
                 filter = ui.searchFilter,
                 canFilterSelf = !app.tokenStore.userId.isNullOrBlank(),
@@ -534,6 +536,7 @@ fun TaskScreen(
                 onBack = { page = TaskPage.List },
                 onQueryChange = vm::search,
                 onFilterChange = vm::setSearchFilter,
+                onRetry = vm::retrySearch,
                 onTaskClick = {
                     selectedTaskId = it.id
                     detailBackStack = listOf(it)
@@ -3363,6 +3366,8 @@ private fun TaskActivityPage(
 private fun TaskSearchPage(
     tasks: List<TaskItem>,
     searching: Boolean,
+    failed: Boolean,
+    completed: Boolean,
     query: String,
     filter: TaskSearchFilter,
     canFilterSelf: Boolean,
@@ -3370,6 +3375,7 @@ private fun TaskSearchPage(
     onBack: () -> Unit,
     onQueryChange: (String) -> Unit,
     onFilterChange: (TaskSearchFilter) -> Unit,
+    onRetry: () -> Unit,
     onTaskClick: (TaskItem) -> Unit,
 ) {
     var statusMenu by remember { mutableStateOf(false) }
@@ -3526,9 +3532,21 @@ private fun TaskSearchPage(
             fontWeight = FontWeight.Bold,
         )
         if (searching) LinearProgressIndicator(Modifier.fillMaxWidth())
-        LazyColumn {
-            items(tasks, key = { it.id }) { task ->
-                TaskRow(task, { onTaskClick(task) }, {}, {}, showOverdueMarker)
+        Box(Modifier.fillMaxSize()) {
+            when {
+                failed -> WeMeetErrorState(
+                    onRetry = onRetry,
+                    message = stringResource(R.string.task_load_failed),
+                )
+                completed && tasks.isEmpty() -> WeMeetEmptyState(
+                    title = stringResource(R.string.task_search_empty),
+                    icon = Icons.Outlined.Search,
+                )
+                else -> LazyColumn {
+                    items(tasks, key = { it.id }) { task ->
+                        TaskRow(task, { onTaskClick(task) }, {}, {}, showOverdueMarker)
+                    }
+                }
             }
         }
     }

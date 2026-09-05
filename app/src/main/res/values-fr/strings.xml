@@ -252,6 +252,7 @@
     <string name="task_search">Rechercher des tâches</string>
     <string name="task_search_hint">Rechercher titres, descriptions, personnes et listes</string>
     <string name="task_search_results">%1$d résultats</string>
+    <string name="task_search_empty">Aucune tâche correspondante</string>
     <string name="task_settings">Paramètres des tâches</string>
     <string name="task_navigation">Navigation des tâches</string>
     <string name="task_filter">Filtrer les tâches</string>

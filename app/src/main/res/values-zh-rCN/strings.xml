@@ -262,6 +262,7 @@
     <string name="task_search">搜索任务</string>
     <string name="task_search_hint">搜索标题、描述、人员或清单</string>
     <string name="task_search_results">找到 %1$d 个结果</string>
+    <string name="task_search_empty">没有找到匹配的任务</string>
     <string name="task_settings">任务设置</string>
     <string name="task_navigation">任务导航</string>
     <string name="task_filter">筛选任务</string>

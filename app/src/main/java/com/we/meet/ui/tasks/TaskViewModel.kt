@@ -54,6 +54,8 @@ data class TaskUiState(
     val searchFilter: TaskSearchFilter = TaskSearchFilter(),
     val searchResults: List<TaskItem> = emptyList(),
     val searching: Boolean = false,
+    val searchFailed: Boolean = false,
+    val searchCompleted: Boolean = false,
     val createParentCandidates: List<TaskParentCandidateItem> = emptyList(),
     val createParentCandidatesLoading: Boolean = false,
     val activityFeed: List<TaskActivityItem> = emptyList(),
@@ -1210,6 +1212,8 @@ class TaskViewModel(
         scheduleSearch()
     }
 
+    fun retrySearch() = scheduleSearch()
+
     private fun scheduleSearch() {
         searchJob?.cancel()
         val snapshot = _ui.value
@@ -1218,12 +1222,26 @@ class TaskViewModel(
             (query.isNotEmpty() && query.length < 2) ||
             (query.isEmpty() && !snapshot.searchFilter.isActive)
         ) {
-            _ui.update { it.copy(searchResults = emptyList(), searching = false) }
+            _ui.update {
+                it.copy(
+                    searchResults = emptyList(),
+                    searching = false,
+                    searchFailed = false,
+                    searchCompleted = false,
+                )
+            }
             return
+        }
+        _ui.update {
+            it.copy(
+                searchResults = emptyList(),
+                searching = true,
+                searchFailed = false,
+                searchCompleted = false,
+            )
         }
         searchJob = viewModelScope.launch {
             delay(300)
-            _ui.update { it.copy(searching = true) }
             val filter = _ui.value.searchFilter
             repository.searchTasks(
                 query = _ui.value.searchQuery,
@@ -1234,11 +1252,24 @@ class TaskViewModel(
                 priority = filter.priority?.name?.lowercase() ?: "all",
             ).fold(
                 onSuccess = { results ->
-                    _ui.update { it.copy(searchResults = results.map(TaskDto::toItem), searching = false) }
+                    _ui.update {
+                        it.copy(
+                            searchResults = results.map(TaskDto::toItem),
+                            searching = false,
+                            searchFailed = false,
+                            searchCompleted = true,
+                        )
+                    }
                 },
                 onFailure = { failure ->
                     if (failure is CancellationException) return@launch
-                    _ui.update { it.copy(searching = false, failure = TaskFailure.Load) }
+                    _ui.update {
+                        it.copy(
+                            searching = false,
+                            searchFailed = true,
+                            searchCompleted = true,
+                        )
+                    }
                 },
             )
         }

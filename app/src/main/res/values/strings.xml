@@ -262,6 +262,7 @@
     <string name="task_search">Search tasks</string>
     <string name="task_search_hint">Search titles, descriptions, people, and lists</string>
     <string name="task_search_results">%1$d results</string>
+    <string name="task_search_empty">No matching tasks found</string>
     <string name="task_settings">Task settings</string>
     <string name="task_navigation">Task navigation</string>
     <string name="task_filter">Filter tasks</string>
