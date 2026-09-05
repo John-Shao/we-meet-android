@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -71,7 +72,11 @@ internal fun CalendarCardBubble(
                     Text(content.description, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
                 Text(
-                    stringResource(R.string.im_calendar_subscribers, content.subscriberCount),
+                    pluralStringResource(
+                        R.plurals.im_calendar_subscribers,
+                        content.subscriberCount,
+                        content.subscriberCount,
+                    ),
                     color = MaterialTheme.colorScheme.primary,
                 )
             }

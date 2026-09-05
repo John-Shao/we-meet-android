@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -213,8 +214,9 @@ internal fun EventCardBubble(
                 }
                 if (!isPrivate && (content.attendeeCount > 0 || content.organizerName.isNotBlank())) {
                     Text(
-                        text = stringResource(
-                            R.string.im_event_card_meta,
+                        text = pluralStringResource(
+                            R.plurals.im_event_card_meta,
+                            content.attendeeCount,
                             content.attendeeCount,
                             content.organizerName,
                         ),

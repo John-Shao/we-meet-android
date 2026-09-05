@@ -71,7 +71,10 @@
     <!-- Read receipts. -->
     <string name="im_read">Read</string>
     <string name="im_unread">Unread</string>
-    <string name="im_read_count">%1$d/%2$d read</string>
+    <plurals name="im_read_count">
+        <item quantity="one">%1$d/%2$d read</item>
+        <item quantity="other">%1$d/%2$d read</item>
+    </plurals>
     <string name="im_receipt_read_section">Read (%1$d)</string>
     <string name="im_receipt_unread_section">Unread (%1$d)</string>
 
@@ -149,7 +152,10 @@
     <!-- 「我的群组」——通讯录里的群清单。 -->
     <string name="im_my_groups_title">My groups (%1$d)</string>
     <string name="im_my_groups_search">Search group names</string>
-    <string name="im_my_groups_member_count">%1$d members</string>
+    <plurals name="im_my_groups_member_count">
+        <item quantity="one">%1$d member</item>
+        <item quantity="other">%1$d members</item>
+    </plurals>
     <string name="im_my_groups_empty">You have not joined any group yet</string>
     <string name="im_my_groups_no_match">No matching groups</string>
     <string name="im_group_remove_member">Remove member</string>
@@ -179,13 +185,19 @@
     <string name="im_recalled_self">You recalled a message</string>
     <string name="im_recalled_other">%1$s recalled a message</string>
     <string name="im_merged_title">Chat record</string>
-    <string name="im_merged_view_count">View %1$d messages</string>
+    <plurals name="im_merged_view_count">
+        <item quantity="one">View %1$d message</item>
+        <item quantity="other">View %1$d messages</item>
+    </plurals>
     <string name="im_action_copy">Copy</string>
     <string name="im_action_reply">Reply</string>
     <string name="im_action_recall">Recall</string>
     <string name="im_action_pin">Pin message</string>
     <string name="im_action_unpin">Unpin</string>
-    <string name="im_pin_count">%1$d pinned</string>
+    <plurals name="im_pin_count">
+        <item quantity="one">%1$d pinned</item>
+        <item quantity="other">%1$d pinned</item>
+    </plurals>
     <string name="im_pin_no_preview">[No preview]</string>
     <string name="im_reply_cancel">Cancel reply</string>
     <string name="im_attach_voice">Voice message</string>
@@ -220,10 +232,16 @@
     <string name="im_forward_search_hint">Search conversations or contacts</string>
     <string name="im_forward_section_directory">Directory</string>
     <string name="im_forward_resolve_failed">Failed to start the conversation, please retry</string>
-    <string name="im_selected_count">%1$d selected</string>
+    <plurals name="im_selected_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
     <string name="im_action_delete">Delete</string>
     <string name="im_delete_confirm_title">Delete messages?</string>
-    <string name="im_delete_confirm_message">Delete %1$d selected messages? They\'ll be removed from your view only — other members can still see them.</string>
+    <plurals name="im_delete_confirm_message">
+        <item quantity="one">Delete %1$d selected message? It will be removed from your view only — other members can still see it.</item>
+        <item quantity="other">Delete %1$d selected messages? They\'ll be removed from your view only — other members can still see them.</item>
+    </plurals>
     <string name="im_delete_one_confirm_message">Delete this message? It\'s removed from your view only — other members can still see it.</string>
     <string name="im_delete_failed">Delete failed</string>
     <!-- P4 call escalation (通话中拉人升级会议) -->
@@ -245,7 +263,10 @@
     <string name="im_group_call_room_name">%1$s voice call</string>
     <string name="im_group_voice_call_title">Start voice call</string>
     <string name="im_group_video_meeting_title">Start video meeting</string>
-    <string name="im_group_voice_call_count">%1$d selected</string>
+    <plurals name="im_group_voice_call_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
     <string name="im_group_voice_call_confirm">Call</string>
     <string name="im_group_card_ongoing">In progress</string>
     <string name="im_group_card_ended">Ended</string>
@@ -285,7 +306,10 @@
     <string name="im_group_apps">Apps</string>
     <string name="im_group_calendar">Calendar</string>
     <string name="im_preview_event">[Event]</string>
-    <string name="im_event_card_meta">%1$d attendees · Organizer %2$s</string>
+    <plurals name="im_event_card_meta">
+        <item quantity="one">%1$d attendee · Organizer %2$s</item>
+        <item quantity="other">%1$d attendees · Organizer %2$s</item>
+    </plurals>
     <string name="im_event_card_view">View details</string>
     <string name="im_event_card_all_day">All day</string>
     <string name="im_event_card_private">Private event</string>
@@ -400,7 +424,10 @@ Limits: 100 requests per minute and 5 per second per bot, bodies up to 20 KB. Se
     <string name="im_emoji_enterprise">Enterprise emoji</string>
     <string name="im_draft_preview">[Draft] %1$s</string>
     <string name="im_calendar_owner">Owner: %1$s</string>
-    <string name="im_calendar_subscribers">%1$d subscribers · Tap to subscribe</string>
+    <plurals name="im_calendar_subscribers">
+        <item quantity="one">%1$d subscriber · Tap to subscribe</item>
+        <item quantity="other">%1$d subscribers · Tap to subscribe</item>
+    </plurals>
     <string name="im_preview_calendar">[Calendar]</string>
     <string name="im_preview_calendar_named">[Calendar] %1$s</string>
     <string name="im_search_ai_network_error">Network error — please check your connection and try again.</string>

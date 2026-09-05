@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import com.jusi.lightim.PinnedMessage
@@ -70,7 +71,7 @@ fun PinnedBar(
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = stringResource(R.string.im_pin_count, pins.size),
+                text = pluralStringResource(R.plurals.im_pin_count, pins.size, pins.size),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = Dimens.SpaceS),

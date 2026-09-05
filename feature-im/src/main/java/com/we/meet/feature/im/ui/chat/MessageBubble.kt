@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -641,7 +642,11 @@ private fun MergedBubble(content: MessageContent.Merged, isOwn: Boolean, onLongP
             }
             HorizontalDivider(Modifier.padding(vertical = Dimens.SpaceXs))
             Text(
-                text = stringResource(R.string.im_merged_view_count, content.count),
+                text = pluralStringResource(
+                    R.plurals.im_merged_view_count,
+                    content.count,
+                    content.count,
+                ),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
             )

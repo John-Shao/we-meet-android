@@ -58,7 +58,10 @@
 
     <string name="im_read">Gelesen</string>
     <string name="im_unread">Ungelesen</string>
-    <string name="im_read_count">%1$d/%2$d gelesen</string>
+    <plurals name="im_read_count">
+        <item quantity="one">%1$d/%2$d gelesen</item>
+        <item quantity="other">%1$d/%2$d gelesen</item>
+    </plurals>
     <string name="im_receipt_read_section">Gelesen (%1$d)</string>
     <string name="im_receipt_unread_section">Ungelesen (%1$d)</string>
 
@@ -144,13 +147,19 @@
     <string name="im_recalled_self">Du hast eine Nachricht zurückgerufen</string>
     <string name="im_recalled_other">%1$s hat eine Nachricht zurückgerufen</string>
     <string name="im_merged_title">Chatverlauf</string>
-    <string name="im_merged_view_count">%1$d Nachrichten ansehen</string>
+    <plurals name="im_merged_view_count">
+        <item quantity="one">%1$d Nachricht ansehen</item>
+        <item quantity="other">%1$d Nachrichten ansehen</item>
+    </plurals>
     <string name="im_action_copy">Kopieren</string>
     <string name="im_action_reply">Antworten</string>
     <string name="im_action_recall">Zurückrufen</string>
     <string name="im_action_pin">Nachricht anheften</string>
     <string name="im_action_unpin">Lösen</string>
-    <string name="im_pin_count">%1$d angeheftet</string>
+    <plurals name="im_pin_count">
+        <item quantity="one">%1$d angeheftet</item>
+        <item quantity="other">%1$d angeheftet</item>
+    </plurals>
     <string name="im_pin_no_preview">[Keine Vorschau]</string>
     <string name="im_reply_cancel">Antwort abbrechen</string>
     <string name="im_attach_voice">Sprachnachricht</string>
@@ -182,10 +191,16 @@
     <string name="im_forward_recent">Letzte Chats</string>
     <string name="im_forward_send">Senden</string>
     <string name="im_forward_confirm">An „%1$s“ senden?</string>
-    <string name="im_selected_count">%1$d ausgewählt</string>
+    <plurals name="im_selected_count">
+        <item quantity="one">%1$d ausgewählt</item>
+        <item quantity="other">%1$d ausgewählt</item>
+    </plurals>
     <string name="im_action_delete">Löschen</string>
     <string name="im_delete_confirm_title">Nachrichten löschen?</string>
-    <string name="im_delete_confirm_message">%1$d ausgewählte Nachrichten löschen? Sie werden nur aus deiner Ansicht entfernt; andere Mitglieder sehen sie weiterhin.</string>
+    <plurals name="im_delete_confirm_message">
+        <item quantity="one">%1$d ausgewählte Nachricht löschen? Sie wird nur aus deiner Ansicht entfernt; andere Mitglieder sehen sie weiterhin.</item>
+        <item quantity="other">%1$d ausgewählte Nachrichten löschen? Sie werden nur aus deiner Ansicht entfernt; andere Mitglieder sehen sie weiterhin.</item>
+    </plurals>
     <string name="im_delete_one_confirm_message">Diese Nachricht löschen? Sie wird nur aus deiner Ansicht entfernt; andere Mitglieder sehen sie weiterhin.</string>
     <string name="im_delete_failed">Löschen fehlgeschlagen</string>
     <!-- P4 call escalation -->
@@ -206,7 +221,10 @@
     <string name="im_group_voice_call">Audiokonferenz</string>
     <string name="im_group_call_room_name">Sprachanruf %1$s</string>
     <string name="im_group_voice_call_title">Sprachanruf starten</string>
-    <string name="im_group_voice_call_count">%1$d ausgewählt</string>
+    <plurals name="im_group_voice_call_count">
+        <item quantity="one">%1$d ausgewählt</item>
+        <item quantity="other">%1$d ausgewählt</item>
+    </plurals>
     <string name="im_group_voice_call_confirm">Anrufen</string>
     <string name="im_group_card_ongoing">Läuft</string>
     <string name="im_group_card_ended">Beendet</string>
@@ -246,7 +264,10 @@
     <string name="im_group_apps">Apps</string>
     <string name="im_group_calendar">Kalender</string>
     <string name="im_preview_event">[Event]</string>
-    <string name="im_event_card_meta">%1$d Teilnehmer · Organisator %2$s</string>
+    <plurals name="im_event_card_meta">
+        <item quantity="one">%1$d Teilnehmer · Organisator %2$s</item>
+        <item quantity="other">%1$d Teilnehmer · Organisator %2$s</item>
+    </plurals>
     <string name="im_event_card_view">Details ansehen</string>
     <string name="im_event_card_all_day">Ganztägig</string>
     <string name="im_event_card_private">Privater Termin</string>
@@ -293,7 +314,10 @@
     <string name="im_group_no_member_match">Keine passenden Mitglieder</string>
     <string name="im_my_groups_title">Meine Gruppen (%1$d)</string>
     <string name="im_my_groups_search">Gruppennamen suchen</string>
-    <string name="im_my_groups_member_count">%1$d Mitglieder</string>
+    <plurals name="im_my_groups_member_count">
+        <item quantity="one">%1$d Mitglied</item>
+        <item quantity="other">%1$d Mitglieder</item>
+    </plurals>
     <string name="im_my_groups_empty">Du bist noch keiner Gruppe beigetreten</string>
     <string name="im_my_groups_no_match">Keine passenden Gruppen</string>
     <string name="im_departed_suffix">\" (verlassen)\"</string>
@@ -381,7 +405,10 @@ Grenzwerte: 100 Anfragen pro Minute und 5 pro Sekunde pro Bot, Nachrichtenkörpe
     <string name="im_emoji_enterprise">Unternehmens-Emojis</string>
     <string name="im_draft_preview">[Entwurf] %1$s</string>
     <string name="im_calendar_owner">Eigentümer: %1$s</string>
-    <string name="im_calendar_subscribers">%1$d Abonnenten · Zum Abonnieren tippen</string>
+    <plurals name="im_calendar_subscribers">
+        <item quantity="one">%1$d Abonnent · Zum Abonnieren tippen</item>
+        <item quantity="other">%1$d Abonnenten · Zum Abonnieren tippen</item>
+    </plurals>
     <string name="im_preview_calendar">[Kalender]</string>
     <string name="im_preview_calendar_named">[Kalender] %1$s</string>
     <string name="im_search_ai_network_error">Netzwerkfehler — bitte prüfe deine Verbindung und versuche es erneut.</string>

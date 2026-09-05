@@ -48,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -302,7 +303,11 @@ fun ChatScreen(
         topBar = {
             WeMeetTopBar(
                 title = if (selectMode) {
-                    stringResource(R.string.im_selected_count, selectedMids.size)
+                    pluralStringResource(
+                        R.plurals.im_selected_count,
+                        selectedMids.size,
+                        selectedMids.size,
+                    )
                 } else ui.title.ifBlank { stringResource(R.string.im_untitled_chat) },
                 // 私聊对端已离职:提示走副标题,不拼进标题 —— 标题会流进
                 // peerName / roomName(通话与会议室命名),那些地方不该带后缀。
@@ -725,7 +730,11 @@ fun ChatScreen(
                     if (targets.size == 1) {
                         stringResource(R.string.im_delete_one_confirm_message)
                     } else {
-                        stringResource(R.string.im_delete_confirm_message, targets.size)
+                        pluralStringResource(
+                            R.plurals.im_delete_confirm_message,
+                            targets.size,
+                            targets.size,
+                        )
                     }
                 )
             },
@@ -857,7 +866,7 @@ private fun receiptLabel(
 ): String = if (!isGroup) {
     stringResource(if (readCount > 0) R.string.im_read else R.string.im_unread)
 } else {
-    stringResource(R.string.im_read_count, readCount, memberCount)
+    pluralStringResource(R.plurals.im_read_count, readCount, readCount, memberCount)
 }
 
 /** Bottom bar shown in multi-select mode: forward one-by-one, merge-forward, delete. */

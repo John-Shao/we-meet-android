@@ -67,7 +67,9 @@
     <!-- 已读回执。 -->
     <string name="im_read">已读</string>
     <string name="im_unread">未读</string>
-    <string name="im_read_count">%1$d/%2$d人已读</string>
+    <plurals name="im_read_count">
+        <item quantity="other">%1$d/%2$d人已读</item>
+    </plurals>
     <string name="im_receipt_read_section">已读 (%1$d)</string>
     <string name="im_receipt_unread_section">未读 (%1$d)</string>
 
@@ -143,7 +145,9 @@
     <string name="im_group_no_member_match">没有匹配的成员</string>
     <string name="im_my_groups_title">我的群组 (%1$d)</string>
     <string name="im_my_groups_search">搜索群名称</string>
-    <string name="im_my_groups_member_count">%1$d 名成员</string>
+    <plurals name="im_my_groups_member_count">
+        <item quantity="other">%1$d 名成员</item>
+    </plurals>
     <string name="im_my_groups_empty">你还没有加入任何群聊</string>
     <string name="im_my_groups_no_match">没有匹配的群聊</string>
     <string name="im_group_remove_member">移出群聊</string>
@@ -169,13 +173,17 @@
     <string name="im_recalled_self">你撤回了一条消息</string>
     <string name="im_recalled_other">%1$s 撤回了一条消息</string>
     <string name="im_merged_title">聊天记录</string>
-    <string name="im_merged_view_count">查看 %1$d 条记录</string>
+    <plurals name="im_merged_view_count">
+        <item quantity="other">查看 %1$d 条记录</item>
+    </plurals>
     <string name="im_action_copy">复制</string>
     <string name="im_action_reply">引用</string>
     <string name="im_action_recall">撤回</string>
     <string name="im_action_pin">置顶消息</string>
     <string name="im_action_unpin">取消置顶</string>
-    <string name="im_pin_count">%1$d 条置顶</string>
+    <plurals name="im_pin_count">
+        <item quantity="other">%1$d 条置顶</item>
+    </plurals>
     <string name="im_pin_no_preview">[无预览]</string>
     <string name="im_reply_cancel">取消引用</string>
     <string name="im_attach_voice">语音消息</string>
@@ -210,10 +218,14 @@
     <string name="im_forward_search_hint">搜索会话或联系人</string>
     <string name="im_forward_section_directory">通讯录</string>
     <string name="im_forward_resolve_failed">创建会话失败，请重试</string>
-    <string name="im_selected_count">已选 %1$d 条</string>
+    <plurals name="im_selected_count">
+        <item quantity="other">已选 %1$d 条</item>
+    </plurals>
     <string name="im_action_delete">删除</string>
     <string name="im_delete_confirm_title">删除消息？</string>
-    <string name="im_delete_confirm_message">确定删除选中的 %1$d 条消息？仅从你的消息记录中移除，其他成员仍可见。</string>
+    <plurals name="im_delete_confirm_message">
+        <item quantity="other">确定删除选中的 %1$d 条消息？仅从你的消息记录中移除，其他成员仍可见。</item>
+    </plurals>
     <string name="im_delete_one_confirm_message">确定删除这条消息？仅从你的消息记录中移除，其他成员仍可见。</string>
     <string name="im_delete_failed">删除失败</string>
     <!-- P4 通话中拉人升级会议 -->
@@ -235,7 +247,9 @@
     <string name="im_group_call_room_name">%1$s的语音通话</string>
     <string name="im_group_voice_call_title">发起语音通话</string>
     <string name="im_group_video_meeting_title">发起视频会议</string>
-    <string name="im_group_voice_call_count">已选 %1$d 人</string>
+    <plurals name="im_group_voice_call_count">
+        <item quantity="other">已选 %1$d 人</item>
+    </plurals>
     <string name="im_group_voice_call_confirm">呼叫</string>
     <string name="im_group_card_ongoing">通话中</string>
     <string name="im_group_card_ended">已结束</string>
@@ -275,7 +289,9 @@
     <string name="im_group_apps">应用</string>
     <string name="im_group_calendar">日程</string>
     <string name="im_preview_event">[日程]</string>
-    <string name="im_event_card_meta">%1$d 人参与 · 组织者 %2$s</string>
+    <plurals name="im_event_card_meta">
+        <item quantity="other">%1$d 人参与 · 组织者 %2$s</item>
+    </plurals>
     <string name="im_event_card_view">查看详情</string>
     <string name="im_event_card_all_day">全天</string>
     <string name="im_event_card_private">私密日程</string>
@@ -389,7 +405,9 @@
     <string name="im_emoji_enterprise">企业表情</string>
     <string name="im_draft_preview">[草稿] %1$s</string>
     <string name="im_calendar_owner">所有者：%1$s</string>
-    <string name="im_calendar_subscribers">%1$d 人已订阅 · 点击订阅</string>
+    <plurals name="im_calendar_subscribers">
+        <item quantity="other">%1$d 人已订阅 · 点击订阅</item>
+    </plurals>
     <string name="im_preview_calendar">[日历]</string>
     <string name="im_preview_calendar_named">[日历] %1$s</string>
     <string name="im_search_ai_network_error">网络异常，请检查连接后重试。</string>

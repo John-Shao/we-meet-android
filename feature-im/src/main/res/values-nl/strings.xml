@@ -58,7 +58,10 @@
 
     <string name="im_read">Gelezen</string>
     <string name="im_unread">Ongelezen</string>
-    <string name="im_read_count">%1$d/%2$d gelezen</string>
+    <plurals name="im_read_count">
+        <item quantity="one">%1$d/%2$d gelezen</item>
+        <item quantity="other">%1$d/%2$d gelezen</item>
+    </plurals>
     <string name="im_receipt_read_section">Gelezen (%1$d)</string>
     <string name="im_receipt_unread_section">Ongelezen (%1$d)</string>
 
@@ -144,13 +147,19 @@
     <string name="im_recalled_self">Je hebt een bericht ingetrokken</string>
     <string name="im_recalled_other">%1$s heeft een bericht ingetrokken</string>
     <string name="im_merged_title">Chatgeschiedenis</string>
-    <string name="im_merged_view_count">%1$d berichten bekijken</string>
+    <plurals name="im_merged_view_count">
+        <item quantity="one">%1$d bericht bekijken</item>
+        <item quantity="other">%1$d berichten bekijken</item>
+    </plurals>
     <string name="im_action_copy">Kopiëren</string>
     <string name="im_action_reply">Antwoorden</string>
     <string name="im_action_recall">Intrekken</string>
     <string name="im_action_pin">Bericht vastzetten</string>
     <string name="im_action_unpin">Losmaken</string>
-    <string name="im_pin_count">%1$d vastgezet</string>
+    <plurals name="im_pin_count">
+        <item quantity="one">%1$d vastgezet</item>
+        <item quantity="other">%1$d vastgezet</item>
+    </plurals>
     <string name="im_pin_no_preview">[Geen voorbeeld]</string>
     <string name="im_reply_cancel">Antwoord annuleren</string>
     <string name="im_attach_voice">Spraakbericht</string>
@@ -182,10 +191,16 @@
     <string name="im_forward_recent">Recente gesprekken</string>
     <string name="im_forward_send">Verzenden</string>
     <string name="im_forward_confirm">Verzenden naar “%1$s”?</string>
-    <string name="im_selected_count">%1$d geselecteerd</string>
+    <plurals name="im_selected_count">
+        <item quantity="one">%1$d geselecteerd</item>
+        <item quantity="other">%1$d geselecteerd</item>
+    </plurals>
     <string name="im_action_delete">Verwijderen</string>
     <string name="im_delete_confirm_title">Berichten verwijderen?</string>
-    <string name="im_delete_confirm_message">%1$d geselecteerde berichten verwijderen? Ze worden alleen uit jouw weergave verwijderd; andere leden zien ze nog.</string>
+    <plurals name="im_delete_confirm_message">
+        <item quantity="one">%1$d geselecteerd bericht verwijderen? Het wordt alleen uit jouw weergave verwijderd; andere leden zien het nog.</item>
+        <item quantity="other">%1$d geselecteerde berichten verwijderen? Ze worden alleen uit jouw weergave verwijderd; andere leden zien ze nog.</item>
+    </plurals>
     <string name="im_delete_one_confirm_message">Dit bericht verwijderen? Het wordt alleen uit jouw weergave verwijderd; andere leden zien het nog.</string>
     <string name="im_delete_failed">Verwijderen mislukt</string>
     <!-- P4 call escalation -->
@@ -206,7 +221,10 @@
     <string name="im_group_voice_call">Audiovergadering</string>
     <string name="im_group_call_room_name">Spraakoproep %1$s</string>
     <string name="im_group_voice_call_title">Spraakoproep starten</string>
-    <string name="im_group_voice_call_count">%1$d geselecteerd</string>
+    <plurals name="im_group_voice_call_count">
+        <item quantity="one">%1$d geselecteerd</item>
+        <item quantity="other">%1$d geselecteerd</item>
+    </plurals>
     <string name="im_group_voice_call_confirm">Bellen</string>
     <string name="im_group_card_ongoing">Bezig</string>
     <string name="im_group_card_ended">Beëindigd</string>
@@ -246,7 +264,10 @@
     <string name="im_group_apps">Apps</string>
     <string name="im_group_calendar">Agenda</string>
     <string name="im_preview_event">[Event]</string>
-    <string name="im_event_card_meta">%1$d deelnemers · Organisator %2$s</string>
+    <plurals name="im_event_card_meta">
+        <item quantity="one">%1$d deelnemer · Organisator %2$s</item>
+        <item quantity="other">%1$d deelnemers · Organisator %2$s</item>
+    </plurals>
     <string name="im_event_card_view">Details bekijken</string>
     <string name="im_event_card_all_day">Hele dag</string>
     <string name="im_event_card_private">Privéafspraak</string>
@@ -293,7 +314,10 @@
     <string name="im_group_no_member_match">Geen overeenkomende leden</string>
     <string name="im_my_groups_title">Mijn groepen (%1$d)</string>
     <string name="im_my_groups_search">Groepsnamen zoeken</string>
-    <string name="im_my_groups_member_count">%1$d leden</string>
+    <plurals name="im_my_groups_member_count">
+        <item quantity="one">%1$d lid</item>
+        <item quantity="other">%1$d leden</item>
+    </plurals>
     <string name="im_my_groups_empty">Je bent nog niet aangesloten bij een groep</string>
     <string name="im_my_groups_no_match">Geen overeenkomende groepen</string>
     <string name="im_departed_suffix">\" (vertrokken)\"</string>
@@ -381,7 +405,10 @@ Limieten: 100 verzoeken per minuut en 5 per seconde per bot, hoofdteksten tot 20
     <string name="im_emoji_enterprise">Organisatie-emoji</string>
     <string name="im_draft_preview">[Concept] %1$s</string>
     <string name="im_calendar_owner">Eigenaar: %1$s</string>
-    <string name="im_calendar_subscribers">%1$d abonnees · Tik om te abonneren</string>
+    <plurals name="im_calendar_subscribers">
+        <item quantity="one">%1$d abonnee · Tik om te abonneren</item>
+        <item quantity="other">%1$d abonnees · Tik om te abonneren</item>
+    </plurals>
     <string name="im_preview_calendar">[Agenda]</string>
     <string name="im_preview_calendar_named">[Agenda] %1$s</string>
     <string name="im_search_ai_network_error">Netwerkfout — controleer je verbinding en probeer het opnieuw.</string>
