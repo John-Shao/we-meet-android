@@ -288,6 +288,7 @@
     <string name="im_error_unknown">Une erreur est survenue — veuillez réessayer</string>
     <string name="im_error_conversation_not_found">Conversation introuvable</string>
     <string name="im_group_members_title">Membres</string>
+    <string name="im_group_members_load_failed">Impossible de charger les membres actuels du groupe</string>
     <string name="im_group_search_members">Rechercher des membres</string>
     <string name="im_group_no_member_match">Aucun membre correspondant</string>
     <string name="im_my_groups_title">Mes groupes (%1$d)</string>

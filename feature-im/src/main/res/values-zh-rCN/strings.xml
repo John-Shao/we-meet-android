@@ -137,6 +137,7 @@
     <string name="im_group_rename">修改</string>
     <string name="im_group_members_count">群成员 (%1$d)</string>
     <string name="im_group_members_title">群成员</string>
+    <string name="im_group_members_load_failed">无法加载当前群成员</string>
     <string name="im_group_add_members">添加成员</string>
     <string name="im_group_search_members">搜索群成员</string>
     <string name="im_group_no_member_match">没有匹配的成员</string>

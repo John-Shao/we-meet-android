@@ -288,6 +288,7 @@
     <string name="im_error_unknown">Etwas ist schiefgelaufen — bitte erneut versuchen</string>
     <string name="im_error_conversation_not_found">Unterhaltung nicht gefunden</string>
     <string name="im_group_members_title">Mitglieder</string>
+    <string name="im_group_members_load_failed">Aktuelle Gruppenmitglieder konnten nicht geladen werden</string>
     <string name="im_group_search_members">Mitglieder suchen</string>
     <string name="im_group_no_member_match">Keine passenden Mitglieder</string>
     <string name="im_my_groups_title">Meine Gruppen (%1$d)</string>

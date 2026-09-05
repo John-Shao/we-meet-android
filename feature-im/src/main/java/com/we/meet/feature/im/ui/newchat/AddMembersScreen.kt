@@ -15,6 +15,8 @@ import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.ImSession
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.userMessageRes
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import kotlinx.coroutines.launch
 
 /**
@@ -33,29 +35,55 @@ fun AddMembersScreen(
     val scope = rememberCoroutineScope()
 
     var excludeIds by remember { mutableStateOf<Set<String>?>(null) }
+    var rosterLoadFailed by remember { mutableStateOf(false) }
+    var rosterReloadTick by remember { mutableStateOf(0) }
+    var submitting by remember { mutableStateOf(false) }
 
-    LaunchedEffect(cid) {
-        val uids = runCatching { session.client.listMembers(cid) }
-            .getOrNull()?.map { it.uid }.orEmpty()
-        val resolved = session.userDirectory.resolve(uids)
-        excludeIds = resolved.values.mapNotNull { it.id.takeIf { id -> id.isNotBlank() } }.toSet()
+    LaunchedEffect(cid, rosterReloadTick) {
+        excludeIds = null
+        rosterLoadFailed = false
+        runCatching {
+            val uids = session.client.listMembers(cid).map { it.uid }
+            val resolved = session.userDirectory.resolve(uids)
+            resolved.values.mapNotNull { member ->
+                member.id.takeIf(String::isNotBlank)
+            }.toSet()
+        }.onSuccess {
+            excludeIds = it
+        }.onFailure {
+            rosterLoadFailed = true
+        }
     }
 
-    val exclude = excludeIds ?: return // roster still resolving; picker mounts right after
+    if (rosterLoadFailed) {
+        WeMeetErrorState(
+            message = context.getString(R.string.im_group_members_load_failed),
+            onRetry = { rosterReloadTick += 1 },
+        )
+        return
+    }
+    val exclude = excludeIds
+    if (exclude == null) {
+        WeMeetLoading()
+        return
+    }
 
     ContactPicker(
         deps = deps,
         mode = ContactPickerMode.Multi,
         excludeUserIds = exclude,
+        enabled = !submitting,
         onConfirm = { picked ->
             if (picked.isEmpty()) {
                 onCancel()
                 return@ContactPicker
             }
+            submitting = true
             scope.launch {
                 runCatching { session.bridge.addMembers(cid, picked.map { it.userId }) }
                     .onSuccess { onDone() }
                     .onFailure { e ->
+                        submitting = false
                         Toast.makeText(
                             context,
                             "${context.getString(R.string.im_create_chat_failed)}: " +

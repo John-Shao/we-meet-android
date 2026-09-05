@@ -288,6 +288,7 @@
     <string name="im_error_unknown">Er ging iets mis — probeer opnieuw</string>
     <string name="im_error_conversation_not_found">Gesprek niet gevonden</string>
     <string name="im_group_members_title">Leden</string>
+    <string name="im_group_members_load_failed">Huidige groepsleden konden niet worden geladen</string>
     <string name="im_group_search_members">Leden zoeken</string>
     <string name="im_group_no_member_match">Geen overeenkomende leden</string>
     <string name="im_my_groups_title">Mijn groepen (%1$d)</string>
