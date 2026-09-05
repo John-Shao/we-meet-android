@@ -29,8 +29,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -82,6 +80,8 @@ import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.R
 import com.we.meet.WeMeetApp
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.data.settings.CalendarWeekStart
 import com.we.meet.data.settings.TimeRangeMode
 import com.we.meet.ui.calendar.views.AgendaView
@@ -284,26 +284,12 @@ fun CalendarTabScreen(
             }
 
             when {
-                ui.loading && ui.eventsByDay.isEmpty() -> Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
+                ui.loading && ui.eventsByDay.isEmpty() -> WeMeetLoading()
 
-                ui.error && ui.eventsByDay.isEmpty() -> Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Spacer(Modifier.height(Dimens.SpaceXxl))
-                    Text(
-                        stringResource(R.string.calendar_load_error),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                    Button(onClick = { vm.refresh() }, modifier = Modifier.padding(top = Dimens.SpaceS)) {
-                        Text(stringResource(R.string.calendar_retry))
-                    }
-                }
+                ui.error && ui.eventsByDay.isEmpty() -> WeMeetErrorState(
+                    onRetry = vm::refresh,
+                    message = stringResource(R.string.calendar_load_error),
+                )
 
                 else -> when (ui.viewMode) {
                     CalendarViewMode.AGENDA -> AgendaView(

@@ -16,8 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarViewDay
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -45,6 +43,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.components.WeMeetEmptyState
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.R
 import com.we.meet.data.api.ApiClient
 import com.we.meet.data.api.dto.MeetingRoomBriefDto
@@ -132,6 +133,7 @@ fun MeetingRoomPicker(
         mutableStateOf<List<MeetingRoomTimelineEntryDto>>(emptyList())
     }
     var timelineLoading by remember { mutableStateOf(false) }
+    var timelineError by remember { mutableStateOf(false) }
     val timelineScroll = rememberScrollState()
     // 时间轴那一天 = 所选时段起点所在的本地日。
     val dayStart = remember(startIso) {
@@ -195,6 +197,7 @@ fun MeetingRoomPicker(
     LaunchedEffect(view, reloadTick, nodeId, capacityMin, facilityIds, query) {
         if (view != RoomView.Timeline) return@LaunchedEffect
         timelineLoading = true
+        timelineError = false
         runCatching {
             apiClient.meetingRoomApi.timeline(
                 start = isoUtc(dayStart.toInstant()),
@@ -206,7 +209,7 @@ fun MeetingRoomPicker(
             )
         }
             .onSuccess { timelineRooms = it.results }
-            .onFailure { error = true }
+            .onFailure { timelineError = true }
         timelineLoading = false
     }
 
@@ -287,10 +290,16 @@ fun MeetingRoomPicker(
 
             Box(modifier = Modifier.weight(1f)) {
                 when {
-                    view == RoomView.Timeline && timelineLoading ->
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
-                        }
+                    view == RoomView.Timeline && timelineLoading -> WeMeetLoading()
+
+                    view == RoomView.Timeline && timelineError -> WeMeetErrorState(
+                        onRetry = { reloadTick++ },
+                        message = stringResource(R.string.meeting_room_load_error),
+                    )
+
+                    view == RoomView.Timeline && timelineRooms.isEmpty() -> WeMeetEmptyState(
+                        title = stringResource(R.string.meeting_room_empty),
+                    )
 
                     view == RoomView.Timeline -> MeetingRoomTimeline(
                         rooms = timelineRooms,
@@ -316,37 +325,22 @@ fun MeetingRoomPicker(
                         modifier = Modifier.fillMaxSize(),
                     )
 
-                    loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
+                    loading -> WeMeetLoading()
 
-                    error -> Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = Dimens.SpaceXxl),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            stringResource(R.string.meeting_room_load_error),
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        Button(onClick = { reloadTick++ }, modifier = Modifier.padding(top = Dimens.SpaceS)) {
-                            Text(stringResource(R.string.meeting_room_retry))
-                        }
-                    }
+                    error -> WeMeetErrorState(
+                        onRetry = { reloadTick++ },
+                        message = stringResource(R.string.meeting_room_load_error),
+                    )
 
-                    rooms.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            stringResource(
-                                if (tab == RoomTab.Available) {
-                                    R.string.meeting_room_empty_available
-                                } else {
-                                    R.string.meeting_room_empty
-                                },
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    rooms.isEmpty() -> WeMeetEmptyState(
+                        title = stringResource(
+                            if (tab == RoomTab.Available) {
+                                R.string.meeting_room_empty_available
+                            } else {
+                                R.string.meeting_room_empty
+                            },
+                        ),
+                    )
 
                     else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                         items(rooms, key = { it.id }) { room ->

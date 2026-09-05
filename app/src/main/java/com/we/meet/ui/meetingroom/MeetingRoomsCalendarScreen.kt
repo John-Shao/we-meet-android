@@ -99,6 +99,9 @@ import com.we.meet.ui.calendar.views.dateSwipeDayDelta
 import com.we.meet.ui.calendar.views.dayPagerDays
 import com.we.meet.ui.calendar.views.draftSlotAt
 import com.we.meet.ui.calendar.views.isHorizontalDateSwipe
+import com.we.meet.ui.components.WeMeetEmptyState
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 import java.time.DayOfWeek
@@ -553,21 +556,21 @@ private fun MeetingRoomOverview(
         }
         Box(modifier = Modifier.fillMaxSize()) {
             when {
-                ui.loading && ui.rooms.isEmpty() -> CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
+                ui.loading && ui.rooms.isEmpty() -> WeMeetLoading()
+                ui.tooManyRooms -> WeMeetEmptyState(
+                    title = stringResource(R.string.meeting_room_scope_too_large),
+                    action = {
+                        Button(onClick = { onOpenFilter(RoomFilterSection.LOCATION) }) {
+                            Text(stringResource(R.string.meeting_room_filter_location))
+                        }
+                    },
                 )
-                ui.tooManyRooms -> StatusMessage(
-                    text = stringResource(R.string.meeting_room_scope_too_large),
-                    action = stringResource(R.string.meeting_room_filter_location),
-                    onAction = { onOpenFilter(RoomFilterSection.LOCATION) },
+                ui.error -> WeMeetErrorState(
+                    onRetry = onRefresh,
+                    message = stringResource(R.string.meeting_room_load_error),
                 )
-                ui.error -> StatusMessage(
-                    text = stringResource(R.string.meeting_room_load_error),
-                    action = stringResource(R.string.meeting_room_retry),
-                    onAction = onRefresh,
-                )
-                ui.rooms.isEmpty() -> StatusMessage(
-                    text = stringResource(R.string.meeting_room_empty),
+                ui.rooms.isEmpty() -> WeMeetEmptyState(
+                    title = stringResource(R.string.meeting_room_empty),
                 )
                 else -> MeetingRoomOverviewList(
                     date = ui.selectedDate,
@@ -973,28 +976,6 @@ private fun RoomInfoDock(
                 Icons.Filled.ExpandLess,
                 contentDescription = stringResource(R.string.meeting_room_room_info),
             )
-        }
-    }
-}
-
-@Composable
-private fun StatusMessage(
-    text: String,
-    action: String? = null,
-    onAction: (() -> Unit)? = null,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(Dimens.SpaceXl),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-        if (action != null && onAction != null) {
-            Button(onClick = onAction, modifier = Modifier.padding(top = Dimens.SpaceS)) {
-                Text(action)
-            }
         }
     }
 }
