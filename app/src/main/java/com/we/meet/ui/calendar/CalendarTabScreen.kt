@@ -398,7 +398,7 @@ fun CalendarTabScreen(
             onClick = { clearPicks(); onCreateEvent(ui.selectedDate.toEpochDay()) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(Dimens.SpaceXl),
+                .padding(Dimens.SpaceL),
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
             shape = CircleShape,

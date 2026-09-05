@@ -473,9 +473,9 @@ fun MeetingRoomsCalendarScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(
-                    end = Dimens.SpaceXl,
+                    end = Dimens.SpaceL,
                     bottom = if (selectedRoom == null) {
-                        Dimens.SpaceXl
+                        Dimens.SpaceL
                     } else {
                         Dimens.Calendar.FabClearance + Dimens.SpaceL
                     },
