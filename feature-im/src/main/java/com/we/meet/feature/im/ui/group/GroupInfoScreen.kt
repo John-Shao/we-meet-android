@@ -170,9 +170,14 @@ fun GroupInfoScreen(
                         if (ui.busy) {
                             CircularProgressIndicator(modifier = Modifier.size(Dimens.IconMedium))
                         } else if (ui.isOwner && ui.avatarUrl != null) {
-                            TextButton(onClick = { confirmAvatarRemove = true }) {
-                                Text(stringResource(R.string.im_group_avatar_remove))
-                            }
+                            Text(
+                                text = stringResource(R.string.im_group_avatar_remove),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .clickable { confirmAvatarRemove = true }
+                                    .padding(vertical = Dimens.SpaceM),
+                            )
                         } else if (ui.isOwner) {
                             Text(
                                 text = stringResource(R.string.im_group_avatar_change),
