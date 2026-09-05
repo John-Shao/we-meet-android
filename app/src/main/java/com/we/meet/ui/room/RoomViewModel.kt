@@ -171,7 +171,7 @@ data class RoomUiState(
     enum class Phase { Connecting, Connected, Error, Disconnected }
 }
 
-enum class RoomMediaActionFailure { Microphone, Camera }
+enum class RoomMediaActionFailure { Microphone, Camera, CameraSwitch }
 
 /**
  * A single transcription line emitted by the LiveKit agent. We keep
@@ -678,7 +678,9 @@ class RoomViewModel(
     }
 
     fun switchCamera() {
-        controller.switchCamera()
+        controller.switchCamera().onFailure {
+            _mediaActionFailures.tryEmit(RoomMediaActionFailure.CameraSwitch)
+        }
     }
 
     // ── Screen share ───────────────────────────────────────────────────────

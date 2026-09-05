@@ -130,15 +130,17 @@ class LiveKitController(
     }
 
     /**
-     * Best-effort camera flip.  The LiveKit camera capturer exposes a switch
-     * helper through the track's capturer; if the underlying capturer is not
-     * a multi-camera capturer (e.g. emulator with a single virtual webcam),
-     * the call is silently a no-op.
+     * Requests a camera flip and reports failures that are observable at this
+     * layer. LiveKit itself treats a single-camera device as a no-op, so that
+     * case cannot be distinguished from a successful asynchronous request.
      */
-    fun switchCamera() {
-        val pub = room.localParticipant.getTrackPublication(Track.Source.CAMERA) ?: return
-        val track = pub.track as? LocalVideoTrack ?: return
-        runCatching { track.switchCamera() }
+    fun switchCamera(): Result<Unit> = runCatching {
+        val publication = checkNotNull(
+            room.localParticipant.getTrackPublication(Track.Source.CAMERA),
+        ) { "No local camera publication" }
+        val track = publication.track as? LocalVideoTrack
+            ?: error("Local camera publication has no video track")
+        track.switchCamera()
     }
 
     /**

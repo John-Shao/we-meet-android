@@ -198,12 +198,14 @@ fun RoomScreen(
     val aiAsking by viewModel.aiAsking.collectAsStateWithLifecycle()
     val microphoneActionFailedText = stringResource(R.string.room_microphone_action_failed)
     val cameraActionFailedText = stringResource(R.string.room_camera_action_failed)
+    val cameraSwitchFailedText = stringResource(R.string.room_camera_switch_failed)
 
     LaunchedEffect(viewModel) {
         viewModel.mediaActionFailures.collect { failure ->
             val message = when (failure) {
                 RoomMediaActionFailure.Microphone -> microphoneActionFailedText
                 RoomMediaActionFailure.Camera -> cameraActionFailedText
+                RoomMediaActionFailure.CameraSwitch -> cameraSwitchFailedText
             }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }

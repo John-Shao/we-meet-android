@@ -88,6 +88,7 @@
     <string name="room_hand_action_failed">Couldn\'t update your hand status. Try again.</string>
     <string name="room_microphone_action_failed">Couldn\'t update the microphone. Try again.</string>
     <string name="room_camera_action_failed">Couldn\'t update the camera. Try again.</string>
+    <string name="room_camera_switch_failed">Couldn\'t switch cameras. Try again.</string>
     <string name="room_screen_share_failed">Couldn\'t start screen sharing. Try again.</string>
     <string name="room_screen_share_stop_failed">Couldn\'t stop screen sharing. Try again.</string>
     <string name="room_subtitles_failed">Couldn\'t start subtitles. Try again.</string>
