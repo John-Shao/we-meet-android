@@ -124,6 +124,7 @@
     <string name="room_rename_failed">Couldn\'t change the display name. Try again.</string>
     <string name="room_host_actions">Host actions</string>
     <string name="room_host_mute">Mute mic</string>
+    <string name="room_host_mute_failed">Couldn\'t mute the participant. Try again.</string>
     <string name="room_host_remove">Remove</string>
     <string name="room_host_remove_title">Remove participant?</string>
     <string name="room_host_remove_message">Remove %1$s from the meeting? They can rejoin from the meeting link.</string>

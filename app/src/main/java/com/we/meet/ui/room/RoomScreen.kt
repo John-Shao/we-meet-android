@@ -1067,7 +1067,9 @@ private fun RoomContent(
     // identity (for the API call) and display name (for the prompt).
     var kickCandidate by remember { mutableStateOf<Pair<String, String>?>(null) }
     var kickSaving by remember { mutableStateOf(false) }
+    var mutingIdentities by remember { mutableStateOf<Set<String>>(emptySet()) }
     val removeFailedText = stringResource(R.string.room_host_remove_failed)
+    val muteFailedText = stringResource(R.string.room_host_mute_failed)
 
     // Participants bottom sheet
     if (showParticipants) {
@@ -1077,6 +1079,7 @@ private fun RoomContent(
             suggested = suggestedParticipants,
             myInvites = myInvites,
             remoteRingingUserIds = remoteRingingUserIds,
+            mutingIdentities = mutingIdentities,
             onCallSuggested = onCallSuggested,
             onCancelInvite = onCancelInvite,
             onRefreshSuggested = onRefreshSuggested,
@@ -1090,7 +1093,19 @@ private fun RoomContent(
                 showRenameDialog = true
             },
             onMuteClick = { identity ->
-                scope.launch { onMuteParticipant(identity) }
+                if (identity !in mutingIdentities) {
+                    mutingIdentities += identity
+                    scope.launch {
+                        onMuteParticipant(identity).onFailure {
+                            Toast.makeText(
+                                context,
+                                muteFailedText,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                        mutingIdentities -= identity
+                    }
+                }
             },
             onRemoveClick = { identity, name ->
                 showParticipants = false
@@ -1649,6 +1664,7 @@ private fun ParticipantsSheet(
     suggested: List<com.we.meet.data.api.dto.SuggestedParticipantDto> = emptyList(),
     myInvites: List<MeetInviteTracker.MeetInvite> = emptyList(),
     remoteRingingUserIds: Set<String> = emptySet(),
+    mutingIdentities: Set<String> = emptySet(),
     onCallSuggested: (com.we.meet.data.api.dto.SuggestedParticipantDto) -> Unit = {},
     onCancelInvite: (callId: String) -> Unit = {},
     onRefreshSuggested: () -> Unit = {},
@@ -1811,6 +1827,7 @@ private fun ParticipantsSheet(
                             Spacer(Modifier.width(Dimens.SpaceXs))
                             ParticipantHostMenu(
                                 isMicEnabled = p.isMicEnabled,
+                                inFlight = p.identity in mutingIdentities,
                                 onMute = { onMuteClick(p.identity) },
                                 onRemove = { onRemoveClick(p.identity, p.name) },
                             )
@@ -2002,6 +2019,7 @@ private fun UnifiedInviteFooter(roomSlug: String) {
 @Composable
 private fun ParticipantHostMenu(
     isMicEnabled: Boolean,
+    inFlight: Boolean,
     onMute: () -> Unit,
     onRemove: () -> Unit,
 ) {
@@ -2009,14 +2027,22 @@ private fun ParticipantHostMenu(
     Box {
         IconButton(
             onClick = { menuOpen = true },
+            enabled = !inFlight,
             modifier = Modifier.size(Dimens.MinTouchTarget),
         ) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = stringResource(R.string.room_host_actions),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(Dimens.IconSmall),
-            )
+            if (inFlight) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(Dimens.IconSmall),
+                    strokeWidth = Dimens.BorderEmphasis,
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = stringResource(R.string.room_host_actions),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(Dimens.IconSmall),
+                )
+            }
         }
         DropdownMenu(
             expanded = menuOpen,
@@ -2024,7 +2050,7 @@ private fun ParticipantHostMenu(
         ) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.room_host_mute)) },
-                enabled = isMicEnabled,
+                enabled = isMicEnabled && !inFlight,
                 onClick = {
                     menuOpen = false
                     onMute()
