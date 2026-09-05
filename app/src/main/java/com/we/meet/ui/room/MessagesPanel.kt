@@ -52,6 +52,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.AvatarOnFallback
 import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.data.chat.ChatMessageUi
 import java.text.SimpleDateFormat
@@ -208,7 +209,7 @@ private fun Avatar(name: String, identity: String) {
     ) {
         Text(
             text = initials,
-            color = Color.White,
+            color = AvatarOnFallback,
             style = MaterialTheme.typography.labelLarge,
         )
     }

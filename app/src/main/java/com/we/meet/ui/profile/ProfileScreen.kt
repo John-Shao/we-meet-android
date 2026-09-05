@@ -45,7 +45,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -56,6 +55,7 @@ import coil.request.ImageRequest
 import com.we.meet.WeMeetApp
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.OnMediaOverlay
 import com.we.meet.data.repository.ProfileRepository
 import kotlinx.coroutines.launch
 
@@ -400,20 +400,20 @@ private fun CoverBanner(
             )
         }
         if (isUploading) {
-            CircularProgressIndicator(color = Color.White)
+            CircularProgressIndicator(color = OnMediaOverlay)
         } else {
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(Dimens.SpaceM)
                     .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.4f))
+                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f))
                     .padding(Dimens.SpaceXs),
             ) {
                 Icon(
                     imageVector = Icons.Default.CameraAlt,
                     contentDescription = stringResource(R.string.profile_change_cover),
-                    tint = Color.White,
+                    tint = OnMediaOverlay,
                     modifier = Modifier.size(Dimens.IconSmall),
                 )
             }

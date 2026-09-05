@@ -94,6 +94,13 @@ val DarkSurfaceContainerHighest = Color(0xFF3A3A3A)
 
 val ThemeScrim = Color(0xFF000000)
 
+/**
+ * Foreground painted directly over photos or other unpredictable media.
+ * Media overlays stay dark in both themes, so this token is deliberately
+ * theme-independent and must be paired with a scrim or dark control surface.
+ */
+val OnMediaOverlay = Color(0xFFFFFFFF)
+
 // --- Semantic tokens not covered by Material 3's ColorScheme ---------------
 // These surface in [WeMeetExtras] and are resolved by [WeMeetTheme] based
 // on the active light/dark mode, so callers never branch on the theme.
