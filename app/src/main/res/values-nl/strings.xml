@@ -264,7 +264,10 @@
     <string name="task_create_action">Taak maken</string>
     <string name="task_search">Taken zoeken</string>
     <string name="task_search_hint">Zoek titels, beschrijvingen, personen en lijsten</string>
-    <string name="task_search_results">%1$d resultaten</string>
+    <plurals name="task_search_results">
+        <item quantity="one">%1$d resultaat</item>
+        <item quantity="other">%1$d resultaten</item>
+    </plurals>
     <string name="task_search_empty">Geen overeenkomende taken gevonden</string>
     <string name="task_settings">Taakinstellingen</string>
     <string name="task_navigation">Taaknavigatie</string>
@@ -453,7 +456,10 @@
     <string name="task_repeat_choose_date">Datum kiezen</string>
     <string name="task_repeat_end_date_invalid">Kies %1$s of een latere datum.</string>
     <string name="task_repeat_occurrences">Maximaal aantal herhalingen</string>
-    <string name="task_repeat_min_occurrences">Er zijn al minstens %1$d herhalingen gegenereerd.</string>
+    <plurals name="task_repeat_min_occurrences">
+        <item quantity="one">Er is al minstens %1$d herhaling gegenereerd.</item>
+        <item quantity="other">Er zijn al minstens %1$d herhalingen gegenereerd.</item>
+    </plurals>
     <string name="task_repeat_save">Herhaling opslaan</string>
     <string name="task_repeat_stop">Herhaling stoppen</string>
     <string name="task_rename">Naam wijzigen</string>
@@ -466,7 +472,10 @@
     <string name="task_manage_custom_groups">Aangepaste groepen beheren</string>
     <string name="task_custom_groups_empty">Nog geen aangepaste groepen</string>
     <string name="task_custom_group_invalid">De aangepaste groep is niet beschikbaar. Alle gerelateerde taken worden getoond.</string>
-    <string name="task_custom_group_task_count">%1$d taken</string>
+    <plurals name="task_custom_group_task_count">
+        <item quantity="one">%1$d taak</item>
+        <item quantity="other">%1$d taken</item>
+    </plurals>
     <string name="task_new_task_group">Nieuwe aangepaste groep</string>
     <string name="task_delete_task_group_confirm">‘%1$s’ verwijderen? Alleen lege groepen kunnen worden verwijderd.</string>
     <string name="task_move_up">Omhoog verplaatsen</string>
@@ -474,10 +483,16 @@
     <string name="task_parent">Bovenliggende taak</string>
     <string name="task_no_parent">Geen bovenliggende taak</string>
     <string name="task_move_subtree_title">Taakstructuur verplaatsen?</string>
-    <string name="task_move_subtree_message">Hiermee worden alle %1$d taken in deze taakstructuur verplaatst.</string>
+    <plurals name="task_move_subtree_message">
+        <item quantity="one">Hiermee wordt %1$d taak in deze taakstructuur verplaatst.</item>
+        <item quantity="other">Hiermee worden alle %1$d taken in deze taakstructuur verplaatst.</item>
+    </plurals>
     <string name="task_delete_confirm_title">Taak verwijderen?</string>
     <string name="task_delete_confirm_single">‘%1$s’ verwijderen? Deze actie kan niet ongedaan worden gemaakt.</string>
-    <string name="task_delete_confirm_tree">‘%1$s’ en alle %2$d taken in de taakstructuur verwijderen? Deze actie kan niet ongedaan worden gemaakt.</string>
+    <plurals name="task_delete_confirm_tree">
+        <item quantity="one">‘%1$s’ en %2$d taak in de taakstructuur verwijderen? Deze actie kan niet ongedaan worden gemaakt.</item>
+        <item quantity="other">‘%1$s’ en alle %2$d taken in de taakstructuur verwijderen? Deze actie kan niet ongedaan worden gemaakt.</item>
+    </plurals>
     <string name="task_search_filter_me">%1$s: ik</string>
     <string name="task_search_open">Open</string>
     <string name="task_search_all_due">Elke vervaldatum</string>

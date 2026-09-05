@@ -264,7 +264,10 @@
     <string name="task_create_action">Créer la tâche</string>
     <string name="task_search">Rechercher des tâches</string>
     <string name="task_search_hint">Rechercher titres, descriptions, personnes et listes</string>
-    <string name="task_search_results">%1$d résultats</string>
+    <plurals name="task_search_results">
+        <item quantity="one">%1$d résultat</item>
+        <item quantity="other">%1$d résultats</item>
+    </plurals>
     <string name="task_search_empty">Aucune tâche correspondante</string>
     <string name="task_settings">Paramètres des tâches</string>
     <string name="task_navigation">Navigation des tâches</string>
@@ -453,7 +456,10 @@
     <string name="task_repeat_choose_date">Choisir une date</string>
     <string name="task_repeat_end_date_invalid">Choisissez le %1$s ou une date ultérieure.</string>
     <string name="task_repeat_occurrences">Nombre maximal d’occurrences</string>
-    <string name="task_repeat_min_occurrences">Au moins %1$d occurrences ont déjà été générées.</string>
+    <plurals name="task_repeat_min_occurrences">
+        <item quantity="one">Au moins %1$d occurrence a déjà été générée.</item>
+        <item quantity="other">Au moins %1$d occurrences ont déjà été générées.</item>
+    </plurals>
     <string name="task_repeat_save">Enregistrer la récurrence</string>
     <string name="task_repeat_stop">Arrêter la répétition</string>
     <string name="task_rename">Renommer</string>
@@ -466,7 +472,10 @@
     <string name="task_manage_custom_groups">Gérer les groupes personnalisés</string>
     <string name="task_custom_groups_empty">Aucun groupe personnalisé</string>
     <string name="task_custom_group_invalid">Le groupe personnalisé n’est plus disponible. Toutes les tâches associées sont affichées.</string>
-    <string name="task_custom_group_task_count">%1$d tâches</string>
+    <plurals name="task_custom_group_task_count">
+        <item quantity="one">%1$d tâche</item>
+        <item quantity="other">%1$d tâches</item>
+    </plurals>
     <string name="task_new_task_group">Nouveau groupe personnalisé</string>
     <string name="task_delete_task_group_confirm">Supprimer « %1$s » ? Seuls les groupes vides peuvent être supprimés.</string>
     <string name="task_move_up">Déplacer vers le haut</string>
@@ -474,10 +483,16 @@
     <string name="task_parent">Tâche parente</string>
     <string name="task_no_parent">Aucune tâche parente</string>
     <string name="task_move_subtree_title">Déplacer l’arborescence ?</string>
-    <string name="task_move_subtree_message">Cette action déplace les %1$d tâches de cette arborescence.</string>
+    <plurals name="task_move_subtree_message">
+        <item quantity="one">Cette action déplace %1$d tâche de cette arborescence.</item>
+        <item quantity="other">Cette action déplace les %1$d tâches de cette arborescence.</item>
+    </plurals>
     <string name="task_delete_confirm_title">Supprimer la tâche ?</string>
     <string name="task_delete_confirm_single">Supprimer « %1$s » ? Cette action est irréversible.</string>
-    <string name="task_delete_confirm_tree">Supprimer « %1$s » et les %2$d tâches de son arborescence ? Cette action est irréversible.</string>
+    <plurals name="task_delete_confirm_tree">
+        <item quantity="one">Supprimer « %1$s » et %2$d tâche de son arborescence ? Cette action est irréversible.</item>
+        <item quantity="other">Supprimer « %1$s » et les %2$d tâches de son arborescence ? Cette action est irréversible.</item>
+    </plurals>
     <string name="task_search_filter_me">%1$s : moi</string>
     <string name="task_search_open">En cours</string>
     <string name="task_search_all_due">Toutes les échéances</string>

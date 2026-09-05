@@ -274,7 +274,10 @@
     <string name="task_create_action">Create task</string>
     <string name="task_search">Search tasks</string>
     <string name="task_search_hint">Search titles, descriptions, people, and lists</string>
-    <string name="task_search_results">%1$d results</string>
+    <plurals name="task_search_results">
+        <item quantity="one">%1$d result</item>
+        <item quantity="other">%1$d results</item>
+    </plurals>
     <string name="task_search_empty">No matching tasks found</string>
     <string name="task_settings">Task settings</string>
     <string name="task_navigation">Task navigation</string>
@@ -463,7 +466,10 @@
     <string name="task_repeat_choose_date">Choose a date</string>
     <string name="task_repeat_end_date_invalid">Choose %1$s or a later date.</string>
     <string name="task_repeat_occurrences">Maximum occurrences</string>
-    <string name="task_repeat_min_occurrences">At least %1$d occurrences have already been generated.</string>
+    <plurals name="task_repeat_min_occurrences">
+        <item quantity="one">At least %1$d occurrence has already been generated.</item>
+        <item quantity="other">At least %1$d occurrences have already been generated.</item>
+    </plurals>
     <string name="task_repeat_save">Save recurrence</string>
     <string name="task_repeat_stop">Stop repeating</string>
     <string name="task_rename">Rename</string>
@@ -476,7 +482,10 @@
     <string name="task_manage_custom_groups">Manage custom groups</string>
     <string name="task_custom_groups_empty">No custom groups yet</string>
     <string name="task_custom_group_invalid">The custom group is unavailable. Showing all related tasks.</string>
-    <string name="task_custom_group_task_count">%1$d tasks</string>
+    <plurals name="task_custom_group_task_count">
+        <item quantity="one">%1$d task</item>
+        <item quantity="other">%1$d tasks</item>
+    </plurals>
     <string name="task_new_task_group">New custom group</string>
     <string name="task_delete_task_group_confirm">Delete “%1$s”? Only empty groups can be deleted.</string>
     <string name="task_move_up">Move up</string>
@@ -484,10 +493,16 @@
     <string name="task_parent">Parent task</string>
     <string name="task_no_parent">No parent task</string>
     <string name="task_move_subtree_title">Move task tree?</string>
-    <string name="task_move_subtree_message">This will move all %1$d tasks in this task tree.</string>
+    <plurals name="task_move_subtree_message">
+        <item quantity="one">This will move %1$d task in this task tree.</item>
+        <item quantity="other">This will move all %1$d tasks in this task tree.</item>
+    </plurals>
     <string name="task_delete_confirm_title">Delete task?</string>
     <string name="task_delete_confirm_single">Delete “%1$s”? This action cannot be undone.</string>
-    <string name="task_delete_confirm_tree">Delete “%1$s” and all %2$d tasks in its task tree? This action cannot be undone.</string>
+    <plurals name="task_delete_confirm_tree">
+        <item quantity="one">Delete “%1$s” and %2$d task in its task tree? This action cannot be undone.</item>
+        <item quantity="other">Delete “%1$s” and all %2$d tasks in its task tree? This action cannot be undone.</item>
+    </plurals>
     <string name="task_search_filter_me">%1$s: Me</string>
     <string name="task_search_open">Open</string>
     <string name="task_search_all_due">Any due date</string>

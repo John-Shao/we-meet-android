@@ -274,7 +274,9 @@
     <string name="task_create_action">创建任务</string>
     <string name="task_search">搜索任务</string>
     <string name="task_search_hint">搜索标题、描述、人员或清单</string>
-    <string name="task_search_results">找到 %1$d 个结果</string>
+    <plurals name="task_search_results">
+        <item quantity="other">找到 %1$d 个结果</item>
+    </plurals>
     <string name="task_search_empty">没有找到匹配的任务</string>
     <string name="task_settings">任务设置</string>
     <string name="task_navigation">任务导航</string>
@@ -463,7 +465,9 @@
     <string name="task_repeat_choose_date">选择日期</string>
     <string name="task_repeat_end_date_invalid">请选择 %1$s 或更晚的日期。</string>
     <string name="task_repeat_occurrences">最大重复次数</string>
-    <string name="task_repeat_min_occurrences">已生成至少 %1$d 次任务。</string>
+    <plurals name="task_repeat_min_occurrences">
+        <item quantity="other">已生成至少 %1$d 次任务。</item>
+    </plurals>
     <string name="task_repeat_save">保存重复规则</string>
     <string name="task_repeat_stop">停止重复</string>
     <string name="task_rename">重命名</string>
@@ -476,7 +480,9 @@
     <string name="task_manage_custom_groups">管理自定义分组</string>
     <string name="task_custom_groups_empty">还没有自定义分组</string>
     <string name="task_custom_group_invalid">自定义分组已不可用，已切换到全部相关任务。</string>
-    <string name="task_custom_group_task_count">%1$d 个任务</string>
+    <plurals name="task_custom_group_task_count">
+        <item quantity="other">%1$d 个任务</item>
+    </plurals>
     <string name="task_new_task_group">新建分组</string>
     <string name="task_delete_task_group_confirm">删除“%1$s”？仅空分组可以删除。</string>
     <string name="task_move_up">上移</string>
@@ -484,10 +490,14 @@
     <string name="task_parent">父任务</string>
     <string name="task_no_parent">无父任务</string>
     <string name="task_move_subtree_title">移动任务树？</string>
-    <string name="task_move_subtree_message">此操作会同时移动该任务树中的全部 %1$d 个任务。</string>
+    <plurals name="task_move_subtree_message">
+        <item quantity="other">此操作会同时移动该任务树中的全部 %1$d 个任务。</item>
+    </plurals>
     <string name="task_delete_confirm_title">删除任务？</string>
     <string name="task_delete_confirm_single">删除“%1$s”？此操作无法撤销。</string>
-    <string name="task_delete_confirm_tree">删除“%1$s”及其任务树中的全部 %2$d 个任务？此操作无法撤销。</string>
+    <plurals name="task_delete_confirm_tree">
+        <item quantity="other">删除“%1$s”及其任务树中的全部 %2$d 个任务？此操作无法撤销。</item>
+    </plurals>
     <string name="task_search_filter_me">%1$s：我</string>
     <string name="task_search_open">未完成</string>
     <string name="task_search_all_due">全部截止时间</string>

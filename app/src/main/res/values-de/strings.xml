@@ -264,7 +264,10 @@
     <string name="task_create_action">Aufgabe erstellen</string>
     <string name="task_search">Aufgaben suchen</string>
     <string name="task_search_hint">Titel, Beschreibungen, Personen und Listen suchen</string>
-    <string name="task_search_results">%1$d Ergebnisse</string>
+    <plurals name="task_search_results">
+        <item quantity="one">%1$d Ergebnis</item>
+        <item quantity="other">%1$d Ergebnisse</item>
+    </plurals>
     <string name="task_search_empty">Keine passenden Aufgaben gefunden</string>
     <string name="task_settings">Aufgabeneinstellungen</string>
     <string name="task_navigation">Aufgabennavigation</string>
@@ -453,7 +456,10 @@
     <string name="task_repeat_choose_date">Datum auswählen</string>
     <string name="task_repeat_end_date_invalid">Wählen Sie den %1$s oder ein späteres Datum.</string>
     <string name="task_repeat_occurrences">Maximale Wiederholungen</string>
-    <string name="task_repeat_min_occurrences">Mindestens %1$d Wiederholungen wurden bereits erzeugt.</string>
+    <plurals name="task_repeat_min_occurrences">
+        <item quantity="one">Mindestens %1$d Wiederholung wurde bereits erzeugt.</item>
+        <item quantity="other">Mindestens %1$d Wiederholungen wurden bereits erzeugt.</item>
+    </plurals>
     <string name="task_repeat_save">Wiederholung speichern</string>
     <string name="task_repeat_stop">Wiederholung beenden</string>
     <string name="task_rename">Umbenennen</string>
@@ -466,7 +472,10 @@
     <string name="task_manage_custom_groups">Benutzerdefinierte Gruppen verwalten</string>
     <string name="task_custom_groups_empty">Noch keine benutzerdefinierten Gruppen</string>
     <string name="task_custom_group_invalid">Die benutzerdefinierte Gruppe ist nicht verfügbar. Alle zugehörigen Aufgaben werden angezeigt.</string>
-    <string name="task_custom_group_task_count">%1$d Aufgaben</string>
+    <plurals name="task_custom_group_task_count">
+        <item quantity="one">%1$d Aufgabe</item>
+        <item quantity="other">%1$d Aufgaben</item>
+    </plurals>
     <string name="task_new_task_group">Neue benutzerdefinierte Gruppe</string>
     <string name="task_delete_task_group_confirm">„%1$s“ löschen? Nur leere Gruppen können gelöscht werden.</string>
     <string name="task_move_up">Nach oben</string>
@@ -474,10 +483,16 @@
     <string name="task_parent">Übergeordnete Aufgabe</string>
     <string name="task_no_parent">Keine übergeordnete Aufgabe</string>
     <string name="task_move_subtree_title">Aufgabenbaum verschieben?</string>
-    <string name="task_move_subtree_message">Dadurch werden alle %1$d Aufgaben in diesem Aufgabenbaum verschoben.</string>
+    <plurals name="task_move_subtree_message">
+        <item quantity="one">Dadurch wird %1$d Aufgabe in diesem Aufgabenbaum verschoben.</item>
+        <item quantity="other">Dadurch werden alle %1$d Aufgaben in diesem Aufgabenbaum verschoben.</item>
+    </plurals>
     <string name="task_delete_confirm_title">Aufgabe löschen?</string>
     <string name="task_delete_confirm_single">„%1$s“ löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
-    <string name="task_delete_confirm_tree">„%1$s“ und alle %2$d Aufgaben in diesem Aufgabenbaum löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
+    <plurals name="task_delete_confirm_tree">
+        <item quantity="one">„%1$s“ mit %2$d Aufgabe in diesem Aufgabenbaum löschen? Diese Aktion kann nicht rückgängig gemacht werden.</item>
+        <item quantity="other">„%1$s“ mit allen %2$d Aufgaben in diesem Aufgabenbaum löschen? Diese Aktion kann nicht rückgängig gemacht werden.</item>
+    </plurals>
     <string name="task_search_filter_me">%1$s: Ich</string>
     <string name="task_search_open">Offen</string>
     <string name="task_search_all_due">Beliebiges Fälligkeitsdatum</string>

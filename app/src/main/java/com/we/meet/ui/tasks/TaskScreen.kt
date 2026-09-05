@@ -141,6 +141,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -3526,7 +3527,7 @@ private fun TaskSearchPage(
             }
         }
         Text(
-            stringResource(R.string.task_search_results, tasks.size),
+            pluralStringResource(R.plurals.task_search_results, tasks.size, tasks.size),
             modifier = Modifier.padding(Dimens.SpaceL),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
@@ -4524,7 +4525,13 @@ private fun TaskRecurrenceSheet(
                     label = { Text(stringResource(R.string.task_repeat_occurrences)) },
                     supportingText = {
                         if (minimumOccurrences > 1) {
-                            Text(stringResource(R.string.task_repeat_min_occurrences, minimumOccurrences))
+                            Text(
+                                pluralStringResource(
+                                    R.plurals.task_repeat_min_occurrences,
+                                    minimumOccurrences,
+                                    minimumOccurrences,
+                                ),
+                            )
                         }
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -4653,7 +4660,15 @@ private fun MoveTaskTreeDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.task_move_subtree_title)) },
-        text = { Text(stringResource(R.string.task_move_subtree_message, nodeCount)) },
+        text = {
+            Text(
+                pluralStringResource(
+                    R.plurals.task_move_subtree_message,
+                    nodeCount,
+                    nodeCount,
+                ),
+            )
+        },
         confirmButton = {
             TextButton(onClick = onConfirm, enabled = !moving) {
                 Text(stringResource(R.string.task_confirm))
@@ -4681,7 +4696,12 @@ private fun DeleteTaskDialog(
         text = {
             Text(
                 if (nodeCount > 1) {
-                    stringResource(R.string.task_delete_confirm_tree, task.title, nodeCount)
+                    pluralStringResource(
+                        R.plurals.task_delete_confirm_tree,
+                        nodeCount,
+                        task.title,
+                        nodeCount,
+                    )
                 } else {
                     stringResource(R.string.task_delete_confirm_single, task.title)
                 },
