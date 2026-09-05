@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,7 +21,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -32,6 +32,7 @@ import coil.request.ImageRequest
 import com.we.meet.design.R as DesignR
 import com.we.meet.feature.im.R
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.OnMediaOverlay
 
 /** Full-screen image viewer with pinch-to-zoom, pan, and an explicit close action. */
 @Composable
@@ -54,7 +55,7 @@ fun ImageLightbox(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(MaterialTheme.colorScheme.scrim)
                 .pointerInput(Unit) {
                     detectTransformGestures { _, pan, zoom, _ ->
                         scale = (scale * zoom).coerceIn(1f, 5f)
@@ -65,7 +66,7 @@ fun ImageLightbox(
             contentAlignment = Alignment.Center,
         ) {
             if (url == null) {
-                CircularProgressIndicator(color = Color.White)
+                CircularProgressIndicator(color = OnMediaOverlay)
             } else {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
@@ -94,7 +95,7 @@ fun ImageLightbox(
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = stringResource(DesignR.string.cd_close),
-                    tint = Color.White,
+                    tint = OnMediaOverlay,
                 )
             }
         }

@@ -3,9 +3,3 @@
 raw-color-named|feature-assistant/src/main/java/com/we/meet/feature/assistant/aicall/ui/AssistantCallScreen.kt|4
 raw-color-named|feature-assistant/src/main/java/com/we/meet/feature/assistant/aicall/ui/components/AnimatedSphere.kt|1
 raw-color-named|feature-assistant/src/main/java/com/we/meet/feature/assistant/aicall/ui/components/BottomControls.kt|1
-raw-color-named|feature-im/src/main/java/com/we/meet/feature/im/ui/bot/BotAvatar.kt|1
-raw-color-named|feature-im/src/main/java/com/we/meet/feature/im/ui/call/CallScreen.kt|1
-raw-color-named|feature-im/src/main/java/com/we/meet/feature/im/ui/call/MinimalVideoCallScreen.kt|5
-raw-color-named|feature-im/src/main/java/com/we/meet/feature/im/ui/call/MinimalVoiceCallScreen.kt|1
-raw-color-named|feature-im/src/main/java/com/we/meet/feature/im/ui/chat/ImageLightbox.kt|3
-raw-color-named|feature-im/src/main/java/com/we/meet/feature/im/ui/common/GroupAvatar.kt|1

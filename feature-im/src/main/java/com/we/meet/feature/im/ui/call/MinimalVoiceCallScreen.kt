@@ -402,7 +402,12 @@ internal fun RoundButton(
             onClick = onClick,
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Icon(icon, contentDescription = label, tint = Color.White, modifier = Modifier.size(Dimens.Chat.CallControlIcon))
+                Icon(
+                    icon,
+                    contentDescription = label,
+                    tint = WeMeetTheme.extras.im.callControlContent,
+                    modifier = Modifier.size(Dimens.Chat.CallControlIcon),
+                )
             }
         }
         Spacer(Modifier.height(Dimens.SpaceS))

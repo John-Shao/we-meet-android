@@ -11,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.ui.theme.Dimens
@@ -57,7 +56,7 @@ internal fun BotAvatar(
         Icon(
             imageVector = Icons.Filled.SmartToy,
             contentDescription = null,
-            tint = Color.White,
+            tint = WeMeetTheme.extras.im.avatarContent,
             modifier = Modifier.size(size * 0.55f),
         )
     }

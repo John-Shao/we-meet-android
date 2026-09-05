@@ -1,6 +1,7 @@
 package com.we.meet.feature.im.ui.call
 
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioManager
@@ -323,7 +324,12 @@ private fun RoundActionButton(
             onClick = onClick,
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Icon(icon, contentDescription = label, tint = Color.White, modifier = Modifier.size(Dimens.Chat.CallControlIcon))
+                Icon(
+                    icon,
+                    contentDescription = label,
+                    tint = WeMeetTheme.extras.im.callControlContent,
+                    modifier = Modifier.size(Dimens.Chat.CallControlIcon),
+                )
             }
         }
         Spacer(Modifier.height(Dimens.SpaceS))

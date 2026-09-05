@@ -205,8 +205,12 @@ data class ImColors(
     val callAccept: Color,
     val callNeutralControl: Color,
     val callMutedControl: Color,
+    /** Foreground for solid call controls (hang up, accept, mute, speaker). */
+    val callControlContent: Color,
     val videoStageBackground: Color,
     val videoStageLabel: Color,
+    /** Foreground for bot/group avatar fallback tiles. */
+    val avatarContent: Color,
     /** 连接状态条:一档一对「底色 + 文字色」。 */
     val connConnectedBg: Color,
     val connConnectedFg: Color,
@@ -230,8 +234,10 @@ private val SharedImColors = ImColors(
     callAccept = ImCallAccept,
     callNeutralControl = ImCallNeutralControl,
     callMutedControl = ImCallMutedControl,
+    callControlContent = OnMediaOverlay,
     videoStageBackground = ImVideoStageBackground,
     videoStageLabel = ImVideoStageLabel,
+    avatarContent = OnMediaOverlay,
     connConnectedBg = ImConnConnectedBg,
     connConnectedFg = ImConnConnectedFg,
     connConnectingBg = ImConnConnectingBg,

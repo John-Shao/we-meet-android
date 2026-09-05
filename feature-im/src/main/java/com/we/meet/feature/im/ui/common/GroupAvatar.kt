@@ -165,7 +165,7 @@ private fun Tile(avatarUrl: String?, name: String, cacheKey: String) {
         ) {
             Text(
                 text = initialOf(name),
-                color = Color.White,
+                color = WeMeetTheme.extras.im.avatarContent,
                 fontWeight = FontWeight.Bold,
                 style = WeMeetTextStyles.LabelTiny,
                 textAlign = TextAlign.Center,

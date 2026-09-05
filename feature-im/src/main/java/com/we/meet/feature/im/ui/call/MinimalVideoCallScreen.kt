@@ -110,12 +110,15 @@ fun MinimalVideoCallScreen(
             Text(
                 text = status,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White,
+                color = VideoStageLabel,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
                     .padding(top = Dimens.SpaceM)
-                    .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(Dimens.CornerM))
+                    .background(
+                        MaterialTheme.colorScheme.scrim.copy(alpha = 0.35f),
+                        RoundedCornerShape(Dimens.CornerM),
+                    )
                     .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs),
             )
         } else {
@@ -136,13 +139,13 @@ fun MinimalVideoCallScreen(
                     text = displayName,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.White,
+                    color = VideoStageLabel,
                 )
                 Spacer(Modifier.height(Dimens.SpaceM))
                 Text(
                     text = status,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = VideoStageLabel.copy(alpha = 0.7f),
                 )
             }
         }
@@ -157,7 +160,7 @@ fun MinimalVideoCallScreen(
                     .padding(top = Dimens.SpaceM, end = Dimens.ScreenPadding)
                     .size(width = Dimens.Chat.PipWidth, height = Dimens.Chat.PipHeight)
                     .clip(RoundedCornerShape(Dimens.CornerM))
-                    .background(Color.Black.copy(alpha = 0.4f)),
+                    .background(VideoStageBackground),
             ) {
                 localVideo()
             }
