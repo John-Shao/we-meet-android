@@ -55,6 +55,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.R
 import com.we.meet.core.directory.ui.MemberAvatar
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.WeMeetApp
@@ -191,6 +193,8 @@ fun CreateEventScreen(
     var errorRes by remember { mutableStateOf<Int?>(null) }
     // Edit and copy modes start not-ready until the source event loads.
     var loaded by remember { mutableStateOf(sourceEventId == null) }
+    var sourceLoadFailed by remember { mutableStateOf(false) }
+    var sourceLoadRetryNonce by remember { mutableStateOf(0) }
     var showDiscardConfirm by remember { mutableStateOf(false) }
 
     androidx.compose.runtime.LaunchedEffect(calendarZone.id, isEdit) {
@@ -248,13 +252,15 @@ fun CreateEventScreen(
             }
     }
 
-    androidx.compose.runtime.LaunchedEffect(sourceEventId) {
+    androidx.compose.runtime.LaunchedEffect(sourceEventId, sourceLoadRetryNonce) {
         if (sourceEventId == null) return@LaunchedEffect
+        loaded = false
+        sourceLoadFailed = false
+        errorRes = null
         runCatching { app.apiClient.calendarApi.getEvent(sourceEventId) }
             .onSuccess { e ->
                 if (isCopy && e.detailsRedacted) {
-                    errorRes = R.string.event_load_error
-                    loaded = true
+                    sourceLoadFailed = true
                     return@onSuccess
                 }
                 val zone = calendarZone
@@ -359,9 +365,13 @@ fun CreateEventScreen(
                         uid to if (sourceRole == "optional") "optional" else "required"
                     }
                 }
+                sourceLoadFailed = false
                 loaded = true
             }
-            .onFailure { errorRes = R.string.event_load_error; loaded = true }
+            .onFailure {
+                sourceLoadFailed = true
+                loaded = false
+            }
     }
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
@@ -595,13 +605,24 @@ fun CreateEventScreen(
             )
         },
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Dimens.ScreenPadding),
-        ) {
+        when {
+            sourceEventId != null && sourceLoadFailed -> WeMeetErrorState(
+                message = stringResource(R.string.event_load_error),
+                onRetry = { sourceLoadRetryNonce += 1 },
+                modifier = Modifier.padding(padding),
+            )
+
+            sourceEventId != null && !loaded -> WeMeetLoading(
+                modifier = Modifier.padding(padding),
+            )
+
+            else -> Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = Dimens.ScreenPadding),
+            ) {
             OutlinedTextField(
                 value = title,
                 onValueChange = { if (it.length <= 80) title = it },
@@ -886,7 +907,8 @@ fun CreateEventScreen(
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
-            Spacer(Modifier.height(Dimens.SpaceXxl))
+                Spacer(Modifier.height(Dimens.SpaceXxl))
+            }
         }
     }
 
