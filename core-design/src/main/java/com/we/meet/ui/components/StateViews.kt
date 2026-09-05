@@ -174,6 +174,7 @@ fun WeMeetErrorState(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     message: String? = null,
+    retryEnabled: Boolean = true,
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
@@ -192,7 +193,7 @@ fun WeMeetErrorState(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
-            TextButton(onClick = onRetry) {
+            TextButton(onClick = onRetry, enabled = retryEnabled) {
                 Text(stringResource(R.string.common_retry))
             }
         }

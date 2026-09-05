@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.InputChip
@@ -35,7 +34,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
+import com.we.meet.ui.components.WeMeetEmptyState
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.core.directory.DirectoryDeps
 import com.we.meet.core.directory.R
@@ -190,38 +191,17 @@ fun ContactPicker(
 
             Box(modifier = Modifier.weight(1f)) {
                 when {
-                    loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
+                    loading -> WeMeetLoading()
 
-                    error -> Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = Dimens.SpaceXxl),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            stringResource(R.string.picker_load_error),
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        Button(
-                            onClick = { reloadTick++ },
-                            enabled = enabled,
-                            modifier = Modifier.padding(top = Dimens.SpaceS),
-                        ) {
-                            Text(stringResource(R.string.picker_retry))
-                        }
-                    }
+                    error -> WeMeetErrorState(
+                        onRetry = { reloadTick++ },
+                        message = stringResource(R.string.picker_load_error),
+                        retryEnabled = enabled,
+                    )
 
-                    members.isEmpty() -> Box(
-                        Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            stringResource(R.string.picker_empty),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    members.isEmpty() -> WeMeetEmptyState(
+                        title = stringResource(R.string.picker_empty),
+                    )
 
                     else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                         items(members, key = { it.id }) { member ->
