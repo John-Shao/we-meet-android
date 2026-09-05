@@ -129,6 +129,7 @@ import com.we.meet.R
 import com.we.meet.design.R as DesignR
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
+import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.audio.AudioOutput
 import com.we.meet.audio.AudioOutputController
 import com.we.meet.audio.AudioOutputStore
@@ -783,7 +784,7 @@ private fun RoomContent(
     onMuteParticipant: suspend (String) -> Result<Unit>,
     onRemoveParticipant: suspend (String) -> Result<Unit>,
     onAdmitParticipant: suspend (participantId: String, allow: Boolean) -> Result<Unit>,
-    onRefreshAccessLevel: suspend () -> Unit,
+    onRefreshAccessLevel: suspend () -> Result<Unit>,
     onUpdateAccessLevel: suspend (String) -> Result<Unit>,
     onToggleRecording: () -> Unit,
     onToggleSubtitles: () -> Unit,
@@ -833,6 +834,10 @@ private fun RoomContent(
     var admittingAll by remember { mutableStateOf(false) }
     val lobbyActionFailedText = stringResource(R.string.room_lobby_action_failed)
     var showHostSettings by remember { mutableStateOf(false) }
+    var accessLoading by remember { mutableStateOf(false) }
+    var accessLoadFailed by remember { mutableStateOf(false) }
+    var accessUpdating by remember { mutableStateOf(false) }
+    val accessUpdateFailedText = stringResource(R.string.room_host_settings_save_failed)
     var showAiSheet by remember { mutableStateOf(false) }
     // One-shot guard so we prompt for SYSTEM_ALERT_WINDOW at most once per
     // meeting instance. If the user declines or ignores, subsequent "共享
@@ -1258,8 +1263,14 @@ private fun RoomContent(
             },
             onHostSettingsClick = {
                 showMore = false
-                scope.launch { onRefreshAccessLevel() }
                 showHostSettings = true
+                accessLoading = true
+                accessLoadFailed = false
+                scope.launch {
+                    onRefreshAccessLevel()
+                        .onFailure { accessLoadFailed = true }
+                    accessLoading = false
+                }
             },
             onDismiss = { showMore = false },
         )
@@ -1278,10 +1289,39 @@ private fun RoomContent(
     if (showHostSettings) {
         HostSettingsSheet(
             currentAccessLevel = state.accessLevel,
-            onSelectAccessLevel = { level ->
-                scope.launch { onUpdateAccessLevel(level) }
+            loading = accessLoading,
+            loadFailed = accessLoadFailed,
+            updating = accessUpdating,
+            onRetry = {
+                if (!accessLoading) {
+                    accessLoading = true
+                    accessLoadFailed = false
+                    scope.launch {
+                        onRefreshAccessLevel()
+                            .onFailure { accessLoadFailed = true }
+                        accessLoading = false
+                    }
+                }
             },
-            onDismiss = { showHostSettings = false },
+            onSelectAccessLevel = { level ->
+                if (!accessUpdating) {
+                    accessUpdating = true
+                    scope.launch {
+                        onUpdateAccessLevel(level)
+                            .onFailure {
+                                Toast.makeText(
+                                    context,
+                                    accessUpdateFailedText,
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                        accessUpdating = false
+                    }
+                }
+            },
+            onDismiss = {
+                if (!accessLoading && !accessUpdating) showHostSettings = false
+            },
         )
     }
 
@@ -2280,12 +2320,16 @@ private const val ACCESS_LEVEL_RESTRICTED = "restricted"
 @Composable
 private fun HostSettingsSheet(
     currentAccessLevel: String?,
+    loading: Boolean,
+    loadFailed: Boolean,
+    updating: Boolean,
+    onRetry: () -> Unit,
     onSelectAccessLevel: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!loading && !updating) onDismiss() },
         sheetState = sheetState,
     ) {
         Column(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)) {
@@ -2301,33 +2345,66 @@ private fun HostSettingsSheet(
                 modifier = Modifier.padding(bottom = Dimens.SpaceL),
             )
             HorizontalDivider()
-            Spacer(Modifier.height(Dimens.SpaceS))
-            Text(
-                text = stringResource(R.string.room_host_access_section),
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(vertical = Dimens.SpaceS),
-            )
-            AccessLevelOption(
-                value = ACCESS_LEVEL_PUBLIC,
-                current = currentAccessLevel,
-                title = stringResource(R.string.room_host_access_public_title),
-                description = stringResource(R.string.room_host_access_public_desc),
-                onSelect = onSelectAccessLevel,
-            )
-            AccessLevelOption(
-                value = ACCESS_LEVEL_TRUSTED,
-                current = currentAccessLevel,
-                title = stringResource(R.string.room_host_access_trusted_title),
-                description = stringResource(R.string.room_host_access_trusted_desc),
-                onSelect = onSelectAccessLevel,
-            )
-            AccessLevelOption(
-                value = ACCESS_LEVEL_RESTRICTED,
-                current = currentAccessLevel,
-                title = stringResource(R.string.room_host_access_restricted_title),
-                description = stringResource(R.string.room_host_access_restricted_desc),
-                onSelect = onSelectAccessLevel,
-            )
+            when {
+                loadFailed -> WeMeetInlineErrorState(
+                    onRetry = onRetry,
+                    message = stringResource(R.string.room_host_settings_load_failed),
+                )
+
+                loading -> Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(Dimens.SpaceXl),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(Dimens.IconMedium),
+                        strokeWidth = Dimens.BorderEmphasis,
+                    )
+                }
+
+                else -> {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(R.string.room_host_access_section),
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier
+                                .padding(vertical = Dimens.SpaceS)
+                                .weight(1f),
+                        )
+                        if (updating) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(Dimens.IconSmall),
+                                strokeWidth = Dimens.BorderEmphasis,
+                            )
+                        }
+                    }
+                    AccessLevelOption(
+                        value = ACCESS_LEVEL_PUBLIC,
+                        current = currentAccessLevel,
+                        title = stringResource(R.string.room_host_access_public_title),
+                        description = stringResource(R.string.room_host_access_public_desc),
+                        enabled = !updating,
+                        onSelect = onSelectAccessLevel,
+                    )
+                    AccessLevelOption(
+                        value = ACCESS_LEVEL_TRUSTED,
+                        current = currentAccessLevel,
+                        title = stringResource(R.string.room_host_access_trusted_title),
+                        description = stringResource(R.string.room_host_access_trusted_desc),
+                        enabled = !updating,
+                        onSelect = onSelectAccessLevel,
+                    )
+                    AccessLevelOption(
+                        value = ACCESS_LEVEL_RESTRICTED,
+                        current = currentAccessLevel,
+                        title = stringResource(R.string.room_host_access_restricted_title),
+                        description = stringResource(R.string.room_host_access_restricted_desc),
+                        enabled = !updating,
+                        onSelect = onSelectAccessLevel,
+                    )
+                }
+            }
             Spacer(Modifier.height(Dimens.SpaceXl))
         }
     }
@@ -2339,19 +2416,21 @@ private fun AccessLevelOption(
     current: String?,
     title: String,
     description: String,
+    enabled: Boolean,
     onSelect: (String) -> Unit,
 ) {
     val selected = current == value
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onSelect(value) }
+            .clickable(enabled = enabled) { onSelect(value) }
             .padding(vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.Top,
     ) {
         RadioButton(
             selected = selected,
             onClick = { onSelect(value) },
+            enabled = enabled,
         )
         Spacer(Modifier.width(Dimens.SpaceS))
         Column(modifier = Modifier.weight(1f)) {

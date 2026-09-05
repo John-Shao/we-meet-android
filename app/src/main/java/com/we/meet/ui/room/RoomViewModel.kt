@@ -1171,11 +1171,11 @@ class RoomViewModel(
      * failure leaves the existing state untouched so a network blip
      * doesn't blank out the sheet's radio selection.
      */
-    suspend fun refreshAccessLevel() {
-        roomRepository.getRoom(roomId, username = selfName).onSuccess { room ->
+    suspend fun refreshAccessLevel(): Result<Unit> =
+        roomRepository.getRoom(roomId, username = selfName).map { room ->
             _state.update { it.copy(accessLevel = room.access_level) }
+            Unit
         }
-    }
 
     /**
      * Host-only: change the room's access level. On success the local

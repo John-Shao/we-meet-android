@@ -147,6 +147,8 @@
     <string name="room_host_settings_title">主持人设置</string>
     <string name="room_host_settings_subtitle">仅主持人可访问以下控制项。</string>
     <string name="room_host_access_section">会议访问</string>
+    <string name="room_host_settings_load_failed">无法加载会议访问设置</string>
+    <string name="room_host_settings_save_failed">无法更新会议访问设置，请重试</string>
     <string name="room_host_access_public_title">开放</string>
     <string name="room_host_access_public_desc">任何人都可直接加入会议，无需申请。</string>
     <string name="room_host_access_trusted_title">对受信任用户开放</string>

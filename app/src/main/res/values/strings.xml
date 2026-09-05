@@ -147,6 +147,8 @@
     <string name="room_host_settings_title">Host settings</string>
     <string name="room_host_settings_subtitle">Only the host can change these.</string>
     <string name="room_host_access_section">Access</string>
+    <string name="room_host_settings_load_failed">Couldn\'t load meeting access settings</string>
+    <string name="room_host_settings_save_failed">Couldn\'t update meeting access. Try again.</string>
     <string name="room_host_access_public_title">Open</string>
     <string name="room_host_access_public_desc">Anyone can join directly.</string>
     <string name="room_host_access_trusted_title">Trusted users</string>
