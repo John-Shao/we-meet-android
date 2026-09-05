@@ -26,6 +26,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -134,6 +136,7 @@ fun MessageSearchScreen(
     val directoryVersion by session.userDirectory.version.collectAsStateWithLifecycle()
     val selfUid by session.selfUid.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val snackbar = remember { SnackbarHostState() }
 
     var query by remember { mutableStateOf("") }
     var category by remember { mutableStateOf(SearchCategory.ALL) }
@@ -164,6 +167,8 @@ fun MessageSearchScreen(
     var docsSearched by remember { mutableStateOf(false) }
     var docsRetryNonce by remember { mutableStateOf(0) }
     var docsResultQuery by remember { mutableStateOf("") }
+    var openingContactId by remember { mutableStateOf<String?>(null) }
+    val createChatFailedMessage = stringResource(R.string.im_create_chat_failed)
     // AI 问答:仅显式触发(按钮/回车),绝不随输入自动发起(成本闸门,同 Web)。
     var ask by remember { mutableStateOf(AskUiState()) }
     var askJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
@@ -427,6 +432,7 @@ fun MessageSearchScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             // design-exempt: 标题位放的是搜索输入框,不是标题文字。
             // WeMeetTopBar 的契约是「标题单行、超长省略号」,把输入框塞进去
@@ -573,12 +579,28 @@ fun MessageSearchScreen(
                             emoji = "👤",
                             title = contact.name,
                             subtitle = contact.subtitle,
+                            enabled = openingContactId == null,
+                            trailing = if (openingContactId == contact.userId) {
+                                {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(Dimens.IconSmall),
+                                        strokeWidth = Dimens.BorderEmphasis,
+                                    )
+                                }
+                            } else null,
                             onClick = {
                                 // 联系人命中 = 直接开聊(Web 口径):建/取直聊再进会话。
+                                if (openingContactId != null) return@TwoLineRow
+                                openingContactId = contact.userId
                                 scope.launch {
-                                    runCatching {
+                                    val result = runCatching {
                                         session.bridge.createDirectByUserId(contact.userId)
-                                    }.onSuccess { conv -> onOpenChat(conv.cid, null) }
+                                    }
+                                    openingContactId = null
+                                    result.onSuccess { conv -> onOpenChat(conv.cid, null) }
+                                    if (result.isFailure) {
+                                        snackbar.showSnackbar(createChatFailedMessage)
+                                    }
                                 }
                             },
                         )
@@ -913,17 +935,23 @@ private fun TwoLineRow(
     emoji: String,
     title: String,
     subtitle: String?,
+    enabled: Boolean = true,
+    trailing: (@Composable () -> Unit)? = null,
     onClick: () -> Unit,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
     ) {
         Text(text = emoji, style = MaterialTheme.typography.titleLarge)
-        Column(Modifier.padding(start = Dimens.SpaceM)) {
+        Column(
+            Modifier
+                .weight(1f)
+                .padding(start = Dimens.SpaceM),
+        ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
@@ -940,6 +968,7 @@ private fun TwoLineRow(
                 )
             }
         }
+        trailing?.invoke()
     }
 }
 
