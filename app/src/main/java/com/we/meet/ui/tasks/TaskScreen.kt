@@ -1329,6 +1329,10 @@ private fun TaskListPage(
                 onFilter = onFilter,
                 onDisplaySettings = onDisplaySettings,
             )
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant,
+                thickness = Dimens.DividerThin,
+            )
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
 
             LazyColumn(
