@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -409,7 +410,12 @@ private fun ApproverChain(inst: ApprovalInstanceDto) {
                     )
                     Text(
                         "$nodeLabel · $head · " +
-                            stringResource(R.string.approval_progress, done, approvers.size),
+                            pluralStringResource(
+                                R.plurals.approval_progress,
+                                done,
+                                done,
+                                approvers.size,
+                            ),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Medium,
                         color = activeColor,

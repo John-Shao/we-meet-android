@@ -28,15 +28,13 @@ fun reminderLabel(res: Resources, minutes: Int?): String = when {
     minutes == 0 -> res.getString(R.string.calendar_reminder_at_time)
     minutes % 1440 == 0 -> {
         val days = minutes / 1440
-        if (days == 1) res.getString(R.string.calendar_reminder_day)
-        else res.getString(R.string.calendar_reminder_days, days)
+        res.getQuantityString(R.plurals.calendar_reminder_days, days, days)
     }
     minutes % 60 == 0 -> {
         val hours = minutes / 60
-        if (hours == 1) res.getString(R.string.calendar_reminder_hour)
-        else res.getString(R.string.calendar_reminder_hours, hours)
+        res.getQuantityString(R.plurals.calendar_reminder_hours, hours, hours)
     }
-    else -> res.getString(R.string.calendar_reminder_minutes, minutes)
+    else -> res.getQuantityString(R.plurals.calendar_reminder_minutes, minutes, minutes)
 }
 
 /** Compose 里的便捷重载。 */

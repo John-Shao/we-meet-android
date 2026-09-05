@@ -136,7 +136,9 @@
     <string name="room_host_remove_title">移出参会人？</string>
     <string name="room_host_remove_message">确定将 %1$s 移出会议？对方可以通过会议链接重新加入。</string>
     <string name="room_host_remove_failed">无法移出参会人，请重试</string>
-    <string name="room_lobby_banner">%1$d 人请求加入</string>
+    <plurals name="room_lobby_banner">
+        <item quantity="other">%1$d 人请求加入</item>
+    </plurals>
     <string name="room_lobby_banner_action">查看</string>
     <string name="room_lobby_title">候诊室（%1$d）</string>
     <string name="room_lobby_admit">允许</string>
@@ -566,14 +568,20 @@
     <string name="freebusy_title">日程</string>
     <string name="freebusy_group_title">日程</string>
     <string name="freebusy_all_free">所有参与者都有空</string>
-    <string name="freebusy_conflict_names">%1$d 人该时段忙碌：%2$s</string>
-    <string name="freebusy_conflict_names_more">%1$d 人该时段忙碌：%2$s 等</string>
+    <plurals name="freebusy_conflict_names">
+        <item quantity="other">%1$d 人该时段忙碌：%2$s</item>
+    </plurals>
+    <plurals name="freebusy_conflict_names_more">
+        <item quantity="other">%1$d 人该时段忙碌：%2$s 等</item>
+    </plurals>
     <string name="freebusy_suggest_title">推荐时段</string>
     <string name="freebusy_rsvp_pending">未回复</string>
     <string name="freebusy_rsvp_declined">已拒绝</string>
     <string name="calendar_untitled">(无标题)</string>
     <string name="freebusy_unavailable">日历不可见</string>
-    <string name="freebusy_unresolved_hint">另有 %1$d 位成员无法获取忙闲</string>
+    <plurals name="freebusy_unresolved_hint">
+        <item quantity="other">另有 %1$d 位成员无法获取忙闲</item>
+    </plurals>
     <string name="freebusy_create">创建日程</string>
     <string name="freebusy_load_error">忙闲加载失败</string>
     <string name="freebusy_event_details_load_error">部分日程详情加载失败</string>
@@ -646,11 +654,15 @@
     <string name="calendar_field_reminder">提醒</string>
     <string name="calendar_reminder_none">不提醒</string>
     <string name="calendar_reminder_at_time">日程开始时</string>
-    <string name="calendar_reminder_minutes">提前 %1$d 分钟</string>
-    <string name="calendar_reminder_hour">提前 1 小时</string>
-    <string name="calendar_reminder_hours">提前 %1$d 小时</string>
-    <string name="calendar_reminder_day">提前 1 天</string>
-    <string name="calendar_reminder_days">提前 %1$d 天</string>
+    <plurals name="calendar_reminder_minutes">
+        <item quantity="other">提前 %1$d 分钟</item>
+    </plurals>
+    <plurals name="calendar_reminder_hours">
+        <item quantity="other">提前 %1$d 小时</item>
+    </plurals>
+    <plurals name="calendar_reminder_days">
+        <item quantity="other">提前 %1$d 天</item>
+    </plurals>
     <string name="calendar_field_attendees">参与人</string>
     <string name="calendar_add_attendees">添加参与者</string>
     <string name="calendar_attendee_required">必选</string>
@@ -799,7 +811,9 @@
     <string name="approval_skipped">已跳过（条件不满足）</string>
     <string name="approval_countersign_and">并签</string>
     <string name="approval_countersign_or">或签</string>
-    <string name="approval_progress">%1$d/%2$d 已批</string>
+    <plurals name="approval_progress">
+        <item quantity="other">%1$d/%2$d 已批</item>
+    </plurals>
     <string name="approval_urge">催办</string>
     <string name="approval_urged">已催办，已再次提醒当前审批人。</string>
     <string name="approval_action_failed">操作失败，请重试。</string>
@@ -884,7 +898,9 @@
     <string name="meeting_room_none">未预订会议室</string>
     <string name="meeting_room_all_day_unsupported">全天日程暂不支持预订会议室</string>
     <string name="meeting_room_detail_label">会议室</string>
-    <string name="meeting_room_capacity_people">%1$d 人</string>
+    <plurals name="meeting_room_capacity_people">
+        <item quantity="other">%1$d 人</item>
+    </plurals>
     <string name="meeting_room_booking_conflict">该场次会议室未预订成功</string>
     <string name="meeting_room_conflict_inline">「%1$s」在新时段已被占用</string>
     <string name="meeting_room_conflict_error">该会议室刚被他人订走,请重新选择</string>
@@ -906,7 +922,9 @@
     <string name="meeting_room_view_timeline">查看时间轴</string>
     <string name="meeting_room_view_list">查看列表</string>
     <string name="meeting_room_timeline_hint">点击会议室所在列即可选中,时段以上方表单为准</string>
-    <string name="calendar_field_attendees_count">参与者 (已选 %1$d 人)</string>
+    <plurals name="calendar_field_attendees_count">
+        <item quantity="other">参与者 (已选 %1$d 人)</item>
+    </plurals>
     <string name="calendar_attendee_remove">移除 %1$s</string>
     <string name="freebusy_busy">忙</string>
     <string name="calendar_a11y_open_event">打开日程</string>
@@ -941,7 +959,9 @@
     <string name="calendar_settings_meeting_room_time_range">会议室时间范围</string>
     <string name="calendar_working_time">工作时间</string>
     <string name="calendar_full_day_time">全天时间</string>
-    <string name="calendar_outside_working_hours">工作时间外有 %1$d 个日程</string>
+    <plurals name="calendar_outside_working_hours">
+        <item quantity="other">工作时间外有 %1$d 个日程</item>
+    </plurals>
     <string name="meeting_rooms_title">会议室</string>
     <string name="meeting_room_filters">筛选</string>
     <string name="meeting_room_filter_location">位置</string>
@@ -949,14 +969,18 @@
     <string name="meeting_room_filter_facility_count">设施（%1$d）</string>
     <string name="meeting_room_refresh">刷新会议室</string>
     <string name="meeting_room_open_schedule">查看会议室日程</string>
-    <string name="meeting_room_availability_summary">忙闲时间轴，共 %1$d 个预订</string>
+    <plurals name="meeting_room_availability_summary">
+        <item quantity="other">忙闲时间轴，共 %1$d 个预订</item>
+    </plurals>
     <string name="meeting_room_schedule_back">返回会议室列表</string>
     <string name="meeting_room_room_info">会议室详情</string>
     <string name="meeting_room_filters_reset">重置</string>
     <string name="meeting_room_filters_done">确定</string>
     <string name="meeting_room_calendar_hint">点击空白时段进行预选；可拖动调整，再次点击即可新建日程。</string>
     <string name="meeting_room_draft_conflict">该会议室在所选时段已被预订</string>
-    <string name="meeting_room_outside_working_hours">工作时间外有 %1$d 个预订</string>
+    <plurals name="meeting_room_outside_working_hours">
+        <item quantity="other">工作时间外有 %1$d 个预订</item>
+    </plurals>
     <string name="meeting_room_scope_too_large">范围过大，请选择园区或楼栋。</string>
     <string name="meeting_room_filters_clear">清除</string>
     <string name="meeting_room_location_level">位置层级 %1$d</string>
@@ -1046,7 +1070,9 @@
     <string name="calendar_manage_more">%1$s 的更多操作</string>
     <string name="calendar_add_subscribe">订阅日历</string>
     <string name="calendar_add_new">新建日历</string>
-    <string name="calendar_view_multi_days">%1$d日</string>
+    <plurals name="calendar_view_multi_days">
+        <item quantity="other">%1$d日</item>
+    </plurals>
     <string name="calendar_change_color">修改颜色</string>
     <string name="calendar_color_title">日历颜色</string>
     <string name="calendar_unsubscribe">取消订阅</string>
@@ -1073,7 +1099,9 @@
     <string name="calendar_share_tab_qr">日历二维码</string>
     <string name="calendar_share_search_conversations">搜索会话</string>
     <string name="calendar_share_multi_select">多选</string>
-    <string name="calendar_share_selected_count">已选择 %1$d 个</string>
+    <plurals name="calendar_share_selected_count">
+        <item quantity="other">已选择 %1$d 个</item>
+    </plurals>
     <string name="calendar_share_no_conversations">没有匹配的会话</string>
     <string name="calendar_share_system">分享</string>
     <string name="calendar_share_save_image">保存图片</string>

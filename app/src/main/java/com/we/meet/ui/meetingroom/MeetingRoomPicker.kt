@@ -40,6 +40,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.ui.theme.Dimens
@@ -400,7 +401,13 @@ private fun FilterRow(
                 selected = capacityMin == step,
                 onClick = { onCapacity(if (capacityMin == step) null else step) },
                 label = {
-                    Text(stringResource(R.string.meeting_room_capacity_people, step))
+                    Text(
+                        pluralStringResource(
+                            R.plurals.meeting_room_capacity_people,
+                            step,
+                            step,
+                        ),
+                    )
                 },
             )
         }

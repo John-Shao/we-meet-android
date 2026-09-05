@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -152,7 +153,7 @@ internal fun MeetingRoomFilterBar(
         ?.let { id -> ui.nodes.firstOrNull { it.id == id }?.name }
         ?: stringResource(R.string.meeting_room_filter_location)
     val capacityLabel = ui.capacityMin?.let {
-        stringResource(R.string.meeting_room_capacity_people, it)
+        pluralStringResource(R.plurals.meeting_room_capacity_people, it, it)
     } ?: stringResource(R.string.meeting_room_filter_capacity)
     val selectedFacilities = ui.facilities.filter { it.id in ui.facilityIds }
     val facilityLabel = when {
@@ -300,7 +301,7 @@ private fun MeetingRoomOverviewItem(
                 )
                 val metadata = meetingRoomMetadata(
                     capacityLabel = room.capacity.takeIf { it > 0 }?.let {
-                        stringResource(R.string.meeting_room_capacity_people, it)
+                        pluralStringResource(R.plurals.meeting_room_capacity_people, it, it)
                     },
                     facilityNames = room.facilities.map { it.name },
                 )
@@ -352,7 +353,11 @@ private fun CompactAvailabilityStrip(
     val offWork = calendarColors.unavailableSurface
     val busy = calendarColors.busyContainer
     val nowLine = calendarColors.nowLine
-    val summary = stringResource(R.string.meeting_room_availability_summary, bounds.size)
+    val summary = pluralStringResource(
+        R.plurals.meeting_room_availability_summary,
+        bounds.size,
+        bounds.size,
+    )
     val trackShape = RoundedCornerShape(Dimens.CornerXs)
 
     Column(modifier = modifier.semantics { contentDescription = summary }) {

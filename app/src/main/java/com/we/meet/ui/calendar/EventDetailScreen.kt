@@ -59,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -710,7 +711,11 @@ private fun EventBody(
                 )
                 append(" · ")
                 append(
-                    stringResource(R.string.meeting_room_capacity_people, room.capacity),
+                    pluralStringResource(
+                        R.plurals.meeting_room_capacity_people,
+                        room.capacity,
+                        room.capacity,
+                    ),
                 )
             }
             Text(

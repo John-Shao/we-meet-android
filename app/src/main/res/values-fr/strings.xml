@@ -129,7 +129,11 @@
     <string name="room_host_remove_failed">Impossible de retirer le participant. Réessayez.</string>
     <string name="room_host_remove_title">Retirer ce participant ?</string>
     <string name="room_host_remove_message">Retirer %1$s de la réunion ? Cette personne pourra rejoindre via le lien.</string>
-    <string name="room_lobby_banner">%1$d personnes attendent de rejoindre</string>
+    <plurals name="room_lobby_banner">
+        <item quantity="one">%1$d personne attend de rejoindre</item>
+        <item quantity="many">%1$d personnes attendent de rejoindre</item>
+        <item quantity="other">%1$d personnes attendent de rejoindre</item>
+    </plurals>
     <string name="room_lobby_banner_action">Examiner</string>
     <string name="room_lobby_title">Salle d\'attente (%1$d)</string>
     <string name="room_lobby_admit">Admettre</string>
@@ -551,14 +555,26 @@
     <string name="freebusy_title">Agenda</string>
     <string name="freebusy_group_title">Agenda</string>
     <string name="freebusy_all_free">Tout le monde est disponible</string>
-    <string name="freebusy_conflict_names">%1$d occupé(s) à ce créneau : %2$s</string>
-    <string name="freebusy_conflict_names_more">%1$d occupé(s) à ce créneau : %2$s et autres</string>
+    <plurals name="freebusy_conflict_names">
+        <item quantity="one">%1$d personne est occupée à ce créneau : %2$s</item>
+        <item quantity="many">%1$d personnes sont occupées à ce créneau : %2$s</item>
+        <item quantity="other">%1$d personnes sont occupées à ce créneau : %2$s</item>
+    </plurals>
+    <plurals name="freebusy_conflict_names_more">
+        <item quantity="one">%1$d personne est occupée à ce créneau : %2$s et autres</item>
+        <item quantity="many">%1$d personnes sont occupées à ce créneau : %2$s et autres</item>
+        <item quantity="other">%1$d personnes sont occupées à ce créneau : %2$s et autres</item>
+    </plurals>
     <string name="freebusy_suggest_title">Créneaux suggérés</string>
     <string name="freebusy_rsvp_pending">Sans réponse</string>
     <string name="freebusy_rsvp_declined">Refusé</string>
     <string name="calendar_untitled">(Sans titre)</string>
     <string name="freebusy_unavailable">Calendrier non visible</string>
-    <string name="freebusy_unresolved_hint">%1$d membre(s) sans information de disponibilité</string>
+    <plurals name="freebusy_unresolved_hint">
+        <item quantity="one">%1$d membre sans information de disponibilité</item>
+        <item quantity="many">%1$d membres sans information de disponibilité</item>
+        <item quantity="other">%1$d membres sans information de disponibilité</item>
+    </plurals>
     <string name="freebusy_create">Créer un événement</string>
     <string name="freebusy_load_error">Impossible de charger les disponibilités</string>
     <string name="freebusy_event_details_load_error">Impossible de charger certains détails d’événement</string>
@@ -621,11 +637,21 @@
     <string name="calendar_field_reminder">Rappel</string>
     <string name="calendar_reminder_none">Aucun</string>
     <string name="calendar_reminder_at_time">Au début de l\'événement</string>
-    <string name="calendar_reminder_minutes">%1$d minutes avant</string>
-    <string name="calendar_reminder_hour">1 heure avant</string>
-    <string name="calendar_reminder_hours">%1$d heures avant</string>
-    <string name="calendar_reminder_day">1 jour avant</string>
-    <string name="calendar_reminder_days">%1$d jours avant</string>
+    <plurals name="calendar_reminder_minutes">
+        <item quantity="one">%1$d minute avant</item>
+        <item quantity="many">%1$d minutes avant</item>
+        <item quantity="other">%1$d minutes avant</item>
+    </plurals>
+    <plurals name="calendar_reminder_hours">
+        <item quantity="one">%1$d heure avant</item>
+        <item quantity="many">%1$d heures avant</item>
+        <item quantity="other">%1$d heures avant</item>
+    </plurals>
+    <plurals name="calendar_reminder_days">
+        <item quantity="one">%1$d jour avant</item>
+        <item quantity="many">%1$d jours avant</item>
+        <item quantity="other">%1$d jours avant</item>
+    </plurals>
     <string name="calendar_field_attendees">Participants</string>
     <string name="calendar_add_attendees">Ajouter des participants</string>
     <string name="calendar_attendee_required">Requis</string>
@@ -756,7 +782,11 @@
     <string name="approval_skipped">Ignorée (condition non remplie)</string>
     <string name="approval_countersign_and">Signature conjointe</string>
     <string name="approval_countersign_or">Un seul signe</string>
-    <string name="approval_progress">%1$d/%2$d approuvé</string>
+    <plurals name="approval_progress">
+        <item quantity="one">%1$d/%2$d approuvé</item>
+        <item quantity="many">%1$d/%2$d approuvés</item>
+        <item quantity="other">%1$d/%2$d approuvés</item>
+    </plurals>
     <string name="approval_urge">Relancer</string>
     <string name="approval_urged">Relance envoyée — l\'approbateur actuel a été rappelé.</string>
     <string name="approval_needs_assignment_hint">\"L\'approbateur n\'a pas pu être résolu automatiquement. Demandez à un admin de corriger la structure.\"</string>
@@ -806,7 +836,11 @@
     <string name="meeting_room_none">Aucune salle réservée</string>
     <string name="meeting_room_all_day_unsupported">Les événements sur la journée ne peuvent pas réserver de salle</string>
     <string name="meeting_room_detail_label">Salle de réunion</string>
-    <string name="meeting_room_capacity_people">%1$d personnes</string>
+    <plurals name="meeting_room_capacity_people">
+        <item quantity="one">%1$d personne</item>
+        <item quantity="many">%1$d personnes</item>
+        <item quantity="other">%1$d personnes</item>
+    </plurals>
     <string name="meeting_room_booking_conflict">La salle n’a pas pu être réservée pour cette occurrence</string>
     <string name="meeting_room_conflict_inline">%1$s est déjà réservée sur le nouvel horaire</string>
     <string name="meeting_room_conflict_error">Cette salle vient d’être prise. Choisissez-en une autre.</string>
@@ -828,7 +862,11 @@
     <string name="meeting_room_view_timeline">Afficher la frise</string>
     <string name="meeting_room_view_list">Afficher la liste</string>
     <string name="meeting_room_timeline_hint">Touchez la colonne d’une salle pour la choisir — l’horaire reste celui du formulaire</string>
-    <string name="calendar_field_attendees_count">Participants (%1$d sélectionnés)</string>
+    <plurals name="calendar_field_attendees_count">
+        <item quantity="one">Participants (%1$d sélectionné)</item>
+        <item quantity="many">Participants (%1$d sélectionnés)</item>
+        <item quantity="other">Participants (%1$d sélectionnés)</item>
+    </plurals>
     <string name="calendar_attendee_remove">Retirer %1$s</string>
     <string name="freebusy_busy">Occupé</string>
     <string name="calendar_a11y_open_event">Ouvrir l’événement</string>
@@ -862,7 +900,11 @@
     <string name="calendar_settings_meeting_room_time_range">Plage horaire des salles de réunion</string>
     <string name="calendar_working_time">Heures de travail</string>
     <string name="calendar_full_day_time">Journée entière</string>
-    <string name="calendar_outside_working_hours">%1$d événements hors des heures de travail</string>
+    <plurals name="calendar_outside_working_hours">
+        <item quantity="one">%1$d événement hors des heures de travail</item>
+        <item quantity="many">%1$d événements hors des heures de travail</item>
+        <item quantity="other">%1$d événements hors des heures de travail</item>
+    </plurals>
     <string name="meeting_rooms_title">Salles de réunion</string>
     <string name="meeting_room_filters">Filtres</string>
     <string name="meeting_room_filter_location">Emplacement</string>
@@ -870,14 +912,22 @@
     <string name="meeting_room_filter_facility_count">Équipements (%1$d)</string>
     <string name="meeting_room_refresh">Actualiser les salles</string>
     <string name="meeting_room_open_schedule">Ouvrir le planning de la salle</string>
-    <string name="meeting_room_availability_summary">Disponibilités avec %1$d réservations</string>
+    <plurals name="meeting_room_availability_summary">
+        <item quantity="one">Disponibilités avec %1$d réservation</item>
+        <item quantity="many">Disponibilités avec %1$d réservations</item>
+        <item quantity="other">Disponibilités avec %1$d réservations</item>
+    </plurals>
     <string name="meeting_room_schedule_back">Retour aux salles</string>
     <string name="meeting_room_room_info">Détails de la salle</string>
     <string name="meeting_room_filters_reset">Réinitialiser</string>
     <string name="meeting_room_filters_done">Terminé</string>
     <string name="meeting_room_calendar_hint">Touchez un créneau libre pour le sélectionner. Faites-le glisser, puis touchez-le à nouveau pour créer un événement.</string>
     <string name="meeting_room_draft_conflict">Cette salle est déjà réservée pour la période sélectionnée</string>
-    <string name="meeting_room_outside_working_hours">%1$d réservations hors des heures de travail</string>
+    <plurals name="meeting_room_outside_working_hours">
+        <item quantity="one">%1$d réservation hors des heures de travail</item>
+        <item quantity="many">%1$d réservations hors des heures de travail</item>
+        <item quantity="other">%1$d réservations hors des heures de travail</item>
+    </plurals>
     <string name="meeting_room_scope_too_large">Cette zone contient trop de salles. Choisissez un campus ou un bâtiment.</string>
     <string name="meeting_room_filters_clear">Effacer</string>
     <string name="meeting_room_location_level">Niveau de lieu %1$d</string>
@@ -1048,7 +1098,11 @@
     <string name="calendar_manage_more">Plus d’actions pour %1$s</string>
     <string name="calendar_add_subscribe">S’abonner à un calendrier</string>
     <string name="calendar_add_new">Créer un calendrier</string>
-    <string name="calendar_view_multi_days">%1$d jours</string>
+    <plurals name="calendar_view_multi_days">
+        <item quantity="one">%1$d jour</item>
+        <item quantity="many">%1$d jours</item>
+        <item quantity="other">%1$d jours</item>
+    </plurals>
     <string name="calendar_change_color">Changer la couleur</string>
     <string name="calendar_color_title">Couleur du calendrier</string>
     <string name="calendar_unsubscribe">Se désabonner</string>
@@ -1075,7 +1129,11 @@
     <string name="calendar_share_tab_qr">Code QR</string>
     <string name="calendar_share_search_conversations">Rechercher des conversations</string>
     <string name="calendar_share_multi_select">Sélection multiple</string>
-    <string name="calendar_share_selected_count">%1$d sélectionné(s)</string>
+    <plurals name="calendar_share_selected_count">
+        <item quantity="one">%1$d sélectionné</item>
+        <item quantity="many">%1$d sélectionnés</item>
+        <item quantity="other">%1$d sélectionnés</item>
+    </plurals>
     <string name="calendar_share_no_conversations">Aucune conversation correspondante</string>
     <string name="calendar_share_system">Partager</string>
     <string name="calendar_share_save_image">Enregistrer l’image</string>

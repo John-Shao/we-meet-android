@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -141,8 +142,9 @@ internal fun MeetingRoomTimeline(
                     )
                     Text(
                         text = if (room.capacity > 0) {
-                            stringResource(
-                                R.string.meeting_room_capacity_people,
+                            pluralStringResource(
+                                R.plurals.meeting_room_capacity_people,
+                                room.capacity,
                                 room.capacity,
                             )
                         } else {

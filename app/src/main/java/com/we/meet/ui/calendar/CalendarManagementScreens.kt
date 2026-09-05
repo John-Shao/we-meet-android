@@ -70,6 +70,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -289,7 +290,11 @@ internal fun CalendarModeStrip(
         Triple(
             CalendarDisplayMode.MULTI_DAY,
             Icons.Filled.ViewWeek,
-            stringResource(R.string.calendar_view_multi_days, THREE_DAY_VIEW_DAYS),
+            pluralStringResource(
+                R.plurals.calendar_view_multi_days,
+                THREE_DAY_VIEW_DAYS,
+                THREE_DAY_VIEW_DAYS,
+            ),
         ),
         Triple(CalendarDisplayMode.MONTH, Icons.Filled.CalendarMonth, stringResource(R.string.calendar_view_month)),
     )
@@ -538,7 +543,11 @@ fun CalendarDiscoverScreen(onBack: () -> Unit) {
                         val supportingText = when {
                             room != null -> meetingRoomMetadata(
                                 capacityLabel = room.capacity.takeIf { capacity -> capacity > 0 }?.let { capacity ->
-                                    stringResource(R.string.meeting_room_capacity_people, capacity)
+                                    pluralStringResource(
+                                        R.plurals.meeting_room_capacity_people,
+                                        capacity,
+                                        capacity,
+                                    )
                                 },
                                 facilityNames = room.facilities.map { facility -> facility.name },
                             ).takeIf(String::isNotBlank)

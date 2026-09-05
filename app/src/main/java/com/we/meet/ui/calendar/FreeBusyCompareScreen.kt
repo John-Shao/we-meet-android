@@ -48,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -701,22 +702,26 @@ fun FreeBusyCompareScreen(
                                     conflictNames.isEmpty() ->
                                         stringResource(R.string.freebusy_all_free)
 
-                                    conflictNames.size > CONFLICT_NAMES_SHOWN -> stringResource(
-                                        R.string.freebusy_conflict_names_more,
+                                    conflictNames.size > CONFLICT_NAMES_SHOWN -> pluralStringResource(
+                                        R.plurals.freebusy_conflict_names_more,
+                                        conflictNames.size,
                                         conflictNames.size,
                                         conflictNames.take(CONFLICT_NAMES_SHOWN)
                                             .joinToString("、"),
                                     )
 
-                                    else -> stringResource(
-                                        R.string.freebusy_conflict_names,
+                                    else -> pluralStringResource(
+                                        R.plurals.freebusy_conflict_names,
+                                        conflictNames.size,
                                         conflictNames.size,
                                         conflictNames.joinToString("、"),
                                     )
                                 }
                                 val hint = if (invisibleCount > 0) {
-                                    " · " + stringResource(
-                                        R.string.freebusy_unresolved_hint, invisibleCount,
+                                    " · " + pluralStringResource(
+                                        R.plurals.freebusy_unresolved_hint,
+                                        invisibleCount,
+                                        invisibleCount,
                                     )
                                 } else ""
                                 Text(

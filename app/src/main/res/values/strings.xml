@@ -136,7 +136,10 @@
     <string name="room_host_remove_title">Remove participant?</string>
     <string name="room_host_remove_message">Remove %1$s from the meeting? They can rejoin from the meeting link.</string>
     <string name="room_host_remove_failed">Couldn\'t remove the participant. Try again.</string>
-    <string name="room_lobby_banner">%1$d people are waiting to join</string>
+    <plurals name="room_lobby_banner">
+        <item quantity="one">%1$d person is waiting to join</item>
+        <item quantity="other">%1$d people are waiting to join</item>
+    </plurals>
     <string name="room_lobby_banner_action">Review</string>
     <string name="room_lobby_title">Waiting room (%1$d)</string>
     <string name="room_lobby_admit">Admit</string>
@@ -571,14 +574,23 @@
     <string name="freebusy_title">Calendar</string>
     <string name="freebusy_group_title">Calendar</string>
     <string name="freebusy_all_free">Everyone is available</string>
-    <string name="freebusy_conflict_names">%1$d busy at this time: %2$s</string>
-    <string name="freebusy_conflict_names_more">%1$d busy at this time: %2$s and others</string>
+    <plurals name="freebusy_conflict_names">
+        <item quantity="one">%1$d person is busy at this time: %2$s</item>
+        <item quantity="other">%1$d people are busy at this time: %2$s</item>
+    </plurals>
+    <plurals name="freebusy_conflict_names_more">
+        <item quantity="one">%1$d person is busy at this time: %2$s and others</item>
+        <item quantity="other">%1$d people are busy at this time: %2$s and others</item>
+    </plurals>
     <string name="freebusy_suggest_title">Suggested times</string>
     <string name="freebusy_rsvp_pending">Not replied</string>
     <string name="freebusy_rsvp_declined">Declined</string>
     <string name="calendar_untitled">(No title)</string>
     <string name="freebusy_unavailable">Calendar not visible</string>
-    <string name="freebusy_unresolved_hint">%1$d member(s) have no busy/free info</string>
+    <plurals name="freebusy_unresolved_hint">
+        <item quantity="one">%1$d member has no busy/free info</item>
+        <item quantity="other">%1$d members have no busy/free info</item>
+    </plurals>
     <string name="freebusy_create">Create event</string>
     <string name="freebusy_load_error">Failed to load busy/free</string>
     <string name="freebusy_event_details_load_error">Some event details could not be loaded</string>
@@ -651,11 +663,18 @@
     <string name="calendar_field_reminder">Reminder</string>
     <string name="calendar_reminder_none">None</string>
     <string name="calendar_reminder_at_time">At event time</string>
-    <string name="calendar_reminder_minutes">%1$d minutes before</string>
-    <string name="calendar_reminder_hour">1 hour before</string>
-    <string name="calendar_reminder_hours">%1$d hours before</string>
-    <string name="calendar_reminder_day">1 day before</string>
-    <string name="calendar_reminder_days">%1$d days before</string>
+    <plurals name="calendar_reminder_minutes">
+        <item quantity="one">%1$d minute before</item>
+        <item quantity="other">%1$d minutes before</item>
+    </plurals>
+    <plurals name="calendar_reminder_hours">
+        <item quantity="one">%1$d hour before</item>
+        <item quantity="other">%1$d hours before</item>
+    </plurals>
+    <plurals name="calendar_reminder_days">
+        <item quantity="one">%1$d day before</item>
+        <item quantity="other">%1$d days before</item>
+    </plurals>
     <string name="calendar_field_attendees">Attendees</string>
     <string name="calendar_add_attendees">Add attendees</string>
     <string name="calendar_attendee_required">Required</string>
@@ -804,7 +823,10 @@
     <string name="approval_skipped">Skipped (condition not met)</string>
     <string name="approval_countersign_and">All must sign</string>
     <string name="approval_countersign_or">Any one signs</string>
-    <string name="approval_progress">%1$d/%2$d approved</string>
+    <plurals name="approval_progress">
+        <item quantity="one">%1$d/%2$d approved</item>
+        <item quantity="other">%1$d/%2$d approved</item>
+    </plurals>
     <string name="approval_urge">Nudge</string>
     <string name="approval_urged">Nudged — the current approver has been reminded.</string>
     <string name="approval_action_failed">Action failed, please try again.</string>
@@ -889,7 +911,10 @@
     <string name="meeting_room_none">No room booked</string>
     <string name="meeting_room_all_day_unsupported">All-day events cannot book a room yet</string>
     <string name="meeting_room_detail_label">Meeting room</string>
-    <string name="meeting_room_capacity_people">%1$d people</string>
+    <plurals name="meeting_room_capacity_people">
+        <item quantity="one">%1$d person</item>
+        <item quantity="other">%1$d people</item>
+    </plurals>
     <string name="meeting_room_booking_conflict">The room could not be booked for this occurrence</string>
     <string name="meeting_room_conflict_inline">%1$s is already booked for the new time</string>
     <string name="meeting_room_conflict_error">Someone just took that room. Please pick another.</string>
@@ -911,7 +936,10 @@
     <string name="meeting_room_view_timeline">Show timeline</string>
     <string name="meeting_room_view_list">Show list</string>
     <string name="meeting_room_timeline_hint">Tap a room column to pick it — the time stays as set above</string>
-    <string name="calendar_field_attendees_count">Attendees (%1$d selected)</string>
+    <plurals name="calendar_field_attendees_count">
+        <item quantity="one">Attendees (%1$d selected)</item>
+        <item quantity="other">Attendees (%1$d selected)</item>
+    </plurals>
     <string name="calendar_attendee_remove">Remove %1$s</string>
     <string name="freebusy_busy">Busy</string>
     <string name="calendar_a11y_open_event">Open event</string>
@@ -946,7 +974,10 @@
     <string name="calendar_settings_meeting_room_time_range">Meeting room time range</string>
     <string name="calendar_working_time">Working hours</string>
     <string name="calendar_full_day_time">Full day</string>
-    <string name="calendar_outside_working_hours">%1$d events outside working hours</string>
+    <plurals name="calendar_outside_working_hours">
+        <item quantity="one">%1$d event outside working hours</item>
+        <item quantity="other">%1$d events outside working hours</item>
+    </plurals>
     <string name="meeting_rooms_title">Meeting rooms</string>
     <string name="meeting_room_filters">Filters</string>
     <string name="meeting_room_filter_location">Location</string>
@@ -954,14 +985,20 @@
     <string name="meeting_room_filter_facility_count">Facilities (%1$d)</string>
     <string name="meeting_room_refresh">Refresh meeting rooms</string>
     <string name="meeting_room_open_schedule">Open room schedule</string>
-    <string name="meeting_room_availability_summary">Availability timeline with %1$d bookings</string>
+    <plurals name="meeting_room_availability_summary">
+        <item quantity="one">Availability timeline with %1$d booking</item>
+        <item quantity="other">Availability timeline with %1$d bookings</item>
+    </plurals>
     <string name="meeting_room_schedule_back">Back to meeting rooms</string>
     <string name="meeting_room_room_info">Meeting room details</string>
     <string name="meeting_room_filters_reset">Reset</string>
     <string name="meeting_room_filters_done">Done</string>
     <string name="meeting_room_calendar_hint">Tap an empty slot to select it. Drag to adjust, then tap again to create an event.</string>
     <string name="meeting_room_draft_conflict">This room is already booked for the selected time</string>
-    <string name="meeting_room_outside_working_hours">%1$d bookings outside working hours</string>
+    <plurals name="meeting_room_outside_working_hours">
+        <item quantity="one">%1$d booking outside working hours</item>
+        <item quantity="other">%1$d bookings outside working hours</item>
+    </plurals>
     <string name="meeting_room_scope_too_large">This range contains too many rooms. Choose a campus or building.</string>
     <string name="meeting_room_filters_clear">Clear</string>
     <string name="meeting_room_location_level">Location level %1$d</string>
@@ -1051,7 +1088,10 @@
     <string name="calendar_manage_more">More actions for %1$s</string>
     <string name="calendar_add_subscribe">Subscribe to a calendar</string>
     <string name="calendar_add_new">Create a calendar</string>
-    <string name="calendar_view_multi_days">%1$d days</string>
+    <plurals name="calendar_view_multi_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
     <string name="calendar_change_color">Change color</string>
     <string name="calendar_color_title">Calendar color</string>
     <string name="calendar_unsubscribe">Unsubscribe</string>
@@ -1078,7 +1118,10 @@
     <string name="calendar_share_tab_qr">QR code</string>
     <string name="calendar_share_search_conversations">Search conversations</string>
     <string name="calendar_share_multi_select">Multi-select</string>
-    <string name="calendar_share_selected_count">%1$d selected</string>
+    <plurals name="calendar_share_selected_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
     <string name="calendar_share_no_conversations">No matching conversations</string>
     <string name="calendar_share_system">Share</string>
     <string name="calendar_share_save_image">Save image</string>

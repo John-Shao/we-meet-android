@@ -65,6 +65,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -279,7 +280,13 @@ fun CalendarTabScreen(
                     },
                     modifier = Modifier.padding(horizontal = Dimens.SpaceS),
                 ) {
-                    Text(stringResource(R.string.calendar_outside_working_hours, outsideCount))
+                    Text(
+                        pluralStringResource(
+                            R.plurals.calendar_outside_working_hours,
+                            outsideCount,
+                            outsideCount,
+                        ),
+                    )
                 }
             }
 

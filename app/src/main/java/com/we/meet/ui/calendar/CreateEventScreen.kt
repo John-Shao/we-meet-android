@@ -51,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -757,8 +758,9 @@ fun CreateEventScreen(
                         .padding(top = Dimens.SpaceM),
                 ) {
                     Text(
-                        text = stringResource(
-                            R.string.calendar_field_attendees_count,
+                        text = pluralStringResource(
+                            R.plurals.calendar_field_attendees_count,
+                            attendees.size + if (organizer != null) 1 else 0,
                             attendees.size + if (organizer != null) 1 else 0,
                         ),
                         style = MaterialTheme.typography.labelLarge,

@@ -129,7 +129,10 @@
     <string name="room_host_remove_failed">Deelnemer kon niet worden verwijderd. Probeer opnieuw.</string>
     <string name="room_host_remove_title">Deelnemer verwijderen?</string>
     <string name="room_host_remove_message">%1$s verwijderen uit de vergadering? Deze persoon kan via de link opnieuw deelnemen.</string>
-    <string name="room_lobby_banner">%1$d personen wachten om deel te nemen</string>
+    <plurals name="room_lobby_banner">
+        <item quantity="one">%1$d persoon wacht om deel te nemen</item>
+        <item quantity="other">%1$d personen wachten om deel te nemen</item>
+    </plurals>
     <string name="room_lobby_banner_action">Controleren</string>
     <string name="room_lobby_title">Wachtruimte (%1$d)</string>
     <string name="room_lobby_admit">Toelaten</string>
@@ -546,14 +549,23 @@
     <string name="freebusy_title">Agenda</string>
     <string name="freebusy_group_title">Agenda</string>
     <string name="freebusy_all_free">Iedereen is beschikbaar</string>
-    <string name="freebusy_conflict_names">%1$d bezet op dit tijdstip: %2$s</string>
-    <string name="freebusy_conflict_names_more">%1$d bezet op dit tijdstip: %2$s e.a.</string>
+    <plurals name="freebusy_conflict_names">
+        <item quantity="one">%1$d persoon is bezet op dit tijdstip: %2$s</item>
+        <item quantity="other">%1$d personen zijn bezet op dit tijdstip: %2$s</item>
+    </plurals>
+    <plurals name="freebusy_conflict_names_more">
+        <item quantity="one">%1$d persoon is bezet op dit tijdstip: %2$s e.a.</item>
+        <item quantity="other">%1$d personen zijn bezet op dit tijdstip: %2$s e.a.</item>
+    </plurals>
     <string name="freebusy_suggest_title">Voorgestelde tijden</string>
     <string name="freebusy_rsvp_pending">Niet gereageerd</string>
     <string name="freebusy_rsvp_declined">Geweigerd</string>
     <string name="calendar_untitled">(Zonder titel)</string>
     <string name="freebusy_unavailable">Agenda niet zichtbaar</string>
-    <string name="freebusy_unresolved_hint">%1$d leden hebben geen vrij/bezet-info</string>
+    <plurals name="freebusy_unresolved_hint">
+        <item quantity="one">%1$d lid heeft geen vrij/bezet-info</item>
+        <item quantity="other">%1$d leden hebben geen vrij/bezet-info</item>
+    </plurals>
     <string name="freebusy_create">Afspraak aanmaken</string>
     <string name="freebusy_load_error">Laden van vrij/bezet mislukt</string>
     <string name="freebusy_event_details_load_error">Sommige afspraakdetails konden niet worden geladen</string>
@@ -616,11 +628,18 @@
     <string name="calendar_field_reminder">Herinnering</string>
     <string name="calendar_reminder_none">Geen</string>
     <string name="calendar_reminder_at_time">Bij aanvang</string>
-    <string name="calendar_reminder_minutes">%1$d minuten van tevoren</string>
-    <string name="calendar_reminder_hour">1 uur van tevoren</string>
-    <string name="calendar_reminder_hours">%1$d uur van tevoren</string>
-    <string name="calendar_reminder_day">1 dag van tevoren</string>
-    <string name="calendar_reminder_days">%1$d dagen van tevoren</string>
+    <plurals name="calendar_reminder_minutes">
+        <item quantity="one">%1$d minuut van tevoren</item>
+        <item quantity="other">%1$d minuten van tevoren</item>
+    </plurals>
+    <plurals name="calendar_reminder_hours">
+        <item quantity="one">%1$d uur van tevoren</item>
+        <item quantity="other">%1$d uur van tevoren</item>
+    </plurals>
+    <plurals name="calendar_reminder_days">
+        <item quantity="one">%1$d dag van tevoren</item>
+        <item quantity="other">%1$d dagen van tevoren</item>
+    </plurals>
     <string name="calendar_field_attendees">Deelnemers</string>
     <string name="calendar_add_attendees">Deelnemers toevoegen</string>
     <string name="calendar_attendee_required">Verplicht</string>
@@ -751,7 +770,10 @@
     <string name="approval_skipped">Overgeslagen (voorwaarde niet vervuld)</string>
     <string name="approval_countersign_and">Gezamenlijk</string>
     <string name="approval_countersign_or">Eén volstaat</string>
-    <string name="approval_progress">%1$d/%2$d goedgekeurd</string>
+    <plurals name="approval_progress">
+        <item quantity="one">%1$d/%2$d goedgekeurd</item>
+        <item quantity="other">%1$d/%2$d goedgekeurd</item>
+    </plurals>
     <string name="approval_urge">Herinneren</string>
     <string name="approval_urged">Herinnering verstuurd — de huidige fiatteur is op de hoogte gebracht.</string>
     <string name="approval_needs_assignment_hint">De fiatteur kon niet automatisch worden bepaald. Vraag een beheerder de organisatiestructuur te corrigeren.</string>
@@ -801,7 +823,10 @@
     <string name="meeting_room_none">Geen ruimte gereserveerd</string>
     <string name="meeting_room_all_day_unsupported">Hele-dag-afspraken kunnen nog geen ruimte reserveren</string>
     <string name="meeting_room_detail_label">Vergaderruimte</string>
-    <string name="meeting_room_capacity_people">%1$d personen</string>
+    <plurals name="meeting_room_capacity_people">
+        <item quantity="one">%1$d persoon</item>
+        <item quantity="other">%1$d personen</item>
+    </plurals>
     <string name="meeting_room_booking_conflict">De ruimte kon voor deze keer niet worden gereserveerd</string>
     <string name="meeting_room_conflict_inline">%1$s is al gereserveerd op de nieuwe tijd</string>
     <string name="meeting_room_conflict_error">Die ruimte is net bezet geraakt. Kies een andere.</string>
@@ -823,7 +848,10 @@
     <string name="meeting_room_view_timeline">Tijdlijn tonen</string>
     <string name="meeting_room_view_list">Lijst tonen</string>
     <string name="meeting_room_timeline_hint">Tik op de kolom van een ruimte om die te kiezen — de tijd blijft zoals hierboven</string>
-    <string name="calendar_field_attendees_count">Deelnemers (%1$d geselecteerd)</string>
+    <plurals name="calendar_field_attendees_count">
+        <item quantity="one">Deelnemers (%1$d geselecteerd)</item>
+        <item quantity="other">Deelnemers (%1$d geselecteerd)</item>
+    </plurals>
     <string name="calendar_attendee_remove">%1$s verwijderen</string>
     <string name="freebusy_busy">Bezet</string>
     <string name="calendar_a11y_open_event">Afspraak openen</string>
@@ -857,7 +885,10 @@
     <string name="calendar_settings_meeting_room_time_range">Tijdbereik vergaderruimtes</string>
     <string name="calendar_working_time">Werktijd</string>
     <string name="calendar_full_day_time">Volledige dag</string>
-    <string name="calendar_outside_working_hours">%1$d afspraken buiten werktijd</string>
+    <plurals name="calendar_outside_working_hours">
+        <item quantity="one">%1$d afspraak buiten werktijd</item>
+        <item quantity="other">%1$d afspraken buiten werktijd</item>
+    </plurals>
     <string name="meeting_rooms_title">Vergaderruimtes</string>
     <string name="meeting_room_filters">Filters</string>
     <string name="meeting_room_filter_location">Locatie</string>
@@ -865,14 +896,20 @@
     <string name="meeting_room_filter_facility_count">Faciliteiten (%1$d)</string>
     <string name="meeting_room_refresh">Vergaderruimtes vernieuwen</string>
     <string name="meeting_room_open_schedule">Ruimteagenda openen</string>
-    <string name="meeting_room_availability_summary">Beschikbaarheid met %1$d boekingen</string>
+    <plurals name="meeting_room_availability_summary">
+        <item quantity="one">Beschikbaarheid met %1$d boeking</item>
+        <item quantity="other">Beschikbaarheid met %1$d boekingen</item>
+    </plurals>
     <string name="meeting_room_schedule_back">Terug naar vergaderruimtes</string>
     <string name="meeting_room_room_info">Ruimtedetails</string>
     <string name="meeting_room_filters_reset">Resetten</string>
     <string name="meeting_room_filters_done">Gereed</string>
     <string name="meeting_room_calendar_hint">Tik op een vrij tijdvak om het te selecteren. Sleep om aan te passen en tik opnieuw om een afspraak te maken.</string>
     <string name="meeting_room_draft_conflict">Deze ruimte is op het geselecteerde tijdstip al geboekt</string>
-    <string name="meeting_room_outside_working_hours">%1$d boekingen buiten werktijd</string>
+    <plurals name="meeting_room_outside_working_hours">
+        <item quantity="one">%1$d boeking buiten werktijd</item>
+        <item quantity="other">%1$d boekingen buiten werktijd</item>
+    </plurals>
     <string name="meeting_room_scope_too_large">Dit bereik bevat te veel ruimtes. Kies een campus of gebouw.</string>
     <string name="meeting_room_filters_clear">Wissen</string>
     <string name="meeting_room_location_level">Locatieniveau %1$d</string>
@@ -1043,7 +1080,10 @@
     <string name="calendar_manage_more">Meer acties voor %1$s</string>
     <string name="calendar_add_subscribe">Abonneren op een agenda</string>
     <string name="calendar_add_new">Agenda maken</string>
-    <string name="calendar_view_multi_days">%1$d dagen</string>
+    <plurals name="calendar_view_multi_days">
+        <item quantity="one">%1$d dag</item>
+        <item quantity="other">%1$d dagen</item>
+    </plurals>
     <string name="calendar_change_color">Kleur wijzigen</string>
     <string name="calendar_color_title">Agendakleur</string>
     <string name="calendar_unsubscribe">Afmelden</string>
@@ -1070,7 +1110,10 @@
     <string name="calendar_share_tab_qr">QR-code</string>
     <string name="calendar_share_search_conversations">Gesprekken zoeken</string>
     <string name="calendar_share_multi_select">Meerdere selecteren</string>
-    <string name="calendar_share_selected_count">%1$d geselecteerd</string>
+    <plurals name="calendar_share_selected_count">
+        <item quantity="one">%1$d geselecteerd</item>
+        <item quantity="other">%1$d geselecteerd</item>
+    </plurals>
     <string name="calendar_share_no_conversations">Geen overeenkomende gesprekken</string>
     <string name="calendar_share_system">Delen</string>
     <string name="calendar_share_save_image">Afbeelding opslaan</string>

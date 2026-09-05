@@ -72,6 +72,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -603,7 +604,13 @@ private fun MeetingRoomOverview(
                 onClick = onShowFullDay,
                 modifier = Modifier.padding(horizontal = Dimens.SpaceS),
             ) {
-                Text(stringResource(R.string.meeting_room_outside_working_hours, outsideCount))
+                Text(
+                    pluralStringResource(
+                        R.plurals.meeting_room_outside_working_hours,
+                        outsideCount,
+                        outsideCount,
+                    ),
+                )
             }
         }
         Box(modifier = Modifier.fillMaxSize()) {
@@ -1076,8 +1083,9 @@ private fun RoomFiltersSheet(
                                     onClick = { capacity = if (capacity == value) null else value },
                                     label = {
                                         Text(
-                                            stringResource(
-                                                R.string.meeting_room_capacity_people,
+                                            pluralStringResource(
+                                                R.plurals.meeting_room_capacity_people,
+                                                value,
                                                 value,
                                             ),
                                         )
@@ -1154,7 +1162,11 @@ private fun RoomInfoSheet(
             )
             if (room.capacity > 0) {
                 Text(
-                    text = stringResource(R.string.meeting_room_capacity_people, room.capacity),
+                    text = pluralStringResource(
+                        R.plurals.meeting_room_capacity_people,
+                        room.capacity,
+                        room.capacity,
+                    ),
                     modifier = Modifier.padding(top = Dimens.SpaceM),
                 )
             }

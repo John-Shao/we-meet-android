@@ -61,6 +61,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -150,7 +151,11 @@ fun CalendarOwnerShareScreen(calendarId: String, onBack: () -> Unit) {
                         text = if (selected.isEmpty()) {
                             stringResource(R.string.calendar_share_action)
                         } else {
-                            stringResource(R.string.calendar_share_selected_count, selected.size)
+                            pluralStringResource(
+                                R.plurals.calendar_share_selected_count,
+                                selected.size,
+                                selected.size,
+                            )
                         },
                         enabled = selected.isNotEmpty(),
                         onClick = {
