@@ -115,6 +115,8 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.rememberDatePickerState
@@ -1035,7 +1037,7 @@ fun TaskScreen(
     }
     taskListTarget?.let { task ->
         TaskListSelectionSheet(
-            task = task,
+            selectedTaskListId = task.listId,
             taskLists = ui.taskLists.filter(TaskListItem::canCreateTasks),
             saving = task.id in ui.mutatingIds,
             onDismiss = { taskListTarget = null },
@@ -1047,7 +1049,7 @@ fun TaskScreen(
     }
     taskGroupTarget?.let { task ->
         TaskGroupSelectionSheet(
-            task = task,
+            selectedGroupId = task.groupId,
             taskGroups = ui.taskGroups,
             saving = task.id in ui.mutatingIds,
             onDismiss = { taskGroupTarget = null },
@@ -2506,13 +2508,14 @@ private fun CreateTaskPage(
     var showSubtaskDialog by remember { mutableStateOf(false) }
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showDueDatePicker by remember { mutableStateOf(false) }
+    var showListPicker by remember { mutableStateOf(false) }
+    var showGroupPicker by remember { mutableStateOf(false) }
     val attachmentPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
     ) { uri -> attachmentUri = uri }
     val selectedList = taskLists.firstOrNull { it.id == selectedListId }
     val allTaskGroups = taskGroups
     val selectedGroup = allTaskGroups.firstOrNull { it.id == selectedGroupId }
-    val listChoices = listOf<String?>(null) + taskLists.map(TaskListItem::id)
     val assigneeLabel = selectedAssignees
         ?.joinToString { it.displayName }
         ?.takeIf(String::isNotBlank)
@@ -2532,9 +2535,17 @@ private fun CreateTaskPage(
 
     Scaffold(
         modifier = Modifier.testTag(TASK_CREATE_PAGE_TEST_TAG),
-        topBar = { TaskPageTopBar(stringResource(R.string.task_create), onClose) },
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                TaskPageTopBar(stringResource(R.string.task_create), onClose)
+            }
+        },
         bottomBar = {
-            Surface(shadowElevation = Dimens.ElevationSticky) {
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = Dimens.ElevationSticky,
+            ) {
                 Button(
                     modifier = Modifier.fillMaxWidth().navigationBarsPadding()
                         .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM)
@@ -2559,35 +2570,59 @@ private fun CreateTaskPage(
                         )
                     },
                     enabled = title.isNotBlank() && !creating,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                ) { Text(stringResource(R.string.task_create_action)) }
+                    shape = MaterialTheme.shapes.extraLarge,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                ) {
+                    if (creating) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(Dimens.IconMedium),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            strokeWidth = Dimens.ProgressStroke,
+                        )
+                    } else {
+                        Text(stringResource(R.string.task_create_action))
+                    }
+                }
             }
         },
     ) { padding ->
         LazyColumn(
             modifier = Modifier.padding(padding).fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
-            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
+            contentPadding = PaddingValues(
+                horizontal = Dimens.ScreenPadding,
+                vertical = Dimens.SpaceL,
+            ),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXl),
         ) {
             item {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    placeholder = { Text(stringResource(R.string.task_title_hint)) },
-                    textStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                    modifier = Modifier.fillMaxWidth().testTag(TASK_CREATE_TITLE_TEST_TAG),
-                    singleLine = false,
-                )
+                TaskDetailCard {
+                    TextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        placeholder = { Text(stringResource(R.string.task_title_hint)) },
+                        textStyle = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        modifier = Modifier.fillMaxWidth().testTag(TASK_CREATE_TITLE_TEST_TAG),
+                        minLines = 2,
+                        maxLines = 4,
+                        colors = taskEditorTextFieldColors(),
+                    )
+                }
             }
             item {
-                DetailSectionTitle(R.string.task_collaboration, null)
-                TaskFormCard {
+                DetailSectionTitle(R.string.task_collaboration, null, subtle = true)
+                TaskDetailCard {
                     FormValueRow(
                         Icons.Outlined.PersonOutline,
                         R.string.task_assignee,
                         assigneeLabel,
                     ) { showAssigneePicker = true }
-                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    TaskDetailDivider()
                     FormValueRow(
                         Icons.Outlined.BookmarkBorder,
                         R.string.task_followers,
@@ -2596,8 +2631,8 @@ private fun CreateTaskPage(
                 }
             }
             item {
-                DetailSectionTitle(R.string.task_plan, null)
-                TaskFormCard {
+                DetailSectionTitle(R.string.task_plan, null, subtle = true)
+                TaskDetailCard {
                     FormValueRow(
                         Icons.Outlined.CalendarMonth,
                         R.string.task_start_date,
@@ -2605,7 +2640,7 @@ private fun CreateTaskPage(
                     ) {
                         showStartDatePicker = true
                     }
-                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    TaskDetailDivider()
                     FormValueRow(
                         Icons.Outlined.CalendarMonth,
                         R.string.task_due_date,
@@ -2613,7 +2648,7 @@ private fun CreateTaskPage(
                     ) {
                         showDueDatePicker = true
                     }
-                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    TaskDetailDivider()
                     TaskReminderRow(
                         enabled = reminderEnabled,
                         reminderMinutes = reminderMinutes,
@@ -2623,14 +2658,17 @@ private fun CreateTaskPage(
                             if (enabled) reminderMinutes = minutes
                         },
                     )
-                    HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                    TaskDetailDivider()
                     FormValueRow(
                         Icons.Outlined.Flag,
                         R.string.task_priority,
                         priorityText(selectedPriority),
                     ) { showPriorityPicker = true }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                Row(
+                    modifier = Modifier.padding(horizontal = Dimens.SpaceM),
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
+                ) {
                     AssistChip(
                         onClick = {
                             startDate = today
@@ -2650,42 +2688,43 @@ private fun CreateTaskPage(
                 }
             }
             item {
-                DetailSectionTitle(R.string.task_placement, null)
-                TaskFormCard {
+                DetailSectionTitle(R.string.task_placement, null, subtle = true)
+                TaskDetailCard {
                     FormValueRow(
                         Icons.AutoMirrored.Outlined.ListAlt,
                         R.string.task_add_to_list,
                         selectedList?.name ?: stringResource(R.string.task_ungrouped),
-                    ) {
-                        val current = listChoices.indexOf(selectedListId).coerceAtLeast(0)
-                        selectedListId = listChoices[(current + 1) % listChoices.size]
-                    }
+                    ) { showListPicker = true }
                     if (allTaskGroups.isNotEmpty()) {
-                        HorizontalDivider(Modifier.padding(start = Dimens.ListLeadingIcon))
+                        TaskDetailDivider()
                         FormValueRow(
-                            Icons.Outlined.Checklist,
+                            Icons.Outlined.AccountTree,
                             R.string.task_grouping,
                             selectedGroup?.name ?: stringResource(R.string.task_ungrouped),
-                        ) {
-                            val groupChoices = listOf<String?>(null) +
-                                allTaskGroups.map(TaskGroupItem::id)
-                            val current = groupChoices.indexOf(selectedGroupId).coerceAtLeast(0)
-                            selectedGroupId = groupChoices[(current + 1) % groupChoices.size]
-                        }
+                        ) { showGroupPicker = true }
                     }
                 }
             }
             item {
-                DetailSectionTitle(R.string.task_content, null)
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    placeholder = { Text(stringResource(R.string.task_description_hint)) },
-                    leadingIcon = { Icon(Icons.Outlined.Edit, null) },
-                    modifier = Modifier.fillMaxWidth().height(Dimens.Task.DescriptionFieldHeight),
-                )
-                Spacer(Modifier.height(Dimens.SpaceM))
-                TaskFormCard {
+                DetailSectionTitle(R.string.task_content, null, subtle = true)
+                TaskDetailCard {
+                    TextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        placeholder = { Text(stringResource(R.string.task_description_hint)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.Edit,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                            .heightIn(min = Dimens.Task.DescriptionFieldHeight),
+                        minLines = 3,
+                        colors = taskEditorTextFieldColors(),
+                    )
+                    TaskDetailDivider()
                     FormValueRow(
                         Icons.Outlined.AttachFile,
                         R.string.task_add_attachment,
@@ -2694,8 +2733,8 @@ private fun CreateTaskPage(
                 }
             }
             item {
-                DetailSectionTitle(R.string.task_related, null)
-                TaskFormCard {
+                DetailSectionTitle(R.string.task_related, null, subtle = true)
+                TaskDetailCard {
                     FormValueRow(
                         Icons.Outlined.AccountTree,
                         R.string.task_add_subtask,
@@ -2731,6 +2770,30 @@ private fun CreateTaskPage(
             onConfirm = { selectedDueDate ->
                 dueDate = selectedDueDate
                 showDueDatePicker = false
+            },
+        )
+    }
+    if (showListPicker) {
+        TaskListSelectionSheet(
+            selectedTaskListId = selectedListId,
+            taskLists = taskLists,
+            saving = creating,
+            onDismiss = { showListPicker = false },
+            onSelect = { taskListId ->
+                selectedListId = taskListId
+                showListPicker = false
+            },
+        )
+    }
+    if (showGroupPicker) {
+        TaskGroupSelectionSheet(
+            selectedGroupId = selectedGroupId,
+            taskGroups = allTaskGroups,
+            saving = creating,
+            onDismiss = { showGroupPicker = false },
+            onSelect = { groupId ->
+                selectedGroupId = groupId
+                showGroupPicker = false
             },
         )
     }
@@ -3528,16 +3591,6 @@ private fun TaskPageTopBar(title: String, onBack: () -> Unit) {
 }
 
 @Composable
-private fun TaskFormCard(content: @Composable ColumnScope.() -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        content = { Column(content = content) },
-    )
-}
-
-@Composable
 private fun TaskDetailCard(content: @Composable ColumnScope.() -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -3546,6 +3599,18 @@ private fun TaskDetailCard(content: @Composable ColumnScope.() -> Unit) {
         content = { Column(content = content) },
     )
 }
+
+@Composable
+private fun taskEditorTextFieldColors() = TextFieldDefaults.colors(
+    focusedContainerColor = Color.Transparent,
+    unfocusedContainerColor = Color.Transparent,
+    disabledContainerColor = Color.Transparent,
+    errorContainerColor = Color.Transparent,
+    focusedIndicatorColor = Color.Transparent,
+    unfocusedIndicatorColor = Color.Transparent,
+    disabledIndicatorColor = Color.Transparent,
+    errorIndicatorColor = Color.Transparent,
+)
 
 @Composable
 private fun TaskDetailDivider() {
@@ -4192,7 +4257,7 @@ private fun TaskSingleDateDialog(
 
 @Composable
 private fun TaskListSelectionSheet(
-    task: TaskItem,
+    selectedTaskListId: String?,
     taskLists: List<TaskListItem>,
     saving: Boolean,
     onDismiss: () -> Unit,
@@ -4213,7 +4278,7 @@ private fun TaskListSelectionSheet(
                     TaskPlacementRow(
                         icon = Icons.Outlined.FolderOpen,
                         label = standaloneLabel,
-                        selected = task.listId == null,
+                        selected = selectedTaskListId == null,
                         saving = saving,
                         onClick = { onSelect(null) },
                     )
@@ -4222,7 +4287,7 @@ private fun TaskListSelectionSheet(
                     TaskPlacementRow(
                         icon = Icons.AutoMirrored.Outlined.ListAlt,
                         label = list.name,
-                        selected = task.listId == list.id,
+                        selected = selectedTaskListId == list.id,
                         saving = saving,
                         onClick = { onSelect(list.id) },
                     )
@@ -4234,7 +4299,7 @@ private fun TaskListSelectionSheet(
 
 @Composable
 private fun TaskGroupSelectionSheet(
-    task: TaskItem,
+    selectedGroupId: String?,
     taskGroups: List<TaskGroupItem>,
     saving: Boolean,
     onDismiss: () -> Unit,
@@ -4255,7 +4320,7 @@ private fun TaskGroupSelectionSheet(
                     TaskPlacementRow(
                         icon = Icons.Outlined.AccountTree,
                         label = ungroupedLabel,
-                        selected = task.groupId == null,
+                        selected = selectedGroupId == null,
                         saving = saving,
                         onClick = { onSelect(null) },
                     )
@@ -4264,7 +4329,7 @@ private fun TaskGroupSelectionSheet(
                     TaskPlacementRow(
                         icon = Icons.Outlined.AccountTree,
                         label = group.name,
-                        selected = task.groupId == group.id,
+                        selected = selectedGroupId == group.id,
                         saving = saving,
                         onClick = { onSelect(group.id) },
                     )
