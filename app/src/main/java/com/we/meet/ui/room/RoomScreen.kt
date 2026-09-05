@@ -6,6 +6,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.Rect
 import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.provider.Settings
@@ -114,6 +115,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -150,6 +153,7 @@ import io.livekit.android.compose.ui.ScaleType
 import io.livekit.android.compose.ui.VideoTrackView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 private val RoomToolbarIconButtonSize = Dimens.Room.ToolbarIconButton
 private val RoomToolbarIconSize = Dimens.IconMedium
@@ -241,7 +245,10 @@ fun RoomScreen(
     val activity = context as? MainActivity
     DisposableEffect(activity, state.phase) {
         activity?.setMeetingInProgress(state.phase == RoomUiState.Phase.Connected)
-        onDispose { activity?.setMeetingInProgress(false) }
+        onDispose {
+            activity?.setMeetingInProgress(false)
+            activity?.setPipSourceRect(null)
+        }
     }
 
     val isInPip = LocalIsInPipMode.current
@@ -249,6 +256,19 @@ fun RoomScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .onGloballyPositioned { coordinates ->
+                if (!isInPip) {
+                    val bounds = coordinates.boundsInWindow()
+                    activity?.setPipSourceRect(
+                        Rect(
+                            bounds.left.roundToInt(),
+                            bounds.top.roundToInt(),
+                            bounds.right.roundToInt(),
+                            bounds.bottom.roundToInt(),
+                        ),
+                    )
+                }
+            }
             .background(WeMeetTheme.extras.room.tileBackground),
     ) {
         if (isInPip && state.phase == RoomUiState.Phase.Connected) {

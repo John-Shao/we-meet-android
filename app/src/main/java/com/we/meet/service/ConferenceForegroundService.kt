@@ -40,10 +40,15 @@ class ConferenceForegroundService : Service() {
             // Declare each type we actually use. The OS verifies against the
             // manifest's foregroundServiceType AND the runtime
             // FOREGROUND_SERVICE_* permissions.
-            val types =
+            val types = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            } else {
+                // Camera and microphone service types were added in API 30;
+                // API 29 can only declare the media-playback portion here.
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            }
             startForeground(NOTIFICATION_ID, notification, types)
         } else {
             startForeground(NOTIFICATION_ID, notification)

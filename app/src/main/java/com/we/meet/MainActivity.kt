@@ -3,6 +3,7 @@ package com.we.meet
 import android.app.PictureInPictureParams
 import android.content.Intent
 import android.content.res.Configuration
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -68,6 +69,13 @@ class MainActivity : AppCompatActivity() {
      * their home screen or inside another app anyway.
      */
     private var screenSharing: Boolean = false
+
+    /**
+     * Window-space bounds of the meeting stage. Android uses this as the
+     * visual origin for the PiP transition instead of shrinking the whole
+     * Activity from an arbitrary point on screen.
+     */
+    private var pipSourceRect: Rect? = null
 
     private val pipModeState = mutableStateOf(false)
 
@@ -186,12 +194,19 @@ class MainActivity : AppCompatActivity() {
         applyPipParams()
     }
 
+    /** Updated by RoomScreen whenever the laid-out meeting stage moves. */
+    fun setPipSourceRect(bounds: Rect?) {
+        if (pipSourceRect == bounds) return
+        pipSourceRect = bounds?.let(::Rect)
+        applyPipParams()
+    }
+
     /**
      * Single place that decides whether auto-enter-PiP is on. Auto-enter
      * only makes sense when we're in a meeting AND not screen-sharing.
      */
     private fun applyPipParams() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val autoEnter = inMeeting && !screenSharing
         runCatching { setPictureInPictureParams(buildPipParams(autoEnter)) }
             .onFailure { Log.w(TAG, "setPictureInPictureParams failed", it) }
@@ -228,6 +243,10 @@ class MainActivity : AppCompatActivity() {
     private fun buildPipParams(autoEnter: Boolean): PictureInPictureParams {
         val builder = PictureInPictureParams.Builder()
             .setAspectRatio(Rational(3, 4))
+        val sourceRect = pipSourceRect
+        if (sourceRect != null && !sourceRect.isEmpty) {
+            builder.setSourceRectHint(sourceRect)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             builder.setAutoEnterEnabled(autoEnter)
         }
