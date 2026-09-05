@@ -94,6 +94,10 @@ fun ProfileScreen(
 
     var showNicknameDialog by remember { mutableStateOf(false) }
     var showIntroDialog by remember { mutableStateOf(false) }
+    var nicknameSaving by remember { mutableStateOf(false) }
+    var introSaving by remember { mutableStateOf(false) }
+    var nicknameDialogError by remember { mutableStateOf<String?>(null) }
+    var introDialogError by remember { mutableStateOf<String?>(null) }
     var uploadingKind by remember { mutableStateOf<ProfileRepository.Kind?>(null) }
     var cropRequest by remember { mutableStateOf<CropRequest?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -221,13 +225,19 @@ fun ProfileScreen(
             SettingsRow(
                 label = stringResource(R.string.profile_nickname),
                 value = nickname.ifBlank { stringResource(R.string.profile_not_set) },
-                onClick = { showNicknameDialog = true },
+                onClick = {
+                    nicknameDialogError = null
+                    showNicknameDialog = true
+                },
             )
             HorizontalDivider(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding))
             SettingsRow(
                 label = stringResource(R.string.profile_intro),
                 value = intro.ifBlank { stringResource(R.string.profile_not_set) },
-                onClick = { showIntroDialog = true },
+                onClick = {
+                    introDialogError = null
+                    showIntroDialog = true
+                },
             )
             // Phone moved to Settings → 账号与安全 alongside the deregister flow.
         }
@@ -295,42 +305,54 @@ fun ProfileScreen(
     }
 
     if (showNicknameDialog) {
-        val previousNickname = nickname
         NicknameDialog(
             currentNickname = nickname,
+            saving = nicknameSaving,
+            errorMessage = nicknameDialogError,
             onConfirm = { newName ->
-                // Optimistic update so the dialog can close immediately; on
-                // failure we revert and surface the error in the same banner
-                // intro-save uses.
-                nickname = newName
-                showNicknameDialog = false
+                if (nicknameSaving) return@NicknameDialog
+                nicknameSaving = true
+                nicknameDialogError = null
                 scope.launch {
                     profileRepo.updateNickname(newName)
                         .onSuccess { user ->
-                            user.full_name?.takeIf { it.isNotBlank() }?.let { nickname = it }
+                            nickname = user.full_name?.takeIf { it.isNotBlank() } ?: newName
+                            nicknameSaving = false
+                            showNicknameDialog = false
                         }
                         .onFailure {
-                            nickname = previousNickname
-                            errorMessage = nicknameError
+                            nicknameSaving = false
+                            nicknameDialogError = nicknameError
                         }
                 }
             },
-            onDismiss = { showNicknameDialog = false },
+            onDismiss = { if (!nicknameSaving) showNicknameDialog = false },
         )
     }
 
     if (showIntroDialog) {
         IntroDialog(
             currentIntro = intro,
+            saving = introSaving,
+            errorMessage = introDialogError,
             onConfirm = { newIntro ->
-                showIntroDialog = false
+                if (introSaving) return@IntroDialog
+                introSaving = true
+                introDialogError = null
                 scope.launch {
                     profileRepo.updateIntro(newIntro)
-                        .onSuccess { user -> intro = user.intro }
-                        .onFailure { errorMessage = introError }
+                        .onSuccess { user ->
+                            intro = user.intro
+                            introSaving = false
+                            showIntroDialog = false
+                        }
+                        .onFailure {
+                            introSaving = false
+                            introDialogError = introError
+                        }
                 }
             },
-            onDismiss = { showIntroDialog = false },
+            onDismiss = { if (!introSaving) showIntroDialog = false },
         )
     }
 
@@ -484,6 +506,8 @@ private fun SettingsRow(
 @Composable
 private fun NicknameDialog(
     currentNickname: String,
+    saving: Boolean,
+    errorMessage: String?,
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -492,25 +516,40 @@ private fun NicknameDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.profile_set_nickname)) },
-        text = {
+        text = { Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
             OutlinedTextField(
                 value = input,
                 onValueChange = { input = it.take(20) },
                 singleLine = true,
                 placeholder = { Text(stringResource(R.string.profile_nickname_hint)) },
                 modifier = Modifier.fillMaxWidth(),
+                enabled = !saving,
             )
-        },
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        } },
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(input.trim()) },
-                enabled = input.isNotBlank(),
+                enabled = input.isNotBlank() && !saving,
             ) {
-                Text(stringResource(R.string.ok))
+                if (saving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(Dimens.IconSmall),
+                        strokeWidth = Dimens.BorderEmphasis,
+                    )
+                } else {
+                    Text(stringResource(R.string.ok))
+                }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !saving) {
                 Text(stringResource(R.string.cancel))
             }
         },
@@ -520,6 +559,8 @@ private fun NicknameDialog(
 @Composable
 private fun IntroDialog(
     currentIntro: String,
+    saving: Boolean,
+    errorMessage: String?,
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -540,6 +581,7 @@ private fun IntroDialog(
                     minLines = 3,
                     maxLines = 5,
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = !saving,
                 )
                 Text(
                     text = stringResource(
@@ -550,15 +592,30 @@ private fun IntroDialog(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (errorMessage != null) {
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(input) }) {
-                Text(stringResource(R.string.ok))
+            TextButton(onClick = { onConfirm(input) }, enabled = !saving) {
+                if (saving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(Dimens.IconSmall),
+                        strokeWidth = Dimens.BorderEmphasis,
+                    )
+                } else {
+                    Text(stringResource(R.string.ok))
+                }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !saving) {
                 Text(stringResource(R.string.cancel))
             }
         },
