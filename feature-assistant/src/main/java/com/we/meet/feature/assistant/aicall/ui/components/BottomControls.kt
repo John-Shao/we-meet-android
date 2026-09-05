@@ -25,7 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.we.meet.feature.assistant.aicall.model.AiCallMode
 import com.we.meet.feature.assistant.aicall.model.AiCallStatus
@@ -136,7 +135,7 @@ private fun CallButton(isActive: Boolean, onClick: () -> Unit) {
             contentDescription = stringResource(
                 if (isActive) R.string.assistant_cd_hang_up else R.string.assistant_cd_start_call,
             ),
-            tint = Color.White,
+            tint = palette.onCallAction,
         )
     }
 }

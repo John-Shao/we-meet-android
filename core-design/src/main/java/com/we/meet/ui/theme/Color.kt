@@ -385,6 +385,7 @@ val DarkAiCallOnControlSelected = Color(0xFF111418)
 /** 说话动效球:外层辉光两色 + 球体本身的扫描渐变(五档首尾同色,才能接成环)。 */
 val AiCallSphereGlowOuter = Color(0xFF4DA8FF)
 val AiCallSphereGlowInner = Color(0xFF1968F0)
+val AiCallVideoScrim = Color(0x66000000)
 val AiCallSphereGradient = listOf(
     Color(0xFF7BC1FF),
     Color(0xFF3D90FF),

@@ -15,7 +15,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
@@ -58,7 +57,7 @@ fun AnimatedSphere(
                 colors = listOf(
                     colors.sphereGlowOuter.copy(alpha = 0.30f + level * 0.30f),
                     colors.sphereGlowInner.copy(alpha = 0.12f),
-                    Color.Transparent,
+                    colors.sphereGlowInner.copy(alpha = 0f),
                 ),
                 radius = r * 1.3f * growth,
             ),
@@ -78,7 +77,10 @@ fun AnimatedSphere(
         // specular highlight
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(Color.White.copy(alpha = 0.35f), Color.Transparent),
+                colors = listOf(
+                    colors.sphereHighlight.copy(alpha = 0.35f),
+                    colors.sphereHighlight.copy(alpha = 0f),
+                ),
                 center = Offset(r * 0.7f, r * 0.65f),
                 radius = r * 0.5f,
             ),

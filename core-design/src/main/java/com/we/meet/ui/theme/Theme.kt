@@ -283,8 +283,16 @@ data class AiCallColors(
     val hangUp: Color,
     /** 发起通话按钮底色。 */
     val startCall: Color,
+    /** Icons and labels rendered over the camera feed. */
+    val onVideo: Color,
+    /** Supporting container rendered over the camera feed. */
+    val videoScrim: Color,
+    /** Foreground for the solid accept and hang-up buttons. */
+    val onCallAction: Color,
     val sphereGlowOuter: Color,
     val sphereGlowInner: Color,
+    /** Specular highlight drawn over the animated sphere. */
+    val sphereHighlight: Color,
     /** 球体扫描渐变,首尾同色才能接成环。 */
     val sphereGradient: List<Color>,
 )
@@ -310,8 +318,12 @@ private fun aiCallColors(control: AiCallControlColors) = AiCallColors(
     // 与 SharedImColors 同源 —— 通话红绿只此一套。
     hangUp = ImCallHangUp,
     startCall = ImCallAccept,
+    onVideo = OnMediaOverlay,
+    videoScrim = AiCallVideoScrim,
+    onCallAction = OnMediaOverlay,
     sphereGlowOuter = AiCallSphereGlowOuter,
     sphereGlowInner = AiCallSphereGlowInner,
+    sphereHighlight = OnMediaOverlay,
     sphereGradient = AiCallSphereGradient,
 )
 

@@ -2,6 +2,7 @@ package com.we.meet.feature.assistant.aicall.ui
 
 import androidx.annotation.StringRes
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.feature.assistant.R
 import androidx.compose.ui.res.stringResource
 import android.Manifest
@@ -42,7 +43,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -255,7 +255,7 @@ fun AssistantCallScreen(
                 Text(
                     text = stringResource(R.string.assistant_ai_generated),
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (isVideoActive) Color.White.copy(alpha = 0.7f)
+                    color = if (isVideoActive) WeMeetTheme.extras.aiCall.onVideo.copy(alpha = 0.7f)
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -293,7 +293,8 @@ private fun TopBar(
     // tintOnDark = true only when video fills the background (so the bar
     // sits on the camera feed). Otherwise the bar sits on the theme
     // background and should follow it (dark surface → light text).
-    val tint = if (tintOnDark) Color.White else MaterialTheme.colorScheme.onBackground
+    val tint = if (tintOnDark) WeMeetTheme.extras.aiCall.onVideo
+        else MaterialTheme.colorScheme.onBackground
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -356,9 +357,10 @@ private fun StatusHint(
         is AiCallStatus.Ended -> stringResource(R.string.assistant_call_ended) to false
         is AiCallStatus.Failed -> status.message to false
     }
-    val background = if (onDark) Color.Black.copy(alpha = 0.4f)
+    val background = if (onDark) WeMeetTheme.extras.aiCall.videoScrim
         else MaterialTheme.colorScheme.surfaceVariant
-    val textColor = if (onDark) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    val textColor = if (onDark) WeMeetTheme.extras.aiCall.onVideo
+        else MaterialTheme.colorScheme.onSurfaceVariant
 
     Box(
         modifier = Modifier
