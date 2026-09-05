@@ -131,15 +131,12 @@
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
 
-        <!-- ZXing's CaptureActivity ships locked to sensorLandscape. Our app
-             is portrait-only, so we subclass it as PortraitCaptureActivity and
-             re-declare it here with sensorPortrait. The library's manifest
-             entry is for the base CaptureActivity and is unaffected. -->
+        <!-- ZXing's base CaptureActivity is orientation-locked. Keep our
+             subclass unlocked so QR scanning also works naturally on tablets,
+             foldables and when the phone is already in landscape. -->
         <activity
             android:name=".ui.qrscan.PortraitCaptureActivity"
-            android:screenOrientation="sensorPortrait"
-            android:stateNotNeeded="true"
-            tools:ignore="LockedOrientationActivity" />
+            android:stateNotNeeded="true" />
 
         <!-- AutoStoreLocales: lets AppCompatDelegate.setApplicationLocales
              persist + apply per-app language on API 24-32 (API 33+ is

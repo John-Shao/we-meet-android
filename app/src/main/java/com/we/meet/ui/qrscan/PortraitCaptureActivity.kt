@@ -13,19 +13,18 @@ import com.journeyapps.barcodescanner.CaptureActivity
 import com.we.meet.R
 
 /**
- * ZXing's [CaptureActivity] subclassed for two reasons:
+ * ZXing's [CaptureActivity] subclassed to provide our scanner chrome:
  *
- *  1. **Portrait lock.** The library ships its CaptureActivity locked to
- *     `sensorLandscape`; we re-declare this subclass with `sensorPortrait`
- *     in the manifest so the scanner doesn't rotate the device.
- *
- *  2. **Close button overlay.** The default scanner UI has no on-screen
+ *  **Close button overlay.** The default scanner UI has no on-screen
  *     close affordance — users on gesture-nav phones (or those who just
  *     don't think to swipe back) have no obvious way out. We overlay a
  *     small circular X button in the top-left after super.onCreate
  *     finishes inflating the scanner layout. Tapping it `finish()`es the
  *     Activity, which mirrors a system back press: ZXing returns null
  *     contents and our `QrScanScreen` routes back to Home as Cancelled.
+ *
+ * Orientation is deliberately left unlocked. Despite the legacy class name,
+ * the scanner follows phones, tablets and foldables in either orientation.
  */
 class PortraitCaptureActivity : CaptureActivity() {
 
