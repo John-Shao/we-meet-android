@@ -24,8 +24,10 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
@@ -144,6 +146,7 @@ internal fun MeetingRoomFilterBar(
     ui: MeetingRoomsCalendarUiState,
     onOpenFilter: (RoomFilterSection) -> Unit,
     onRefresh: () -> Unit,
+    onRetryFilters: () -> Unit,
 ) {
     val locationLabel = ui.nodeId
         ?.let { id -> ui.nodes.firstOrNull { it.id == id }?.name }
@@ -161,46 +164,70 @@ internal fun MeetingRoomFilterBar(
         else -> selectedFacilities.joinToString(" · ") { it.name }
     }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        LazyRow(
-            modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(start = Dimens.SpaceM, end = Dimens.SpaceXs),
-            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            item {
-                FilterChip(
-                    selected = ui.nodeId != null,
-                    onClick = { onOpenFilter(RoomFilterSection.LOCATION) },
-                    label = { Text(locationLabel, maxLines = 1) },
-                )
+            LazyRow(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(start = Dimens.SpaceM, end = Dimens.SpaceXs),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                item {
+                    FilterChip(
+                        selected = ui.nodeId != null,
+                        onClick = { onOpenFilter(RoomFilterSection.LOCATION) },
+                        enabled = !ui.filtersLoading && !ui.filtersError,
+                        label = { Text(locationLabel, maxLines = 1) },
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = ui.facilityIds.isNotEmpty(),
+                        onClick = { onOpenFilter(RoomFilterSection.FACILITIES) },
+                        enabled = !ui.filtersLoading && !ui.filtersError,
+                        label = { Text(facilityLabel, maxLines = 1) },
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = ui.capacityMin != null,
+                        onClick = { onOpenFilter(RoomFilterSection.CAPACITY) },
+                        label = { Text(capacityLabel, maxLines = 1) },
+                    )
+                }
             }
-            item {
-                FilterChip(
-                    selected = ui.facilityIds.isNotEmpty(),
-                    onClick = { onOpenFilter(RoomFilterSection.FACILITIES) },
-                    label = { Text(facilityLabel, maxLines = 1) },
-                )
-            }
-            item {
-                FilterChip(
-                    selected = ui.capacityMin != null,
-                    onClick = { onOpenFilter(RoomFilterSection.CAPACITY) },
-                    label = { Text(capacityLabel, maxLines = 1) },
+            IconButton(
+                onClick = onRefresh,
+                modifier = Modifier.padding(end = Dimens.SpaceXs),
+            ) {
+                Icon(
+                    Icons.Filled.Refresh,
+                    contentDescription = stringResource(R.string.meeting_room_refresh),
                 )
             }
         }
-        IconButton(
-            onClick = onRefresh,
-            modifier = Modifier.padding(end = Dimens.SpaceXs),
-        ) {
-            Icon(
-                Icons.Filled.Refresh,
-                contentDescription = stringResource(R.string.meeting_room_refresh),
-            )
+        if (ui.filtersLoading) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        } else if (ui.filtersError) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.SpaceM),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.meeting_room_load_error),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = onRetryFilters) {
+                    Text(stringResource(R.string.meeting_room_retry))
+                }
+            }
         }
     }
 }

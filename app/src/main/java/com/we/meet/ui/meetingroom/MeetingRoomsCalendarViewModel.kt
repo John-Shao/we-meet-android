@@ -35,6 +35,8 @@ data class MeetingRoomsCalendarUiState(
     val facilities: List<MeetingRoomFacilityDto> = emptyList(),
     val rooms: List<MeetingRoomTimelineEntryDto> = emptyList(),
     val roomsByDate: Map<LocalDate, List<MeetingRoomTimelineEntryDto>> = emptyMap(),
+    val filtersLoading: Boolean = true,
+    val filtersError: Boolean = false,
     val loading: Boolean = true,
     val error: Boolean = false,
     val tooManyRooms: Boolean = false,
@@ -89,13 +91,29 @@ class MeetingRoomsCalendarViewModel(
     )
 
     init {
-        viewModelScope.launch {
-            val nodes = runCatching { api.listNodes() }.getOrDefault(emptyList())
-            val facilities = runCatching { api.listFacilities() }.getOrDefault(emptyList())
-            _ui.update { it.copy(nodes = nodes, facilities = facilities) }
-        }
+        refreshFilters()
         viewModelScope.launch {
             requests.collectLatest(::loadTimeline)
+        }
+    }
+
+    fun refreshFilters() {
+        viewModelScope.launch {
+            _ui.update { it.copy(filtersLoading = true, filtersError = false) }
+            val nodes = runCatching { api.listNodes() }
+            val facilities = runCatching { api.listFacilities() }
+            if (nodes.isSuccess && facilities.isSuccess) {
+                _ui.update {
+                    it.copy(
+                        nodes = nodes.getOrThrow(),
+                        facilities = facilities.getOrThrow(),
+                        filtersLoading = false,
+                        filtersError = false,
+                    )
+                }
+            } else {
+                _ui.update { it.copy(filtersLoading = false, filtersError = true) }
+            }
         }
     }
 

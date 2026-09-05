@@ -341,6 +341,7 @@ fun MeetingRoomsCalendarScreen(
                 onSelectDate = selectDate,
                 onOpenFilter = { filterSection = it },
                 onRefresh = vm::refresh,
+                onRetryFilters = vm::refreshFilters,
                 onShowFullDay = {
                     app.settingsStore.setMeetingRoomTimeRangeMode(TimeRangeMode.FULL)
                 },
@@ -507,6 +508,7 @@ private fun MeetingRoomOverview(
     onSelectDate: (LocalDate) -> Unit,
     onOpenFilter: (RoomFilterSection) -> Unit,
     onRefresh: () -> Unit,
+    onRetryFilters: () -> Unit,
     onShowFullDay: () -> Unit,
     onOpenRoom: (String) -> Unit,
 ) {
@@ -545,6 +547,7 @@ private fun MeetingRoomOverview(
             ui = ui,
             onOpenFilter = onOpenFilter,
             onRefresh = onRefresh,
+            onRetryFilters = onRetryFilters,
         )
         if (outsideCount > 0) {
             TextButton(
