@@ -815,6 +815,7 @@
     <string name="settings_quiet_end">结束时间</string>
     <string name="settings_quiet_hint">静默期间不推送消息通知，来电不受影响（按账号时区 %1$s）</string>
     <string name="settings_quiet_save_failed">设置保存失败</string>
+    <string name="settings_quiet_load_failed">无法加载通知设置</string>
 
     <!-- P2-M3 重复日程创建 -->
     <string name="calendar_field_repeat">重复</string>

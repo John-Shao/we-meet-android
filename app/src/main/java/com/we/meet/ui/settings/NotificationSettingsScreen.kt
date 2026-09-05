@@ -11,12 +11,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -35,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.PushPreferencesUpdate
@@ -67,12 +70,17 @@ fun NotificationSettingsScreen(
     val scope = rememberCoroutineScope()
 
     var loaded by remember { mutableStateOf(false) }
+    var loadFailed by remember { mutableStateOf(false) }
+    var reloadKey by remember { mutableStateOf(0) }
+    var saving by remember { mutableStateOf(false) }
     var enabled by remember { mutableStateOf(false) }
     var start by remember { mutableStateOf("22:00") }
     var end by remember { mutableStateOf("08:00") }
     var tz by remember { mutableStateOf("") }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(reloadKey) {
+        loaded = false
+        loadFailed = false
         runCatching { app.apiClient.pushApi.getPreferences() }
             .onSuccess { p ->
                 enabled = p.quiet_enabled
@@ -85,14 +93,19 @@ fun NotificationSettingsScreen(
                 app.profileRepository.syncDeviceTimezone(p.timezone.orEmpty())
                     .onSuccess { reported -> if (reported != null) tz = reported }
             }
-        loaded = true
+            .onSuccess { loaded = true }
+            .onFailure { loadFailed = true }
     }
 
     /** 局部更新:未传的字段服务端不动(PushPreferencesUpdate 字段全可空)。 */
     fun save(update: PushPreferencesUpdate, rollback: () -> Unit) {
+        if (saving) return
+        saving = true
         scope.launch {
             runCatching { app.apiClient.pushApi.updatePreferences(update) }
+                .onSuccess { saving = false }
                 .onFailure {
+                    saving = false
                     rollback()  // 别让开关停在一个没落库的状态
                     Toast.makeText(
                         context, R.string.settings_quiet_save_failed, Toast.LENGTH_SHORT,
@@ -131,7 +144,25 @@ fun NotificationSettingsScreen(
         ) {
             Spacer(Modifier.height(Dimens.SpaceS))
             SettingsCard {
-                Column {
+                when {
+                    loadFailed -> WeMeetInlineErrorState(
+                        onRetry = { reloadKey += 1 },
+                        message = stringResource(R.string.settings_quiet_load_failed),
+                    )
+
+                    !loaded -> Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(Dimens.ScreenPadding),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(Dimens.IconMedium),
+                            strokeWidth = Dimens.BorderEmphasis,
+                        )
+                    }
+
+                    else -> Column {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -145,7 +176,7 @@ fun NotificationSettingsScreen(
                         Spacer(Modifier.weight(1f))
                         Switch(
                             checked = enabled,
-                            enabled = loaded,
+                            enabled = !saving,
                             onCheckedChange = { next ->
                                 val previous = enabled
                                 enabled = next
@@ -163,6 +194,7 @@ fun NotificationSettingsScreen(
                         QuietTimeRow(
                             label = stringResource(R.string.settings_quiet_start),
                             value = start,
+                            enabled = !saving,
                             onClick = {
                                 pickTime(start) { picked ->
                                     val previous = start
@@ -176,6 +208,7 @@ fun NotificationSettingsScreen(
                         QuietTimeRow(
                             label = stringResource(R.string.settings_quiet_end),
                             value = end,
+                            enabled = !saving,
                             onClick = {
                                 pickTime(end) { picked ->
                                     val previous = end
@@ -190,14 +223,17 @@ fun NotificationSettingsScreen(
                     }
                 }
             }
+            }
 
-            Spacer(Modifier.height(Dimens.SpaceS))
-            Text(
-                text = stringResource(R.string.settings_quiet_hint, tz.ifBlank { "-" }),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = Dimens.SpaceXl),
-            )
+            if (loaded) {
+                Spacer(Modifier.height(Dimens.SpaceS))
+                Text(
+                    text = stringResource(R.string.settings_quiet_hint, tz.ifBlank { "-" }),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = Dimens.SpaceXl),
+                )
+            }
 
             Spacer(Modifier.height(Dimens.SpaceXl))
             // 「消息特别提醒」名单入口:逐个人的开关在各自详情页上,这里是回顾/
@@ -249,11 +285,16 @@ private fun SettingsCard(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun QuietTimeRow(label: String, value: String, onClick: () -> Unit) {
+private fun QuietTimeRow(
+    label: String,
+    value: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -262,7 +303,11 @@ private fun QuietTimeRow(label: String, value: String, onClick: () -> Unit) {
         Text(
             text = value,
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (enabled) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+            },
         )
     }
 }
