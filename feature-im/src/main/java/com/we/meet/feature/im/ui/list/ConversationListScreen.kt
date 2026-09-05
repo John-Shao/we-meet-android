@@ -178,7 +178,12 @@ fun ConversationListScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = Dimens.SpaceM, end = Dimens.SpaceXs, top = Dimens.SpaceS, bottom = Dimens.SpaceXs),
+                    .padding(
+                        start = Dimens.SpaceM,
+                        end = Dimens.SpaceXs,
+                        top = Dimens.SpaceS,
+                        bottom = Dimens.SpaceS,
+                    ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 MemberAvatar(
@@ -245,6 +250,12 @@ fun ConversationListScreen(
                 }
             }
         }
+        // Keep the app-level title bar visually separate from the first list
+        // item (notably the injected calendar reminder entry).
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.outlineVariant,
+            thickness = Dimens.DividerThin,
+        )
 
         // 「重试」不在连接中立刻出现:每次回前台 SDK 都会走 RECONNECTING → CONNECTING,
         // 秒级完成,按钮闪现又消失只会让状态条抖动。但退避循环会一直停在 RECONNECTING、
