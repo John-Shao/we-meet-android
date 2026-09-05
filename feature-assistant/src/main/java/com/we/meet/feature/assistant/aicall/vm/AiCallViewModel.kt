@@ -162,11 +162,24 @@ class AiCallViewModel(
     }
 
     fun toggleMic() {
+        if (_state.value.micPending) return
         val room = liveKitRoom ?: return
         val nextMuted = !_state.value.isMicMuted
-        _state.update { it.copy(isMicMuted = nextMuted) }
+        _state.update { it.copy(isMicMuted = nextMuted, micPending = true) }
         viewModelScope.launch {
-            runCatching { room.localParticipant.setMicrophoneEnabled(!nextMuted) }
+            runCatching {
+                check(room.localParticipant.setMicrophoneEnabled(!nextMuted)) {
+                    "LiveKit rejected the microphone update"
+                }
+            }.onFailure {
+                _state.update {
+                    it.copy(
+                        isMicMuted = !nextMuted,
+                        errorToastRes = R.string.assistant_mic_action_failed,
+                    )
+                }
+            }
+            _state.update { it.copy(micPending = false) }
         }
     }
 
@@ -174,10 +187,17 @@ class AiCallViewModel(
     fun flipCamera() {
         if (_state.value.status !is AiCallStatus.Active) return
         if (_state.value.mode != AiCallMode.Video) return
-        val track = localVideoTrack as? LocalVideoTrack ?: return
+        val track = localVideoTrack as? LocalVideoTrack
+        if (track == null) {
+            _state.update { it.copy(errorToastRes = R.string.assistant_camera_switch_failed) }
+            return
+        }
         val next = if (_state.value.cameraFront) CameraPosition.BACK else CameraPosition.FRONT
         runCatching { track.switchCamera(position = next) }
-        _state.update { it.copy(cameraFront = !it.cameraFront) }
+            .onSuccess { _state.update { it.copy(cameraFront = !it.cameraFront) } }
+            .onFailure {
+                _state.update { it.copy(errorToastRes = R.string.assistant_camera_switch_failed) }
+            }
     }
 
     fun onTapToInterrupt() {

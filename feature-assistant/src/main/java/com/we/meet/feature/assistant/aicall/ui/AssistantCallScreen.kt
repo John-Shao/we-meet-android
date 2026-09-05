@@ -238,6 +238,7 @@ fun AssistantCallScreen(
                     status = state.status,
                     mode = state.mode,
                     isMicMuted = state.isMicMuted,
+                    micPending = state.micPending,
                     onToggleMic = vm::toggleMic,
                     onPrimaryAction = {
                         when (state.status) {

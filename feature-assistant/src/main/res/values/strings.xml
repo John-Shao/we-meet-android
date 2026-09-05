@@ -24,6 +24,8 @@
     <string name="assistant_call_ended">Call ended</string>
     <string name="assistant_disconnected_ended">Disconnected — the call has ended</string>
     <string name="assistant_config_loading">AI settings are still loading. Please try again shortly.</string>
+    <string name="assistant_mic_action_failed">Couldn\'t update the microphone. Try again.</string>
+    <string name="assistant_camera_switch_failed">Couldn\'t switch cameras. Try again.</string>
 
     <!-- 连接进度 -->
     <string name="assistant_step_creating_room">Creating room</string>

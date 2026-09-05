@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Icon
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +35,7 @@ fun BottomControls(
     status: AiCallStatus,
     mode: AiCallMode,
     isMicMuted: Boolean,
+    micPending: Boolean,
     onToggleMic: () -> Unit,
     onPrimaryAction: () -> Unit,
     onToggleVideoMode: () -> Unit,
@@ -62,7 +64,8 @@ fun BottomControls(
         // Left — mic mute: always visible, enabled only during Active call.
         MicButton(
             controls = controls,
-            enabled = isActive,
+            enabled = isActive && !micPending,
+            loading = micPending,
             muted = isMicMuted,
             onClick = onToggleMic,
         )
@@ -87,6 +90,7 @@ fun BottomControls(
 private fun MicButton(
     controls: AiCallControlColors,
     enabled: Boolean,
+    loading: Boolean,
     muted: Boolean,
     onClick: () -> Unit,
 ) {
@@ -107,13 +111,21 @@ private fun MicButton(
             .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            imageVector = if (muted) Icons.Filled.MicOff else Icons.Filled.Mic,
-            contentDescription = stringResource(
-                if (muted) R.string.assistant_cd_unmute else R.string.assistant_cd_mute,
-            ),
-            tint = tint,
-        )
+        if (loading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(Dimens.IconSmall),
+                color = controls.onSurface,
+                strokeWidth = Dimens.BorderEmphasis,
+            )
+        } else {
+            Icon(
+                imageVector = if (muted) Icons.Filled.MicOff else Icons.Filled.Mic,
+                contentDescription = stringResource(
+                    if (muted) R.string.assistant_cd_unmute else R.string.assistant_cd_mute,
+                ),
+                tint = tint,
+            )
+        }
     }
 }
 

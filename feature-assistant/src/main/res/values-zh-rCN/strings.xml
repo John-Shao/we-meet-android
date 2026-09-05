@@ -18,6 +18,8 @@
     <string name="assistant_call_ended">通话已结束</string>
     <string name="assistant_disconnected_ended">连接已断开，通话已结束</string>
     <string name="assistant_config_loading">AI 配置加载中，请稍后重试</string>
+    <string name="assistant_mic_action_failed">麦克风状态更新失败，请重试</string>
+    <string name="assistant_camera_switch_failed">无法切换摄像头，请重试</string>
 
     <!-- 连接进度 -->
     <string name="assistant_step_creating_room">正在创建房间</string>
