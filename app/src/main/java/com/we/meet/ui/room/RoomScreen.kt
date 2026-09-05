@@ -128,6 +128,7 @@ import com.we.meet.WeMeetApp
 import com.we.meet.R
 import com.we.meet.design.R as DesignR
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.OnMediaOverlay
 import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.audio.AudioOutput
@@ -246,7 +247,7 @@ fun RoomScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(WeMeetTheme.extras.room.tileBackground),
     ) {
         if (isInPip && state.phase == RoomUiState.Phase.Connected) {
             PipLayout(room = viewModel.room, state = state)
@@ -747,14 +748,14 @@ private fun MeetInviteChipsRow(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .background(
-                        Color.Black.copy(alpha = 0.6f),
+                        WeMeetTheme.extras.room.overlayScrim.copy(alpha = 0.6f),
                         CircleShape,
                     )
                     .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
             ) {
                 Text(
                     text = label,
-                    color = Color.White,
+                    color = OnMediaOverlay,
                     style = MaterialTheme.typography.labelSmall,
                     maxLines = 1,
                 )
@@ -764,7 +765,7 @@ private fun MeetInviteChipsRow(
                     color = if (active) {
                         WeMeetTheme.extras.room.overlayAccentText
                     } else {
-                        Color.White.copy(alpha = 0.65f)
+                        OnMediaOverlay.copy(alpha = 0.65f)
                     },
                     style = MaterialTheme.typography.labelSmall,
                     maxLines = 1,
@@ -1499,7 +1500,10 @@ private fun TopToolbar(
             .fillMaxWidth()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent),
+                    colors = listOf(
+                        WeMeetTheme.extras.room.overlayScrim.copy(alpha = 0.6f),
+                        Color.Transparent,
+                    ),
                 )
             )
             .statusBarsPadding()
@@ -1517,7 +1521,7 @@ private fun TopToolbar(
                 Icon(
                     imageVector = Icons.Default.FullscreenExit,
                     contentDescription = stringResource(R.string.room_action_minimize),
-                    tint = Color.White,
+                    tint = OnMediaOverlay,
                     modifier = Modifier.size(RoomToolbarIconSize),
                 )
             }
@@ -1528,7 +1532,7 @@ private fun TopToolbar(
                 Icon(
                     imageVector = Icons.Default.FlipCameraIos,
                     contentDescription = stringResource(R.string.room_action_switch_camera),
-                    tint = Color.White,
+                    tint = OnMediaOverlay,
                     modifier = Modifier.size(RoomToolbarIconSize),
                 )
             }
@@ -1550,14 +1554,14 @@ private fun TopToolbar(
             Text(
                 text = roomName.ifBlank { stringResource(R.string.room_title) },
                 style = MaterialTheme.typography.titleSmall,
-                color = Color.White,
+                color = OnMediaOverlay,
                 maxLines = 1,
             )
             if (roomSlug.isNotBlank()) {
                 Text(
                     text = stringResource(R.string.room_slug_label, roomSlug),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = OnMediaOverlay.copy(alpha = 0.7f),
                 )
             }
         }
@@ -1574,7 +1578,7 @@ private fun TopToolbar(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Chat,
                     contentDescription = stringResource(R.string.room_action_message),
-                    tint = Color.White,
+                    tint = OnMediaOverlay,
                     modifier = Modifier.size(RoomToolbarIconSize),
                 )
             }
@@ -1613,7 +1617,10 @@ private fun BottomToolbar(
             .fillMaxWidth()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)),
+                    colors = listOf(
+                        Color.Transparent,
+                        WeMeetTheme.extras.room.overlayScrim.copy(alpha = 0.6f),
+                    ),
                 )
             )
             .navigationBarsPadding()
@@ -3034,7 +3041,7 @@ internal fun ControlButton(
     /** Unimplemented stub: dim the button and show a "开发中" badge so it no
      *  longer looks fully available before the "coming soon" toast fires. */
     comingSoon: Boolean = false,
-    labelColor: Color = Color.White,
+    labelColor: Color = OnMediaOverlay,
     iconBgColor: Color? = null,
     iconTintColor: Color? = null,
     iconSize: Dp = RoomToolbarIconSize,
@@ -3045,7 +3052,7 @@ internal fun ControlButton(
     // an explicit [iconBgColor] when they want the circular icon container.
     val bgColor = iconBgColor ?: Color.Transparent
     val iconTint = iconTintColor
-        ?: if (isOn) Color.White else WeMeetTheme.extras.room.dangerOnOverlay
+        ?: if (isOn) OnMediaOverlay else WeMeetTheme.extras.room.dangerOnOverlay
 
     // Whole column is the click target — tap on the icon, the label, or
     // the space between all route to [onClick]. The caller-supplied
@@ -3088,7 +3095,7 @@ internal fun ControlButton(
                 Text(
                     text = stringResource(R.string.room_badge_coming_soon),
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.White,
+                    color = OnMediaOverlay,
                     modifier = Modifier
                         .clip(RoundedCornerShape(Dimens.CornerS))
                         .background(WeMeetTheme.extras.room.overlayScrim)
@@ -3112,13 +3119,13 @@ private fun ConnectingView(onCancel: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator(color = Color.White)
+            CircularProgressIndicator(color = OnMediaOverlay)
             Spacer(Modifier.height(Dimens.SpaceM))
-            Text(stringResource(R.string.room_connecting), color = Color.White)
+            Text(stringResource(R.string.room_connecting), color = OnMediaOverlay)
             // A stuck connect otherwise strands the user with only system Back.
             Spacer(Modifier.height(Dimens.SpaceXl))
             TextButton(onClick = onCancel) {
-                Text(stringResource(R.string.cancel), color = Color.White)
+                Text(stringResource(R.string.cancel), color = OnMediaOverlay)
             }
         }
     }
