@@ -829,6 +829,9 @@ private fun RoomContent(
     var showShareChooser by remember { mutableStateOf(false) }
     var showInvite by remember { mutableStateOf(false) }
     var showWaitingList by remember { mutableStateOf(false) }
+    var waitingActionIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var admittingAll by remember { mutableStateOf(false) }
+    val lobbyActionFailedText = stringResource(R.string.room_lobby_action_failed)
     var showHostSettings by remember { mutableStateOf(false) }
     var showAiSheet by remember { mutableStateOf(false) }
     // One-shot guard so we prompt for SYSTEM_ALERT_WINDOW at most once per
@@ -1159,15 +1162,57 @@ private fun RoomContent(
     if (showWaitingList) {
         WaitingListSheet(
             waitingParticipants = state.waitingParticipants,
+            pendingIds = waitingActionIds,
+            admittingAll = admittingAll,
             onAdmit = { id ->
-                scope.launch { onAdmitParticipant(id, true) }
+                if (id !in waitingActionIds) {
+                    waitingActionIds += id
+                    scope.launch {
+                        onAdmitParticipant(id, true).onFailure {
+                            Toast.makeText(
+                                context,
+                                lobbyActionFailedText,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                        waitingActionIds -= id
+                    }
+                }
             },
             onDeny = { id ->
-                scope.launch { onAdmitParticipant(id, false) }
+                if (id !in waitingActionIds) {
+                    waitingActionIds += id
+                    scope.launch {
+                        onAdmitParticipant(id, false).onFailure {
+                            Toast.makeText(
+                                context,
+                                lobbyActionFailedText,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                        waitingActionIds -= id
+                    }
+                }
             },
             onAdmitAll = {
-                state.waitingParticipants.forEach { p ->
-                    scope.launch { onAdmitParticipant(p.id, true) }
+                if (!admittingAll) {
+                    val participantIds = state.waitingParticipants.map { it.id }
+                    admittingAll = true
+                    waitingActionIds += participantIds
+                    scope.launch {
+                        val failed = participantIds.count { id ->
+                            onAdmitParticipant(id, true).isFailure
+                        }
+                        waitingActionIds -= participantIds.toSet()
+                        admittingAll = false
+                        if (failed > 0) {
+                            Toast.makeText(
+                                context,
+                                lobbyActionFailedText,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                    }
                 }
             },
             onDismiss = { showWaitingList = false },
@@ -2131,6 +2176,8 @@ private fun RecordingBanner() {
 @Composable
 private fun WaitingListSheet(
     waitingParticipants: List<com.we.meet.data.api.dto.WaitingParticipantDto>,
+    pendingIds: Set<String>,
+    admittingAll: Boolean,
     onAdmit: (participantId: String) -> Unit,
     onDeny: (participantId: String) -> Unit,
     onAdmitAll: () -> Unit,
@@ -2154,8 +2201,15 @@ private fun WaitingListSheet(
                     modifier = Modifier.weight(1f),
                 )
                 if (waitingParticipants.size > 1) {
-                    TextButton(onClick = onAdmitAll) {
-                        Text(stringResource(R.string.room_lobby_admit_all))
+                    TextButton(onClick = onAdmitAll, enabled = !admittingAll) {
+                        if (admittingAll) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(Dimens.IconSmall),
+                                strokeWidth = Dimens.BorderEmphasis,
+                            )
+                        } else {
+                            Text(stringResource(R.string.room_lobby_admit_all))
+                        }
                     }
                 }
             }
@@ -2184,19 +2238,28 @@ private fun WaitingListSheet(
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.weight(1f),
                         )
-                        TextButton(
-                            onClick = { onDeny(p.id) },
-                        ) {
-                            Text(
-                                text = stringResource(R.string.room_lobby_deny),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        if (p.id in pendingIds) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .padding(horizontal = Dimens.SpaceL)
+                                    .size(Dimens.IconSmall),
+                                strokeWidth = Dimens.BorderEmphasis,
                             )
-                        }
-                        Spacer(Modifier.width(Dimens.SpaceXs))
-                        TextButton(
-                            onClick = { onAdmit(p.id) },
-                        ) {
-                            Text(stringResource(R.string.room_lobby_admit))
+                        } else {
+                            TextButton(
+                                onClick = { onDeny(p.id) },
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.room_lobby_deny),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Spacer(Modifier.width(Dimens.SpaceXs))
+                            TextButton(
+                                onClick = { onAdmit(p.id) },
+                            ) {
+                                Text(stringResource(R.string.room_lobby_admit))
+                            }
                         }
                     }
                     HorizontalDivider()

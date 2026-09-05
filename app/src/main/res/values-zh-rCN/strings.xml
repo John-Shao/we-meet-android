@@ -134,6 +134,7 @@
     <string name="room_lobby_admit">允许</string>
     <string name="room_lobby_deny">拒绝</string>
     <string name="room_lobby_admit_all">全部允许</string>
+    <string name="room_lobby_action_failed">候诊室操作失败，请重试</string>
     <string name="waiting_title">等待主持人审批</string>
     <string name="waiting_subtitle">主持人允许后将自动加入「%1$s」</string>
     <string name="waiting_cancel">取消</string>

@@ -134,6 +134,7 @@
     <string name="room_lobby_admit">Admit</string>
     <string name="room_lobby_deny">Deny</string>
     <string name="room_lobby_admit_all">Admit all</string>
+    <string name="room_lobby_action_failed">Couldn\'t update the waiting room. Try again.</string>
     <string name="waiting_title">Waiting for host approval</string>
     <string name="waiting_subtitle">You\'ll join %1$s once the host lets you in.</string>
     <string name="waiting_cancel">Cancel</string>
