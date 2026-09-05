@@ -22,9 +22,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.OnMediaOverlay
+import com.we.meet.ui.theme.WeMeetTheme
 import io.livekit.android.room.Room
 
 /** Pick bucket-based per-page tile count + (cols, rows) based on orientation. */
@@ -233,7 +234,7 @@ private fun PageIndicator(
     Row(
         modifier = modifier
             .clip(androidx.compose.foundation.shape.RoundedCornerShape(Dimens.CornerS))
-            .background(Color.Black.copy(alpha = 0.35f))
+            .background(WeMeetTheme.extras.room.overlayScrim.copy(alpha = 0.35f))
             .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
         horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
         verticalAlignment = Alignment.CenterVertically,
@@ -244,8 +245,8 @@ private fun PageIndicator(
                     .size(if (i == currentPage) Dimens.Room.PageDotActive else Dimens.Room.PageDotInactive)
                     .clip(CircleShape)
                     .background(
-                        if (i == currentPage) Color.White
-                        else Color.White.copy(alpha = 0.5f)
+                        if (i == currentPage) OnMediaOverlay
+                        else OnMediaOverlay.copy(alpha = 0.5f)
                     ),
             )
         }

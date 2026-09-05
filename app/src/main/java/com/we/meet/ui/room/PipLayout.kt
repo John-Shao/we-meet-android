@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import com.we.meet.ui.theme.WeMeetTheme
 import io.livekit.android.room.Room
 
 /**
@@ -29,7 +29,7 @@ fun PipLayout(room: Room, state: RoomUiState) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(WeMeetTheme.extras.room.tileBackground),
     ) {
         speaker?.let {
             // Rectangle shape (no rounded corners): the PiP window already has

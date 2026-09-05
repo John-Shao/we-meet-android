@@ -13,11 +13,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.OnMediaOverlay
 import com.we.meet.ui.theme.WeMeetTheme
 
 /**
@@ -63,7 +63,7 @@ fun SubtitleOverlay(
                 )
                 Text(
                     text = row.text,
-                    color = Color.White,
+                    color = OnMediaOverlay,
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
