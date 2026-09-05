@@ -18,6 +18,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +33,10 @@ import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.ui.common.GroupAvatar
 import com.we.meet.feature.im.vm.ConversationListViewModel
+import com.we.meet.ui.components.WeMeetEmptyState
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetInlineErrorState
+import com.we.meet.ui.components.WeMeetLoading
 
 /**
  * 「我的群组」——通讯录里的群清单(对标飞书通讯录的同名分组)。
@@ -53,6 +58,10 @@ fun MyGroupsScreen(
     val vm: ConversationListViewModel =
         viewModel(factory = remember(deps) { ConversationListViewModel.Factory(deps) })
     val rows by vm.rows.collectAsStateWithLifecycle()
+    val loading by vm.loading.collectAsStateWithLifecycle()
+    val error by vm.error.collectAsStateWithLifecycle()
+
+    LaunchedEffect(vm) { vm.refresh() }
 
     var query by remember { mutableStateOf("") }
     val groups = rows.filter { it.isGroup }
@@ -86,50 +95,64 @@ fun MyGroupsScreen(
                     .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             )
 
-            if (visible.isEmpty()) {
-                Text(
-                    text = stringResource(
+            when {
+                loading && groups.isEmpty() -> WeMeetLoading(Modifier.weight(1f))
+                error != null && groups.isEmpty() -> WeMeetErrorState(
+                    onRetry = vm::refresh,
+                    modifier = Modifier.weight(1f),
+                    message = stringResource(error!!),
+                )
+                visible.isEmpty() -> WeMeetEmptyState(
+                    title = stringResource(
                         if (groups.isEmpty()) R.string.im_my_groups_empty
                         else R.string.im_my_groups_no_match,
                     ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXl),
+                    modifier = Modifier.weight(1f),
                 )
-            } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(visible, key = { it.cid }) { row ->
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onOpenChat(row.cid) }
-                                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
-                        ) {
-                            androidx.compose.foundation.layout.Row(
-                                verticalAlignment = Alignment.CenterVertically,
+                else -> {
+                    if (error != null) {
+                        WeMeetInlineErrorState(
+                            onRetry = vm::refresh,
+                            message = stringResource(error!!),
+                        )
+                    }
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(visible, key = { it.cid }) { row ->
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onOpenChat(row.cid) }
+                                    .padding(
+                                        horizontal = Dimens.ScreenPadding,
+                                        vertical = Dimens.SpaceS,
+                                    ),
                             ) {
-                                GroupAvatar(tiles = row.memberTiles, size = Dimens.AvatarM)
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(start = Dimens.SpaceM),
+                                androidx.compose.foundation.layout.Row(
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Text(
-                                        text = row.title.ifBlank {
-                                            stringResource(R.string.im_untitled_chat)
-                                        },
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                    Text(
-                                        text = stringResource(
-                                            R.string.im_my_groups_member_count,
-                                            row.memberUids.size,
-                                        ),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
+                                    GroupAvatar(tiles = row.memberTiles, size = Dimens.AvatarM)
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(start = Dimens.SpaceM),
+                                    ) {
+                                        Text(
+                                            text = row.title.ifBlank {
+                                                stringResource(R.string.im_untitled_chat)
+                                            },
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                        Text(
+                                            text = stringResource(
+                                                R.string.im_my_groups_member_count,
+                                                row.memberUids.size,
+                                            ),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
                                 }
                             }
                         }
