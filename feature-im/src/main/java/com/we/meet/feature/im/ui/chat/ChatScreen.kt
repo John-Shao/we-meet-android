@@ -992,8 +992,7 @@ private fun MessageInputBar(
     val inputFocusRequester = remember { FocusRequester() }
     fun openPanel(p: InputPanel) {
         if (panel == p) {
-            // 再次点击同一按钮:收起面板并把焦点还给输入框——重新聚焦使
-            // inputFocused=true,expanded 保持 true(工具栏不隐藏),键盘回归。
+            // 再次点击同一按钮：收起面板并把焦点还给输入框，让键盘回归。
             panel = InputPanel.None
             inputFocusRequester.requestFocus()
         } else {
@@ -1126,115 +1125,93 @@ private fun MessageInputBar(
                 }
             }
         }
-        // 两态输入:折叠为灰底胶囊 + 表情快捷图标;
-        // 聚焦或有草稿后展开为大圆角框,下方浮出完整工具栏与发送键。
-        var inputFocused by remember { mutableStateOf(false) }
-        val expanded = inputFocused || text.isNotBlank() || panel != InputPanel.None
+        // 输入框与工具栏始终按两行显示，避免焦点切换时输入区上下跳动。
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
         ) {
             Surface(
-                    shape = RoundedCornerShape(if (expanded) Dimens.CornerL else Dimens.CornerL),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
-                            contentAlignment = Alignment.CenterStart,
-                        ) {
-                            if (text.isEmpty()) {
-                                Text(
-                                    text = stringResource(R.string.im_input_placeholder),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            BasicTextField(
-                                value = field,
-                                onValueChange = { value ->
-                                    field = if (value.text.length <= 4000) value
-                                    else TextFieldValue(value.text.take(4000), TextRange(4000))
-                                    onDraftChange(field.text)
-                                    commandIndex = 0
-                                    commandMenuDismissed = false
-                                },
-                                enabled = canSend,
-                                maxLines = if (expanded) 5 else 1,
-                                textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                ),
-                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(inputFocusRequester)
-                                    .onPreviewKeyEvent { event ->
-                                        if (commands.isEmpty() || event.type != KeyEventType.KeyDown) false
-                                        else when (event.key) {
-                                            Key.DirectionDown -> { commandIndex = (commandIndex + 1) % commands.size; true }
-                                            Key.DirectionUp -> { commandIndex = (commandIndex - 1 + commands.size) % commands.size; true }
-                                            Key.Enter -> { executeCommand(commands[commandIndex.coerceAtMost(commands.lastIndex)]); true }
-                                            Key.Escape -> { commandMenuDismissed = true; true }
-                                            else -> false
-                                        }
-                                    }
-                                    .onFocusChanged {
-                                        inputFocused = it.isFocused
-                                        // 点击输入框拉起键盘时,自动收起已展开的表情/「+」
-                                        // 面板(二者互斥);inputFocused=true 使工具栏不隐藏。
-                                        if (it.isFocused) panel = InputPanel.None
-                                    },
+                shape = RoundedCornerShape(Dimens.CornerL),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
+                        if (text.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.im_input_placeholder),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        // 折叠态:胶囊尾部只保留表情；图片统一从「+」面板选择。
-                        if (!expanded) {
-                            IconButton(
-                                onClick = { openPanel(InputPanel.Emoji) },
-                                enabled = canSend,
-                                modifier = Modifier.size(Dimens.AvatarS).padding(end = Dimens.SpaceXs),
-                            ) {
-                                Icon(
-                                    Icons.Filled.EmojiEmotions,
-                                    contentDescription = stringResource(R.string.im_input_emoji),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(Dimens.IconSmall),
-                                )
-                            }
-                        }
-                    }
-                }
-            // 展开态:下方完整工具栏 + 发送键
-            AnimatedVisibility(visible = expanded) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = Dimens.SpaceS),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(onClick = { openPanel(InputPanel.Emoji) }, enabled = canSend) {
-                        Icon(
-                            Icons.Filled.EmojiEmotions,
-                            contentDescription = stringResource(R.string.im_input_emoji),
-                            tint = if (panel == InputPanel.Emoji) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        BasicTextField(
+                            value = field,
+                            onValueChange = { value ->
+                                field = if (value.text.length <= 4000) value
+                                else TextFieldValue(value.text.take(4000), TextRange(4000))
+                                onDraftChange(field.text)
+                                commandIndex = 0
+                                commandMenuDismissed = false
+                            },
+                            enabled = canSend,
+                            maxLines = 5,
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                color = MaterialTheme.colorScheme.onSurface,
+                            ),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(inputFocusRequester)
+                                .onPreviewKeyEvent { event ->
+                                    if (commands.isEmpty() || event.type != KeyEventType.KeyDown) false
+                                    else when (event.key) {
+                                        Key.DirectionDown -> { commandIndex = (commandIndex + 1) % commands.size; true }
+                                        Key.DirectionUp -> { commandIndex = (commandIndex - 1 + commands.size) % commands.size; true }
+                                        Key.Enter -> { executeCommand(commands[commandIndex.coerceAtMost(commands.lastIndex)]); true }
+                                        Key.Escape -> { commandMenuDismissed = true; true }
+                                        else -> false
+                                    }
+                                }
+                                .onFocusChanged {
+                                    // 点击输入框拉起键盘时,自动收起已展开的表情/「+」
+                                    // 面板(二者互斥)。
+                                    if (it.isFocused) panel = InputPanel.None
+                                },
                         )
                     }
-                    IconButton(onClick = { openPanel(InputPanel.Plus) }, enabled = canSend) {
-                        Icon(
-                            Icons.Filled.Add,
-                            contentDescription = stringResource(R.string.im_input_more),
-                            tint = if (panel == InputPanel.Plus) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Spacer(Modifier.weight(1f))
-                    Button(
-                        onClick = { onSend(text) },
-                        enabled = canSend && text.isNotBlank() && commands.isEmpty(),
-                        contentPadding = PaddingValues(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceXs),
-                        modifier = Modifier.height(Dimens.AvatarS),
-                    ) { Text(stringResource(R.string.im_input_send)) }
                 }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = Dimens.SpaceS),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = { openPanel(InputPanel.Emoji) }, enabled = canSend) {
+                    Icon(
+                        Icons.Filled.EmojiEmotions,
+                        contentDescription = stringResource(R.string.im_input_emoji),
+                        tint = if (panel == InputPanel.Emoji) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                IconButton(onClick = { openPanel(InputPanel.Plus) }, enabled = canSend) {
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = stringResource(R.string.im_input_more),
+                        tint = if (panel == InputPanel.Plus) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                Button(
+                    onClick = { onSend(text) },
+                    enabled = canSend && text.isNotBlank() && commands.isEmpty(),
+                    contentPadding = PaddingValues(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceXs),
+                    modifier = Modifier.height(Dimens.MinTouchTarget),
+                ) { Text(stringResource(R.string.im_input_send)) }
             }
         }
         AnimatedVisibility(visible = panel != InputPanel.None) {
