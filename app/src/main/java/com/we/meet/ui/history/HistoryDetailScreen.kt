@@ -39,6 +39,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.we.meet.ui.components.WeMeetInlineErrorState
+import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.WeMeetApp
@@ -194,6 +196,7 @@ fun HistoryDetailScreen(
                 roomState = roomState,
                 transcriptsState = transcriptsState,
                 localEntry = localEntry,
+                onRetry = { viewModel.retryRoom(roomId) },
             )
             SectionSpacer()
 
@@ -212,20 +215,32 @@ fun HistoryDetailScreen(
                     }
                 },
             )
-            SummaryTab(state = summaryState)
+            SummaryTab(
+                state = summaryState,
+                onRetry = { viewModel.retrySummary(roomId) },
+            )
             SectionSpacer()
 
             SectionHeader(stringResource(R.string.meeting_detail_tab_action_items))
-            ActionItemsTab(state = actionItemsState)
+            ActionItemsTab(
+                state = actionItemsState,
+                onRetry = { viewModel.retryActionItems(roomId) },
+            )
             SectionSpacer()
 
             // 纪要闭环 M3:智能章节区块(与 Web 三板块对齐,App 只读)。
             SectionHeader(stringResource(R.string.meeting_detail_tab_chapters))
-            ChaptersTab(state = summaryState)
+            ChaptersTab(
+                state = summaryState,
+                onRetry = { viewModel.retrySummary(roomId) },
+            )
             SectionSpacer()
 
             SectionHeader(stringResource(R.string.meeting_detail_tab_transcript))
-            TranscriptTab(state = transcriptsState)
+            TranscriptTab(
+                state = transcriptsState,
+                onRetry = { viewModel.retryTranscripts(roomId) },
+            )
             Spacer(Modifier.height(Dimens.SpaceXl))
         }
     }
@@ -272,10 +287,11 @@ private fun InfoTab(
     roomState: MeetingDetailViewModel.LoadState<RoomDto>,
     transcriptsState: MeetingDetailViewModel.LoadState<List<TranscriptDto>>,
     localEntry: HistoryEntry?,
+    onRetry: () -> Unit,
 ) {
     when (roomState) {
-        is MeetingDetailViewModel.LoadState.Loading -> CenteredText(stringResource(R.string.meeting_detail_loading))
-        is MeetingDetailViewModel.LoadState.Failure -> CenteredText(stringResource(R.string.meeting_detail_load_failed))
+        is MeetingDetailViewModel.LoadState.Loading -> WeMeetInlineLoading()
+        is MeetingDetailViewModel.LoadState.Failure -> WeMeetInlineErrorState(onRetry = onRetry)
         is MeetingDetailViewModel.LoadState.Success -> {
             val room = roomState.value
             val emptyMark = stringResource(R.string.meeting_detail_info_empty)
@@ -437,10 +453,11 @@ private fun TimelineRow(time: String, label: String) {
 @Composable
 private fun SummaryTab(
     state: MeetingDetailViewModel.LoadState<SummaryDto?>,
+    onRetry: () -> Unit,
 ) {
     when (state) {
-        is MeetingDetailViewModel.LoadState.Loading -> CenteredText(stringResource(R.string.meeting_detail_loading))
-        is MeetingDetailViewModel.LoadState.Failure -> CenteredText(stringResource(R.string.meeting_detail_load_failed))
+        is MeetingDetailViewModel.LoadState.Loading -> WeMeetInlineLoading()
+        is MeetingDetailViewModel.LoadState.Failure -> WeMeetInlineErrorState(onRetry = onRetry)
         is MeetingDetailViewModel.LoadState.Success -> {
             val summary = state.value
             // For end users, "no summary generated yet" (404), "summary
@@ -479,10 +496,11 @@ private fun SummaryTab(
 @Composable
 private fun ChaptersTab(
     state: MeetingDetailViewModel.LoadState<SummaryDto?>,
+    onRetry: () -> Unit,
 ) {
     when (state) {
-        is MeetingDetailViewModel.LoadState.Loading -> CenteredText(stringResource(R.string.meeting_detail_loading))
-        is MeetingDetailViewModel.LoadState.Failure -> CenteredText(stringResource(R.string.meeting_detail_load_failed))
+        is MeetingDetailViewModel.LoadState.Loading -> WeMeetInlineLoading()
+        is MeetingDetailViewModel.LoadState.Failure -> WeMeetInlineErrorState(onRetry = onRetry)
         is MeetingDetailViewModel.LoadState.Success -> {
             val chapters = state.value?.chapters.orEmpty()
             if (chapters.isEmpty()) {
@@ -595,10 +613,13 @@ private fun MarkdownText(content: String) {
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun ActionItemsTab(state: MeetingDetailViewModel.LoadState<List<ActionItemDto>>) {
+private fun ActionItemsTab(
+    state: MeetingDetailViewModel.LoadState<List<ActionItemDto>>,
+    onRetry: () -> Unit,
+) {
     when (state) {
-        is MeetingDetailViewModel.LoadState.Loading -> CenteredText(stringResource(R.string.meeting_detail_loading))
-        is MeetingDetailViewModel.LoadState.Failure -> CenteredText(stringResource(R.string.meeting_detail_load_failed))
+        is MeetingDetailViewModel.LoadState.Loading -> WeMeetInlineLoading()
+        is MeetingDetailViewModel.LoadState.Failure -> WeMeetInlineErrorState(onRetry = onRetry)
         is MeetingDetailViewModel.LoadState.Success -> {
             val items = state.value
             if (items.isEmpty()) {
@@ -657,10 +678,13 @@ private fun ActionItemsTab(state: MeetingDetailViewModel.LoadState<List<ActionIt
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun TranscriptTab(state: MeetingDetailViewModel.LoadState<List<TranscriptDto>>) {
+private fun TranscriptTab(
+    state: MeetingDetailViewModel.LoadState<List<TranscriptDto>>,
+    onRetry: () -> Unit,
+) {
     when (state) {
-        is MeetingDetailViewModel.LoadState.Loading -> CenteredText(stringResource(R.string.meeting_detail_loading))
-        is MeetingDetailViewModel.LoadState.Failure -> CenteredText(stringResource(R.string.meeting_detail_load_failed))
+        is MeetingDetailViewModel.LoadState.Loading -> WeMeetInlineLoading()
+        is MeetingDetailViewModel.LoadState.Failure -> WeMeetInlineErrorState(onRetry = onRetry)
         is MeetingDetailViewModel.LoadState.Success -> {
             val rows = state.value
             if (rows.isEmpty()) {

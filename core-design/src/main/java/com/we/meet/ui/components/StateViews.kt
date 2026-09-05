@@ -52,6 +52,22 @@ fun WeMeetLoading(modifier: Modifier = Modifier) {
     }
 }
 
+/** Compact loading state for a section inside an already visible page. */
+@Composable
+fun WeMeetInlineLoading(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = Dimens.SpaceL),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(Dimens.IconMedium),
+            strokeWidth = Dimens.ProgressStroke,
+        )
+    }
+}
+
 /**
  * 空态:没有内容,但也没出错。
  *
@@ -148,6 +164,32 @@ fun WeMeetErrorState(
             TextButton(onClick = onRetry) {
                 Text(stringResource(R.string.common_retry))
             }
+        }
+    }
+}
+
+/** Retryable error state for a section, card, or sheet within an existing page. */
+@Composable
+fun WeMeetInlineErrorState(
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+    message: String? = null,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = Dimens.SpaceS),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
+    ) {
+        Text(
+            text = message ?: stringResource(R.string.common_load_error),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        TextButton(onClick = onRetry) {
+            Text(stringResource(R.string.common_retry))
         }
     }
 }

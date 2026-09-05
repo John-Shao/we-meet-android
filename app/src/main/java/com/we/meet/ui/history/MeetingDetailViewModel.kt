@@ -73,6 +73,14 @@ class MeetingDetailViewModel(
         loadTranscripts(idOrSlug)
     }
 
+    fun retryRoom(idOrSlug: String) = loadRoom(idOrSlug)
+
+    fun retrySummary(idOrSlug: String) = loadSummary(idOrSlug)
+
+    fun retryActionItems(idOrSlug: String) = loadActionItems(idOrSlug)
+
+    fun retryTranscripts(idOrSlug: String) = loadTranscripts(idOrSlug)
+
     private fun loadRoom(idOrSlug: String) {
         viewModelScope.launch {
             _room.value = LoadState.Loading
