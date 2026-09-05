@@ -399,6 +399,9 @@ fun CalendarTabScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(Dimens.SpaceXl),
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            shape = CircleShape,
         ) {
             Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.calendar_create_title))
         }

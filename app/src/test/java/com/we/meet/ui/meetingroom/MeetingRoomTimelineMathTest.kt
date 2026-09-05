@@ -4,6 +4,7 @@ import com.we.meet.data.api.dto.MeetingRoomNodeDto
 import com.we.meet.data.api.dto.MeetingRoomTimelineEntryDto
 import com.we.meet.data.api.dto.RoomBookingDto
 import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
@@ -12,6 +13,35 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MeetingRoomTimelineMathTest {
+
+    @Test
+    fun meetingRoomFabPrefillsTheSelectedRoomAndNextHourForToday() {
+        val prefill = meetingRoomEventPrefill(
+            selectedDate = LocalDate.of(2026, 9, 5),
+            meetingRoomId = "room-1203",
+            zone = ZoneId.of("UTC"),
+            durationMinutes = 60,
+            now = Instant.parse("2026-09-05T07:15:00Z"),
+        )
+
+        assertEquals("room-1203", prefill.meetingRoomId)
+        assertEquals(Instant.parse("2026-09-05T08:00:00Z").epochSecond, prefill.startEpochSecond)
+        assertEquals(Instant.parse("2026-09-05T09:00:00Z").epochSecond, prefill.endEpochSecond)
+    }
+
+    @Test
+    fun meetingRoomFabUsesNineAmOnAnotherDate() {
+        val prefill = meetingRoomEventPrefill(
+            selectedDate = LocalDate.of(2026, 9, 6),
+            meetingRoomId = "room-1203",
+            zone = ZoneId.of("Asia/Shanghai"),
+            durationMinutes = 30,
+            now = Instant.parse("2026-09-05T07:15:00Z"),
+        )
+
+        assertEquals(Instant.parse("2026-09-06T01:00:00Z").epochSecond, prefill.startEpochSecond)
+        assertEquals(Instant.parse("2026-09-06T01:30:00Z").epochSecond, prefill.endEpochSecond)
+    }
 
     @Test
     fun adjacentDateCacheKeepsOnlyThePagerWindow() {

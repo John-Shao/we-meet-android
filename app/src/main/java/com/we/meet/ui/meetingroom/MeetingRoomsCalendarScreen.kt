@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -120,6 +121,36 @@ import kotlinx.coroutines.launch
 private val CAPACITY_FILTERS = listOf(2, 4, 6, 10, 20, 50)
 internal const val MEETING_ROOM_SCHEDULE_TEST_TAG = "meeting-room-schedule-timeline"
 private const val MEETING_ROOM_SCHEDULE_SETTLE_MILLIS = 180
+
+internal data class MeetingRoomEventPrefill(
+    val startEpochSecond: Long,
+    val endEpochSecond: Long,
+    val meetingRoomId: String,
+)
+
+/**
+ * Builds the same default time range as the ordinary date-based create flow while retaining the
+ * room selected on the meeting-room detail page.
+ */
+internal fun meetingRoomEventPrefill(
+    selectedDate: LocalDate,
+    meetingRoomId: String,
+    zone: ZoneId,
+    durationMinutes: Int,
+    now: Instant = Instant.now(),
+): MeetingRoomEventPrefill {
+    val localNow = now.atZone(zone)
+    val start = if (selectedDate == localNow.toLocalDate()) {
+        localNow.plusHours(1).withMinute(0).withSecond(0).withNano(0)
+    } else {
+        selectedDate.atTime(9, 0).atZone(zone)
+    }
+    return MeetingRoomEventPrefill(
+        startEpochSecond = start.toEpochSecond(),
+        endEpochSecond = start.plusMinutes(durationMinutes.toLong()).toEpochSecond(),
+        meetingRoomId = meetingRoomId,
+    )
+}
 
 internal data class BookingBounds(
     val booking: RoomBookingDto,
@@ -422,7 +453,22 @@ fun MeetingRoomsCalendarScreen(
             onClick = {
                 draft = null
                 selectedBookingId = null
-                onCreateEvent(ui.selectedDate.toEpochDay())
+                val room = selectedRoom
+                if (room == null) {
+                    onCreateEvent(ui.selectedDate.toEpochDay())
+                } else {
+                    val prefill = meetingRoomEventPrefill(
+                        selectedDate = ui.selectedDate,
+                        meetingRoomId = room.id,
+                        zone = zone,
+                        durationMinutes = defaultDurationMin,
+                    )
+                    onCreateEventInRoom(
+                        prefill.startEpochSecond,
+                        prefill.endEpochSecond,
+                        prefill.meetingRoomId,
+                    )
+                }
             },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -434,6 +480,9 @@ fun MeetingRoomsCalendarScreen(
                         Dimens.Calendar.FabClearance + Dimens.SpaceL
                     },
                 ),
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            shape = CircleShape,
         ) {
             Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.calendar_create_title))
         }
