@@ -54,6 +54,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTextStyles
 import com.we.meet.ui.theme.WeMeetTheme
@@ -132,7 +134,11 @@ fun FreeBusyCompareScreen(
     var people by remember { mutableStateOf<List<PersonColumn>>(emptyList()) }
     var checked by remember { mutableStateOf<Set<String>>(emptySet()) }
     var identityLoading by remember { mutableStateOf(true) }
-    LaunchedEffect(userIds) {
+    var identityError by remember { mutableStateOf(false) }
+    var identityReloadKey by remember { mutableStateOf(0) }
+    LaunchedEffect(userIds, identityReloadKey) {
+        identityLoading = true
+        identityError = false
         runCatching {
             coroutineScope {
                 val me = async {
@@ -165,6 +171,7 @@ fun FreeBusyCompareScreen(
         }
         // 飞书默认全选;列多靠横滚承载。
         checked = people.map { it.userId }.toSet()
+        identityError = people.isEmpty()
         identityLoading = false
     }
 
@@ -468,20 +475,12 @@ fun FreeBusyCompareScreen(
             }
 
             when {
-                identityLoading -> Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) { CircularProgressIndicator() }
+                identityLoading -> WeMeetLoading()
 
-                people.isEmpty() -> Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        stringResource(R.string.freebusy_load_error),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
+                identityError || people.isEmpty() -> WeMeetErrorState(
+                    onRetry = { identityReloadKey += 1 },
+                    message = stringResource(R.string.freebusy_load_error),
+                )
 
                 else -> {
                     Box(modifier = Modifier.weight(1f)) {

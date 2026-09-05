@@ -18,7 +18,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,8 +41,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.R
-import com.we.meet.design.R as DesignR
 import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.components.WeMeetEmptyState
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.WeMeetApp
@@ -122,29 +123,23 @@ fun ReminderScreen(
     ) { padding ->
         val w = window
         if (w == null) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (loadFailed) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            stringResource(R.string.reminder_load_error),
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        Button(
-                            onClick = { loadFailed = false; refreshKey += 1 },
-                            modifier = Modifier.padding(top = Dimens.SpaceS),
-                        ) {
-                            Text(stringResource(DesignR.string.common_retry))
-                        }
-                    }
-                } else {
-                    CircularProgressIndicator()
-                }
+            if (loadFailed) {
+                WeMeetErrorState(
+                    onRetry = { loadFailed = false; refreshKey += 1 },
+                    message = stringResource(R.string.reminder_load_error),
+                    modifier = Modifier.padding(padding),
+                )
+            } else {
+                WeMeetLoading(modifier = Modifier.padding(padding))
             }
+            return@Scaffold
+        }
+
+        if (w.today.isEmpty() && w.tomorrow.isEmpty()) {
+            WeMeetEmptyState(
+                title = stringResource(R.string.reminder_empty),
+                modifier = Modifier.padding(padding),
+            )
             return@Scaffold
         }
 
@@ -217,20 +212,6 @@ fun ReminderScreen(
                     }
                 }
                 Spacer(Modifier.height(Dimens.SpaceL))
-            }
-
-            if (w.today.isEmpty() && w.tomorrow.isEmpty()) {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = Dimens.SpaceXxl),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        stringResource(R.string.reminder_empty),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
             }
 
             if (w.today.isNotEmpty()) {

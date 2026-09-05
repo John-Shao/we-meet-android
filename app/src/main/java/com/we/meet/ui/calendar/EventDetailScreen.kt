@@ -72,6 +72,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.components.WeMeetErrorState
+import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.BuildConfig
 import com.we.meet.R
@@ -141,6 +143,7 @@ class EventDetailViewModel(
     }
 
     fun refresh() {
+        _ui.update { it.copy(loading = it.event == null, error = false) }
         viewModelScope.launch {
             runCatching { api.getEvent(eventId) }
                 .onSuccess { e ->
@@ -572,11 +575,10 @@ fun EventDetailScreen(
                 .padding(padding),
         ) {
             when {
-                ui.loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                ui.error || ui.event == null -> Text(
-                    text = stringResource(R.string.event_load_error),
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.align(Alignment.Center),
+                ui.loading -> WeMeetLoading()
+                ui.error || ui.event == null -> WeMeetErrorState(
+                    onRetry = vm::refresh,
+                    message = stringResource(R.string.event_load_error),
                 )
                 else -> EventBody(
                     event = ui.event!!,
