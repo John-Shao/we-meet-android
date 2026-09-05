@@ -70,6 +70,13 @@
     <string name="room_action_mic">Microfoon</string>
     <string name="room_action_camera">Camera</string>
     <string name="room_action_switch_camera">Wisselen</string>
+    <string name="room_hand_action_failed">Handstatus kon niet worden bijgewerkt. Probeer opnieuw.</string>
+    <string name="room_microphone_action_failed">Microfoon kon niet worden bijgewerkt. Probeer opnieuw.</string>
+    <string name="room_camera_action_failed">Camera kon niet worden bijgewerkt. Probeer opnieuw.</string>
+    <string name="room_camera_switch_failed">Kon niet van camera wisselen. Probeer opnieuw.</string>
+    <string name="room_screen_share_failed">Scherm delen kon niet worden gestart. Probeer opnieuw.</string>
+    <string name="room_screen_share_stop_failed">Scherm delen kon niet worden gestopt. Probeer opnieuw.</string>
+    <string name="room_subtitles_failed">Ondertiteling kon niet worden gestart. Probeer opnieuw.</string>
     <string name="room_action_participants">Leden</string>
     <string name="room_action_minimize">Minimaliseren</string>
     <string name="room_action_message">Berichten</string>
@@ -114,9 +121,12 @@
     <string name="room_rename_label">Weergavenaam</string>
     <string name="room_rename_confirm">Opslaan</string>
     <string name="room_rename_cancel">Annuleren</string>
+    <string name="room_rename_failed">Weergavenaam kon niet worden gewijzigd. Probeer opnieuw.</string>
     <string name="room_host_actions">Host-acties</string>
     <string name="room_host_mute">Microfoon dempen</string>
+    <string name="room_host_mute_failed">Deelnemer kon niet worden gedempt. Probeer opnieuw.</string>
     <string name="room_host_remove">Verwijderen</string>
+    <string name="room_host_remove_failed">Deelnemer kon niet worden verwijderd. Probeer opnieuw.</string>
     <string name="room_host_remove_title">Deelnemer verwijderen?</string>
     <string name="room_host_remove_message">%1$s verwijderen uit de vergadering? Deze persoon kan via de link opnieuw deelnemen.</string>
     <string name="room_lobby_banner">%1$d personen wachten om deel te nemen</string>
@@ -125,6 +135,7 @@
     <string name="room_lobby_admit">Toelaten</string>
     <string name="room_lobby_deny">Weigeren</string>
     <string name="room_lobby_admit_all">Iedereen toelaten</string>
+    <string name="room_lobby_action_failed">Wachtruimte kon niet worden bijgewerkt. Probeer opnieuw.</string>
     <string name="waiting_title">Wachten op goedkeuring van de host</string>
     <string name="waiting_subtitle">Je neemt deel aan „%1$s” zodra de host je binnenlaat.</string>
     <string name="waiting_cancel">Annuleren</string>
@@ -136,6 +147,8 @@
     <string name="room_more_host_settings">Host-instellingen</string>
     <string name="room_host_settings_title">Host-instellingen</string>
     <string name="room_host_settings_subtitle">Alleen de host kan dit wijzigen.</string>
+    <string name="room_host_settings_load_failed">Instellingen voor toegang tot de vergadering konden niet worden geladen</string>
+    <string name="room_host_settings_save_failed">Toegang tot de vergadering kon niet worden bijgewerkt. Probeer opnieuw.</string>
     <string name="room_host_access_section">Toegang</string>
     <string name="room_host_access_public_title">Open</string>
     <string name="room_host_access_public_desc">Iedereen kan direct deelnemen.</string>
@@ -747,6 +760,7 @@
     <string name="settings_quiet_end">Eindtijd</string>
     <string name="settings_quiet_hint">Tijdens stille uren worden berichtmeldingen gedempt; oproepen gaan gewoon over (accounttijdzone %1$s)</string>
     <string name="settings_quiet_save_failed">Instellingen opslaan mislukt</string>
+    <string name="settings_quiet_load_failed">Meldingsinstellingen konden niet worden geladen</string>
 
     <!-- P2-M3 重复日程创建 -->
     <string name="calendar_field_repeat">Herhalen</string>

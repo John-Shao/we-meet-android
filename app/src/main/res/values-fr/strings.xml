@@ -70,6 +70,13 @@
     <string name="room_action_mic">Microphone</string>
     <string name="room_action_camera">Caméra</string>
     <string name="room_action_switch_camera">Retourner</string>
+    <string name="room_hand_action_failed">Impossible de mettre à jour le statut de la main. Réessayez.</string>
+    <string name="room_microphone_action_failed">Impossible de mettre à jour le microphone. Réessayez.</string>
+    <string name="room_camera_action_failed">Impossible de mettre à jour la caméra. Réessayez.</string>
+    <string name="room_camera_switch_failed">Impossible de changer de caméra. Réessayez.</string>
+    <string name="room_screen_share_failed">Impossible de démarrer le partage d\'écran. Réessayez.</string>
+    <string name="room_screen_share_stop_failed">Impossible d\'arrêter le partage d\'écran. Réessayez.</string>
+    <string name="room_subtitles_failed">Impossible de démarrer les sous-titres. Réessayez.</string>
     <string name="room_action_participants">Membres</string>
     <string name="room_action_minimize">Réduire</string>
     <string name="room_action_message">Messages</string>
@@ -114,9 +121,12 @@
     <string name="room_rename_label">Nom affiché</string>
     <string name="room_rename_confirm">Enregistrer</string>
     <string name="room_rename_cancel">Annuler</string>
+    <string name="room_rename_failed">Impossible de modifier le nom affiché. Réessayez.</string>
     <string name="room_host_actions">Actions hôte</string>
     <string name="room_host_mute">Couper le micro</string>
+    <string name="room_host_mute_failed">Impossible de couper le micro du participant. Réessayez.</string>
     <string name="room_host_remove">Retirer</string>
+    <string name="room_host_remove_failed">Impossible de retirer le participant. Réessayez.</string>
     <string name="room_host_remove_title">Retirer ce participant ?</string>
     <string name="room_host_remove_message">Retirer %1$s de la réunion ? Cette personne pourra rejoindre via le lien.</string>
     <string name="room_lobby_banner">%1$d personnes attendent de rejoindre</string>
@@ -125,6 +135,7 @@
     <string name="room_lobby_admit">Admettre</string>
     <string name="room_lobby_deny">Refuser</string>
     <string name="room_lobby_admit_all">Admettre tous</string>
+    <string name="room_lobby_action_failed">Impossible de mettre à jour la salle d\'attente. Réessayez.</string>
     <string name="waiting_title">En attente de l\'approbation de l\'hôte</string>
     <string name="waiting_subtitle">Vous rejoindrez « %1$s » dès que l\'hôte vous laissera entrer.</string>
     <string name="waiting_cancel">Annuler</string>
@@ -136,6 +147,8 @@
     <string name="room_more_host_settings">Paramètres hôte</string>
     <string name="room_host_settings_title">Paramètres hôte</string>
     <string name="room_host_settings_subtitle">Seul l\'hôte peut modifier ces options.</string>
+    <string name="room_host_settings_load_failed">Impossible de charger les paramètres d\'accès à la réunion</string>
+    <string name="room_host_settings_save_failed">Impossible de mettre à jour l\'accès à la réunion. Réessayez.</string>
     <string name="room_host_access_section">Accès</string>
     <string name="room_host_access_public_title">Ouvert</string>
     <string name="room_host_access_public_desc">Tout le monde peut rejoindre directement.</string>
@@ -747,6 +760,7 @@
     <string name="settings_quiet_end">Heure de fin</string>
     <string name="settings_quiet_hint">Pendant cette période, les notifications de messages sont coupées ; les appels sonnent toujours (fuseau du compte %1$s)</string>
     <string name="settings_quiet_save_failed">Échec de sauvegarde des réglages</string>
+    <string name="settings_quiet_load_failed">Impossible de charger les paramètres de notification</string>
 
     <!-- P2-M3 重复日程创建 -->
     <string name="calendar_field_repeat">Répéter</string>
