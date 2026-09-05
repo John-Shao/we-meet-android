@@ -911,6 +911,7 @@
     <string name="meeting_room_filter_capacity">Capacité</string>
     <string name="meeting_room_filter_facility_count">Équipements (%1$d)</string>
     <string name="meeting_room_refresh">Actualiser les salles</string>
+    <string name="meeting_room_refresh_failed">Impossible d’actualiser les salles. Le dernier planning chargé est affiché.</string>
     <string name="meeting_room_open_schedule">Ouvrir le planning de la salle</string>
     <plurals name="meeting_room_availability_summary">
         <item quantity="one">Disponibilités avec %1$d réservation</item>

@@ -895,6 +895,7 @@
     <string name="meeting_room_filter_capacity">Capaciteit</string>
     <string name="meeting_room_filter_facility_count">Faciliteiten (%1$d)</string>
     <string name="meeting_room_refresh">Vergaderruimtes vernieuwen</string>
+    <string name="meeting_room_refresh_failed">De vergaderruimtes konden niet worden vernieuwd. Het laatst geladen schema wordt getoond.</string>
     <string name="meeting_room_open_schedule">Ruimteagenda openen</string>
     <plurals name="meeting_room_availability_summary">
         <item quantity="one">Beschikbaarheid met %1$d boeking</item>

@@ -79,7 +79,10 @@ class MeetingRoomsCalendarViewModel(
     val ui: StateFlow<MeetingRoomsCalendarUiState> = _ui.asStateFlow()
     private val _moveFailed = MutableSharedFlow<MoveFailure>(extraBufferCapacity = 1)
     val moveFailed = _moveFailed.asSharedFlow()
+    private val _refreshFailed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val refreshFailed = _refreshFailed.asSharedFlow()
     private val prefetchJobs = mutableMapOf<LocalDate, Job>()
+    private val movingBookingIds = mutableSetOf<String>()
 
     private val requests = MutableStateFlow(
         RoomTimelineRequest(
@@ -197,7 +200,18 @@ class MeetingRoomsCalendarViewModel(
 
     fun refresh() {
         cancelPrefetches()
-        _ui.update { it.copy(roomsByDate = emptyMap()) }
+        // Force a network request while retaining the visible day as an
+        // offline fallback. A failed resume/manual refresh must not replace a
+        // useful schedule with a full-screen error.
+        _ui.update {
+            it.copy(
+                roomsByDate = if (it.rooms.isEmpty()) {
+                    emptyMap()
+                } else {
+                    mapOf(it.selectedDate to it.rooms)
+                },
+            )
+        }
         requests.update { it.copy(refreshToken = it.refreshToken + 1) }
     }
 
@@ -251,6 +265,7 @@ class MeetingRoomsCalendarViewModel(
         val currentStart = runCatching { Instant.parse(booking.start) }.getOrNull()
         val currentEnd = runCatching { Instant.parse(booking.end) }.getOrNull()
         if (currentStart == newStart && currentEnd == newEnd) return
+        if (!movingBookingIds.add(bookingId)) return
 
         _ui.update { state ->
             state.copy(
@@ -269,22 +284,26 @@ class MeetingRoomsCalendarViewModel(
         }
 
         viewModelScope.launch {
-            runCatching {
-                calendarApi.rescheduleEvent(
-                    eventId,
-                    RescheduleEventRequest(startAt = startAt, endAt = endAt),
-                )
-            }.onSuccess {
-                refresh()
-            }.onFailure { error ->
-                _ui.update { it.copy(rooms = before) }
-                _moveFailed.tryEmit(
-                    if (error is HttpException && error.code() == 409) {
-                        MoveFailure.ROOM_CONFLICT
-                    } else {
-                        MoveFailure.OTHER
-                    },
-                )
+            try {
+                runCatching {
+                    calendarApi.rescheduleEvent(
+                        eventId,
+                        RescheduleEventRequest(startAt = startAt, endAt = endAt),
+                    )
+                }.onSuccess {
+                    refresh()
+                }.onFailure { error ->
+                    _ui.update { it.copy(rooms = before) }
+                    _moveFailed.tryEmit(
+                        if (error is HttpException && error.code() == 409) {
+                            MoveFailure.ROOM_CONFLICT
+                        } else {
+                            MoveFailure.OTHER
+                        },
+                    )
+                }
+            } finally {
+                movingBookingIds.remove(bookingId)
             }
         }
     }
@@ -331,6 +350,7 @@ class MeetingRoomsCalendarViewModel(
                     tooManyRooms = cachedRooms == null && tooMany,
                 )
             }
+            if (cachedRooms != null && !tooMany) _refreshFailed.tryEmit(Unit)
         }
     }
 

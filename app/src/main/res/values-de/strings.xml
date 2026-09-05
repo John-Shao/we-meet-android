@@ -895,6 +895,7 @@
     <string name="meeting_room_filter_capacity">Kapazität</string>
     <string name="meeting_room_filter_facility_count">Ausstattung (%1$d)</string>
     <string name="meeting_room_refresh">Besprechungsräume aktualisieren</string>
+    <string name="meeting_room_refresh_failed">Besprechungsräume konnten nicht aktualisiert werden. Der zuletzt geladene Zeitplan wird angezeigt.</string>
     <string name="meeting_room_open_schedule">Raumkalender öffnen</string>
     <plurals name="meeting_room_availability_summary">
         <item quantity="one">Verfügbarkeit mit %1$d Buchung</item>

@@ -984,6 +984,7 @@
     <string name="meeting_room_filter_capacity">Capacity</string>
     <string name="meeting_room_filter_facility_count">Facilities (%1$d)</string>
     <string name="meeting_room_refresh">Refresh meeting rooms</string>
+    <string name="meeting_room_refresh_failed">Couldn’t refresh meeting rooms. Showing the last loaded schedule.</string>
     <string name="meeting_room_open_schedule">Open room schedule</string>
     <plurals name="meeting_room_availability_summary">
         <item quantity="one">Availability timeline with %1$d booking</item>

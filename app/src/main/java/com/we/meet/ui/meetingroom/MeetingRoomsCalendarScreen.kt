@@ -49,6 +49,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -329,11 +330,22 @@ fun MeetingRoomsCalendarScreen(
 
     val moveFailedText = stringResource(R.string.calendar_move_failed)
     val roomConflictText = stringResource(R.string.calendar_move_room_conflict)
+    val refreshFailedText = stringResource(R.string.meeting_room_refresh_failed)
+    val retryText = stringResource(R.string.meeting_room_retry)
     LaunchedEffect(vm) {
         vm.moveFailed.collect { reason ->
             snackbar.showSnackbar(
                 if (reason == MoveFailure.ROOM_CONFLICT) roomConflictText else moveFailedText,
             )
+        }
+    }
+    LaunchedEffect(vm) {
+        vm.refreshFailed.collect {
+            val result = snackbar.showSnackbar(
+                message = refreshFailedText,
+                actionLabel = retryText,
+            )
+            if (result == SnackbarResult.ActionPerformed) vm.refresh()
         }
     }
 

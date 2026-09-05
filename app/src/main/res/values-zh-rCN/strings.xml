@@ -968,6 +968,7 @@
     <string name="meeting_room_filter_capacity">容纳人数</string>
     <string name="meeting_room_filter_facility_count">设施（%1$d）</string>
     <string name="meeting_room_refresh">刷新会议室</string>
+    <string name="meeting_room_refresh_failed">无法刷新会议室，正在显示上次加载的日程。</string>
     <string name="meeting_room_open_schedule">查看会议室日程</string>
     <plurals name="meeting_room_availability_summary">
         <item quantity="other">忙闲时间轴，共 %1$d 个预订</item>
