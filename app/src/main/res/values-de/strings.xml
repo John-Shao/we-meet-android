@@ -127,6 +127,7 @@
     <string name="waiting_subtitle">Du trittst „%1$s“ bei, sobald der Host dich hereinlässt.</string>
     <string name="waiting_cancel">Abbrechen</string>
     <string name="waiting_back">Zurück</string>
+    <string name="waiting_retry">Erneut versuchen</string>
     <string name="waiting_denied_title">Der Host hat deine Anfrage abgelehnt</string>
     <string name="waiting_denied_subtitle">Du kannst es später erneut versuchen oder den Host direkt kontaktieren.</string>
     <string name="waiting_error_title">Meeting nicht erreichbar</string>

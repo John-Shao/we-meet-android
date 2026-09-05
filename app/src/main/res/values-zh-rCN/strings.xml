@@ -134,6 +134,7 @@
     <string name="waiting_subtitle">主持人允许后将自动加入「%1$s」</string>
     <string name="waiting_cancel">取消</string>
     <string name="waiting_back">返回</string>
+    <string name="waiting_retry">重试</string>
     <string name="waiting_denied_title">主持人拒绝了你的请求</string>
     <string name="waiting_denied_subtitle">你可以稍后重试，或直接联系主持人。</string>
     <string name="waiting_error_title">无法连接到会议</string>

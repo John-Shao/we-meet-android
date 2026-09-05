@@ -127,6 +127,7 @@
     <string name="waiting_subtitle">Vous rejoindrez « %1$s » dès que l\'hôte vous laissera entrer.</string>
     <string name="waiting_cancel">Annuler</string>
     <string name="waiting_back">Retour</string>
+    <string name="waiting_retry">Réessayer</string>
     <string name="waiting_denied_title">L\'hôte a refusé votre demande</string>
     <string name="waiting_denied_subtitle">Vous pouvez réessayer plus tard ou contacter l\'hôte directement.</string>
     <string name="waiting_error_title">Impossible d\'accéder à la réunion</string>

@@ -127,6 +127,7 @@
     <string name="waiting_subtitle">Je neemt deel aan „%1$s” zodra de host je binnenlaat.</string>
     <string name="waiting_cancel">Annuleren</string>
     <string name="waiting_back">Terug</string>
+    <string name="waiting_retry">Opnieuw proberen</string>
     <string name="waiting_denied_title">De host heeft je verzoek geweigerd</string>
     <string name="waiting_denied_subtitle">Je kunt het later opnieuw proberen of de host direct benaderen.</string>
     <string name="waiting_error_title">Vergadering niet bereikbaar</string>

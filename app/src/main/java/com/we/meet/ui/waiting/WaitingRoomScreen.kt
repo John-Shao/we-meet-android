@@ -96,6 +96,7 @@ fun WaitingRoomScreen(
             WaitingRoomUiState.Phase.Denied -> DeniedContent(onBack = onCancel)
             WaitingRoomUiState.Phase.Error -> ErrorContent(
                 message = state.errorMessage,
+                onRetry = vm::retry,
                 onBack = onCancel,
             )
         }
@@ -164,7 +165,11 @@ private fun DeniedContent(onBack: () -> Unit) {
 }
 
 @Composable
-private fun ErrorContent(message: String?, onBack: () -> Unit) {
+private fun ErrorContent(
+    message: String?,
+    onRetry: () -> Unit,
+    onBack: () -> Unit,
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
@@ -190,6 +195,10 @@ private fun ErrorContent(message: String?, onBack: () -> Unit) {
         }
         Spacer(Modifier.height(Dimens.SpaceS))
         Button(
+            onClick = onRetry,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text(stringResource(R.string.waiting_retry)) }
+        OutlinedButton(
             onClick = onBack,
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(R.string.waiting_back)) }

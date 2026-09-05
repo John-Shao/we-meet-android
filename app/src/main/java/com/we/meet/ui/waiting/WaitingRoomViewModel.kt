@@ -10,6 +10,7 @@ import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.RequestEntryResponse
 import com.we.meet.data.repository.RoomRepository
 import com.we.meet.util.toUserMessage
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,8 +52,15 @@ class WaitingRoomViewModel(
 
     private val _state = MutableStateFlow(WaitingRoomUiState())
     val state: StateFlow<WaitingRoomUiState> = _state.asStateFlow()
+    private var pollingJob: Job? = null
 
     init {
+        startPolling()
+    }
+
+    fun retry() {
+        if (pollingJob?.isActive == true) return
+        _state.value = WaitingRoomUiState()
         startPolling()
     }
 
@@ -69,7 +77,8 @@ class WaitingRoomViewModel(
      * comfortably under that limit while still feeling responsive.
      */
     private fun startPolling() {
-        viewModelScope.launch {
+        if (pollingJob?.isActive == true) return
+        pollingJob = viewModelScope.launch {
             while (true) {
                 if (_state.value.phase != WaitingRoomUiState.Phase.Waiting) break
                 roomRepository.requestEntry(idOrSlug, username)

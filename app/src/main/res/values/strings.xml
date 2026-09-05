@@ -134,6 +134,7 @@
     <string name="waiting_subtitle">You\'ll join %1$s once the host lets you in.</string>
     <string name="waiting_cancel">Cancel</string>
     <string name="waiting_back">Back</string>
+    <string name="waiting_retry">Retry</string>
     <string name="waiting_denied_title">The host denied your request</string>
     <string name="waiting_denied_subtitle">You can try again later or contact the host directly.</string>
     <string name="waiting_error_title">Could not reach the meeting</string>
