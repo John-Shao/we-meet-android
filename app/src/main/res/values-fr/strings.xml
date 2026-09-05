@@ -528,6 +528,7 @@
     <string name="freebusy_unresolved_hint">%1$d membre(s) sans information de disponibilité</string>
     <string name="freebusy_create">Créer un événement</string>
     <string name="freebusy_load_error">Impossible de charger les disponibilités</string>
+    <string name="freebusy_event_details_load_error">Impossible de charger certains détails d’événement</string>
     <string name="freebusy_pick_hint">Touchez un créneau vide, faites glisser les points pour ajuster</string>
     <string name="freebusy_pick_members">Sélectionner des membres</string>
     <string name="freebusy_selected_count">Sélectionné : %1$d</string>

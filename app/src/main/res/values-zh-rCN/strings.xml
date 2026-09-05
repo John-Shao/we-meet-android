@@ -553,6 +553,7 @@
     <string name="freebusy_unresolved_hint">另有 %1$d 位成员无法获取忙闲</string>
     <string name="freebusy_create">创建日程</string>
     <string name="freebusy_load_error">忙闲加载失败</string>
+    <string name="freebusy_event_details_load_error">部分日程详情加载失败</string>
     <string name="freebusy_pick_hint">点空白选时段，拖圆点调整</string>
     <string name="freebusy_pick_members">选择成员</string>
     <string name="freebusy_selected_count">已选: %1$d 人</string>

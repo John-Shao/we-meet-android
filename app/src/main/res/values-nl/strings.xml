@@ -528,6 +528,7 @@
     <string name="freebusy_unresolved_hint">%1$d leden hebben geen vrij/bezet-info</string>
     <string name="freebusy_create">Afspraak aanmaken</string>
     <string name="freebusy_load_error">Laden van vrij/bezet mislukt</string>
+    <string name="freebusy_event_details_load_error">Sommige afspraakdetails konden niet worden geladen</string>
     <string name="freebusy_pick_hint">Tik op een leeg blok, sleep de punten om aan te passen</string>
     <string name="freebusy_pick_members">Leden selecteren</string>
     <string name="freebusy_selected_count">Geselecteerd: %1$d</string>

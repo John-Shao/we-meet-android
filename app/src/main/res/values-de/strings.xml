@@ -528,6 +528,7 @@
     <string name="freebusy_unresolved_hint">%1$d Mitglied(er) ohne Frei/Belegt-Informationen</string>
     <string name="freebusy_create">Termin erstellen</string>
     <string name="freebusy_load_error">Frei/Belegt konnte nicht geladen werden</string>
+    <string name="freebusy_event_details_load_error">Einige Termindetails konnten nicht geladen werden</string>
     <string name="freebusy_pick_hint">Leeren Bereich antippen, Punkte ziehen zum Anpassen</string>
     <string name="freebusy_pick_members">Mitglieder auswählen</string>
     <string name="freebusy_selected_count">Ausgewählt: %1$d</string>

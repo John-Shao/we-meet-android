@@ -211,15 +211,24 @@ fun FreeBusyCompareScreen(
     // 标题,他人列显示「他对我这场会的回复状态」——后者本来就能在日程详情里
     // 看到,不是新增泄露。拉失败就退回纯灰块,不影响忙闲主流程。 ──
     var myEvents by remember { mutableStateOf<List<CalendarEventDto>>(emptyList()) }
-    LaunchedEffect(day, busyReloadKey) {
+    var myEventsError by remember { mutableStateOf(false) }
+    var myEventsReloadKey by remember { mutableStateOf(0) }
+    LaunchedEffect(day, busyReloadKey, myEventsReloadKey) {
+        // Never carry the previous day's event metadata into a newly selected day.
+        myEvents = emptyList()
+        myEventsError = false
         val dayStart = day.atStartOfDay(zone).toInstant()
         val dayEnd = day.plusDays(1).atStartOfDay(zone).toInstant()
-        myEvents = runCatching {
+        runCatching {
             app.apiClient.calendarApi.listEvents(
                 start = DateTimeFormatter.ISO_INSTANT.format(dayStart),
                 end = DateTimeFormatter.ISO_INSTANT.format(dayEnd),
             ).results
-        }.getOrDefault(emptyList())
+        }.onSuccess {
+            myEvents = it
+        }.onFailure {
+            myEventsError = true
+        }
     }
 
     // 起止(当日分钟制)→ 我的日程。**要求起止完全一致**才算同一场:后端的
@@ -621,6 +630,22 @@ fun FreeBusyCompareScreen(
                                 .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
                         ) {
                             // 推荐时段(全员空闲):点一下即套用,免得自己扫空档。
+                            if (myEventsError) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.freebusy_event_details_load_error),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    TextButton(onClick = { myEventsReloadKey += 1 }) {
+                                        Text(stringResource(DesignR.string.common_retry))
+                                    }
+                                }
+                            }
                             if (suggestions.isNotEmpty()) {
                                 Text(
                                     text = stringResource(R.string.freebusy_suggest_title),
