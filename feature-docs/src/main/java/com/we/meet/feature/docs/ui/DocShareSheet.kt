@@ -482,12 +482,16 @@ class DocShareViewModel(
     }
 
     fun updateLink(reach: String? = null, role: String? = null) {
-        val newReach = reach ?: _state.value.linkReach
-        val newRole = role ?: _state.value.linkRole
+        val prevReach = _state.value.linkReach
+        val prevRole = _state.value.linkRole
+        val newReach = reach ?: prevReach
+        val newRole = role ?: prevRole
         if (newReach.isBlank() || newRole.isBlank()) return
+        // 乐观更新;失败回滚,避免 chip 显示服务端并未生效的值。
         _state.update { it.copy(linkReach = newReach, linkRole = newRole) }
         viewModelScope.launch {
             runCatching { repo.updateLinkConfiguration(doc.id, newReach, newRole) }
+                .onFailure { _state.update { it.copy(linkReach = prevReach, linkRole = prevRole) } }
         }
     }
 
@@ -500,7 +504,10 @@ class DocShareViewModel(
             _state.update { it.copy(userSearching = true) }
             runCatching { repo.searchUsers(query, documentId = doc.id) }
                 .onSuccess { users ->
-                    _state.update { it.copy(userResults = users, userSearching = false) }
+                    // 仅在当前 query 仍是本次请求时应用结果,避免旧响应覆盖新输入。
+                    if (_state.value.userQuery == query) {
+                        _state.update { it.copy(userResults = users, userSearching = false) }
+                    }
                 }
                 .onFailure { _state.update { it.copy(userSearching = false) } }
         }

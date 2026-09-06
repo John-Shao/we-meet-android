@@ -40,10 +40,15 @@ class DocsSearchViewModel(private val repo: DocsRepository) : ViewModel() {
             _state.update { it.copy(loading = true, error = false) }
             runCatching { repo.search(query) }
                 .onSuccess { page ->
-                    _state.update { it.copy(results = page.results, loading = false) }
+                    // 仅在当前 query 仍是本次请求时应用结果,避免旧响应覆盖新输入。
+                    if (_state.value.query == query) {
+                        _state.update { it.copy(results = page.results, loading = false) }
+                    }
                 }
                 .onFailure {
-                    _state.update { it.copy(loading = false, error = true) }
+                    if (_state.value.query == query) {
+                        _state.update { it.copy(loading = false, error = true) }
+                    }
                 }
         }
     }
@@ -56,10 +61,14 @@ class DocsSearchViewModel(private val repo: DocsRepository) : ViewModel() {
             _state.update { it.copy(loading = true, error = false) }
             runCatching { repo.search(q) }
                 .onSuccess { page ->
-                    _state.update { it.copy(results = page.results, loading = false) }
+                    if (_state.value.query == q) {
+                        _state.update { it.copy(results = page.results, loading = false) }
+                    }
                 }
                 .onFailure {
-                    _state.update { it.copy(loading = false, error = true) }
+                    if (_state.value.query == q) {
+                        _state.update { it.copy(loading = false, error = true) }
+                    }
                 }
         }
     }

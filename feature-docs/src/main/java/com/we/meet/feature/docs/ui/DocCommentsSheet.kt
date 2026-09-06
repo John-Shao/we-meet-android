@@ -347,6 +347,14 @@ class DocCommentsViewModel(
         }
     }
 
+    /** 静默刷新线程:不动 `loading`,避免反应/解决等局部操作把整列表闪成 spinner。 */
+    private fun refreshThreadsSilently() {
+        viewModelScope.launch {
+            runCatching { repo.threads(docId) }
+                .onSuccess { threads -> _state.update { it.copy(threads = threads) } }
+        }
+    }
+
     fun createThread(text: String) {
         if (_state.value.sending) return
         viewModelScope.launch {
@@ -404,7 +412,7 @@ class DocCommentsViewModel(
             runCatching {
                 if (mine) repo.removeReaction(docId, threadId, commentId, emoji)
                 else repo.addReaction(docId, threadId, commentId, emoji)
-            }.onSuccess { load() }
+            }.onSuccess { refreshThreadsSilently() }
         }
     }
 
@@ -429,11 +437,27 @@ private fun commentBodyText(body: Any?): String {
     return inlines.flatMap(::inlineTexts).joinToString("")
 }
 
+/**
+ * `content` 是 `Any?`,Moshi 会把嵌套 inline 数组反序列化成 `List<LinkedHashMap>`
+ * 而非 [JsonInlineDto];若用 `filterIsInstance` 会丢链接/提及的行内文字。因此沿用
+ * BlockNoteRenderer 的做法:先取已类型化的,否则用 Moshi 重解析,递归构建类型化 DTO。
+ */
 private fun inlineTexts(inline: JsonInlineDto): List<String> {
     val text = inline.text.orEmpty()
-    val nested = (inline.content as? List<*>)?.filterIsInstance<JsonInlineDto>()
+    val nested = (inline.content as? List<*>)
+        ?.toCommentInlines()
         ?.flatMap(::inlineTexts) ?: emptyList()
     return listOf(text) + nested
+}
+
+private fun List<*>.toCommentInlines(): List<JsonInlineDto> {
+    val typed = filterIsInstance<JsonInlineDto>()
+    if (typed.isNotEmpty()) return typed
+    return runCatching {
+        commentMoshi.adapter<List<JsonInlineDto>>(
+            com.squareup.moshi.Types.newParameterizedType(List::class.java, JsonInlineDto::class.java),
+        ).fromJsonValue(this)
+    }.getOrNull() ?: emptyList()
 }
 
 private val PRESET_EMOJIS = listOf("👍", "❤️", "😂", "🎉")

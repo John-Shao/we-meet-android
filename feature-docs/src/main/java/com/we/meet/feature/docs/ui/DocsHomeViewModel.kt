@@ -64,6 +64,8 @@ class DocsHomeViewModel(
             } else {
                 _state.update { it.copy(refreshing = true) }
             }
+            // 取消进行中的加载更多(可能用旧 page 拼接造成重复),随刷新整体重置分页。
+            _state.update { it.copy(loadingMore = false) }
             page = 1
             val result = runCatching { fetchPage(1) }
             result.onSuccess { pageDto ->

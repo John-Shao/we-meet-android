@@ -57,9 +57,20 @@ class DocDetailViewModel(
 
     fun load() {
         viewModelScope.launch {
-            _state.update { it.copy(loading = true, error = false, noAccess = false) }
+            // 已有内容时静默刷新(不置 loading),避免「切后台再回前台」整屏闪 loading
+            // 盖住已渲染文档;首次加载(无 doc)才置 loading。
+            val hasContent = _state.value.doc != null
+            _state.update {
+                it.copy(
+                    loading = !hasContent,
+                    error = false,
+                    noAccess = false,
+                )
+            }
             runCatching { repo.document(docId) }
-                .onSuccess { doc -> _state.update { it.copy(doc = doc, loading = false) } }
+                .onSuccess { doc ->
+                    _state.update { it.copy(doc = doc, loading = false) }
+                }
                 .onFailure { e ->
                     _state.update {
                         it.copy(
