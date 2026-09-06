@@ -13,9 +13,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Sort
-import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Search
@@ -146,9 +147,14 @@ fun DocsHomeScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showCreate = true }) {
+            FloatingActionButton(
+                onClick = { showCreate = true },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = CircleShape,
+            ) {
                 Icon(
-                    imageVector = Icons.Outlined.Add,
+                    imageVector = Icons.Filled.Add,
                     contentDescription = stringResource(R.string.cd_docs_create),
                 )
             }
