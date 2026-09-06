@@ -64,6 +64,7 @@
     <string name="docs_attachment">附件</string>
     <string name="docs_attachment_open">点击打开</string>
     <string name="docs_comments">评论</string>
+<string name="docs_edit">编辑</string>
     <string name="docs_comment_hint">写下评论</string>
     <string name="cd_docs_send_comment">发送评论</string>
     <string name="docs_comments_empty_title">还没有评论</string>

@@ -28,6 +28,70 @@ import com.we.meet.R
 import com.we.meet.ui.theme.WeMeetTheme
 
 /**
+ * 云文档编辑画布(M3,设计文档 §4.6):独立轻量 WebView,直载 `?chrome=editor`
+ * 的收敛编辑器。仅当用户对该文档可编辑时才会进入(入口在原生详情页)。
+ * 返回键先走 WebView 历史,退出即销毁——与常驻云文档 tab 互不干扰。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DocsEditorScreen(url: String, onClose: () -> Unit) {
+    val context = LocalContext.current
+    val darkTheme = WeMeetTheme.isDark
+    val webView =
+        remember { createDocsWebView(context, darkTheme = darkTheme, deferInitialLoad = true) }
+    LaunchedEffect(webView, url) { loadDocsEditorEntry(context, webView, url) }
+    var canGoBack by remember { mutableStateOf(false) }
+    var loading by remember { mutableStateOf(true) }
+    var everLoaded by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf(false) }
+
+    DisposableEffect(webView) {
+        val client = webView.webViewClient as? DocsWebViewClient
+        client?.onHistoryChanged = { canGoBack = webView.canGoBack() }
+        client?.onLoadingChanged = { l ->
+            loading = l
+            if (l) error = false else everLoaded = true
+        }
+        client?.onMainFrameError = { error = true; loading = false }
+        onDispose {
+            client?.onHistoryChanged = null
+            client?.onLoadingChanged = null
+            client?.onMainFrameError = null
+            (webView.parent as? ViewGroup)?.removeView(webView)
+            webView.destroy()
+        }
+    }
+    BackHandler(enabled = canGoBack) { webView.goBack() }
+
+    Scaffold(
+        topBar = {
+            WeMeetTopBar(
+                title = stringResource(R.string.docs_editor_title),
+                onClose = onClose,
+            )
+        },
+    ) { padding ->
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .consumeWindowInsets(padding)
+                .imePadding(),
+        ) {
+            AndroidView(
+                factory = { webView },
+                modifier = Modifier.fillMaxSize(),
+            )
+            DocsLoadStateOverlay(
+                loading = loading && !everLoaded,
+                error = error,
+                onRetry = { error = false; loading = true; webView.reload() },
+            )
+        }
+    }
+}
+
+/**
  * 搜索统一 M2:全局搜索「文档」命中的应用内查看器。
  *
  * 独立轻量 WebView(复用 [createDocsWebView] 全套配置:embed UA/允许域拦截/

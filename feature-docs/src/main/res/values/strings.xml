@@ -64,6 +64,7 @@
     <string name="docs_attachment">Attachment</string>
     <string name="docs_attachment_open">Tap to open</string>
     <string name="docs_comments">Comments</string>
+    <string name="docs_edit">Edit</string>
     <string name="docs_comment_hint">Write a comment</string>
     <string name="cd_docs_send_comment">Send comment</string>
     <string name="docs_comments_empty_title">No comments yet</string>

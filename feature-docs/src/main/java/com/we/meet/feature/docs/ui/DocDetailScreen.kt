@@ -71,6 +71,7 @@ fun DocDetailScreen(
     onBack: () -> Unit,
     onOpenDoc: (docId: String) -> Unit,
     onOpenWebUrl: (String) -> Unit,
+    onOpenEditor: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val vm: DocDetailViewModel = viewModel(
@@ -236,6 +237,17 @@ fun DocDetailScreen(
                                 )
                             }
                         }
+                    }
+                    if (doc.abilities.update) {
+                        PrimaryButton(
+                            text = stringResource(R.string.docs_edit),
+                            onClick = {
+                                onOpenEditor(DocLinks.editorUrl(deps.docsBaseUrl, doc.id))
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = Dimens.SpaceS),
+                        )
                     }
                     Row(
                         modifier = Modifier

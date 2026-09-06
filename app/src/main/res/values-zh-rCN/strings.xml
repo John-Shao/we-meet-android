@@ -787,6 +787,7 @@
     <string name="meeting_detail_chapters_empty">暂无章节——章节随纪要一起生成。</string>
     <string name="meeting_detail_summary_edited">已编辑</string>
     <string name="docs_viewer_title">文档</string>
+    <string name="docs_editor_title">编辑</string>
     <string name="docs_load_error">文档加载失败</string>
 
     <!-- P5 建议参会 + 统一邀请面板 -->

@@ -733,6 +733,7 @@
     <string name="meeting_detail_chapters_empty">Noch keine Kapitel — sie entstehen mit der Zusammenfassung.</string>
     <string name="meeting_detail_summary_edited">Bearbeitet</string>
     <string name="docs_viewer_title">Dokument</string>
+    <string name="docs_editor_title">Bearbeiten</string>
 
     <!-- P9 会议室(实体会议室;LiveKit 视频房间用 room_* 前缀,勿混) -->
     <string name="meeting_room_field_label">Besprechungsraum</string>

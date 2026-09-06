@@ -361,6 +361,15 @@ object Routes {
         return "$DOCS_VIEWER_BASE/$enc"
     }
 
+    // 云文档编辑画布(M3):可编辑文档的「编辑」入口 → 独立 WebView。
+    private const val DOCS_EDITOR_BASE = "docs_editor"
+    const val DOCS_EDITOR = "$DOCS_EDITOR_BASE/{url}"
+
+    fun docsEditor(url: String): String {
+        val enc = URLEncoder.encode(url, StandardCharsets.UTF_8.name())
+        return "$DOCS_EDITOR_BASE/$enc"
+    }
+
     // 云文档原生化(M1):原生详情/搜索/回收站路由;WebView 查看器保留为兜底。
     private const val DOCS_DETAIL_BASE = "docs_detail"
     const val DOCS_DETAIL = "$DOCS_DETAIL_BASE/{docId}"
@@ -985,6 +994,17 @@ fun AppNav() {
         }
 
         composable(
+            route = Routes.DOCS_EDITOR,
+            arguments = listOf(navArgument("url") { type = NavType.StringType }),
+        ) { entry ->
+            val url = Routes.decode(entry.arguments?.getString("url").orEmpty())
+            com.we.meet.ui.docs.DocsEditorScreen(
+                url = url,
+                onClose = rememberOnceOnly(safePop),
+            )
+        }
+
+        composable(
             route = Routes.DOCS_DETAIL,
             arguments = listOf(navArgument("docId") { type = NavType.StringType }),
         ) { entry ->
@@ -995,6 +1015,7 @@ fun AppNav() {
                 onBack = rememberOnceOnly(safePop),
                 onOpenDoc = { otherDocId -> navController.navigate(Routes.docsDetail(otherDocId)) },
                 onOpenWebUrl = { url -> navController.navigate(Routes.docsViewer(url)) },
+                onOpenEditor = { url -> navController.navigate(Routes.docsEditor(url)) },
             )
         }
 

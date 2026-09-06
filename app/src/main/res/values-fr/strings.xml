@@ -745,6 +745,7 @@
     <string name="meeting_detail_chapters_empty">Pas encore de chapitres — générés avec le compte rendu.</string>
     <string name="meeting_detail_summary_edited">Modifié</string>
     <string name="docs_viewer_title">Document</string>
+    <string name="docs_editor_title">Modifier</string>
 
     <!-- P9 会议室(实体会议室;LiveKit 视频房间用 room_* 前缀,勿混) -->
     <string name="meeting_room_field_label">Salle de réunion</string>

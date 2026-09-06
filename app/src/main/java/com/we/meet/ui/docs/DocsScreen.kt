@@ -391,6 +391,19 @@ suspend fun loadDocsDeepLinkEntry(context: Context, webView: WebView, url: Strin
     withContext(Dispatchers.Main.immediate) { webView.loadUrl(entryUrl) }
 }
 
+/**
+ * 编辑画布进站(设计文档 §4.6):直载 `docs/{id}/?embed=1&chrome=editor`。同样走
+ * 票据优先,拿不到就直载 URL 本身(靠 CookieManager 里已有的 docs 会话)。
+ *
+ * 镜像尚未支持 `chrome=editor` 时该值被当作 `full` 处理 → 渲染完整文档页(可编辑
+ * 用户即编辑器),不破坏加载;待镜像支持后即为收敛的无壳画布。
+ */
+suspend fun loadDocsEditorEntry(context: Context, webView: WebView, url: String) {
+    val next = docsRelativePathOrNull(url)
+    val entryUrl = if (next == null) url else docsEntryUrl(context, next = next, fallback = url)
+    withContext(Dispatchers.Main.immediate) { webView.loadUrl(entryUrl) }
+}
+
 /** 给站内相对路径追加 `chrome=none`(已有则不重复加)。 */
 private fun withReadingMode(path: String): String = when {
     path.contains("chrome=none") -> path

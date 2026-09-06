@@ -64,6 +64,7 @@
     <string name="docs_attachment">Anhang</string>
     <string name="docs_attachment_open">Zum Öffnen tippen</string>
     <string name="docs_comments">Kommentare</string>
+<string name="docs_edit">Bearbeiten</string>
     <string name="docs_comment_hint">Kommentar schreiben</string>
     <string name="cd_docs_send_comment">Kommentar senden</string>
     <string name="docs_comments_empty_title">Noch keine Kommentare</string>
