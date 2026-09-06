@@ -39,6 +39,8 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
     val darkTheme = WeMeetTheme.isDark
     val webView =
         remember { createDocsWebView(context, darkTheme = darkTheme, deferInitialLoad = true) }
+    // 评论锚定:编辑画布 URL 可带 `thread=<threadId>`,加载完成后让 docs 定位到该评论。
+    val threadId = remember(url) { commentThreadIdFromUrl(url) }
     LaunchedEffect(webView, url) { loadDocsEditorEntry(context, webView, url) }
     var canGoBack by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
@@ -59,6 +61,17 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
             client?.onMainFrameError = null
             (webView.parent as? ViewGroup)?.removeView(webView)
             webView.destroy()
+        }
+    }
+    // 页面首次加载完成后,若带评论线程锚定,注入 wemeet-navigate-comment 让 docs 定位。
+    LaunchedEffect(everLoaded, threadId) {
+        if (everLoaded && threadId != null) {
+            postToDocs(
+                webView,
+                org.json.JSONObject()
+                    .put("type", "wemeet-navigate-comment")
+                    .put("threadId", threadId),
+            )
         }
     }
     BackHandler(enabled = canGoBack) { webView.goBack() }
@@ -158,3 +171,9 @@ fun DocsViewerScreen(url: String, onClose: () -> Unit) {
         }
     }
 }
+
+/** 从编辑画布 URL 提取 `thread=<threadId>`(评论锚定),无则 null。 */
+private fun commentThreadIdFromUrl(url: String): String? =
+    runCatching { android.net.Uri.parse(url).getQueryParameter("thread") }
+        .getOrNull()
+        ?.takeIf { it.isNotBlank() }

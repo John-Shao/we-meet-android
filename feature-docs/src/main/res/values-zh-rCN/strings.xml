@@ -78,6 +78,7 @@
     <string name="docs_comments_count">%1$d 条回复</string>
     <string name="docs_unknown_user">未知用户</string>
     <string name="docs_reply">回复</string>
+    <string name="docs_view_in_doc">在文档中查看</string>
     <string name="docs_reply_confirm">发送</string>
     <string name="docs_resolve">标记已解决</string>
     <string name="docs_reopen">重新打开</string>

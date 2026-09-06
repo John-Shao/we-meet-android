@@ -78,6 +78,7 @@
     <string name="docs_comments_count">%1$d antwoorden</string>
     <string name="docs_unknown_user">Onbekende gebruiker</string>
     <string name="docs_reply">Beantwoorden</string>
+    <string name="docs_view_in_doc">In document bekijken</string>
     <string name="docs_reply_confirm">Versturen</string>
     <string name="docs_resolve">Als opgelost markeren</string>
     <string name="docs_reopen">Heropenen</string>

@@ -323,6 +323,10 @@ fun DocDetailScreen(
             deps = deps,
             docId = docId,
             onDismiss = { showComments = false },
+            onOpenComment = { threadId ->
+                showComments = false
+                onOpenEditor(DocLinks.editorUrl(deps.docsBaseUrl, docId, threadId))
+            },
         )
     }
 

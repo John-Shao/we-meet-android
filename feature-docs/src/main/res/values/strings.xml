@@ -78,6 +78,7 @@
     <string name="docs_comments_count">%1$d replies</string>
     <string name="docs_unknown_user">Unknown user</string>
     <string name="docs_reply">Reply</string>
+    <string name="docs_view_in_doc">View in document</string>
     <string name="docs_reply_confirm">Send</string>
     <string name="docs_resolve">Resolve</string>
     <string name="docs_reopen">Reopen</string>

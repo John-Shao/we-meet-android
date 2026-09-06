@@ -78,6 +78,7 @@
     <string name="docs_comments_count">%1$d réponses</string>
     <string name="docs_unknown_user">Utilisateur inconnu</string>
     <string name="docs_reply">Répondre</string>
+    <string name="docs_view_in_doc">Voir dans le document</string>
     <string name="docs_reply_confirm">Envoyer</string>
     <string name="docs_resolve">Marquer comme résolu</string>
     <string name="docs_reopen">Rouvrir</string>

@@ -23,7 +23,15 @@ object DocLinks {
      * 编辑画布 URL(设计文档 §4.6):`?chrome=editor` 让 docs 收敛到「纯编辑器」。
      * 镜像尚未理解该值前会退化为完整文档页(对可编辑用户即编辑器本身),不破坏加载;
      * 待镜像支持后即为无站点壳的画布。`lang` 走 UA 兜底(docs 的 i18next 已随 UA 命中)。
+     *
+     * @param commentThreadId 可选:评论锚定 —— 进入画布后让 docs 定位到该线程。
      */
-    fun editorUrl(docsBaseUrl: String, docId: String): String =
-        "${docsBaseUrl.trimEnd('/')}/docs/$docId/?embed=1&chrome=editor"
+    fun editorUrl(docsBaseUrl: String, docId: String, commentThreadId: String? = null): String {
+        val base = "${docsBaseUrl.trimEnd('/')}/docs/$docId/?embed=1&chrome=editor"
+        return if (commentThreadId.isNullOrBlank()) {
+            base
+        } else {
+            "$base&thread=${android.net.Uri.encode(commentThreadId)}"
+        }
+    }
 }

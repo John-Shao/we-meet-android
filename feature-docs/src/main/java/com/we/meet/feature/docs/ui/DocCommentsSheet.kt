@@ -61,6 +61,7 @@ fun DocCommentsSheet(
     deps: DocsDeps,
     docId: String,
     onDismiss: () -> Unit,
+    onOpenComment: (String) -> Unit = {},
 ) {
     val vm: DocCommentsViewModel = viewModel(
         factory = viewModelFactory {
@@ -113,6 +114,7 @@ fun DocCommentsSheet(
                                 onReply = { replyTo = thread },
                                 onToggleResolved = { vm.setResolved(thread.id, !thread.resolved) },
                                 onReact = { commentId, emoji -> vm.toggleReaction(commentId, emoji) },
+                                onViewInDoc = { onOpenComment(thread.id) },
                             )
                         }
                     }
@@ -195,6 +197,7 @@ private fun ThreadItem(
     onReply: () -> Unit,
     onToggleResolved: () -> Unit,
     onReact: (commentId: String, emoji: String) -> Unit,
+    onViewInDoc: () -> Unit,
 ) {
     val first = thread.comments.firstOrNull()
     Surface(
@@ -249,6 +252,9 @@ private fun ThreadItem(
                 Row {
                     androidx.compose.material3.TextButton(onClick = onReply) {
                         Text(stringResource(R.string.docs_reply))
+                    }
+                    androidx.compose.material3.TextButton(onClick = onViewInDoc) {
+                        Text(stringResource(R.string.docs_view_in_doc))
                     }
                     androidx.compose.material3.TextButton(onClick = onToggleResolved) {
                         Icon(
