@@ -55,6 +55,12 @@ interface DocsApi {
     @POST("api/v1.0/documents/{id}/restore/")
     suspend fun restore(@Path("id") id: String)
 
+    @POST("api/v1.0/documents/{id}/duplicate/")
+    suspend fun duplicateDocument(
+        @Path("id") id: String,
+        @Body body: DocsDuplicateRequest = DocsDuplicateRequest(),
+    ): DocsDuplicateResponse
+
     @POST("api/v1.0/documents/{id}/move/")
     suspend fun move(
         @Path("id") id: String,
@@ -327,6 +333,21 @@ data class DocsMoveRequest(
 
 @JsonClass(generateAdapter = true)
 data class DocsMoveResponse(val message: String? = null)
+
+/**
+ * 复制文档(POST /documents/{id}/duplicate/)请求体。后端用
+ * DocumentDuplicationSerializer(partial),空 body / `{}` 即可(默认不复制
+ * 后端访问权限,追加为当前文档的兄弟节点)。
+ */
+@JsonClass(generateAdapter = true)
+data class DocsDuplicateRequest(
+    @Json(name = "with_accesses") val withAccesses: Boolean = false,
+    @Json(name = "with_descendants") val withDescendants: Boolean = false,
+)
+
+/** 复制后的新文档引用。 */
+@JsonClass(generateAdapter = true)
+data class DocsDuplicateResponse(val id: String = "")
 
 /** Move positions — mirrors docs' MoveNodePositionChoices. */
 object DocsMovePositions {

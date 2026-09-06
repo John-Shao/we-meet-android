@@ -19,6 +19,8 @@
     <string name="docs_untitled">未命名文档</string>
     <string name="docs_rename_title">重命名</string>
     <string name="docs_copy_link">复制链接</string>
+    <string name="docs_duplicate">复制文档</string>
+    <string name="docs_duplicated">文档已复制</string>
     <string name="docs_rename_confirm">保存</string>
     <string name="docs_delete_title">删除文档</string>
     <string name="docs_delete_message">删除后 30 天内可在回收站恢复</string>

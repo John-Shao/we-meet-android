@@ -19,6 +19,8 @@
     <string name="docs_untitled">Document zonder naam</string>
     <string name="docs_rename_title">Hernoemen</string>
     <string name="docs_copy_link">Link kopiëren</string>
+    <string name="docs_duplicate">Dupliceren</string>
+    <string name="docs_duplicated">Document gedupliceerd</string>
     <string name="docs_rename_confirm">Opslaan</string>
     <string name="docs_delete_title">Document verwijderen</string>
     <string name="docs_delete_message">Het kan binnen 30 dagen uit de prullenbak worden hersteld</string>

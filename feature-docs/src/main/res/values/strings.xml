@@ -19,6 +19,8 @@
     <string name="docs_untitled">Untitled document</string>
     <string name="docs_rename_title">Rename</string>
     <string name="docs_copy_link">Copy link</string>
+    <string name="docs_duplicate">Duplicate</string>
+    <string name="docs_duplicated">Document duplicated</string>
     <string name="docs_rename_confirm">Save</string>
     <string name="docs_delete_title">Delete document</string>
     <string name="docs_delete_message">It can be restored from the trash within 30 days</string>

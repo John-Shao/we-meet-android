@@ -94,6 +94,11 @@ class DocsRepository(private val session: DocsSessionManager) {
         docsCall { if (add) api.addFavorite(id) else api.removeFavorite(id) }
     }
 
+    /** 复制文档(与 Web 端 DocToolBox 的 Duplicate 对齐) → 返回新文档 id。 */
+    suspend fun duplicate(id: String): String? = docsCall {
+        api.duplicateDocument(id).id.takeIf { it.isNotBlank() }
+    }
+
     suspend fun restore(id: String) {
         docsCall { api.restore(id) }
     }

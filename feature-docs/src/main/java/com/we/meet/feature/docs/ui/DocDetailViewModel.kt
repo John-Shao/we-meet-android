@@ -159,6 +159,23 @@ class DocDetailViewModel(
         }
     }
 
+    /** 复制文档(§4.7 对齐 Web 端 Duplicate) → 成功回调新文档 id。 */
+    fun duplicate(onDuplicated: (String) -> Unit) {
+        val doc = _state.value.doc ?: return
+        viewModelScope.launch {
+            runCatching { repo.duplicate(doc.id) }
+                .onSuccess { newId ->
+                    if (newId != null) {
+                        _toasts.tryEmit(R.string.docs_duplicated)
+                        onDuplicated(newId)
+                    } else {
+                        _toasts.tryEmit(R.string.docs_load_error)
+                    }
+                }
+                .onFailure { _toasts.tryEmit(R.string.docs_load_error) }
+        }
+    }
+
     fun move(targetId: String, position: String, onMoved: () -> Unit) {
         val doc = _state.value.doc ?: return
         viewModelScope.launch {

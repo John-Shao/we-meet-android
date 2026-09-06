@@ -19,6 +19,8 @@
     <string name="docs_untitled">Document sans titre</string>
     <string name="docs_rename_title">Renommer</string>
     <string name="docs_copy_link">Copier le lien</string>
+    <string name="docs_duplicate">Dupliquer</string>
+    <string name="docs_duplicated">Document dupliqué</string>
     <string name="docs_rename_confirm">Enregistrer</string>
     <string name="docs_delete_title">Supprimer le document</string>
     <string name="docs_delete_message">Il peut être restauré depuis la corbeille pendant 30 jours</string>

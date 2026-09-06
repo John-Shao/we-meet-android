@@ -169,6 +169,15 @@ fun DocDetailScreen(
                                         },
                                     )
                                 }
+                                if (doc.abilities.duplicate) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.docs_duplicate), softWrap = false) },
+                                        onClick = {
+                                            menuExpanded = false
+                                            vm.duplicate { newId -> onOpenDoc(newId) }
+                                        },
+                                    )
+                                }
                                 if (doc.abilities.destroy) {
                                     DropdownMenuItem(
                                         text = {
