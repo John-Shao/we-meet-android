@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +52,7 @@ import com.we.meet.core.directory.data.ContactPrefs
 import com.we.meet.feature.im.ImSession
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.data.settings.ThemeMode
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,6 +71,7 @@ fun SettingsScreen(
     val app = LocalContext.current.applicationContext as WeMeetApp
     val settingsStore = app.settingsStore
     val themeMode by settingsStore.themeMode.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
     var showSignOutConfirm by remember { mutableStateOf(false) }
 
     var backPending by remember { mutableStateOf(false) }
@@ -121,6 +124,9 @@ fun SettingsScreen(
                     ImSession.shutdown()
                     // 星标名单同理:换账号后不该还挂着上一个人的星标。
                     ContactPrefs.clear()
+                    // 云文档原生栈同理:清掉 docs_sessionid/csrftoken,下个账号
+                    // 不能继承上一个账号的 docs 会话(设计文档 §4.2/§4.10)。
+                    scope.launch { app.docsSessionManager.invalidate() }
                     onSignedOut()
                 }) {
                     Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.error)

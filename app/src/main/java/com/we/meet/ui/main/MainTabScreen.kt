@@ -70,6 +70,8 @@ import com.we.meet.ui.calendar.reminder.ReminderWindow
 import com.we.meet.ui.calendar.reminder.loadReminderWindow
 import com.we.meet.ui.calendar.reminder.nearest
 import android.view.ViewGroup
+import android.webkit.WebView
+import com.we.meet.BuildConfig
 import com.we.meet.ui.contacts.ContactsTabScreen
 import com.we.meet.ui.docs.DocsTabScreen
 import com.we.meet.ui.docs.createDocsWebView
@@ -78,6 +80,7 @@ import com.we.meet.ui.docs.postToDocs
 import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.ui.home.HomeScreen
 import com.we.meet.ui.docs.DocsWebViewClient
+import com.we.meet.feature.docs.ui.DocsHomeScreen
 import com.we.meet.ui.profile.ProfileScreen
 import com.we.meet.ui.tasks.TaskNavController
 import com.we.meet.ui.tasks.TaskNavigationDrawer
@@ -145,58 +148,73 @@ fun MainTabScreen(
     onOpenCalendarSettings: () -> Unit,
     /** 任务页齿轮与系统设置中的入口共用同一个任务设置页。 */
     onOpenTaskSettings: () -> Unit,
+    /** 云文档原生化(M1):原生 tab 内的路由回调 —— 详情/搜索/回收站。 */
+    onOpenDocDetail: (docId: String) -> Unit,
+    onOpenDocsSearch: () -> Unit,
+    onOpenDocsTrash: () -> Unit,
 ) {
     // Default to the Messages tab.
     var selectedTab by rememberSaveable { mutableIntStateOf(MainTab.Messages.ordinal) }
     val ctx = LocalContext.current
     val app = ctx.applicationContext as WeMeetApp
 
+    // 云文档原生化开关(M1):默认 true → tab 用 feature-docs 原生主页;false →
+    // 回退常驻 WebView(p3-docs-app.md D6 同款保险丝)。WebView 实例只在兜底
+    // 模式下创建,原生模式下不预加载、不占内存。
+    val docsNative = BuildConfig.WE_MEET_DOCS_NATIVE
+
+    // 分享云文档到聊天(入口 B)待处理请求状态:WebView 桥回调写入,选择器消费。
+    var shareDocRequest by remember { mutableStateOf<ShareDocRequest?>(null) }
+    var shareDocCreateGroup by remember { mutableStateOf(false) }
+
     // 云文档 WebView 提升到 tab 层持有:tabs 是 `tabs[safeTab].content()` 重组切换,
     // 若放进 content lambda,每次切 tab 都会重建 WebView、重走加载 + KC SSO 重定向。
     // remember 一次跨 tab 存活;MainTabScreen 退出(登出)时销毁,避免泄漏。
-    val docsDark = WeMeetTheme.isDark
-    // deferInitialLoad:进站 URL 要先向后端换一张 Docs 登录票据(suspend),构造时
-    // 拿不到 —— 直接 load 老入口只会先闪一下没有登录态的那条链路。
-    val docsWebView =
-        remember { createDocsWebView(ctx, darkTheme = docsDark, deferInitialLoad = true) }
-    LaunchedEffect(docsWebView) { loadDocsTabEntry(ctx, docsWebView) }
-    DisposableEffect(Unit) {
-        onDispose {
-            (docsWebView.parent as? ViewGroup)?.removeView(docsWebView)
-            docsWebView.destroy()
+    val docsWebView: WebView? = if (!docsNative) {
+        val docsDark = WeMeetTheme.isDark
+        // deferInitialLoad:进站 URL 要先向后端换一张 Docs 登录票据(suspend),构造时
+        // 拿不到 —— 直接 load 老入口只会先闪一下没有登录态的那条链路。
+        val webView =
+            remember { createDocsWebView(ctx, darkTheme = docsDark, deferInitialLoad = true) }
+        LaunchedEffect(webView) { loadDocsTabEntry(ctx, webView) }
+        DisposableEffect(Unit) {
+            onDispose {
+                (webView.parent as? ViewGroup)?.removeView(webView)
+                webView.destroy()
+            }
         }
-    }
-
-    // 分享云文档到聊天(入口 B):docs WebView 内点「分享到聊天」→ DocsHostBridge
-    // 收到 postEvent → DocsWebViewClient.onShareDoc → 这里弹会话选择器。
-    var shareDocRequest by remember { mutableStateOf<ShareDocRequest?>(null) }
-    var shareDocCreateGroup by remember { mutableStateOf(false) }
-    DisposableEffect(docsWebView) {
-        val client = docsWebView.webViewClient as? DocsWebViewClient
-        client?.onShareDoc = { docId, title, url ->
-            shareDocRequest = ShareDocRequest(docId, title, url)
+        // 分享云文档到聊天(入口 B):docs WebView 内点「分享到聊天」→ DocsHostBridge
+        // 收到 postEvent → DocsWebViewClient.onShareDoc → 这里弹会话选择器。
+        DisposableEffect(webView) {
+            val client = webView.webViewClient as? DocsWebViewClient
+            client?.onShareDoc = { docId, title, url ->
+                shareDocRequest = ShareDocRequest(docId, title, url)
+            }
+            // 能力握手:docs 挂载后发 wemeet-embed-hello,这里回一条宣告 App 能提供什么。
+            // 挂在这一层而不是 DocsTabScreen —— WebView 在 MainTabScreen 就开始预加载,
+            // 用户可能压根还没点进云文档 tab,握手早已发生。
+            client?.onEmbedHello = { replyDocsHostHello(webView) }
+            // docs 里点搜索 / 按 Ctrl+K:它的自带搜索已收敛,转到 App 自己的全局搜索
+            // (那里本来就含文档源,命中进 DocsViewerScreen)。
+            client?.onOpenSearch = { onOpenSearch() }
+            onDispose {
+                client?.onShareDoc = null
+                client?.onEmbedHello = null
+                client?.onOpenSearch = null
+            }
         }
-        // 能力握手:docs 挂载后发 wemeet-embed-hello,这里回一条宣告 App 能提供什么。
-        // 挂在这一层而不是 DocsTabScreen —— WebView 在 MainTabScreen 就开始预加载,
-        // 用户可能压根还没点进云文档 tab,握手早已发生。
-        client?.onEmbedHello = { replyDocsHostHello(docsWebView) }
-        // docs 里点搜索 / 按 Ctrl+K:它的自带搜索已收敛,转到 App 自己的全局搜索
-        // (那里本来就含文档源,命中进 DocsViewerScreen)。
-        client?.onOpenSearch = { onOpenSearch() }
-        onDispose {
-            client?.onShareDoc = null
-            client?.onEmbedHello = null
-            client?.onOpenSearch = null
+        // 运行时切换深浅:UA 是创建时固化的,靠注入 postMessage 让常驻 docs 立即跟随
+        // (docs ConfigProvider 内嵌时监听 wemeet-theme 消息)。首帧主题已由 UA 覆盖。
+        LaunchedEffect(docsDark) {
+            val scheme = if (docsDark) "dark" else "light"
+            webView.evaluateJavascript(
+                "window.postMessage({type:'wemeet-theme',theme:'$scheme'},'*')",
+                null,
+            )
         }
-    }
-    // 运行时切换深浅:UA 是创建时固化的,靠注入 postMessage 让常驻 docs 立即跟随
-    // (docs ConfigProvider 内嵌时监听 wemeet-theme 消息)。首帧主题已由 UA 覆盖。
-    LaunchedEffect(docsDark) {
-        val scheme = if (docsDark) "dark" else "light"
-        docsWebView.evaluateJavascript(
-            "window.postMessage({type:'wemeet-theme',theme:'$scheme'},'*')",
-            null,
-        )
+        webView
+    } else {
+        null
     }
 
     // Live unread total for the 消息 tab badge — fed by the process-wide IM
@@ -369,7 +387,16 @@ fun MainTabScreen(
             )
         },
         TabItem(R.string.tab_docs, Icons.Filled.Description, Icons.Outlined.Description) {
-            DocsTabScreen(docsWebView)
+            if (docsNative) {
+                DocsHomeScreen(
+                    deps = app,
+                    onOpenDoc = onOpenDocDetail,
+                    onOpenSearch = onOpenDocsSearch,
+                    onOpenTrash = onOpenDocsTrash,
+                )
+            } else {
+                docsWebView?.let { DocsTabScreen(it) }
+            }
         },
         TabItem(R.string.tab_tasks, Icons.Filled.TaskAlt, Icons.Outlined.TaskAlt) {
             TaskScreen(
@@ -533,7 +560,7 @@ fun MainTabScreen(
                     // Only recipients of a successfully persisted card may
                     // receive access; authorization itself remains best-effort.
                     if (imSession.grantDocAccess(req.docId, delivered)) {
-                        notifyDocsAccessUpdated(docsWebView, req.docId)
+                        docsWebView?.let { notifyDocsAccessUpdated(it, req.docId) }
                     }
                 }
                 shareDocRequest = null
@@ -549,7 +576,7 @@ fun MainTabScreen(
                         if (imSession.sendMessage(newCid, docCardBody, "doc-card").isSuccess &&
                             imSession.grantDocAccess(req.docId, listOf(newCid))
                         ) {
-                            notifyDocsAccessUpdated(docsWebView, req.docId)
+                            docsWebView?.let { notifyDocsAccessUpdated(it, req.docId) }
                         }
                     }
                     shareDocCreateGroup = false

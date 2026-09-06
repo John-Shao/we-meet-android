@@ -9,6 +9,9 @@ import com.we.meet.core.directory.data.DirectoryRepository
 import com.we.meet.core.directory.data.ContactPrefs
 import com.we.meet.core.directory.net.DirectoryNetwork
 import com.we.meet.feature.assistant.AssistantDeps
+import com.we.meet.feature.docs.DocsDeps
+import com.we.meet.feature.docs.data.DocsRepository
+import com.we.meet.feature.docs.data.net.DocsSessionManager
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.call.CallHost
 import com.we.meet.feature.im.call.CallRoom
@@ -37,7 +40,7 @@ import okhttp3.OkHttpClient
  * If the app grows beyond a few screens, swap this for Hilt without churning
  * the call sites: every screen reads dependencies from a single property.
  */
-class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, DirectoryDeps, CallHost {
+class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, DocsDeps, DirectoryDeps, CallHost {
 
     lateinit var tokenStore: TokenStore
         private set
@@ -64,6 +67,10 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
     lateinit var taskRepository: TaskRepository
         private set
     lateinit var screenShareOverlay: ScreenShareOverlay
+        private set
+    lateinit var docsSessionManager: DocsSessionManager
+        private set
+    override lateinit var docsRepository: DocsRepository
         private set
 
     /**
@@ -126,6 +133,10 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
         directoryRepository = DirectoryRepository(DirectoryNetwork.directoryApi(this))
         taskRepository = TaskRepository(apiClient.taskApi, contentResolver)
         screenShareOverlay = ScreenShareOverlay(this)
+        // 云文档原生栈(M1):票据换 docs 会话 cookie + docs REST。与 WebView 栈
+        // 互相独立(设计文档 §4.2),登出时随 AuthRepository.signOut 一起清理。
+        docsSessionManager = DocsSessionManager(this, this)
+        docsRepository = DocsRepository(docsSessionManager)
         // 逐联系人偏好(星标 / 特别提醒):进程级单例,通讯录与会话列表共享(见 ContactPrefs)。
         ContactPrefs.init(directoryRepository)
         // PostHog: no-op when WE_MEET_POSTHOG_KEY is blank (default).
@@ -166,13 +177,17 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Dire
         com.we.meet.push.DeviceTimezoneReporter.reportIfNeeded()
     }
 
-    // AssistantDeps / ImDeps — lets :feature-assistant and :feature-im reuse the
-    // host's authenticated networking instead of owning their own auth/login.
-    // `authedOkHttp` and `baseUrl` are shared by both contracts.
+    // AssistantDeps / ImDeps / DocsDeps — lets :feature-assistant, :feature-im and
+    // :feature-docs reuse the host's authenticated networking instead of owning
+    // their own auth/login. `authedOkHttp` and `baseUrl` are shared by all contracts.
     override val authedOkHttp: OkHttpClient
         get() = apiClient.okHttp
     override val baseUrl: String
         get() = BuildConfig.WE_MEET_BASE_URL
+
+    /** DocsDeps — La Suite Docs origin for the native docs REST stack. */
+    override val docsBaseUrl: String
+        get() = BuildConfig.WE_MEET_DOCS_URL
 
     /** ImDeps — jusi-light-im server origin (no trailing slash). */
     override val jusiImBaseUrl: String

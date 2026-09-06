@@ -33,6 +33,7 @@ include(":app")
 include(":core-design")
 include(":core-directory")
 include(":feature-assistant")
+include(":feature-docs")
 include(":feature-im")
 
 // jusi-light-im Android SDK lives in a sibling repo (same parent dir as this

@@ -24,6 +24,8 @@ val livekitOverride = cfg("WE_MEET_LIVEKIT_URL_OVERRIDE", "")
 val jusiImBaseUrl = cfg("JUSI_IM_BASE_URL", "https://im.we-meet.online")
 val docsUrl = cfg("WE_MEET_DOCS_URL", "https://docs.we-meet.online")
 val oidcClientId = cfg("WE_MEET_OIDC_CLIENT_ID", "app")
+// 云文档 tab 原生化开关(M1):false 回退常驻 WebView(p3-docs-app.md D6 的保险丝同款)。
+val docsNative = cfg("WE_MEET_DOCS_NATIVE", "true")
 // WebView Keycloak login vs legacy native OTP — the rollback fuse (p3-docs-app.md D1).
 val webLogin = cfg("WE_MEET_WEB_LOGIN", "true")
 // PostHog: leave WE_MEET_POSTHOG_KEY empty to keep analytics off. The
@@ -62,6 +64,7 @@ android {
         buildConfigField("String", "JUSI_IM_BASE_URL", "\"$jusiImBaseUrl\"")
         buildConfigField("String", "WE_MEET_DOCS_URL", "\"$docsUrl\"")
         buildConfigField("String", "WE_MEET_OIDC_CLIENT_ID", "\"$oidcClientId\"")
+        buildConfigField("boolean", "WE_MEET_DOCS_NATIVE", docsNative)
         buildConfigField("boolean", "WE_MEET_WEB_LOGIN", webLogin)
 
         // Getui: the gtsdk AAR's manifest references ${GETUI_APPID} etc., and
@@ -155,6 +158,9 @@ dependencies {
 
     // IM feature (P4) — chat list + 1:1/group messaging via jusi-light-im SDK.
     implementation(project(":feature-im"))
+
+    // 云文档原生化(M1) — docs 列表/详情/搜索/管理操作,WebView 保留为兜底。
+    implementation(project(":feature-docs"))
 
     // Shared org-directory data layer + ContactPicker (contacts tab, calendar attendees).
     implementation(project(":core-directory"))

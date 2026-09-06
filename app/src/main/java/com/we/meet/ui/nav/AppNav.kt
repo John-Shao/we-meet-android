@@ -361,6 +361,14 @@ object Routes {
         return "$DOCS_VIEWER_BASE/$enc"
     }
 
+    // 云文档原生化(M1):原生详情/搜索/回收站路由;WebView 查看器保留为兜底。
+    private const val DOCS_DETAIL_BASE = "docs_detail"
+    const val DOCS_DETAIL = "$DOCS_DETAIL_BASE/{docId}"
+    const val DOCS_SEARCH = "docs_search"
+    const val DOCS_TRASH = "docs_trash"
+
+    fun docsDetail(docId: String): String = "$DOCS_DETAIL_BASE/${URLEncoder.encode(docId, StandardCharsets.UTF_8.name())}"
+
     fun decode(value: String): String =
         URLDecoder.decode(value, StandardCharsets.UTF_8.name())
 }
@@ -382,6 +390,21 @@ fun AppNav() {
     val safePop: () -> Unit = {
         if (navController.previousBackStackEntry != null) {
             navController.popBackStack()
+        }
+    }
+
+    // 云文档打开入口统一(设计文档 §4.7.2):原生开关开启且 URL 能解析出 docId
+    // → 原生详情;否则走既有 WebView 查看器兜底(老版本/降级行为不变)。
+    val openDocUrl: (String) -> Unit = { url ->
+        val docId = if (com.we.meet.BuildConfig.WE_MEET_DOCS_NATIVE) {
+            com.we.meet.feature.docs.util.DocLinks.docIdFromUrl(url)
+        } else {
+            null
+        }
+        if (docId != null) {
+            navController.navigate(Routes.docsDetail(docId))
+        } else {
+            navController.navigate(Routes.docsViewer(url))
         }
     }
 
@@ -591,6 +614,16 @@ fun AppNav() {
                 onOpenTaskSettings = {
                     navController.navigate(Routes.TASK_SETTINGS)
                 },
+                // 云文档原生化(M1):tab 内的原生路由回调。
+                onOpenDocDetail = { docId ->
+                    navController.navigate(Routes.docsDetail(docId))
+                },
+                onOpenDocsSearch = {
+                    navController.navigate(Routes.DOCS_SEARCH)
+                },
+                onOpenDocsTrash = {
+                    navController.navigate(Routes.DOCS_TRASH)
+                },
             )
         }
 
@@ -651,8 +684,8 @@ fun AppNav() {
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 // P8 日程卡片 → 日程详情页(EVENT_DETAIL 已有)。
                 onOpenEvent = { eventId -> navController.navigate(Routes.eventDetail(eventId)) },
-                // 分享云文档卡片 → 复用搜索命中的文档查看器(DOCS_VIEWER 已有)。
-                onOpenDoc = { url -> navController.navigate(Routes.docsViewer(url)) },
+                // 分享云文档卡片 → 原生详情(开启时)或既有 WebView 查看器兜底。
+                onOpenDoc = openDocUrl,
                 // 分享会议卡片 → 按 slug 走入会预览(与会议详情「加入会议」同一路径)。
                 onJoinMeeting = { slug -> navController.navigate(Routes.joinPreview(slug)) },
                 onOpenSchedule = { sourceCid, memberIds ->
@@ -920,9 +953,7 @@ fun AppNav() {
                 onOpenMeeting = { roomId ->
                     navController.navigate(Routes.historyDetail(roomId))
                 },
-                onOpenDoc = { url ->
-                    navController.navigate(Routes.docsViewer(url))
-                },
+                onOpenDoc = openDocUrl,
                 // AI 日历引用:直开事件详情(EventDetailScreen 按 id 自加载)。
                 onOpenEvent = { eventId ->
                     navController.navigate(Routes.eventDetail(eventId))
@@ -950,6 +981,35 @@ fun AppNav() {
             com.we.meet.ui.docs.DocsViewerScreen(
                 url = url,
                 onClose = rememberOnceOnly(safePop),
+            )
+        }
+
+        composable(
+            route = Routes.DOCS_DETAIL,
+            arguments = listOf(navArgument("docId") { type = NavType.StringType }),
+        ) { entry ->
+            val docId = Routes.decode(entry.arguments?.getString("docId").orEmpty())
+            com.we.meet.feature.docs.ui.DocDetailScreen(
+                deps = app,
+                docId = docId,
+                onBack = rememberOnceOnly(safePop),
+                onOpenWebUrl = { url -> navController.navigate(Routes.docsViewer(url)) },
+            )
+        }
+
+        composable(Routes.DOCS_SEARCH) {
+            com.we.meet.feature.docs.ui.DocsSearchScreen(
+                deps = app,
+                onBack = rememberOnceOnly(safePop),
+                onOpenDoc = { docId -> navController.navigate(Routes.docsDetail(docId)) },
+            )
+        }
+
+        composable(Routes.DOCS_TRASH) {
+            com.we.meet.feature.docs.ui.DocsTrashScreen(
+                deps = app,
+                onBack = rememberOnceOnly(safePop),
+                onOpenDoc = { docId -> navController.navigate(Routes.docsDetail(docId)) },
             )
         }
 
