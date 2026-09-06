@@ -52,10 +52,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -226,7 +230,13 @@ fun MessageBubble(
             }
             when (content) {
                 is MessageContent.Text ->
-                    TextBubble(content.body, isOwn, mentionNames, selfMentionNames)
+                    TextBubble(
+                        body = content.body,
+                        isOwn = isOwn,
+                        mentionNames = mentionNames,
+                        selfMentionNames = selfMentionNames,
+                        onOpenDoc = onOpenDoc,
+                    )
                 is MessageContent.Image -> ImageBubble(
                     objectKey = content.objectKey,
                     onClick = { onImageClick(content.objectKey) },
@@ -322,6 +332,7 @@ private fun TextBubble(
     isOwn: Boolean,
     mentionNames: List<String> = emptyList(),
     selfMentionNames: List<String> = emptyList(),
+    onOpenDoc: ((url: String) -> Unit)? = null,
 ) {
     Surface(
         color = if (isOwn) MaterialTheme.colorScheme.primaryContainer
@@ -329,7 +340,7 @@ private fun TextBubble(
         shape = bubbleShape,
     ) {
         Text(
-            text = mentionAnnotated(body, mentionNames, selfMentionNames),
+            text = mentionAnnotated(body, mentionNames, selfMentionNames, isOwn, onOpenDoc),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier
                 .widthIn(max = Dimens.Chat.BubbleMaxWidth)
@@ -342,20 +353,52 @@ private fun TextBubble(
  * Highlight `@name` tokens (P10, mirrors web renderBody): self-mention / 所有人 →
  * amber pill; other members → bold + primary tint. Longest name first to avoid
  * partial matches. No `@` or no candidates → plain text.
+ *
+ * 跨端打开(§4.7.2):正文里的云文档链接(`/docs/<uuid>`)联成可点链接,点击经
+ * [onOpenDoc] 进原生详情 —— 与聊天卡片里的 doc-card 同一条原生路由。
  */
 @Composable
 private fun mentionAnnotated(
     body: String,
     names: List<String>,
     selfNames: List<String>,
+    isOwn: Boolean = false,
+    onOpenDoc: ((url: String) -> Unit)? = null,
 ): AnnotatedString {
-    if (names.isEmpty() || !body.contains('@')) return AnnotatedString(body)
-    val sorted = names.filter { it.isNotBlank() }.sortedByDescending { it.length }
     val primary = MaterialTheme.colorScheme.primary
+    val onPrimaryContainer = MaterialTheme.colorScheme.onPrimaryContainer
     val mention = WeMeetTheme.extras.im
+    val docsUrlRegex = DOCS_URL_REGEX
+    if (names.isEmpty() && !body.contains('@') && (onOpenDoc == null || !docsUrlRegex.containsMatchIn(body))) {
+        return AnnotatedString(body)
+    }
+    val sorted = names.filter { it.isNotBlank() }.sortedByDescending { it.length }
     return buildAnnotatedString {
         var i = 0
         while (i < body.length) {
+            // 云文档深链优先:整段链接联成可点(路由原生详情)。
+            val urlMatch = docsUrlRegex.find(body, i)
+            if (urlMatch != null && urlMatch.range.first == i && onOpenDoc != null) {
+                val url = urlMatch.value
+                val linkColor = if (isOwn) onPrimaryContainer else primary
+                withLink(
+                    LinkAnnotation.Clickable(
+                        tag = "doc:$url",
+                        styles = TextLinkStyles(
+                            style = SpanStyle(
+                                color = linkColor,
+                                textDecoration = TextDecoration.Underline,
+                            ),
+                        ),
+                        linkInteractionListener = {
+                            onOpenDoc(url)
+                            true
+                        },
+                    ),
+                ) { append(url) }
+                i += url.length
+                continue
+            }
             if (body[i] == '@') {
                 val rest = body.substring(i + 1)
                 val hit = sorted.firstOrNull { rest.startsWith(it) }
@@ -379,6 +422,11 @@ private fun mentionAnnotated(
         }
     }
 }
+
+/** 云文档深链:`…/docs/{uuid}`(可带 query/尾斜杠,不吞空格)。 */
+private val DOCS_URL_REGEX = Regex(
+    "(?:https?://)?[^\\s]*?/docs/[0-9a-fA-F-]{36}/?[^\\s]*",
+)
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
