@@ -67,6 +67,12 @@ private val contentMoshi: Moshi = Moshi.Builder()
     .add(KotlinJsonAdapterFactory())
     .build()
 
+private val inlineListAdapter: com.squareup.moshi.JsonAdapter<List<JsonInlineDto>> by lazy {
+    contentMoshi.adapter(
+        com.squareup.moshi.Types.newParameterizedType(List::class.java, JsonInlineDto::class.java),
+    )
+}
+
 /** Parses the raw BlockNote JSON string; invalid input → empty list. */
 fun parseBlockNoteJson(raw: String?): List<JsonBlockDto> {
     if (raw.isNullOrBlank()) return emptyList()
@@ -679,10 +685,22 @@ private fun contentBackground(name: String, dark: Boolean): Color? {
 // ---- block helpers ----
 
 private fun JsonBlockDto.inlineContent(): List<JsonInlineDto> =
-    (content as? List<*>)?.filterIsInstance<JsonInlineDto>() ?: emptyList()
+    (content as? List<*>)?.toInlineList() ?: emptyList()
 
 private fun JsonInlineDto.inlineList(): List<JsonInlineDto> =
-    (content as? List<*>)?.filterIsInstance<JsonInlineDto>() ?: emptyList()
+    (content as? List<*>)?.toInlineList() ?: emptyList()
+
+/**
+ * `content` is typed [Any?], so Moshi deserializes the inline array into
+ * `List<LinkedHashMap>` rather than [JsonInlineDto]. Convert any present
+ * [JsonInlineDto] as-is; otherwise re-parse the raw maps with Moshi so the
+ * typed inline DTOs (with their own nested `content`) are built recursively.
+ */
+private fun List<*>.toInlineList(): List<JsonInlineDto> {
+    val typed = filterIsInstance<JsonInlineDto>()
+    if (typed.isNotEmpty()) return typed
+    return inlineListAdapter.fromJsonValue(this) ?: emptyList()
+}
 
 private fun JsonBlockDto.textAlignment(): TextAlign = when (props.str("textAlignment")) {
     "center" -> TextAlign.Center
