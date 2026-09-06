@@ -345,18 +345,20 @@ private fun DocsListHeader(
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.weight(1f),
         )
-        IconButton(onClick = { onSortChanged(true) }) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Outlined.Sort,
-                contentDescription = stringResource(R.string.cd_docs_sort),
+        Box {
+            IconButton(onClick = { onSortChanged(true) }) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.Sort,
+                    contentDescription = stringResource(R.string.cd_docs_sort),
+                )
+            }
+            SortDropdown(
+                expanded = sortExpanded,
+                current = ordering,
+                onDismiss = { onSortChanged(false) },
+                onSelect = onSelectOrdering,
             )
         }
-        SortDropdown(
-            expanded = sortExpanded,
-            current = ordering,
-            onDismiss = { onSortChanged(false) },
-            onSelect = onSelectOrdering,
-        )
     }
 }
 
