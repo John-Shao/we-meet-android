@@ -153,6 +153,13 @@ fun DocDetailScreen(
                                         },
                                     )
                                 }
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.docs_copy_link), softWrap = false) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        copyLink(context, deps.docsBaseUrl, doc)
+                                    },
+                                )
                                 if (doc.abilities.move) {
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.docs_move_title), softWrap = false) },
@@ -358,6 +365,23 @@ private fun buildInfoLine(doc: com.we.meet.feature.docs.data.net.DocumentDto): S
         stringResource(R.string.docs_updated_at, updated)
     } else {
         stringResource(R.string.docs_untitled)
+    }
+}
+
+/**
+ * 复制文档链接(§4.7.3:Android 复制链接 → PC 打开,同 realm SSO 免登直达)。
+ * 写系统剪贴板并把文档可见的 Web URL 放进去。
+ */
+private fun copyLink(
+    context: android.content.Context,
+    docsBaseUrl: String,
+    doc: com.we.meet.feature.docs.data.net.DocumentDto,
+) {
+    val url = com.we.meet.feature.docs.util.DocLinks.webUrl(docsBaseUrl, doc.id)
+    runCatching {
+        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+            as? android.content.ClipboardManager
+        clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("doc-link", url))
     }
 }
 

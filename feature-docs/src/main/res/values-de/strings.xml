@@ -18,6 +18,7 @@
     <string name="docs_create_confirm">Erstellen</string>
     <string name="docs_untitled">Unbenanntes Dokument</string>
     <string name="docs_rename_title">Umbenennen</string>
+    <string name="docs_copy_link">Link kopieren</string>
     <string name="docs_rename_confirm">Speichern</string>
     <string name="docs_delete_title">Dokument löschen</string>
     <string name="docs_delete_message">Es kann innerhalb von 30 Tagen aus dem Papierkorb wiederhergestellt werden</string>
