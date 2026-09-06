@@ -735,6 +735,10 @@
     <string name="docs_viewer_title">Dokument</string>
     <string name="docs_editor_title">Bearbeiten</string>
     <string name="docs_editor_title_hint">Dokumenttitel</string>
+    <string name="docs_editor_unsaved_title">Nicht gespeicherte Änderungen</string>
+    <string name="docs_editor_unsaved_desc">Sie haben nicht gespeicherte Änderungen im Dokument.</string>
+    <string name="docs_editor_unsaved_save">Speichern &amp; beenden</string>
+    <string name="docs_editor_unsaved_continue">Weiter bearbeiten</string>
 
     <!-- P9 会议室(实体会议室;LiveKit 视频房间用 room_* 前缀,勿混) -->
     <string name="meeting_room_field_label">Besprechungsraum</string>

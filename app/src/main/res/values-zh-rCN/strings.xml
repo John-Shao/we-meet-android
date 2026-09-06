@@ -789,6 +789,10 @@
     <string name="docs_viewer_title">文档</string>
     <string name="docs_editor_title">编辑</string>
     <string name="docs_editor_title_hint">文档标题</string>
+    <string name="docs_editor_unsaved_title">未保存的更改</string>
+    <string name="docs_editor_unsaved_desc">文档中有未保存的更改。</string>
+    <string name="docs_editor_unsaved_save">保存并退出</string>
+    <string name="docs_editor_unsaved_continue">继续编辑</string>
     <string name="docs_load_error">文档加载失败</string>
 
     <!-- P5 建议参会 + 统一邀请面板 -->

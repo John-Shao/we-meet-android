@@ -79,6 +79,12 @@ internal class DocsWebViewClient : WebViewClient() {
     var onShareDoc: ((docId: String, title: String, url: String) -> Unit)? = null
 
     /**
+     * docs 编辑器保存队列未同步(设计文档 §4.6 脏检查):`wemeet-editor-dirty`
+     * 上报真/假,宿主据此在返回前弹「有未保存更改」守卫。Set by [DocsEditorScreen].
+     */
+    var onEditorDirty: ((Boolean) -> Unit)? = null
+
+    /**
      * docs 挂载后宣告自己支持哪些内嵌协议(`wemeet-embed-hello`)。宿主收到后回一条
      * `wemeet-host-hello` 宣告自己有什么 —— docs 据此才决定要不要收敛自带入口。
      *
@@ -244,6 +250,7 @@ private class DocsHostBridge(
                         o.optBoolean("leftPanelOpen"),
                         o.optBoolean("rightPanelOpen"),
                     )
+                    "wemeet-editor-dirty" -> client.onEditorDirty?.invoke(o.optBoolean("dirty"))
                 }
             }
         }.onFailure { Log.w(TAG, "[bridge] malformed postEvent payload", it) }
@@ -255,6 +262,7 @@ private class DocsHostBridge(
             "wemeet-embed-hello",
             "wemeet-open-search",
             "wemeet-panel-state",
+            "wemeet-editor-dirty",
         )
     }
 }

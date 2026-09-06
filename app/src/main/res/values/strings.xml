@@ -801,6 +801,10 @@
     <string name="docs_viewer_title">Document</string>
     <string name="docs_editor_title">Edit</string>
     <string name="docs_editor_title_hint">Document title</string>
+    <string name="docs_editor_unsaved_title">Unsaved changes</string>
+    <string name="docs_editor_unsaved_desc">You have unsaved changes in the document.</string>
+    <string name="docs_editor_unsaved_save">Save &amp; exit</string>
+    <string name="docs_editor_unsaved_continue">Keep editing</string>
     <string name="docs_load_error">Couldn\'t load the document</string>
 
     <!-- P5 建议参会 + 统一邀请面板 -->

@@ -56,6 +56,8 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
     val docId = remember(url) { com.we.meet.feature.docs.util.DocLinks.docIdFromUrl(url) }
     var docTitle by remember(docId) { mutableStateOf<String?>(null) }
     var titleSaving by remember(docId) { mutableStateOf(false) }
+    var editorDirty by remember(docId) { mutableStateOf(false) }
+    var showUnsavedDialog by remember(docId) { mutableStateOf(false) }
     val titleScope = rememberCoroutineScope()
     LaunchedEffect(docId) {
         if (docId != null && app != null) {
@@ -74,10 +76,13 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
             if (l) error = false else everLoaded = true
         }
         client?.onMainFrameError = { error = true; loading = false }
+        // 脏检查(设计文档 §4.6):docs 编辑器保存队列未同步时上报,宿主据此守卫返回。
+        client?.onEditorDirty = { dirty -> editorDirty = dirty }
         onDispose {
             client?.onHistoryChanged = null
             client?.onLoadingChanged = null
             client?.onMainFrameError = null
+            client?.onEditorDirty = null
             (webView.parent as? ViewGroup)?.removeView(webView)
             webView.destroy()
         }
@@ -93,7 +98,14 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
             )
         }
     }
-    BackHandler(enabled = canGoBack) { webView.goBack() }
+    // 返回键:脏时先弹「有未保存更改」守卫(继续编辑/放弃/保存并退出)。
+    BackHandler(enabled = canGoBack || editorDirty) {
+        if (editorDirty) {
+            showUnsavedDialog = true
+        } else {
+            webView.goBack()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -143,6 +155,33 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
                 )
             }
         }
+    }
+
+    if (showUnsavedDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showUnsavedDialog = false },
+            title = { Text(stringResource(R.string.docs_editor_unsaved_title)) },
+            text = { Text(stringResource(R.string.docs_editor_unsaved_desc)) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        // 保存并退出:先让 docs 落库,再回退。
+                        postToDocs(
+                            webView,
+                            org.json.JSONObject().put("type", "wemeet-save-now"),
+                        )
+                        showUnsavedDialog = false
+                        editorDirty = false
+                        onClose()
+                    },
+                ) { Text(stringResource(R.string.docs_editor_unsaved_save)) }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = { showUnsavedDialog = false },
+                ) { Text(stringResource(R.string.docs_editor_unsaved_continue)) }
+            },
+        )
     }
 }
 
