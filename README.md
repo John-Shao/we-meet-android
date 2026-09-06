@@ -1,4 +1,4 @@
-# We Meet Android
+# 人 ♾️ 智能体协同办公平台：Android 客户端
 
 We Meet 的原生 Android 客户端 —— **Kotlin + Jetpack Compose**。
 
