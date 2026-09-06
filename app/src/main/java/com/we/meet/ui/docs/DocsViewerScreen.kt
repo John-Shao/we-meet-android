@@ -5,6 +5,7 @@ import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -18,14 +19,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.R
+import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
+import kotlinx.coroutines.launch
 
 /**
  * 云文档编辑画布(M3,设计文档 §4.6):独立轻量 WebView,直载 `?chrome=editor`
@@ -46,6 +51,20 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
     var loading by remember { mutableStateOf(true) }
     var everLoaded by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf(false) }
+    // 原生标题编辑(设计文档 §4.6):标题编辑框放在 WebView 上方,保存走 PATCH。
+    val app = context.applicationContext as? com.we.meet.WeMeetApp
+    val docId = remember(url) { com.we.meet.feature.docs.util.DocLinks.docIdFromUrl(url) }
+    var docTitle by remember(docId) { mutableStateOf<String?>(null) }
+    var titleSaving by remember(docId) { mutableStateOf(false) }
+    val titleScope = rememberCoroutineScope()
+    LaunchedEffect(docId) {
+        if (docId != null && app != null) {
+            try {
+                val doc = app.docsRepository.document(docId)
+                docTitle = doc.displayTitle
+            } catch (_: Exception) { /* 标题加载失败回退为空,不阻断画布 */ }
+        }
+    }
 
     DisposableEffect(webView) {
         val client = webView.webViewClient as? DocsWebViewClient
@@ -84,22 +103,45 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
             )
         },
     ) { padding ->
-        androidx.compose.foundation.layout.Box(
+        androidx.compose.foundation.layout.Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .consumeWindowInsets(padding)
                 .imePadding(),
         ) {
-            AndroidView(
-                factory = { webView },
-                modifier = Modifier.fillMaxSize(),
-            )
-            DocsLoadStateOverlay(
-                loading = loading && !everLoaded,
-                error = error,
-                onRetry = { error = false; loading = true; webView.reload() },
-            )
+            if (docId != null && app != null) {
+                DocTitleEditField(
+                    title = docTitle.orEmpty(),
+                    enabled = !titleSaving,
+                    onCommit = { newTitle ->
+                        val trimmed = newTitle.trim()
+                        if (trimmed.isNotEmpty() && trimmed != docTitle) {
+                            titleSaving = true
+                            titleScope.launch {
+                                runCatching { app.docsRepository.rename(docId, trimmed) }
+                                    .onSuccess { docTitle = trimmed }
+                                titleSaving = false
+                            }
+                        }
+                    },
+                )
+            }
+            androidx.compose.foundation.layout.Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f),
+            ) {
+                AndroidView(
+                    factory = { webView },
+                    modifier = Modifier.fillMaxSize(),
+                )
+                DocsLoadStateOverlay(
+                    loading = loading && !everLoaded,
+                    error = error,
+                    onRetry = { error = false; loading = true; webView.reload() },
+                )
+            }
         }
     }
 }
@@ -177,3 +219,56 @@ private fun commentThreadIdFromUrl(url: String): String? =
     runCatching { android.net.Uri.parse(url).getQueryParameter("thread") }
         .getOrNull()
         ?.takeIf { it.isNotBlank() }
+
+/**
+ * 编辑画布的原生标题编辑框(设计文档 §4.6):放在 WebView 上方,专注正文标题;
+ * 失焦/回车提交 PATCH。正文仍由 WebView 内的 docs 编辑器负责。
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun DocTitleEditField(
+    title: String,
+    enabled: Boolean,
+    onCommit: (String) -> Unit,
+) {
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    var editing by remember { mutableStateOf(false) }
+    var draft by remember(title) { mutableStateOf(title) }
+    androidx.compose.foundation.layout.Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+    ) {
+        androidx.compose.material3.OutlinedTextField(
+            value = draft,
+            onValueChange = { draft = it },
+            enabled = enabled,
+            singleLine = true,
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                imeAction = androidx.compose.ui.text.input.ImeAction.Done,
+            ),
+            keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                onDone = {
+                    editing = false
+                    onCommit(draft)
+                    keyboard?.hide()
+                },
+            ),
+            placeholder = { Text(stringResource(R.string.docs_editor_title_hint)) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged {
+                    if (it.isFocused) {
+                        editing = true
+                    } else if (editing) {
+                        editing = false
+                        onCommit(draft)
+                    }
+                },
+            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface,
+            ),
+        )
+    }
+}
