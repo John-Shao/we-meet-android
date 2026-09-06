@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
+import coil.ImageLoader
 import coil.compose.AsyncImage
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -120,6 +121,7 @@ fun DocReader(
     onOpenDoc: (docId: String) -> Unit,
     onOpenUrl: (url: String) -> Unit,
     onOpenWebFallback: () -> Unit,
+    imageLoader: ImageLoader,
 ) {
     val flattened = remember(blocks) { flattenBlocks(blocks) }
     if (flattened.isEmpty()) {
@@ -138,6 +140,7 @@ fun DocReader(
                 onOpenDoc = onOpenDoc,
                 onOpenUrl = onOpenUrl,
                 onOpenWebFallback = onOpenWebFallback,
+                imageLoader = imageLoader,
             )
         }
     }
@@ -172,6 +175,7 @@ private fun BlockView(
     onOpenDoc: (docId: String) -> Unit,
     onOpenUrl: (url: String) -> Unit,
     onOpenWebFallback: () -> Unit,
+    imageLoader: ImageLoader,
 ) {
     val block = item.block
     val baseModifier = Modifier
@@ -318,7 +322,7 @@ private fun BlockView(
             onOpenWebFallback = onOpenWebFallback,
         )
 
-        "image" -> ImageView(block = block, modifier = baseModifier)
+        "image" -> ImageView(block = block, modifier = baseModifier, imageLoader = imageLoader)
 
         "video", "audio", "file", "pdf" -> AttachmentCard(
             block = block,
@@ -400,7 +404,7 @@ private fun TableView(
 }
 
 @Composable
-private fun ImageView(block: JsonBlockDto, modifier: Modifier) {
+private fun ImageView(block: JsonBlockDto, modifier: Modifier, imageLoader: ImageLoader) {
     val url = block.props.str("url")
     val caption = block.props.str("caption")
     Column(modifier) {
@@ -411,6 +415,7 @@ private fun ImageView(block: JsonBlockDto, modifier: Modifier) {
                 model = url,
                 contentDescription = caption ?: stringResource(R.string.cd_docs_image),
                 modifier = Modifier.fillMaxWidth(),
+                imageLoader = imageLoader,
             )
         }
         if (!caption.isNullOrBlank()) {

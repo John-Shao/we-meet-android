@@ -23,7 +23,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,7 +40,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import coil.compose.LocalImageLoader
 import com.we.meet.feature.docs.DocsDeps
 import com.we.meet.feature.docs.R
 import com.we.meet.feature.docs.renderer.DocReader
@@ -229,37 +227,36 @@ fun DocDetailScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = Dimens.SpaceXs),
                     )
-                    CompositionLocalProvider(LocalImageLoader provides deps.docsMediaLoader) {
-                        Box(Modifier.weight(1f).fillMaxWidth()) {
-                            when {
-                                state.contentLoading && state.blocks.isEmpty() -> WeMeetLoading()
-                                state.contentError && state.blocks.isEmpty() -> Column {
-                                    WeMeetInlineErrorState(
-                                        onRetry = vm::loadContent,
-                                        message = stringResource(R.string.docs_load_error),
-                                    )
-                                    SecondaryButton(
-                                        text = stringResource(R.string.docs_open_web),
-                                        onClick = {
-                                            onOpenWebUrl(DocLinks.webUrl(deps.docsBaseUrl, doc.id))
-                                        },
-                                    )
-                                }
-                                else -> DocReader(
-                                    blocks = state.blocks,
-                                    onOpenDoc = onOpenDoc,
-                                    onOpenUrl = { url ->
-                                        if (DocLinks.docIdFromUrl(url) != null) {
-                                            DocLinks.docIdFromUrl(url)?.let(onOpenDoc)
-                                        } else {
-                                            runCatching { uriHandler.openUri(url) }
-                                        }
-                                    },
-                                    onOpenWebFallback = {
+                    Box(Modifier.weight(1f).fillMaxWidth()) {
+                        when {
+                            state.contentLoading && state.blocks.isEmpty() -> WeMeetLoading()
+                            state.contentError && state.blocks.isEmpty() -> Column {
+                                WeMeetInlineErrorState(
+                                    onRetry = vm::loadContent,
+                                    message = stringResource(R.string.docs_load_error),
+                                )
+                                SecondaryButton(
+                                    text = stringResource(R.string.docs_open_web),
+                                    onClick = {
                                         onOpenWebUrl(DocLinks.webUrl(deps.docsBaseUrl, doc.id))
                                     },
                                 )
                             }
+                            else -> DocReader(
+                                blocks = state.blocks,
+                                imageLoader = deps.docsMediaLoader,
+                                onOpenDoc = onOpenDoc,
+                                onOpenUrl = { url ->
+                                    if (DocLinks.docIdFromUrl(url) != null) {
+                                        DocLinks.docIdFromUrl(url)?.let(onOpenDoc)
+                                    } else {
+                                        runCatching { uriHandler.openUri(url) }
+                                    }
+                                },
+                                onOpenWebFallback = {
+                                    onOpenWebUrl(DocLinks.webUrl(deps.docsBaseUrl, doc.id))
+                                },
+                            )
                         }
                     }
                     if (doc.abilities.update) {
