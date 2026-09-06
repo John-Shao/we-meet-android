@@ -633,6 +633,13 @@ fun AppNav() {
                 onOpenDocsTrash = {
                     navController.navigate(Routes.DOCS_TRASH)
                 },
+                onOpenDocEditor = { docId ->
+                    val url = com.we.meet.feature.docs.util.DocLinks.editorUrl(
+                        app.docsBaseUrl,
+                        docId,
+                    )
+                    navController.navigate(Routes.docsEditor(url))
+                },
             )
         }
 

@@ -96,6 +96,7 @@ fun DocsHomeScreen(
     onOpenDoc: (docId: String) -> Unit,
     onOpenSearch: () -> Unit,
     onOpenTrash: () -> Unit,
+    onOpenEditor: (docId: String) -> Unit = {},
     onRegisterDocsNav: (DocsNavController) -> Unit = {},
     onOpenNavDrawer: () -> Unit = {},
 ) {
@@ -200,7 +201,10 @@ fun DocsHomeScreen(
             onCreate = { title ->
                 showCreate = false
                 scope.launch {
-                    vm.create(title)?.let { onOpenDoc(it) }
+                    // §4.4 新建 = 建空文档 → 跳编辑画布填充(可直接写正文,不再点编辑)。
+                    vm.create(title)?.let { docId ->
+                        onOpenEditor(docId)
+                    }
                 }
             },
         )

@@ -154,6 +154,8 @@ fun MainTabScreen(
     onOpenDocDetail: (docId: String) -> Unit,
     onOpenDocsSearch: () -> Unit,
     onOpenDocsTrash: () -> Unit,
+    /** 云文档编辑画布(§4.4/4.6):新建空文档后直接进编辑画布填充。 */
+    onOpenDocEditor: (docId: String) -> Unit,
 ) {
     // Default to the Messages tab.
     var selectedTab by rememberSaveable { mutableIntStateOf(MainTab.Messages.ordinal) }
@@ -406,6 +408,7 @@ fun MainTabScreen(
                     onOpenDoc = onOpenDocDetail,
                     onOpenSearch = onOpenDocsSearch,
                     onOpenTrash = onOpenDocsTrash,
+                    onOpenEditor = onOpenDocEditor,
                     onRegisterDocsNav = { docsNavController = it },
                     onOpenNavDrawer = { docsNavScope.launch { docsNavDrawerState.open() } },
                 )
