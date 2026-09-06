@@ -50,7 +50,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -121,6 +124,17 @@ fun DocsHomeScreen(
         }
     }
     LaunchedEffect(Unit) { vm.refreshCounts() }
+
+    // 列表/计数鲜度(§4.7.1):每次 Docs tab 回到前台时刷新,让 PC 端新授予的权限、
+    // 邮箱邀请转正等在返回后立即可见(§4.7.6 用例 6/7)。首次组合已在 init 拉过,
+    // 此效果仅负责后续 RESUME。
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            vm.refresh()
+            vm.refreshCounts()
+        }
+    }
 
     Scaffold(
         topBar = {

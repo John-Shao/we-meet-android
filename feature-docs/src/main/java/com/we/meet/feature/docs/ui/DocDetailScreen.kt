@@ -97,10 +97,12 @@ fun DocDetailScreen(
         }
     }
 
-    // 30s 轻轮询,仅前台可见时(设计文档 §4.7.4)。
+    // 30s 轻轮询,仅前台可见时(设计文档 §4.7.4);回到前台先重拉一次文档/权限,
+    // 覆盖「PC 批准 ask-for-access 后 Android 详情恢复可见」(§4.7.6 用例 7)。
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            vm.load()
             while (true) {
                 delay(POLL_INTERVAL_MS)
                 vm.pollContent()
