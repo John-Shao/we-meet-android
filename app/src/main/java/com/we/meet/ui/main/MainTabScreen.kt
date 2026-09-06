@@ -81,6 +81,8 @@ import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.ui.home.HomeScreen
 import com.we.meet.ui.docs.DocsWebViewClient
 import com.we.meet.feature.docs.ui.DocsHomeScreen
+import com.we.meet.feature.docs.ui.DocsNavController
+import com.we.meet.feature.docs.ui.DocsNavDrawer
 import com.we.meet.ui.profile.ProfileScreen
 import com.we.meet.ui.tasks.TaskNavController
 import com.we.meet.ui.tasks.TaskNavigationDrawer
@@ -287,6 +289,17 @@ fun MainTabScreen(
         if (safeTab != MainTab.Tasks.ordinal) taskDetailVisible = false
     }
 
+    // 云文档二级导航抽屉 —— 与 task 抽屉同款提升到本层(遮罩覆盖底部导航栏),
+    // 控制器由 DocsHomeScreen 经 onRegisterDocsNav 注册(它持有 DocsHomeViewModel)。
+    val docsNavDrawerState = rememberDrawerState(DrawerValue.Closed)
+    val docsNavScope = rememberCoroutineScope()
+    var docsNavController by remember { mutableStateOf<DocsNavController?>(null) }
+    LaunchedEffect(safeTab) {
+        if (safeTab != MainTab.Docs.ordinal && docsNavDrawerState.isOpen) {
+            docsNavDrawerState.close()
+        }
+    }
+
     // Identity for the 消息 header. TokenStore's getters are plain prefs reads, not
     // snapshot state, so they can never trigger a recomposition — hold them in
     // Compose state instead and refresh explicitly. One /users/me/ at startup is
@@ -393,6 +406,8 @@ fun MainTabScreen(
                     onOpenDoc = onOpenDocDetail,
                     onOpenSearch = onOpenDocsSearch,
                     onOpenTrash = onOpenDocsTrash,
+                    onRegisterDocsNav = { docsNavController = it },
+                    onOpenNavDrawer = { docsNavScope.launch { docsNavDrawerState.open() } },
                 )
             } else {
                 docsWebView?.let { DocsTabScreen(it) }
@@ -518,23 +533,58 @@ fun MainTabScreen(
                 }
             },
         ) {
-            Scaffold(
-                bottomBar = {
-                    if (!(safeTab == MainTab.Tasks.ordinal && taskDetailVisible)) {
-                        CompactTabBar(
-                            tabs = tabs,
-                            selectedTab = safeTab,
-                            onTabSelected = { selectedTab = it },
-                        )
+            // 云文档二级导航抽屉 —— 与 task 抽屉同款宿主在此(遮罩覆盖底部导航栏)。
+            ModalNavigationDrawer(
+                drawerState = docsNavDrawerState,
+                gesturesEnabled = docsNavDrawerState.isOpen,
+                drawerContent = {
+                    ModalDrawerSheet(
+                        drawerState = docsNavDrawerState,
+                        drawerShape = RectangleShape,
+                        modifier = Modifier.fillMaxWidth(0.8f),
+                    ) {
+                        docsNavController
+                            ?.takeIf { safeTab == MainTab.Docs.ordinal }
+                            ?.let { c ->
+                                val docsUi by c.viewModel.state.collectAsStateWithLifecycle()
+                                DocsNavDrawer(
+                                    selectedFilter = docsUi.filter,
+                                    allCount = docsUi.allCount,
+                                    mineCount = docsUi.mineCount,
+                                    sharedCount = docsUi.sharedCount,
+                                    trashCount = docsUi.trashCount,
+                                    onDismiss = { docsNavScope.launch { docsNavDrawerState.close() } },
+                                    onSelectFilter = { filter ->
+                                        c.viewModel.setFilter(filter)
+                                        docsNavScope.launch { docsNavDrawerState.close() }
+                                    },
+                                    onOpenTrash = {
+                                        docsNavScope.launch { docsNavDrawerState.close() }
+                                        c.onOpenTrash()
+                                    },
+                                )
+                            }
                     }
                 },
-            ) { padding ->
-                Box(
-                    modifier = Modifier
-                        .padding(padding)
-                        .consumeWindowInsets(padding),
-                ) {
-                    tabs[safeTab].content()
+            ) {
+                Scaffold(
+                    bottomBar = {
+                        if (!(safeTab == MainTab.Tasks.ordinal && taskDetailVisible)) {
+                            CompactTabBar(
+                                tabs = tabs,
+                                selectedTab = safeTab,
+                                onTabSelected = { selectedTab = it },
+                            )
+                        }
+                    },
+                ) { padding ->
+                    Box(
+                        modifier = Modifier
+                            .padding(padding)
+                            .consumeWindowInsets(padding),
+                    ) {
+                        tabs[safeTab].content()
+                    }
                 }
             }
         }

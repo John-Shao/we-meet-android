@@ -1,5 +1,6 @@
 package com.we.meet.feature.docs.ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -61,12 +62,11 @@ fun DocsNavDrawer(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(Dimens.ListLeadingIcon),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(contentAlignment = Alignment.Center) {
                     Icon(
                         Icons.Outlined.Description,
                         null,
                         tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.padding(Dimens.SpaceS),
                     )
                 }
             }

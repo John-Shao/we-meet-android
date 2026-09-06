@@ -16,7 +16,6 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,17 +24,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,11 +64,22 @@ import com.we.meet.ui.theme.Dimens
 import kotlinx.coroutines.launch
 
 /**
+ * 云文档二级导航控制器(与任务模块的 TaskNavController 同款):由
+ * [DocsHomeScreen] 在组合期注册给宿主(MainTabScreen 持有 drawerState,
+ * 据此在 tab 级宿主抽屉),抽屉内容经它读取 [DocsHomeViewModel] 与导航回调。
+ */
+class DocsNavController(
+    val viewModel: DocsHomeViewModel,
+    val onOpenSearch: () -> Unit,
+    val onOpenTrash: () -> Unit,
+)
+
+/**
  * 云文档 tab 根页(设计文档 §4.4 文档主页)。
  *
  * 导航设计:保留 Web 端文档的二级导航结构(所有文档/我的文档/与我分享/垃圾桶),
- * 以任务模块的同款抽屉呈现(ModalNavigationDrawer + 带计数/选中高亮的 DrawerItem);
- * 新建走任务模块的 FAB。
+ * 以任务模块的同款抽屉呈现 —— 抽屉由宿主 MainTabScreen 在 tab 层持有
+ * (遮罩覆盖底部导航栏,与 profile/task 抽屉一致),本页仅注册 [DocsNavController]。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,6 +88,8 @@ fun DocsHomeScreen(
     onOpenDoc: (docId: String) -> Unit,
     onOpenSearch: () -> Unit,
     onOpenTrash: () -> Unit,
+    onRegisterDocsNav: (DocsNavController) -> Unit = {},
+    onOpenNavDrawer: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val vm: DocsHomeViewModel = viewModel(
@@ -89,12 +100,15 @@ fun DocsHomeScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
     var showCreate by rememberSaveable { mutableStateOf(false) }
     var renameTarget by remember { mutableStateOf<DocumentDto?>(null) }
     var deleteTarget by remember { mutableStateOf<DocumentDto?>(null) }
     var moveTarget by remember { mutableStateOf<DocumentDto?>(null) }
     var showSortMenu by remember { mutableStateOf(false) }
+
+    SideEffect {
+        onRegisterDocsNav(DocsNavController(vm, onOpenSearch, onOpenTrash))
+    }
 
     LaunchedEffect(Unit) {
         vm.toasts.collect { resId ->
@@ -103,94 +117,72 @@ fun DocsHomeScreen(
     }
     LaunchedEffect(Unit) { vm.refreshCounts() }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            DocsNavDrawer(
-                selectedFilter = state.filter,
-                allCount = state.allCount,
-                mineCount = state.mineCount,
-                sharedCount = state.sharedCount,
-                trashCount = state.trashCount,
-                onDismiss = { scope.launch { drawerState.close() } },
-                onSelectFilter = { filter ->
-                    vm.setFilter(filter)
-                    scope.launch { drawerState.close() }
-                },
-                onOpenTrash = {
-                    scope.launch { drawerState.close() }
-                    onOpenTrash()
+    Scaffold(
+        topBar = {
+            WeMeetTopBar(
+                title = stringResource(R.string.docs_screen_title),
+                actions = {
+                    IconButton(onClick = onOpenNavDrawer) {
+                        Icon(
+                            imageVector = Icons.Outlined.Menu,
+                            contentDescription = stringResource(R.string.cd_docs_nav),
+                        )
+                    }
+                    IconButton(onClick = onOpenSearch) {
+                        Icon(
+                            imageVector = Icons.Outlined.Search,
+                            contentDescription = stringResource(R.string.cd_docs_search),
+                        )
+                    }
                 },
             )
         },
-    ) {
-        Scaffold(
-            topBar = {
-                WeMeetTopBar(
-                    title = stringResource(R.string.docs_screen_title),
-                    actions = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(
-                                imageVector = Icons.Outlined.Menu,
-                                contentDescription = stringResource(R.string.cd_docs_nav),
-                            )
-                        }
-                        IconButton(onClick = onOpenSearch) {
-                            Icon(
-                                imageVector = Icons.Outlined.Search,
-                                contentDescription = stringResource(R.string.cd_docs_search),
-                            )
-                        }
-                    },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showCreate = true }) {
+                Icon(
+                    imageVector = Icons.Outlined.Add,
+                    contentDescription = stringResource(R.string.cd_docs_create),
                 )
-            },
-            snackbarHost = { SnackbarHost(snackbarHostState) },
-            floatingActionButton = {
-                FloatingActionButton(onClick = { showCreate = true }) {
-                    Icon(
-                        imageVector = Icons.Outlined.Add,
-                        contentDescription = stringResource(R.string.cd_docs_create),
+            }
+        },
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            DocsListHeader(
+                filter = state.filter,
+                ordering = state.ordering,
+                sortExpanded = showSortMenu,
+                onSortChanged = { showSortMenu = it },
+                onSelectOrdering = vm::setOrdering,
+            )
+            PullToRefreshBox(
+                isRefreshing = state.refreshing,
+                onRefresh = {
+                    vm.refresh()
+                    vm.refreshCounts()
+                },
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                when {
+                    state.loading && state.items.isEmpty() -> WeMeetLoading()
+                    state.error && state.items.isEmpty() -> WeMeetErrorState(
+                        onRetry = vm::refresh,
+                        message = stringResource(R.string.docs_load_error),
                     )
-                }
-            },
-        ) { padding ->
-            Column(Modifier.fillMaxSize().padding(padding)) {
-                DocsListHeader(
-                    filter = state.filter,
-                    ordering = state.ordering,
-                    sortExpanded = showSortMenu,
-                    onSortChanged = { showSortMenu = it },
-                    onSelectOrdering = vm::setOrdering,
-                )
-                PullToRefreshBox(
-                    isRefreshing = state.refreshing,
-                    onRefresh = {
-                        vm.refresh()
-                        vm.refreshCounts()
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    when {
-                        state.loading && state.items.isEmpty() -> WeMeetLoading()
-                        state.error && state.items.isEmpty() -> WeMeetErrorState(
-                            onRetry = vm::refresh,
-                            message = stringResource(R.string.docs_load_error),
-                        )
-                        state.items.isEmpty() -> DocsEmptyState(
-                            filter = state.filter,
-                            onCreate = { showCreate = true },
-                        )
-                        else -> DocsList(
-                            items = state.items,
-                            loadingMore = state.loadingMore,
-                            onLoadMore = vm::loadMore,
-                            onOpenDoc = onOpenDoc,
-                            onToggleFavorite = vm::toggleFavorite,
-                            onRename = { renameTarget = it },
-                            onMove = { moveTarget = it },
-                            onDelete = { deleteTarget = it },
-                        )
-                    }
+                    state.items.isEmpty() -> DocsEmptyState(
+                        filter = state.filter,
+                        onCreate = { showCreate = true },
+                    )
+                    else -> DocsList(
+                        items = state.items,
+                        loadingMore = state.loadingMore,
+                        onLoadMore = vm::loadMore,
+                        onOpenDoc = onOpenDoc,
+                        onToggleFavorite = vm::toggleFavorite,
+                        onRename = { renameTarget = it },
+                        onMove = { moveTarget = it },
+                        onDelete = { deleteTarget = it },
+                    )
                 }
             }
         }
