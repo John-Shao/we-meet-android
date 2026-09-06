@@ -1210,7 +1210,7 @@ private fun MessageInputBar(
                     onClick = { onSend(text) },
                     enabled = canSend && text.isNotBlank() && commands.isEmpty(),
                     contentPadding = PaddingValues(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceXs),
-                    modifier = Modifier.height(Dimens.MinTouchTarget),
+                    modifier = Modifier.height(Dimens.ControlDefault),
                 ) { Text(stringResource(R.string.im_input_send)) }
             }
         }
