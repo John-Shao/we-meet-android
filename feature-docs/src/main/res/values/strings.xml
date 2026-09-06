@@ -108,4 +108,12 @@
     <string name="docs_reach_authenticated">Anyone in the workspace</string>
     <string name="docs_reach_public">Public</string>
     <string name="docs_content_updated">Content updated</string>
+    <string name="docs_nav_views">Document views</string>
+    <string name="docs_nav_all">All documents</string>
+    <string name="docs_nav_mine">My documents</string>
+    <string name="docs_nav_shared">Shared with me</string>
+    <string name="docs_nav_trash">Trash</string>
+    <string name="docs_empty_shared_title">Nothing shared with you yet</string>
+    <string name="docs_empty_shared_desc">Documents shared with you will appear here</string>
+    <string name="cd_docs_nav">Open navigation</string>
 </resources>

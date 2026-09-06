@@ -108,4 +108,12 @@
     <string name="docs_reach_authenticated">Alle im Arbeitsbereich</string>
     <string name="docs_reach_public">Öffentlich</string>
     <string name="docs_content_updated">Inhalt aktualisiert</string>
+    <string name="docs_nav_views">Dokumentansichten</string>
+    <string name="docs_nav_all">Alle Dokumente</string>
+    <string name="docs_nav_mine">Meine Dokumente</string>
+    <string name="docs_nav_shared">Mit mir geteilt</string>
+    <string name="docs_nav_trash">Papierkorb</string>
+    <string name="docs_empty_shared_title">Noch nichts mit dir geteilt</string>
+    <string name="docs_empty_shared_desc">Mit dir geteilte Dokumente erscheinen hier</string>
+    <string name="cd_docs_nav">Navigation öffnen</string>
 </resources>

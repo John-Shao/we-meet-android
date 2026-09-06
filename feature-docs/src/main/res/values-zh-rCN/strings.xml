@@ -108,4 +108,12 @@
     <string name="docs_reach_authenticated">企业内所有人</string>
     <string name="docs_reach_public">公开</string>
     <string name="docs_content_updated">内容已更新</string>
+    <string name="docs_nav_views">文档视图</string>
+    <string name="docs_nav_all">所有文档</string>
+    <string name="docs_nav_mine">我的文档</string>
+    <string name="docs_nav_shared">与我分享</string>
+    <string name="docs_nav_trash">垃圾桶</string>
+    <string name="docs_empty_shared_title">还没有人向你分享文档</string>
+    <string name="docs_empty_shared_desc">别人分享给你的文档会出现在这里</string>
+    <string name="cd_docs_nav">打开导航</string>
 </resources>

@@ -108,4 +108,12 @@
     <string name="docs_reach_authenticated">Iedereen in de werkruimte</string>
     <string name="docs_reach_public">Openbaar</string>
     <string name="docs_content_updated">Inhoud bijgewerkt</string>
+    <string name="docs_nav_views">Documentweergaven</string>
+    <string name="docs_nav_all">Alle documenten</string>
+    <string name="docs_nav_mine">Mijn documenten</string>
+    <string name="docs_nav_shared">Met mij gedeeld</string>
+    <string name="docs_nav_trash">Prullenbak</string>
+    <string name="docs_empty_shared_title">Nog niets met je gedeeld</string>
+    <string name="docs_empty_shared_desc">Documenten die met je worden gedeeld, verschijnen hier</string>
+    <string name="cd_docs_nav">Navigatie openen</string>
 </resources>

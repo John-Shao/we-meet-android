@@ -27,7 +27,7 @@ class DocsHomeViewModel(
 ) : ViewModel() {
 
     enum class Mode { HOME, TRASH }
-    enum class Filter { ALL, MINE, FAVORITES }
+    enum class Filter { ALL, MINE, SHARED }
 
     data class UiState(
         val filter: Filter = Filter.ALL,
@@ -38,6 +38,10 @@ class DocsHomeViewModel(
         val refreshing: Boolean = false,
         val loadingMore: Boolean = false,
         val hasMore: Boolean = false,
+        val allCount: Int? = null,
+        val mineCount: Int? = null,
+        val sharedCount: Int? = null,
+        val trashCount: Int? = null,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -92,6 +96,25 @@ class DocsHomeViewModel(
         refresh()
     }
 
+    /** 抽屉计数(各筛选一次轻查询,page_size=1 只取 count)。 */
+    fun refreshCounts() {
+        val current = _state.value
+        viewModelScope.launch {
+            val all = runCatching { repo.list(page = 1, pageSize = 1) }.getOrNull()?.count
+            val mine = runCatching { repo.list(page = 1, pageSize = 1, isCreatorMe = true) }.getOrNull()?.count
+            val shared = runCatching { repo.list(page = 1, pageSize = 1, isCreatorMe = false) }.getOrNull()?.count
+            val trash = runCatching { repo.trashbin(page = 1, pageSize = 1) }.getOrNull()?.count
+            _state.update {
+                it.copy(
+                    allCount = all,
+                    mineCount = mine,
+                    sharedCount = shared,
+                    trashCount = trash,
+                )
+            }
+        }
+    }
+
     fun setOrdering(ordering: String) {
         if (_state.value.ordering == ordering) return
         _state.update { it.copy(ordering = ordering) }
@@ -128,7 +151,6 @@ class DocsHomeViewModel(
                     _state.update { state ->
                         state.copy(items = state.items.map { if (it.id == doc.id) it.copy(isFavorite = !doc.isFavorite) else it })
                     }
-                    if (_state.value.filter == Filter.FAVORITES) refresh()
                 }
                 .onFailure { emitToast(R.string.docs_load_error) }
         }
@@ -195,8 +217,11 @@ class DocsHomeViewModel(
     private suspend fun fetchPage(pageNumber: Int) = when (mode) {
         Mode.HOME -> repo.list(
             page = pageNumber,
-            isCreatorMe = if (_state.value.filter == Filter.MINE) true else null,
-            isFavorite = if (_state.value.filter == Filter.FAVORITES) true else null,
+            isCreatorMe = when (_state.value.filter) {
+                Filter.MINE -> true
+                Filter.SHARED -> false
+                Filter.ALL -> null
+            },
             ordering = _state.value.ordering,
         )
         Mode.TRASH -> repo.trashbin(pageNumber)

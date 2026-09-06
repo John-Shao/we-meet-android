@@ -13,22 +13,26 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,8 +68,9 @@ import kotlinx.coroutines.launch
 /**
  * 云文档 tab 根页(设计文档 §4.4 文档主页)。
  *
- * 原生列表(全部/我的/收藏 + 排序 + 分页 + 下拉刷新 + 三态)替换常驻 WebView;
- * 行操作(收藏/重命名/移动/删除)与新建走 docs REST。
+ * 导航设计:保留 Web 端文档的二级导航结构(所有文档/我的文档/与我分享/垃圾桶),
+ * 以任务模块的同款抽屉呈现(ModalNavigationDrawer + 带计数/选中高亮的 DrawerItem);
+ * 新建走任务模块的 FAB。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,55 +80,16 @@ fun DocsHomeScreen(
     onOpenSearch: () -> Unit,
     onOpenTrash: () -> Unit,
 ) {
-    DocsListScreen(
-        deps = deps,
-        mode = DocsHomeViewModel.Mode.HOME,
-        title = stringResource(R.string.docs_screen_title),
-        onBack = null,
-        onOpenDoc = onOpenDoc,
-        onOpenSearch = onOpenSearch,
-        onOpenTrash = onOpenTrash,
-    )
-}
-
-/** 回收站页(路由级,独立于主页)。 */
-@Composable
-fun DocsTrashScreen(
-    deps: DocsDeps,
-    onBack: () -> Unit,
-    onOpenDoc: (docId: String) -> Unit,
-) {
-    DocsListScreen(
-        deps = deps,
-        mode = DocsHomeViewModel.Mode.TRASH,
-        title = stringResource(R.string.docs_trash),
-        onBack = onBack,
-        onOpenDoc = onOpenDoc,
-        onOpenSearch = null,
-        onOpenTrash = null,
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DocsListScreen(
-    deps: DocsDeps,
-    mode: DocsHomeViewModel.Mode,
-    title: String,
-    onBack: (() -> Unit)?,
-    onOpenDoc: (docId: String) -> Unit,
-    onOpenSearch: (() -> Unit)?,
-    onOpenTrash: (() -> Unit)?,
-) {
     val context = LocalContext.current
     val vm: DocsHomeViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { DocsHomeViewModel(deps.docsRepository, mode) }
+            initializer { DocsHomeViewModel(deps.docsRepository, DocsHomeViewModel.Mode.HOME) }
         },
     )
     val state by vm.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
     var showCreate by rememberSaveable { mutableStateOf(false) }
     var renameTarget by remember { mutableStateOf<DocumentDto?>(null) }
     var deleteTarget by remember { mutableStateOf<DocumentDto?>(null) }
@@ -135,96 +101,96 @@ private fun DocsListScreen(
             snackbarHostState.showSnackbar(context.getString(resId))
         }
     }
+    LaunchedEffect(Unit) { vm.refreshCounts() }
 
-    Scaffold(
-        topBar = {
-            WeMeetTopBar(
-                title = title,
-                onBack = onBack,
-                actions = {
-                    if (mode == DocsHomeViewModel.Mode.HOME) {
-                        if (onOpenSearch != null) {
-                            IconButton(onClick = onOpenSearch) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Search,
-                                    contentDescription = stringResource(R.string.cd_docs_search),
-                                )
-                            }
-                        }
-                        IconButton(onClick = { showSortMenu = true }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.Sort,
-                                contentDescription = stringResource(R.string.cd_docs_sort),
-                            )
-                        }
-                        SortMenu(
-                            expanded = showSortMenu,
-                            current = state.ordering,
-                            onDismiss = { showSortMenu = false },
-                            onSelect = {
-                                vm.setOrdering(it)
-                                showSortMenu = false
-                            },
-                        )
-                        if (onOpenTrash != null) {
-                            IconButton(onClick = onOpenTrash) {
-                                Icon(
-                                    imageVector = Icons.Outlined.DeleteOutline,
-                                    contentDescription = stringResource(R.string.cd_docs_trash),
-                                )
-                            }
-                        }
-                        IconButton(onClick = { showCreate = true }) {
-                            Icon(
-                                imageVector = Icons.Outlined.Add,
-                                contentDescription = stringResource(R.string.cd_docs_create),
-                            )
-                        }
-                    }
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            DocsNavDrawer(
+                selectedFilter = state.filter,
+                allCount = state.allCount,
+                mineCount = state.mineCount,
+                sharedCount = state.sharedCount,
+                trashCount = state.trashCount,
+                onDismiss = { scope.launch { drawerState.close() } },
+                onSelectFilter = { filter ->
+                    vm.setFilter(filter)
+                    scope.launch { drawerState.close() }
+                },
+                onOpenTrash = {
+                    scope.launch { drawerState.close() }
+                    onOpenTrash()
                 },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-    ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            if (mode == DocsHomeViewModel.Mode.HOME) {
-                FilterRow(
-                    filter = state.filter,
-                    onSelect = vm::setFilter,
+    ) {
+        Scaffold(
+            topBar = {
+                WeMeetTopBar(
+                    title = stringResource(R.string.docs_screen_title),
+                    actions = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(
+                                imageVector = Icons.Outlined.Menu,
+                                contentDescription = stringResource(R.string.cd_docs_nav),
+                            )
+                        }
+                        IconButton(onClick = onOpenSearch) {
+                            Icon(
+                                imageVector = Icons.Outlined.Search,
+                                contentDescription = stringResource(R.string.cd_docs_search),
+                            )
+                        }
+                    },
                 )
-            }
-            PullToRefreshBox(
-                isRefreshing = state.refreshing,
-                onRefresh = vm::refresh,
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                when {
-                    state.loading && state.items.isEmpty() -> WeMeetLoading()
-                    state.error && state.items.isEmpty() -> WeMeetErrorState(
-                        onRetry = vm::refresh,
-                        message = stringResource(R.string.docs_load_error),
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            floatingActionButton = {
+                FloatingActionButton(onClick = { showCreate = true }) {
+                    Icon(
+                        imageVector = Icons.Outlined.Add,
+                        contentDescription = stringResource(R.string.cd_docs_create),
                     )
-                    state.items.isEmpty() -> DocsEmptyState(
-                        filter = state.filter,
-                        mode = mode,
-                        onCreate = if (mode == DocsHomeViewModel.Mode.HOME) {
-                            { showCreate = true }
-                        } else {
-                            null
-                        },
-                    )
-                    else -> DocsList(
-                        items = state.items,
-                        mode = mode,
-                        loadingMore = state.loadingMore,
-                        onLoadMore = vm::loadMore,
-                        onOpenDoc = onOpenDoc,
-                        onToggleFavorite = vm::toggleFavorite,
-                        onRename = { renameTarget = it },
-                        onMove = { moveTarget = it },
-                        onDelete = { deleteTarget = it },
-                        onRestore = vm::restore,
-                    )
+                }
+            },
+        ) { padding ->
+            Column(Modifier.fillMaxSize().padding(padding)) {
+                DocsListHeader(
+                    filter = state.filter,
+                    ordering = state.ordering,
+                    sortExpanded = showSortMenu,
+                    onSortChanged = { showSortMenu = it },
+                    onSelectOrdering = vm::setOrdering,
+                )
+                PullToRefreshBox(
+                    isRefreshing = state.refreshing,
+                    onRefresh = {
+                        vm.refresh()
+                        vm.refreshCounts()
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    when {
+                        state.loading && state.items.isEmpty() -> WeMeetLoading()
+                        state.error && state.items.isEmpty() -> WeMeetErrorState(
+                            onRetry = vm::refresh,
+                            message = stringResource(R.string.docs_load_error),
+                        )
+                        state.items.isEmpty() -> DocsEmptyState(
+                            filter = state.filter,
+                            onCreate = { showCreate = true },
+                        )
+                        else -> DocsList(
+                            items = state.items,
+                            loadingMore = state.loadingMore,
+                            onLoadMore = vm::loadMore,
+                            onOpenDoc = onOpenDoc,
+                            onToggleFavorite = vm::toggleFavorite,
+                            onRename = { renameTarget = it },
+                            onMove = { moveTarget = it },
+                            onDelete = { deleteTarget = it },
+                        )
+                    }
                 }
             }
         }
@@ -280,37 +246,101 @@ private fun DocsListScreen(
     }
 }
 
+/** 回收站页(路由级,独立于主页;复用列表内容,不带导航抽屉)。 */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FilterRow(
+fun DocsTrashScreen(
+    deps: DocsDeps,
+    onBack: () -> Unit,
+    onOpenDoc: (docId: String) -> Unit,
+) {
+    val context = LocalContext.current
+    val vm: DocsHomeViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { DocsHomeViewModel(deps.docsRepository, DocsHomeViewModel.Mode.TRASH) }
+        },
+    )
+    val state by vm.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) {
+        vm.toasts.collect { resId ->
+            snackbarHostState.showSnackbar(context.getString(resId))
+        }
+    }
+    Scaffold(
+        topBar = { WeMeetTopBar(title = stringResource(R.string.docs_trash), onBack = onBack) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding)) {
+            when {
+                state.loading -> WeMeetLoading()
+                state.error -> WeMeetErrorState(
+                    onRetry = vm::refresh,
+                    message = stringResource(R.string.docs_load_error),
+                )
+                state.items.isEmpty() -> WeMeetEmptyState(
+                    title = stringResource(R.string.docs_empty_trash_title),
+                )
+                else -> DocsList(
+                    items = state.items,
+                    loadingMore = state.loadingMore,
+                    onLoadMore = vm::loadMore,
+                    onOpenDoc = onOpenDoc,
+                    onToggleFavorite = vm::toggleFavorite,
+                    onRename = {},
+                    onMove = {},
+                    onDelete = {},
+                    onRestore = vm::restore,
+                    trashMode = true,
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DocsListHeader(
     filter: DocsHomeViewModel.Filter,
-    onSelect: (DocsHomeViewModel.Filter) -> Unit,
+    ordering: String,
+    sortExpanded: Boolean,
+    onSortChanged: (Boolean) -> Unit,
+    onSelectOrdering: (String) -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenPadding),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        FilterChip(
-            selected = filter == DocsHomeViewModel.Filter.ALL,
-            onClick = { onSelect(DocsHomeViewModel.Filter.ALL) },
-            label = { Text(stringResource(R.string.docs_filter_all)) },
+        Text(
+            text = stringResource(
+                when (filter) {
+                    DocsHomeViewModel.Filter.ALL -> R.string.docs_nav_all
+                    DocsHomeViewModel.Filter.MINE -> R.string.docs_nav_mine
+                    DocsHomeViewModel.Filter.SHARED -> R.string.docs_nav_shared
+                },
+            ),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.weight(1f),
         )
-        FilterChip(
-            selected = filter == DocsHomeViewModel.Filter.MINE,
-            onClick = { onSelect(DocsHomeViewModel.Filter.MINE) },
-            label = { Text(stringResource(R.string.docs_filter_mine)) },
-        )
-        FilterChip(
-            selected = filter == DocsHomeViewModel.Filter.FAVORITES,
-            onClick = { onSelect(DocsHomeViewModel.Filter.FAVORITES) },
-            label = { Text(stringResource(R.string.docs_filter_favorites)) },
+        IconButton(onClick = { onSortChanged(true) }) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.Sort,
+                contentDescription = stringResource(R.string.cd_docs_sort),
+            )
+        }
+        SortDropdown(
+            expanded = sortExpanded,
+            current = ordering,
+            onDismiss = { onSortChanged(false) },
+            onSelect = onSelectOrdering,
         )
     }
 }
 
 @Composable
-private fun SortMenu(
+private fun SortDropdown(
     expanded: Boolean,
     current: String,
     onDismiss: () -> Unit,
@@ -343,25 +373,19 @@ private fun SortEntry(
 @Composable
 private fun DocsEmptyState(
     filter: DocsHomeViewModel.Filter,
-    mode: DocsHomeViewModel.Mode,
-    onCreate: (() -> Unit)?,
+    onCreate: () -> Unit,
 ) {
-    when {
-        mode == DocsHomeViewModel.Mode.TRASH -> WeMeetEmptyState(
-            title = stringResource(R.string.docs_empty_trash_title),
-        )
-        filter == DocsHomeViewModel.Filter.FAVORITES -> WeMeetEmptyState(
-            title = stringResource(R.string.docs_empty_favorites_title),
-            description = stringResource(R.string.docs_empty_favorites_description),
+    when (filter) {
+        DocsHomeViewModel.Filter.SHARED -> WeMeetEmptyState(
+            title = stringResource(R.string.docs_empty_shared_title),
+            description = stringResource(R.string.docs_empty_shared_desc),
             icon = Icons.Outlined.Description,
         )
         else -> WeMeetEmptyState(
             title = stringResource(R.string.docs_empty_title),
             description = stringResource(R.string.docs_empty_description),
             icon = Icons.Outlined.Description,
-            action = onCreate?.let { onCreateAction ->
-                { SecondaryButton(text = stringResource(R.string.docs_create_confirm), onClick = onCreateAction) }
-            },
+            action = { SecondaryButton(text = stringResource(R.string.docs_create_confirm), onClick = onCreate) },
         )
     }
 }
@@ -369,7 +393,6 @@ private fun DocsEmptyState(
 @Composable
 private fun DocsList(
     items: List<DocumentDto>,
-    mode: DocsHomeViewModel.Mode,
     loadingMore: Boolean,
     onLoadMore: () -> Unit,
     onOpenDoc: (docId: String) -> Unit,
@@ -377,7 +400,8 @@ private fun DocsList(
     onRename: (DocumentDto) -> Unit,
     onMove: (DocumentDto) -> Unit,
     onDelete: (DocumentDto) -> Unit,
-    onRestore: (DocumentDto) -> Unit,
+    onRestore: (DocumentDto) -> Unit = {},
+    trashMode: Boolean = false,
 ) {
     val listState = rememberLazyListState()
     LaunchedEffect(listState) {
@@ -389,14 +413,11 @@ private fun DocsList(
             if (total > 0 && lastVisible >= total - 3) onLoadMore()
         }
     }
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize(),
-    ) {
+    LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
         items(items, key = { it.id }) { doc ->
             DocListItem(
                 doc = doc,
-                mode = mode,
+                mode = if (trashMode) DocsHomeViewModel.Mode.TRASH else DocsHomeViewModel.Mode.HOME,
                 onClick = { onOpenDoc(doc.id) },
                 onToggleFavorite = { onToggleFavorite(doc) },
                 onRename = { onRename(doc) },
@@ -472,7 +493,7 @@ private fun DocRenameDialog(
             )
         },
         confirmButton = {
-            androidx.compose.material3.TextButton(
+            TextButton(
                 onClick = { onConfirm(title.trim()) },
                 enabled = title.isNotBlank(),
             ) {
@@ -480,7 +501,7 @@ private fun DocRenameDialog(
             }
         },
         dismissButton = {
-            androidx.compose.material3.TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.docs_cancel))
             }
         },
