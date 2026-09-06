@@ -64,6 +64,12 @@
     <string name="docs_attachment">Bijlage</string>
     <string name="docs_attachment_open">Tik om te openen</string>
     <string name="docs_comments">Reacties</string>
+    <string name="docs_ask_access">Toegang aanvragen</string>
+    <string name="docs_ask_access_title">U heeft geen toegang tot dit document</string>
+    <string name="docs_ask_access_desc">Vraag de eigenaar om leestoegang om de inhoud te bekijken.</string>
+    <string name="docs_ask_access_pending">Toegangsverzoek verzonden - wachten op de eigenaar.</string>
+    <string name="docs_ask_access_sent">Toegangsverzoek verzonden</string>
+    <string name="docs_ask_access_failed">Verzoek kon niet worden verzonden. Probeer opnieuw.</string>
 <string name="docs_edit">Bewerken</string>
     <string name="docs_comment_hint">Schrijf een reactie</string>
     <string name="cd_docs_send_comment">Reactie versturen</string>

@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 /**
  * 文档详情(M2):元数据 + 阅读态正文(formatted-content → BlockNote JSON)。
@@ -31,6 +32,11 @@ class DocDetailViewModel(
         val doc: DocumentDto? = null,
         val loading: Boolean = false,
         val error: Boolean = false,
+        /** 该文档对当前用户不可访问(403 无权限)→ 展示「申请访问」流。 */
+        val noAccess: Boolean = false,
+        val requestingAccess: Boolean = false,
+        /** 已发起过申请(防止重复提交,并提示等待)。 */
+        val requestSent: Boolean = false,
         val blocks: List<JsonBlockDto> = emptyList(),
         val contentLoading: Boolean = false,
         val contentError: Boolean = false,
@@ -51,10 +57,40 @@ class DocDetailViewModel(
 
     fun load() {
         viewModelScope.launch {
-            _state.update { it.copy(loading = true, error = false) }
+            _state.update { it.copy(loading = true, error = false, noAccess = false) }
             runCatching { repo.document(docId) }
                 .onSuccess { doc -> _state.update { it.copy(doc = doc, loading = false) } }
-                .onFailure { _state.update { it.copy(loading = false, error = true) } }
+                .onFailure { e ->
+                    _state.update {
+                        it.copy(
+                            loading = false,
+                            error = !isNoAccess(e),
+                            noAccess = isNoAccess(e),
+                        )
+                    }
+                }
+        }
+    }
+
+    /**
+     * docs 侧对无权限文档返回 403(DocumentPermission 无 retrieve 能力 → PermissionDenied),
+     * 据此与真实网络/服务错误区分,走「申请访问」而非「重试」。
+     */
+    private fun isNoAccess(e: Throwable): Boolean =
+        (e as? HttpException)?.code() == 403
+
+    fun requestAccess() {
+        viewModelScope.launch {
+            _state.update { it.copy(requestingAccess = true) }
+            runCatching { repo.createAccessRequest(docId, role = "reader") }
+                .onSuccess {
+                    _state.update { it.copy(requestingAccess = false, requestSent = true) }
+                    _toasts.tryEmit(R.string.docs_ask_access_sent)
+                }
+                .onFailure {
+                    _state.update { it.copy(requestingAccess = false) }
+                    _toasts.tryEmit(R.string.docs_ask_access_failed)
+                }
         }
     }
 

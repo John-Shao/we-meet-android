@@ -50,6 +50,7 @@ import com.we.meet.feature.docs.util.formatIsoTime
 import com.we.meet.ui.components.DestructiveConfirmDialog
 import com.we.meet.ui.components.PrimaryButton
 import com.we.meet.ui.components.SecondaryButton
+import com.we.meet.ui.components.WeMeetEmptyState
 import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetLoading
@@ -185,6 +186,11 @@ fun DocDetailScreen(
         Box(Modifier.fillMaxSize().padding(padding)) {
             when {
                 state.loading -> WeMeetLoading()
+                state.noAccess -> DocNoAccessState(
+                    requesting = state.requestingAccess,
+                    requestSent = state.requestSent,
+                    onRequest = vm::requestAccess,
+                )
                 state.error -> WeMeetErrorState(
                     onRetry = vm::load,
                     message = stringResource(R.string.docs_load_error),
@@ -347,6 +353,36 @@ private fun buildInfoLine(doc: com.we.meet.feature.docs.data.net.DocumentDto): S
     } else {
         stringResource(R.string.docs_untitled)
     }
+}
+
+/**
+ * 无访问权限态(§4.7.2):用户点开无权限文档(403)→ 提供「申请访问」,
+ * 与 Web 端的 ask-for-access 同一链路(POST /documents/{id}/ask-for-access/)。
+ */
+@Composable
+private fun DocNoAccessState(
+    requesting: Boolean,
+    requestSent: Boolean,
+    onRequest: () -> Unit,
+) {
+    WeMeetEmptyState(
+        title = stringResource(R.string.docs_ask_access_title),
+        description = stringResource(R.string.docs_ask_access_desc),
+        action = {
+            when {
+                requestSent -> Text(
+                    text = stringResource(R.string.docs_ask_access_pending),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                else -> PrimaryButton(
+                    text = stringResource(R.string.docs_ask_access),
+                    enabled = !requesting,
+                    onClick = onRequest,
+                )
+            }
+        },
+    )
 }
 
 @Composable

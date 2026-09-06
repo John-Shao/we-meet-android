@@ -64,6 +64,12 @@
     <string name="docs_attachment">Pièce jointe</string>
     <string name="docs_attachment_open">Touchez pour ouvrir</string>
     <string name="docs_comments">Commentaires</string>
+    <string name="docs_ask_access">Demander l\'accès</string>
+    <string name="docs_ask_access_title">Vous n\'avez pas accès à ce document</string>
+    <string name="docs_ask_access_desc">Demandez l\'accès en lecture au propriétaire pour voir le contenu.</string>
+    <string name="docs_ask_access_pending">Demande envoyée - en attente du propriétaire.</string>
+    <string name="docs_ask_access_sent">Demande envoyée</string>
+    <string name="docs_ask_access_failed">Impossible d\'envoyer la demande. Réessayez.</string>
 <string name="docs_edit">Modifier</string>
     <string name="docs_comment_hint">Écrire un commentaire</string>
     <string name="cd_docs_send_comment">Envoyer le commentaire</string>
