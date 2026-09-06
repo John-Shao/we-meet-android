@@ -3,10 +3,13 @@ package com.we.meet.feature.docs.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -45,6 +48,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -119,22 +124,9 @@ fun DocsHomeScreen(
 
     Scaffold(
         topBar = {
-            WeMeetTopBar(
-                title = stringResource(R.string.docs_screen_title),
-                actions = {
-                    IconButton(onClick = onOpenNavDrawer) {
-                        Icon(
-                            imageVector = Icons.Outlined.Menu,
-                            contentDescription = stringResource(R.string.cd_docs_nav),
-                        )
-                    }
-                    IconButton(onClick = onOpenSearch) {
-                        Icon(
-                            imageVector = Icons.Outlined.Search,
-                            contentDescription = stringResource(R.string.cd_docs_search),
-                        )
-                    }
-                },
+            DocsHomeHeader(
+                onOpenNavDrawer = onOpenNavDrawer,
+                onOpenSearch = onOpenSearch,
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -286,6 +278,43 @@ fun DocsTrashScreen(
                     trashMode = true,
                 )
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DocsHomeHeader(
+    onOpenNavDrawer: () -> Unit,
+    onOpenSearch: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(Dimens.ActionTile)
+            .padding(horizontal = Dimens.ScreenPadding),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onOpenNavDrawer) {
+            Icon(
+                imageVector = Icons.Outlined.Menu,
+                contentDescription = stringResource(R.string.cd_docs_nav),
+            )
+        }
+        Spacer(Modifier.width(Dimens.SpaceS))
+        Text(
+            text = stringResource(R.string.docs_screen_title),
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        IconButton(onClick = onOpenSearch) {
+            Icon(
+                imageVector = Icons.Outlined.Search,
+                contentDescription = stringResource(R.string.cd_docs_search),
+            )
         }
     }
 }
