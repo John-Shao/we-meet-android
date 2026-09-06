@@ -439,6 +439,25 @@ val AvatarFallbackPalette = listOf(
 val AvatarOnFallback = Color(0xFFFFFFFF)
 
 /**
+ * 云文档内容区专用色(设计文档 §4.11.2 的 core-design 扩展点)。
+ *
+ * 评论锚定高亮:doc 正文里被评论的文本段落的高亮底 + 底上文字。
+ *
+ * 文字 vs 高亮底按正文文字处理(≥4.5:1):
+ * - Light:`FBEA9F` 底 + `3B2E00` 字 ≈ 10.3:1;
+ * - Dark:`4F4200` 底 + `FFE8A3` 字 ≈ 7.9:1。
+ *
+ * 高亮底相对页面 surface 的区分度达不到非文本 3:1(浅色主题下 ~1.2:1)——
+ * 高亮是**背景强调**而非控件/图形,可辨识性由「底色变化 + 评论图标」共同
+ * 承担,不把它当唯一线索(设计规范 §5.1「不靠颜色单独传达信息」)。
+ * 对比度数值由 ColorContrastTest 守住,改值先复算。
+ */
+val LightDocsCommentHighlight = Color(0xFFFBEA9F)
+val LightDocsCommentHighlightText = Color(0xFF3B2E00)
+val DarkDocsCommentHighlight = Color(0xFF4F4200)
+val DarkDocsCommentHighlightText = Color(0xFFFFE8A3)
+
+/**
  * 会中(RoomScreen)专用色。
  *
  * 会中界面永远是深色的 —— 视频画面之上必须压暗才看得清叠加控件,不跟随

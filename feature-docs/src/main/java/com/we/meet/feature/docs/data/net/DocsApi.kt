@@ -7,6 +7,7 @@ import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -72,6 +73,162 @@ interface DocsApi {
 
     @GET("api/v1.0/users/me/")
     suspend fun me(): DocsUserDto
+
+    // ---- M2: read mode / comments / versions / share ----
+
+    @GET("api/v1.0/documents/{id}/formatted-content/")
+    suspend fun formattedContent(
+        @Path("id") id: String,
+        @Query("content_format") format: String = "json",
+    ): DocsFormattedContentDto
+
+    @PATCH("api/v1.0/documents/{id}/content/")
+    suspend fun updateContent(
+        @Path("id") id: String,
+        @Body body: DocsContentUpdateRequest,
+    )
+
+    @GET("api/v1.0/documents/{id}/threads/")
+    suspend fun threads(@Path("id") id: String): List<DocsThreadDto>
+
+    @POST("api/v1.0/documents/{id}/threads/")
+    suspend fun createThread(
+        @Path("id") id: String,
+        @Body body: DocsThreadCreateRequest,
+    ): DocsThreadDto
+
+    @DELETE("api/v1.0/documents/{id}/threads/{threadId}/")
+    suspend fun deleteThread(
+        @Path("id") id: String,
+        @Path("threadId") threadId: String,
+    )
+
+    @POST("api/v1.0/documents/{id}/threads/{threadId}/resolve/")
+    suspend fun resolveThread(
+        @Path("id") id: String,
+        @Path("threadId") threadId: String,
+    )
+
+    @POST("api/v1.0/documents/{id}/threads/{threadId}/unresolve/")
+    suspend fun unresolveThread(
+        @Path("id") id: String,
+        @Path("threadId") threadId: String,
+    )
+
+    @POST("api/v1.0/documents/{id}/threads/{threadId}/comments/")
+    suspend fun createComment(
+        @Path("id") id: String,
+        @Path("threadId") threadId: String,
+        @Body body: DocsCommentCreateRequest,
+    ): DocsCommentDto
+
+    @DELETE("api/v1.0/documents/{id}/threads/{threadId}/comments/{commentId}/")
+    suspend fun deleteComment(
+        @Path("id") id: String,
+        @Path("threadId") threadId: String,
+        @Path("commentId") commentId: String,
+    )
+
+    @POST("api/v1.0/documents/{id}/threads/{threadId}/comments/{commentId}/reactions/")
+    suspend fun addReaction(
+        @Path("id") id: String,
+        @Path("threadId") threadId: String,
+        @Path("commentId") commentId: String,
+        @Body body: DocsReactionRequest,
+    )
+
+    @DELETE("api/v1.0/documents/{id}/threads/{threadId}/comments/{commentId}/reactions/")
+    suspend fun removeReaction(
+        @Path("id") id: String,
+        @Path("threadId") threadId: String,
+        @Path("commentId") commentId: String,
+        @Body body: DocsReactionRequest,
+    )
+
+    @GET("api/v1.0/documents/{id}/versions/")
+    suspend fun versions(
+        @Path("id") id: String,
+        @Query("version_id") marker: String? = null,
+    ): DocsVersionsDto
+
+    @GET("api/v1.0/documents/{id}/versions/{versionId}/")
+    suspend fun version(
+        @Path("id") id: String,
+        @Path("versionId") versionId: String,
+    ): DocsVersionDto
+
+    @GET("api/v1.0/documents/{id}/accesses/")
+    suspend fun accesses(
+        @Path("id") id: String,
+        @Query("page") page: Int? = null,
+        @Query("page_size") pageSize: Int? = null,
+    ): DocsAccessPageDto
+
+    @POST("api/v1.0/documents/{id}/accesses/")
+    suspend fun createAccess(
+        @Path("id") id: String,
+        @Body body: DocsAccessCreateRequest,
+    ): DocsAccessDto
+
+    @PATCH("api/v1.0/documents/{id}/accesses/{accessId}/")
+    suspend fun updateAccess(
+        @Path("id") id: String,
+        @Path("accessId") accessId: String,
+        @Body body: DocsAccessUpdateRequest,
+    ): DocsAccessDto
+
+    @DELETE("api/v1.0/documents/{id}/accesses/{accessId}/")
+    suspend fun deleteAccess(
+        @Path("id") id: String,
+        @Path("accessId") accessId: String,
+    )
+
+    @GET("api/v1.0/documents/{id}/invitations/")
+    suspend fun invitations(
+        @Path("id") id: String,
+        @Query("page") page: Int? = null,
+        @Query("page_size") pageSize: Int? = null,
+    ): DocsInvitationPageDto
+
+    @POST("api/v1.0/documents/{id}/invitations/")
+    suspend fun createInvitation(
+        @Path("id") id: String,
+        @Body body: DocsInvitationCreateRequest,
+    ): DocsInvitationDto
+
+    @DELETE("api/v1.0/documents/{id}/invitations/{invitationId}/")
+    suspend fun deleteInvitation(
+        @Path("id") id: String,
+        @Path("invitationId") invitationId: String,
+    )
+
+    @PUT("api/v1.0/documents/{id}/link-configuration/")
+    suspend fun updateLinkConfiguration(
+        @Path("id") id: String,
+        @Body body: DocsLinkConfigurationRequest,
+    )
+
+    @POST("api/v1.0/documents/{id}/leave/")
+    suspend fun leave(@Path("id") id: String)
+
+    @GET("api/v1.0/documents/{id}/ask-for-access/")
+    suspend fun accessRequests(
+        @Path("id") id: String,
+        @Query("page") page: Int? = null,
+        @Query("page_size") pageSize: Int? = null,
+    ): DocsAccessRequestPageDto
+
+    @POST("api/v1.0/documents/{id}/ask-for-access/")
+    suspend fun createAccessRequest(
+        @Path("id") id: String,
+        @Body body: DocsAccessRequestCreate,
+    )
+
+    @GET("api/v1.0/users/")
+    suspend fun searchUsers(
+        @Query("q") q: String? = null,
+        @Query("document_id") documentId: String? = null,
+    ): List<DocsUserDto>
 }
 
 // ---- Meet-side ticket (host-authenticated) ----
@@ -105,7 +262,8 @@ data class DocumentDto(
     val excerpt: String? = null,
     @Json(name = "updated_at") val updatedAt: String? = null,
     @Json(name = "created_at") val createdAt: String? = null,
-    val creator: DocsUserDto? = null,
+    /** Creator id (UUID string) — list/detail serializers render the FK as a plain id. */
+    val creator: String? = null,
     val abilities: DocsAbilitiesDto = DocsAbilitiesDto(),
     @Json(name = "is_favorite") val isFavorite: Boolean = false,
     @Json(name = "user_role") val userRole: String? = null,
@@ -113,6 +271,10 @@ data class DocumentDto(
     val depth: Int = 0,
     val path: String = "",
     @Json(name = "deleted_at") val deletedAt: String? = null,
+    @Json(name = "link_reach") val linkReach: String? = null,
+    @Json(name = "link_role") val linkRole: String? = null,
+    @Json(name = "computed_link_reach") val computedLinkReach: String? = null,
+    @Json(name = "computed_link_role") val computedLinkRole: String? = null,
     /** Search results embed the parent document. */
     val parent: DocumentDto? = null,
 ) {
@@ -132,6 +294,7 @@ data class DocsAbilitiesDto(
     val favorite: Boolean = false,
     val duplicate: Boolean = false,
     val retrieve: Boolean = false,
+    @Json(name = "link_configuration") val linkConfiguration: Boolean = false,
 ) {
     val canRename: Boolean get() = partialUpdate || update
 }

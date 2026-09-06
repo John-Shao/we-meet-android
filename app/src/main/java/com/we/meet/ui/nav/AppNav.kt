@@ -993,6 +993,7 @@ fun AppNav() {
                 deps = app,
                 docId = docId,
                 onBack = rememberOnceOnly(safePop),
+                onOpenDoc = { otherDocId -> navController.navigate(Routes.docsDetail(otherDocId)) },
                 onOpenWebUrl = { url -> navController.navigate(Routes.docsViewer(url)) },
             )
         }

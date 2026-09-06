@@ -1,11 +1,14 @@
 package com.we.meet.feature.docs.data.net
 
 import android.content.Context
+import android.util.Log
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.we.meet.feature.docs.DocsDeps
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
@@ -13,6 +16,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.ConcurrentHashMap
@@ -115,7 +119,12 @@ class DocsSessionManager(
         .writeTimeout(30, TimeUnit.SECONDS)
         .cookieJar(cookieJar)
         .addInterceptor(csrfInterceptor)
+        .apply { if (com.we.meet.feature.docs.BuildConfig.DEBUG) addInterceptor(docsLogging()) }
         .build()
+
+    private fun docsLogging(): Interceptor =
+        HttpLoggingInterceptor { msg -> Log.d("WeMeetHttp", msg) }
+            .apply { level = HttpLoggingInterceptor.Level.BASIC }
 
     private val docsRetrofit: Retrofit = Retrofit.Builder()
         .baseUrl(deps.docsBaseUrl.trimEnd('/') + "/")
@@ -159,7 +168,7 @@ class DocsSessionManager(
         cookiesByHost.remove(docsHost)
     }
 
-    private suspend fun bootstrapLocked() {
+    private suspend fun bootstrapLocked() = withContext(Dispatchers.IO) {
         val url = ticketApi
             .createSession(DocsTicketRequest(next = "/"))
             .url

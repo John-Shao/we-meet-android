@@ -72,6 +72,20 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         private set
     override lateinit var docsRepository: DocsRepository
         private set
+    /** Doc media needs the docs session cookie — a dedicated Coil loader. */
+    private var cachedDocsMediaLoader: ImageLoader? = null
+    override val docsMediaLoader: ImageLoader
+        get() = cachedDocsMediaLoader ?: ImageLoader.Builder(this)
+            .okHttpClient(docsSessionManager.okHttp)
+            .respectCacheHeaders(false)
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(cacheDir.resolve("docs_image_cache"))
+                    .maxSizeBytes(64L * 1024L * 1024L)
+                    .build()
+            }
+            .build()
+            .also { cachedDocsMediaLoader = it }
 
     /**
      * Holds a meeting slug pulled from an incoming App Links / deep-link

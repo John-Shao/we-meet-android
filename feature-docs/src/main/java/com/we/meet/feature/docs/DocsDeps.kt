@@ -1,5 +1,6 @@
 package com.we.meet.feature.docs
 
+import coil.ImageLoader
 import com.we.meet.core.directory.DirectoryDeps
 import com.we.meet.feature.docs.data.DocsRepository
 
@@ -18,4 +19,7 @@ interface DocsDeps : DirectoryDeps {
 
     /** Docs REST access, bootstrapped from the host's authenticated session. */
     val docsRepository: DocsRepository
+
+    /** Coil loader wired to the docs session cookies — doc media needs them. */
+    val docsMediaLoader: ImageLoader
 }

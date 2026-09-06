@@ -28,6 +28,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
@@ -72,6 +73,9 @@ dependencies {
 
     // docs_sessionid / csrftoken persistence — same crypto store as TokenStore.
     implementation(libs.androidx.security.crypto)
+
+    // Doc images (M2 read mode) — AsyncImage.
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
 }
