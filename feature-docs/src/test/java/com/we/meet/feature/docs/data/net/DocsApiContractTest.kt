@@ -16,6 +16,18 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 class DocsApiContractTest {
     private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
 
+    @Test fun userSearchMinimumUsesServerConfigurationWithLegacyFallback() = runBlocking {
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            assertEquals("/api/v1.0/config/", chain.request().url.encodedPath)
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200)
+                .message("OK").body("""{"API_USERS_SEARCH_QUERY_MIN_LENGTH":6,"unrelated":true}""".toResponseBody()).build()
+        }.build()
+        val api = Retrofit.Builder().baseUrl("https://docs.example/").client(client)
+            .addConverterFactory(MoshiConverterFactory.create(moshi)).build().create(DocsApi::class.java)
+        assertEquals(6, api.config().userSearchMinLength)
+        assertEquals(3, moshi.adapter(DocsConfigDto::class.java).fromJson("{}")!!.userSearchMinLength)
+    }
+
     @Test fun restrictedLinksAcceptNullOptionsAndOmitRole() {
         val doc = moshi.adapter(DocumentDto::class.java).fromJson("""{"id":"doc","abilities":{"link_select_options":{"restricted":null,"authenticated":["reader","editor"]}}}""")!!
         assertTrue(doc.abilities.linkSelectOptions.containsKey("restricted"))

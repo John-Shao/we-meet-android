@@ -154,4 +154,20 @@
     <string name="docs_move_help">Hier erscheinen nur Dokumente, in die Sie verschieben dürfen.</string>
     <string name="docs_thread_expand">Diskussion ausklappen</string>
     <string name="docs_thread_collapse">Diskussion einklappen</string>
+    <string name="docs_share_access_title">Wer hat Zugriff</string>
+    <string name="docs_share_collaborators">Mitglieder</string>
+    <string name="docs_share_invite_members">Mitglieder einladen</string>
+    <string name="docs_share_loading_members">Mitglieder werden geladen…</string>
+    <string name="docs_share_no_members">Noch keine Mitglieder</string>
+    <string name="docs_share_pending_invitations">Ausstehende Einladungen</string>
+    <string name="docs_share_change_recipient">Andere Person auswählen</string>
+    <string name="docs_share_invite_role">Berechtigung</string>
+    <string name="docs_share_invite_success">Einladung gesendet</string>
+    <string name="docs_share_member_added">Mitglied hinzugefügt</string>
+    <string name="docs_share_invite_hint">Mindestens %d Zeichen eines Namens oder einer E-Mail eingeben, dann Person und Berechtigung wählen und bestätigen.</string>
+    <string name="docs_share_link_role">Berechtigung für Personen mit dem Link</string>
+    <plurals name="docs_share_member_count">
+        <item quantity="one">%d Mitglied</item>
+        <item quantity="other">%d Mitglieder</item>
+    </plurals>
 </resources>

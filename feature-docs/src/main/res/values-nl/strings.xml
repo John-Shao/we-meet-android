@@ -154,4 +154,20 @@
     <string name="docs_move_help">Hier staan alleen documenten waarnaar je mag verplaatsen.</string>
     <string name="docs_thread_expand">Discussie uitklappen</string>
     <string name="docs_thread_collapse">Discussie inklappen</string>
+    <string name="docs_share_access_title">Wie heeft toegang</string>
+    <string name="docs_share_collaborators">Leden</string>
+    <string name="docs_share_invite_members">Leden uitnodigen</string>
+    <string name="docs_share_loading_members">Leden laden…</string>
+    <string name="docs_share_no_members">Nog geen leden</string>
+    <string name="docs_share_pending_invitations">Openstaande uitnodigingen</string>
+    <string name="docs_share_change_recipient">Andere ontvanger kiezen</string>
+    <string name="docs_share_invite_role">Rechten</string>
+    <string name="docs_share_invite_success">Uitnodiging verzonden</string>
+    <string name="docs_share_member_added">Lid toegevoegd</string>
+    <string name="docs_share_invite_hint">Voer minimaal %d tekens van een naam of e-mailadres in. Kies daarna een persoon en de rechten en bevestig.</string>
+    <string name="docs_share_link_role">Rechten voor personen met de link</string>
+    <plurals name="docs_share_member_count">
+        <item quantity="one">%d lid</item>
+        <item quantity="other">%d leden</item>
+    </plurals>
 </resources>

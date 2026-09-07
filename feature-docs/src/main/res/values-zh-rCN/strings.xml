@@ -154,4 +154,20 @@
     <string name="docs_move_help">这里仅显示你有权限移入的文档位置</string>
     <string name="docs_thread_expand">展开讨论</string>
     <string name="docs_thread_collapse">收起讨论</string>
+    <string name="docs_share_access_title">谁可以访问</string>
+    <string name="docs_share_collaborators">协作成员</string>
+    <string name="docs_share_invite_members">邀请成员</string>
+    <string name="docs_share_loading_members">正在加载成员…</string>
+    <string name="docs_share_no_members">暂无协作成员</string>
+    <string name="docs_share_pending_invitations">待接受的邀请</string>
+    <string name="docs_share_change_recipient">更换邀请对象</string>
+    <string name="docs_share_invite_role">权限</string>
+    <string name="docs_share_invite_success">邀请已发送</string>
+    <string name="docs_share_member_added">成员已添加</string>
+    <string name="docs_share_invite_hint">输入姓名或邮箱（至少 %d 个字符），选定邀请对象后设置权限并确认。</string>
+    <string name="docs_share_link_role">通过链接访问的权限</string>
+    <plurals name="docs_share_member_count">
+        <item quantity="one">%d 人</item>
+        <item quantity="other">%d 人</item>
+    </plurals>
 </resources>

@@ -2,6 +2,7 @@ package com.we.meet.feature.docs.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Folder
@@ -18,11 +19,14 @@ import com.we.meet.ui.theme.Dimens
 
 /** Shared hierarchy and an explicit, accessible exit for native document sheets. */
 @Composable
-internal fun DocsSheetHeader(title: String, onClose: () -> Unit, subtitle: String? = null) {
+internal fun DocsSheetHeader(title: String, onClose: () -> Unit, subtitle: String? = null, onBack: (() -> Unit)? = null) {
     Row(
         Modifier.fillMaxWidth().padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (onBack != null) IconButton(onClick = onBack) {
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.cd_docs_back))
+        }
         Column(Modifier.weight(1f).padding(vertical = Dimens.SpaceS)) {
             Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
             if (!subtitle.isNullOrBlank()) Text(

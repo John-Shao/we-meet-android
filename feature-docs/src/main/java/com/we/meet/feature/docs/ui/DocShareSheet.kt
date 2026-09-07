@@ -8,21 +8,21 @@ import com.we.meet.ui.components.WeMeetInlineErrorState
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.ui.components.SecondaryButton
 
 import com.we.meet.feature.docs.util.docsRunCatching as runCatching
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -69,9 +69,7 @@ import com.we.meet.feature.docs.data.net.DocsUserDto
 import com.we.meet.feature.docs.data.net.DocumentDto
 import com.we.meet.ui.components.DestructiveConfirmDialog
 import com.we.meet.ui.components.PrimaryButton
-import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
-import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.theme.Dimens
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -81,8 +79,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** 分享面板(设计文档 §4.4 分享):链接权限 / 成员 / 邀请 / 离开 / 申请访问。 */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+private enum class SharePage { HOME, ACCESS, MEMBERS, INVITE }
+
+/** Compact overview with access, membership and invitation pages in one sheet. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DocShareSheet(
     deps: DocsDeps,
@@ -92,268 +92,293 @@ fun DocShareSheet(
 ) {
     val vm: DocShareViewModel = viewModel(
         key = "share:${doc.id}",
-        factory = viewModelFactory {
-            initializer { DocShareViewModel(deps.docsRepository, doc) }
-        },
+        factory = viewModelFactory { initializer { DocShareViewModel(deps.docsRepository, doc) } },
     )
     val state by vm.state.collectAsStateWithLifecycle()
-    var showLeave by remember { mutableStateOf(false) }
-    var inviteEmail by rememberSaveable(doc.id) { mutableStateOf("") }
+    var page by rememberSaveable(doc.id) { mutableStateOf(SharePage.HOME) }
+    var inviteOrigin by rememberSaveable(doc.id) { mutableStateOf(SharePage.HOME) }
     var inviteRole by rememberSaveable(doc.id) { mutableStateOf("reader") }
-
-    val scope = rememberCoroutineScope()
+    var recipientId by rememberSaveable(doc.id) { mutableStateOf<String?>(null) }
+    var recipientName by rememberSaveable(doc.id) { mutableStateOf<String?>(null) }
+    var recipientEmail by rememberSaveable(doc.id) { mutableStateOf<String?>(null) }
+    var showLeave by remember { mutableStateOf(false) }
     var removeTarget by remember { mutableStateOf<DocsAccessDto?>(null) }
+    val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
+    val focus = androidx.compose.ui.platform.LocalFocusManager.current
     val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+    )
+    val goBack = { focus.clearFocus(); page = if (page == SharePage.INVITE) inviteOrigin else SharePage.HOME }
+    val inviteSucceeded = {
+        val message = if (recipientId != null) R.string.docs_share_member_added else R.string.docs_share_invite_success
+        recipientId = null
+        recipientName = null
+        recipientEmail = null
+        inviteRole = "reader"
+        vm.onUserQueryChange("")
+        focus.clearFocus()
+        page = SharePage.MEMBERS
+        onDocChanged()
+        scope.launch { snackbar.showSnackbar(context.getString(message)) }
+        Unit
+    }
     LaunchedEffect(vm) { vm.errors.collect { snackbar.showSnackbar(context.getString(R.string.docs_action_failed)) } }
     LaunchedEffect(vm) { vm.load() }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState = sheetState,
+        properties = androidx.compose.material3.ModalBottomSheetProperties(shouldDismissOnBackPress = false),
     ) {
+        // Handle navigation in the dialog's dispatcher before dismissing the whole sheet.
+        androidx.activity.compose.BackHandler { if (page == SharePage.HOME) onDismiss() else goBack() }
         Column(
-            modifier = Modifier
-                .fillMaxWidth().fillMaxHeight(0.9f).imePadding()
-                .padding(bottom = Dimens.SpaceM),
+            Modifier.fillMaxWidth()
+                .heightIn(max = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp * 0.85f)
+                .imePadding().padding(bottom = Dimens.SpaceM),
         ) {
-            DocsSheetHeader(stringResource(R.string.docs_share), onDismiss,
-                doc.displayTitle.ifBlank { stringResource(R.string.docs_untitled) })
-            Box(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS)) {
-                SecondaryButton(text = stringResource(R.string.docs_copy_link), onClick = {
-                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
-                    clipboard?.setPrimaryClip(android.content.ClipData.newPlainText(doc.displayTitle,
-                        com.we.meet.feature.docs.util.DocLinks.webUrl(deps.docsBaseUrl, doc.id)))
-                    scope.launch { snackbar.showSnackbar(context.getString(R.string.docs_link_copied)) }
-                })
-            }
+            DocsSheetHeader(
+                title = stringResource(when (page) {
+                    SharePage.HOME -> R.string.docs_share
+                    SharePage.ACCESS -> R.string.docs_share_access_title
+                    SharePage.MEMBERS -> R.string.docs_share_collaborators
+                    SharePage.INVITE -> R.string.docs_share_invite_members
+                }),
+                onClose = onDismiss,
+                subtitle = if (page == SharePage.HOME) doc.displayTitle.ifBlank { stringResource(R.string.docs_untitled) } else null,
+                onBack = if (page == SharePage.HOME) null else goBack,
+            )
             if (state.mutating || state.linkSaving) WeMeetInlineLoading()
-
             androidx.compose.material3.SnackbarHost(snackbar)
-            when {
-                state.loading && state.accesses.isEmpty() -> Box(Modifier.padding(top = Dimens.SpaceM)) { WeMeetLoading() }
-                state.error && state.accesses.isEmpty() -> Box(Modifier.padding(top = Dimens.SpaceM)) {
-                    WeMeetErrorState(
-                        onRetry = vm::load,
-                        message = stringResource(R.string.docs_load_error),
-                    )
-                }
-                else -> LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = Dimens.SpaceXl)) {
-                    // 链接权限
-                    if (state.doc.abilities.retrieve && state.doc.abilities.linkConfiguration) {
-                        item(key = "link") {
-                            Text(
-                                text = stringResource(R.string.docs_share_link_section),
-                                style = MaterialTheme.typography.titleSmall,
-                                modifier = Modifier.padding(
-                                    horizontal = Dimens.ScreenPadding,
-                                    vertical = Dimens.SpaceS,
-                                ),
-                            )
-                            FlowRow(
-                                Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding),
-                                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
-                            ) {
-                                state.doc.abilities.linkSelectOptions.keys.forEach { reach ->
-                                    FilterChip(
-                                        enabled = !state.linkSaving,
-                                        selected = state.linkReach == reach,
-                                        onClick = { vm.updateLink(reach = reach) },
-                                        label = { Text(stringResource(reachLabelRes(reach)), softWrap = false) },
-                                    )
+            // Reset scrolling when changing pages; drafts live above page content.
+            androidx.compose.runtime.key(page) {
+                LazyColumn(Modifier.weight(1f, fill = false), contentPadding = PaddingValues(bottom = Dimens.SpaceM)) {
+                    when (page) {
+                        SharePage.HOME -> {
+                            item("copy") {
+                                Box(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM)) {
+                                    PrimaryButton(text = stringResource(R.string.docs_copy_link), onClick = {
+                                        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                                        clipboard?.setPrimaryClip(android.content.ClipData.newPlainText(doc.displayTitle,
+                                            com.we.meet.feature.docs.util.DocLinks.webUrl(deps.docsBaseUrl, doc.id)))
+                                        scope.launch { snackbar.showSnackbar(context.getString(R.string.docs_link_copied)) }
+                                    })
                                 }
                             }
-                            FlowRow(
-                                Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding),
-                                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
-                            ) {
-                                state.doc.abilities.linkSelectOptions[state.linkReach].orEmpty().forEach { role ->
-                                    FilterChip(
-                                        enabled = !state.linkSaving,
-                                        selected = state.linkRole == role,
-                                        onClick = { vm.updateLink(role = role) },
-                                        label = { Text(stringResource(roleLabelRes(role)), softWrap = false) },
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    item(key = "reach-help") {
-                        Text(stringResource(when (state.linkReach) {
-                            "public" -> R.string.docs_share_public_help
-                            "authenticated" -> R.string.docs_share_authenticated_help
-                            else -> R.string.docs_share_restricted_help
-                        }), style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM))
-                        HorizontalDivider(Modifier.padding(horizontal = Dimens.ScreenPadding))
-                    }
-                    // 成员
-                    item(key = "members-title") {
-                        Text(
-                            text = stringResource(R.string.docs_share_members_section),
-                            style = MaterialTheme.typography.titleSmall,
-                            modifier = Modifier.padding(
-                                horizontal = Dimens.ScreenPadding,
-                                vertical = Dimens.SpaceS,
-                            ),
-                        )
-                    }
-                    items(state.accesses, key = { it.id }) { access ->
-                        AccessRow(
-                            access = access,
-                            enabled = !state.mutating,
-                            onChangeRole = { role -> vm.updateAccessRole(access, role) },
-                            onRemove = { removeTarget = access },
-                        )
-                    }
-
-                    // 添加成员
-                    if (state.doc.abilities.accessesManage) item(key = "add-member") {
-                        Text(
-                            text = stringResource(R.string.docs_share_add_member),
-                            style = MaterialTheme.typography.titleSmall,
-                            modifier = Modifier.padding(
-                                horizontal = Dimens.ScreenPadding,
-                                vertical = Dimens.SpaceS,
-                            ),
-                        )
-                        OutlinedTextField(
-                            value = state.userQuery,
-                            onValueChange = vm::onUserQueryChange,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = Dimens.ScreenPadding),
-                            placeholder = { Text(stringResource(R.string.docs_share_search_user)) },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.PersonAdd,
-                                    contentDescription = null,
-                                )
-                            },
-                            singleLine = true,
-                        )
-                    }
-                    if (state.userSearching) {
-                        item(key = "user-searching") {
-                            Box(Modifier.padding(Dimens.SpaceM)) { WeMeetInlineLoading() }
-                        }
-                    }
-                    items(state.userResults, key = { "user-${it.id}" }) { user ->
-                        UserResultRow(user = user, enabled = !state.mutating, onAdd = { vm.addMember(user) })
-                    }
-
-                    if (state.userSearchError) item(key = "user-search-error") {
-                        WeMeetInlineErrorState(onRetry = { vm.onUserQueryChange(state.userQuery) },
-                            message = stringResource(R.string.docs_action_failed))
-                    }
-                    if (!state.userSearchError && state.userQuery.isNotBlank() && !state.userSearching && state.userResults.isEmpty()) item(key = "no-users") {
-                        Text(stringResource(R.string.docs_share_no_users), style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(Dimens.ScreenPadding))
-                    }
-                    // 邀请(邮箱)
-                    if (state.doc.abilities.accessesManage) item(key = "invite") {
-                        Text(
-                            text = stringResource(R.string.docs_share_invite_section),
-                            style = MaterialTheme.typography.titleSmall,
-                            modifier = Modifier.padding(
-                                horizontal = Dimens.ScreenPadding,
-                                vertical = Dimens.SpaceS,
-                            ),
-                        )
-                        Column(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding)) {
-                            OutlinedTextField(
-                                value = inviteEmail, onValueChange = { inviteEmail = it },
-                                modifier = Modifier.fillMaxWidth(), enabled = !state.mutating,
-                                label = { Text(stringResource(R.string.docs_share_invite_email)) },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), singleLine = true,
-                            )
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween) {
-                                RoleDropdown(role = inviteRole, roles = SHARABLE_ROLES, enabled = !state.mutating,
-                                    onSelect = { inviteRole = it })
-                                TextButton(onClick = { vm.invite(inviteEmail.trim(), inviteRole) { inviteEmail = "" } },
-                                    enabled = !state.mutating && android.util.Patterns.EMAIL_ADDRESS.matcher(inviteEmail.trim()).matches()) {
-                                    Text(stringResource(R.string.cd_docs_invite))
-                                }
-                            }
-                        }
-                    }
-                    items(state.invitations, key = { it.id }) { invitation ->
-                        InvitationRow(
-                            invitation = invitation,
-                            enabled = !state.mutating,
-                            onDelete = { vm.deleteInvitation(invitation) },
-                        )
-                    }
-
-                    // 离开
-                    if (state.doc.abilities.leave) item(key = "leave") {
-                        TextButton(onClick = { showLeave = true }, enabled = !state.mutating) {
-                            Text(
-                                text = stringResource(R.string.docs_share_leave),
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        }
-                    }
-                    if (!state.doc.abilities.retrieve && !state.requestedAccess) {
-                        item(key = "ask-access") {
-                            Box(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
-                            ) {
-                                PrimaryButton(
-                                    text = stringResource(R.string.docs_share_ask_access),
-                                    loading = state.mutating,
-                                    onClick = { vm.requestAccess() },
+                            item("access") {
+                                ShareNavigationRow(
+                                    title = stringResource(R.string.docs_share_access_title),
+                                    summary = stringResource(reachLabelRes(state.linkReach)) +
+                                        if (state.linkReach != "restricted" && state.linkRole.isNotBlank())
+                                            " ? " + stringResource(roleLabelRes(state.linkRole)) else "",
+                                    onClick = { page = SharePage.ACCESS },
                                 )
                             }
+                            if (state.doc.abilities.retrieve) item("members") {
+                                ShareNavigationRow(
+                                    title = stringResource(R.string.docs_share_collaborators),
+                                    summary = when {
+                                        state.error -> stringResource(R.string.docs_load_error)
+                                        !state.loaded -> stringResource(R.string.docs_share_loading_members)
+                                        else -> androidx.compose.ui.res.pluralStringResource(R.plurals.docs_share_member_count, state.accesses.size, state.accesses.size)
+                                    },
+                                    onClick = { page = SharePage.MEMBERS },
+                                )
+                            }
+                            if (state.doc.abilities.accessesManage) item("invite") {
+                                Box(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM)) {
+                                    SecondaryButton(text = stringResource(R.string.docs_share_invite_members),
+                                        onClick = { inviteOrigin = SharePage.HOME; page = SharePage.INVITE })
+                                }
+                            }
+                            if (!state.doc.abilities.retrieve) item("request") {
+                                Box(Modifier.padding(Dimens.ScreenPadding)) {
+                                    if (state.requestedAccess) Text(stringResource(R.string.docs_share_ask_sent))
+                                    else PrimaryButton(text = stringResource(R.string.docs_share_ask_access),
+                                        loading = state.mutating, onClick = vm::requestAccess)
+                                }
+                            }
                         }
-                    } else if (state.requestedAccess) {
-                        item(key = "ask-sent") {
-                            Text(
-                                text = stringResource(R.string.docs_share_ask_sent),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
-                            )
+                        SharePage.ACCESS -> {
+                            item("options") { LinkAccessOptions(state, vm::updateLink) }
+                        }
+                        SharePage.MEMBERS -> {
+                            if (state.loading && !state.loaded) item("loading") { WeMeetInlineLoading() }
+                            if (state.error) item("error") {
+                                WeMeetInlineErrorState(onRetry = vm::load, message = stringResource(R.string.docs_load_error))
+                            }
+                            items(state.accesses, key = { "access-${it.id}" }) { access ->
+                                AccessRow(access, !state.mutating,
+                                    onChangeRole = { vm.updateAccessRole(access, it) },
+                                    onRemove = { removeTarget = access })
+                            }
+                            if (state.loaded && state.accesses.isEmpty()) item("empty") {
+                                ShareHint(stringResource(R.string.docs_share_no_members))
+                            }
+                            if (state.invitations.isNotEmpty()) item("pending-title") {
+                                HorizontalDivider(Modifier.padding(horizontal = Dimens.ScreenPadding))
+                                ShareHint(stringResource(R.string.docs_share_pending_invitations))
+                            }
+                            items(state.invitations, key = { "invitation-${it.id}" }) { invitation ->
+                                InvitationRow(invitation, !state.mutating, onDelete = { vm.deleteInvitation(invitation) })
+                            }
+                            if (state.doc.abilities.accessesManage) item("invite") {
+                                Box(Modifier.padding(Dimens.ScreenPadding)) {
+                                    SecondaryButton(text = stringResource(R.string.docs_share_invite_members),
+                                        onClick = { inviteOrigin = SharePage.MEMBERS; page = SharePage.INVITE })
+                                }
+                            }
+                            if (state.doc.abilities.leave) item("leave") {
+                                TextButton(onClick = { showLeave = true }, enabled = !state.mutating,
+                                    modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)) {
+                                    Text(stringResource(R.string.docs_share_leave), color = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        }
+                        SharePage.INVITE -> if (state.doc.abilities.accessesManage) {
+                            val selected = recipientId != null || recipientEmail != null
+                            if (selected) {
+                                item("recipient") {
+                                    Column(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM)) {
+                                        Text(recipientName ?: recipientEmail.orEmpty(), style = MaterialTheme.typography.titleMedium)
+                                        if (recipientName != null && !recipientEmail.isNullOrBlank()) Text(recipientEmail.orEmpty(),
+                                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        TextButton(enabled = !state.mutating, onClick = {
+                                            recipientId = null; recipientName = null; recipientEmail = null
+                                        }) { Text(stringResource(R.string.docs_share_change_recipient)) }
+                                        HorizontalDivider()
+                                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                            Text(stringResource(R.string.docs_share_invite_role), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                                            RoleDropdown(inviteRole, SHARABLE_ROLES, { inviteRole = it }, !state.mutating)
+                                        }
+                                        PrimaryButton(
+                                            text = stringResource(if (recipientId != null) R.string.docs_share_add_member else R.string.cd_docs_invite),
+                                            loading = state.mutating,
+                                            onClick = {
+                                                val userId = recipientId
+                                                if (userId != null) vm.addMember(userId, inviteRole, inviteSucceeded)
+                                                else vm.invite(recipientEmail.orEmpty(), inviteRole, inviteSucceeded)
+                                            },
+                                        )
+                                    }
+                                }
+                            } else {
+                                item("search") {
+                                    OutlinedTextField(
+                                        value = state.userQuery, onValueChange = vm::onUserQueryChange,
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+                                        enabled = !state.mutating,
+                                        label = { Text(stringResource(R.string.docs_share_search_user)) },
+                                        leadingIcon = { Icon(Icons.Outlined.PersonAdd, null) },
+                                        singleLine = true,
+                                    )
+                                }
+                                if (state.userSearching) item("searching") { WeMeetInlineLoading() }
+                                items(state.userResults, key = { "user-${it.id}" }) { user ->
+                                    UserResultRow(user, !state.mutating, onSelect = {
+                                        recipientId = user.id
+                                        recipientName = user.displayName
+                                        recipientEmail = user.email
+                                        focus.clearFocus()
+                                    })
+                                }
+                                if (state.userSearchError) item("search-error") {
+                                    WeMeetInlineErrorState(onRetry = { vm.onUserQueryChange(state.userQuery) },
+                                        message = stringResource(R.string.docs_action_failed))
+                                }
+                                val email = state.userQuery.trim()
+                                val isEmail = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+                                if (isEmail && !state.userSearching && !state.userSearchError && state.userResults.none { it.email.equals(email, ignoreCase = true) }) item("email") {
+                                    ShareNavigationRow(stringResource(R.string.docs_share_invite_section), email,
+                                        enabled = !state.mutating, onClick = {
+                                            recipientId = null; recipientName = null; recipientEmail = email
+                                            focus.clearFocus()
+                                        })
+                                }
+                                if (state.userQuery.trim().length < state.userSearchMinLength) item("hint") {
+                                    ShareHint(stringResource(R.string.docs_share_invite_hint, state.userSearchMinLength))
+                                } else if (!isEmail && !state.userSearching && !state.userSearchError && state.userResults.isEmpty()) item("empty") {
+                                    ShareHint(stringResource(R.string.docs_share_no_users))
+                                }
+                            }
                         }
                     }
-                    item(key = "spacer") { HorizontalDivider() }
                 }
             }
         }
     }
-
     removeTarget?.let { access ->
         DestructiveConfirmDialog(
             title = stringResource(R.string.cd_docs_remove_member),
             message = stringResource(R.string.docs_remove_member_message,
                 access.user?.displayName ?: access.team ?: stringResource(R.string.docs_unknown_user)),
-            confirmLabel = stringResource(R.string.cd_docs_remove_member),
-            dismissLabel = stringResource(R.string.docs_cancel),
-            onConfirm = { removeTarget = null; vm.removeAccess(access, onDocChanged) },
-            onDismiss = { removeTarget = null },
+            confirmLabel = stringResource(R.string.cd_docs_remove_member), dismissLabel = stringResource(R.string.docs_cancel),
+            onConfirm = { removeTarget = null; vm.removeAccess(access, onDocChanged) }, onDismiss = { removeTarget = null },
         )
     }
+    if (showLeave) DestructiveConfirmDialog(
+        title = stringResource(R.string.docs_share_leave_title), message = stringResource(R.string.docs_share_leave_message),
+        confirmLabel = stringResource(R.string.docs_share_leave), dismissLabel = stringResource(R.string.docs_cancel),
+        onConfirm = { showLeave = false; vm.leave { onDocChanged(); onDismiss() } }, onDismiss = { showLeave = false },
+    )
+}
 
-    if (showLeave) {
-        DestructiveConfirmDialog(
-            title = stringResource(R.string.docs_share_leave_title),
-            message = stringResource(R.string.docs_share_leave_message),
-            confirmLabel = stringResource(R.string.docs_share_leave),
-            dismissLabel = stringResource(R.string.docs_cancel),
-            onConfirm = {
-                showLeave = false
-                vm.leave {
-                    onDocChanged()
-                    onDismiss()
+@Composable
+private fun ShareNavigationRow(title: String, summary: String, enabled: Boolean = true, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable(enabled = enabled, onClick = onClick)
+        .heightIn(min = Dimens.MinTouchTarget).padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
+        verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, Modifier.padding(start = Dimens.SpaceS))
+    }
+}
+
+@Composable
+private fun ShareHint(text: String) {
+    Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM))
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LinkAccessOptions(state: DocShareViewModel.UiState, onChange: (String?, String?) -> Unit) {
+    val canChange = state.doc.abilities.retrieve && state.doc.abilities.linkConfiguration
+    val reaches = if (canChange) state.doc.abilities.linkSelectOptions.keys.toList() else listOf(state.linkReach)
+    Column {
+        reaches.forEach { reach ->
+            Row(Modifier.fillMaxWidth().selectable(selected = state.linkReach == reach,
+                enabled = canChange && !state.linkSaving, role = androidx.compose.ui.semantics.Role.RadioButton,
+                onClick = { onChange(reach, null) })
+                .heightIn(min = Dimens.MinTouchTarget).padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+                verticalAlignment = Alignment.CenterVertically) {
+                androidx.compose.material3.RadioButton(selected = state.linkReach == reach, onClick = null,
+                    enabled = canChange && !state.linkSaving)
+                Column(Modifier.weight(1f).padding(start = Dimens.SpaceM)) {
+                    Text(stringResource(reachLabelRes(reach)), style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(when (reach) {
+                        "public" -> R.string.docs_share_public_help
+                        "authenticated" -> R.string.docs_share_authenticated_help
+                        else -> R.string.docs_share_restricted_help
+                    }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-            },
-            onDismiss = { showLeave = false },
-        )
+            }
+        }
+        if (state.linkReach != "restricted") {
+            HorizontalDivider(Modifier.padding(horizontal = Dimens.ScreenPadding))
+            ShareHint(stringResource(R.string.docs_share_link_role))
+            if (canChange) FlowRow(Modifier.padding(horizontal = Dimens.ScreenPadding),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                state.doc.abilities.linkSelectOptions[state.linkReach].orEmpty().forEach { role ->
+                    FilterChip(selected = state.linkRole == role, enabled = !state.linkSaving,
+                        onClick = { onChange(null, role) }, label = { Text(stringResource(roleLabelRes(role))) })
+                }
+            } else ShareHint(stringResource(roleLabelRes(state.linkRole)))
+        }
     }
 }
 
@@ -367,6 +392,7 @@ private fun AccessRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = Dimens.MinTouchTarget)
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -377,12 +403,13 @@ private fun AccessRow(
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(1f),
         )
-        if (access.abilities.setRoleTo.isNotEmpty()) {
+        if (access.abilities.setRoleTo.isNotEmpty() || access.abilities.destroy) {
             RoleDropdown(
                 role = access.role.orEmpty(),
                 enabled = enabled,
                 roles = access.abilities.setRoleTo,
                 onSelect = onChangeRole,
+                onRemove = if (access.abilities.destroy) onRemove else null,
             )
         } else {
             Text(
@@ -390,14 +417,6 @@ private fun AccessRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        }
-        if (access.abilities.destroy) {
-            IconButton(onClick = onRemove, enabled = enabled) {
-                Icon(
-                    imageVector = Icons.Outlined.PersonRemove,
-                    contentDescription = stringResource(R.string.cd_docs_remove_member),
-                )
-            }
         }
     }
 }
@@ -408,6 +427,7 @@ private fun RoleDropdown(
     roles: List<String>,
     onSelect: (String) -> Unit,
     enabled: Boolean = true,
+    onRemove: (() -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box {
@@ -427,6 +447,15 @@ private fun RoleDropdown(
                     },
                 )
             }
+            if (onRemove != null) {
+                if (roles.isNotEmpty()) HorizontalDivider()
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.cd_docs_remove_member), color = MaterialTheme.colorScheme.error) },
+                    leadingIcon = { Icon(Icons.Outlined.PersonRemove, null, tint = MaterialTheme.colorScheme.error) },
+                    enabled = enabled,
+                    onClick = { expanded = false; onRemove() },
+                )
+            }
         }
     }
 }
@@ -435,12 +464,12 @@ private fun RoleDropdown(
 private fun UserResultRow(
     user: DocsUserDto,
     enabled: Boolean,
-    onAdd: () -> Unit,
+    onSelect: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = Dimens.MinTouchTarget).clickable(enabled = enabled, onClick = onAdd)
+            .heightIn(min = Dimens.MinTouchTarget).clickable(enabled = enabled, onClick = onSelect)
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -450,7 +479,7 @@ private fun UserResultRow(
             if (!user.email.isNullOrBlank()) Text(user.email.orEmpty(), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        Icon(Icons.Outlined.PersonAdd, stringResource(R.string.docs_share_add_member),
+        Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null,
             modifier = Modifier.padding(start = Dimens.SpaceS).size(Dimens.IconMedium))
     }
 }
@@ -502,10 +531,12 @@ class DocShareViewModel(
         val accesses: List<DocsAccessDto> = emptyList(),
         val invitations: List<DocsInvitationDto> = emptyList(),
         val userQuery: String = "",
+        val userSearchMinLength: Int = 3,
         val userResults: List<DocsUserDto> = emptyList(),
         val userSearching: Boolean = false,
         val userSearchError: Boolean = false,
         val requestedAccess: Boolean = false,
+        val loaded: Boolean = false,
         val loading: Boolean = false,
         val mutating: Boolean = false,
         val linkSaving: Boolean = false,
@@ -525,6 +556,15 @@ class DocShareViewModel(
     private var searchJob: Job? = null
     private var updatingLink = false
 
+    init {
+        if (doc.abilities.accessesManage) viewModelScope.launch {
+            runCatching { repo.userSearchMinLength() }.onSuccess { minimum ->
+                _state.update { it.copy(userSearchMinLength = minimum) }
+                if (_state.value.userQuery.isNotBlank()) onUserQueryChange(_state.value.userQuery)
+            }
+        }
+    }
+
     fun load() {
         viewModelScope.launch {
             _state.update { it.copy(loading = true, error = false) }
@@ -536,6 +576,7 @@ class DocShareViewModel(
             } else {
                 _state.update {
                     it.copy(
+                        loaded = true,
                         accesses = accesses.orEmpty(),
                         invitations = invitations.orEmpty(),
                         requestedAccess = myRequest?.results?.isNotEmpty() == true,
@@ -568,13 +609,14 @@ class DocShareViewModel(
     }
 
     fun onUserQueryChange(query: String) {
-        _state.update { it.copy(userQuery = query, userSearchError = false, userSearching = query.isNotBlank(), userResults = if (query.isBlank()) emptyList() else it.userResults) }
+        val canSearch = query.trim().length >= _state.value.userSearchMinLength
+        _state.update { it.copy(userQuery = query, userSearchError = false, userSearching = canSearch, userResults = emptyList()) }
         searchJob?.cancel()
-        if (query.isBlank()) { _state.update { it.copy(userSearching = false) }; return }
+        if (!canSearch) return
         searchJob = viewModelScope.launch {
             delay(300)
             _state.update { it.copy(userSearching = true) }
-            runCatching { repo.searchUsers(query, documentId = doc.id) }
+            runCatching { repo.searchUsers(query.trim(), documentId = doc.id) }
                 .onSuccess { users ->
                     // 仅在当前 query 仍是本次请求时应用结果,避免旧响应覆盖新输入。
                     if (_state.value.userQuery == query) {
@@ -595,9 +637,9 @@ class DocShareViewModel(
         }
     }
 
-    fun addMember(user: DocsUserDto) = mutate {
-        repo.createAccess(doc.id, user.id, "reader")
-        onUserQueryChange("")
+    fun addMember(userId: String, role: String, onSuccess: () -> Unit) = mutate {
+        repo.createAccess(doc.id, userId, role)
+        onSuccess()
         load()
     }
 
@@ -652,6 +694,4 @@ internal fun reachLabelRes(reach: String): Int = when (reach) {
     else -> R.string.docs_reach_restricted
 }
 
-private val LINK_REACHES = listOf("restricted", "authenticated", "public")
-private val LINK_ROLES = listOf("reader", "commenter", "editor")
 private val SHARABLE_ROLES = listOf("reader", "commenter", "editor")

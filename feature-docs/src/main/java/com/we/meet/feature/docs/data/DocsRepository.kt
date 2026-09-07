@@ -249,6 +249,8 @@ class DocsRepository(private val session: DocsSessionManager) {
         docsCall { api -> api.createAccessRequest(id, DocsAccessRequestCreate(role = role)) }
     }
 
+    suspend fun userSearchMinLength(): Int = docsCall { it.config().userSearchMinLength.coerceAtLeast(1) }
+
     suspend fun searchUsers(q: String, documentId: String? = null): List<DocsUserDto> = docsCall { api ->
         api.searchUsers(q = q, documentId = documentId)
     }

@@ -154,4 +154,20 @@
     <string name="docs_move_help">Seuls les documents de destination autorisés sont proposés.</string>
     <string name="docs_thread_expand">Développer la discussion</string>
     <string name="docs_thread_collapse">Réduire la discussion</string>
+    <string name="docs_share_access_title">Qui peut accéder</string>
+    <string name="docs_share_collaborators">Membres</string>
+    <string name="docs_share_invite_members">Inviter des membres</string>
+    <string name="docs_share_loading_members">Chargement des membres…</string>
+    <string name="docs_share_no_members">Aucun membre</string>
+    <string name="docs_share_pending_invitations">Invitations en attente</string>
+    <string name="docs_share_change_recipient">Changer de destinataire</string>
+    <string name="docs_share_invite_role">Autorisation</string>
+    <string name="docs_share_invite_success">Invitation envoyée</string>
+    <string name="docs_share_member_added">Membre ajouté</string>
+    <string name="docs_share_invite_hint">Saisissez au moins %d caractères du nom ou de l’e-mail, puis choisissez une personne et une autorisation avant de confirmer.</string>
+    <string name="docs_share_link_role">Autorisation des personnes disposant du lien</string>
+    <plurals name="docs_share_member_count">
+        <item quantity="one">%d membre</item>
+        <item quantity="other">%d membres</item>
+    </plurals>
 </resources>

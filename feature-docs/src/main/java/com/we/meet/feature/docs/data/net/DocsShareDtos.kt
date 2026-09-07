@@ -102,6 +102,11 @@ data class DocsVersionDto(
 // ---- Access / invitation / link configuration ----
 
 @JsonClass(generateAdapter = true)
+data class DocsConfigDto(
+    @Json(name = "API_USERS_SEARCH_QUERY_MIN_LENGTH") val userSearchMinLength: Int = 3,
+)
+
+@JsonClass(generateAdapter = true)
 data class DocsAccessDto(
     val id: String = "",
     val user: DocsUserDto? = null,

@@ -16,6 +16,9 @@ import retrofit2.http.Query
 
 interface DocsApi {
 
+    @GET("api/v1.0/config/")
+    suspend fun config(): DocsConfigDto
+
     @GET("api/v1.0/documents/")
     suspend fun documents(
         @Query("page") page: Int? = null,
