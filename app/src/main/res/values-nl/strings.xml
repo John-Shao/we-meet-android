@@ -1034,4 +1034,10 @@
     <string name="docs_editor_incompatible">De editor kan niet worden geopend. Probeer het later opnieuw of ga terug om verder te lezen.</string>
     <string name="docs_editor_pending_work">Nog niet alle wijzigingen zijn bevestigd. Controleer de verbinding, titel, bijlagen en niet-gepubliceerde reacties en probeer opnieuw.</string>
     <string name="docs_editor_reloaded">De editor is opnieuw geladen. Alleen op de server opgeslagen inhoud kan worden bevestigd. Controleer uw laatste wijzigingen.</string>
+    <string name="docs_chat_share_title">Delen in chat</string>
+    <string name="docs_chat_share_sent">Gedeeld in chat</string>
+    <string name="docs_chat_share_delivery_failed">Verzonden naar %1$d chats; %2$d mislukt. Bevestigde verzendingen worden bij opnieuw proberen overgeslagen.</string>
+    <string name="docs_chat_share_access_failed">Sommige kaarten zijn verzonden, maar toegang is niet bevestigd. Probeer opnieuw of beheer de documentrechten.</string>
+    <string name="docs_chat_share_retry">Opnieuw proberen</string>
+    <string name="docs_chat_share_close">Sluiten</string>
 </resources>

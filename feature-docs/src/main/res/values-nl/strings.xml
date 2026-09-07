@@ -170,4 +170,6 @@
         <item quantity="one">%d lid</item>
         <item quantity="other">%d leden</item>
     </plurals>
+    <string name="docs_share_to_chat">Delen in chat</string>
+    <string name="docs_share_to_chat_help">Verstuurt een documentkaart en probeert chatleden leestoegang te geven.</string>
 </resources>

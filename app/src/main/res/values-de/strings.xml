@@ -1034,4 +1034,10 @@
     <string name="docs_editor_incompatible">Der Editor konnte nicht geöffnet werden. Versuchen Sie es später erneut oder gehen Sie zum Lesen zurück.</string>
     <string name="docs_editor_pending_work">Noch sind nicht alle Änderungen bestätigt. Prüfen Sie Verbindung, Titel, Anhänge und unveröffentlichte Kommentare und versuchen Sie es erneut.</string>
     <string name="docs_editor_reloaded">Der Editor wurde neu geladen. Nur auf dem Server gespeicherte Inhalte können bestätigt werden. Bitte prüfen Sie Ihre letzten Änderungen.</string>
+    <string name="docs_chat_share_title">Im Chat teilen</string>
+    <string name="docs_chat_share_sent">Im Chat geteilt</string>
+    <string name="docs_chat_share_delivery_failed">An %1$d Chats gesendet; %2$d fehlgeschlagen. Bestätigte Zustellungen werden beim Wiederholen übersprungen.</string>
+    <string name="docs_chat_share_access_failed">Einige Karten wurden gesendet, der Zugriff wurde jedoch nicht bestätigt. Erneut versuchen oder Dokumentberechtigungen verwalten.</string>
+    <string name="docs_chat_share_retry">Erneut versuchen</string>
+    <string name="docs_chat_share_close">Schließen</string>
 </resources>

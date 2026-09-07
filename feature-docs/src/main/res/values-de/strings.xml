@@ -170,4 +170,6 @@
         <item quantity="one">%d Mitglied</item>
         <item quantity="other">%d Mitglieder</item>
     </plurals>
+    <string name="docs_share_to_chat">Im Chat teilen</string>
+    <string name="docs_share_to_chat_help">Sendet eine Dokumentkarte und versucht, Chatmitgliedern Lesezugriff zu geben.</string>
 </resources>

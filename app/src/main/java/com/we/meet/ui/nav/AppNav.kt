@@ -1016,6 +1016,8 @@ fun AppNav() {
             arguments = listOf(navArgument("docId") { type = NavType.StringType }),
         ) { entry ->
             val docId = Routes.decode(entry.arguments?.getString("docId").orEmpty())
+            var shareTitle by androidx.compose.runtime.saveable.rememberSaveable(docId) { mutableStateOf<String?>(null) }
+            var shareUrl by androidx.compose.runtime.saveable.rememberSaveable(docId) { mutableStateOf("") }
             com.we.meet.feature.docs.ui.DocDetailScreen(
                 deps = app,
                 docId = docId,
@@ -1023,7 +1025,15 @@ fun AppNav() {
                 onOpenDoc = { otherDocId -> navController.navigate(Routes.docsDetail(otherDocId)) },
                 onOpenWebUrl = { url -> navController.navigate(Routes.docsViewer(url)) },
                 onOpenEditor = { url -> navController.navigate(Routes.docsEditor(url)) },
+                onShareToChat = { _, title, url -> shareUrl = url; shareTitle = title },
             )
+            shareTitle?.let { title ->
+                com.we.meet.ui.docs.DocChatShareFlow(
+                    deps = app,
+                    request = com.we.meet.ui.docs.ShareDocRequest(docId, title, shareUrl),
+                    onDismiss = { shareTitle = null },
+                )
+            }
         }
 
         composable(Routes.DOCS_SEARCH) {

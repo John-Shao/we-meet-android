@@ -89,6 +89,7 @@ fun DocShareSheet(
     doc: DocumentDto,
     onDismiss: () -> Unit,
     onDocChanged: () -> Unit,
+    onShareToChat: () -> Unit,
 ) {
     val vm: DocShareViewModel = viewModel(
         key = "share:${doc.id}",
@@ -159,12 +160,25 @@ fun DocShareSheet(
                         SharePage.HOME -> {
                             item("copy") {
                                 Box(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM)) {
-                                    PrimaryButton(text = stringResource(R.string.docs_copy_link), onClick = {
+                                    val copyLink = {
                                         val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
                                         clipboard?.setPrimaryClip(android.content.ClipData.newPlainText(doc.displayTitle,
                                             com.we.meet.feature.docs.util.DocLinks.webUrl(deps.docsBaseUrl, doc.id)))
                                         scope.launch { snackbar.showSnackbar(context.getString(R.string.docs_link_copied)) }
-                                    })
+                                        Unit
+                                    }
+                                    if (state.doc.abilities.retrieve) Column {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                                            SecondaryButton(text = stringResource(R.string.docs_copy_link), onClick = copyLink,
+                                                modifier = Modifier.weight(1f))
+                                            PrimaryButton(text = stringResource(R.string.docs_share_to_chat), onClick = onShareToChat,
+                                                enabled = !state.mutating && !state.linkSaving, modifier = Modifier.weight(1f))
+                                        }
+                                        Text(stringResource(R.string.docs_share_to_chat_help),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(top = Dimens.SpaceS))
+                                    } else PrimaryButton(text = stringResource(R.string.docs_copy_link), onClick = copyLink)
                                 }
                             }
                             item("access") {

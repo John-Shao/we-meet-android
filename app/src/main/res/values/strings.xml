@@ -1042,4 +1042,10 @@
     <string name="docs_editor_incompatible">The editor could not be opened. Try again later, or go back to continue reading.</string>
     <string name="docs_editor_pending_work">Not all changes are confirmed saved. Check the connection, title, attachments and unpublished comments, then retry.</string>
     <string name="docs_editor_reloaded">The editor was reloaded. Only server-saved content can be confirmed; please check your last changes.</string>
+    <string name="docs_chat_share_title">Share to chat</string>
+    <string name="docs_chat_share_sent">Shared to chat</string>
+    <string name="docs_chat_share_delivery_failed">Sent to %1$d chats; %2$d failed. Retrying skips confirmed deliveries.</string>
+    <string name="docs_chat_share_access_failed">Some cards were sent, but access could not be confirmed. Retry access or manage permissions in the document.</string>
+    <string name="docs_chat_share_retry">Retry</string>
+    <string name="docs_chat_share_close">Close</string>
 </resources>

@@ -1023,4 +1023,10 @@
     <string name="docs_editor_incompatible">暂时无法打开编辑器，请稍后重试。你可以返回继续阅读文档。</string>
     <string name="docs_editor_pending_work">尚未确认全部保存。请检查网络、标题、附件上传及未发表的评论，处理后重试。</string>
     <string name="docs_editor_reloaded">编辑页面已重新加载，目前只能确认服务端已保存的内容，请检查最后的修改。</string>
+    <string name="docs_chat_share_title">分享到聊天</string>
+    <string name="docs_chat_share_sent">已分享到聊天</string>
+    <string name="docs_chat_share_delivery_failed">已发送到 %1$d 个会话，%2$d 个发送失败。重试将跳过已确认发送的会话。</string>
+    <string name="docs_chat_share_access_failed">部分卡片已发送，但未能确认访问授权。可重试授权，或在文档中管理权限。</string>
+    <string name="docs_chat_share_retry">重试</string>
+    <string name="docs_chat_share_close">关闭</string>
 </resources>

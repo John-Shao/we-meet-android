@@ -89,6 +89,7 @@ fun DocDetailScreen(
     onBack: () -> Unit,
     onOpenDoc: (docId: String) -> Unit,
     onOpenWebUrl: (String) -> Unit,
+    onShareToChat: (docId: String, title: String, url: String) -> Unit,
     onOpenEditor: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -398,6 +399,11 @@ fun DocDetailScreen(
             doc = doc,
             onDismiss = { showShare = false },
             onDocChanged = vm::load,
+            onShareToChat = {
+                showShare = false
+                onShareToChat(doc.id, doc.displayTitle.ifBlank { context.getString(R.string.docs_untitled) },
+                    DocLinks.webUrl(deps.docsBaseUrl, doc.id))
+            },
         )
     }
 }

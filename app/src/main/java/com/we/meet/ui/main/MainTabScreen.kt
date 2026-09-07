@@ -66,8 +66,6 @@ import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.feature.im.ImSession
-import com.we.meet.feature.im.ui.chat.ForwardCreateGroupFlow
-import com.we.meet.feature.im.ui.chat.ForwardPicker
 import com.we.meet.feature.im.ui.list.ConversationListScreen
 import com.we.meet.ui.calendar.CalendarTabScreen
 import com.we.meet.ui.calendar.reminder.ReminderEntryRow
@@ -78,6 +76,8 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import com.we.meet.BuildConfig
 import com.we.meet.ui.contacts.ContactsTabScreen
+import com.we.meet.ui.docs.DocChatShareFlow
+import com.we.meet.ui.docs.ShareDocRequest
 import com.we.meet.ui.docs.DocsTabScreen
 import com.we.meet.ui.docs.createDocsWebView
 import com.we.meet.ui.docs.loadDocsTabEntry
@@ -104,9 +104,6 @@ import org.json.JSONObject
  * That means 消息 is the ONLY route to the profile page.
  */
 enum class MainTab { Messages, Calendar, Meeting, Contacts, Docs, Tasks }
-
-/** 分享云文档到聊天(入口 B)待处理请求:docs WebView 发来的一条「分享到聊天」。 */
-private data class ShareDocRequest(val docId: String, val title: String, val url: String)
 
 private data class TabItem(
     val labelRes: Int,
@@ -174,7 +171,6 @@ fun MainTabScreen(
 
     // 分享云文档到聊天(入口 B)待处理请求状态:WebView 桥回调写入,选择器消费。
     var shareDocRequest by remember { mutableStateOf<ShareDocRequest?>(null) }
-    var shareDocCreateGroup by remember { mutableStateOf(false) }
 
     // 云文档 WebView 提升到 tab 层持有:tabs 是 `tabs[safeTab].content()` 重组切换,
     // 若放进 content lambda,每次切 tab 都会重建 WebView、重走加载 + KC SSO 重定向。
@@ -613,49 +609,13 @@ fun MainTabScreen(
 
     // 分享云文档到聊天(入口 B):每个目标先确认 doc-card 已发出，再授予
     // 对应会话成员只读权限。发送失败绝不能留下无聊天记录的授权。
-    shareDocRequest?.let { req ->
-        val docCardBody = JSONObject()
-            .put("v", 1)
-            .put("doc_id", req.docId)
-            .put("title", req.title)
-            .put("url", req.url)
-            .toString()
-        ForwardPicker(
+    shareDocRequest?.let { request ->
+        DocChatShareFlow(
             deps = app,
-            targets = imSession.allForwardTargets(),
-            onForward = { cids ->
-                scope.launch {
-                    val delivered = cids.filter {
-                        imSession.sendMessage(it, docCardBody, "doc-card").isSuccess
-                    }
-                    // Only recipients of a successfully persisted card may
-                    // receive access; authorization itself remains best-effort.
-                    if (imSession.grantDocAccess(req.docId, delivered)) {
-                        docsWebView?.let { notifyDocsAccessUpdated(it, req.docId) }
-                    }
-                }
-                shareDocRequest = null
-            },
-            onCreateGroupForward = { shareDocCreateGroup = true },
+            request = request,
             onDismiss = { shareDocRequest = null },
+            onAccessChanged = { docsWebView?.let { notifyDocsAccessUpdated(it, request.docId) } },
         )
-        if (shareDocCreateGroup) {
-            ForwardCreateGroupFlow(
-                deps = app,
-                onCreated = { newCid ->
-                    scope.launch {
-                        if (imSession.sendMessage(newCid, docCardBody, "doc-card").isSuccess &&
-                            imSession.grantDocAccess(req.docId, listOf(newCid))
-                        ) {
-                            docsWebView?.let { notifyDocsAccessUpdated(it, req.docId) }
-                        }
-                    }
-                    shareDocCreateGroup = false
-                    shareDocRequest = null
-                },
-                onCancel = { shareDocCreateGroup = false },
-            )
-        }
     }
 
 }

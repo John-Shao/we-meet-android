@@ -170,4 +170,6 @@
         <item quantity="one">%d 人</item>
         <item quantity="other">%d 人</item>
     </plurals>
+    <string name="docs_share_to_chat">分享到聊天</string>
+    <string name="docs_share_to_chat_help">发送文档卡片，并尝试为会话成员开通只读访问。</string>
 </resources>
