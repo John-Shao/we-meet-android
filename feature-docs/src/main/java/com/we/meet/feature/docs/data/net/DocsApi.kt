@@ -305,7 +305,7 @@ data class DocsAbilitiesDto(
     @Json(name = "children_list") val childrenList: Boolean = false,
     val comment: Boolean = false,
     val leave: Boolean = false,
-    @Json(name = "link_select_options") val linkSelectOptions: Map<String, List<String>> = emptyMap(),
+    @Json(name = "link_select_options") val linkSelectOptions: Map<String, List<String>?> = emptyMap(),
 ) {
     val canRename: Boolean get() = partialUpdate || update
 }

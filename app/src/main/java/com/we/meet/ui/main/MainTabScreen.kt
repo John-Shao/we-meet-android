@@ -184,7 +184,7 @@ fun MainTabScreen(
         DisposableEffect(Unit) {
             onDispose {
                 (webView.parent as? ViewGroup)?.removeView(webView)
-                webView.destroy()
+                com.we.meet.ui.docs.releaseDocsWebView(webView)
             }
         }
         // 分享云文档到聊天(入口 B):docs WebView 内点「分享到聊天」→ DocsHostBridge

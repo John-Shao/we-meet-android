@@ -14,7 +14,7 @@ import androidx.security.crypto.MasterKey
  * encrypted storage as the app's [com.we.meet.data.auth.TokenStore], never
  * plain SharedPreferences.
  */
-class DocsSessionStore(context: Context) {
+class DocsSessionStore(context: Context) : DocsCredentials {
 
     private val prefs: SharedPreferences = run {
         val masterKey = MasterKey.Builder(context)
@@ -29,15 +29,19 @@ class DocsSessionStore(context: Context) {
         )
     }
 
-    var sessionId: String?
+    override var sessionId: String?
         get() = prefs.getString(KEY_SESSION_ID, null)
         set(value) = prefs.edit().putString(KEY_SESSION_ID, value).apply()
 
-    var csrfToken: String?
+    override var csrfToken: String?
         get() = prefs.getString(KEY_CSRF_TOKEN, null)
         set(value) = prefs.edit().putString(KEY_CSRF_TOKEN, value).apply()
 
-    fun clear() = prefs.edit().remove(KEY_SESSION_ID).remove(KEY_CSRF_TOKEN).apply()
+    override var ownerKey: String?
+        get() = prefs.getString("owner", null)
+        set(value) = prefs.edit().putString("owner", value).apply()
+
+    override fun clear() = prefs.edit().remove(KEY_SESSION_ID).remove(KEY_CSRF_TOKEN).apply()
 
     private companion object {
         const val FILE_NAME = "docs_session_prefs"

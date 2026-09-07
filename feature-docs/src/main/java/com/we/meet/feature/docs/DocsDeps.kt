@@ -16,6 +16,8 @@ interface DocsDeps : DirectoryDeps {
 
     /** La Suite Docs origin (no trailing slash), e.g. `https://docs.we-meet.online`. */
     val docsBaseUrl: String
+    /** Stable account identity, including issuer/realm; null while signed out. */
+    val docsAccountKey: String?
 
     /** Docs REST access, bootstrapped from the host's authenticated session. */
     val docsRepository: DocsRepository

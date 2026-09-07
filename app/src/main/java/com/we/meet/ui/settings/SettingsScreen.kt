@@ -73,6 +73,8 @@ fun SettingsScreen(
     val themeMode by settingsStore.themeMode.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var showSignOutConfirm by remember { mutableStateOf(false) }
+    var signingOut by remember { mutableStateOf(false) }
+    androidx.activity.compose.BackHandler(enabled = signingOut) { }
 
     var backPending by remember { mutableStateOf(false) }
 
@@ -111,29 +113,32 @@ fun SettingsScreen(
 
     if (showSignOutConfirm) {
         AlertDialog(
-            onDismissRequest = { showSignOutConfirm = false },
+            onDismissRequest = { if (!signingOut) showSignOutConfirm = false },
             title = { Text(stringResource(R.string.profile_sign_out)) },
             text = { Text(stringResource(R.string.profile_sign_out_confirm)) },
             confirmButton = {
-                TextButton(onClick = {
-                    showSignOutConfirm = false
-                    app.authRepository.signOut()
-                    com.we.meet.analytics.Analytics.reset()
-                    // Drop the IM socket + caches so the next login doesn't
-                    // inherit this user's session.
-                    ImSession.shutdown()
-                    // 星标名单同理:换账号后不该还挂着上一个人的星标。
-                    ContactPrefs.clear()
-                    // 云文档原生栈同理:清掉 docs_sessionid/csrftoken,下个账号
-                    // 不能继承上一个账号的 docs 会话(设计文档 §4.2/§4.10)。
-                    scope.launch { app.docsSessionManager.invalidate() }
-                    onSignedOut()
+                TextButton(enabled = !signingOut, onClick = {
+                    signingOut = true
+                    app.clearDocsSession()
+                    scope.launch {
+                        // Finish cleanup even if the settings composition is disposed.
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                            app.authRepository.signOut()
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                app.cacheDir.resolve("docs_image_cache").deleteRecursively()
+                            }
+                            com.we.meet.analytics.Analytics.reset()
+                            ImSession.shutdown()
+                            ContactPrefs.clear()
+                            onSignedOut()
+                        }
+                    }
                 }) {
                     Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showSignOutConfirm = false }) {
+                TextButton(enabled = !signingOut, onClick = { showSignOutConfirm = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             },

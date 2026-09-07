@@ -1,5 +1,7 @@
 package com.we.meet.feature.docs.ui
 
+import com.we.meet.feature.docs.util.docsRunCatching as runCatching
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.we.meet.feature.docs.R
@@ -52,45 +54,71 @@ class DocDetailViewModel(
     private var lastContentRaw: String? = null
 
     private val refreshMutex = kotlinx.coroutines.sync.Mutex()
+    private var refreshPending = false
+    private var manualPending = false
+    var pollDelayMillis: Long = 30_000
+        private set
 
     fun load() { viewModelScope.launch { refresh(manual = true) } }
     fun loadContent() = load()
     suspend fun pollContent() = refresh()
+    fun onOffline() { _state.update { if (it.doc == null) it.copy(error = true, loading = false) else it } }
 
     suspend fun refresh(manual: Boolean = false) {
+        refreshPending = true
+        manualPending = manualPending || manual
         if (!refreshMutex.tryLock()) return
+        try {
+            while (refreshPending) {
+                val requestedManually = manualPending
+                refreshPending = false
+                manualPending = false
+                refreshOnce(requestedManually)
+            }
+        } finally {
+            refreshMutex.unlock()
+        }
+    }
+
+    private fun backOff(error: Exception) {
+        val retryAfter = (error as? HttpException)?.response()?.headers()?.get("Retry-After")?.toLongOrNull()
+        pollDelayMillis = retryAfter?.coerceIn(30, 3600)?.times(1000)
+            ?: (pollDelayMillis * 2).coerceAtMost(300_000)
+    }
+
+    private suspend fun refreshOnce(manual: Boolean) {
         try {
             _state.update { it.copy(loading = it.doc == null, refreshing = manual && it.doc != null, error = false) }
             val doc = repo.document(docId)
             _state.update { it.copy(doc = doc, loading = false, noAccess = false, contentLoading = it.blocks.isEmpty()) }
             try {
                 val raw = repo.formattedContent(docId, format = "json").content
-                val blocks = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { parseBlockNoteContent(raw) }
-                if (lastContentRaw != null && lastContentRaw != raw?.toString()) {
-                    _toasts.tryEmit(R.string.docs_content_updated)
-                }
+                val blocks = if (lastContentRaw == raw?.toString()) _state.value.blocks else
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { parseBlockNoteContent(raw) }
                 lastContentRaw = raw?.toString()
+                pollDelayMillis = 30_000
                 _state.update { it.copy(blocks = blocks, contentLoading = false, contentError = false) }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
                 if (isNoAccess(e) || (e as? HttpException)?.code() == 404) throw e
+                backOff(e)
                 _state.update { it.copy(contentLoading = false, contentError = true) }
-                if (_state.value.blocks.isNotEmpty()) _toasts.tryEmit(R.string.docs_load_error)
+                if (manual && _state.value.blocks.isNotEmpty()) _toasts.tryEmit(R.string.docs_load_error)
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
+            backOff(e)
             if (isNoAccess(e) || (e as? HttpException)?.code() == 404) {
                 lastContentRaw = null
                 _state.update { UiState(noAccess = isNoAccess(e), error = !isNoAccess(e), requestSent = it.requestSent) }
             } else {
                 _state.update { it.copy(loading = false, error = true) }
-                if (_state.value.doc != null) _toasts.tryEmit(R.string.docs_load_error)
+                if (manual && _state.value.doc != null) _toasts.tryEmit(R.string.docs_load_error)
             }
         } finally {
             _state.update { it.copy(loading = false, refreshing = false, contentLoading = false) }
-            refreshMutex.unlock()
         }
     }
 

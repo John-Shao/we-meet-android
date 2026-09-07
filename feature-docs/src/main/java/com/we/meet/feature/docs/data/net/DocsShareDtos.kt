@@ -161,7 +161,7 @@ data class DocsInvitationCreateRequest(
 @JsonClass(generateAdapter = true)
 data class DocsLinkConfigurationRequest(
     @Json(name = "link_reach") val linkReach: String,
-    @Json(name = "link_role") val linkRole: String,
+    @Json(name = "link_role") val linkRole: String?,
 )
 
 // ---- Ask for access ----

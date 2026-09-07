@@ -1,5 +1,8 @@
 package com.we.meet.feature.docs.ui
 
+import com.we.meet.feature.docs.util.docsRunCatching as runCatching
+import kotlinx.coroutines.flow.collectLatest
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -102,10 +105,14 @@ fun DocDetailScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(lifecycleOwner, vm) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            vm.refresh()
-            while (true) {
-                delay(POLL_INTERVAL_MS)
-                vm.pollContent()
+            com.we.meet.feature.docs.util.docsConnectivity(context).collectLatest { online ->
+                if (online) {
+                    vm.refresh()
+                    while (true) {
+                        delay(vm.pollDelayMillis)
+                        vm.pollContent()
+                    }
+                } else vm.onOffline()
             }
         }
     }
@@ -484,5 +491,3 @@ private fun DocRenameDialogInternal(
         },
     )
 }
-
-private const val POLL_INTERVAL_MS = 30_000L

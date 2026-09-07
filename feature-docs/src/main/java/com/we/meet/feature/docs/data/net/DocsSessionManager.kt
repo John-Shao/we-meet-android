@@ -4,6 +4,7 @@ import android.content.Context
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.we.meet.feature.docs.DocsDeps
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -12,219 +13,171 @@ import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
+import java.io.IOException
 import java.security.SecureRandom
+import java.util.concurrent.TimeUnit
 
-/**
- * Native docs-session bootstrap (设计文档 §4.2).
- *
- * The docs REST API authenticates with a `docs_sessionid` **cookie** (+ CSRF
- * header on writes), not a Bearer token. This manager trades the app's own
- * login state for that session:
- *
- *  1. `POST {meet}/api/v1.0/docs/session/` (host-authenticated OkHttp) mints a
- *     one-time ticket URL;
- *  2. `GET {docs}/api/v1.0/session-from-ticket/?ticket=…` — the docs server
- *     sets `docs_sessionid` and 302s to the target page; OkHttp follows the
- *     redirects and the [cookieJar] captures the cookie;
- *  3. the cookie values persist in [DocsSessionStore] (encrypted) and are
- *     re-seeded into the jar on process restart.
- *
- * Write requests additionally send `X-CSRFToken` mirroring the `csrftoken`
- * cookie — Django's CSRF check compares the two values, so the client only
- * needs cookie/header agreement and never a server-side round-trip.
- */
-class DocsSessionManager(
-    context: Context,
-    private val deps: DocsDeps,
-) {
-
-    val store = DocsSessionStore(context)
-
-    private val moshi: Moshi = Moshi.Builder()
-        .add(KotlinJsonAdapterFactory())
-        .build()
-
-    /** Host of the docs site — cookies only ever attach to it. */
-    private val docsHost: String =
-        deps.docsBaseUrl.toHttpUrl().host
-    private val docsOrigin = deps.docsBaseUrl.toHttpUrl()
-
-    // ---- Cookie jar: host-keyed in-memory map, hydrated from / persisted to the store ----
-
-    private val cookiesByHost = ConcurrentHashMap<String, List<Cookie>>()
-
-    private val cookieJar = object : CookieJar {
-        override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-            if (!sameOrigin(url)) return
-            val existing = cookiesByHost[url.host] ?: loadForRequest(url)
-            cookiesByHost[url.host] = (existing.filterNot { old ->
-                cookies.any { it.name == old.name && it.domain == old.domain && it.path == old.path }
-            } + cookies).filter { it.expiresAt > System.currentTimeMillis() }
-            for (cookie in cookies) {
-                val value = cookie.value.takeIf { cookie.expiresAt > System.currentTimeMillis() }
-                if (cookie.name == COOKIE_SESSION_ID) store.sessionId = value
-                if (cookie.name == COOKIE_CSRF) store.csrfToken = value
-            }
-        }
-
-        override fun loadForRequest(url: HttpUrl): List<Cookie> {
-            if (!sameOrigin(url)) return emptyList()
-            cookiesByHost[url.host]?.let { return it.filter { c -> c.matches(url) && c.expiresAt > System.currentTimeMillis() } }
-            // Process restart: re-seed the jar from the encrypted store.
-            return buildList {
-                store.sessionId?.let { value ->
-                    add(
-                        Cookie.Builder()
-                            .name(COOKIE_SESSION_ID)
-                            .value(value)
-                            .hostOnlyDomain(url.host)
-                            .path("/")
-                            .build(),
-                    )
-                }
-                store.csrfToken?.let { value ->
-                    add(
-                        Cookie.Builder()
-                            .name(COOKIE_CSRF)
-                            .value(value)
-                            .hostOnlyDomain(url.host)
-                            .path("/")
-                            .build(),
-                    )
-                }
-            }.also { if (it.isNotEmpty()) cookiesByHost[url.host] = it }
-        }
-    }
-
-    /** Mirrors the `csrftoken` cookie into `X-CSRFToken` for unsafe methods. */
-    private val csrfInterceptor = Interceptor { chain ->
-        val request = chain.request()
-        if (!sameOrigin(request.url) || request.method in SAFE_METHODS) {
-            chain.proceed(request)
-        } else {
-            val token = store.csrfToken
-            if (token == null) {
-                chain.proceed(request)
-            } else {
-                chain.proceed(request.newBuilder().header(HEADER_CSRF, token)
-                    .header("Origin", docsOrigin.resolve("/")!!.toString().removeSuffix("/"))
-                    .header("Referer", docsOrigin.toString()).build())
-            }
-        }
-    }
-
-    val okHttp: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .cookieJar(cookieJar)
-        .addNetworkInterceptor(csrfInterceptor)
-        .build()
-
-    private val docsRetrofit: Retrofit = Retrofit.Builder()
-        .baseUrl(deps.docsBaseUrl.trimEnd('/') + "/")
-        .client(okHttp)
-        .addConverterFactory(MoshiConverterFactory.create(moshi))
-        .build()
-
-    val docsApi: DocsApi = docsRetrofit.create(DocsApi::class.java)
-
-    private val ticketRetrofit: Retrofit = Retrofit.Builder()
-        .baseUrl(deps.baseUrl.trimEnd('/') + "/")
-        .client(deps.authedOkHttp)
-        .addConverterFactory(MoshiConverterFactory.create(moshi))
-        .build()
-
-    private val ticketApi: DocsTicketApi = ticketRetrofit.create(DocsTicketApi::class.java)
-
+/** Each account generation owns its transport, so old responses cannot repopulate credentials. */
+class DocsSessionManager internal constructor(private val deps: DocsDeps, val store: DocsCredentials) {
+    constructor(context: Context, deps: DocsDeps) : this(deps, DocsSessionStore(context))
+    private val lock = Any()
     private val bootstrapMutex = Mutex()
+    private val origin = deps.docsBaseUrl.toHttpUrl()
+    private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+    private var epoch = 0L
+    private var owner = store.ownerKey
+    private var transport: Transport? = null
+    private val ticketApi = Retrofit.Builder().baseUrl(deps.baseUrl.trimEnd('/') + "/")
+        .client(deps.authedOkHttp).addConverterFactory(MoshiConverterFactory.create(moshi))
+        .build().create(DocsTicketApi::class.java)
 
-    private fun sameOrigin(url: HttpUrl) = url.scheme == docsOrigin.scheme &&
-        url.host == docsOrigin.host && url.port == docsOrigin.port
-
-    suspend fun renewSession(expiredSessionId: String?) = bootstrapMutex.withLock {
-        if (store.sessionId == expiredSessionId || !hasSession) {
-            store.clear()
-            cookiesByHost.clear()
-            bootstrapLocked()
+    private inner class Transport(val generation: Long) {
+        var cookies: List<Cookie> = buildList {
+            store.sessionId?.let { add(cookie("docs_sessionid", it)) }
+            store.csrfToken?.let { add(cookie("csrftoken", it)) }
         }
+        val jar = object : CookieJar {
+            override fun loadForRequest(url: HttpUrl): List<Cookie> = synchronized(lock) {
+                syncAccountLocked()
+                if (generation != epoch || !sameOrigin(url)) emptyList()
+                else cookies.filter { it.matches(url) && it.expiresAt > System.currentTimeMillis() }
+            }
+            override fun saveFromResponse(url: HttpUrl, received: List<Cookie>) = synchronized(lock) {
+                syncAccountLocked()
+                if (generation == epoch && sameOrigin(url)) {
+                    cookies = (cookies.filterNot { old -> received.any {
+                        it.name == old.name && it.domain == old.domain && it.path == old.path
+                    } } + received).filter { it.expiresAt > System.currentTimeMillis() }
+                    received.filter { it.path == "/" }.forEach {
+                        val value = it.value.takeIf { _ -> it.expiresAt > System.currentTimeMillis() }
+                        when (it.name) {
+                            "docs_sessionid" -> store.sessionId = value
+                            "csrftoken" -> store.csrfToken = value
+                        }
+                    }
+                }
+            }
+        }
+        val client = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(false)
+            .readTimeout(30, TimeUnit.SECONDS).writeTimeout(30, TimeUnit.SECONDS)
+            .callTimeout(45, TimeUnit.SECONDS).cookieJar(jar)
+            .addInterceptor { chain ->
+                if (!isCurrent(generation)) throw IOException("docs account changed")
+                val response = chain.proceed(chain.request())
+                if (!isCurrent(generation)) {
+                    response.close()
+                    throw IOException("docs account changed")
+                }
+                response
+            }
+            .addNetworkInterceptor { chain ->
+                val request = chain.request()
+                val token = synchronized(lock) {
+                    syncAccountLocked()
+                    if (generation != epoch) throw IOException("docs account changed")
+                    store.csrfToken
+                }
+                val authenticated = if (sameOrigin(request.url) && request.method !in setOf("GET", "HEAD", "OPTIONS", "TRACE") && token != null)
+                    request.newBuilder().header("X-CSRFToken", token)
+                        .header("Origin", origin.resolve("/")!!.toString().removeSuffix("/"))
+                        .header("Referer", origin.toString()).build()
+                    else if (!sameOrigin(request.url)) request.newBuilder()
+                        .removeHeader("X-CSRFToken").removeHeader("Origin").removeHeader("Referer").build()
+                    else request
+                chain.proceed(authenticated)
+            }.build()
+        val api: DocsApi = Retrofit.Builder().baseUrl(deps.docsBaseUrl.trimEnd('/') + "/")
+            .client(client).addConverterFactory(MoshiConverterFactory.create(moshi)).build().create(DocsApi::class.java)
     }
 
-    val hasSession: Boolean
-        get() = !store.sessionId.isNullOrBlank()
+    private fun cookie(name: String, value: String): Cookie = Cookie.Builder().name(name).value(value)
+        .hostOnlyDomain(origin.host).path("/").apply { if (origin.isHttps) secure() }.build()
+    private fun sameOrigin(url: HttpUrl) = url.scheme == origin.scheme && url.host == origin.host && url.port == origin.port
+    private fun accountKey() = deps.docsAccountKey?.let { "${deps.docsBaseUrl}|${deps.baseUrl}|$it" }
+    private fun syncAccountLocked() {
+        val current = accountKey()
+        if (owner != current) {
+            clearLocked()
+            owner = current
+            store.ownerKey = current
+        }
+    }
+    private fun clearLocked() {
+        epoch++
+        transport?.client?.dispatcher?.cancelAll()
+        transport = null
+        store.clear()
+    }
+    val generation: Long get() = synchronized(lock) { syncAccountLocked(); epoch }
+    fun isCurrent(expected: Long): Boolean = synchronized(lock) {
+        syncAccountLocked()
+        expected == epoch && owner != null
+    }
+    fun checkGeneration(expected: Long) {
+        if (!isCurrent(expected)) throw CancellationException("docs account changed")
+    }
+    private fun transport(expected: Long): Transport = synchronized(lock) {
+        checkGeneration(expected)
+        transport ?: Transport(expected).also { transport = it }
+    }
+    val okHttp: OkHttpClient get() = transport(generation).client
+    fun api(expected: Long): DocsApi = transport(expected).api
+    val hasSession: Boolean get() = synchronized(lock) { syncAccountLocked(); !store.sessionId.isNullOrBlank() }
 
-    /**
-     * Ensures a docs session exists (bootstrap if missing). Cheap no-op when a
-     * session cookie is already present — repositories call it before each
-     * request; the 401 path then retries once with a fresh bootstrap.
-     */
-    suspend fun ensureSession() {
+    suspend fun ensureSession(expected: Long = generation) {
+        checkGeneration(expected)
         if (hasSession) return
         bootstrapMutex.withLock {
-            if (!hasSession) bootstrapLocked()
+            checkGeneration(expected)
+            if (!hasSession) bootstrapLocked(expected)
         }
     }
+    suspend fun renewSession(expiredSessionId: String?, expected: Long = generation) = bootstrapMutex.withLock {
+        synchronized(lock) {
+            checkGeneration(expected)
+            if (store.sessionId != expiredSessionId && hasSession) return@withLock
+            store.sessionId = null
+            store.csrfToken = null
+            transport?.cookies = emptyList()
+        }
+        bootstrapLocked(expected)
+    }
+    suspend fun bootstrap() = bootstrapMutex.withLock { bootstrapLocked(generation) }
 
-    /** Force a fresh session (used by the 401 retry path and logout). */
-    suspend fun bootstrap() = bootstrapMutex.withLock { bootstrapLocked() }
-
-    /** Drops the stored session (401 recovery + app logout). */
-    suspend fun invalidate() {
-        store.clear()
-        cookiesByHost.remove(docsHost)
+    /** Synchronous invalidation happens before navigation or token changes. */
+    fun invalidate() = synchronized(lock) {
+        clearLocked()
+        owner = null
+        store.ownerKey = null
     }
 
-    private suspend fun bootstrapLocked() = withContext(Dispatchers.IO) {
-        val url = ticketApi
-            .createSession(DocsTicketRequest(next = "/"))
-            .url
-            ?: throw DocsSessionException("docs session ticket unavailable (docs not configured)")
+    private suspend fun bootstrapLocked(expected: Long) = withContext(Dispatchers.IO) {
+        checkGeneration(expected)
+        val url = ticketApi.createSession(DocsTicketRequest(next = "/")).url
+            ?: throw DocsSessionException("docs session ticket unavailable")
+        checkGeneration(expected)
         val request = Request.Builder().url(url).build()
         if (!sameOrigin(request.url)) throw DocsSessionException("unexpected docs ticket origin")
-        okHttp.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw DocsSessionException("docs session bootstrap failed: ${response.code}")
+        transport(expected).client.newCall(request).execute().use { response ->
+            checkGeneration(expected)
+            if (!response.isSuccessful) throw DocsSessionException("docs bootstrap failed: ${response.code}")
+        }
+        synchronized(lock) {
+            checkGeneration(expected)
+            if (!hasSession) throw DocsSessionException("docs bootstrap did not establish a session")
+            if (store.csrfToken.isNullOrBlank()) {
+                val random = SecureRandom()
+                val token = buildString { repeat(32) { append("0123456789abcdef"[random.nextInt(16)]) } }
+                store.csrfToken = token
+                transport(expected).cookies = transport(expected).cookies.filterNot { it.name == "csrftoken" } + cookie("csrftoken", token)
             }
         }
-        if (!hasSession) throw DocsSessionException("docs bootstrap did not establish a session")
-        ensureCsrfToken()
-    }
-
-    /**
-     * Guarantees a `csrftoken` cookie exists. Django's CSRF check only requires
-     * cookie/header agreement, so when the bootstrap chain didn't hand us one,
-     * a locally generated 32-char token is valid for every subsequent write.
-     */
-    private fun ensureCsrfToken() {
-        if (!store.csrfToken.isNullOrBlank()) return
-        val random = SecureRandom()
-        val token = buildString {
-            val chars = "0123456789abcdef"
-            repeat(32) { append(chars[random.nextInt(chars.length)]) }
-        }
-        store.csrfToken = token
-        cookiesByHost[docsHost] = buildList {
-            store.sessionId?.let { value ->
-                add(Cookie.Builder().name(COOKIE_SESSION_ID).value(value).hostOnlyDomain(docsHost).path("/").build())
-            }
-            add(Cookie.Builder().name(COOKIE_CSRF).value(token).hostOnlyDomain(docsHost).path("/").build())
-        }
-    }
-
-    private companion object {
-        const val COOKIE_SESSION_ID = "docs_sessionid"
-        const val COOKIE_CSRF = "csrftoken"
-        const val HEADER_CSRF = "X-CSRFToken"
-        val SAFE_METHODS = setOf("GET", "HEAD", "OPTIONS", "TRACE")
     }
 }
 
-/** Docs session bootstrap failed — caller maps this to an error state. */
 class DocsSessionException(message: String) : Exception(message)

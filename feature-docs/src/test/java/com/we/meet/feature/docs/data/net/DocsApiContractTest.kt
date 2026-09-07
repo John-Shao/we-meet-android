@@ -16,6 +16,17 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 class DocsApiContractTest {
     private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
 
+    @Test fun restrictedLinksAcceptNullOptionsAndOmitRole() {
+        val doc = moshi.adapter(DocumentDto::class.java).fromJson("""{"id":"doc","abilities":{"link_select_options":{"restricted":null,"authenticated":["reader","editor"]}}}""")!!
+        assertTrue(doc.abilities.linkSelectOptions.containsKey("restricted"))
+        assertNull(doc.abilities.linkSelectOptions["restricted"])
+        val body = moshi.adapter(DocsLinkConfigurationRequest::class.java)
+            .toJson(DocsLinkConfigurationRequest("restricted", null))
+        // The service accepts an omitted role for restricted reach, but rejects
+        // explicit null because the stored model field itself is non-nullable.
+        assertEquals("""{"link_reach":"restricted"}""", body)
+    }
+
     @Test fun resolvedThreadAndReactionPermissionsMatchServer() {
         val thread = moshi.adapter(DocsThreadDto::class.java).fromJson("""
             {"id":"thread","resolved":true,"resolved_by":"user-uuid",

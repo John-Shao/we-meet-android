@@ -126,7 +126,7 @@ class AuthRepository(
 
     fun isLoggedIn(): Boolean = tokenStore.isLoggedIn()
 
-    fun signOut() {
+    suspend fun signOut() {
         // Best-effort push-token unregister; fired before the token clear
         // (races it — a lost race is harmless, see unregisterQuietly's doc).
         PushTokenUploader.unregisterQuietly()
@@ -139,14 +139,17 @@ class AuthRepository(
             // re-issue a code for the account that just signed out, and the
             // Docs tab would stay logged in as them (p3-docs-app.md D8).
             keycloakOidc.endSessionQuietly(tokenStore.idToken)
-            runCatching {
-                CookieManager.getInstance().apply {
-                    removeAllCookies(null)
-                    flush()
+        }
+        tokenStore.clear()
+        // Cookie cleanup is required for password login too, and must finish before a new login.
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main.immediate) {
+            kotlinx.coroutines.suspendCancellableCoroutine<Unit> { continuation ->
+                CookieManager.getInstance().removeAllCookies {
+                    CookieManager.getInstance().flush()
+                    if (continuation.isActive) continuation.resumeWith(Result.success(Unit))
                 }
             }
         }
-        tokenStore.clear()
     }
 
     private companion object {

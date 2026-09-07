@@ -1,5 +1,8 @@
 package com.we.meet.feature.docs.ui
 
+import com.we.meet.feature.docs.util.docsRunCatching as runCatching
+import kotlinx.coroutines.flow.collectLatest
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +36,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -68,14 +73,14 @@ fun DocCommentsSheet(
     val vm: DocCommentsViewModel = viewModel(
         key = "comments:$docId",
         factory = viewModelFactory {
-            initializer { DocCommentsViewModel(deps.docsRepository, docId) }
+            initializer { DocCommentsViewModel(deps.docsRepository, docId, createSavedStateHandle()) }
         },
     )
     val state by vm.state.collectAsStateWithLifecycle()
-    var draft by remember { mutableStateOf("") }
+    val draft = vm.draft
     var expandedThreadId by remember { mutableStateOf<String?>(null) }
     var replyTo by remember { mutableStateOf<DocsThreadDto?>(null) }
-    var replyDraft by remember { mutableStateOf("") }
+    val replyDraft = vm.replyDrafts[replyTo?.id].orEmpty()
     var deleteTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
     var showResolved by remember { mutableStateOf(false) }
 
@@ -87,10 +92,14 @@ fun DocCommentsSheet(
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     LaunchedEffect(vm, lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
-            vm.load()
-            while (true) {
-                kotlinx.coroutines.delay(30_000)
-                vm.refreshThreadsSilently()
+            com.we.meet.feature.docs.util.docsConnectivity(context).collectLatest { online ->
+                if (online) {
+                    vm.refresh(manual = true)
+                    while (true) {
+                        kotlinx.coroutines.delay(vm.pollDelayMillis)
+                        vm.refresh()
+                    }
+                } else vm.onOffline()
             }
         }
     }
@@ -124,7 +133,7 @@ fun DocCommentsSheet(
             ) {
                 when {
                     state.loading -> WeMeetLoading()
-                    state.error -> WeMeetErrorState(
+                    state.error && state.threads.isEmpty() -> WeMeetErrorState(
                         onRetry = vm::load,
                         message = stringResource(R.string.docs_load_error),
                     )
@@ -159,7 +168,7 @@ fun DocCommentsSheet(
             ) {
                 OutlinedTextField(
                     value = draft,
-                    onValueChange = { draft = it },
+                    onValueChange = vm::updateDraft,
                     modifier = Modifier.weight(1f),
                     placeholder = { Text(stringResource(R.string.docs_comment_hint)) },
                     maxLines = 4,
@@ -168,7 +177,7 @@ fun DocCommentsSheet(
                     onClick = {
                         val text = draft.trim()
                         if (text.isNotEmpty()) {
-                            vm.createThread(text) { draft = "" }
+                            vm.createThread(text) { vm.updateDraft("") }
                         }
                     },
                     enabled = draft.isNotBlank() && !state.sending,
@@ -200,7 +209,7 @@ fun DocCommentsSheet(
             text = {
                 OutlinedTextField(
                     value = replyDraft,
-                    onValueChange = { replyDraft = it },
+                    onValueChange = { vm.updateReplyDraft(thread.id, it) },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(stringResource(R.string.docs_comment_hint)) },
                     maxLines = 4,
@@ -211,7 +220,7 @@ fun DocCommentsSheet(
                     onClick = {
                         val text = replyDraft.trim()
                         if (text.isNotEmpty()) {
-                            vm.reply(thread.id, text) { replyDraft = ""; replyTo = null }
+                            vm.reply(thread.id, text) { vm.updateReplyDraft(thread.id, ""); replyTo = null }
                         }
                     },
                     enabled = replyDraft.isNotBlank() && !state.sending,
@@ -369,7 +378,18 @@ private fun CommentItem(
 class DocCommentsViewModel(
     private val repo: DocsRepository,
     private val docId: String,
+    private val savedState: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
+    var draft by mutableStateOf(savedState.get<String>("draft").orEmpty())
+        private set
+    val replyDrafts = androidx.compose.runtime.mutableStateMapOf<String, String>().apply {
+        putAll(savedState.get<HashMap<String, String>>("replies").orEmpty())
+    }
+    fun updateDraft(value: String) { draft = value; savedState["draft"] = value }
+    fun updateReplyDraft(threadId: String, value: String) {
+        if (value.isEmpty()) replyDrafts.remove(threadId) else replyDrafts[threadId] = value
+        savedState["replies"] = HashMap(replyDrafts)
+    }
 
     data class UiState(
         val threads: List<DocsThreadDto> = emptyList(),
@@ -385,22 +405,29 @@ class DocCommentsViewModel(
 
     private var myUserId: String? = null
 
-    fun load() {
-        viewModelScope.launch {
-            _state.update { it.copy(loading = true, error = false) }
-            runCatching { repo.me() }
-                .onSuccess { myUserId = it.id }
+    var pollDelayMillis = 30_000L
+        private set
+    private val refreshMutex = kotlinx.coroutines.sync.Mutex()
+    fun load() { viewModelScope.launch { refresh(manual = true) } }
+    fun onOffline() { _state.update { if (it.threads.isEmpty()) it.copy(error = true, loading = false) else it } }
+    fun refreshThreadsSilently() { viewModelScope.launch { refresh() } }
+    suspend fun refresh(manual: Boolean = false) {
+        refreshMutex.lock()
+        try {
+            if (manual) _state.update { it.copy(loading = it.threads.isEmpty(), error = false) }
+            if (myUserId == null) runCatching { repo.me() }.onSuccess { myUserId = it.id }
             runCatching { repo.threads(docId) }
-                .onSuccess { threads -> _state.update { it.copy(threads = threads, loading = false) } }
-                .onFailure { _state.update { it.copy(loading = false, error = true) } }
-        }
-    }
-
-    /** 静默刷新线程:不动 `loading`,避免反应/解决等局部操作把整列表闪成 spinner。 */
-    fun refreshThreadsSilently() {
-        viewModelScope.launch {
-            runCatching { repo.threads(docId) }
-                .onSuccess { threads -> _state.update { it.copy(threads = threads) } }
+                .onSuccess { threads ->
+                    pollDelayMillis = 30_000
+                    _state.update { it.copy(threads = threads, error = false) }
+                }
+                .onFailure {
+                    pollDelayMillis = (pollDelayMillis * 2).coerceAtMost(300_000)
+                    if (manual) _state.update { it.copy(error = true) }
+                }
+        } finally {
+            _state.update { it.copy(loading = false) }
+            refreshMutex.unlock()
         }
     }
 

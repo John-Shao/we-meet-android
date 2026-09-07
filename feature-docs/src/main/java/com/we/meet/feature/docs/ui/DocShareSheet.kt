@@ -1,5 +1,7 @@
 package com.we.meet.feature.docs.ui
 
+import com.we.meet.feature.docs.util.docsRunCatching as runCatching
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -495,12 +497,12 @@ class DocShareViewModel(
         val prevReach = _state.value.linkReach
         val prevRole = _state.value.linkRole
         val newReach = reach ?: prevReach
+        if (!_state.value.doc.abilities.linkSelectOptions.containsKey(newReach)) return
         val options = _state.value.doc.abilities.linkSelectOptions[newReach].orEmpty()
-        val newRole = role ?: prevRole.takeIf { it in options } ?: options.firstOrNull().orEmpty()
-        if (newRole !in options) return
-        if (newReach.isBlank() || newRole.isBlank()) return
+        val newRole = if (newReach == "restricted") null else role ?: prevRole.takeIf { it in options } ?: options.firstOrNull()
+        if (newReach != "restricted" && newRole !in options) return
         // 乐观更新;失败回滚,避免 chip 显示服务端并未生效的值。
-        _state.update { it.copy(linkReach = newReach, linkRole = newRole) }
+        _state.update { it.copy(linkReach = newReach, linkRole = newRole.orEmpty()) }
         updatingLink = true
         viewModelScope.launch {
             runCatching { repo.updateLinkConfiguration(doc.id, newReach, newRole) }

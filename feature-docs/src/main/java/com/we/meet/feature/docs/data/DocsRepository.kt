@@ -1,5 +1,7 @@
 package com.we.meet.feature.docs.data
 
+import com.we.meet.feature.docs.util.docsRunCatching as runCatching
+
 import com.we.meet.feature.docs.data.net.DocsAccessCreateRequest
 import com.we.meet.feature.docs.data.net.DocsAccessDto
 import com.we.meet.feature.docs.data.net.DocsAccessRequestCreate
@@ -35,28 +37,25 @@ import retrofit2.HttpException
  */
 class DocsRepository(private val session: DocsSessionManager) {
 
-    private val api: DocsApi get() = session.docsApi
-
-    suspend fun <T> docsCall(retries: Int = 1, block: suspend () -> T): T {
-        session.ensureSession()
+    suspend fun <T> docsCall(retries: Int = 1, expected: Long = session.generation, block: suspend (DocsApi) -> T): T {
+        session.ensureSession(expected)
+        val api = session.api(expected)
         val sessionId = session.store.sessionId
-        return try {
-            block()
-        } catch (e: HttpException) {
-            val authFailure = e.code() == 401 || (e.code() == 403 && retries > 0 &&
-                (e.response()?.errorBody()?.string().orEmpty().contains("CSRF Failed") ||
-                    try {
-                        api.me()
-                        false
-                    } catch (probe: HttpException) {
-                        probe.code() == 401 || probe.code() == 403
-                    }))
-            if (authFailure && retries > 0) {
-                session.renewSession(sessionId)
-                docsCall(retries = retries - 1, block = block)
-            } else {
-                throw e
-            }
+        try {
+            val result = block(api)
+            session.checkGeneration(expected)
+            return result
+        } catch (error: Exception) {
+            session.checkGeneration(expected)
+            if (error is kotlinx.coroutines.CancellationException) throw error
+            if (error !is HttpException || retries == 0) throw error
+            val authFailure = error.code() == 401 || (error.code() == 403 &&
+                (error.response()?.errorBody()?.string().orEmpty().contains("CSRF Failed") ||
+                    try { api.me(); false } catch (probe: HttpException) { probe.code() == 401 || probe.code() == 403 }))
+            session.checkGeneration(expected)
+            if (!authFailure) throw error
+            session.renewSession(sessionId, expected)
+            return docsCall(retries - 1, expected, block)
         }
     }
 
@@ -66,7 +65,7 @@ class DocsRepository(private val session: DocsSessionManager) {
         isCreatorMe: Boolean? = null,
         isFavorite: Boolean? = null,
         ordering: String? = null,
-    ): DocsPageDto = docsCall {
+    ): DocsPageDto = docsCall { api ->
         api.documents(
             page = page,
             pageSize = pageSize,
@@ -76,50 +75,50 @@ class DocsRepository(private val session: DocsSessionManager) {
         )
     }
 
-    suspend fun trashbin(page: Int, pageSize: Int = PAGE_SIZE): DocsPageDto = docsCall {
+    suspend fun trashbin(page: Int, pageSize: Int = PAGE_SIZE): DocsPageDto = docsCall { api ->
         api.trashbin(page = page, pageSize = pageSize)
     }
 
-    suspend fun search(q: String, page: Int = 1): DocsPageDto = docsCall { api.search(q = q, page = page) }
+    suspend fun search(q: String, page: Int = 1): DocsPageDto = docsCall { api -> api.search(q = q, page = page) }
 
-    suspend fun createChild(parentId: String, title: String): DocumentDto = docsCall {
+    suspend fun createChild(parentId: String, title: String): DocumentDto = docsCall { api ->
         api.createChild(parentId, DocsCreateRequest(title))
     }
 
-    suspend fun document(id: String): DocumentDto = docsCall { api.document(id) }
+    suspend fun document(id: String): DocumentDto = docsCall { api -> api.document(id) }
 
-    suspend fun create(title: String): DocumentDto = docsCall {
+    suspend fun create(title: String): DocumentDto = docsCall { api ->
         api.createDocument(DocsCreateRequest(title = title))
     }
 
-    suspend fun rename(id: String, title: String): DocumentDto = docsCall {
+    suspend fun rename(id: String, title: String): DocumentDto = docsCall { api ->
         api.renameDocument(id, DocsRenameRequest(title = title))
     }
 
     suspend fun delete(id: String) {
-        docsCall { api.deleteDocument(id) }
+        docsCall { api -> api.deleteDocument(id) }
     }
 
     suspend fun favorite(id: String, add: Boolean) {
-        docsCall { if (add) api.addFavorite(id) else api.removeFavorite(id) }
+        docsCall { api -> if (add) api.addFavorite(id) else api.removeFavorite(id) }
     }
 
     /** 复制文档(与 Web 端 DocToolBox 的 Duplicate 对齐) → 返回新文档 id。 */
-    suspend fun duplicate(id: String): String? = docsCall {
+    suspend fun duplicate(id: String): String? = docsCall { api ->
         api.duplicateDocument(id).id.takeIf { it.isNotBlank() }
     }
 
     suspend fun restore(id: String) {
-        docsCall { api.restore(id) }
+        docsCall { api -> api.restore(id) }
     }
 
     suspend fun move(id: String, targetId: String, position: String) {
-        docsCall { api.move(id, DocsMoveRequest(targetDocumentId = targetId, position = position)) }
+        docsCall { api -> api.move(id, DocsMoveRequest(targetDocumentId = targetId, position = position)) }
     }
 
     suspend fun moveInto(id: String, parentId: String) = move(id, parentId, DocsMovePositions.LAST_CHILD)
 
-    suspend fun children(id: String, page: Int, pageSize: Int = PAGE_SIZE): DocsPageDto = docsCall {
+    suspend fun children(id: String, page: Int, pageSize: Int = PAGE_SIZE): DocsPageDto = docsCall { api ->
         api.children(id = id, page = page, pageSize = pageSize)
     }
 
@@ -137,34 +136,34 @@ class DocsRepository(private val session: DocsSessionManager) {
     // ---- M2: read mode / comments / versions / share ----
 
     /** BlockNote JSON formatted content (fallback chain lives in the VM). */
-    suspend fun formattedContent(id: String, format: String = "json"): DocsFormattedContentDto = docsCall {
+    suspend fun formattedContent(id: String, format: String = "json"): DocsFormattedContentDto = docsCall { api ->
         api.formattedContent(id = id, format = format)
     }
 
-    suspend fun threads(id: String): List<DocsThreadDto> = docsCall { api.threads(id) }
+    suspend fun threads(id: String): List<DocsThreadDto> = docsCall { api -> api.threads(id) }
 
-    suspend fun createThread(id: String, bodyInlines: Any): DocsThreadDto = docsCall {
+    suspend fun createThread(id: String, bodyInlines: Any): DocsThreadDto = docsCall { api ->
         api.createThread(id, DocsThreadCreateRequest(body = bodyInlines))
     }
 
     suspend fun deleteThread(id: String, threadId: String) {
-        docsCall { api.deleteThread(id, threadId) }
+        docsCall { api -> api.deleteThread(id, threadId) }
     }
 
     suspend fun setThreadResolved(id: String, threadId: String, resolved: Boolean) {
-        docsCall { if (resolved) api.resolveThread(id, threadId) else api.unresolveThread(id, threadId) }
+        docsCall { api -> if (resolved) api.resolveThread(id, threadId) else api.unresolveThread(id, threadId) }
     }
 
-    suspend fun createComment(id: String, threadId: String, bodyInlines: Any): DocsCommentDto = docsCall {
+    suspend fun createComment(id: String, threadId: String, bodyInlines: Any): DocsCommentDto = docsCall { api ->
         api.createComment(id, threadId, DocsCommentCreateRequest(body = bodyInlines))
     }
 
     suspend fun deleteComment(id: String, threadId: String, commentId: String) {
-        docsCall { api.deleteComment(id, threadId, commentId) }
+        docsCall { api -> api.deleteComment(id, threadId, commentId) }
     }
 
     suspend fun addReaction(id: String, threadId: String, commentId: String, emoji: String) {
-        docsCall { api.addReaction(id, threadId, commentId, DocsReactionRequest(emoji = emoji)) }
+        docsCall { api -> api.addReaction(id, threadId, commentId, DocsReactionRequest(emoji = emoji)) }
     }
 
     /** UserLightSerializer omits IDs. Only the server can identify an existing own reaction. */
@@ -186,19 +185,19 @@ class DocsRepository(private val session: DocsSessionManager) {
     }
 
     suspend fun removeReaction(id: String, threadId: String, commentId: String, emoji: String) {
-        docsCall { api.removeReaction(id, threadId, commentId, DocsReactionRequest(emoji = emoji)) }
+        docsCall { api -> api.removeReaction(id, threadId, commentId, DocsReactionRequest(emoji = emoji)) }
     }
 
-    suspend fun versions(id: String, marker: String? = null): DocsVersionsDto = docsCall {
+    suspend fun versions(id: String, marker: String? = null): DocsVersionsDto = docsCall { api ->
         api.versions(id = id, marker = marker)
     }
 
-    suspend fun version(id: String, versionId: String): DocsVersionDto = docsCall {
+    suspend fun version(id: String, versionId: String): DocsVersionDto = docsCall { api ->
         api.version(id = id, versionId = versionId)
     }
 
     // ResourceAccessViewsetMixin.list returns an unpaginated JSON array.
-    suspend fun allAccesses(id: String): List<DocsAccessDto> = docsCall { api.accesses(id) }
+    suspend fun allAccesses(id: String): List<DocsAccessDto> = docsCall { api -> api.accesses(id) }
 
     suspend fun allInvitations(id: String): List<DocsInvitationDto> {
         val result = mutableListOf<DocsInvitationDto>()
@@ -210,52 +209,52 @@ class DocsRepository(private val session: DocsSessionManager) {
         return result.distinctBy { it.id }
     }
 
-    suspend fun createAccess(id: String, userId: String, role: String): DocsAccessDto = docsCall {
+    suspend fun createAccess(id: String, userId: String, role: String): DocsAccessDto = docsCall { api ->
         api.createAccess(id, DocsAccessCreateRequest(userId = userId, role = role))
     }
 
-    suspend fun updateAccess(id: String, accessId: String, role: String): DocsAccessDto = docsCall {
+    suspend fun updateAccess(id: String, accessId: String, role: String): DocsAccessDto = docsCall { api ->
         api.updateAccess(id, accessId, DocsAccessUpdateRequest(role = role))
     }
 
     suspend fun deleteAccess(id: String, accessId: String) {
-        docsCall { api.deleteAccess(id, accessId) }
+        docsCall { api -> api.deleteAccess(id, accessId) }
     }
 
-    suspend fun invitations(id: String, page: Int = 1, pageSize: Int = 200): DocsInvitationPageDto = docsCall {
+    suspend fun invitations(id: String, page: Int = 1, pageSize: Int = 200): DocsInvitationPageDto = docsCall { api ->
         api.invitations(id = id, page = page, pageSize = pageSize)
     }
 
-    suspend fun createInvitation(id: String, email: String, role: String): DocsInvitationDto = docsCall {
+    suspend fun createInvitation(id: String, email: String, role: String): DocsInvitationDto = docsCall { api ->
         api.createInvitation(id, DocsInvitationCreateRequest(email = email, role = role))
     }
 
     suspend fun deleteInvitation(id: String, invitationId: String) {
-        docsCall { api.deleteInvitation(id, invitationId) }
+        docsCall { api -> api.deleteInvitation(id, invitationId) }
     }
 
-    suspend fun updateLinkConfiguration(id: String, linkReach: String, linkRole: String) {
-        docsCall { api.updateLinkConfiguration(id, DocsLinkConfigurationRequest(linkReach, linkRole)) }
+    suspend fun updateLinkConfiguration(id: String, linkReach: String, linkRole: String?) {
+        docsCall { api -> api.updateLinkConfiguration(id, DocsLinkConfigurationRequest(linkReach, linkRole)) }
     }
 
     suspend fun leave(id: String) {
-        docsCall { api.leave(id) }
+        docsCall { api -> api.leave(id) }
     }
 
-    suspend fun accessRequests(id: String, page: Int = 1, pageSize: Int = 50): DocsAccessRequestPageDto = docsCall {
+    suspend fun accessRequests(id: String, page: Int = 1, pageSize: Int = 50): DocsAccessRequestPageDto = docsCall { api ->
         api.accessRequests(id = id, page = page, pageSize = pageSize)
     }
 
     suspend fun createAccessRequest(id: String, role: String = "reader") {
-        docsCall { api.createAccessRequest(id, DocsAccessRequestCreate(role = role)) }
+        docsCall { api -> api.createAccessRequest(id, DocsAccessRequestCreate(role = role)) }
     }
 
-    suspend fun searchUsers(q: String, documentId: String? = null): List<DocsUserDto> = docsCall {
+    suspend fun searchUsers(q: String, documentId: String? = null): List<DocsUserDto> = docsCall { api ->
         api.searchUsers(q = q, documentId = documentId)
     }
 
     /** 当前登录的 docs 用户(评论表情归属判断用)。 */
-    suspend fun me(): DocsUserDto = docsCall { api.me() }
+    suspend fun me(): DocsUserDto = docsCall { api -> api.me() }
 
     companion object {
         const val PAGE_SIZE = 20

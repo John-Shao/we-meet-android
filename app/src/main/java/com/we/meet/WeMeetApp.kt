@@ -74,18 +74,37 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         private set
     /** Doc media needs the docs session cookie — a dedicated Coil loader. */
     private var cachedDocsMediaLoader: ImageLoader? = null
+    private var docsMediaGeneration = -1L
+    override val docsAccountKey: String?
+        get() {
+            if (!tokenStore.isLoggedIn()) return null
+            val user = tokenStore.userId ?: tokenStore.phone ?: return null
+            return "${BuildConfig.WE_MEET_KEYCLOAK_URL}/realms/meet:$user"
+        }
     override val docsMediaLoader: ImageLoader
-        get() = cachedDocsMediaLoader ?: ImageLoader.Builder(this)
-            .okHttpClient(docsSessionManager.okHttp)
-            .respectCacheHeaders(false)
-            .diskCache {
-                DiskCache.Builder()
-                    .directory(cacheDir.resolve("docs_image_cache"))
-                    .maxSizeBytes(64L * 1024L * 1024L)
-                    .build()
+        get() {
+            val generation = docsSessionManager.generation
+            if (docsMediaGeneration != generation) {
+                cachedDocsMediaLoader?.shutdown()
+                cachedDocsMediaLoader?.memoryCache?.clear()
+                cachedDocsMediaLoader = null
+                docsMediaGeneration = generation
             }
+            return cachedDocsMediaLoader ?: ImageLoader.Builder(this)
+            .okHttpClient(docsSessionManager.okHttp)
+            .respectCacheHeaders(true)
+            .diskCache(null)
             .build()
             .also { cachedDocsMediaLoader = it }
+        }
+
+    fun clearDocsSession() {
+        docsSessionManager.invalidate()
+        com.we.meet.ui.docs.clearDocsWebViews()
+        cachedDocsMediaLoader?.shutdown()
+        cachedDocsMediaLoader?.memoryCache?.clear()
+        cachedDocsMediaLoader = null
+    }
 
     /**
      * Holds a meeting slug pulled from an incoming App Links / deep-link
