@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -63,6 +64,7 @@ fun DocsSearchScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .padding(horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -98,6 +100,9 @@ fun DocsSearchScreen(
                     icon = Icons.Outlined.Description,
                 )
                 else -> SearchResults(
+                    hasMore = state.hasMore,
+                    loadingMore = state.loadingMore,
+                    onLoadMore = vm::loadMore,
                     results = state.results,
                     onOpenDoc = onOpenDoc,
                     onClearFocus = { focusManager.clearFocus() },
@@ -109,6 +114,9 @@ fun DocsSearchScreen(
 
 @Composable
 private fun SearchResults(
+    hasMore: Boolean,
+    loadingMore: Boolean,
+    onLoadMore: () -> Unit,
     results: List<DocumentDto>,
     onOpenDoc: (String) -> Unit,
     onClearFocus: () -> Unit,
@@ -119,6 +127,11 @@ private fun SearchResults(
                 onClearFocus()
                 onOpenDoc(doc.id)
             })
+        }
+        if (hasMore) item {
+            androidx.compose.material3.TextButton(onClick = onLoadMore, enabled = !loadingMore, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.docs_versions_more))
+            }
         }
     }
 }

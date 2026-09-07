@@ -406,7 +406,7 @@ fun AppNav() {
     // → 原生详情;否则走既有 WebView 查看器兜底(老版本/降级行为不变)。
     val openDocUrl: (String) -> Unit = { url ->
         val docId = if (com.we.meet.BuildConfig.WE_MEET_DOCS_NATIVE) {
-            com.we.meet.feature.docs.util.DocLinks.docIdFromUrl(url)
+            com.we.meet.feature.docs.util.DocLinks.docIdFromUrl(url, com.we.meet.BuildConfig.WE_MEET_DOCS_URL)
         } else {
             null
         }

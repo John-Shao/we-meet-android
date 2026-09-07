@@ -74,6 +74,7 @@ fun DocDetailScreen(
 ) {
     val context = LocalContext.current
     val vm: DocDetailViewModel = viewModel(
+        key = "doc:$docId",
         factory = viewModelFactory {
             initializer { DocDetailViewModel(deps.docsRepository, docId) }
         },
@@ -88,6 +89,7 @@ fun DocDetailScreen(
     var showComments by rememberSaveable { mutableStateOf(false) }
     var showVersions by rememberSaveable { mutableStateOf(false) }
     var showShare by rememberSaveable { mutableStateOf(false) }
+    var showChildren by rememberSaveable(docId) { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         vm.toasts.collect { resId ->
@@ -98,9 +100,9 @@ fun DocDetailScreen(
     // 30s 轻轮询,仅前台可见时(设计文档 §4.7.4);回到前台先重拉一次文档/权限,
     // 覆盖「PC 批准 ask-for-access 后 Android 详情恢复可见」(§4.7.6 用例 7)。
     val lifecycleOwner = LocalLifecycleOwner.current
-    LaunchedEffect(lifecycleOwner) {
+    LaunchedEffect(lifecycleOwner, vm) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            vm.load()
+            vm.refresh()
             while (true) {
                 delay(POLL_INTERVAL_MS)
                 vm.pollContent()
@@ -118,7 +120,7 @@ fun DocDetailScreen(
                 onBack = onBack,
                 actions = {
                     if (doc != null) {
-                        IconButton(onClick = vm::toggleFavorite) {
+                        IconButton(onClick = vm::toggleFavorite, enabled = doc.abilities.favorite) {
                             Icon(
                                 imageVector = if (doc.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
                                 contentDescription = stringResource(
@@ -151,6 +153,16 @@ fun DocDetailScreen(
                                         },
                                     )
                                 }
+                                if (doc.abilities.childrenList) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.docs_children), softWrap = false) },
+                                        onClick = { menuExpanded = false; showChildren = true },
+                                    )
+                                }
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.docs_open_web), softWrap = false) },
+                                    onClick = { menuExpanded = false; onOpenWebUrl(DocLinks.webUrl(deps.docsBaseUrl, doc.id)) },
+                                )
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.docs_copy_link), softWrap = false) },
                                     onClick = {
@@ -207,7 +219,7 @@ fun DocDetailScreen(
                     requestSent = state.requestSent,
                     onRequest = vm::requestAccess,
                 )
-                state.error -> WeMeetErrorState(
+                state.error && doc == null -> WeMeetErrorState(
                     onRetry = vm::load,
                     message = stringResource(R.string.docs_load_error),
                 )
@@ -227,7 +239,11 @@ fun DocDetailScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = Dimens.SpaceXs),
                     )
-                    Box(Modifier.weight(1f).fillMaxWidth()) {
+                    androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+                        isRefreshing = state.refreshing,
+                        onRefresh = vm::load,
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                    ) {
                         when {
                             state.contentLoading && state.blocks.isEmpty() -> WeMeetLoading()
                             state.contentError && state.blocks.isEmpty() -> Column {
@@ -247,8 +263,8 @@ fun DocDetailScreen(
                                 imageLoader = deps.docsMediaLoader,
                                 onOpenDoc = onOpenDoc,
                                 onOpenUrl = { url ->
-                                    if (DocLinks.docIdFromUrl(url) != null) {
-                                        DocLinks.docIdFromUrl(url)?.let(onOpenDoc)
+                                    if (DocLinks.docIdFromUrl(url, deps.docsBaseUrl) != null) {
+                                        DocLinks.docIdFromUrl(url, deps.docsBaseUrl)?.let(onOpenDoc)
                                     } else {
                                         runCatching { uriHandler.openUri(url) }
                                     }
@@ -259,7 +275,7 @@ fun DocDetailScreen(
                             )
                         }
                     }
-                    if (doc.abilities.update) {
+                    if (doc.abilities.canEdit) {
                         PrimaryButton(
                             text = stringResource(R.string.docs_edit),
                             onClick = {
@@ -278,22 +294,32 @@ fun DocDetailScreen(
                         SecondaryButton(
                             text = stringResource(R.string.docs_comments),
                             onClick = { showComments = true },
+                            enabled = doc.abilities.comment,
                             modifier = Modifier.weight(1f).padding(end = Dimens.SpaceXs),
                         )
                         SecondaryButton(
                             text = stringResource(R.string.docs_versions),
                             onClick = { showVersions = true },
+                            enabled = doc.abilities.versionsList,
                             modifier = Modifier.weight(1f).padding(horizontal = Dimens.SpaceXs),
                         )
                         PrimaryButton(
                             text = stringResource(R.string.docs_share),
                             onClick = { showShare = true },
+                            enabled = doc.abilities.accessesView,
                             modifier = Modifier.weight(1f).padding(start = Dimens.SpaceXs),
                         )
                     }
                 }
             }
         }
+    }
+
+    if (showChildren && doc != null) {
+        DocChildrenSheet(deps, doc, onDismiss = { showChildren = false }, onOpenDoc = {
+            showChildren = false
+            onOpenDoc(it)
+        })
     }
 
     if (showRename) {
@@ -350,7 +376,10 @@ fun DocDetailScreen(
             deps = deps,
             docId = docId,
             onDismiss = { showVersions = false },
-            onRestored = vm::loadContent,
+            onOpenVersion = { versionId ->
+                showVersions = false
+                onOpenEditor(DocLinks.webUrl(deps.docsBaseUrl, docId) + "?embed=1&chrome=editor&version=" + android.net.Uri.encode(versionId))
+            },
         )
     }
 

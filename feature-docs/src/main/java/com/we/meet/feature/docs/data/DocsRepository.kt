@@ -2,14 +2,12 @@ package com.we.meet.feature.docs.data
 
 import com.we.meet.feature.docs.data.net.DocsAccessCreateRequest
 import com.we.meet.feature.docs.data.net.DocsAccessDto
-import com.we.meet.feature.docs.data.net.DocsAccessPageDto
 import com.we.meet.feature.docs.data.net.DocsAccessRequestCreate
 import com.we.meet.feature.docs.data.net.DocsAccessRequestPageDto
 import com.we.meet.feature.docs.data.net.DocsAccessUpdateRequest
 import com.we.meet.feature.docs.data.net.DocsApi
 import com.we.meet.feature.docs.data.net.DocsCommentCreateRequest
 import com.we.meet.feature.docs.data.net.DocsCommentDto
-import com.we.meet.feature.docs.data.net.DocsContentUpdateRequest
 import com.we.meet.feature.docs.data.net.DocsCreateRequest
 import com.we.meet.feature.docs.data.net.DocsFormattedContentDto
 import com.we.meet.feature.docs.data.net.DocsInvitationCreateRequest
@@ -41,12 +39,20 @@ class DocsRepository(private val session: DocsSessionManager) {
 
     suspend fun <T> docsCall(retries: Int = 1, block: suspend () -> T): T {
         session.ensureSession()
+        val sessionId = session.store.sessionId
         return try {
             block()
         } catch (e: HttpException) {
-            if (e.code() == 401 && retries > 0) {
-                session.invalidate()
-                session.ensureSession()
+            val authFailure = e.code() == 401 || (e.code() == 403 && retries > 0 &&
+                (e.response()?.errorBody()?.string().orEmpty().contains("CSRF Failed") ||
+                    try {
+                        api.me()
+                        false
+                    } catch (probe: HttpException) {
+                        probe.code() == 401 || probe.code() == 403
+                    }))
+            if (authFailure && retries > 0) {
+                session.renewSession(sessionId)
                 docsCall(retries = retries - 1, block = block)
             } else {
                 throw e
@@ -74,7 +80,11 @@ class DocsRepository(private val session: DocsSessionManager) {
         api.trashbin(page = page, pageSize = pageSize)
     }
 
-    suspend fun search(q: String): DocsPageDto = docsCall { api.search(q = q) }
+    suspend fun search(q: String, page: Int = 1): DocsPageDto = docsCall { api.search(q = q, page = page) }
+
+    suspend fun createChild(parentId: String, title: String): DocumentDto = docsCall {
+        api.createChild(parentId, DocsCreateRequest(title))
+    }
 
     suspend fun document(id: String): DocumentDto = docsCall { api.document(id) }
 
@@ -113,16 +123,22 @@ class DocsRepository(private val session: DocsSessionManager) {
         api.children(id = id, page = page, pageSize = pageSize)
     }
 
+    suspend fun moveCandidates(parentId: String? = null): List<DocumentDto> {
+        val documents = mutableListOf<DocumentDto>()
+        var page = 1
+        do {
+            val response = if (parentId == null) list(page++, pageSize = 200, ordering = "title")
+                else children(parentId, page++, pageSize = 200)
+            documents.addAll(response.results)
+        } while (response.next != null)
+        return documents.distinctBy { it.id }
+    }
+
     // ---- M2: read mode / comments / versions / share ----
 
     /** BlockNote JSON formatted content (fallback chain lives in the VM). */
     suspend fun formattedContent(id: String, format: String = "json"): DocsFormattedContentDto = docsCall {
         api.formattedContent(id = id, format = format)
-    }
-
-    /** Restore a version: PUT its opaque base64 content straight back. */
-    suspend fun restoreContent(id: String, base64Content: String) {
-        docsCall { api.updateContent(id, DocsContentUpdateRequest(content = base64Content)) }
     }
 
     suspend fun threads(id: String): List<DocsThreadDto> = docsCall { api.threads(id) }
@@ -151,6 +167,24 @@ class DocsRepository(private val session: DocsSessionManager) {
         docsCall { api.addReaction(id, threadId, commentId, DocsReactionRequest(emoji = emoji)) }
     }
 
+    /** UserLightSerializer omits IDs. Only the server can identify an existing own reaction. */
+    suspend fun toggleReaction(id: String, threadId: String, commentId: String, emoji: String, mine: Boolean) {
+        if (mine) {
+            removeReaction(id, threadId, commentId, emoji)
+            return
+        }
+        try {
+            addReaction(id, threadId, commentId, emoji)
+        } catch (error: retrofit2.HttpException) {
+            val alreadyReacted = error.code() == 400 && runCatching {
+                org.json.JSONObject(error.response()?.errorBody()?.string().orEmpty())
+                    .optBoolean("user_already_reacted", false)
+            }.getOrDefault(false)
+            if (!alreadyReacted) throw error
+            removeReaction(id, threadId, commentId, emoji)
+        }
+    }
+
     suspend fun removeReaction(id: String, threadId: String, commentId: String, emoji: String) {
         docsCall { api.removeReaction(id, threadId, commentId, DocsReactionRequest(emoji = emoji)) }
     }
@@ -163,8 +197,17 @@ class DocsRepository(private val session: DocsSessionManager) {
         api.version(id = id, versionId = versionId)
     }
 
-    suspend fun accesses(id: String, page: Int = 1, pageSize: Int = 200): DocsAccessPageDto = docsCall {
-        api.accesses(id = id, page = page, pageSize = pageSize)
+    // ResourceAccessViewsetMixin.list returns an unpaginated JSON array.
+    suspend fun allAccesses(id: String): List<DocsAccessDto> = docsCall { api.accesses(id) }
+
+    suspend fun allInvitations(id: String): List<DocsInvitationDto> {
+        val result = mutableListOf<DocsInvitationDto>()
+        var page = 1
+        do {
+            val response = invitations(id, page++)
+            result.addAll(response.results)
+        } while (response.next != null)
+        return result.distinctBy { it.id }
     }
 
     suspend fun createAccess(id: String, userId: String, role: String): DocsAccessDto = docsCall {

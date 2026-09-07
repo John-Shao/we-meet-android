@@ -120,6 +120,12 @@ fun DocsNavDrawer(
                     onSelectFilter(DocsHomeViewModel.Filter.SHARED)
                 }
                 DrawerItemRow(
+                    Icons.Outlined.Description,
+                    stringResource(R.string.docs_filter_favorites),
+                    null,
+                    selected = selectedFilter == DocsHomeViewModel.Filter.FAVORITES,
+                ) { onSelectFilter(DocsHomeViewModel.Filter.FAVORITES) }
+                DrawerItemRow(
                     Icons.Outlined.DeleteOutline,
                     stringResource(R.string.docs_nav_trash),
                     trashCount?.toString(),

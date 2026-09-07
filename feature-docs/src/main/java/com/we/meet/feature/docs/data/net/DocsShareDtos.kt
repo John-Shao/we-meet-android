@@ -15,12 +15,6 @@ data class DocsFormattedContentDto(
     @Json(name = "updated_at") val updatedAt: String? = null,
 )
 
-@JsonClass(generateAdapter = true)
-data class DocsContentUpdateRequest(
-    val content: String,
-    val websocket: Boolean = false,
-)
-
 // ---- Threads / comments / reactions ----
 
 @JsonClass(generateAdapter = true)
@@ -33,17 +27,17 @@ data class DocsThreadDto(
     val comments: List<DocsCommentDto> = emptyList(),
     val resolved: Boolean = false,
     @Json(name = "resolved_at") val resolvedAt: String? = null,
-    @Json(name = "resolved_by") val resolvedBy: DocsUserDto? = null,
+    @Json(name = "resolved_by") val resolvedBy: String? = null,
 )
 
 @JsonClass(generateAdapter = true)
 data class DocsThreadAbilitiesDto(
     val destroy: Boolean = false,
     val resolve: Boolean = false,
-    val comment: Boolean = false,
+    val unresolve: Boolean = false,
 )
 
-/** write-only: body = BlockNote inline JSON (first comment). */
+/** write-only: body = BlockNote block JSON (first comment). */
 @JsonClass(generateAdapter = true)
 data class DocsThreadCreateRequest(val body: Any)
 
@@ -51,7 +45,7 @@ data class DocsThreadCreateRequest(val body: Any)
 data class DocsCommentDto(
     val id: String = "",
     val user: DocsUserDto? = null,
-    /** BlockNote inline JSON — may be a plain string in legacy data. */
+    /** BlockNote block JSON — may be an inline array or plain string in legacy data. */
     val body: Any? = null,
     @Json(name = "created_at") val createdAt: String? = null,
     @Json(name = "updated_at") val updatedAt: String? = null,
@@ -63,7 +57,7 @@ data class DocsCommentDto(
 data class DocsCommentAbilitiesDto(
     val destroy: Boolean = false,
     val update: Boolean = false,
-    val react: Boolean = false,
+    @Json(name = "reactions") val react: Boolean = false,
 )
 
 @JsonClass(generateAdapter = true)
@@ -99,21 +93,13 @@ data class DocsVersionMetaDto(
 
 @JsonClass(generateAdapter = true)
 data class DocsVersionDto(
-    /** base64 Yjs update — opaque to us; PATCH it straight back to restore. */
+    /** base64 Yjs update — opaque to native; restore through the Web collaboration editor. */
     val content: String = "",
     @Json(name = "last_modified") val lastModified: String = "",
     val id: String = "",
 )
 
 // ---- Access / invitation / link configuration ----
-
-@JsonClass(generateAdapter = true)
-data class DocsAccessPageDto(
-    val count: Int = 0,
-    val next: String? = null,
-    val previous: String? = null,
-    val results: List<DocsAccessDto> = emptyList(),
-)
 
 @JsonClass(generateAdapter = true)
 data class DocsAccessDto(

@@ -5,12 +5,9 @@ import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,23 +16,19 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.R
-import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
-import kotlinx.coroutines.launch
 
 /**
  * 云文档编辑画布(M3,设计文档 §4.6):独立轻量 WebView,直载 `?chrome=editor`
- * 的收敛编辑器。仅当用户对该文档可编辑时才会进入(入口在原生详情页)。
- * 返回键先走 WebView 历史,退出即销毁——与常驻云文档 tab 互不干扰。
+ * 的收敛编辑器，也用于评论定位和版本预览。
+ * 有未保存正文时，系统返回与顶栏关闭都等待 Web 确认持久化成功。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,32 +38,19 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
     val webView =
         remember { createDocsWebView(context, darkTheme = darkTheme, deferInitialLoad = true) }
     // 评论锚定:编辑画布 URL 可带 `thread=<threadId>`,加载完成后让 docs 定位到该评论。
-    val threadId = remember(url) { commentThreadIdFromUrl(url) }
     LaunchedEffect(webView, url) { loadDocsEditorEntry(context, webView, url) }
-    var canGoBack by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var everLoaded by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf(false) }
-    // 原生标题编辑(设计文档 §4.6):标题编辑框放在 WebView 上方,保存走 PATCH。
-    val app = context.applicationContext as? com.we.meet.WeMeetApp
-    val docId = remember(url) { com.we.meet.feature.docs.util.DocLinks.docIdFromUrl(url) }
-    var docTitle by remember(docId) { mutableStateOf<String?>(null) }
-    var titleSaving by remember(docId) { mutableStateOf(false) }
+    // 标题使用 Web 自身组件，避免两套标题状态并发覆盖。
+    val docId = remember(url) { com.we.meet.feature.docs.util.DocLinks.docIdFromUrl(url, com.we.meet.BuildConfig.WE_MEET_DOCS_URL) }
     var editorDirty by remember(docId) { mutableStateOf(false) }
     var showUnsavedDialog by remember(docId) { mutableStateOf(false) }
-    val titleScope = rememberCoroutineScope()
-    LaunchedEffect(docId) {
-        if (docId != null && app != null) {
-            try {
-                val doc = app.docsRepository.document(docId)
-                docTitle = doc.displayTitle
-            } catch (_: Exception) { /* 标题加载失败回退为空,不阻断画布 */ }
-        }
-    }
-
+    var saveRequestId by remember(docId) { mutableStateOf<String?>(null) }
+    var saveFailed by remember(docId) { mutableStateOf(false) }
+    val currentOnClose by androidx.compose.runtime.rememberUpdatedState(onClose)
     DisposableEffect(webView) {
         val client = webView.webViewClient as? DocsWebViewClient
-        client?.onHistoryChanged = { canGoBack = webView.canGoBack() }
         client?.onLoadingChanged = { l ->
             loading = l
             if (l) error = false else everLoaded = true
@@ -78,32 +58,37 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
         client?.onMainFrameError = { error = true; loading = false }
         // 脏检查(设计文档 §4.6):docs 编辑器保存队列未同步时上报,宿主据此守卫返回。
         client?.onEditorDirty = { dirty -> editorDirty = dirty }
+        client?.onEditorSaveResult = { requestId, success ->
+            if (requestId == saveRequestId) {
+                saveRequestId = null
+                if (success) {
+                    editorDirty = false
+                    currentOnClose()
+                } else {
+                    saveFailed = true
+                }
+            }
+        }
         onDispose {
             client?.onHistoryChanged = null
             client?.onLoadingChanged = null
             client?.onMainFrameError = null
             client?.onEditorDirty = null
+            client?.onEditorSaveResult = null
             (webView.parent as? ViewGroup)?.removeView(webView)
             webView.destroy()
         }
     }
-    // 页面首次加载完成后,若带评论线程锚定,注入 wemeet-navigate-comment 让 docs 定位。
-    LaunchedEffect(everLoaded, threadId) {
-        if (everLoaded && threadId != null) {
-            postToDocs(
-                webView,
-                org.json.JSONObject()
-                    .put("type", "wemeet-navigate-comment")
-                    .put("threadId", threadId),
-            )
-        }
+    // URL 中的评论/版本参数由 Web 在编辑器数据就绪后消费。
+    val requestClose = {
+        if (editorDirty) showUnsavedDialog = true else currentOnClose()
     }
-    // 返回键:脏时先弹「有未保存更改」守卫(继续编辑/放弃/保存并退出)。
-    BackHandler(enabled = canGoBack || editorDirty) {
-        if (editorDirty) {
-            showUnsavedDialog = true
-        } else {
-            webView.goBack()
+    BackHandler { requestClose() }
+    LaunchedEffect(saveRequestId) {
+        if (saveRequestId != null) {
+            kotlinx.coroutines.delay(15_000)
+            saveRequestId = null
+            saveFailed = true
         }
     }
 
@@ -111,7 +96,7 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
         topBar = {
             WeMeetTopBar(
                 title = stringResource(R.string.docs_editor_title),
-                onClose = onClose,
+                onClose = requestClose,
             )
         },
     ) { padding ->
@@ -122,23 +107,6 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
                 .consumeWindowInsets(padding)
                 .imePadding(),
         ) {
-            if (docId != null && app != null) {
-                DocTitleEditField(
-                    title = docTitle.orEmpty(),
-                    enabled = !titleSaving,
-                    onCommit = { newTitle ->
-                        val trimmed = newTitle.trim()
-                        if (trimmed.isNotEmpty() && trimmed != docTitle) {
-                            titleSaving = true
-                            titleScope.launch {
-                                runCatching { app.docsRepository.rename(docId, trimmed) }
-                                    .onSuccess { docTitle = trimmed }
-                                titleSaving = false
-                            }
-                        }
-                    },
-                )
-            }
             androidx.compose.foundation.layout.Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -159,26 +127,29 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
 
     if (showUnsavedDialog) {
         androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showUnsavedDialog = false },
+            onDismissRequest = { if (saveRequestId == null) showUnsavedDialog = false },
             title = { Text(stringResource(R.string.docs_editor_unsaved_title)) },
-            text = { Text(stringResource(R.string.docs_editor_unsaved_desc)) },
+            text = { Text(stringResource(if (saveFailed) R.string.docs_editor_save_failed else R.string.docs_editor_unsaved_desc)) },
             confirmButton = {
                 androidx.compose.material3.TextButton(
                     onClick = {
                         // 保存并退出:先让 docs 落库,再回退。
+                        val requestId = java.util.UUID.randomUUID().toString()
+                        saveFailed = false
+                        saveRequestId = requestId
                         postToDocs(
                             webView,
-                            org.json.JSONObject().put("type", "wemeet-save-now"),
+                            org.json.JSONObject().put("type", "wemeet-save-now")
+                                .put("docId", docId).put("requestId", requestId),
                         )
-                        showUnsavedDialog = false
-                        editorDirty = false
-                        onClose()
                     },
+                    enabled = saveRequestId == null,
                 ) { Text(stringResource(R.string.docs_editor_unsaved_save)) }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(
                     onClick = { showUnsavedDialog = false },
+                    enabled = saveRequestId == null,
                 ) { Text(stringResource(R.string.docs_editor_unsaved_continue)) }
             },
         )
@@ -250,64 +221,5 @@ fun DocsViewerScreen(url: String, onClose: () -> Unit) {
                 onRetry = { error = false; loading = true; webView.reload() },
             )
         }
-    }
-}
-
-/** 从编辑画布 URL 提取 `thread=<threadId>`(评论锚定),无则 null。 */
-private fun commentThreadIdFromUrl(url: String): String? =
-    runCatching { android.net.Uri.parse(url).getQueryParameter("thread") }
-        .getOrNull()
-        ?.takeIf { it.isNotBlank() }
-
-/**
- * 编辑画布的原生标题编辑框(设计文档 §4.6):放在 WebView 上方,专注正文标题;
- * 失焦/回车提交 PATCH。正文仍由 WebView 内的 docs 编辑器负责。
- */
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-@Composable
-private fun DocTitleEditField(
-    title: String,
-    enabled: Boolean,
-    onCommit: (String) -> Unit,
-) {
-    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
-    var editing by remember { mutableStateOf(false) }
-    var draft by remember(title) { mutableStateOf(title) }
-    androidx.compose.foundation.layout.Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
-    ) {
-        androidx.compose.material3.OutlinedTextField(
-            value = draft,
-            onValueChange = { draft = it },
-            enabled = enabled,
-            singleLine = true,
-            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                imeAction = androidx.compose.ui.text.input.ImeAction.Done,
-            ),
-            keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                onDone = {
-                    editing = false
-                    onCommit(draft)
-                    keyboard?.hide()
-                },
-            ),
-            placeholder = { Text(stringResource(R.string.docs_editor_title_hint)) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .onFocusChanged {
-                    if (it.isFocused) {
-                        editing = true
-                    } else if (editing) {
-                        editing = false
-                        onCommit(draft)
-                    }
-                },
-            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface,
-            ),
-        )
     }
 }

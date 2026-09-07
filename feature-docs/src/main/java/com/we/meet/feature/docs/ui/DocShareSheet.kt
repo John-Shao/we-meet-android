@@ -69,6 +69,7 @@ fun DocShareSheet(
     onDocChanged: () -> Unit,
 ) {
     val vm: DocShareViewModel = viewModel(
+        key = "share:${doc.id}",
         factory = viewModelFactory {
             initializer { DocShareViewModel(deps.docsRepository, doc) }
         },
@@ -78,9 +79,15 @@ fun DocShareSheet(
     var inviteEmail by remember { mutableStateOf("") }
     var inviteRole by remember { mutableStateOf("reader") }
 
-    LaunchedEffect(Unit) { vm.load() }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
+    LaunchedEffect(vm) { vm.errors.collect { snackbar.showSnackbar(context.getString(R.string.docs_load_error)) } }
+    LaunchedEffect(vm) { vm.load() }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -92,6 +99,7 @@ fun DocShareSheet(
                 modifier = Modifier.padding(horizontal = Dimens.ScreenPadding),
             )
 
+            androidx.compose.material3.SnackbarHost(snackbar)
             when {
                 state.loading -> Box(Modifier.padding(top = Dimens.SpaceM)) { WeMeetLoading() }
                 state.error -> Box(Modifier.padding(top = Dimens.SpaceM)) {
@@ -117,7 +125,7 @@ fun DocShareSheet(
                                     .fillMaxWidth()
                                     .padding(horizontal = Dimens.ScreenPadding),
                             ) {
-                                LINK_REACHES.forEach { reach ->
+                                state.doc.abilities.linkSelectOptions.keys.forEach { reach ->
                                     FilterChip(
                                         selected = state.linkReach == reach,
                                         onClick = { vm.updateLink(reach = reach) },
@@ -130,7 +138,7 @@ fun DocShareSheet(
                                     .fillMaxWidth()
                                     .padding(horizontal = Dimens.ScreenPadding),
                             ) {
-                                LINK_ROLES.forEach { role ->
+                                state.doc.abilities.linkSelectOptions[state.linkReach].orEmpty().forEach { role ->
                                     FilterChip(
                                         selected = state.linkRole == role,
                                         onClick = { vm.updateLink(role = role) },
@@ -161,7 +169,7 @@ fun DocShareSheet(
                     }
 
                     // 添加成员
-                    item(key = "add-member") {
+                    if (state.doc.abilities.accessesManage) item(key = "add-member") {
                         Text(
                             text = stringResource(R.string.docs_share_add_member),
                             style = MaterialTheme.typography.titleSmall,
@@ -196,7 +204,7 @@ fun DocShareSheet(
                     }
 
                     // 邀请(邮箱)
-                    item(key = "invite") {
+                    if (state.doc.abilities.accessesManage) item(key = "invite") {
                         Text(
                             text = stringResource(R.string.docs_share_invite_section),
                             style = MaterialTheme.typography.titleSmall,
@@ -227,8 +235,7 @@ fun DocShareSheet(
                                 onClick = {
                                     val email = inviteEmail.trim()
                                     if (email.isNotBlank()) {
-                                        vm.invite(email, inviteRole)
-                                        inviteEmail = ""
+                                        vm.invite(email, inviteRole) { inviteEmail = "" }
                                     }
                                 },
                                 enabled = inviteEmail.isNotBlank(),
@@ -248,7 +255,7 @@ fun DocShareSheet(
                     }
 
                     // 离开
-                    item(key = "leave") {
+                    if (state.doc.abilities.leave) item(key = "leave") {
                         TextButton(onClick = { showLeave = true }) {
                             Text(
                                 text = stringResource(R.string.docs_share_leave),
@@ -452,27 +459,29 @@ class DocShareViewModel(
     private val _state = MutableStateFlow(
         UiState(
             doc = doc,
-            linkReach = doc.computedLinkReach ?: doc.linkReach.orEmpty(),
-            linkRole = doc.computedLinkRole ?: doc.linkRole.orEmpty(),
+            linkReach = doc.linkReach.orEmpty(),
+            linkRole = doc.linkRole.orEmpty(),
         ),
     )
     val state: StateFlow<UiState> = _state.asStateFlow()
 
+    val errors = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 4)
     private var searchJob: Job? = null
+    private var updatingLink = false
 
     fun load() {
         viewModelScope.launch {
             _state.update { it.copy(loading = true, error = false) }
-            val accesses = runCatching { repo.accesses(doc.id) }.getOrNull()
-            val invitations = runCatching { repo.invitations(doc.id) }.getOrNull()
+            val accesses = runCatching { repo.allAccesses(doc.id) }.getOrNull()
+            val invitations = if (doc.abilities.accessesManage) runCatching { repo.allInvitations(doc.id) }.getOrNull() else emptyList()
             val myRequest = runCatching { repo.accessRequests(doc.id) }.getOrNull()
-            if (accesses == null && invitations == null) {
+            if (accesses == null || invitations == null) {
                 _state.update { it.copy(loading = false, error = true) }
             } else {
                 _state.update {
                     it.copy(
-                        accesses = accesses?.results ?: emptyList(),
-                        invitations = invitations?.results ?: emptyList(),
+                        accesses = accesses.orEmpty(),
+                        invitations = invitations.orEmpty(),
                         requestedAccess = myRequest?.results?.isNotEmpty() == true,
                         loading = false,
                     )
@@ -482,23 +491,28 @@ class DocShareViewModel(
     }
 
     fun updateLink(reach: String? = null, role: String? = null) {
+        if (updatingLink) return
         val prevReach = _state.value.linkReach
         val prevRole = _state.value.linkRole
         val newReach = reach ?: prevReach
-        val newRole = role ?: prevRole
+        val options = _state.value.doc.abilities.linkSelectOptions[newReach].orEmpty()
+        val newRole = role ?: prevRole.takeIf { it in options } ?: options.firstOrNull().orEmpty()
+        if (newRole !in options) return
         if (newReach.isBlank() || newRole.isBlank()) return
         // 乐观更新;失败回滚,避免 chip 显示服务端并未生效的值。
         _state.update { it.copy(linkReach = newReach, linkRole = newRole) }
+        updatingLink = true
         viewModelScope.launch {
             runCatching { repo.updateLinkConfiguration(doc.id, newReach, newRole) }
-                .onFailure { _state.update { it.copy(linkReach = prevReach, linkRole = prevRole) } }
+                .onFailure { _state.update { it.copy(linkReach = prevReach, linkRole = prevRole) }; errors.tryEmit(Unit) }
+            updatingLink = false
         }
     }
 
     fun onUserQueryChange(query: String) {
         _state.update { it.copy(userQuery = query, userResults = if (query.isBlank()) emptyList() else it.userResults) }
         searchJob?.cancel()
-        if (query.isBlank()) return
+        if (query.isBlank()) { _state.update { it.copy(userSearching = false) }; return }
         searchJob = viewModelScope.launch {
             delay(300)
             _state.update { it.copy(userSearching = true) }
@@ -509,7 +523,7 @@ class DocShareViewModel(
                         _state.update { it.copy(userResults = users, userSearching = false) }
                     }
                 }
-                .onFailure { _state.update { it.copy(userSearching = false) } }
+                .onFailure { if (_state.value.userQuery == query) _state.update { it.copy(userSearching = false) } }
         }
     }
 
@@ -517,6 +531,7 @@ class DocShareViewModel(
         viewModelScope.launch {
             runCatching { repo.createAccess(doc.id, user.id, "reader") }
                 .onSuccess { load() }
+                .onFailure { errors.tryEmit(Unit) }
         }
     }
 
@@ -524,6 +539,7 @@ class DocShareViewModel(
         viewModelScope.launch {
             runCatching { repo.updateAccess(doc.id, access.id, role) }
                 .onSuccess { load() }
+                .onFailure { errors.tryEmit(Unit) }
         }
     }
 
@@ -537,10 +553,11 @@ class DocShareViewModel(
         }
     }
 
-    fun invite(email: String, role: String) {
+    fun invite(email: String, role: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             runCatching { repo.createInvitation(doc.id, email, role) }
-                .onSuccess { load() }
+                .onSuccess { onSuccess(); load() }
+                .onFailure { errors.tryEmit(Unit) }
         }
     }
 
@@ -548,6 +565,7 @@ class DocShareViewModel(
         viewModelScope.launch {
             runCatching { repo.deleteInvitation(doc.id, invitation.id) }
                 .onSuccess { load() }
+                .onFailure { errors.tryEmit(Unit) }
         }
     }
 
@@ -562,6 +580,7 @@ class DocShareViewModel(
         viewModelScope.launch {
             runCatching { repo.leave(doc.id) }
                 .onSuccess { onLeft() }
+                .onFailure { errors.tryEmit(Unit) }
         }
     }
 }

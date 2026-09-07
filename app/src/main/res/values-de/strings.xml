@@ -1030,4 +1030,5 @@
     <string name="waiting_no_token">Der Host hat deine Anfrage genehmigt, aber die Verbindungsdaten fehlen. Bitte versuche es erneut.</string>
     <string name="web_login_network_error">Netzwerkfehler</string>
     <string name="web_login_invalid_callback">Ungültiger Anmelde-Callback</string>
+    <string name="docs_editor_save_failed">Saving was not confirmed. Check your connection and retry. This page will stay open.</string>
 </resources>

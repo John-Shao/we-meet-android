@@ -1019,4 +1019,5 @@
     <string name="waiting_no_token">主持人已同意你加入，但连接信息缺失，请重试。</string>
     <string name="web_login_network_error">网络异常</string>
     <string name="web_login_invalid_callback">登录回调无效</string>
+    <string name="docs_editor_save_failed">保存未确认，请检查网络后重试。当前页面会保留。</string>
 </resources>

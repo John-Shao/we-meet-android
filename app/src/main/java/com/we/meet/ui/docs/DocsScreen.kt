@@ -83,6 +83,7 @@ internal class DocsWebViewClient : WebViewClient() {
      * 上报真/假,宿主据此在返回前弹「有未保存更改」守卫。Set by [DocsEditorScreen].
      */
     var onEditorDirty: ((Boolean) -> Unit)? = null
+    var onEditorSaveResult: ((String, Boolean) -> Unit)? = null
 
     /**
      * docs 挂载后宣告自己支持哪些内嵌协议(`wemeet-embed-hello`)。宿主收到后回一条
@@ -251,6 +252,9 @@ private class DocsHostBridge(
                         o.optBoolean("rightPanelOpen"),
                     )
                     "wemeet-editor-dirty" -> client.onEditorDirty?.invoke(o.optBoolean("dirty"))
+                    "wemeet-save-result" -> client.onEditorSaveResult?.invoke(
+                        o.optString("requestId"), o.optBoolean("success"),
+                    )
                 }
             }
         }.onFailure { Log.w(TAG, "[bridge] malformed postEvent payload", it) }
@@ -263,6 +267,7 @@ private class DocsHostBridge(
             "wemeet-open-search",
             "wemeet-panel-state",
             "wemeet-editor-dirty",
+            "wemeet-save-result",
         )
     }
 }
@@ -425,8 +430,8 @@ private fun withReadingMode(path: String): String = when {
 private fun docsRelativePathOrNull(url: String): String? {
     val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return null
     if (!uri.host.equals(DOCS_HOST, ignoreCase = true)) return null
-    val path = uri.path.orEmpty().ifEmpty { "/" }
-    val query = uri.query
+    val path = uri.encodedPath.orEmpty().ifEmpty { "/" }
+    val query = uri.encodedQuery
     return if (query.isNullOrEmpty()) path else "$path?$query"
 }
 

@@ -127,4 +127,9 @@
     <string name="docs_empty_shared_title">还没有人向你分享文档</string>
     <string name="docs_empty_shared_desc">别人分享给你的文档会出现在这里</string>
     <string name="cd_docs_nav">打开导航</string>
+    <string name="docs_version_preview">查看版本</string>
+    <string name="docs_children">子文档</string>
+    <string name="docs_children_empty">还没有子文档</string>
+    <string name="docs_comment_delete">删除评论</string>
+    <string name="docs_comment_delete_message">此评论将被永久删除。</string>
 </resources>

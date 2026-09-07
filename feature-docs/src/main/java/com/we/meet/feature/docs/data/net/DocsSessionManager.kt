@@ -1,7 +1,6 @@
 package com.we.meet.feature.docs.data.net
 
 import android.content.Context
-import android.util.Log
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.we.meet.feature.docs.DocsDeps
@@ -16,11 +15,11 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.security.SecureRandom
 
 /**
  * Native docs-session bootstrap (设计文档 §4.2).
@@ -55,6 +54,7 @@ class DocsSessionManager(
     /** Host of the docs site — cookies only ever attach to it. */
     private val docsHost: String =
         deps.docsBaseUrl.toHttpUrl().host
+    private val docsOrigin = deps.docsBaseUrl.toHttpUrl()
 
     // ---- Cookie jar: host-keyed in-memory map, hydrated from / persisted to the store ----
 
@@ -62,16 +62,21 @@ class DocsSessionManager(
 
     private val cookieJar = object : CookieJar {
         override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-            cookiesByHost[url.host] = cookies
+            if (!sameOrigin(url)) return
+            val existing = cookiesByHost[url.host] ?: loadForRequest(url)
+            cookiesByHost[url.host] = (existing.filterNot { old ->
+                cookies.any { it.name == old.name && it.domain == old.domain && it.path == old.path }
+            } + cookies).filter { it.expiresAt > System.currentTimeMillis() }
             for (cookie in cookies) {
-                if (cookie.name == COOKIE_SESSION_ID) store.sessionId = cookie.value
-                if (cookie.name == COOKIE_CSRF) store.csrfToken = cookie.value
+                val value = cookie.value.takeIf { cookie.expiresAt > System.currentTimeMillis() }
+                if (cookie.name == COOKIE_SESSION_ID) store.sessionId = value
+                if (cookie.name == COOKIE_CSRF) store.csrfToken = value
             }
         }
 
         override fun loadForRequest(url: HttpUrl): List<Cookie> {
-            cookiesByHost[url.host]?.let { return it }
-            if (url.host != docsHost) return emptyList()
+            if (!sameOrigin(url)) return emptyList()
+            cookiesByHost[url.host]?.let { return it.filter { c -> c.matches(url) && c.expiresAt > System.currentTimeMillis() } }
             // Process restart: re-seed the jar from the encrypted store.
             return buildList {
                 store.sessionId?.let { value ->
@@ -101,14 +106,16 @@ class DocsSessionManager(
     /** Mirrors the `csrftoken` cookie into `X-CSRFToken` for unsafe methods. */
     private val csrfInterceptor = Interceptor { chain ->
         val request = chain.request()
-        if (request.method in SAFE_METHODS) {
+        if (!sameOrigin(request.url) || request.method in SAFE_METHODS) {
             chain.proceed(request)
         } else {
             val token = store.csrfToken
             if (token == null) {
                 chain.proceed(request)
             } else {
-                chain.proceed(request.newBuilder().header(HEADER_CSRF, token).build())
+                chain.proceed(request.newBuilder().header(HEADER_CSRF, token)
+                    .header("Origin", docsOrigin.resolve("/")!!.toString().removeSuffix("/"))
+                    .header("Referer", docsOrigin.toString()).build())
             }
         }
     }
@@ -118,13 +125,8 @@ class DocsSessionManager(
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .cookieJar(cookieJar)
-        .addInterceptor(csrfInterceptor)
-        .apply { if (com.we.meet.feature.docs.BuildConfig.DEBUG) addInterceptor(docsLogging()) }
+        .addNetworkInterceptor(csrfInterceptor)
         .build()
-
-    private fun docsLogging(): Interceptor =
-        HttpLoggingInterceptor { msg -> Log.d("WeMeetHttp", msg) }
-            .apply { level = HttpLoggingInterceptor.Level.BASIC }
 
     private val docsRetrofit: Retrofit = Retrofit.Builder()
         .baseUrl(deps.docsBaseUrl.trimEnd('/') + "/")
@@ -143,6 +145,17 @@ class DocsSessionManager(
     private val ticketApi: DocsTicketApi = ticketRetrofit.create(DocsTicketApi::class.java)
 
     private val bootstrapMutex = Mutex()
+
+    private fun sameOrigin(url: HttpUrl) = url.scheme == docsOrigin.scheme &&
+        url.host == docsOrigin.host && url.port == docsOrigin.port
+
+    suspend fun renewSession(expiredSessionId: String?) = bootstrapMutex.withLock {
+        if (store.sessionId == expiredSessionId || !hasSession) {
+            store.clear()
+            cookiesByHost.clear()
+            bootstrapLocked()
+        }
+    }
 
     val hasSession: Boolean
         get() = !store.sessionId.isNullOrBlank()
@@ -174,11 +187,13 @@ class DocsSessionManager(
             .url
             ?: throw DocsSessionException("docs session ticket unavailable (docs not configured)")
         val request = Request.Builder().url(url).build()
+        if (!sameOrigin(request.url)) throw DocsSessionException("unexpected docs ticket origin")
         okHttp.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
                 throw DocsSessionException("docs session bootstrap failed: ${response.code}")
             }
         }
+        if (!hasSession) throw DocsSessionException("docs bootstrap did not establish a session")
         ensureCsrfToken()
     }
 
@@ -189,9 +204,10 @@ class DocsSessionManager(
      */
     private fun ensureCsrfToken() {
         if (!store.csrfToken.isNullOrBlank()) return
+        val random = SecureRandom()
         val token = buildString {
             val chars = "0123456789abcdef"
-            repeat(32) { append(chars.random()) }
+            repeat(32) { append(chars[random.nextInt(chars.length)]) }
         }
         store.csrfToken = token
         cookiesByHost[docsHost] = buildList {

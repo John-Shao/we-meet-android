@@ -127,4 +127,9 @@
     <string name="docs_empty_shared_title">Rien n\'a encore été partagé avec vous</string>
     <string name="docs_empty_shared_desc">Les documents partagés avec vous apparaîtront ici</string>
     <string name="cd_docs_nav">Ouvrir la navigation</string>
+    <string name="docs_version_preview">Voir la version</string>
+    <string name="docs_children">Sous-pages</string>
+    <string name="docs_children_empty">Aucune sous-page</string>
+    <string name="docs_comment_delete">Supprimer le commentaire</string>
+    <string name="docs_comment_delete_message">Ce commentaire sera supprimé définitivement.</string>
 </resources>

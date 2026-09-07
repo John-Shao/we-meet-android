@@ -127,4 +127,9 @@
     <string name="docs_empty_shared_title">Nothing shared with you yet</string>
     <string name="docs_empty_shared_desc">Documents shared with you will appear here</string>
     <string name="cd_docs_nav">Open navigation</string>
+    <string name="docs_version_preview">View version</string>
+    <string name="docs_children">Subpages</string>
+    <string name="docs_children_empty">No subpages yet</string>
+    <string name="docs_comment_delete">Delete comment</string>
+    <string name="docs_comment_delete_message">This comment will be permanently deleted.</string>
 </resources>

@@ -27,7 +27,7 @@ class DocsHomeViewModel(
 ) : ViewModel() {
 
     enum class Mode { HOME, TRASH }
-    enum class Filter { ALL, MINE, SHARED }
+    enum class Filter { ALL, MINE, SHARED, FAVORITES }
 
     data class UiState(
         val filter: Filter = Filter.ALL,
@@ -52,13 +52,17 @@ class DocsHomeViewModel(
     val toasts: SharedFlow<Int> = _toasts.asSharedFlow()
 
     private var page = 1
+    private var generation = 0
+    private var pageJob: kotlinx.coroutines.Job? = null
 
     init {
         refresh()
     }
 
     fun refresh() {
-        viewModelScope.launch {
+        val requestGeneration = ++generation
+        pageJob?.cancel()
+        pageJob = viewModelScope.launch {
             if (_state.value.items.isEmpty()) {
                 _state.update { it.copy(loading = true, error = false) }
             } else {
@@ -68,6 +72,7 @@ class DocsHomeViewModel(
             _state.update { it.copy(loadingMore = false) }
             page = 1
             val result = runCatching { fetchPage(1) }
+            if (requestGeneration != generation) return@launch
             result.onSuccess { pageDto ->
                 _state.update {
                     it.copy(
@@ -94,7 +99,7 @@ class DocsHomeViewModel(
 
     fun setFilter(filter: Filter) {
         if (_state.value.filter == filter) return
-        _state.update { it.copy(filter = filter) }
+        _state.update { it.copy(filter = filter, items = emptyList(), hasMore = false) }
         refresh()
     }
 
@@ -126,14 +131,16 @@ class DocsHomeViewModel(
     fun loadMore() {
         val state = _state.value
         if (state.loading || state.refreshing || state.loadingMore || !state.hasMore) return
-        viewModelScope.launch {
+        val requestGeneration = generation
+        pageJob = viewModelScope.launch {
             _state.update { it.copy(loadingMore = true) }
             val result = runCatching { fetchPage(page + 1) }
+            if (requestGeneration != generation) return@launch
             result.onSuccess { pageDto ->
                 page += 1
                 _state.update {
                     it.copy(
-                        items = it.items + pageDto.results,
+                        items = (it.items + pageDto.results).distinctBy { doc -> doc.id },
                         loadingMore = false,
                         hasMore = pageDto.next != null,
                     )
@@ -153,6 +160,7 @@ class DocsHomeViewModel(
                     _state.update { state ->
                         state.copy(items = state.items.map { if (it.id == doc.id) it.copy(isFavorite = !doc.isFavorite) else it })
                     }
+                    if (_state.value.filter == Filter.FAVORITES) refresh()
                 }
                 .onFailure { emitToast(R.string.docs_load_error) }
         }
@@ -179,6 +187,8 @@ class DocsHomeViewModel(
                 .onSuccess {
                     _state.update { state -> state.copy(items = state.items.filterNot { it.id == doc.id }) }
                     emitToast(R.string.docs_deleted_toast)
+                    refresh()
+                    refreshCounts()
                 }
                 .onFailure { emitToast(R.string.docs_load_error) }
         }
@@ -191,6 +201,8 @@ class DocsHomeViewModel(
                 .onSuccess {
                     _state.update { state -> state.copy(items = state.items.filterNot { it.id == doc.id }) }
                     emitToast(R.string.docs_restored_toast)
+                    refresh()
+                    refreshCounts()
                 }
                 .onFailure { emitToast(R.string.docs_load_error) }
         }
@@ -203,6 +215,8 @@ class DocsHomeViewModel(
                 .onSuccess {
                     _state.update { state -> state.copy(items = state.items.filterNot { it.id == doc.id }) }
                     emitToast(R.string.docs_moved_toast)
+                    refresh()
+                    refreshCounts()
                 }
                 .onFailure { emitToast(R.string.docs_load_error) }
         }
@@ -211,7 +225,11 @@ class DocsHomeViewModel(
     /** Creates a document; returns its id for navigation, or null on failure. */
     suspend fun create(title: String): String? =
         runCatching { repo.create(title) }
-            .onSuccess { emitToast(R.string.docs_created_toast) }
+            .onSuccess {
+                refresh()
+                refreshCounts()
+                emitToast(R.string.docs_created_toast)
+            }
             .onFailure { emitToast(R.string.docs_load_error) }
             .getOrNull()
             ?.id
@@ -222,8 +240,9 @@ class DocsHomeViewModel(
             isCreatorMe = when (_state.value.filter) {
                 Filter.MINE -> true
                 Filter.SHARED -> false
-                Filter.ALL -> null
+                Filter.ALL, Filter.FAVORITES -> null
             },
+            isFavorite = true.takeIf { _state.value.filter == Filter.FAVORITES },
             ordering = _state.value.ordering,
         )
         Mode.TRASH -> repo.trashbin(pageNumber)

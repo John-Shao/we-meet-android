@@ -364,6 +364,7 @@ private fun DocsListHeader(
                     DocsHomeViewModel.Filter.ALL -> R.string.docs_nav_all
                     DocsHomeViewModel.Filter.MINE -> R.string.docs_nav_mine
                     DocsHomeViewModel.Filter.SHARED -> R.string.docs_nav_shared
+                    DocsHomeViewModel.Filter.FAVORITES -> R.string.docs_filter_favorites
                 },
             ),
             style = MaterialTheme.typography.titleMedium,
@@ -423,6 +424,11 @@ private fun DocsEmptyState(
     onCreate: () -> Unit,
 ) {
     when (filter) {
+        DocsHomeViewModel.Filter.FAVORITES -> WeMeetEmptyState(
+            title = stringResource(R.string.docs_empty_favorites_title),
+            description = stringResource(R.string.docs_empty_favorites_description),
+            icon = Icons.Outlined.Description,
+        )
         DocsHomeViewModel.Filter.SHARED -> WeMeetEmptyState(
             title = stringResource(R.string.docs_empty_shared_title),
             description = stringResource(R.string.docs_empty_shared_desc),

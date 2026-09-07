@@ -13,7 +13,16 @@ object DocLinks {
     )
 
     /** Extracts the document UUID from any docs URL, or null when none is present. */
-    fun docIdFromUrl(url: String): String? = UUID_REGEX.find(url)?.value
+    fun docIdFromUrl(url: String, docsBaseUrl: String? = null): String? = runCatching {
+        val uri = java.net.URI(url)
+        if (uri.isAbsolute && uri.scheme !in listOf("http", "https")) return null
+        if (docsBaseUrl != null && uri.isAbsolute) {
+            val base = java.net.URI(docsBaseUrl)
+            if (!uri.host.equals(base.host, ignoreCase = true) || uri.port != base.port || uri.scheme != base.scheme) return null
+        }
+        val segments = uri.path.orEmpty().trim('/').split('/')
+        segments.takeIf { it.size == 2 && it[0] == "docs" && UUID_REGEX.matches(it[1]) }?.get(1)
+    }.getOrNull()
 
     /** Canonical docs-web URL for a document — used by the WebView fallback. */
     fun webUrl(docsBaseUrl: String, docId: String): String =

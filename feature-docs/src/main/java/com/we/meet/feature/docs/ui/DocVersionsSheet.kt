@@ -44,17 +44,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** 版本列表 + 恢复(设计文档 §4.4 版本):S3 对象版本,恢复 = 旧版 base64 透传 PATCH。 */
+/** 原生历史版本列表；预览和恢复使用 Web 协作编辑器。 */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DocVersionsSheet(
     deps: DocsDeps,
     docId: String,
     onDismiss: () -> Unit,
-    onRestored: () -> Unit,
+    onOpenVersion: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val vm: DocVersionsViewModel = viewModel(
+        key = "versions:$docId",
         factory = viewModelFactory {
             initializer { DocVersionsViewModel(deps.docsRepository, docId) }
         },
@@ -62,7 +63,6 @@ fun DocVersionsSheet(
     val state by vm.state.collectAsStateWithLifecycle()
     val message by vm.message.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    var restoreTarget by remember { mutableStateOf<DocsVersionMetaDto?>(null) }
 
     LaunchedEffect(Unit) { vm.load() }
     LaunchedEffect(message) {
@@ -72,7 +72,10 @@ fun DocVersionsSheet(
         }
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -115,10 +118,9 @@ fun DocVersionsSheet(
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
                                 TextButton(
-                                    onClick = { restoreTarget = version },
-                                    enabled = !state.restoring,
+                                    onClick = { onOpenVersion(version.versionId) },
                                 ) {
-                                    Text(stringResource(R.string.docs_restore))
+                                    Text(stringResource(R.string.docs_version_preview))
                                 }
                             }
                         }
@@ -141,22 +143,6 @@ fun DocVersionsSheet(
         }
     }
 
-    restoreTarget?.let { version ->
-        DestructiveConfirmDialog(
-            title = stringResource(R.string.docs_restore_title),
-            message = stringResource(
-                R.string.docs_restore_message,
-                formatIsoTime(version.lastModified),
-            ),
-            confirmLabel = stringResource(R.string.docs_restore),
-            dismissLabel = stringResource(R.string.docs_cancel),
-            onConfirm = {
-                restoreTarget = null
-                vm.restore(version.versionId) { onRestored() }
-            },
-            onDismiss = { restoreTarget = null },
-        )
-    }
 }
 
 class DocVersionsViewModel(
@@ -170,7 +156,6 @@ class DocVersionsViewModel(
         val error: Boolean = false,
         val loadingMore: Boolean = false,
         val hasMore: Boolean = false,
-        val restoring: Boolean = false,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -195,7 +180,7 @@ class DocVersionsViewModel(
                         it.copy(
                             versions = dto.versions,
                             loading = false,
-                            hasMore = dto.nextVersionIdMarker != null,
+                            hasMore = dto.isTruncated && dto.nextVersionIdMarker != null,
                         )
                     }
                 }
@@ -204,6 +189,7 @@ class DocVersionsViewModel(
     }
 
     fun loadMore() {
+        if (_state.value.loading || _state.value.loadingMore) return
         val marker = nextMarker ?: return
         viewModelScope.launch {
             _state.update { it.copy(loadingMore = true) }
@@ -212,30 +198,14 @@ class DocVersionsViewModel(
                     nextMarker = dto.nextVersionIdMarker
                     _state.update {
                         it.copy(
-                            versions = it.versions + dto.versions,
+                            versions = (it.versions + dto.versions).distinctBy { version -> version.versionId },
                             loadingMore = false,
-                            hasMore = dto.nextVersionIdMarker != null,
+                            hasMore = dto.isTruncated && dto.nextVersionIdMarker != null,
                         )
                     }
                 }
-                .onFailure { _state.update { it.copy(loadingMore = false) } }
+                .onFailure { _state.update { it.copy(loadingMore = false) }; _message.value = R.string.docs_load_error }
         }
     }
 
-    fun restore(versionId: String, onDone: () -> Unit) {
-        viewModelScope.launch {
-            _state.update { it.copy(restoring = true) }
-            val result = runCatching {
-                val version = repo.version(docId, versionId)
-                repo.restoreContent(docId, version.content)
-            }
-            _state.update { it.copy(restoring = false) }
-            result
-                .onSuccess {
-                    _message.value = R.string.docs_version_restored
-                    onDone()
-                }
-                .onFailure { _message.value = R.string.docs_version_restore_failed }
-        }
-    }
 }

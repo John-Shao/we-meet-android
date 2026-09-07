@@ -127,4 +127,9 @@
     <string name="docs_empty_shared_title">Nog niets met je gedeeld</string>
     <string name="docs_empty_shared_desc">Documenten die met je worden gedeeld, verschijnen hier</string>
     <string name="cd_docs_nav">Navigatie openen</string>
+    <string name="docs_version_preview">Versie bekijken</string>
+    <string name="docs_children">Subpagina’s</string>
+    <string name="docs_children_empty">Nog geen subpagina’s</string>
+    <string name="docs_comment_delete">Reactie verwijderen</string>
+    <string name="docs_comment_delete_message">Deze reactie wordt permanent verwijderd.</string>
 </resources>

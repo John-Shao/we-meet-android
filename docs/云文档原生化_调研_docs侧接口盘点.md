@@ -1,6 +1,6 @@
 # we-meet-docs（La Suite Docs 分支）云文档模块分析报告
 
-仓库：`D:\workspace\we-meet\we-meet-docs`（upstream = github.com/suitenumerique/docs，origin = John-Shao/we-meet-docs，本 fork 当前版本 app-impress 5.4.1）。路径均相对仓库根。
+仓库：同工作区的 `we-meet-docs`（upstream = github.com/suitenumerique/docs，origin = John-Shao/we-meet-docs，本 fork 当前版本 app-impress 5.4.1）。路径均相对仓库根。2026-09-07 复审已修正版本恢复语义；其余基线盘点与当前变更状态应结合 [复审与功能对齐](./云文档原生化_复审与功能对齐.md) 阅读。
 
 ## A. 后端（src/backend，Django 5 + DRF，app 包名 impress/core）
 
@@ -115,7 +115,7 @@
 - 树：左栏 `TreeProvider onLoadChildren`→`GET /documents/{id}/children/?page=`（**懒加载分页，非整棵**）；`useDocTree`→tree/（当前文档祖先链+相邻层，`utils.nest_tree` 嵌套返回）；move/restore/duplicate 走对应端点。
 - 列表：docs-grid 用 `GET /documents/?...`（filters/is_favorite/is_creator_me + ordering），收藏列表 favorite_list，回收站 trashbin。
 - 评论：DocsThreadStore（REST threads/comments/reactions + awareness ping + comment mark 定位）；thread 弹窗内 Restore/Resolve。
-- 版本：useDocVersions→versions/，选中→versions/{id}/ GET，恢复→PATCH content（前端把版本内容写回）。
+- 版本：useDocVersions→versions/，选中→versions/{id}/ GET；恢复不止 PATCH content，还在成功回调中 `revertUpdate(provider.document, provider.document, base64ToYDoc(version.content))` 并刷新线程。原生只回写 base64 不能与 Web 恢复等价（2026-09-07 复审修正）。
 - 分享：DocShareModal → accesses CRUD、invitations CRUD、`link-configuration`、ask-for-access、leave、users 搜索 `GET /users/?q=`；内嵌时"分享到聊天"经 `sendToHost`（postMessage/WeMeetHost 桥）交宿主。
 - 导入导出：导入 useImportDoc POST /documents/ (multipart file)；导出 doc-export（@blocknote/xl-* 客户端 + formatted-content 服务端 + @react-pdf/renderer）。
 - AI：doc-editor/components/AI（blocknote AI 走 ai-proxy SSE；legacy ai-transform/ai-translate）。

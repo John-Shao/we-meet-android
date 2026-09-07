@@ -82,7 +82,7 @@ fun parseBlockNoteJson(raw: String?): List<JsonBlockDto> {
             com.squareup.moshi.Types.newParameterizedType(List::class.java, JsonBlockDto::class.java),
         )
         adapter.fromJson(raw) ?: emptyList()
-    }.getOrDefault(emptyList())
+    }.getOrElse { listOf(JsonBlockDto(type = "unsupported")) }
 }
 
 /**
@@ -97,8 +97,9 @@ fun parseBlockNoteContent(raw: Any?): List<JsonBlockDto> = when (raw) {
         // so Moshi builds the typed block/inline DTOs.
         val json = contentMoshi.adapter(Any::class.java).toJson(raw)
         parseBlockNoteJson(json)
-    }.getOrDefault(emptyList())
-    else -> emptyList()
+    }.getOrElse { listOf(JsonBlockDto(type = "unsupported")) }
+    null -> emptyList()
+    else -> listOf(JsonBlockDto(type = "unsupported"))
 }
 
 private data class FlattenedBlock(
@@ -360,7 +361,7 @@ private fun TableView(
     onOpenWebFallback: () -> Unit,
 ) {
     val table = runCatching {
-        contentMoshi.adapter(JsonTableContentDto::class.java).fromJsonValue(block.content)
+        contentMoshi.adapter(JsonTableContentDto::class.java).fromJsonValue(normalizeTableContent(block.content))
     }.getOrNull()
     if (table == null) {
         UnknownBlock(onOpenWebFallback = onOpenWebFallback, modifier = modifier)

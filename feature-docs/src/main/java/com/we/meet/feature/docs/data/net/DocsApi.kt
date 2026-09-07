@@ -8,6 +8,7 @@ import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.HTTP
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -68,7 +69,10 @@ interface DocsApi {
     ): DocsMoveResponse
 
     @GET("api/v1.0/documents/search/")
-    suspend fun search(@Query("q") q: String): DocsPageDto
+    suspend fun search(@Query("q") q: String, @Query("page") page: Int = 1): DocsPageDto
+
+    @POST("api/v1.0/documents/{id}/children/")
+    suspend fun createChild(@Path("id") id: String, @Body body: DocsCreateRequest): DocumentDto
 
     @GET("api/v1.0/documents/{id}/children/")
     suspend fun children(
@@ -87,12 +91,6 @@ interface DocsApi {
         @Path("id") id: String,
         @Query("content_format") format: String = "json",
     ): DocsFormattedContentDto
-
-    @PATCH("api/v1.0/documents/{id}/content/")
-    suspend fun updateContent(
-        @Path("id") id: String,
-        @Body body: DocsContentUpdateRequest,
-    )
 
     @GET("api/v1.0/documents/{id}/threads/")
     suspend fun threads(@Path("id") id: String): List<DocsThreadDto>
@@ -143,7 +141,7 @@ interface DocsApi {
         @Body body: DocsReactionRequest,
     )
 
-    @DELETE("api/v1.0/documents/{id}/threads/{threadId}/comments/{commentId}/reactions/")
+    @HTTP(method = "DELETE", path = "api/v1.0/documents/{id}/threads/{threadId}/comments/{commentId}/reactions/", hasBody = true)
     suspend fun removeReaction(
         @Path("id") id: String,
         @Path("threadId") threadId: String,
@@ -166,9 +164,7 @@ interface DocsApi {
     @GET("api/v1.0/documents/{id}/accesses/")
     suspend fun accesses(
         @Path("id") id: String,
-        @Query("page") page: Int? = null,
-        @Query("page_size") pageSize: Int? = null,
-    ): DocsAccessPageDto
+    ): List<DocsAccessDto>
 
     @POST("api/v1.0/documents/{id}/accesses/")
     suspend fun createAccess(
@@ -301,6 +297,15 @@ data class DocsAbilitiesDto(
     val duplicate: Boolean = false,
     val retrieve: Boolean = false,
     @Json(name = "link_configuration") val linkConfiguration: Boolean = false,
+    @Json(name = "can_edit") val canEdit: Boolean = false,
+    @Json(name = "versions_list") val versionsList: Boolean = false,
+    @Json(name = "accesses_view") val accessesView: Boolean = false,
+    @Json(name = "accesses_manage") val accessesManage: Boolean = false,
+    @Json(name = "children_create") val childrenCreate: Boolean = false,
+    @Json(name = "children_list") val childrenList: Boolean = false,
+    val comment: Boolean = false,
+    val leave: Boolean = false,
+    @Json(name = "link_select_options") val linkSelectOptions: Map<String, List<String>> = emptyMap(),
 ) {
     val canRename: Boolean get() = partialUpdate || update
 }

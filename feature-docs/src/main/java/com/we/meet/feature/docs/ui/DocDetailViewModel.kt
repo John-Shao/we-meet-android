@@ -31,6 +31,7 @@ class DocDetailViewModel(
     data class UiState(
         val doc: DocumentDto? = null,
         val loading: Boolean = false,
+        val refreshing: Boolean = false,
         val error: Boolean = false,
         /** 该文档对当前用户不可访问(403 无权限)→ 展示「申请访问」流。 */
         val noAccess: Boolean = false,
@@ -50,36 +51,46 @@ class DocDetailViewModel(
 
     private var lastContentRaw: String? = null
 
-    init {
-        load()
-        loadContent()
-    }
+    private val refreshMutex = kotlinx.coroutines.sync.Mutex()
 
-    fun load() {
-        viewModelScope.launch {
-            // 已有内容时静默刷新(不置 loading),避免「切后台再回前台」整屏闪 loading
-            // 盖住已渲染文档;首次加载(无 doc)才置 loading。
-            val hasContent = _state.value.doc != null
-            _state.update {
-                it.copy(
-                    loading = !hasContent,
-                    error = false,
-                    noAccess = false,
-                )
+    fun load() { viewModelScope.launch { refresh(manual = true) } }
+    fun loadContent() = load()
+    suspend fun pollContent() = refresh()
+
+    suspend fun refresh(manual: Boolean = false) {
+        if (!refreshMutex.tryLock()) return
+        try {
+            _state.update { it.copy(loading = it.doc == null, refreshing = manual && it.doc != null, error = false) }
+            val doc = repo.document(docId)
+            _state.update { it.copy(doc = doc, loading = false, noAccess = false, contentLoading = it.blocks.isEmpty()) }
+            try {
+                val raw = repo.formattedContent(docId, format = "json").content
+                val blocks = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { parseBlockNoteContent(raw) }
+                if (lastContentRaw != null && lastContentRaw != raw?.toString()) {
+                    _toasts.tryEmit(R.string.docs_content_updated)
+                }
+                lastContentRaw = raw?.toString()
+                _state.update { it.copy(blocks = blocks, contentLoading = false, contentError = false) }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (isNoAccess(e) || (e as? HttpException)?.code() == 404) throw e
+                _state.update { it.copy(contentLoading = false, contentError = true) }
+                if (_state.value.blocks.isNotEmpty()) _toasts.tryEmit(R.string.docs_load_error)
             }
-            runCatching { repo.document(docId) }
-                .onSuccess { doc ->
-                    _state.update { it.copy(doc = doc, loading = false) }
-                }
-                .onFailure { e ->
-                    _state.update {
-                        it.copy(
-                            loading = false,
-                            error = !isNoAccess(e),
-                            noAccess = isNoAccess(e),
-                        )
-                    }
-                }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (isNoAccess(e) || (e as? HttpException)?.code() == 404) {
+                lastContentRaw = null
+                _state.update { UiState(noAccess = isNoAccess(e), error = !isNoAccess(e), requestSent = it.requestSent) }
+            } else {
+                _state.update { it.copy(loading = false, error = true) }
+                if (_state.value.doc != null) _toasts.tryEmit(R.string.docs_load_error)
+            }
+        } finally {
+            _state.update { it.copy(loading = false, refreshing = false, contentLoading = false) }
+            refreshMutex.unlock()
         }
     }
 
@@ -101,44 +112,6 @@ class DocDetailViewModel(
                 .onFailure {
                     _state.update { it.copy(requestingAccess = false) }
                     _toasts.tryEmit(R.string.docs_ask_access_failed)
-                }
-        }
-    }
-
-    fun loadContent() {
-        viewModelScope.launch {
-            _state.update { it.copy(contentLoading = true, contentError = false) }
-            runCatching { repo.formattedContent(docId, format = "json") }
-                .onSuccess { dto ->
-                    val raw = dto.content
-                    lastContentRaw = raw?.toString()
-                    _state.update {
-                        it.copy(
-                            blocks = parseBlockNoteContent(raw),
-                            contentLoading = false,
-                            contentError = false,
-                        )
-                    }
-                }
-                .onFailure {
-                    _state.update { it.copy(contentLoading = false, contentError = true) }
-                }
-        }
-    }
-
-    /** 前台停留期间的轻轮询:内容没变就不动,变了重渲染 + 提示。 */
-    fun pollContent() {
-        viewModelScope.launch {
-            runCatching { repo.formattedContent(docId, format = "json") }
-                .onSuccess { dto ->
-                    val raw = dto.content
-                    if (raw?.toString() != lastContentRaw) {
-                        lastContentRaw = raw?.toString()
-                        _state.update {
-                            it.copy(blocks = parseBlockNoteContent(raw), contentError = false)
-                        }
-                        _toasts.tryEmit(R.string.docs_content_updated)
-                    }
                 }
         }
     }
@@ -196,15 +169,4 @@ class DocDetailViewModel(
         }
     }
 
-    fun restoreVersion(base64Content: String, onRestored: () -> Unit) {
-        viewModelScope.launch {
-            runCatching { repo.restoreContent(docId, base64Content) }
-                .onSuccess {
-                    _toasts.tryEmit(R.string.docs_version_restored)
-                    loadContent()
-                    onRestored()
-                }
-                .onFailure { _toasts.tryEmit(R.string.docs_version_restore_failed) }
-        }
-    }
 }

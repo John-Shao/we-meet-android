@@ -63,16 +63,19 @@ fun DocMoveSheet(
 
     LaunchedEffect(Unit) {
         runCatching {
-            deps.docsRepository.list(page = 1, pageSize = MAX_PAGE, ordering = "title")
-        }.onSuccess { page ->
-            roots = page.results.filter { it.id != doc.id }
+            deps.docsRepository.moveCandidates()
+        }.onSuccess { documents ->
+            roots = documents.filter { it.id != doc.id && (doc.path.isBlank() || !it.path.startsWith(doc.path)) }
             rootsLoading = false
         }.onFailure {
             rootsLoading = false
         }
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -87,7 +90,7 @@ fun DocMoveSheet(
                 when {
                     rootsLoading -> WeMeetInlineLoading()
                     else -> LazyColumn {
-                        if (roots.isNotEmpty()) {
+                        if (roots.any { it.depth == 1 }) {
                             item(key = "top") {
                                 MoveRow(
                                     icon = Icons.Outlined.Home,
@@ -122,7 +125,7 @@ fun DocMoveSheet(
                         when (val sel = selected) {
                             is DocMoveSheetSelection.Into -> onMove(sel.docId, DocsMovePositions.LAST_CHILD)
                             DocMoveSheetSelection.Top -> {
-                                val firstRoot = roots.firstOrNull()
+                                val firstRoot = roots.firstOrNull { it.depth == 1 }
                                 if (firstRoot != null) onMove(firstRoot.id, DocsMovePositions.LEFT)
                             }
                             DocMoveSheetSelection.None -> Unit
@@ -161,6 +164,7 @@ private fun MoveNodeRow(
             label = node.displayTitle.ifBlank { stringResource(R.string.docs_untitled) },
             depth = depth,
             selected = selected == DocMoveSheetSelection.Into(node.id),
+            selectable = node.abilities.move,
             expandable = node.numchild > 0,
             expanded = expanded,
             onToggle = if (node.numchild > 0) {
@@ -170,9 +174,9 @@ private fun MoveNodeRow(
                         childrenLoading = true
                         scope.launch {
                             runCatching {
-                                deps.docsRepository.children(node.id, page = 1, pageSize = MAX_PAGE)
-                            }.onSuccess { page ->
-                                children = page.results.filter { it.id != docId }
+                                deps.docsRepository.moveCandidates(node.id)
+                            }.onSuccess { documents ->
+                                children = documents.filter { it.id != docId }
                                 childrenLoading = false
                             }.onFailure {
                                 childrenLoading = false
@@ -210,6 +214,7 @@ private fun MoveRow(
     label: String,
     depth: Int,
     selected: Boolean,
+    selectable: Boolean = true,
     expandable: Boolean,
     expanded: Boolean,
     onToggle: (() -> Unit)?,
@@ -218,7 +223,7 @@ private fun MoveRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onSelect)
+            .clickable(enabled = selectable, onClick = onSelect)
             .padding(
                 start = Dimens.ScreenPadding + Dimens.SpaceM * depth,
                 end = Dimens.ScreenPadding,
@@ -250,7 +255,7 @@ private fun MoveRow(
                 )
             }
         }
-        RadioButton(selected = selected, onClick = onSelect)
+        RadioButton(selected = selected, onClick = onSelect, enabled = selectable)
     }
 }
 

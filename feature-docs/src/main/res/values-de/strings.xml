@@ -127,4 +127,9 @@
     <string name="docs_empty_shared_title">Noch nichts mit dir geteilt</string>
     <string name="docs_empty_shared_desc">Mit dir geteilte Dokumente erscheinen hier</string>
     <string name="cd_docs_nav">Navigation öffnen</string>
+    <string name="docs_version_preview">Version anzeigen</string>
+    <string name="docs_children">Unterseiten</string>
+    <string name="docs_children_empty">Noch keine Unterseiten</string>
+    <string name="docs_comment_delete">Kommentar löschen</string>
+    <string name="docs_comment_delete_message">Dieser Kommentar wird dauerhaft gelöscht.</string>
 </resources>
