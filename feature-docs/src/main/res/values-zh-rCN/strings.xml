@@ -174,4 +174,7 @@
     <string name="docs_share_to_chat_help">发送文档卡片，并尝试为会话成员开通只读访问。</string>
     <string name="docs_link_share">链接分享</string>
     <string name="docs_save_copy_link">保存并复制链接</string>
+    <string name="docs_share_picker_help">确认后为所选用户设置以下权限；尚未使用云文档的用户将收到邮箱邀请。</string>
+    <string name="docs_share_batch_result">已添加 %1$d 人 · 已邀请 %2$d 人 · 已在文档中 %3$d 人</string>
+    <string name="docs_share_batch_failed">%d 人未完成，可重试剩余选择。未配置邮箱的用户需先完善账号信息。</string>
 </resources>

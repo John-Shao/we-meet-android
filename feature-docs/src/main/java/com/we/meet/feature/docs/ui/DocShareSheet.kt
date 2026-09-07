@@ -63,6 +63,11 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.we.meet.feature.docs.DocsDeps
 import com.we.meet.feature.docs.R
 import com.we.meet.feature.docs.data.DocsRepository
+import com.we.meet.feature.docs.data.DocMemberInviteResult
+import com.we.meet.feature.docs.data.inviteDocMembers
+import com.we.meet.core.directory.ui.ContactPicker
+import com.we.meet.core.directory.ui.ContactPickerMode
+import com.we.meet.core.directory.ui.PickedMember
 import com.we.meet.feature.docs.data.net.DocsAccessDto
 import com.we.meet.feature.docs.data.net.DocsInvitationDto
 import com.we.meet.feature.docs.data.net.DocsUserDto
@@ -99,6 +104,7 @@ fun DocShareSheet(
     val state by vm.state.collectAsStateWithLifecycle()
     var page by rememberSaveable(doc.id) { mutableStateOf(initialPage) }
     var inviteRole by rememberSaveable(doc.id) { mutableStateOf("reader") }
+    var showUserPicker by rememberSaveable(doc.id) { mutableStateOf(false) }
     var recipientId by rememberSaveable(doc.id) { mutableStateOf<String?>(null) }
     var recipientName by rememberSaveable(doc.id) { mutableStateOf<String?>(null) }
     var recipientEmail by rememberSaveable(doc.id) { mutableStateOf<String?>(null) }
@@ -128,7 +134,45 @@ fun DocShareSheet(
     LaunchedEffect(vm) { vm.errors.collect { snackbar.showSnackbar(context.getString(R.string.docs_action_failed)) } }
     LaunchedEffect(vm) { if (initialPage == DocSharingPage.LINKS) vm.loadLink() else vm.load() }
 
-    ModalBottomSheet(
+    if (showUserPicker) {
+        ContactPicker(
+            deps = deps,
+            mode = ContactPickerMode.Multi,
+            enabled = !state.mutating,
+            excludeEmails = (state.accesses.mapNotNull { it.user?.email } + state.invitations.map { it.email }).toSet(),
+            initialSelection = state.inviteSelection,
+            footer = {
+                Column(Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.docs_share_invite_members), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.docs_share_picker_help), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.docs_share_invite_role), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                        RoleDropdown(inviteRole, SHARABLE_ROLES, { inviteRole = it }, !state.mutating)
+                    }
+                    if (state.mutating) WeMeetInlineLoading()
+                    state.inviteResult?.let { result ->
+                        Text(stringResource(R.string.docs_share_batch_result, result.added, result.invited, result.existing),
+                            style = MaterialTheme.typography.bodySmall)
+                        if (result.failed.isNotEmpty()) Text(stringResource(R.string.docs_share_batch_failed, result.failed.size),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            },
+            onConfirm = { members -> vm.addMembers(members, inviteRole) { result ->
+                onDocChanged()
+                if (result.failed.isEmpty()) {
+                    showUserPicker = false
+                    inviteRole = "reader"
+                    scope.launch { snackbar.showSnackbar(context.getString(R.string.docs_share_batch_result,
+                        result.added, result.invited, result.existing)) }
+                }
+            } },
+            onDismiss = { showUserPicker = false },
+        )
+    }
+
+    if (!showUserPicker) ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         properties = androidx.compose.material3.ModalBottomSheetProperties(shouldDismissOnBackPress = false),
@@ -185,7 +229,16 @@ fun DocShareSheet(
                             if (state.doc.abilities.accessesManage) item("invite") {
                                 Box(Modifier.padding(Dimens.ScreenPadding)) {
                                     SecondaryButton(text = stringResource(R.string.docs_share_invite_members),
-                                        onClick = { page = DocSharingPage.INVITE })
+                                        enabled = state.loaded && !state.loading && !state.error && !state.mutating,
+                                        onClick = { scope.launch {
+                                            sheetState.hide()
+                                            vm.resetMemberInvite()
+                                            showUserPicker = true
+                                        } })
+                                }
+                                TextButton(onClick = { page = DocSharingPage.INVITE }, enabled = !state.mutating,
+                                    modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)) {
+                                    Text(stringResource(R.string.docs_share_invite_section))
                                 }
                             }
                             if (state.doc.abilities.leave) item("leave") {
@@ -514,6 +567,8 @@ class DocShareViewModel(
         val mutating: Boolean = false,
         val linkSaving: Boolean = false,
         val error: Boolean = false,
+        val inviteSelection: List<PickedMember> = emptyList(),
+        internal val inviteResult: DocMemberInviteResult? = null,
     )
 
     private val _state = MutableStateFlow(
@@ -636,6 +691,33 @@ class DocShareViewModel(
         repo.createAccess(doc.id, userId, role)
         onSuccess()
         load()
+    }
+
+    fun resetMemberInvite() {
+        if (!_state.value.mutating) _state.update { it.copy(inviteSelection = emptyList(), inviteResult = null) }
+    }
+
+    internal fun addMembers(members: List<PickedMember>, role: String, onComplete: (DocMemberInviteResult) -> Unit) {
+        if (_state.value.mutating || !_state.value.doc.abilities.accessesManage || role !in SHARABLE_ROLES || members.isEmpty()) return
+        _state.update { it.copy(mutating = true, inviteSelection = members, inviteResult = null) }
+        viewModelScope.launch {
+            try {
+                // Refresh before every attempt: a previous timed-out request may already have succeeded.
+                val result = runCatching {
+                    val accesses = repo.allAccesses(doc.id)
+                    val invitations = repo.allInvitations(doc.id)
+                    _state.update { it.copy(accesses = accesses, invitations = invitations) }
+                    inviteDocMembers(members,
+                        existingEmails = (accesses.mapNotNull { it.user?.email } + invitations.map { it.email }).toSet(),
+                        searchUsers = { repo.searchUsers(it) },
+                        addAccess = { repo.createAccess(doc.id, it, role) },
+                        inviteEmail = { repo.createInvitation(doc.id, it, role) })
+                }.getOrElse { DocMemberInviteResult(failed = members) }
+                _state.update { it.copy(inviteSelection = result.failed, inviteResult = result) }
+                load()
+                onComplete(result)
+            } finally { _state.update { it.copy(mutating = false) } }
+        }
     }
 
     fun updateAccessRole(access: DocsAccessDto, role: String) = mutate {
