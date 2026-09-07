@@ -9,9 +9,10 @@ data class EditorProtocol(
 ) {
     enum class Phase { WAITING, READY, SAVING, FAILED, UNSUPPORTED, CLOSED }
     val interactive: Boolean get() = phase == Phase.READY || phase == Phase.FAILED
+    val awaitingReady: Boolean get() = phase == Phase.WAITING || phase == Phase.UNSUPPORTED
 
     fun ready(doc: String, instance: String, version: Int, saveConfirmation: Boolean): EditorProtocol =
-        if (phase == Phase.WAITING && doc == docId && instance == instanceId && version == 2 && saveConfirmation)
+        if (awaitingReady && doc == docId && instance == instanceId && version == 2 && saveConfirmation)
             copy(phase = Phase.READY) else this
 
     fun save(request: String): EditorProtocol =

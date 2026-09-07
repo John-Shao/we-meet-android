@@ -1,6 +1,8 @@
 package com.we.meet.ui.docs
 
 import android.net.Uri
+import android.os.SystemClock
+import android.util.Log
 import android.view.View
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.AlertDialog
@@ -58,6 +60,7 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
     var protocol by remember { mutableStateOf(EditorProtocol(docId, UUID.randomUUID().toString())) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf(false) }
+    var entryAttempt by remember { mutableStateOf(0) }
     var pendingNavigation by remember { mutableStateOf<String?>(null) }
     var leftPanel by remember { mutableStateOf(false) }
     val currentOnClose by rememberUpdatedState(onClose)
@@ -65,6 +68,14 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
     fun message(type: String, requestId: String? = protocol.requestId) = JSONObject()
         .put("type", type).put("docId", protocol.docId).put("editorInstanceId", protocol.instanceId)
         .put("requestId", requestId).put("protocolVersion", 2)
+    fun retryEntry() {
+        // Restart from the canonical editor URL with a fresh login ticket. Reloading
+        // an intermediate login/redirect URL can reuse an already consumed ticket.
+        loading = true
+        error = false
+        protocol = EditorProtocol(docId, UUID.randomUUID().toString())
+        entryAttempt++
+    }
     fun beginSave() {
         if (protocol.interactive) {
             protocol = protocol.save(UUID.randomUUID().toString())
@@ -140,18 +151,26 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
             releaseDocsWebView(webView)
         }
     }
-    LaunchedEffect(webView, currentUrl) { loadDocsEditorEntry(context, webView, currentUrl) }
+    LaunchedEffect(webView, currentUrl, entryAttempt) { loadDocsEditorEntry(context, webView, currentUrl) }
     LaunchedEffect(protocol.phase) {
         if (protocol.interactive) previouslyInteractive = true
     }
     LaunchedEffect(protocol.instanceId, loading, error) {
         if (!loading && !error) {
-            repeat(20) {
-                if (protocol.phase != EditorProtocol.Phase.WAITING) return@LaunchedEffect
+            // onPageFinished covers the HTML, not Next's lazy editor chunks or
+            // document fetch. A cold start can mount the bridge much later.
+            val started = SystemClock.elapsedRealtime()
+            while (protocol.awaitingReady) {
                 postToDocs(webView, message("wemeet-host-hello"))
-                delay(500)
+                if (protocol.phase == EditorProtocol.Phase.WAITING &&
+                    SystemClock.elapsedRealtime() - started >= 30_000) {
+                    Log.w("WeMeetDocs", "[editor] ready handshake delayed; continuing to wait")
+                    protocol = protocol.timedOut()
+                }
+                // A timeout offers retry, but is not proof of incompatibility.
+                // Keep the same challenge so late readiness can recover in place.
+                delay(if (protocol.phase == EditorProtocol.Phase.WAITING) 500 else 2_000)
             }
-            protocol = protocol.timedOut()
         }
     }
     LaunchedEffect(protocol.requestId) {
@@ -174,16 +193,13 @@ fun DocsEditorScreen(url: String, onClose: () -> Unit) {
                 it.isFocusableInTouchMode = protocol.interactive
             })
             if (protocol.phase == EditorProtocol.Phase.WAITING) {
-                DocsLoadStateOverlay(loading = !error, error = error, onRetry = { webView.reload() })
+                DocsLoadStateOverlay(loading = !error, error = error, onRetry = ::retryEntry)
             }
             if (protocol.phase == EditorProtocol.Phase.SAVING) {
                 WeMeetLoading()
             }
             if (protocol.phase == EditorProtocol.Phase.UNSUPPORTED) {
-                WeMeetErrorState(message = stringResource(R.string.docs_editor_incompatible), onRetry = {
-                    protocol = EditorProtocol(docId, UUID.randomUUID().toString())
-                    webView.reload()
-                })
+                WeMeetErrorState(message = stringResource(R.string.docs_editor_incompatible), onRetry = ::retryEntry)
             }
         }
     }
