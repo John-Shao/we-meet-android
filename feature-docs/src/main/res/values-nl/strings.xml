@@ -116,7 +116,7 @@
     <string name="docs_role_administrator">Beheerder</string>
     <string name="docs_role_owner">Eigenaar</string>
     <string name="docs_reach_restricted">Alleen bevoegde gebruikers</string>
-    <string name="docs_reach_authenticated">Iedereen in de werkruimte</string>
+    <string name="docs_reach_authenticated">Ingelogde gebruikers</string>
     <string name="docs_reach_public">Openbaar</string>
     <string name="docs_content_updated">Inhoud bijgewerkt</string>
     <string name="docs_nav_views">Documentweergaven</string>
@@ -172,4 +172,6 @@
     </plurals>
     <string name="docs_share_to_chat">Delen in chat</string>
     <string name="docs_share_to_chat_help">Verstuurt een documentkaart en probeert chatleden leestoegang te geven.</string>
+    <string name="docs_link_share">Delen via link</string>
+    <string name="docs_save_copy_link">Opslaan en link kopiëren</string>
 </resources>

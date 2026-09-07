@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -31,14 +32,14 @@ import com.we.meet.feature.im.model.MessageContent
 
 /**
  * 分享云文档到聊天气泡(content_type='doc-card'):左竖色条 + 文档图标 + 标题 +
- * 底部「查看文档」。与 EventCardBubble 不同,这是分享时刻的静态快照,没有
- * badge/取消态——一次性卡片,不追更。
+ * 底部「查看文档」和发送者的「会话权限」。标题是发送时的快照，授权设置从服务端读取。
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun DocCardBubble(
     content: MessageContent.DocCard,
     onLongPress: (() -> Unit)?,
+    onManageAccess: (() -> Unit)? = null,
     onOpen: () -> Unit,
 ) {
     val clickable = content.docId.isNotBlank() && content.url.isNotBlank()
@@ -92,6 +93,13 @@ internal fun DocCardBubble(
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(top = Dimens.SpaceXs),
                     )
+                    if (onManageAccess != null) androidx.compose.material3.TextButton(onClick = onManageAccess) {
+                        Text(stringResource(R.string.im_doc_card_access))
+                        androidx.compose.material3.Icon(
+                            androidx.compose.material.icons.Icons.Default.ExpandMore,
+                            contentDescription = null,
+                        )
+                    }
                 }
             }
         }

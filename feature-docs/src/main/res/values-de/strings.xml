@@ -116,7 +116,7 @@
     <string name="docs_role_administrator">Administrator</string>
     <string name="docs_role_owner">Eigentümer</string>
     <string name="docs_reach_restricted">Nur berechtigte Nutzer</string>
-    <string name="docs_reach_authenticated">Alle im Arbeitsbereich</string>
+    <string name="docs_reach_authenticated">Angemeldete Benutzer</string>
     <string name="docs_reach_public">Öffentlich</string>
     <string name="docs_content_updated">Inhalt aktualisiert</string>
     <string name="docs_nav_views">Dokumentansichten</string>
@@ -172,4 +172,6 @@
     </plurals>
     <string name="docs_share_to_chat">Im Chat teilen</string>
     <string name="docs_share_to_chat_help">Sendet eine Dokumentkarte und versucht, Chatmitgliedern Lesezugriff zu geben.</string>
+    <string name="docs_link_share">Link teilen</string>
+    <string name="docs_save_copy_link">Speichern und Link kopieren</string>
 </resources>

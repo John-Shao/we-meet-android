@@ -439,4 +439,14 @@ Limits: 100 requests per minute and 5 per second per bot, bodies up to 20 KB. Se
     <string name="im_search_ai_http_error">Request failed (HTTP %1$d). Please try again.</string>
     <string name="im_search_ai_empty_body">The AI service returned an empty response. Please try again.</string>
     <string name="im_search_ai_server_error">The AI service failed. Please try again.</string>
+    <string name="im_doc_card_access">Chat permissions</string>
+    <string name="im_doc_access_reader">Can read</string>
+    <string name="im_doc_access_editor">Can edit</string>
+    <string name="im_doc_access_help">Change the access you grant current members in this chat. Higher access from other chats, manual grants and links is preserved, including existing access from older cards.</string>
+    <string name="im_doc_access_denied">You cannot manage permissions for this document.</string>
+    <string name="im_doc_access_failed">Access could not be confirmed. Please retry.</string>
+    <string name="im_doc_access_saved">Permissions updated</string>
+    <string name="im_doc_access_retry">Retry</string>
+    <string name="im_doc_access_save">Save</string>
+    <string name="im_doc_access_close">Close</string>
 </resources>

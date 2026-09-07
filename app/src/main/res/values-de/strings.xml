@@ -1040,4 +1040,14 @@
     <string name="docs_chat_share_access_failed">Einige Karten wurden gesendet, der Zugriff wurde jedoch nicht bestätigt. Erneut versuchen oder Dokumentberechtigungen verwalten.</string>
     <string name="docs_chat_share_retry">Erneut versuchen</string>
     <string name="docs_chat_share_close">Schließen</string>
+    <string name="docs_chat_share_next">Weiter</string>
+    <string name="docs_chat_share_targets">Ausgewählte Chats: %d</string>
+    <string name="docs_chat_share_permission_retry">Berechtigungen nicht geladen. Erneut versuchen</string>
+    <string name="docs_chat_share_permission">Zugriffsrecht</string>
+    <string name="docs_chat_share_reader">Lesen</string>
+    <string name="docs_chat_share_editor">Bearbeiten</string>
+    <string name="docs_chat_share_grant_help">Legt den Zugriff aktueller Chatmitglieder fest. Ihre Karten zum selben Dokument im Chat teilen diese Einstellung. Höhere Rechte aus anderen Quellen bleiben erhalten.</string>
+    <string name="docs_chat_share_existing_access">Nur die Karte senden. Vorhandene Zugriffsrechte bleiben bestehen.</string>
+    <string name="docs_chat_share_send">Senden</string>
+    <string name="docs_chat_share_back">Zurück</string>
 </resources>

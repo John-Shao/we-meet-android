@@ -152,6 +152,9 @@ internal interface ImApi {
         @Body body: Map<String, @JvmSuppressWildcards Any>,
     ): Map<String, Any>
 
+    @POST("api/v1.0/im/doc-chat-access/")
+    suspend fun docChatAccess(@Body body: Map<String, @JvmSuppressWildcards Any>): Map<String, Any>
+
     /** P1-M3 消息全文检索(代理 jusi p15;仅本人可见范围,已撤回排除)。 */
     @GET("api/v1.0/im/search/")
     suspend fun searchMessages(

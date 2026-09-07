@@ -1059,4 +1059,14 @@
     <string name="docs_chat_share_access_failed">Certaines cartes ont été envoyées, mais l’accès reste non confirmé. Réessayez ou gérez les autorisations du document.</string>
     <string name="docs_chat_share_retry">Réessayer</string>
     <string name="docs_chat_share_close">Fermer</string>
+    <string name="docs_chat_share_next">Suivant</string>
+    <string name="docs_chat_share_targets">Chats sélectionnés : %d</string>
+    <string name="docs_chat_share_permission_retry">Vérification des droits impossible. Réessayer</string>
+    <string name="docs_chat_share_permission">Autorisation</string>
+    <string name="docs_chat_share_reader">Lecture</string>
+    <string name="docs_chat_share_editor">Modification</string>
+    <string name="docs_chat_share_grant_help">Définit les droits des membres actuels. Vos cartes du même document dans chaque chat partagent ce réglage. Les droits supérieurs provenant d’autres sources sont conservés.</string>
+    <string name="docs_chat_share_existing_access">Envoyer uniquement la carte. Les destinataires conservent leurs droits existants.</string>
+    <string name="docs_chat_share_send">Envoyer</string>
+    <string name="docs_chat_share_back">Retour</string>
 </resources>

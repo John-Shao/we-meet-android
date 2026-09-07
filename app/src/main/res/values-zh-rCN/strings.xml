@@ -1029,4 +1029,14 @@
     <string name="docs_chat_share_access_failed">部分卡片已发送，但未能确认访问授权。可重试授权，或在文档中管理权限。</string>
     <string name="docs_chat_share_retry">重试</string>
     <string name="docs_chat_share_close">关闭</string>
+    <string name="docs_chat_share_next">下一步</string>
+    <string name="docs_chat_share_targets">已选 %d 个会话</string>
+    <string name="docs_chat_share_permission_retry">权限加载失败，点击重试</string>
+    <string name="docs_chat_share_permission">授权类型</string>
+    <string name="docs_chat_share_reader">可阅读</string>
+    <string name="docs_chat_share_editor">可编辑</string>
+    <string name="docs_chat_share_grant_help">为当前会话成员设置授权，同一文档在该会话中由你发出的卡片共用此设置。其他来源的更高权限会保留。</string>
+    <string name="docs_chat_share_existing_access">仅发送文档卡片，接收者沿用已有访问权限。</string>
+    <string name="docs_chat_share_send">发送</string>
+    <string name="docs_chat_share_back">返回</string>
 </resources>

@@ -116,7 +116,7 @@
     <string name="docs_role_administrator">Administrateur</string>
     <string name="docs_role_owner">Propriétaire</string>
     <string name="docs_reach_restricted">Utilisateurs autorisés uniquement</string>
-    <string name="docs_reach_authenticated">Tout l\'espace de travail</string>
+    <string name="docs_reach_authenticated">Utilisateurs connectés</string>
     <string name="docs_reach_public">Public</string>
     <string name="docs_content_updated">Contenu mis à jour</string>
     <string name="docs_nav_views">Vues de documents</string>
@@ -172,4 +172,6 @@
     </plurals>
     <string name="docs_share_to_chat">Partager dans un chat</string>
     <string name="docs_share_to_chat_help">Envoie une carte du document et tente de donner un accès en lecture aux membres du chat.</string>
+    <string name="docs_link_share">Partage par lien</string>
+    <string name="docs_save_copy_link">Enregistrer et copier le lien</string>
 </resources>

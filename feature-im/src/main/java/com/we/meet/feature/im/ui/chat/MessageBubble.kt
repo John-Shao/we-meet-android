@@ -122,6 +122,7 @@ fun MessageBubble(
     onOpenEvent: ((eventId: String) -> Unit)? = null,
     /** 分享云文档卡片: tap「查看文档」→ 打开该文档(app 层接文档查看器)。 */
     onOpenDoc: ((url: String) -> Unit)? = null,
+    onManageDocAccess: ((MessageContent.DocCard) -> Unit)? = null,
     /** 分享会议卡片: tap「加入会议」→ 按 slug 走入会预览(app 层接 joinPreview)。 */
     onJoinMeeting: ((slug: String) -> Unit)? = null,
 ) {
@@ -269,6 +270,7 @@ fun MessageBubble(
                 ) { onOpenEvent?.invoke(content.eventId) }
                 is MessageContent.DocCard -> DocCardBubble(
                     content, onLongPress,
+                    onManageAccess = if (isOwn && onManageDocAccess != null) ({ onManageDocAccess(content) }) else null,
                 ) { onOpenDoc?.invoke(content.url) }
                 is MessageContent.MeetingCard -> MeetingCardBubble(
                     content, onLongPress,

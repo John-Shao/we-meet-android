@@ -129,9 +129,9 @@ class ImSession private constructor(deps: ImDeps, appContext: Context) {
      * 刷新成员列表(授权没成功就没什么可刷的)。courtesy 语义不变:失败只记日志,
      * 返回 false,绝不抛。
      */
-    suspend fun grantDocAccess(docId: String, cids: Collection<String>): Boolean {
+    suspend fun grantDocAccess(docId: String, cids: Collection<String>, role: String? = null): Boolean {
         if (docId.isBlank() || cids.isEmpty()) return false
-        return runCatching { bridge.grantDocAccess(docId, cids) }
+        return runCatching { bridge.grantDocAccess(docId, cids, role) }
             .onFailure {
                 android.util.Log.w("ImSession", "grantDocAccess failed", it)
             }

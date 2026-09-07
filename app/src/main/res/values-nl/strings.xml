@@ -1040,4 +1040,14 @@
     <string name="docs_chat_share_access_failed">Sommige kaarten zijn verzonden, maar toegang is niet bevestigd. Probeer opnieuw of beheer de documentrechten.</string>
     <string name="docs_chat_share_retry">Opnieuw proberen</string>
     <string name="docs_chat_share_close">Sluiten</string>
+    <string name="docs_chat_share_next">Volgende</string>
+    <string name="docs_chat_share_targets">Geselecteerde chats: %d</string>
+    <string name="docs_chat_share_permission_retry">Rechten laden mislukt. Opnieuw proberen</string>
+    <string name="docs_chat_share_permission">Toegangsrecht</string>
+    <string name="docs_chat_share_reader">Lezen</string>
+    <string name="docs_chat_share_editor">Bewerken</string>
+    <string name="docs_chat_share_grant_help">Stelt toegang voor huidige chatleden in. Uw kaarten voor hetzelfde document in elke chat delen deze instelling. Hogere rechten uit andere bronnen blijven behouden.</string>
+    <string name="docs_chat_share_existing_access">Alleen de kaart verzenden. Ontvangers behouden hun bestaande toegangsrechten.</string>
+    <string name="docs_chat_share_send">Verzenden</string>
+    <string name="docs_chat_share_back">Terug</string>
 </resources>

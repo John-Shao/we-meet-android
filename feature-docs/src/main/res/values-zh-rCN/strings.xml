@@ -110,13 +110,13 @@
     <string name="docs_share_leave_message">离开后将失去访问权限,需他人再次分享才能查看</string>
     <string name="docs_share_ask_access">申请访问</string>
     <string name="docs_share_ask_sent">已发送申请,批准后会通知你</string>
-    <string name="docs_role_reader">可查看</string>
+    <string name="docs_role_reader">可阅读</string>
     <string name="docs_role_commenter">可评论</string>
     <string name="docs_role_editor">可编辑</string>
     <string name="docs_role_administrator">管理员</string>
     <string name="docs_role_owner">所有者</string>
     <string name="docs_reach_restricted">仅已获授权用户</string>
-    <string name="docs_reach_authenticated">企业内所有人</string>
+    <string name="docs_reach_authenticated">已登录用户</string>
     <string name="docs_reach_public">公开</string>
     <string name="docs_content_updated">内容已更新</string>
     <string name="docs_nav_views">文档视图</string>
@@ -172,4 +172,6 @@
     </plurals>
     <string name="docs_share_to_chat">分享到聊天</string>
     <string name="docs_share_to_chat_help">发送文档卡片，并尝试为会话成员开通只读访问。</string>
+    <string name="docs_link_share">链接分享</string>
+    <string name="docs_save_copy_link">保存并复制链接</string>
 </resources>

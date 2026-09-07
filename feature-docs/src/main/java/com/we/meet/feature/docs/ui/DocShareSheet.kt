@@ -79,9 +79,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-private enum class SharePage { HOME, ACCESS, MEMBERS, INVITE }
+enum class DocSharingPage { LINKS, MEMBERS, INVITE }
 
-/** Compact overview with access, membership and invitation pages in one sheet. */
+/** Independent link and membership pages; invitations are a membership subpage. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DocShareSheet(
@@ -89,15 +89,15 @@ fun DocShareSheet(
     doc: DocumentDto,
     onDismiss: () -> Unit,
     onDocChanged: () -> Unit,
-    onShareToChat: () -> Unit,
+    initialPage: DocSharingPage,
 ) {
+    val instanceKey = rememberSaveable(doc.id, initialPage) { java.util.UUID.randomUUID().toString() }
     val vm: DocShareViewModel = viewModel(
-        key = "share:${doc.id}",
+        key = "share:${doc.id}:$instanceKey",
         factory = viewModelFactory { initializer { DocShareViewModel(deps.docsRepository, doc) } },
     )
     val state by vm.state.collectAsStateWithLifecycle()
-    var page by rememberSaveable(doc.id) { mutableStateOf(SharePage.HOME) }
-    var inviteOrigin by rememberSaveable(doc.id) { mutableStateOf(SharePage.HOME) }
+    var page by rememberSaveable(doc.id) { mutableStateOf(initialPage) }
     var inviteRole by rememberSaveable(doc.id) { mutableStateOf("reader") }
     var recipientId by rememberSaveable(doc.id) { mutableStateOf<String?>(null) }
     var recipientName by rememberSaveable(doc.id) { mutableStateOf<String?>(null) }
@@ -111,7 +111,7 @@ fun DocShareSheet(
     val sheetState = androidx.compose.material3.rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
     )
-    val goBack = { focus.clearFocus(); page = if (page == SharePage.INVITE) inviteOrigin else SharePage.HOME }
+    val goBack = { focus.clearFocus(); page = initialPage }
     val inviteSucceeded = {
         val message = if (recipientId != null) R.string.docs_share_member_added else R.string.docs_share_invite_success
         recipientId = null
@@ -120,13 +120,13 @@ fun DocShareSheet(
         inviteRole = "reader"
         vm.onUserQueryChange("")
         focus.clearFocus()
-        page = SharePage.MEMBERS
+        page = DocSharingPage.MEMBERS
         onDocChanged()
         scope.launch { snackbar.showSnackbar(context.getString(message)) }
         Unit
     }
     LaunchedEffect(vm) { vm.errors.collect { snackbar.showSnackbar(context.getString(R.string.docs_action_failed)) } }
-    LaunchedEffect(vm) { vm.load() }
+    LaunchedEffect(vm) { if (initialPage == DocSharingPage.LINKS) vm.loadLink() else vm.load() }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -134,7 +134,7 @@ fun DocShareSheet(
         properties = androidx.compose.material3.ModalBottomSheetProperties(shouldDismissOnBackPress = false),
     ) {
         // Handle navigation in the dialog's dispatcher before dismissing the whole sheet.
-        androidx.activity.compose.BackHandler { if (page == SharePage.HOME) onDismiss() else goBack() }
+        androidx.activity.compose.BackHandler { if (page == initialPage) onDismiss() else goBack() }
         Column(
             Modifier.fillMaxWidth()
                 .heightIn(max = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp * 0.85f)
@@ -142,83 +142,27 @@ fun DocShareSheet(
         ) {
             DocsSheetHeader(
                 title = stringResource(when (page) {
-                    SharePage.HOME -> R.string.docs_share
-                    SharePage.ACCESS -> R.string.docs_share_access_title
-                    SharePage.MEMBERS -> R.string.docs_share_collaborators
-                    SharePage.INVITE -> R.string.docs_share_invite_members
+                    DocSharingPage.LINKS -> R.string.docs_link_share
+                    DocSharingPage.MEMBERS -> R.string.docs_share_collaborators
+                    DocSharingPage.INVITE -> R.string.docs_share_invite_members
                 }),
                 onClose = onDismiss,
-                subtitle = if (page == SharePage.HOME) doc.displayTitle.ifBlank { stringResource(R.string.docs_untitled) } else null,
-                onBack = if (page == SharePage.HOME) null else goBack,
+                subtitle = if (page == initialPage) doc.displayTitle.ifBlank { stringResource(R.string.docs_untitled) } else null,
+                onBack = if (page == initialPage) null else goBack,
             )
-            if (state.mutating || state.linkSaving) WeMeetInlineLoading()
+            if (state.loading || state.mutating || state.linkSaving) WeMeetInlineLoading()
             androidx.compose.material3.SnackbarHost(snackbar)
             // Reset scrolling when changing pages; drafts live above page content.
             androidx.compose.runtime.key(page) {
                 LazyColumn(Modifier.weight(1f, fill = false), contentPadding = PaddingValues(bottom = Dimens.SpaceM)) {
                     when (page) {
-                        SharePage.HOME -> {
-                            item("copy") {
-                                Box(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM)) {
-                                    val copyLink = {
-                                        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
-                                        clipboard?.setPrimaryClip(android.content.ClipData.newPlainText(doc.displayTitle,
-                                            com.we.meet.feature.docs.util.DocLinks.webUrl(deps.docsBaseUrl, doc.id)))
-                                        scope.launch { snackbar.showSnackbar(context.getString(R.string.docs_link_copied)) }
-                                        Unit
-                                    }
-                                    if (state.doc.abilities.retrieve) Column {
-                                        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                                            SecondaryButton(text = stringResource(R.string.docs_copy_link), onClick = copyLink,
-                                                modifier = Modifier.weight(1f))
-                                            PrimaryButton(text = stringResource(R.string.docs_share_to_chat), onClick = onShareToChat,
-                                                enabled = !state.mutating && !state.linkSaving, modifier = Modifier.weight(1f))
-                                        }
-                                        Text(stringResource(R.string.docs_share_to_chat_help),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.padding(top = Dimens.SpaceS))
-                                    } else PrimaryButton(text = stringResource(R.string.docs_copy_link), onClick = copyLink)
-                                }
+                        DocSharingPage.LINKS -> {
+                            if (state.error) item("error") {
+                                WeMeetInlineErrorState(onRetry = vm::loadLink, message = stringResource(R.string.docs_load_error))
                             }
-                            item("access") {
-                                ShareNavigationRow(
-                                    title = stringResource(R.string.docs_share_access_title),
-                                    summary = stringResource(reachLabelRes(state.linkReach)) +
-                                        if (state.linkReach != "restricted" && state.linkRole.isNotBlank())
-                                            " ? " + stringResource(roleLabelRes(state.linkRole)) else "",
-                                    onClick = { page = SharePage.ACCESS },
-                                )
-                            }
-                            if (state.doc.abilities.retrieve) item("members") {
-                                ShareNavigationRow(
-                                    title = stringResource(R.string.docs_share_collaborators),
-                                    summary = when {
-                                        state.error -> stringResource(R.string.docs_load_error)
-                                        !state.loaded -> stringResource(R.string.docs_share_loading_members)
-                                        else -> androidx.compose.ui.res.pluralStringResource(R.plurals.docs_share_member_count, state.accesses.size, state.accesses.size)
-                                    },
-                                    onClick = { page = SharePage.MEMBERS },
-                                )
-                            }
-                            if (state.doc.abilities.accessesManage) item("invite") {
-                                Box(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM)) {
-                                    SecondaryButton(text = stringResource(R.string.docs_share_invite_members),
-                                        onClick = { inviteOrigin = SharePage.HOME; page = SharePage.INVITE })
-                                }
-                            }
-                            if (!state.doc.abilities.retrieve) item("request") {
-                                Box(Modifier.padding(Dimens.ScreenPadding)) {
-                                    if (state.requestedAccess) Text(stringResource(R.string.docs_share_ask_sent))
-                                    else PrimaryButton(text = stringResource(R.string.docs_share_ask_access),
-                                        loading = state.mutating, onClick = vm::requestAccess)
-                                }
-                            }
+                            if (state.loaded) item("options") { LinkAccessOptions(state, vm::updateLink) }
                         }
-                        SharePage.ACCESS -> {
-                            item("options") { LinkAccessOptions(state, vm::updateLink) }
-                        }
-                        SharePage.MEMBERS -> {
+                        DocSharingPage.MEMBERS -> {
                             if (state.loading && !state.loaded) item("loading") { WeMeetInlineLoading() }
                             if (state.error) item("error") {
                                 WeMeetInlineErrorState(onRetry = vm::load, message = stringResource(R.string.docs_load_error))
@@ -241,7 +185,7 @@ fun DocShareSheet(
                             if (state.doc.abilities.accessesManage) item("invite") {
                                 Box(Modifier.padding(Dimens.ScreenPadding)) {
                                     SecondaryButton(text = stringResource(R.string.docs_share_invite_members),
-                                        onClick = { inviteOrigin = SharePage.MEMBERS; page = SharePage.INVITE })
+                                        onClick = { page = DocSharingPage.INVITE })
                                 }
                             }
                             if (state.doc.abilities.leave) item("leave") {
@@ -251,7 +195,7 @@ fun DocShareSheet(
                                 }
                             }
                         }
-                        SharePage.INVITE -> if (state.doc.abilities.accessesManage) {
+                        DocSharingPage.INVITE -> if (state.doc.abilities.accessesManage) {
                             val selected = recipientId != null || recipientEmail != null
                             if (selected) {
                                 item("recipient") {
@@ -321,6 +265,21 @@ fun DocShareSheet(
                     }
                 }
             }
+            if (page == DocSharingPage.LINKS) Box(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS)) {
+                PrimaryButton(
+                    text = stringResource(if (state.doc.abilities.linkConfiguration) R.string.docs_save_copy_link else R.string.docs_copy_link),
+                    enabled = state.loaded && !state.loading && !state.error,
+                    loading = state.linkSaving,
+                    onClick = { vm.saveLink {
+                        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                        clipboard?.setPrimaryClip(android.content.ClipData.newPlainText(doc.displayTitle,
+                            com.we.meet.feature.docs.util.DocLinks.webUrl(deps.docsBaseUrl, doc.id)))
+                        onDocChanged()
+                        scope.launch { snackbar.showSnackbar(context.getString(R.string.docs_link_copied)) }
+                    } },
+                )
+            }
+
         }
     }
     removeTarget?.let { access ->
@@ -568,7 +527,6 @@ class DocShareViewModel(
 
     val errors = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 4)
     private var searchJob: Job? = null
-    private var updatingLink = false
 
     init {
         if (doc.abilities.accessesManage) viewModelScope.launch {
@@ -601,24 +559,47 @@ class DocShareViewModel(
         }
     }
 
+    fun loadLink() {
+        if (_state.value.loaded || _state.value.loading) return
+        _state.update { it.copy(loading = true, error = false) }
+        viewModelScope.launch {
+            runCatching { repo.document(doc.id) }
+                .onSuccess { fresh -> _state.update { it.copy(doc = fresh, linkReach = fresh.linkReach.orEmpty(),
+                    linkRole = fresh.linkRole.orEmpty(), loaded = true) } }
+                .onFailure { _state.update { it.copy(error = true) } }
+            _state.update { it.copy(loading = false) }
+        }
+    }
+
     fun updateLink(reach: String? = null, role: String? = null) {
-        if (updatingLink) return
-        val prevReach = _state.value.linkReach
-        val prevRole = _state.value.linkRole
-        val newReach = reach ?: prevReach
-        if (!_state.value.doc.abilities.linkSelectOptions.containsKey(newReach)) return
-        val options = _state.value.doc.abilities.linkSelectOptions[newReach].orEmpty()
-        val newRole = if (newReach == "restricted") null else role ?: prevRole.takeIf { it in options } ?: options.firstOrNull()
+        val current = _state.value
+        if (current.linkSaving || !current.doc.abilities.linkConfiguration) return
+        val newReach = reach ?: current.linkReach
+        if (!current.doc.abilities.linkSelectOptions.containsKey(newReach)) return
+        val options = current.doc.abilities.linkSelectOptions[newReach].orEmpty()
+        val newRole = if (newReach == "restricted") null else role
+            ?: current.linkRole.takeIf { it in options } ?: options.firstOrNull()
         if (newReach != "restricted" && newRole !in options) return
-        // 乐观更新;失败回滚,避免 chip 显示服务端并未生效的值。
         _state.update { it.copy(linkReach = newReach, linkRole = newRole.orEmpty()) }
-        updatingLink = true
+    }
+
+    fun saveLink(onSaved: () -> Unit) {
+        val current = _state.value
+        if (current.linkSaving || !current.loaded || current.error) return
+        val changed = current.linkReach != current.doc.linkReach ||
+            (current.linkReach != "restricted" && current.linkRole != current.doc.linkRole)
+        if (!changed || !current.doc.abilities.linkConfiguration) { onSaved(); return }
         _state.update { it.copy(linkSaving = true) }
         viewModelScope.launch {
-            runCatching { repo.updateLinkConfiguration(doc.id, newReach, newRole) }
-                .onFailure { _state.update { it.copy(linkReach = prevReach, linkRole = prevRole) }; errors.tryEmit(Unit) }
-            updatingLink = false
-            _state.update { it.copy(linkSaving = false) }
+            try {
+                runCatching { repo.updateLinkConfiguration(doc.id, current.linkReach,
+                    current.linkRole.takeUnless { current.linkReach == "restricted" }) }
+                    .onSuccess {
+                        _state.update { it.copy(doc = it.doc.copy(linkReach = current.linkReach, linkRole = current.linkRole)) }
+                        onSaved()
+                    }
+                    .onFailure { errors.tryEmit(Unit) }
+            } finally { _state.update { it.copy(linkSaving = false) } }
         }
     }
 

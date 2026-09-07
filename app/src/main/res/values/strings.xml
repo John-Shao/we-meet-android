@@ -1048,4 +1048,14 @@
     <string name="docs_chat_share_access_failed">Some cards were sent, but access could not be confirmed. Retry access or manage permissions in the document.</string>
     <string name="docs_chat_share_retry">Retry</string>
     <string name="docs_chat_share_close">Close</string>
+    <string name="docs_chat_share_next">Next</string>
+    <string name="docs_chat_share_targets">Selected chats: %d</string>
+    <string name="docs_chat_share_permission_retry">Could not check permissions. Retry</string>
+    <string name="docs_chat_share_permission">Access to grant</string>
+    <string name="docs_chat_share_reader">Read</string>
+    <string name="docs_chat_share_editor">Edit</string>
+    <string name="docs_chat_share_grant_help">Sets access for current chat members. Your cards for the same document in each chat share this setting. Higher access from other sources is preserved.</string>
+    <string name="docs_chat_share_existing_access">Send the card only. Recipients keep their existing access permissions.</string>
+    <string name="docs_chat_share_send">Send</string>
+    <string name="docs_chat_share_back">Back</string>
 </resources>

@@ -108,7 +108,7 @@ fun DocDetailScreen(
     var showMove by rememberSaveable { mutableStateOf(false) }
     var showComments by rememberSaveable { mutableStateOf(false) }
     var showVersions by rememberSaveable { mutableStateOf(false) }
-    var showShare by rememberSaveable { mutableStateOf(false) }
+    var sharingPage by rememberSaveable { mutableStateOf<DocSharingPage?>(null) }
     var showChildren by rememberSaveable(docId) { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -190,11 +190,12 @@ fun DocDetailScreen(
                                     onClick = { menuExpanded = false; onOpenWebUrl(DocLinks.webUrl(deps.docsBaseUrl, doc.id)) },
                                 )
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.docs_copy_link), softWrap = false) },
-                                    onClick = {
-                                        menuExpanded = false
-                                        copyLink(context, deps.docsBaseUrl, doc)
-                                    },
+                                    text = { Text(stringResource(R.string.docs_link_share)) },
+                                    onClick = { menuExpanded = false; sharingPage = DocSharingPage.LINKS },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.docs_share_collaborators)) },
+                                    onClick = { menuExpanded = false; sharingPage = DocSharingPage.MEMBERS },
                                 )
                                 if (doc.abilities.move) {
                                     DropdownMenuItem(
@@ -313,7 +314,10 @@ fun DocDetailScreen(
                             if (doc.abilities.versionsList) DocsReaderAction(Icons.Outlined.History,
                                 stringResource(R.string.docs_versions), { showVersions = true }, Modifier.weight(1f))
                             if (doc.abilities.accessesView) DocsReaderAction(Icons.Outlined.Share,
-                                stringResource(R.string.docs_share), { showShare = true }, Modifier.weight(1f))
+                                stringResource(R.string.docs_share_to_chat), {
+                                    onShareToChat(doc.id, doc.displayTitle.ifBlank { context.getString(R.string.docs_untitled) },
+                                        DocLinks.webUrl(deps.docsBaseUrl, doc.id))
+                                }, Modifier.weight(1f))
                             if (doc.abilities.canEdit) PrimaryButton(
                                 text = stringResource(R.string.docs_edit),
                                 onClick = { onOpenEditor(DocLinks.editorUrl(deps.docsBaseUrl, doc.id)) },
@@ -393,17 +397,13 @@ fun DocDetailScreen(
         )
     }
 
-    if (showShare && doc != null) {
+    if (sharingPage != null && doc != null) {
         DocShareSheet(
             deps = deps,
             doc = doc,
-            onDismiss = { showShare = false },
+            onDismiss = { sharingPage = null },
             onDocChanged = vm::load,
-            onShareToChat = {
-                showShare = false
-                onShareToChat(doc.id, doc.displayTitle.ifBlank { context.getString(R.string.docs_untitled) },
-                    DocLinks.webUrl(deps.docsBaseUrl, doc.id))
-            },
+            initialPage = sharingPage!!,
         )
     }
 }
@@ -415,23 +415,6 @@ private fun buildInfoLine(doc: com.we.meet.feature.docs.data.net.DocumentDto): S
         stringResource(R.string.docs_updated_at, updated)
     } else {
         stringResource(R.string.docs_untitled)
-    }
-}
-
-/**
- * 复制文档链接(§4.7.3:Android 复制链接 → PC 打开,同 realm SSO 免登直达)。
- * 写系统剪贴板并把文档可见的 Web URL 放进去。
- */
-private fun copyLink(
-    context: android.content.Context,
-    docsBaseUrl: String,
-    doc: com.we.meet.feature.docs.data.net.DocumentDto,
-) {
-    val url = com.we.meet.feature.docs.util.DocLinks.webUrl(docsBaseUrl, doc.id)
-    runCatching {
-        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
-            as? android.content.ClipboardManager
-        clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("doc-link", url))
     }
 }
 

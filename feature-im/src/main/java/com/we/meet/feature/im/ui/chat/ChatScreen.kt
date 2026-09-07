@@ -184,6 +184,11 @@ fun ChatScreen(
     var showCallSheet by remember { mutableStateOf(false) }
     // 分享云文档到聊天(入口 A):「+」面板「云文档」→ 选择器。
     var showDocPicker by remember { mutableStateOf(false) }
+    var docAccessId by androidx.compose.runtime.saveable.rememberSaveable(cid) { mutableStateOf<String?>(null) }
+    var docAccessTitle by androidx.compose.runtime.saveable.rememberSaveable(cid) { mutableStateOf("") }
+    docAccessId?.let { docId ->
+        DocCardAccessDialog(deps, cid, docId, docAccessTitle) { docAccessId = null }
+    }
     fun exitSelect() { selectMode = false; selectedMids = emptySet() }
     androidx.activity.compose.BackHandler(enabled = selectMode) { exitSelect() }
 
@@ -534,6 +539,10 @@ fun ChatScreen(
                                     } else null,
                                     onOpenEvent = onOpenEvent,
                                     onOpenDoc = onOpenDoc,
+                                    onManageDocAccess = if (isOwn && !selectMode) ({ doc ->
+                                        docAccessTitle = doc.title
+                                        docAccessId = doc.docId
+                                    }) else null,
                                     onJoinMeeting = onJoinMeeting,
                                     onJoinGroupCall = { slug -> calls.joinGroupCall(slug) },
                                     groupCallEnded = if (message.contentType == "group-call") {
