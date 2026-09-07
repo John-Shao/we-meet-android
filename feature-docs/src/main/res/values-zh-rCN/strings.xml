@@ -115,7 +115,7 @@
     <string name="docs_role_editor">可编辑</string>
     <string name="docs_role_administrator">管理员</string>
     <string name="docs_role_owner">所有者</string>
-    <string name="docs_reach_restricted">仅限特定成员</string>
+    <string name="docs_reach_restricted">仅已获授权用户</string>
     <string name="docs_reach_authenticated">企业内所有人</string>
     <string name="docs_reach_public">公开</string>
     <string name="docs_content_updated">内容已更新</string>
@@ -144,7 +144,7 @@
     <string name="docs_link_copied">链接已复制</string>
     <string name="docs_share_public_help">获得链接的任何人都可以访问此文档。</string>
     <string name="docs_share_authenticated_help">登录后的用户可通过链接访问此文档。</string>
-    <string name="docs_share_restricted_help">仅有权限的成员可以打开链接，复制链接不会扩大访问范围。</string>
+    <string name="docs_share_restricted_help">仅已获授权用户可以打开链接，复制链接不会扩大访问范围。</string>
     <string name="docs_share_no_users">未找到用户，请尝试其他姓名或邮箱</string>
     <string name="docs_remove_member_message">确定将 %1$s 从此文档成员中移除？</string>
     <string name="docs_versions_help">选择历史版本查看当时的内容</string>
@@ -154,11 +154,11 @@
     <string name="docs_move_help">这里仅显示你有权限移入的文档位置</string>
     <string name="docs_thread_expand">展开讨论</string>
     <string name="docs_thread_collapse">收起讨论</string>
-    <string name="docs_share_access_title">谁可以访问</string>
-    <string name="docs_share_collaborators">协作成员</string>
+    <string name="docs_share_access_title">链接访问范围</string>
+    <string name="docs_share_collaborators">成员与权限</string>
     <string name="docs_share_invite_members">邀请成员</string>
     <string name="docs_share_loading_members">正在加载成员…</string>
-    <string name="docs_share_no_members">暂无协作成员</string>
+    <string name="docs_share_no_members">暂无成员</string>
     <string name="docs_share_pending_invitations">待接受的邀请</string>
     <string name="docs_share_change_recipient">更换邀请对象</string>
     <string name="docs_share_invite_role">权限</string>

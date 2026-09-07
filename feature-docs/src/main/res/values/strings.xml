@@ -115,7 +115,7 @@
     <string name="docs_role_editor">Can edit</string>
     <string name="docs_role_administrator">Admin</string>
     <string name="docs_role_owner">Owner</string>
-    <string name="docs_reach_restricted">Restricted</string>
+    <string name="docs_reach_restricted">Only users with access</string>
     <string name="docs_reach_authenticated">Anyone in the workspace</string>
     <string name="docs_reach_public">Public</string>
     <string name="docs_content_updated">Content updated</string>
@@ -154,11 +154,11 @@
     <string name="docs_move_help">Only documents you can move into are available here.</string>
     <string name="docs_thread_expand">Expand discussion</string>
     <string name="docs_thread_collapse">Collapse discussion</string>
-    <string name="docs_share_access_title">Who can access</string>
-    <string name="docs_share_collaborators">Collaborators</string>
+    <string name="docs_share_access_title">Link access</string>
+    <string name="docs_share_collaborators">Members &amp; permissions</string>
     <string name="docs_share_invite_members">Invite members</string>
     <string name="docs_share_loading_members">Loading members…</string>
-    <string name="docs_share_no_members">No collaborators yet</string>
+    <string name="docs_share_no_members">No members yet</string>
     <string name="docs_share_pending_invitations">Pending invitations</string>
     <string name="docs_share_change_recipient">Change recipient</string>
     <string name="docs_share_invite_role">Permission</string>

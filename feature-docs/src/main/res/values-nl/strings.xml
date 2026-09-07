@@ -115,7 +115,7 @@
     <string name="docs_role_editor">Bewerken</string>
     <string name="docs_role_administrator">Beheerder</string>
     <string name="docs_role_owner">Eigenaar</string>
-    <string name="docs_reach_restricted">Alleen specifieke leden</string>
+    <string name="docs_reach_restricted">Alleen bevoegde gebruikers</string>
     <string name="docs_reach_authenticated">Iedereen in de werkruimte</string>
     <string name="docs_reach_public">Openbaar</string>
     <string name="docs_content_updated">Inhoud bijgewerkt</string>
@@ -154,8 +154,8 @@
     <string name="docs_move_help">Hier staan alleen documenten waarnaar je mag verplaatsen.</string>
     <string name="docs_thread_expand">Discussie uitklappen</string>
     <string name="docs_thread_collapse">Discussie inklappen</string>
-    <string name="docs_share_access_title">Wie heeft toegang</string>
-    <string name="docs_share_collaborators">Leden</string>
+    <string name="docs_share_access_title">Toegang via link</string>
+    <string name="docs_share_collaborators">Leden en rechten</string>
     <string name="docs_share_invite_members">Leden uitnodigen</string>
     <string name="docs_share_loading_members">Leden laden…</string>
     <string name="docs_share_no_members">Nog geen leden</string>

@@ -115,7 +115,7 @@
     <string name="docs_role_editor">Édition</string>
     <string name="docs_role_administrator">Administrateur</string>
     <string name="docs_role_owner">Propriétaire</string>
-    <string name="docs_reach_restricted">Membres spécifiques uniquement</string>
+    <string name="docs_reach_restricted">Utilisateurs autorisés uniquement</string>
     <string name="docs_reach_authenticated">Tout l\'espace de travail</string>
     <string name="docs_reach_public">Public</string>
     <string name="docs_content_updated">Contenu mis à jour</string>
@@ -154,8 +154,8 @@
     <string name="docs_move_help">Seuls les documents de destination autorisés sont proposés.</string>
     <string name="docs_thread_expand">Développer la discussion</string>
     <string name="docs_thread_collapse">Réduire la discussion</string>
-    <string name="docs_share_access_title">Qui peut accéder</string>
-    <string name="docs_share_collaborators">Membres</string>
+    <string name="docs_share_access_title">Accès par lien</string>
+    <string name="docs_share_collaborators">Membres et autorisations</string>
     <string name="docs_share_invite_members">Inviter des membres</string>
     <string name="docs_share_loading_members">Chargement des membres…</string>
     <string name="docs_share_no_members">Aucun membre</string>

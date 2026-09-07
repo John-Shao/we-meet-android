@@ -115,7 +115,7 @@
     <string name="docs_role_editor">Bearbeiten</string>
     <string name="docs_role_administrator">Administrator</string>
     <string name="docs_role_owner">Eigentümer</string>
-    <string name="docs_reach_restricted">Nur bestimmte Mitglieder</string>
+    <string name="docs_reach_restricted">Nur berechtigte Nutzer</string>
     <string name="docs_reach_authenticated">Alle im Arbeitsbereich</string>
     <string name="docs_reach_public">Öffentlich</string>
     <string name="docs_content_updated">Inhalt aktualisiert</string>
@@ -154,8 +154,8 @@
     <string name="docs_move_help">Hier erscheinen nur Dokumente, in die Sie verschieben dürfen.</string>
     <string name="docs_thread_expand">Diskussion ausklappen</string>
     <string name="docs_thread_collapse">Diskussion einklappen</string>
-    <string name="docs_share_access_title">Wer hat Zugriff</string>
-    <string name="docs_share_collaborators">Mitglieder</string>
+    <string name="docs_share_access_title">Zugriff über Link</string>
+    <string name="docs_share_collaborators">Mitglieder und Berechtigungen</string>
     <string name="docs_share_invite_members">Mitglieder einladen</string>
     <string name="docs_share_loading_members">Mitglieder werden geladen…</string>
     <string name="docs_share_no_members">Noch keine Mitglieder</string>
