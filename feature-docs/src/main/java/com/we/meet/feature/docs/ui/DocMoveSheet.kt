@@ -1,8 +1,14 @@
 package com.we.meet.feature.docs.ui
 
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
+import com.we.meet.ui.components.WeMeetInlineErrorState
+import com.we.meet.ui.components.WeMeetEmptyState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+
 import com.we.meet.feature.docs.util.docsRunCatching as runCatching
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,41 +62,48 @@ fun DocMoveSheet(
     deps: DocsDeps,
     doc: DocumentDto,
     onDismiss: () -> Unit,
-    onMove: (targetId: String, position: String) -> Unit,
+    onMove: (targetId: String, position: String, onComplete: (Boolean) -> Unit) -> Unit,
 ) {
     var roots by remember { mutableStateOf<List<DocumentDto>>(emptyList()) }
     var rootsLoading by remember { mutableStateOf(true) }
     var selected by remember { mutableStateOf<DocMoveSheetSelection>(DocMoveSheetSelection.None) }
     val scope = rememberCoroutineScope()
+    var moving by remember { mutableStateOf(false) }
+    var moveError by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        runCatching {
+    var rootsError by remember { mutableStateOf(false) }
+    fun loadRoots() {
+        rootsLoading = true
+        rootsError = false
+        scope.launch { runCatching {
             deps.docsRepository.moveCandidates()
         }.onSuccess { documents ->
             roots = documents.filter { it.id != doc.id && (doc.path.isBlank() || !it.path.startsWith(doc.path)) }
             rootsLoading = false
         }.onFailure {
             rootsLoading = false
-        }
+            rootsError = true
+        } }
     }
+    LaunchedEffect(doc.id) { loadRoots() }
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!moving) onDismiss() },
         sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = Dimens.SpaceXl),
+                .fillMaxWidth().fillMaxHeight(0.75f)
+                .padding(bottom = Dimens.SpaceM),
         ) {
-            Text(
-                text = stringResource(R.string.docs_move_title),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(horizontal = Dimens.ScreenPadding),
-            )
-            Box(Modifier.padding(top = Dimens.SpaceM)) {
+            DocsSheetHeader(stringResource(R.string.docs_move_title), { if (!moving) onDismiss() },
+                doc.displayTitle.ifBlank { stringResource(R.string.docs_untitled) })
+            Box(Modifier.weight(1f).padding(top = Dimens.SpaceM)) {
                 when {
                     rootsLoading -> WeMeetInlineLoading()
+                    rootsError -> WeMeetInlineErrorState(onRetry = { loadRoots() }, message = stringResource(R.string.docs_load_error))
+                    roots.isEmpty() -> WeMeetEmptyState(title = stringResource(R.string.docs_move_empty),
+                        description = stringResource(R.string.docs_move_help))
                     else -> LazyColumn {
                         if (roots.any { it.depth == 1 }) {
                             item(key = "top") {
@@ -102,7 +115,7 @@ fun DocMoveSheet(
                                     expandable = false,
                                     expanded = false,
                                     onToggle = null,
-                                    onSelect = { selected = DocMoveSheetSelection.Top },
+                                    onSelect = { if (!moving) selected = DocMoveSheetSelection.Top },
                                 )
                             }
                         }
@@ -113,24 +126,33 @@ fun DocMoveSheet(
                                 docId = doc.id,
                                 depth = 0,
                                 selected = selected,
-                                onSelect = { selected = it },
+                                onSelect = { if (!moving) selected = it },
                             )
                         }
                     }
                 }
             }
+            if (moveError) Text(stringResource(R.string.docs_action_failed), color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = Dimens.ScreenPadding))
             Box(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceL)) {
                 PrimaryButton(
                     text = stringResource(R.string.docs_move_confirm),
-                    enabled = selected != DocMoveSheetSelection.None,
+                    loading = moving,
+                    enabled = !rootsLoading && !rootsError && selected != DocMoveSheetSelection.None,
                     onClick = {
-                        when (val sel = selected) {
-                            is DocMoveSheetSelection.Into -> onMove(sel.docId, DocsMovePositions.LAST_CHILD)
-                            DocMoveSheetSelection.Top -> {
-                                val firstRoot = roots.firstOrNull { it.depth == 1 }
-                                if (firstRoot != null) onMove(firstRoot.id, DocsMovePositions.LEFT)
+                        val destination = when (val sel = selected) {
+                            is DocMoveSheetSelection.Into -> sel.docId to DocsMovePositions.LAST_CHILD
+                            DocMoveSheetSelection.Top -> roots.firstOrNull { it.depth == 1 }?.let { it.id to DocsMovePositions.LEFT }
+                            DocMoveSheetSelection.None -> null
+                        }
+                        if (destination != null && !moving) {
+                            moving = true
+                            moveError = false
+                            onMove(destination.first, destination.second) { success ->
+                                moving = false
+                                moveError = !success
+                                if (success) onDismiss()
                             }
-                            DocMoveSheetSelection.None -> Unit
                         }
                     },
                 )
@@ -225,9 +247,10 @@ private fun MoveRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = selectable, onClick = onSelect)
+            .heightIn(min = Dimens.MinTouchTarget)
+            .selectable(selected = selected, enabled = selectable, role = Role.RadioButton, onClick = onSelect)
             .padding(
-                start = Dimens.ScreenPadding + Dimens.SpaceM * depth,
+                start = Dimens.ScreenPadding + Dimens.SpaceM * depth.coerceAtMost(4),
                 end = Dimens.ScreenPadding,
             ),
         verticalAlignment = Alignment.CenterVertically,

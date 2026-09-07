@@ -132,4 +132,26 @@
     <string name="docs_children_empty">Nog geen subpagina’s</string>
     <string name="docs_comment_delete">Reactie verwijderen</string>
     <string name="docs_comment_delete_message">Deze reactie wordt permanent verwijderd.</string>
+    <string name="docs_close">Sluiten</string>
+    <string name="docs_read_only">Alleen lezen</string>
+    <string name="docs_search_clear">Zoekopdracht wissen</string>
+    <string name="docs_search_start">Zoek op titel of inhoud</string>
+    <string name="docs_load_more">Meer laden</string>
+    <string name="docs_action_failed">Actie mislukt. Probeer opnieuw.</string>
+    <string name="docs_comments_open">Open · %1$d</string>
+    <string name="docs_comments_resolved">Opgelost · %1$d</string>
+    <string name="docs_comments_resolved_empty">Geen opgeloste discussies</string>
+    <string name="docs_link_copied">Link gekopieerd</string>
+    <string name="docs_share_public_help">Iedereen met de link heeft toegang tot dit document.</string>
+    <string name="docs_share_authenticated_help">Ingelogde gebruikers hebben toegang via de link.</string>
+    <string name="docs_share_restricted_help">Alleen bevoegde personen kunnen deze link openen. Kopiëren verleent geen toegang.</string>
+    <string name="docs_share_no_users">Geen personen gevonden. Probeer een andere naam of e-mail.</string>
+    <string name="docs_remove_member_message">%1$s uit dit document verwijderen?</string>
+    <string name="docs_versions_help">Kies een versie om de inhoud te bekijken.</string>
+    <string name="docs_versions_empty_help">Beschikbare opgeslagen versies verschijnen hier.</string>
+    <string name="docs_version_current">Nieuwste versie</string>
+    <string name="docs_move_empty">Geen beschikbare locaties</string>
+    <string name="docs_move_help">Hier staan alleen documenten waarnaar je mag verplaatsen.</string>
+    <string name="docs_thread_expand">Discussie uitklappen</string>
+    <string name="docs_thread_collapse">Discussie inklappen</string>
 </resources>

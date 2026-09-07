@@ -1,5 +1,21 @@
 package com.we.meet.feature.docs.ui
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.foundation.text.selection.SelectionContainer
+
 import com.we.meet.feature.docs.util.docsRunCatching as runCatching
 import kotlinx.coroutines.flow.collectLatest
 
@@ -19,13 +35,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -118,12 +134,14 @@ fun DocDetailScreen(
     }
 
     val doc = state.doc
+    val readerState = rememberLazyListState()
+    val headerScrolledAway by remember { derivedStateOf { readerState.firstVisibleItemIndex > 0 } }
 
     Scaffold(
         topBar = {
             WeMeetTopBar(
-                title = doc?.displayTitle?.takeIf { it.isNotBlank() }
-                    ?: stringResource(R.string.docs_untitled),
+                title = if (headerScrolledAway && doc != null) doc.displayTitle.ifBlank { stringResource(R.string.docs_untitled) }
+                    else stringResource(R.string.docs_screen_title),
                 onBack = onBack,
                 actions = {
                     if (doc != null) {
@@ -232,20 +250,8 @@ fun DocDetailScreen(
                 )
                 doc != null -> Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = Dimens.ScreenPadding),
+                        .fillMaxSize(),
                 ) {
-                    Text(
-                        text = doc.displayTitle.ifBlank { stringResource(R.string.docs_untitled) },
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.padding(top = Dimens.SpaceL),
-                    )
-                    Text(
-                        text = buildInfoLine(doc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = Dimens.SpaceXs),
-                    )
                     androidx.compose.material3.pulltorefresh.PullToRefreshBox(
                         isRefreshing = state.refreshing,
                         onRefresh = vm::load,
@@ -266,6 +272,22 @@ fun DocDetailScreen(
                                 )
                             }
                             else -> DocReader(
+                                listState = readerState,
+                                header = {
+                                    Column(Modifier.padding(Dimens.ScreenPadding).padding(bottom = Dimens.SpaceM)) {
+                                        SelectionContainer {
+                                            Text(doc.displayTitle.ifBlank { stringResource(R.string.docs_untitled) },
+                                                style = MaterialTheme.typography.headlineMedium,
+                                                modifier = Modifier.semantics { heading() })
+                                        }
+                                        Text(buildInfoLine(doc), style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(top = Dimens.SpaceS))
+                                        if (!doc.abilities.canEdit) Text(stringResource(R.string.docs_read_only),
+                                            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.padding(top = Dimens.SpaceS))
+                                    }
+                                },
                                 blocks = state.blocks,
                                 imageLoader = deps.docsMediaLoader,
                                 onOpenDoc = onOpenDoc,
@@ -282,40 +304,21 @@ fun DocDetailScreen(
                             )
                         }
                     }
-                    if (doc.abilities.canEdit) {
-                        PrimaryButton(
-                            text = stringResource(R.string.docs_edit),
-                            onClick = {
-                                onOpenEditor(DocLinks.editorUrl(deps.docsBaseUrl, doc.id))
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = Dimens.SpaceS),
-                        )
-                    }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = Dimens.SpaceM),
-                    ) {
-                        SecondaryButton(
-                            text = stringResource(R.string.docs_comments),
-                            onClick = { showComments = true },
-                            enabled = doc.abilities.comment,
-                            modifier = Modifier.weight(1f).padding(end = Dimens.SpaceXs),
-                        )
-                        SecondaryButton(
-                            text = stringResource(R.string.docs_versions),
-                            onClick = { showVersions = true },
-                            enabled = doc.abilities.versionsList,
-                            modifier = Modifier.weight(1f).padding(horizontal = Dimens.SpaceXs),
-                        )
-                        PrimaryButton(
-                            text = stringResource(R.string.docs_share),
-                            onClick = { showShare = true },
-                            enabled = doc.abilities.accessesView,
-                            modifier = Modifier.weight(1f).padding(start = Dimens.SpaceXs),
-                        )
+                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, tonalElevation = Dimens.ElevationSubtle) {
+                        Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+                            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS), verticalAlignment = Alignment.CenterVertically) {
+                            if (doc.abilities.comment) DocsReaderAction(Icons.Outlined.ChatBubbleOutline,
+                                stringResource(R.string.docs_comments), { showComments = true }, Modifier.weight(1f))
+                            if (doc.abilities.versionsList) DocsReaderAction(Icons.Outlined.History,
+                                stringResource(R.string.docs_versions), { showVersions = true }, Modifier.weight(1f))
+                            if (doc.abilities.accessesView) DocsReaderAction(Icons.Outlined.Share,
+                                stringResource(R.string.docs_share), { showShare = true }, Modifier.weight(1f))
+                            if (doc.abilities.canEdit) PrimaryButton(
+                                text = stringResource(R.string.docs_edit),
+                                onClick = { onOpenEditor(DocLinks.editorUrl(deps.docsBaseUrl, doc.id)) },
+                                modifier = Modifier.weight(1.3f),
+                            )
+                        }
                     }
                 }
             }
@@ -329,14 +332,11 @@ fun DocDetailScreen(
         })
     }
 
-    if (showRename) {
-        DocRenameDialogInternal(
+    if (showRename && doc != null) {
+        DocsRenameDialog(
             doc = doc,
             onDismiss = { showRename = false },
-            onConfirm = { newTitle ->
-                vm.rename(newTitle)
-                showRename = false
-            },
+            onConfirm = { newTitle, complete -> vm.rename(newTitle, complete) },
         )
     }
 
@@ -359,9 +359,11 @@ fun DocDetailScreen(
             deps = deps,
             doc = doc,
             onDismiss = { showMove = false },
-            onMove = { targetId, position ->
-                showMove = false
-                vm.move(targetId, position, onMoved = onBack)
+            onMove = { targetId, position, complete ->
+                vm.move(targetId, position) { success ->
+                    complete(success)
+                    if (success) onBack()
+                }
             },
         )
     }
@@ -458,36 +460,11 @@ private fun DocNoAccessState(
 }
 
 @Composable
-private fun DocRenameDialogInternal(
-    doc: com.we.meet.feature.docs.data.net.DocumentDto?,
-    onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit,
-) {
-    var title by rememberSaveable(doc?.id) { mutableStateOf(doc?.displayTitle ?: "") }
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.docs_rename_title)) },
-        text = {
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(stringResource(R.string.docs_create_hint)) },
-                singleLine = true,
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onConfirm(title.trim()) },
-                enabled = title.isNotBlank(),
-            ) {
-                Text(stringResource(R.string.docs_rename_confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.docs_cancel))
-            }
-        },
-    )
+private fun DocsReaderAction(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier) {
+    Column(modifier.heightIn(min = Dimens.MinTouchTarget).clickable(role = Role.Button, onClick = onClick)
+        .padding(vertical = Dimens.SpaceXs), horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(Dimens.IconMedium), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(label, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
+    }
 }

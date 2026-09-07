@@ -1050,7 +1050,7 @@
     <string name="web_login_network_error">Erreur réseau</string>
     <string name="web_login_invalid_callback">Rappel de connexion invalide</string>
     <string name="docs_editor_save_failed">Saving was not confirmed. Check your connection and retry. This page will stay open.</string>
-    <string name="docs_editor_incompatible">L’éditeur n’est pas encore prêt. Réessayez et, si nécessaire, vérifiez que le service de documents est à jour.</string>
+    <string name="docs_editor_incompatible">Impossible d’ouvrir l’éditeur. Réessayez plus tard ou revenez au document pour continuer la lecture.</string>
     <string name="docs_editor_pending_work">Toutes les modifications ne sont pas encore confirmées. Vérifiez la connexion, le titre, les pièces jointes et les commentaires non publiés, puis réessayez.</string>
     <string name="docs_editor_reloaded">L’éditeur a été rechargé. Seul le contenu enregistré sur le serveur peut être confirmé. Vérifiez vos dernières modifications.</string>
 </resources>

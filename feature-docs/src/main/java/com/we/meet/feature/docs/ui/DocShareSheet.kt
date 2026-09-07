@@ -1,5 +1,25 @@
 package com.we.meet.feature.docs.ui
 
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.PersonRemove
+import androidx.compose.material.icons.outlined.Check
+import com.we.meet.ui.components.WeMeetInlineErrorState
+
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
+import com.we.meet.ui.components.SecondaryButton
+
 import com.we.meet.feature.docs.util.docsRunCatching as runCatching
 
 import androidx.compose.foundation.clickable
@@ -62,7 +82,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** 分享面板(设计文档 §4.4 分享):链接权限 / 成员 / 邀请 / 离开 / 申请访问。 */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun DocShareSheet(
     deps: DocsDeps,
@@ -78,12 +98,14 @@ fun DocShareSheet(
     )
     val state by vm.state.collectAsStateWithLifecycle()
     var showLeave by remember { mutableStateOf(false) }
-    var inviteEmail by remember { mutableStateOf("") }
-    var inviteRole by remember { mutableStateOf("reader") }
+    var inviteEmail by rememberSaveable(doc.id) { mutableStateOf("") }
+    var inviteRole by rememberSaveable(doc.id) { mutableStateOf("reader") }
 
+    val scope = rememberCoroutineScope()
+    var removeTarget by remember { mutableStateOf<DocsAccessDto?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
     val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
-    LaunchedEffect(vm) { vm.errors.collect { snackbar.showSnackbar(context.getString(R.string.docs_load_error)) } }
+    LaunchedEffect(vm) { vm.errors.collect { snackbar.showSnackbar(context.getString(R.string.docs_action_failed)) } }
     LaunchedEffect(vm) { vm.load() }
 
     ModalBottomSheet(
@@ -92,25 +114,31 @@ fun DocShareSheet(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = Dimens.SpaceXl),
+                .fillMaxWidth().fillMaxHeight(0.9f).imePadding()
+                .padding(bottom = Dimens.SpaceM),
         ) {
-            Text(
-                text = stringResource(R.string.docs_share),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(horizontal = Dimens.ScreenPadding),
-            )
+            DocsSheetHeader(stringResource(R.string.docs_share), onDismiss,
+                doc.displayTitle.ifBlank { stringResource(R.string.docs_untitled) })
+            Box(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS)) {
+                SecondaryButton(text = stringResource(R.string.docs_copy_link), onClick = {
+                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                    clipboard?.setPrimaryClip(android.content.ClipData.newPlainText(doc.displayTitle,
+                        com.we.meet.feature.docs.util.DocLinks.webUrl(deps.docsBaseUrl, doc.id)))
+                    scope.launch { snackbar.showSnackbar(context.getString(R.string.docs_link_copied)) }
+                })
+            }
+            if (state.mutating || state.linkSaving) WeMeetInlineLoading()
 
             androidx.compose.material3.SnackbarHost(snackbar)
             when {
-                state.loading -> Box(Modifier.padding(top = Dimens.SpaceM)) { WeMeetLoading() }
-                state.error -> Box(Modifier.padding(top = Dimens.SpaceM)) {
+                state.loading && state.accesses.isEmpty() -> Box(Modifier.padding(top = Dimens.SpaceM)) { WeMeetLoading() }
+                state.error && state.accesses.isEmpty() -> Box(Modifier.padding(top = Dimens.SpaceM)) {
                     WeMeetErrorState(
                         onRetry = vm::load,
                         message = stringResource(R.string.docs_load_error),
                     )
                 }
-                else -> LazyColumn {
+                else -> LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = Dimens.SpaceXl)) {
                     // 链接权限
                     if (state.doc.abilities.retrieve && state.doc.abilities.linkConfiguration) {
                         item(key = "link") {
@@ -122,26 +150,26 @@ fun DocShareSheet(
                                     vertical = Dimens.SpaceS,
                                 ),
                             )
-                            Row(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = Dimens.ScreenPadding),
+                            FlowRow(
+                                Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding),
+                                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
                             ) {
                                 state.doc.abilities.linkSelectOptions.keys.forEach { reach ->
                                     FilterChip(
+                                        enabled = !state.linkSaving,
                                         selected = state.linkReach == reach,
                                         onClick = { vm.updateLink(reach = reach) },
                                         label = { Text(stringResource(reachLabelRes(reach)), softWrap = false) },
                                     )
                                 }
                             }
-                            Row(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = Dimens.ScreenPadding),
+                            FlowRow(
+                                Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding),
+                                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
                             ) {
                                 state.doc.abilities.linkSelectOptions[state.linkReach].orEmpty().forEach { role ->
                                     FilterChip(
+                                        enabled = !state.linkSaving,
                                         selected = state.linkRole == role,
                                         onClick = { vm.updateLink(role = role) },
                                         label = { Text(stringResource(roleLabelRes(role)), softWrap = false) },
@@ -151,6 +179,16 @@ fun DocShareSheet(
                         }
                     }
 
+                    item(key = "reach-help") {
+                        Text(stringResource(when (state.linkReach) {
+                            "public" -> R.string.docs_share_public_help
+                            "authenticated" -> R.string.docs_share_authenticated_help
+                            else -> R.string.docs_share_restricted_help
+                        }), style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM))
+                        HorizontalDivider(Modifier.padding(horizontal = Dimens.ScreenPadding))
+                    }
                     // 成员
                     item(key = "members-title") {
                         Text(
@@ -165,8 +203,9 @@ fun DocShareSheet(
                     items(state.accesses, key = { it.id }) { access ->
                         AccessRow(
                             access = access,
+                            enabled = !state.mutating,
                             onChangeRole = { role -> vm.updateAccessRole(access, role) },
-                            onRemove = { vm.removeAccess(access, onDocChanged) },
+                            onRemove = { removeTarget = access },
                         )
                     }
 
@@ -202,9 +241,17 @@ fun DocShareSheet(
                         }
                     }
                     items(state.userResults, key = { "user-${it.id}" }) { user ->
-                        UserResultRow(user = user, onAdd = { vm.addMember(user) })
+                        UserResultRow(user = user, enabled = !state.mutating, onAdd = { vm.addMember(user) })
                     }
 
+                    if (state.userSearchError) item(key = "user-search-error") {
+                        WeMeetInlineErrorState(onRetry = { vm.onUserQueryChange(state.userQuery) },
+                            message = stringResource(R.string.docs_action_failed))
+                    }
+                    if (!state.userSearchError && state.userQuery.isNotBlank() && !state.userSearching && state.userResults.isEmpty()) item(key = "no-users") {
+                        Text(stringResource(R.string.docs_share_no_users), style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(Dimens.ScreenPadding))
+                    }
                     // 邀请(邮箱)
                     if (state.doc.abilities.accessesManage) item(key = "invite") {
                         Text(
@@ -215,50 +262,35 @@ fun DocShareSheet(
                                 vertical = Dimens.SpaceS,
                             ),
                         )
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = Dimens.ScreenPadding),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
+                        Column(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding)) {
                             OutlinedTextField(
-                                value = inviteEmail,
-                                onValueChange = { inviteEmail = it },
-                                modifier = Modifier.weight(1f),
-                                placeholder = { Text(stringResource(R.string.docs_share_invite_email)) },
-                                singleLine = true,
+                                value = inviteEmail, onValueChange = { inviteEmail = it },
+                                modifier = Modifier.fillMaxWidth(), enabled = !state.mutating,
+                                label = { Text(stringResource(R.string.docs_share_invite_email)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), singleLine = true,
                             )
-                            RoleDropdown(
-                                role = inviteRole,
-                                roles = SHARABLE_ROLES,
-                                onSelect = { inviteRole = it },
-                            )
-                            IconButton(
-                                onClick = {
-                                    val email = inviteEmail.trim()
-                                    if (email.isNotBlank()) {
-                                        vm.invite(email, inviteRole) { inviteEmail = "" }
-                                    }
-                                },
-                                enabled = inviteEmail.isNotBlank(),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.PersonAdd,
-                                    contentDescription = stringResource(R.string.cd_docs_invite),
-                                )
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween) {
+                                RoleDropdown(role = inviteRole, roles = SHARABLE_ROLES, enabled = !state.mutating,
+                                    onSelect = { inviteRole = it })
+                                TextButton(onClick = { vm.invite(inviteEmail.trim(), inviteRole) { inviteEmail = "" } },
+                                    enabled = !state.mutating && android.util.Patterns.EMAIL_ADDRESS.matcher(inviteEmail.trim()).matches()) {
+                                    Text(stringResource(R.string.cd_docs_invite))
+                                }
                             }
                         }
                     }
                     items(state.invitations, key = { it.id }) { invitation ->
                         InvitationRow(
                             invitation = invitation,
+                            enabled = !state.mutating,
                             onDelete = { vm.deleteInvitation(invitation) },
                         )
                     }
 
                     // 离开
                     if (state.doc.abilities.leave) item(key = "leave") {
-                        TextButton(onClick = { showLeave = true }) {
+                        TextButton(onClick = { showLeave = true }, enabled = !state.mutating) {
                             Text(
                                 text = stringResource(R.string.docs_share_leave),
                                 color = MaterialTheme.colorScheme.error,
@@ -274,6 +306,7 @@ fun DocShareSheet(
                             ) {
                                 PrimaryButton(
                                     text = stringResource(R.string.docs_share_ask_access),
+                                    loading = state.mutating,
                                     onClick = { vm.requestAccess() },
                                 )
                             }
@@ -292,6 +325,18 @@ fun DocShareSheet(
                 }
             }
         }
+    }
+
+    removeTarget?.let { access ->
+        DestructiveConfirmDialog(
+            title = stringResource(R.string.cd_docs_remove_member),
+            message = stringResource(R.string.docs_remove_member_message,
+                access.user?.displayName ?: access.team ?: stringResource(R.string.docs_unknown_user)),
+            confirmLabel = stringResource(R.string.cd_docs_remove_member),
+            dismissLabel = stringResource(R.string.docs_cancel),
+            onConfirm = { removeTarget = null; vm.removeAccess(access, onDocChanged) },
+            onDismiss = { removeTarget = null },
+        )
     }
 
     if (showLeave) {
@@ -315,6 +360,7 @@ fun DocShareSheet(
 @Composable
 private fun AccessRow(
     access: DocsAccessDto,
+    enabled: Boolean,
     onChangeRole: (String) -> Unit,
     onRemove: () -> Unit,
 ) {
@@ -334,6 +380,7 @@ private fun AccessRow(
         if (access.abilities.setRoleTo.isNotEmpty()) {
             RoleDropdown(
                 role = access.role.orEmpty(),
+                enabled = enabled,
                 roles = access.abilities.setRoleTo,
                 onSelect = onChangeRole,
             )
@@ -345,9 +392,9 @@ private fun AccessRow(
             )
         }
         if (access.abilities.destroy) {
-            IconButton(onClick = onRemove) {
+            IconButton(onClick = onRemove, enabled = enabled) {
                 Icon(
-                    imageVector = Icons.Outlined.Close,
+                    imageVector = Icons.Outlined.PersonRemove,
                     contentDescription = stringResource(R.string.cd_docs_remove_member),
                 )
             }
@@ -360,16 +407,20 @@ private fun RoleDropdown(
     role: String,
     roles: List<String>,
     onSelect: (String) -> Unit,
+    enabled: Boolean = true,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        TextButton(onClick = { expanded = true }) {
+        TextButton(onClick = { expanded = true }, enabled = enabled) {
             Text(stringResource(roleLabelRes(role)), softWrap = false)
+            Icon(Icons.Outlined.ExpandMore, null, modifier = Modifier.size(Dimens.IconSmall))
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             roles.forEach { candidate ->
                 DropdownMenuItem(
                     text = { Text(stringResource(roleLabelRes(candidate)), softWrap = false) },
+                    enabled = enabled,
+                    trailingIcon = { if (role == candidate) Icon(Icons.Outlined.Check, null) },
                     onClick = {
                         expanded = false
                         onSelect(candidate)
@@ -383,31 +434,31 @@ private fun RoleDropdown(
 @Composable
 private fun UserResultRow(
     user: DocsUserDto,
+    enabled: Boolean,
     onAdd: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onAdd)
+            .heightIn(min = Dimens.MinTouchTarget).clickable(enabled = enabled, onClick = onAdd)
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = user.displayName.ifBlank { user.email.orEmpty() },
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            text = user.email.orEmpty(),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Column(Modifier.weight(1f)) {
+            Text(user.displayName.ifBlank { user.email.orEmpty() }, style = MaterialTheme.typography.bodyMedium,
+                maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (!user.email.isNullOrBlank()) Text(user.email.orEmpty(), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Icon(Icons.Outlined.PersonAdd, stringResource(R.string.docs_share_add_member),
+            modifier = Modifier.padding(start = Dimens.SpaceS).size(Dimens.IconMedium))
     }
 }
 
 @Composable
 private fun InvitationRow(
     invitation: DocsInvitationDto,
+    enabled: Boolean,
     onDelete: () -> Unit,
 ) {
     Row(
@@ -427,7 +478,7 @@ private fun InvitationRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (invitation.abilities.destroy) {
-            IconButton(onClick = onDelete) {
+            IconButton(onClick = onDelete, enabled = enabled) {
                 Icon(
                     imageVector = Icons.Outlined.Close,
                     contentDescription = stringResource(R.string.cd_docs_remove_invitation),
@@ -453,8 +504,11 @@ class DocShareViewModel(
         val userQuery: String = "",
         val userResults: List<DocsUserDto> = emptyList(),
         val userSearching: Boolean = false,
+        val userSearchError: Boolean = false,
         val requestedAccess: Boolean = false,
         val loading: Boolean = false,
+        val mutating: Boolean = false,
+        val linkSaving: Boolean = false,
         val error: Boolean = false,
     )
 
@@ -504,15 +558,17 @@ class DocShareViewModel(
         // 乐观更新;失败回滚,避免 chip 显示服务端并未生效的值。
         _state.update { it.copy(linkReach = newReach, linkRole = newRole.orEmpty()) }
         updatingLink = true
+        _state.update { it.copy(linkSaving = true) }
         viewModelScope.launch {
             runCatching { repo.updateLinkConfiguration(doc.id, newReach, newRole) }
                 .onFailure { _state.update { it.copy(linkReach = prevReach, linkRole = prevRole) }; errors.tryEmit(Unit) }
             updatingLink = false
+            _state.update { it.copy(linkSaving = false) }
         }
     }
 
     fun onUserQueryChange(query: String) {
-        _state.update { it.copy(userQuery = query, userResults = if (query.isBlank()) emptyList() else it.userResults) }
+        _state.update { it.copy(userQuery = query, userSearchError = false, userSearching = query.isNotBlank(), userResults = if (query.isBlank()) emptyList() else it.userResults) }
         searchJob?.cancel()
         if (query.isBlank()) { _state.update { it.copy(userSearching = false) }; return }
         searchJob = viewModelScope.launch {
@@ -525,66 +581,58 @@ class DocShareViewModel(
                         _state.update { it.copy(userResults = users, userSearching = false) }
                     }
                 }
-                .onFailure { if (_state.value.userQuery == query) _state.update { it.copy(userSearching = false) } }
+                .onFailure { if (_state.value.userQuery == query) _state.update { it.copy(userSearching = false, userSearchError = true) } }
         }
     }
 
-    fun addMember(user: DocsUserDto) {
+    /** Only one membership mutation at a time; failures remain visible in the sheet. */
+    private fun mutate(action: suspend () -> Unit) {
+        if (_state.value.mutating) return
+        _state.update { it.copy(mutating = true) }
         viewModelScope.launch {
-            runCatching { repo.createAccess(doc.id, user.id, "reader") }
-                .onSuccess { load() }
-                .onFailure { errors.tryEmit(Unit) }
+            try { runCatching { action() }.onFailure { errors.tryEmit(Unit) } }
+            finally { _state.update { it.copy(mutating = false) } }
         }
     }
 
-    fun updateAccessRole(access: DocsAccessDto, role: String) {
-        viewModelScope.launch {
-            runCatching { repo.updateAccess(doc.id, access.id, role) }
-                .onSuccess { load() }
-                .onFailure { errors.tryEmit(Unit) }
-        }
+    fun addMember(user: DocsUserDto) = mutate {
+        repo.createAccess(doc.id, user.id, "reader")
+        onUserQueryChange("")
+        load()
     }
 
-    fun removeAccess(access: DocsAccessDto, onDocChanged: () -> Unit) {
-        viewModelScope.launch {
-            runCatching { repo.deleteAccess(doc.id, access.id) }
-                .onSuccess {
-                    load()
-                    onDocChanged()
-                }
-        }
+    fun updateAccessRole(access: DocsAccessDto, role: String) = mutate {
+        repo.updateAccess(doc.id, access.id, role)
+        load()
     }
 
-    fun invite(email: String, role: String, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            runCatching { repo.createInvitation(doc.id, email, role) }
-                .onSuccess { onSuccess(); load() }
-                .onFailure { errors.tryEmit(Unit) }
-        }
+    fun removeAccess(access: DocsAccessDto, onDocChanged: () -> Unit) = mutate {
+        repo.deleteAccess(doc.id, access.id)
+        load()
+        onDocChanged()
     }
 
-    fun deleteInvitation(invitation: DocsInvitationDto) {
-        viewModelScope.launch {
-            runCatching { repo.deleteInvitation(doc.id, invitation.id) }
-                .onSuccess { load() }
-                .onFailure { errors.tryEmit(Unit) }
-        }
+    fun invite(email: String, role: String, onSuccess: () -> Unit) = mutate {
+        repo.createInvitation(doc.id, email, role)
+        onSuccess()
+        load()
     }
 
-    fun requestAccess() {
-        viewModelScope.launch {
-            runCatching { repo.createAccessRequest(doc.id, "reader") }
-                .onSuccess { _state.update { it.copy(requestedAccess = true) } }
-        }
+    fun deleteInvitation(invitation: DocsInvitationDto) = mutate {
+        repo.deleteInvitation(doc.id, invitation.id)
+        load()
     }
 
-    fun leave(onLeft: () -> Unit) {
-        viewModelScope.launch {
-            runCatching { repo.leave(doc.id) }
-                .onSuccess { onLeft() }
-                .onFailure { errors.tryEmit(Unit) }
-        }
+    fun requestAccess() = mutate {
+        repo.createAccessRequest(doc.id, "reader")
+        _state.update { it.copy(requestedAccess = true) }
     }
+
+    fun leave(onLeft: () -> Unit) = mutate {
+        repo.leave(doc.id)
+        onLeft()
+    }
+
 }
 
 // ---- role/reach label helpers ----

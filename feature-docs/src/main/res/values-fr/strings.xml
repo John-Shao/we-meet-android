@@ -132,4 +132,26 @@
     <string name="docs_children_empty">Aucune sous-page</string>
     <string name="docs_comment_delete">Supprimer le commentaire</string>
     <string name="docs_comment_delete_message">Ce commentaire sera supprimé définitivement.</string>
+    <string name="docs_close">Fermer</string>
+    <string name="docs_read_only">Lecture seule</string>
+    <string name="docs_search_clear">Effacer la recherche</string>
+    <string name="docs_search_start">Rechercher par titre ou contenu</string>
+    <string name="docs_load_more">Charger plus</string>
+    <string name="docs_action_failed">Action impossible. Réessayez.</string>
+    <string name="docs_comments_open">En cours · %1$d</string>
+    <string name="docs_comments_resolved">Résolus · %1$d</string>
+    <string name="docs_comments_resolved_empty">Aucune discussion résolue</string>
+    <string name="docs_link_copied">Lien copié</string>
+    <string name="docs_share_public_help">Toute personne disposant du lien peut accéder au document.</string>
+    <string name="docs_share_authenticated_help">Les personnes connectées peuvent accéder au document via le lien.</string>
+    <string name="docs_share_restricted_help">Seules les personnes autorisées peuvent ouvrir ce lien. Le copier ne donne pas accès au document.</string>
+    <string name="docs_share_no_users">Aucune personne trouvée. Essayez un autre nom ou e-mail.</string>
+    <string name="docs_remove_member_message">Retirer %1$s de ce document ?</string>
+    <string name="docs_versions_help">Choisissez une version pour consulter son contenu.</string>
+    <string name="docs_versions_empty_help">Les versions enregistrées disponibles apparaîtront ici.</string>
+    <string name="docs_version_current">Dernière version</string>
+    <string name="docs_move_empty">Aucune destination disponible</string>
+    <string name="docs_move_help">Seuls les documents de destination autorisés sont proposés.</string>
+    <string name="docs_thread_expand">Développer la discussion</string>
+    <string name="docs_thread_collapse">Réduire la discussion</string>
 </resources>

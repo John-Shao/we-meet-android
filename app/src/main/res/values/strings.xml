@@ -1039,7 +1039,7 @@
     <string name="web_login_network_error">Network error</string>
     <string name="web_login_invalid_callback">Invalid sign-in callback</string>
     <string name="docs_editor_save_failed">Saving was not confirmed. Check your connection and retry. This page will stay open.</string>
-    <string name="docs_editor_incompatible">The editor is not ready. Retry; if this continues, check that the document service is up to date.</string>
+    <string name="docs_editor_incompatible">The editor could not be opened. Try again later, or go back to continue reading.</string>
     <string name="docs_editor_pending_work">Not all changes are confirmed saved. Check the connection, title, attachments and unpublished comments, then retry.</string>
     <string name="docs_editor_reloaded">The editor was reloaded. Only server-saved content can be confirmed; please check your last changes.</string>
 </resources>

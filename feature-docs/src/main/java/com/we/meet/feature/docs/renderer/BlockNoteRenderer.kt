@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckBox
@@ -123,18 +125,18 @@ fun DocReader(
     onOpenUrl: (url: String) -> Unit,
     onOpenWebFallback: () -> Unit,
     imageLoader: ImageLoader,
+    header: @Composable () -> Unit = {},
+    listState: LazyListState = rememberLazyListState(),
 ) {
     val flattened = remember(blocks) { flattenBlocks(blocks) }
-    if (flattened.isEmpty()) {
-        Box(Modifier.fillMaxWidth()) {
+    LazyColumn(Modifier.fillMaxWidth(), state = listState, contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = Dimens.SpaceXl)) {
+        item(key = "document-header") { header() }
+        if (flattened.isEmpty()) item(key = "empty") {
             WeMeetInlineEmptyState(
                 title = stringResource(R.string.docs_reader_empty_title),
                 description = stringResource(R.string.docs_reader_empty_desc),
             )
         }
-        return
-    }
-    LazyColumn(Modifier.fillMaxWidth()) {
         items(flattened, key = { it.pathKey }) { item ->
             BlockView(
                 item = item,

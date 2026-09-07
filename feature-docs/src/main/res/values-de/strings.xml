@@ -132,4 +132,26 @@
     <string name="docs_children_empty">Noch keine Unterseiten</string>
     <string name="docs_comment_delete">Kommentar löschen</string>
     <string name="docs_comment_delete_message">Dieser Kommentar wird dauerhaft gelöscht.</string>
+    <string name="docs_close">Schließen</string>
+    <string name="docs_read_only">Schreibgeschützt</string>
+    <string name="docs_search_clear">Suche löschen</string>
+    <string name="docs_search_start">Nach Titel oder Inhalt suchen</string>
+    <string name="docs_load_more">Mehr laden</string>
+    <string name="docs_action_failed">Aktion fehlgeschlagen. Bitte erneut versuchen.</string>
+    <string name="docs_comments_open">Offen · %1$d</string>
+    <string name="docs_comments_resolved">Erledigt · %1$d</string>
+    <string name="docs_comments_resolved_empty">Keine erledigten Diskussionen</string>
+    <string name="docs_link_copied">Link kopiert</string>
+    <string name="docs_share_public_help">Alle Personen mit dem Link können auf dieses Dokument zugreifen.</string>
+    <string name="docs_share_authenticated_help">Angemeldete Personen können über den Link auf das Dokument zugreifen.</string>
+    <string name="docs_share_restricted_help">Nur berechtigte Personen können den Link öffnen. Das Kopieren erteilt keinen Zugriff.</string>
+    <string name="docs_share_no_users">Keine Personen gefunden. Anderen Namen oder andere E-Mail versuchen.</string>
+    <string name="docs_remove_member_message">%1$s aus diesem Dokument entfernen?</string>
+    <string name="docs_versions_help">Eine Version auswählen, um ihren Inhalt anzuzeigen.</string>
+    <string name="docs_versions_empty_help">Verfügbare gespeicherte Versionen werden hier angezeigt.</string>
+    <string name="docs_version_current">Neueste Version</string>
+    <string name="docs_move_empty">Keine verfügbaren Ziele</string>
+    <string name="docs_move_help">Hier erscheinen nur Dokumente, in die Sie verschieben dürfen.</string>
+    <string name="docs_thread_expand">Diskussion ausklappen</string>
+    <string name="docs_thread_collapse">Diskussion einklappen</string>
 </resources>

@@ -1031,7 +1031,7 @@
     <string name="web_login_network_error">Netzwerkfehler</string>
     <string name="web_login_invalid_callback">Ungültiger Anmelde-Callback</string>
     <string name="docs_editor_save_failed">Saving was not confirmed. Check your connection and retry. This page will stay open.</string>
-    <string name="docs_editor_incompatible">Der Editor ist noch nicht bereit. Versuchen Sie es erneut und prüfen Sie gegebenenfalls, ob der Dokumentendienst aktuell ist.</string>
+    <string name="docs_editor_incompatible">Der Editor konnte nicht geöffnet werden. Versuchen Sie es später erneut oder gehen Sie zum Lesen zurück.</string>
     <string name="docs_editor_pending_work">Noch sind nicht alle Änderungen bestätigt. Prüfen Sie Verbindung, Titel, Anhänge und unveröffentlichte Kommentare und versuchen Sie es erneut.</string>
     <string name="docs_editor_reloaded">Der Editor wurde neu geladen. Nur auf dem Server gespeicherte Inhalte können bestätigt werden. Bitte prüfen Sie Ihre letzten Änderungen.</string>
 </resources>

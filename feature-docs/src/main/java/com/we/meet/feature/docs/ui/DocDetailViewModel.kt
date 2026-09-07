@@ -153,12 +153,12 @@ class DocDetailViewModel(
         }
     }
 
-    fun rename(newTitle: String) {
-        val doc = _state.value.doc ?: return
+    fun rename(newTitle: String, onComplete: (Boolean) -> Unit) {
+        val doc = _state.value.doc ?: return onComplete(false)
         viewModelScope.launch {
-            runCatching { repo.rename(doc.id, newTitle) }
+            val result = runCatching { repo.rename(doc.id, newTitle) }
                 .onSuccess { updated -> _state.update { it.copy(doc = updated) } }
-                .onFailure { _toasts.tryEmit(R.string.docs_load_error) }
+            onComplete(result.isSuccess)
         }
     }
 
@@ -188,12 +188,10 @@ class DocDetailViewModel(
         }
     }
 
-    fun move(targetId: String, position: String, onMoved: () -> Unit) {
-        val doc = _state.value.doc ?: return
+    fun move(targetId: String, position: String, onComplete: (Boolean) -> Unit) {
+        val doc = _state.value.doc ?: return onComplete(false)
         viewModelScope.launch {
-            runCatching { repo.move(doc.id, targetId, position) }
-                .onSuccess { onMoved() }
-                .onFailure { _toasts.tryEmit(R.string.docs_load_error) }
+            onComplete(runCatching { repo.move(doc.id, targetId, position) }.isSuccess)
         }
     }
 

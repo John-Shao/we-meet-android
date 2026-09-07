@@ -132,4 +132,26 @@
     <string name="docs_children_empty">No subpages yet</string>
     <string name="docs_comment_delete">Delete comment</string>
     <string name="docs_comment_delete_message">This comment will be permanently deleted.</string>
+    <string name="docs_close">Close</string>
+    <string name="docs_read_only">Read only</string>
+    <string name="docs_search_clear">Clear search</string>
+    <string name="docs_search_start">Search by title or document content</string>
+    <string name="docs_load_more">Load more</string>
+    <string name="docs_action_failed">Could not complete the action. Please try again.</string>
+    <string name="docs_comments_open">Open · %1$d</string>
+    <string name="docs_comments_resolved">Resolved · %1$d</string>
+    <string name="docs_comments_resolved_empty">No resolved discussions</string>
+    <string name="docs_link_copied">Link copied</string>
+    <string name="docs_share_public_help">Anyone with the link can access this document.</string>
+    <string name="docs_share_authenticated_help">People who sign in can access this document through the link.</string>
+    <string name="docs_share_restricted_help">Only people with access can open this link. Copying the link does not grant access.</string>
+    <string name="docs_share_no_users">No people found. Try another name or email.</string>
+    <string name="docs_remove_member_message">Remove %1$s from this document?</string>
+    <string name="docs_versions_help">Choose a version to preview its content.</string>
+    <string name="docs_versions_empty_help">Saved versions will appear here when available.</string>
+    <string name="docs_version_current">Latest version</string>
+    <string name="docs_move_empty">No available destinations</string>
+    <string name="docs_move_help">Only documents you can move into are available here.</string>
+    <string name="docs_thread_expand">Expand discussion</string>
+    <string name="docs_thread_collapse">Collapse discussion</string>
 </resources>

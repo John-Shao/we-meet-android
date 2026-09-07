@@ -168,17 +168,14 @@ class DocsHomeViewModel(
         }
     }
 
-    fun rename(doc: DocumentDto, newTitle: String) {
-        if (doc.id.isBlank()) return
+    fun rename(doc: DocumentDto, newTitle: String, onComplete: (Boolean) -> Unit) {
         viewModelScope.launch {
-            runCatching { repo.rename(doc.id, newTitle) }
+            val result = runCatching { repo.rename(doc.id, newTitle) }
                 .onSuccess { updated ->
-                    _state.update { state ->
-                        state.copy(items = state.items.map { if (it.id == doc.id) updated else it })
-                    }
+                    _state.update { state -> state.copy(items = state.items.map { if (it.id == doc.id) updated else it }) }
                     emitToast(R.string.docs_renamed_toast)
                 }
-                .onFailure { emitToast(R.string.docs_load_error) }
+            onComplete(result.isSuccess)
         }
     }
 
@@ -210,17 +207,16 @@ class DocsHomeViewModel(
         }
     }
 
-    fun move(doc: DocumentDto, targetId: String, position: String) {
-        if (doc.id.isBlank()) return
+    fun move(doc: DocumentDto, targetId: String, position: String, onComplete: (Boolean) -> Unit) {
         viewModelScope.launch {
-            runCatching { repo.move(doc.id, targetId, position) }
+            val result = runCatching { repo.move(doc.id, targetId, position) }
                 .onSuccess {
                     _state.update { state -> state.copy(items = state.items.filterNot { it.id == doc.id }) }
                     emitToast(R.string.docs_moved_toast)
                     refresh()
                     refreshCounts()
                 }
-                .onFailure { emitToast(R.string.docs_load_error) }
+            onComplete(result.isSuccess)
         }
     }
 

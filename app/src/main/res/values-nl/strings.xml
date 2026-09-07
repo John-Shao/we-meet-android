@@ -1031,7 +1031,7 @@
     <string name="web_login_network_error">Netwerkfout</string>
     <string name="web_login_invalid_callback">Ongeldige aanmeld-callback</string>
     <string name="docs_editor_save_failed">Saving was not confirmed. Check your connection and retry. This page will stay open.</string>
-    <string name="docs_editor_incompatible">De editor is nog niet klaar. Probeer opnieuw en controleer zo nodig of de documentservice is bijgewerkt.</string>
+    <string name="docs_editor_incompatible">De editor kan niet worden geopend. Probeer het later opnieuw of ga terug om verder te lezen.</string>
     <string name="docs_editor_pending_work">Nog niet alle wijzigingen zijn bevestigd. Controleer de verbinding, titel, bijlagen en niet-gepubliceerde reacties en probeer opnieuw.</string>
     <string name="docs_editor_reloaded">De editor is opnieuw geladen. Alleen op de server opgeslagen inhoud kan worden bevestigd. Controleer uw laatste wijzigingen.</string>
 </resources>

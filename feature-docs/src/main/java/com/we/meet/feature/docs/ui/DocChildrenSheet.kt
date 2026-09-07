@@ -1,5 +1,10 @@
 package com.we.meet.feature.docs.ui
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextOverflow
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -48,10 +53,10 @@ fun DocChildrenSheet(deps: DocsDeps, doc: DocumentDto, onDismiss: () -> Unit, on
         onDismissRequest = onDismiss,
         sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {
-        Column(Modifier.fillMaxWidth().imePadding().padding(Dimens.ScreenPadding)) {
-            Text(stringResource(R.string.docs_children), style = MaterialTheme.typography.titleMedium)
+        Column(Modifier.fillMaxWidth().fillMaxHeight(0.75f).imePadding().padding(bottom = Dimens.SpaceM)) {
+            DocsSheetHeader(stringResource(R.string.docs_children), onDismiss, doc.displayTitle)
             if (doc.abilities.childrenCreate) {
-                Row {
+                Row(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(value = title, onValueChange = { title = it }, modifier = Modifier.weight(1f),
                         singleLine = true, label = { Text(stringResource(R.string.docs_create_hint)) })
                     TextButton(enabled = title.isNotBlank() && !busy, onClick = {
@@ -68,16 +73,22 @@ fun DocChildrenSheet(deps: DocsDeps, doc: DocumentDto, onDismiss: () -> Unit, on
                     }) { Text(stringResource(R.string.docs_create_confirm)) }
                 }
             }
-            LazyColumn(Modifier.weight(1f, fill = false)) {
+            LazyColumn(Modifier.weight(1f)) {
                 items(children, key = { it.id }) { child ->
-                    Text(child.displayTitle.ifBlank { stringResource(R.string.docs_untitled) },
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.fillMaxWidth().clickable { onOpenDoc(child.id) }.padding(vertical = Dimens.SpaceM))
+                    Row(Modifier.fillMaxWidth().clickable { onOpenDoc(child.id) }
+                        .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
+                        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM), verticalAlignment = Alignment.CenterVertically) {
+                        DocsFileIcon(child.isFolder)
+                        Text(child.displayTitle.ifBlank { stringResource(R.string.docs_untitled) },
+                            style = MaterialTheme.typography.titleMedium, maxLines = 2,
+                            overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                        Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null)
+                    }
                 }
                 if (busy) item { WeMeetInlineLoading() }
                 if (error) item { WeMeetInlineErrorState(onRetry = { load() }, message = stringResource(R.string.docs_load_error)) }
                 if (!busy && hasMore && !error) item {
-                    TextButton(onClick = { load() }) { Text(stringResource(R.string.docs_versions_more)) }
+                    TextButton(onClick = { load() }) { Text(stringResource(R.string.docs_load_more)) }
                 }
                 if (!busy && children.isEmpty() && !error) item {
                     Text(stringResource(R.string.docs_children_empty), style = MaterialTheme.typography.bodyMedium)

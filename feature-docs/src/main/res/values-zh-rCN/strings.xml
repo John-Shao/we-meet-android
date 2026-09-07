@@ -132,4 +132,26 @@
     <string name="docs_children_empty">还没有子文档</string>
     <string name="docs_comment_delete">删除评论</string>
     <string name="docs_comment_delete_message">此评论将被永久删除。</string>
+    <string name="docs_close">关闭</string>
+    <string name="docs_read_only">只读文档</string>
+    <string name="docs_search_clear">清空搜索</string>
+    <string name="docs_search_start">输入标题或正文关键词查找文档</string>
+    <string name="docs_load_more">加载更多</string>
+    <string name="docs_action_failed">操作未完成，请重试</string>
+    <string name="docs_comments_open">未解决 · %1$d</string>
+    <string name="docs_comments_resolved">已解决 · %1$d</string>
+    <string name="docs_comments_resolved_empty">暂无已解决的讨论</string>
+    <string name="docs_link_copied">链接已复制</string>
+    <string name="docs_share_public_help">获得链接的任何人都可以访问此文档。</string>
+    <string name="docs_share_authenticated_help">登录后的用户可通过链接访问此文档。</string>
+    <string name="docs_share_restricted_help">仅有权限的成员可以打开链接，复制链接不会扩大访问范围。</string>
+    <string name="docs_share_no_users">未找到用户，请尝试其他姓名或邮箱</string>
+    <string name="docs_remove_member_message">确定将 %1$s 从此文档成员中移除？</string>
+    <string name="docs_versions_help">选择历史版本查看当时的内容</string>
+    <string name="docs_versions_empty_help">有可用的历史版本时，会显示在这里</string>
+    <string name="docs_version_current">最新版本</string>
+    <string name="docs_move_empty">暂无可用的移动位置</string>
+    <string name="docs_move_help">这里仅显示你有权限移入的文档位置</string>
+    <string name="docs_thread_expand">展开讨论</string>
+    <string name="docs_thread_collapse">收起讨论</string>
 </resources>

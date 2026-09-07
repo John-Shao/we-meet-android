@@ -35,7 +35,7 @@ class DocsSearchViewModel(private val repo: DocsRepository) : ViewModel() {
 
     fun onQueryChange(query: String) {
         pageNumber = 1
-        _state.update { it.copy(query = query, idle = query.isBlank(), results = emptyList(), hasMore = false, loadingMore = false) }
+        _state.update { it.copy(query = query, loading = query.isNotBlank(), error = false, idle = query.isBlank(), results = emptyList(), hasMore = false, loadingMore = false) }
         searchJob?.cancel()
         if (query.isBlank()) {
             _state.update { it.copy(results = emptyList(), loading = false, error = false) }

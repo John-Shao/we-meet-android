@@ -1,5 +1,18 @@
 package com.we.meet.feature.docs.ui
 
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,7 +26,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.Add
@@ -23,7 +35,6 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -147,17 +158,11 @@ fun DocsHomeScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            FloatingActionButton(
+            ExtendedFloatingActionButton(
                 onClick = { showCreate = true },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = CircleShape,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = stringResource(R.string.cd_docs_create),
-                )
-            }
+                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                text = { Text(stringResource(R.string.docs_create_title)) },
+            )
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -167,6 +172,7 @@ fun DocsHomeScreen(
                 sortExpanded = showSortMenu,
                 onSortChanged = { showSortMenu = it },
                 onSelectOrdering = vm::setOrdering,
+                onSelectFilter = vm::setFilter,
             )
             PullToRefreshBox(
                 isRefreshing = state.refreshing,
@@ -205,25 +211,21 @@ fun DocsHomeScreen(
         DocCreateSheet(
             onDismiss = { showCreate = false },
             onCreate = { title ->
-                showCreate = false
-                scope.launch {
-                    // §4.4 新建 = 建空文档 → 跳编辑画布填充(可直接写正文,不再点编辑)。
-                    vm.create(title)?.let { docId ->
-                        onOpenEditor(docId)
-                    }
+                val newId = vm.create(title)
+                if (newId != null) {
+                    showCreate = false
+                    onOpenEditor(newId)
                 }
+                newId != null
             },
         )
     }
 
     renameTarget?.let { doc ->
-        DocRenameDialog(
+        DocsRenameDialog(
             doc = doc,
             onDismiss = { renameTarget = null },
-            onConfirm = { newTitle ->
-                vm.rename(doc, newTitle)
-                renameTarget = null
-            },
+            onConfirm = { newTitle, complete -> vm.rename(doc, newTitle, complete) },
         )
     }
 
@@ -246,9 +248,8 @@ fun DocsHomeScreen(
             deps = deps,
             doc = doc,
             onDismiss = { moveTarget = null },
-            onMove = { targetId, position ->
-                moveTarget = null
-                vm.move(doc, targetId, position)
+            onMove = { targetId, position, complete ->
+                vm.move(doc, targetId, position, complete)
             },
         )
     }
@@ -351,6 +352,7 @@ private fun DocsListHeader(
     sortExpanded: Boolean,
     onSortChanged: (Boolean) -> Unit,
     onSelectOrdering: (String) -> Unit,
+    onSelectFilter: (DocsHomeViewModel.Filter) -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -358,23 +360,22 @@ private fun DocsListHeader(
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = stringResource(
-                when (filter) {
-                    DocsHomeViewModel.Filter.ALL -> R.string.docs_nav_all
-                    DocsHomeViewModel.Filter.MINE -> R.string.docs_nav_mine
-                    DocsHomeViewModel.Filter.SHARED -> R.string.docs_nav_shared
-                    DocsHomeViewModel.Filter.FAVORITES -> R.string.docs_filter_favorites
-                },
-            ),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.weight(1f),
-        )
+        Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+            listOf(DocsHomeViewModel.Filter.ALL to R.string.docs_filter_all,
+                DocsHomeViewModel.Filter.MINE to R.string.docs_filter_mine,
+                DocsHomeViewModel.Filter.SHARED to R.string.docs_nav_shared,
+                DocsHomeViewModel.Filter.FAVORITES to R.string.docs_filter_favorites).forEach { (candidate, label) ->
+                FilterChip(selected = filter == candidate, onClick = { onSelectFilter(candidate) },
+                    label = { Text(stringResource(label)) })
+            }
+        }
         Box {
             IconButton(onClick = { onSortChanged(true) }) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.Sort,
-                    contentDescription = stringResource(R.string.cd_docs_sort),
+                    contentDescription = stringResource(R.string.cd_docs_sort) + ": " + stringResource(
+                        when (ordering) { "title" -> R.string.docs_sort_title; "-created_at" -> R.string.docs_sort_created; else -> R.string.docs_sort_updated }),
                 )
             }
             SortDropdown(
@@ -411,6 +412,7 @@ private fun SortEntry(
 ) {
     DropdownMenuItem(
         text = { Text(stringResource(labelRes), softWrap = false) },
+        trailingIcon = { if (value == current) Icon(Icons.Outlined.Check, contentDescription = null) },
         onClick = {
             onSelect(value)
             onDismiss()
@@ -466,7 +468,8 @@ private fun DocsList(
             if (total > 0 && lastVisible >= total - 3) onLoadMore()
         }
     }
-    LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+    LazyColumn(state = listState, modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = Dimens.ActionTile + Dimens.SpaceXl)) {
         items(items, key = { it.id }) { doc ->
             DocListItem(
                 doc = doc,
@@ -490,73 +493,53 @@ private fun DocsList(
 @Composable
 private fun DocCreateSheet(
     onDismiss: () -> Unit,
-    onCreate: (String) -> Unit,
+    onCreate: suspend (String) -> Boolean,
 ) {
     var title by rememberSaveable { mutableStateOf("") }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    var creating by remember { mutableStateOf(false) }
+    var failed by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val focus = remember { FocusRequester() }
+    fun submit() {
+        if (creating || title.isBlank()) return
+        creating = true
+        failed = false
+        scope.launch {
+            try { failed = !onCreate(title.trim()) } finally { creating = false }
+        }
+    }
+    LaunchedEffect(Unit) { focus.requestFocus() }
+    ModalBottomSheet(onDismissRequest = { if (!creating) onDismiss() },
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .imePadding()
-                .padding(horizontal = Dimens.ScreenPadding)
                 .padding(bottom = Dimens.SpaceXl),
         ) {
-            Text(
-                text = stringResource(R.string.docs_create_title),
-                style = MaterialTheme.typography.titleMedium,
-            )
+            DocsSheetHeader(stringResource(R.string.docs_create_title), { if (!creating) onDismiss() })
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = Dimens.SpaceM),
-                placeholder = { Text(stringResource(R.string.docs_create_hint)) },
+                    .padding(horizontal = Dimens.ScreenPadding).padding(top = Dimens.SpaceM).focusRequester(focus),
+                label = { Text(stringResource(R.string.docs_create_hint)) },
+                enabled = !creating,
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { submit() }),
             )
-            Box(Modifier.padding(top = Dimens.SpaceL)) {
+            if (failed) Text(stringResource(R.string.docs_action_failed), color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = Dimens.ScreenPadding).padding(top = Dimens.SpaceS))
+            Box(Modifier.padding(horizontal = Dimens.ScreenPadding).padding(top = Dimens.SpaceL)) {
                 PrimaryButton(
                     text = stringResource(R.string.docs_create_confirm),
                     enabled = title.isNotBlank(),
-                    onClick = { onCreate(title.trim()) },
+                    loading = creating,
+                    onClick = { submit() },
                 )
             }
         }
     }
-}
-
-/** 重命名弹层。 */
-@Composable
-private fun DocRenameDialog(
-    doc: DocumentDto,
-    onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit,
-) {
-    var title by rememberSaveable(doc.id) { mutableStateOf(doc.displayTitle) }
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.docs_rename_title)) },
-        text = {
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(stringResource(R.string.docs_create_hint)) },
-                singleLine = true,
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onConfirm(title.trim()) },
-                enabled = title.isNotBlank(),
-            ) {
-                Text(stringResource(R.string.docs_rename_confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.docs_cancel))
-            }
-        },
-    )
 }

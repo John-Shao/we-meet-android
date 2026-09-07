@@ -6,15 +6,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
-import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.DriveFileMove
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material3.DropdownMenu
@@ -69,12 +63,7 @@ fun DocListItem(
                 ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = if (doc.isFolder) Icons.Outlined.Folder else Icons.Outlined.Description,
-                contentDescription = null,
-                modifier = Modifier.size(Dimens.IconMedium),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            DocsFileIcon(doc.isFolder)
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -83,7 +72,7 @@ fun DocListItem(
                 Text(
                     text = doc.displayTitle.ifBlank { stringResource(R.string.docs_untitled) },
                     style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
@@ -95,7 +84,7 @@ fun DocListItem(
                 )
             }
             if (mode == DocsHomeViewModel.Mode.HOME) {
-                IconButton(onClick = onToggleFavorite) {
+                if (doc.isFavorite) IconButton(onClick = onToggleFavorite, enabled = doc.abilities.favorite) {
                     Icon(
                         imageVector = if (doc.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
                         contentDescription = stringResource(
@@ -120,6 +109,7 @@ fun DocListItem(
                         onDismissRequest = { menuExpanded = false },
                     ) {
                         DropdownMenuItem(
+                            enabled = doc.abilities.favorite,
                             text = {
                                 Text(
                                     stringResource(
@@ -179,7 +169,8 @@ fun DocListItem(
                 }
             }
         }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        HorizontalDivider(Modifier.padding(start = Dimens.ScreenPadding + Dimens.ListLeadingIcon + Dimens.SpaceM),
+            thickness = Dimens.DividerThin, color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 

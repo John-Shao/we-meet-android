@@ -1,0 +1,52 @@
+package com.we.meet.feature.docs.ui
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import com.we.meet.feature.docs.R
+import com.we.meet.ui.theme.Dimens
+
+/** Shared hierarchy and an explicit, accessible exit for native document sheets. */
+@Composable
+internal fun DocsSheetHeader(title: String, onClose: () -> Unit, subtitle: String? = null) {
+    Row(
+        Modifier.fillMaxWidth().padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f).padding(vertical = Dimens.SpaceS)) {
+            Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+            if (!subtitle.isNullOrBlank()) Text(
+                subtitle, style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2, overflow = TextOverflow.Ellipsis,
+            )
+        }
+        IconButton(onClick = onClose) {
+            Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.docs_close))
+        }
+    }
+}
+
+@Composable
+internal fun DocsFileIcon(folder: Boolean = false) {
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = if (folder) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primaryContainer,
+        contentColor = if (folder) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimaryContainer,
+    ) {
+        Box(Modifier.size(Dimens.ListLeadingIcon), contentAlignment = Alignment.Center) {
+            Icon(if (folder) Icons.Outlined.Folder else Icons.Outlined.Description,
+                contentDescription = null, modifier = Modifier.size(Dimens.IconMedium))
+        }
+    }
+}

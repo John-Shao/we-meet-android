@@ -1,5 +1,19 @@
 package com.we.meet.feature.docs.ui
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.text.style.TextOverflow
+
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Search
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,6 +71,8 @@ fun DocsSearchScreen(
     )
     val state by vm.state.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     Scaffold(
         // design-exempt: 标题位是搜索输入框(设计规范 §9 已有豁免先例)。
@@ -79,16 +95,28 @@ fun DocsSearchScreen(
                     onValueChange = vm::onQueryChange,
                     modifier = Modifier
                         .weight(1f)
+                        .focusRequester(focusRequester)
                         .padding(end = Dimens.SpaceM),
                     placeholder = { Text(stringResource(R.string.docs_search_hint)) },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                    trailingIcon = {
+                        if (state.query.isNotEmpty()) IconButton(onClick = { vm.onQueryChange("") }) {
+                            Icon(Icons.Outlined.Close, stringResource(R.string.docs_search_clear))
+                        }
+                    },
                 )
             }
         },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when {
-                state.idle -> Unit
+                state.idle -> WeMeetEmptyState(
+                    title = stringResource(R.string.docs_search_hint),
+                    description = stringResource(R.string.docs_search_start),
+                    icon = Icons.Outlined.Search,
+                )
                 state.loading -> WeMeetLoading()
                 state.error -> WeMeetErrorState(
                     onRetry = vm::retry,
@@ -130,7 +158,7 @@ private fun SearchResults(
         }
         if (hasMore) item {
             androidx.compose.material3.TextButton(onClick = onLoadMore, enabled = !loadingMore, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.docs_versions_more))
+                Text(stringResource(R.string.docs_load_more))
             }
         }
     }
@@ -141,22 +169,23 @@ private fun SearchResultRow(
     doc: DocumentDto,
     onClick: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
+    Column {
+        Row(Modifier.fillMaxWidth().clickable(onClick = onClick)
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
-    ) {
-        Text(
-            text = doc.displayTitle.ifBlank { stringResource(R.string.docs_untitled) },
-            style = MaterialTheme.typography.titleMedium,
-        )
-        Text(
-            text = doc.parent?.displayTitle?.takeIf { it.isNotBlank() }?.let { parent ->
-                stringResource(R.string.docs_search_in_parent, parent)
-            } ?: stringResource(R.string.docs_updated_at, formatIsoTime(doc.updatedAt)),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+            DocsFileIcon(doc.isFolder)
+            Column(Modifier.weight(1f)) {
+                Text(doc.displayTitle.ifBlank { stringResource(R.string.docs_untitled) },
+                    style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(doc.parent?.displayTitle?.takeIf { it.isNotBlank() }?.let { parent ->
+                    stringResource(R.string.docs_search_in_parent, parent)
+                } ?: stringResource(R.string.docs_updated_at, formatIsoTime(doc.updatedAt)),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        HorizontalDivider(Modifier.padding(start = Dimens.ScreenPadding + Dimens.ListLeadingIcon + Dimens.SpaceM),
+            thickness = Dimens.DividerThin, color = MaterialTheme.colorScheme.outlineVariant)
     }
 }

@@ -1,5 +1,23 @@
 package com.we.meet.feature.docs.ui
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import com.we.meet.feature.docs.util.formatIsoTime
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.icons.automirrored.outlined.Send
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.text.style.TextOverflow
+
 import com.we.meet.feature.docs.util.docsRunCatching as runCatching
 import kotlinx.coroutines.flow.collectLatest
 
@@ -43,14 +61,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.we.meet.feature.docs.DocsDeps
 import com.we.meet.feature.docs.R
 import com.we.meet.feature.docs.data.DocsRepository
 import com.we.meet.feature.docs.data.net.DocsCommentDto
 import com.we.meet.feature.docs.data.net.DocsThreadDto
-import com.we.meet.feature.docs.renderer.JsonInlineDto
 import com.we.meet.ui.components.WeMeetEmptyState
 import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetLoading
@@ -62,7 +77,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** 评论/线程 BottomSheet(设计文档 §4.4 评论):列表 + 发表 + 回复 + 解决 + 表情。 */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun DocCommentsSheet(
     deps: DocsDeps,
@@ -82,12 +97,12 @@ fun DocCommentsSheet(
     var replyTo by remember { mutableStateOf<DocsThreadDto?>(null) }
     val replyDraft = vm.replyDrafts[replyTo?.id].orEmpty()
     var deleteTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
-    var showResolved by remember { mutableStateOf(false) }
+    var showResolved by rememberSaveable { mutableStateOf(false) }
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
     LaunchedEffect(vm) {
-        vm.errors.collect { snackbar.showSnackbar(context.getString(R.string.docs_load_error)) }
+        vm.errors.collect { snackbar.showSnackbar(context.getString(R.string.docs_action_failed)) }
     }
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     LaunchedEffect(vm, lifecycleOwner) {
@@ -115,16 +130,12 @@ fun DocCommentsSheet(
                 .imePadding()
                 .padding(bottom = Dimens.SpaceXl),
         ) {
-            Text(
-                text = stringResource(R.string.docs_comments),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(horizontal = Dimens.ScreenPadding),
-            )
-            Row(Modifier.padding(horizontal = Dimens.ScreenPadding)) {
+            DocsSheetHeader(stringResource(R.string.docs_comments), onDismiss)
+            FlowRow(Modifier.padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                 androidx.compose.material3.FilterChip(selected = !showResolved, onClick = { showResolved = false },
-                    label = { Text(stringResource(R.string.docs_comments)) })
+                    label = { Text(stringResource(R.string.docs_comments_open, state.threads.count { !it.resolved })) })
                 androidx.compose.material3.FilterChip(selected = showResolved, onClick = { showResolved = true },
-                    label = { Text(stringResource(R.string.docs_resolved_label)) })
+                    label = { Text(stringResource(R.string.docs_comments_resolved, state.threads.count { it.resolved })) })
             }
             Box(
                 Modifier
@@ -138,10 +149,10 @@ fun DocCommentsSheet(
                         message = stringResource(R.string.docs_load_error),
                     )
                     state.threads.none { it.resolved == showResolved } -> com.we.meet.ui.components.WeMeetEmptyState(
-                        title = stringResource(R.string.docs_comments_empty_title),
-                        description = stringResource(R.string.docs_comments_empty_desc),
+                        title = stringResource(if (showResolved) R.string.docs_comments_resolved_empty else R.string.docs_comments_empty_title),
+                        description = if (showResolved) null else stringResource(R.string.docs_comments_empty_desc),
                     )
-                    else -> LazyColumn {
+                    else -> LazyColumn(contentPadding = PaddingValues(bottom = Dimens.SpaceM)) {
                         items(state.threads.filter { it.resolved == showResolved }, key = { it.id }) { thread ->
                             ThreadItem(
                                 thread = thread,
@@ -160,6 +171,7 @@ fun DocCommentsSheet(
                 }
             }
             androidx.compose.material3.SnackbarHost(snackbar)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -172,6 +184,7 @@ fun DocCommentsSheet(
                     modifier = Modifier.weight(1f),
                     placeholder = { Text(stringResource(R.string.docs_comment_hint)) },
                     maxLines = 4,
+                    enabled = !state.sending,
                 )
                 IconButton(
                     onClick = {
@@ -182,8 +195,8 @@ fun DocCommentsSheet(
                     },
                     enabled = draft.isNotBlank() && !state.sending,
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Done,
+                    if (state.sending) com.we.meet.ui.components.WeMeetInlineLoading() else Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.Send,
                         contentDescription = stringResource(R.string.cd_docs_send_comment),
                     )
                 }
@@ -209,6 +222,7 @@ fun DocCommentsSheet(
             text = {
                 OutlinedTextField(
                     value = replyDraft,
+                    enabled = !state.sending,
                     onValueChange = { vm.updateReplyDraft(thread.id, it) },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(stringResource(R.string.docs_comment_hint)) },
@@ -237,6 +251,7 @@ fun DocCommentsSheet(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ThreadItem(
     thread: DocsThreadDto,
@@ -249,20 +264,22 @@ private fun ThreadItem(
     onDeleteComment: (String) -> Unit,
 ) {
     val first = thread.comments.firstOrNull()
+    val expansionLabel = stringResource(if (expanded) R.string.docs_thread_collapse else R.string.docs_thread_expand)
     Surface(
         color = if (thread.resolved) {
             MaterialTheme.colorScheme.surfaceContainerLow
         } else {
-            MaterialTheme.colorScheme.surface
+            MaterialTheme.colorScheme.surfaceContainerLow
         },
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
-        shape = MaterialTheme.shapes.small,
+        shape = MaterialTheme.shapes.medium,
+        border = BorderStroke(Dimens.BorderThin, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(
             Modifier
-                .clickable(onClick = onToggle)
+                .clickable(onClickLabel = expansionLabel, onClick = onToggle)
                 .padding(Dimens.SpaceM),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -270,6 +287,7 @@ private fun ThreadItem(
                     text = thread.creator?.displayName?.takeIf { it.isNotBlank() }
                         ?: stringResource(R.string.docs_unknown_user),
                     style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = stringResource(R.string.docs_comments_count, (thread.comments.size - 1).coerceAtLeast(0)),
@@ -285,9 +303,13 @@ private fun ThreadItem(
                         modifier = Modifier.padding(start = Dimens.SpaceS),
                     )
                 }
+                Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null,
+                    modifier = Modifier.padding(start = Dimens.SpaceS).size(Dimens.IconSmall),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (!expanded) Text(
                 text = commentBodyPlainText(first?.body),
+                maxLines = 3, overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = Dimens.SpaceXs),
             )
@@ -295,11 +317,12 @@ private fun ThreadItem(
                 thread.comments.forEach { comment ->
                     CommentItem(
                         comment = comment,
+                        showAuthor = comment.id != first?.id,
                         onReact = { emoji -> onReact(comment.id, emoji) },
                         onDelete = { onDeleteComment(comment.id) },
                     )
                 }
-                Row {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
                     androidx.compose.material3.TextButton(onClick = onReply) {
                         Text(stringResource(R.string.docs_reply))
                     }
@@ -328,46 +351,42 @@ private fun ThreadItem(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun CommentItem(
     comment: DocsCommentDto,
+    showAuthor: Boolean,
     onReact: (emoji: String) -> Unit,
     onDelete: () -> Unit,
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
     Column(Modifier.padding(top = Dimens.SpaceS)) {
-        Text(
-            text = comment.user?.displayName?.takeIf { it.isNotBlank() }
-                ?: stringResource(R.string.docs_unknown_user),
-            style = MaterialTheme.typography.titleSmall,
-        )
-        Text(
-            text = commentBodyPlainText(comment.body),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        if (comment.abilities.destroy) {
-            androidx.compose.material3.TextButton(onClick = onDelete) {
-                Text(stringResource(R.string.docs_comment_delete))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                if (showAuthor) Text(comment.user?.displayName?.takeIf { it.isNotBlank() }
+                    ?: stringResource(R.string.docs_unknown_user), style = MaterialTheme.typography.titleSmall)
+                if (!comment.createdAt.isNullOrBlank()) Text(formatIsoTime(comment.createdAt),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (comment.abilities.destroy) Box {
+                IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.cd_docs_more)) }
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.docs_comment_delete), color = MaterialTheme.colorScheme.error) },
+                        onClick = { menuExpanded = false; onDelete() })
+                }
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(commentBodyPlainText(comment.body), style = MaterialTheme.typography.bodyMedium)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
             comment.reactions.forEach { reaction ->
-                Text(
-                    text = "${reaction.emoji} ${reaction.users.size}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .padding(end = Dimens.SpaceXs)
-                        .clickable(enabled = comment.abilities.react) { onReact(reaction.emoji) },
-                )
+                TextButton(onClick = { onReact(reaction.emoji) }, enabled = comment.abilities.react) {
+                    Text("${reaction.emoji} ${reaction.users.size}", style = MaterialTheme.typography.bodyMedium)
+                }
             }
-            PRESET_EMOJIS.forEach { emoji ->
-                Text(
-                    text = emoji,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .padding(horizontal = Dimens.SpaceXs)
-                        .clickable(enabled = comment.abilities.react) { onReact(emoji) },
-                )
+            PRESET_EMOJIS.filterNot { emoji -> comment.reactions.any { it.emoji == emoji } }.forEach { emoji ->
+                TextButton(onClick = { onReact(emoji) }, enabled = comment.abilities.react) {
+                    Text(emoji, style = MaterialTheme.typography.bodyMedium)
+                }
             }
         }
     }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.DrawerDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +42,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,9 +54,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -273,6 +278,8 @@ fun MainTabScreen(
     // i.e. swipe-to-close): drawerContent is composed lazily below, and
     // DrawerState exposes no "drag started" signal — `isAnimationRunning` is false
     // during a finger drag — so an edge swipe would drag out an empty sheet.
+    // Keep navigation drawers narrow on landscape/tablet windows.
+    val drawerWidth = minOf(LocalConfiguration.current.screenWidthDp.dp * 0.8f, DrawerDefaults.MaximumDrawerWidth)
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -294,6 +301,17 @@ fun MainTabScreen(
     // 云文档二级导航抽屉 —— 与 task 抽屉同款提升到本层(遮罩覆盖底部导航栏),
     // 控制器由 DocsHomeScreen 经 onRegisterDocsNav 注册(它持有 DocsHomeViewModel)。
     val docsNavDrawerState = rememberDrawerState(DrawerValue.Closed)
+    var previousDrawerWidth by remember { mutableStateOf(drawerWidth) }
+    LaunchedEffect(drawerWidth) {
+        if (previousDrawerWidth == drawerWidth) return@LaunchedEffect
+        previousDrawerWidth = drawerWidth
+        // Let the sheets measure their new anchors before resetting offsets.
+        // Otherwise a closed offset can be nearer to Open after a width change.
+        withFrameNanos { }
+        drawerState.snapTo(DrawerValue.Closed)
+        taskNavDrawerState.snapTo(DrawerValue.Closed)
+        docsNavDrawerState.snapTo(DrawerValue.Closed)
+    }
     val docsNavScope = rememberCoroutineScope()
     var docsNavController by remember { mutableStateOf<DocsNavController?>(null) }
     LaunchedEffect(safeTab) {
@@ -442,11 +460,11 @@ fun MainTabScreen(
             // Feishu-style: full-height page that leaves a narrow strip of the
             // underlying content peeking on the right. The drawerState overload of
             // ModalDrawerSheet doesn't apply DrawerDefaults.MaximumDrawerWidth, so
-            // width is unconstrained by default — cap it to 80% of screen width.
+            // width is unconstrained by default — cap it to 80% and the M3 maximum.
             ModalDrawerSheet(
                 drawerState = drawerState,
                 drawerShape = RectangleShape,
-                modifier = Modifier.fillMaxWidth(0.8f),
+                modifier = Modifier.width(drawerWidth),
             ) {
                 // ProfileScreen must stay composed even while closed — gating the
                 // sheet's content composition on drawerState collapses the drawer's
@@ -474,7 +492,7 @@ fun MainTabScreen(
                 ModalDrawerSheet(
                     drawerState = taskNavDrawerState,
                     drawerShape = RectangleShape,
-                    modifier = Modifier.fillMaxWidth(0.8f),
+                    modifier = Modifier.width(drawerWidth),
                 ) {
                     taskNavController
                         ?.takeIf { safeTab == MainTab.Tasks.ordinal }
@@ -544,7 +562,7 @@ fun MainTabScreen(
                     ModalDrawerSheet(
                         drawerState = docsNavDrawerState,
                         drawerShape = RectangleShape,
-                        modifier = Modifier.fillMaxWidth(0.8f),
+                        modifier = Modifier.width(drawerWidth),
                     ) {
                         docsNavController
                             ?.takeIf { safeTab == MainTab.Docs.ordinal }

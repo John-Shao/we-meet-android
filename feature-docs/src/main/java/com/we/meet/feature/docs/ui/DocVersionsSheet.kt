@@ -1,5 +1,16 @@
 package com.we.meet.feature.docs.ui
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material3.Icon
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.Alignment
+
 import com.we.meet.feature.docs.util.docsRunCatching as runCatching
 
 import androidx.compose.foundation.layout.Box
@@ -18,7 +29,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -35,7 +45,6 @@ import com.we.meet.feature.docs.R
 import com.we.meet.feature.docs.data.DocsRepository
 import com.we.meet.feature.docs.data.net.DocsVersionMetaDto
 import com.we.meet.feature.docs.util.formatIsoTime
-import com.we.meet.ui.components.DestructiveConfirmDialog
 import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.components.WeMeetLoading
@@ -80,15 +89,12 @@ fun DocVersionsSheet(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = Dimens.SpaceXl),
+                .fillMaxWidth().fillMaxHeight(0.75f)
+                .padding(bottom = Dimens.SpaceM),
         ) {
-            Text(
-                text = stringResource(R.string.docs_versions),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(horizontal = Dimens.ScreenPadding),
-            )
-            Box(Modifier.padding(top = Dimens.SpaceM)) {
+            DocsSheetHeader(stringResource(R.string.docs_versions), onDismiss,
+                stringResource(R.string.docs_versions_help))
+            Box(Modifier.weight(1f).padding(top = Dimens.SpaceM)) {
                 when {
                     state.loading -> WeMeetLoading()
                     state.error -> WeMeetErrorState(
@@ -97,34 +103,24 @@ fun DocVersionsSheet(
                     )
                     state.versions.isEmpty() -> com.we.meet.ui.components.WeMeetEmptyState(
                         title = stringResource(R.string.docs_versions_empty),
+                        description = stringResource(R.string.docs_versions_empty_help),
+                        icon = Icons.Outlined.History,
                     )
                     else -> LazyColumn {
                         items(state.versions, key = { it.versionId }) { version ->
-                            Column(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
-                            ) {
-                                Text(
-                                    text = if (version.isLatest) {
-                                        stringResource(
-                                            R.string.docs_version_line_latest,
-                                            formatIsoTime(version.lastModified),
-                                        )
-                                    } else {
-                                        stringResource(
-                                            R.string.docs_version_line,
-                                            formatIsoTime(version.lastModified),
-                                        )
-                                    },
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-                                TextButton(
-                                    onClick = { onOpenVersion(version.versionId) },
-                                ) {
-                                    Text(stringResource(R.string.docs_version_preview))
+                            Row(Modifier.fillMaxWidth().clickable { onOpenVersion(version.versionId) }
+                                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceL),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                                Icon(Icons.Outlined.History, null, tint = MaterialTheme.colorScheme.primary)
+                                Column(Modifier.weight(1f)) {
+                                    Text(formatIsoTime(version.lastModified), style = MaterialTheme.typography.titleSmall)
+                                    Text(stringResource(if (version.isLatest) R.string.docs_version_current else R.string.docs_version_preview),
+                                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
+                                Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null)
                             }
+                            HorizontalDivider(Modifier.padding(horizontal = Dimens.ScreenPadding))
                         }
                         if (state.loadingMore) {
                             item(key = "more") { WeMeetInlineLoading() }
