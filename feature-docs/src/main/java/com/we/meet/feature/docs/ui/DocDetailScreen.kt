@@ -1,17 +1,6 @@
 package com.we.meet.feature.docs.ui
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.outlined.ChatBubbleOutline
-import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -21,20 +10,18 @@ import kotlinx.coroutines.flow.collectLatest
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -102,7 +89,7 @@ fun DocDetailScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val uriHandler = LocalUriHandler.current
-    var menuExpanded by remember { mutableStateOf(false) }
+    var menuExpanded by rememberSaveable(docId) { mutableStateOf(false) }
     var showRename by rememberSaveable { mutableStateOf(false) }
     var showDelete by rememberSaveable { mutableStateOf(false) }
     var showMove by rememberSaveable { mutableStateOf(false) }
@@ -138,7 +125,20 @@ fun DocDetailScreen(
     val readerState = rememberLazyListState()
     val headerScrolledAway by remember { derivedStateOf { readerState.firstVisibleItemIndex > 0 } }
 
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    var editButtonHeight by remember { mutableStateOf(Dimens.ControlLarge) }
+
     Scaffold(
+        floatingActionButton = {
+            if (doc?.abilities?.canEdit == true) FloatingActionButton(
+                onClick = { onOpenEditor(DocLinks.editorUrl(deps.docsBaseUrl, doc.id)) },
+                modifier = Modifier.onSizeChanged { editButtonHeight = with(density) { it.height.toDp() } },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ) {
+                Icon(Icons.Outlined.Edit, contentDescription = stringResource(R.string.docs_edit))
+            }
+        },
         topBar = {
             WeMeetTopBar(
                 title = if (headerScrolledAway && doc != null) doc.displayTitle.ifBlank { stringResource(R.string.docs_untitled) }
@@ -146,91 +146,14 @@ fun DocDetailScreen(
                 onBack = onBack,
                 actions = {
                     if (doc != null) {
-                        IconButton(onClick = vm::toggleFavorite, enabled = doc.abilities.favorite) {
-                            Icon(
-                                imageVector = if (doc.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
-                                contentDescription = stringResource(
-                                    if (doc.isFavorite) R.string.cd_docs_unfavorite else R.string.cd_docs_favorite,
-                                ),
-                                tint = if (doc.isFavorite) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                            )
+                        if (doc.abilities.retrieve) IconButton(onClick = {
+                            onShareToChat(doc.id, doc.displayTitle.ifBlank { context.getString(R.string.docs_untitled) },
+                                DocLinks.webUrl(deps.docsBaseUrl, doc.id))
+                        }) {
+                            Icon(Icons.Outlined.Share, contentDescription = stringResource(R.string.docs_share_to_chat))
                         }
-                        Box {
-                            IconButton(onClick = { menuExpanded = true }) {
-                                Icon(
-                                    imageVector = Icons.Outlined.MoreVert,
-                                    contentDescription = stringResource(R.string.cd_docs_more),
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = menuExpanded,
-                                onDismissRequest = { menuExpanded = false },
-                            ) {
-                                if (doc.abilities.canRename) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.docs_rename_title), softWrap = false) },
-                                        onClick = {
-                                            menuExpanded = false
-                                            showRename = true
-                                        },
-                                    )
-                                }
-                                if (doc.abilities.childrenList) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.docs_children), softWrap = false) },
-                                        onClick = { menuExpanded = false; showChildren = true },
-                                    )
-                                }
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.docs_open_web), softWrap = false) },
-                                    onClick = { menuExpanded = false; onOpenWebUrl(DocLinks.webUrl(deps.docsBaseUrl, doc.id)) },
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.docs_link_share)) },
-                                    onClick = { menuExpanded = false; sharingPage = DocSharingPage.LINKS },
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.docs_share_collaborators)) },
-                                    onClick = { menuExpanded = false; sharingPage = DocSharingPage.MEMBERS },
-                                )
-                                if (doc.abilities.move) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.docs_move_title), softWrap = false) },
-                                        onClick = {
-                                            menuExpanded = false
-                                            showMove = true
-                                        },
-                                    )
-                                }
-                                if (doc.abilities.duplicate) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.docs_duplicate), softWrap = false) },
-                                        onClick = {
-                                            menuExpanded = false
-                                            vm.duplicate { newId -> onOpenDoc(newId) }
-                                        },
-                                    )
-                                }
-                                if (doc.abilities.destroy) {
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = stringResource(R.string.docs_delete_title),
-                                                color = MaterialTheme.colorScheme.error,
-                                                softWrap = false,
-                                            )
-                                        },
-                                        onClick = {
-                                            menuExpanded = false
-                                            showDelete = true
-                                        },
-                                    )
-                                }
-                            }
+                        IconButton(onClick = { menuExpanded = true }) {
+                            Icon(Icons.Outlined.MoreVert, contentDescription = stringResource(R.string.cd_docs_more))
                         }
                     }
                 },
@@ -275,6 +198,9 @@ fun DocDetailScreen(
                             }
                             else -> DocReader(
                                 listState = readerState,
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                                    bottom = if (doc.abilities.canEdit) editButtonHeight + Dimens.SpaceXxl else Dimens.SpaceXl,
+                                ),
                                 header = {
                                     Column(Modifier.padding(Dimens.ScreenPadding).padding(bottom = Dimens.SpaceM)) {
                                         SelectionContainer {
@@ -306,26 +232,26 @@ fun DocDetailScreen(
                             )
                         }
                     }
-                    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, tonalElevation = Dimens.ElevationSubtle) {
-                        Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
-                            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS), verticalAlignment = Alignment.CenterVertically) {
-                            if (doc.abilities.comment) DocsReaderAction(Icons.Outlined.ChatBubbleOutline,
-                                stringResource(R.string.docs_comments), { showComments = true }, Modifier.weight(1f))
-                            if (doc.abilities.versionsList) DocsReaderAction(Icons.Outlined.History,
-                                stringResource(R.string.docs_versions), { showVersions = true }, Modifier.weight(1f))
-                            if (doc.abilities.accessesView) DocsReaderAction(Icons.Outlined.Share,
-                                stringResource(R.string.docs_share_to_chat), {
-                                    onShareToChat(doc.id, doc.displayTitle.ifBlank { context.getString(R.string.docs_untitled) },
-                                        DocLinks.webUrl(deps.docsBaseUrl, doc.id))
-                                }, Modifier.weight(1f))
-                            if (doc.abilities.canEdit) PrimaryButton(
-                                text = stringResource(R.string.docs_edit),
-                                onClick = { onOpenEditor(DocLinks.editorUrl(deps.docsBaseUrl, doc.id)) },
-                                modifier = Modifier.weight(1.3f),
-                            )
-                        }
-                    }
                 }
+            }
+        }
+    }
+
+    if (menuExpanded && doc != null) {
+        DocActionsSheet(doc, buildInfoLine(doc), onDismiss = { menuExpanded = false }) { action ->
+            if (action != DocAction.FAVORITE) menuExpanded = false
+            when (action) {
+                DocAction.COMMENTS -> showComments = true
+                DocAction.FAVORITE -> vm.toggleFavorite()
+                DocAction.VERSIONS -> showVersions = true
+                DocAction.LINKS -> sharingPage = DocSharingPage.LINKS
+                DocAction.MEMBERS -> sharingPage = DocSharingPage.MEMBERS
+                DocAction.RENAME -> showRename = true
+                DocAction.CHILDREN -> showChildren = true
+                DocAction.MOVE -> showMove = true
+                DocAction.DUPLICATE -> vm.duplicate(onOpenDoc)
+                DocAction.WEB -> onOpenWebUrl(DocLinks.webUrl(deps.docsBaseUrl, doc.id))
+                DocAction.DELETE -> showDelete = true
             }
         }
     }
@@ -446,14 +372,4 @@ private fun DocNoAccessState(
             }
         },
     )
-}
-
-@Composable
-private fun DocsReaderAction(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier) {
-    Column(modifier.heightIn(min = Dimens.MinTouchTarget).clickable(role = Role.Button, onClick = onClick)
-        .padding(vertical = Dimens.SpaceXs), horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(Dimens.IconMedium), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(label, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
-    }
 }

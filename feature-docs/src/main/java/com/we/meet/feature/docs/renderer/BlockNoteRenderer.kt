@@ -127,9 +127,10 @@ fun DocReader(
     imageLoader: ImageLoader,
     header: @Composable () -> Unit = {},
     listState: LazyListState = rememberLazyListState(),
+    contentPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(bottom = Dimens.SpaceXl),
 ) {
     val flattened = remember(blocks) { flattenBlocks(blocks) }
-    LazyColumn(Modifier.fillMaxWidth(), state = listState, contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = Dimens.SpaceXl)) {
+    LazyColumn(Modifier.fillMaxWidth(), state = listState, contentPadding = contentPadding) {
         item(key = "document-header") { header() }
         if (flattened.isEmpty()) item(key = "empty") {
             WeMeetInlineEmptyState(

@@ -19,7 +19,7 @@ import com.we.meet.ui.theme.Dimens
 
 /** Shared hierarchy and an explicit, accessible exit for native document sheets. */
 @Composable
-internal fun DocsSheetHeader(title: String, onClose: () -> Unit, subtitle: String? = null, onBack: (() -> Unit)? = null) {
+internal fun DocsSheetHeader(title: String, onClose: () -> Unit, subtitle: String? = null, onBack: (() -> Unit)? = null, titleMaxLines: Int = Int.MAX_VALUE) {
     Row(
         Modifier.fillMaxWidth().padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs),
         verticalAlignment = Alignment.CenterVertically,
@@ -28,7 +28,8 @@ internal fun DocsSheetHeader(title: String, onClose: () -> Unit, subtitle: Strin
             Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.cd_docs_back))
         }
         Column(Modifier.weight(1f).padding(vertical = Dimens.SpaceS)) {
-            Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+            Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() },
+                maxLines = titleMaxLines, overflow = TextOverflow.Ellipsis)
             if (!subtitle.isNullOrBlank()) Text(
                 subtitle, style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
