@@ -174,4 +174,14 @@
     <string name="docs_share_to_chat_help">Sendet eine Dokumentkarte und versucht, Chatmitgliedern Lesezugriff zu geben.</string>
     <string name="docs_link_share">Link teilen</string>
     <string name="docs_save_copy_link">Speichern und Link kopieren</string>
+    <string name="docs_children_count">Unterseiten · %1$d</string>
+    <string name="docs_directory">Dokumentverzeichnis</string>
+    <string name="docs_directory_in">Verzeichnis · %1$s</string>
+    <string name="docs_previous">Vorheriges</string>
+    <string name="docs_next">Nächstes</string>
+    <string name="docs_first_document">Erstes Dokument</string>
+    <string name="docs_last_document">Letztes Dokument</string>
+    <string name="docs_current_document">Aktuell</string>
+    <string name="docs_open_parent">Übergeordnetes Dokument öffnen</string>
+    <string name="docs_navigation_error">Dokumentverzeichnis konnte nicht geladen werden</string>
 </resources>

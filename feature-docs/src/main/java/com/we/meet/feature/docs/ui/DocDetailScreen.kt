@@ -1,6 +1,7 @@
 package com.we.meet.feature.docs.ui
 
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -78,6 +80,8 @@ fun DocDetailScreen(
     onOpenWebUrl: (String) -> Unit,
     onShareToChat: (docId: String, title: String, url: String) -> Unit,
     onOpenEditor: (String) -> Unit = {},
+    onSwitchDoc: (String) -> Unit = onOpenDoc,
+    onOpenParent: (String) -> Unit = onOpenDoc,
 ) {
     val context = LocalContext.current
     val vm: DocDetailViewModel = viewModel(
@@ -97,6 +101,7 @@ fun DocDetailScreen(
     var showVersions by rememberSaveable { mutableStateOf(false) }
     var sharingPage by rememberSaveable { mutableStateOf<DocSharingPage?>(null) }
     var showChildren by rememberSaveable(docId) { mutableStateOf(false) }
+    var showDirectory by rememberSaveable(docId) { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         vm.toasts.collect { resId ->
@@ -129,6 +134,19 @@ fun DocDetailScreen(
     var editButtonHeight by remember { mutableStateOf(Dimens.ControlLarge) }
 
     Scaffold(
+        bottomBar = {
+            if (doc != null && !state.noAccess) {
+                if (state.navigation.parent != null) DocNavigationBar(
+                    navigation = state.navigation,
+                    onDirectory = { showDirectory = true },
+                    onSwitch = onSwitchDoc,
+                ) else if (state.navigationError && doc.depth > 1) {
+                    WeMeetInlineErrorState(onRetry = vm::retryNavigation,
+                        modifier = Modifier.navigationBarsPadding(),
+                        message = stringResource(R.string.docs_navigation_error))
+                }
+            }
+        },
         floatingActionButton = {
             if (doc?.abilities?.canEdit == true) FloatingActionButton(
                 onClick = { onOpenEditor(DocLinks.editorUrl(deps.docsBaseUrl, doc.id)) },
@@ -146,6 +164,12 @@ fun DocDetailScreen(
                 onBack = onBack,
                 actions = {
                     if (doc != null) {
+                        if (headerScrolledAway && doc.abilities.childrenList && doc.numchild > 0) IconButton(
+                            onClick = { showChildren = true },
+                        ) {
+                            Icon(androidx.compose.material.icons.Icons.Outlined.FolderOpen,
+                                contentDescription = stringResource(R.string.docs_children_count, doc.numchild))
+                        }
                         if (doc.abilities.retrieve) IconButton(onClick = {
                             onShareToChat(doc.id, doc.displayTitle.ifBlank { context.getString(R.string.docs_untitled) },
                                 DocLinks.webUrl(deps.docsBaseUrl, doc.id))
@@ -214,6 +238,9 @@ fun DocDetailScreen(
                                         if (!doc.abilities.canEdit) Text(stringResource(R.string.docs_read_only),
                                             style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.padding(top = Dimens.SpaceS))
+                                        if (doc.abilities.childrenList && doc.numchild > 0) DocChildrenEntry(
+                                            doc, state.navigation.children, onClick = { showChildren = true },
+                                        )
                                     }
                                 },
                                 blocks = state.blocks,
@@ -261,6 +288,23 @@ fun DocDetailScreen(
             showChildren = false
             onOpenDoc(it)
         })
+    }
+
+    val parent = state.navigation.parent
+    if (showDirectory && parent != null) {
+        DocChildrenSheet(deps, parent,
+            onDismiss = { showDirectory = false },
+            onOpenDoc = { target ->
+                showDirectory = false
+                if (target != docId) onSwitchDoc(target)
+            },
+            currentDocId = docId,
+            initialChildren = state.navigation.siblings,
+            onOpenParent = {
+                showDirectory = false
+                onOpenParent(parent.id)
+            },
+        )
     }
 
     if (showRename && doc != null) {

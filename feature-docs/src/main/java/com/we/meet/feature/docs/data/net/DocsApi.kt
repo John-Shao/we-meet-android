@@ -32,6 +32,9 @@ interface DocsApi {
     @GET("api/v1.0/documents/{id}/")
     suspend fun document(@Path("id") id: String): DocumentDto
 
+    @GET("api/v1.0/documents/{id}/tree/")
+    suspend fun tree(@Path("id") id: String): DocumentDto
+
     @POST("api/v1.0/documents/")
     suspend fun createDocument(@Body body: DocsCreateRequest): DocumentDto
 
@@ -304,6 +307,8 @@ data class DocumentDto(
     @Json(name = "computed_link_role") val computedLinkRole: String? = null,
     /** Search results embed the parent document. */
     val parent: DocumentDto? = null,
+    /** The tree endpoint expands ancestors, siblings and direct children in server order. */
+    val children: List<DocumentDto> = emptyList(),
 ) {
     val displayTitle: String
         get() = title?.takeIf { it.isNotBlank() } ?: ""

@@ -92,6 +92,8 @@ class DocsRepository(private val session: DocsSessionManager) {
 
     suspend fun document(id: String): DocumentDto = docsCall { api -> api.document(id) }
 
+    suspend fun tree(id: String): DocumentDto = docsCall { api -> api.tree(id) }
+
     suspend fun create(title: String): DocumentDto = docsCall { api ->
         api.createDocument(DocsCreateRequest(title = title))
     }

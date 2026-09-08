@@ -183,4 +183,14 @@
     <string name="docs_request_accept">批准</string>
     <string name="docs_request_reject">拒绝申请</string>
     <string name="docs_request_reject_message">拒绝 %1$s 的申请？对方可以再次申请。</string>
+    <string name="docs_children_count">子文档 · %1$d</string>
+    <string name="docs_directory">文档目录</string>
+    <string name="docs_directory_in">目录 · %1$s</string>
+    <string name="docs_previous">上一篇</string>
+    <string name="docs_next">下一篇</string>
+    <string name="docs_first_document">已是第一篇</string>
+    <string name="docs_last_document">已是最后一篇</string>
+    <string name="docs_current_document">当前阅读</string>
+    <string name="docs_open_parent">打开父文档</string>
+    <string name="docs_navigation_error">文档目录加载失败</string>
 </resources>

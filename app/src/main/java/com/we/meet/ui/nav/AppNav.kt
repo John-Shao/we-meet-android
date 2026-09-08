@@ -1023,6 +1023,22 @@ fun AppNav() {
                 docId = docId,
                 onBack = rememberOnceOnly(safePop),
                 onOpenDoc = { otherDocId -> navController.navigate(Routes.docsDetail(otherDocId)) },
+                onSwitchDoc = { otherDocId ->
+                    if (otherDocId != docId && navController.currentBackStackEntry?.id == entry.id) {
+                        navController.navigate(Routes.docsDetail(otherDocId)) {
+                            // Replace this sibling only; the parent shares the same destination type.
+                            popUpTo(Routes.docsDetail(docId)) { inclusive = true }
+                        }
+                    }
+                },
+                onOpenParent = { parentId ->
+                    if (navController.currentBackStackEntry?.id == entry.id &&
+                        !navController.popBackStack(Routes.docsDetail(parentId), false)) {
+                        navController.navigate(Routes.docsDetail(parentId)) {
+                            popUpTo(Routes.docsDetail(docId)) { inclusive = true }
+                        }
+                    }
+                },
                 onOpenWebUrl = { url -> navController.navigate(Routes.docsViewer(url)) },
                 onOpenEditor = { url -> navController.navigate(Routes.docsEditor(url)) },
                 onShareToChat = { _, title, url -> shareUrl = url; shareTitle = title },

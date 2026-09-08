@@ -174,4 +174,14 @@
     <string name="docs_share_to_chat_help">Envoie une carte du document et tente de donner un accès en lecture aux membres du chat.</string>
     <string name="docs_link_share">Partage par lien</string>
     <string name="docs_save_copy_link">Enregistrer et copier le lien</string>
+    <string name="docs_children_count">Sous-pages · %1$d</string>
+    <string name="docs_directory">Répertoire des documents</string>
+    <string name="docs_directory_in">Répertoire · %1$s</string>
+    <string name="docs_previous">Précédent</string>
+    <string name="docs_next">Suivant</string>
+    <string name="docs_first_document">Premier document</string>
+    <string name="docs_last_document">Dernier document</string>
+    <string name="docs_current_document">En cours</string>
+    <string name="docs_open_parent">Ouvrir le document parent</string>
+    <string name="docs_navigation_error">Impossible de charger le répertoire</string>
 </resources>

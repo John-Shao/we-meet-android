@@ -174,4 +174,14 @@
     <string name="docs_share_to_chat_help">Verstuurt een documentkaart en probeert chatleden leestoegang te geven.</string>
     <string name="docs_link_share">Delen via link</string>
     <string name="docs_save_copy_link">Opslaan en link kopiëren</string>
+    <string name="docs_children_count">Subpagina’s · %1$d</string>
+    <string name="docs_directory">Documentoverzicht</string>
+    <string name="docs_directory_in">Overzicht · %1$s</string>
+    <string name="docs_previous">Vorige</string>
+    <string name="docs_next">Volgende</string>
+    <string name="docs_first_document">Eerste document</string>
+    <string name="docs_last_document">Laatste document</string>
+    <string name="docs_current_document">Huidig</string>
+    <string name="docs_open_parent">Bovenliggend document openen</string>
+    <string name="docs_navigation_error">Documentoverzicht kon niet worden geladen</string>
 </resources>
