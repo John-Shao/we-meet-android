@@ -185,12 +185,14 @@
     <string name="docs_request_reject_message">Decline the request from %1$s? They can request access again.</string>
     <string name="docs_children_count">Subpages · %1$d</string>
     <string name="docs_directory">Document directory</string>
-    <string name="docs_directory_in">Directory · %1$s</string>
-    <string name="docs_previous">Previous</string>
-    <string name="docs_next">Next</string>
-    <string name="docs_first_document">First document</string>
-    <string name="docs_last_document">Last document</string>
     <string name="docs_current_document">Current</string>
-    <string name="docs_open_parent">Open parent document</string>
     <string name="docs_navigation_error">Could not load document directory</string>
+    <string name="docs_tree_open">Directory</string>
+    <string name="docs_tree_locate">Locate current document</string>
+    <string name="docs_tree_level">Level %1$d</string>
+    <string name="docs_tree_collapse">Collapse %1$s</string>
+    <string name="docs_tree_expand">Expand %1$s</string>
+    <string name="docs_tree_actions">Actions for %1$s</string>
+    <string name="docs_tree_create">New subpage</string>
+    <string name="docs_tree_detach">Move to my docs</string>
 </resources>

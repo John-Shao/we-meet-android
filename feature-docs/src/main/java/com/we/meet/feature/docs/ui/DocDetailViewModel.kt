@@ -43,9 +43,6 @@ class DocDetailViewModel(
         val blocks: List<JsonBlockDto> = emptyList(),
         val contentLoading: Boolean = false,
         val contentError: Boolean = false,
-        val navigation: DocNavigation = DocNavigation(),
-        val navigationLoading: Boolean = false,
-        val navigationError: Boolean = false,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -89,12 +86,11 @@ class DocDetailViewModel(
             ?: (pollDelayMillis * 2).coerceAtMost(300_000)
     }
 
-    private suspend fun refreshOnce(manual: Boolean) = kotlinx.coroutines.coroutineScope {
+    private suspend fun refreshOnce(manual: Boolean) {
         try {
             _state.update { it.copy(loading = it.doc == null, refreshing = manual && it.doc != null, error = false) }
             val doc = repo.document(docId)
             _state.update { it.copy(doc = doc, loading = false, noAccess = false, contentLoading = it.blocks.isEmpty()) }
-            val navigationJob = launch { refreshNavigation(doc) }
             try {
                 val raw = repo.formattedContent(docId, format = "json").content
                 val blocks = if (lastContentRaw == raw?.toString()) _state.value.blocks else
@@ -106,8 +102,6 @@ class DocDetailViewModel(
                 throw e
             } catch (e: Exception) {
                 if (isNoAccess(e) || (e as? HttpException)?.code() == 404) {
-                    navigationJob.cancel()
-                    navigationJob.join()
                     throw e
                 }
                 backOff(e)
@@ -128,23 +122,6 @@ class DocDetailViewModel(
         } finally {
             _state.update { it.copy(loading = false, refreshing = false, contentLoading = false) }
         }
-    }
-
-    fun retryNavigation() { viewModelScope.launch { refresh() } }
-
-    private suspend fun refreshNavigation(doc: DocumentDto) {
-        if (doc.depth <= 1 && doc.numchild == 0) {
-            _state.update { it.copy(navigation = DocNavigation(), navigationLoading = false, navigationError = false) }
-            return
-        }
-        _state.update { it.copy(navigationLoading = true, navigationError = false) }
-        runCatching { documentNavigation(repo.tree(doc.id), doc.id) }
-            .onSuccess { navigation ->
-                _state.update { it.copy(navigation = navigation, navigationLoading = false) }
-            }
-            .onFailure {
-                _state.update { it.copy(navigation = DocNavigation(), navigationLoading = false, navigationError = true) }
-            }
     }
 
     /**

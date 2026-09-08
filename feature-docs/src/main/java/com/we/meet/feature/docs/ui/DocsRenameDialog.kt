@@ -24,6 +24,8 @@ internal fun DocsRenameDialog(
     doc: DocumentDto,
     onDismiss: () -> Unit,
     onConfirm: (String, (Boolean) -> Unit) -> Unit,
+    titleRes: Int = R.string.docs_rename_title,
+    confirmRes: Int = R.string.docs_rename_confirm,
 ) {
     var title by rememberSaveable(doc.id, stateSaver = TextFieldValue.Saver) {
         mutableStateOf(TextFieldValue(doc.displayTitle, TextRange(0, doc.displayTitle.length)))
@@ -45,7 +47,7 @@ internal fun DocsRenameDialog(
     LaunchedEffect(Unit) { focus.requestFocus() }
     AlertDialog(
         onDismissRequest = { if (!saving) onDismiss() },
-        title = { Text(stringResource(R.string.docs_rename_title)) },
+        title = { Text(stringResource(titleRes)) },
         text = {
             Column {
                 OutlinedTextField(
@@ -64,7 +66,7 @@ internal fun DocsRenameDialog(
         },
         confirmButton = {
             TextButton(onClick = { submit() }, enabled = canSubmit) {
-                if (saving) WeMeetInlineLoading() else Text(stringResource(R.string.docs_rename_confirm))
+                if (saving) WeMeetInlineLoading() else Text(stringResource(confirmRes))
             }
         },
         dismissButton = {

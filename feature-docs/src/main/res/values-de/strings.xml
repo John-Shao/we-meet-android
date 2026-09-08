@@ -176,12 +176,14 @@
     <string name="docs_save_copy_link">Speichern und Link kopieren</string>
     <string name="docs_children_count">Unterseiten · %1$d</string>
     <string name="docs_directory">Dokumentverzeichnis</string>
-    <string name="docs_directory_in">Verzeichnis · %1$s</string>
-    <string name="docs_previous">Vorheriges</string>
-    <string name="docs_next">Nächstes</string>
-    <string name="docs_first_document">Erstes Dokument</string>
-    <string name="docs_last_document">Letztes Dokument</string>
     <string name="docs_current_document">Aktuell</string>
-    <string name="docs_open_parent">Übergeordnetes Dokument öffnen</string>
     <string name="docs_navigation_error">Dokumentverzeichnis konnte nicht geladen werden</string>
+    <string name="docs_tree_open">Verzeichnis</string>
+    <string name="docs_tree_locate">Aktuelles Dokument finden</string>
+    <string name="docs_tree_level">Ebene %1$d</string>
+    <string name="docs_tree_collapse">%1$s einklappen</string>
+    <string name="docs_tree_expand">%1$s ausklappen</string>
+    <string name="docs_tree_actions">Aktionen für %1$s</string>
+    <string name="docs_tree_create">Neue Unterseite</string>
+    <string name="docs_tree_detach">Zu meinen Dokumenten verschieben</string>
 </resources>

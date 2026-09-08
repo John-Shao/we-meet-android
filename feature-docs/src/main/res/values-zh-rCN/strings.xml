@@ -185,12 +185,14 @@
     <string name="docs_request_reject_message">拒绝 %1$s 的申请？对方可以再次申请。</string>
     <string name="docs_children_count">子文档 · %1$d</string>
     <string name="docs_directory">文档目录</string>
-    <string name="docs_directory_in">目录 · %1$s</string>
-    <string name="docs_previous">上一篇</string>
-    <string name="docs_next">下一篇</string>
-    <string name="docs_first_document">已是第一篇</string>
-    <string name="docs_last_document">已是最后一篇</string>
     <string name="docs_current_document">当前阅读</string>
-    <string name="docs_open_parent">打开父文档</string>
     <string name="docs_navigation_error">文档目录加载失败</string>
+    <string name="docs_tree_open">目录</string>
+    <string name="docs_tree_locate">定位当前文档</string>
+    <string name="docs_tree_level">第 %1$d 级</string>
+    <string name="docs_tree_collapse">收起 %1$s</string>
+    <string name="docs_tree_expand">展开 %1$s</string>
+    <string name="docs_tree_actions">%1$s 的操作</string>
+    <string name="docs_tree_create">新建子文档</string>
+    <string name="docs_tree_detach">移至我的文档</string>
 </resources>

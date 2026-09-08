@@ -1,7 +1,6 @@
 package com.we.meet.feature.docs.ui
 
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,6 +23,11 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -81,7 +84,8 @@ fun DocDetailScreen(
     onShareToChat: (docId: String, title: String, url: String) -> Unit,
     onOpenEditor: (String) -> Unit = {},
     onSwitchDoc: (String) -> Unit = onOpenDoc,
-    onOpenParent: (String) -> Unit = onOpenDoc,
+    treeVm: DocTreeViewModel,
+    onExitWorkspace: () -> Unit,
 ) {
     val context = LocalContext.current
     val vm: DocDetailViewModel = viewModel(
@@ -100,8 +104,10 @@ fun DocDetailScreen(
     var showComments by rememberSaveable { mutableStateOf(false) }
     var showVersions by rememberSaveable { mutableStateOf(false) }
     var sharingPage by rememberSaveable { mutableStateOf<DocSharingPage?>(null) }
-    var showChildren by rememberSaveable(docId) { mutableStateOf(false) }
-    var showDirectory by rememberSaveable(docId) { mutableStateOf(false) }
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val drawerScope = rememberCoroutineScope()
+    val treeState by treeVm.state.collectAsStateWithLifecycle()
+    fun openDirectory() { drawerScope.launch { drawerState.open() } }
 
     LaunchedEffect(Unit) {
         vm.toasts.collect { resId ->
@@ -133,20 +139,9 @@ fun DocDetailScreen(
     val density = androidx.compose.ui.platform.LocalDensity.current
     var editButtonHeight by remember { mutableStateOf(Dimens.ControlLarge) }
 
+    DocTreeWorkspace(deps, treeVm, docId, drawerState,
+        onNavigate = onSwitchDoc, onExitWorkspace = onExitWorkspace, onDocChanged = vm::load) {
     Scaffold(
-        bottomBar = {
-            if (doc != null && !state.noAccess) {
-                if (state.navigation.parent != null) DocNavigationBar(
-                    navigation = state.navigation,
-                    onDirectory = { showDirectory = true },
-                    onSwitch = onSwitchDoc,
-                ) else if (state.navigationError && doc.depth > 1) {
-                    WeMeetInlineErrorState(onRetry = vm::retryNavigation,
-                        modifier = Modifier.navigationBarsPadding(),
-                        message = stringResource(R.string.docs_navigation_error))
-                }
-            }
-        },
         floatingActionButton = {
             if (doc?.abilities?.canEdit == true) FloatingActionButton(
                 onClick = { onOpenEditor(DocLinks.editorUrl(deps.docsBaseUrl, doc.id)) },
@@ -164,11 +159,8 @@ fun DocDetailScreen(
                 onBack = onBack,
                 actions = {
                     if (doc != null) {
-                        if (headerScrolledAway && doc.abilities.childrenList && doc.numchild > 0) IconButton(
-                            onClick = { showChildren = true },
-                        ) {
-                            Icon(androidx.compose.material.icons.Icons.Outlined.FolderOpen,
-                                contentDescription = stringResource(R.string.docs_children_count, doc.numchild))
+                        TextButton(onClick = ::openDirectory) {
+                            Text(stringResource(R.string.docs_tree_open))
                         }
                         if (doc.abilities.retrieve) IconButton(onClick = {
                             onShareToChat(doc.id, doc.displayTitle.ifBlank { context.getString(R.string.docs_untitled) },
@@ -239,7 +231,7 @@ fun DocDetailScreen(
                                             style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.padding(top = Dimens.SpaceS))
                                         if (doc.abilities.childrenList && doc.numchild > 0) DocChildrenEntry(
-                                            doc, state.navigation.children, onClick = { showChildren = true },
+                                            doc, treeState.root?.findTreeNode(docId)?.children.orEmpty(), onClick = ::openDirectory,
                                         )
                                     }
                                 },
@@ -264,6 +256,8 @@ fun DocDetailScreen(
         }
     }
 
+    } // Document tree drawer wraps the reader.
+
     if (menuExpanded && doc != null) {
         DocActionsSheet(doc, buildInfoLine(doc), onDismiss = { menuExpanded = false }) { action ->
             if (action != DocAction.FAVORITE) menuExpanded = false
@@ -274,37 +268,13 @@ fun DocDetailScreen(
                 DocAction.LINKS -> sharingPage = DocSharingPage.LINKS
                 DocAction.MEMBERS -> sharingPage = DocSharingPage.MEMBERS
                 DocAction.RENAME -> showRename = true
-                DocAction.CHILDREN -> showChildren = true
+                DocAction.CHILDREN -> openDirectory()
                 DocAction.MOVE -> showMove = true
                 DocAction.DUPLICATE -> vm.duplicate(onOpenDoc)
                 DocAction.WEB -> onOpenWebUrl(DocLinks.webUrl(deps.docsBaseUrl, doc.id))
                 DocAction.DELETE -> showDelete = true
             }
         }
-    }
-
-    if (showChildren && doc != null) {
-        DocChildrenSheet(deps, doc, onDismiss = { showChildren = false }, onOpenDoc = {
-            showChildren = false
-            onOpenDoc(it)
-        })
-    }
-
-    val parent = state.navigation.parent
-    if (showDirectory && parent != null) {
-        DocChildrenSheet(deps, parent,
-            onDismiss = { showDirectory = false },
-            onOpenDoc = { target ->
-                showDirectory = false
-                if (target != docId) onSwitchDoc(target)
-            },
-            currentDocId = docId,
-            initialChildren = state.navigation.siblings,
-            onOpenParent = {
-                showDirectory = false
-                onOpenParent(parent.id)
-            },
-        )
     }
 
     if (showRename && doc != null) {

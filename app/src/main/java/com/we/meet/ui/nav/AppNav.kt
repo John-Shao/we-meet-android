@@ -28,6 +28,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -1018,23 +1021,25 @@ fun AppNav() {
             val docId = Routes.decode(entry.arguments?.getString("docId").orEmpty())
             var shareTitle by androidx.compose.runtime.saveable.rememberSaveable(docId) { mutableStateOf<String?>(null) }
             var shareUrl by androidx.compose.runtime.saveable.rememberSaveable(docId) { mutableStateOf("") }
+            val treeOwner = remember(navController) { navController.getBackStackEntry(navController.graph.id) }
+            val treeVm: com.we.meet.feature.docs.ui.DocTreeViewModel = viewModel(
+                viewModelStoreOwner = treeOwner,
+                key = "docs-workspace-tree",
+                factory = viewModelFactory {
+                    initializer { com.we.meet.feature.docs.ui.DocTreeViewModel(app.docsRepository, createSavedStateHandle()) }
+                },
+            )
             com.we.meet.feature.docs.ui.DocDetailScreen(
                 deps = app,
                 docId = docId,
                 onBack = rememberOnceOnly(safePop),
                 onOpenDoc = { otherDocId -> navController.navigate(Routes.docsDetail(otherDocId)) },
+                treeVm = treeVm,
+                onExitWorkspace = { navController.popBackStack(Routes.HOME, false) },
                 onSwitchDoc = { otherDocId ->
-                    if (otherDocId != docId && navController.currentBackStackEntry?.id == entry.id) {
+                    if (otherDocId != docId && navController.currentBackStackEntry?.id == entry.id &&
+                        !navController.popBackStack(Routes.docsDetail(otherDocId), false)) {
                         navController.navigate(Routes.docsDetail(otherDocId)) {
-                            // Replace this sibling only; the parent shares the same destination type.
-                            popUpTo(Routes.docsDetail(docId)) { inclusive = true }
-                        }
-                    }
-                },
-                onOpenParent = { parentId ->
-                    if (navController.currentBackStackEntry?.id == entry.id &&
-                        !navController.popBackStack(Routes.docsDetail(parentId), false)) {
-                        navController.navigate(Routes.docsDetail(parentId)) {
                             popUpTo(Routes.docsDetail(docId)) { inclusive = true }
                         }
                     }

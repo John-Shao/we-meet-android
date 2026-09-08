@@ -176,12 +176,14 @@
     <string name="docs_save_copy_link">Opslaan en link kopiëren</string>
     <string name="docs_children_count">Subpagina’s · %1$d</string>
     <string name="docs_directory">Documentoverzicht</string>
-    <string name="docs_directory_in">Overzicht · %1$s</string>
-    <string name="docs_previous">Vorige</string>
-    <string name="docs_next">Volgende</string>
-    <string name="docs_first_document">Eerste document</string>
-    <string name="docs_last_document">Laatste document</string>
     <string name="docs_current_document">Huidig</string>
-    <string name="docs_open_parent">Bovenliggend document openen</string>
     <string name="docs_navigation_error">Documentoverzicht kon niet worden geladen</string>
+    <string name="docs_tree_open">Overzicht</string>
+    <string name="docs_tree_locate">Huidig document zoeken</string>
+    <string name="docs_tree_level">Niveau %1$d</string>
+    <string name="docs_tree_collapse">%1$s inklappen</string>
+    <string name="docs_tree_expand">%1$s uitklappen</string>
+    <string name="docs_tree_actions">Acties voor %1$s</string>
+    <string name="docs_tree_create">Nieuwe subpagina</string>
+    <string name="docs_tree_detach">Naar mijn documenten verplaatsen</string>
 </resources>
