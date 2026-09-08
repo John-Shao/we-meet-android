@@ -229,6 +229,16 @@ interface DocsApi {
         @Body body: DocsAccessRequestCreate,
     )
 
+    @POST("api/v1.0/documents/{id}/ask-for-access/{requestId}/accept/")
+    suspend fun acceptAccessRequest(
+        @Path("id") id: String,
+        @Path("requestId") requestId: String,
+        @Body body: DocsAccessUpdateRequest,
+    )
+
+    @DELETE("api/v1.0/documents/{id}/ask-for-access/{requestId}/")
+    suspend fun rejectAccessRequest(@Path("id") id: String, @Path("requestId") requestId: String)
+
     @GET("api/v1.0/users/")
     suspend fun searchUsers(
         @Query("q") q: String? = null,
@@ -241,7 +251,19 @@ interface DocsApi {
 interface DocsTicketApi {
     @POST("api/v1.0/docs/session/")
     suspend fun createSession(@Body body: DocsTicketRequest): DocsTicketResponse
+
+    @GET("api/v1.0/docs/member-access/")
+    suspend fun memberIds(@Query("doc_id") docId: String): DocsMemberIds
+
+    @POST("api/v1.0/docs/member-access/")
+    suspend fun addMembers(@Body body: DocsMemberGrantRequest): DocsMemberGrantResponse
 }
+
+data class DocsMemberIds(@Json(name = "user_ids") val userIds: List<String>)
+data class DocsMemberGrantRequest(@Json(name = "doc_id") val docId: String,
+    @Json(name = "user_ids") val userIds: List<String>, val role: String)
+data class DocsMemberGrantStatus(@Json(name = "user_id") val userId: String, val status: String)
+data class DocsMemberGrantResponse(val identity: String, val role: String, val results: List<DocsMemberGrantStatus>)
 
 // ---- DTOs ----
 

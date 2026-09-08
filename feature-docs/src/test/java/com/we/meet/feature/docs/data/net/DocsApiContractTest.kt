@@ -16,6 +16,35 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 class DocsApiContractTest {
     private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
 
+    @Test fun noEmailAccessRequestsExposeServerPermissionsAndApprovalContract() = runBlocking {
+        val request = moshi.adapter(DocsAccessRequestDto::class.java).fromJson("""
+            {"id":"request","user":{"id":"user","email":null,"full_name":"Phone User"},
+             "role":"reader","abilities":{"accept":true,"destroy":true,"set_role_to":["reader","editor"]}}
+        """)!!
+        assertEquals("Phone User", request.user?.displayName)
+        assertTrue(request.abilities.accept)
+        assertEquals(listOf("reader", "editor"), request.abilities.setRoleTo)
+        assertFalse(moshi.adapter(DocsAccessRequestDto::class.java).fromJson("{}")!!.abilities.accept)
+        val calls = mutableListOf<String>()
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            val outgoing = chain.request()
+            calls.add(outgoing.method + " " + outgoing.url.encodedPath)
+            if (outgoing.method == "POST") {
+                val buffer = Buffer()
+                outgoing.body!!.writeTo(buffer)
+                assertEquals("""{"role":"editor"}""", buffer.readUtf8())
+            }
+            Response.Builder().request(outgoing).protocol(Protocol.HTTP_1_1).code(204)
+                .message("No Content").body("".toResponseBody()).build()
+        }.build()
+        val api = Retrofit.Builder().baseUrl("https://docs.example/").client(client)
+            .addConverterFactory(MoshiConverterFactory.create(moshi)).build().create(DocsApi::class.java)
+        api.acceptAccessRequest("doc", "request", DocsAccessUpdateRequest("editor"))
+        api.rejectAccessRequest("doc", "request")
+        assertEquals(listOf("POST /api/v1.0/documents/doc/ask-for-access/request/accept/",
+            "DELETE /api/v1.0/documents/doc/ask-for-access/request/"), calls)
+    }
+
     @Test fun userSearchMinimumUsesServerConfigurationWithLegacyFallback() = runBlocking {
         val client = OkHttpClient.Builder().addInterceptor { chain ->
             assertEquals("/api/v1.0/config/", chain.request().url.encodedPath)

@@ -24,6 +24,33 @@ class DocsSessionBoundaryTest {
         override fun clear() { sessionId = null; csrfToken = null }
     }
 
+    @Test fun accountSwitchCancelsFailedMemberGrantAndRejectsRemainingBatches() = runBlocking {
+        val account = AtomicReference("A")
+        var calls = 0
+        val client = OkHttpClient.Builder().addInterceptor {
+            calls++
+            account.set("B")
+            throw java.io.IOException("response lost during account switch")
+        }.build()
+        val deps = object : DocsDeps {
+            override val docsAccountKey get() = account.get()
+            override val docsBaseUrl = "https://docs.example/"
+            override val baseUrl = "https://meet.example/"
+            override val authedOkHttp = client
+            override val docsRepository: DocsRepository get() = error("not used")
+            override val docsMediaLoader: ImageLoader get() = error("not used")
+        }
+        val manager = DocsSessionManager(deps, MemoryCredentials())
+        val expected = manager.generation
+        try {
+            assertTrue(runCatching { manager.addMembers("doc", listOf("one"), "reader", expected) }
+                .exceptionOrNull() is CancellationException)
+            assertTrue(runCatching { manager.addMembers("doc", listOf("two"), "reader", expected) }
+                .exceptionOrNull() is CancellationException)
+            assertEquals(1, calls)
+        } finally { client.dispatcher.executorService.shutdown() }
+    }
+
     @Test fun repositoryRejectsAnOldAccountResultEvenWithoutExplicitInvalidation() = runBlocking {
         val account = AtomicReference("A")
         val client = OkHttpClient()

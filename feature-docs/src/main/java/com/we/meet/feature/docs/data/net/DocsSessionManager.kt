@@ -35,6 +35,34 @@ class DocsSessionManager internal constructor(private val deps: DocsDeps, val st
         .client(deps.authedOkHttp).addConverterFactory(MoshiConverterFactory.create(moshi))
         .build().create(DocsTicketApi::class.java)
 
+    suspend fun memberIds(docId: String): List<String> {
+        val expected = generation
+        checkGeneration(expected)
+        return try { memberApi(expected).memberIds(docId).userIds }
+        finally { checkGeneration(expected) }
+    }
+
+    suspend fun addMembers(docId: String, userIds: List<String>, role: String, expected: Long = generation): DocsMemberGrantResponse {
+        checkGeneration(expected)
+        return try { memberApi(expected).addMembers(DocsMemberGrantRequest(docId, userIds, role)) }
+        finally { checkGeneration(expected) }
+    }
+
+    private fun memberApi(expected: Long): DocsTicketApi {
+        val client = deps.authedOkHttp.newBuilder().addNetworkInterceptor { chain ->
+            if (!isCurrent(expected)) throw IOException("docs account changed")
+            val response = chain.proceed(chain.request())
+            if (!isCurrent(expected)) {
+                response.close()
+                throw IOException("docs account changed")
+            }
+            response
+        }.build()
+        return Retrofit.Builder().baseUrl(deps.baseUrl.trimEnd('/') + "/")
+            .client(client).addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build().create(DocsTicketApi::class.java)
+    }
+
     private inner class Transport(val generation: Long) {
         var cookies: List<Cookie> = buildList {
             store.sessionId?.let { add(cookie("docs_sessionid", it)) }

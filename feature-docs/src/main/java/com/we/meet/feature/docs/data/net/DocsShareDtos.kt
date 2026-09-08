@@ -182,6 +182,7 @@ data class DocsAccessRequestPageDto(
 @JsonClass(generateAdapter = true)
 data class DocsAccessRequestDto(
     val id: String = "",
+    val user: DocsUserDto? = null,
     val role: String? = null,
     val status: String? = null,
     @Json(name = "created_at") val createdAt: String? = null,
@@ -191,6 +192,8 @@ data class DocsAccessRequestDto(
 @JsonClass(generateAdapter = true)
 data class DocsAccessRequestAbilitiesDto(
     val destroy: Boolean = false,
+    val accept: Boolean = false,
+    @Json(name = "set_role_to") val setRoleTo: List<String> = emptyList(),
 )
 
 @JsonClass(generateAdapter = true)

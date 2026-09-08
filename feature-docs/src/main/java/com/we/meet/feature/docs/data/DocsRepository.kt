@@ -37,6 +37,11 @@ import retrofit2.HttpException
  */
 class DocsRepository(private val session: DocsSessionManager) {
 
+    suspend fun memberUserIds(id: String) = session.memberIds(id)
+    val accountGeneration: Long get() = session.generation
+    suspend fun addMembers(id: String, userIds: List<String>, role: String, expected: Long = session.generation) =
+        session.addMembers(id, userIds, role, expected)
+
     suspend fun <T> docsCall(retries: Int = 1, expected: Long = session.generation, block: suspend (DocsApi) -> T): T {
         session.ensureSession(expected)
         val api = session.api(expected)
@@ -247,6 +252,24 @@ class DocsRepository(private val session: DocsSessionManager) {
 
     suspend fun createAccessRequest(id: String, role: String = "reader") {
         docsCall { api -> api.createAccessRequest(id, DocsAccessRequestCreate(role = role)) }
+    }
+
+    suspend fun allAccessRequests(id: String): List<com.we.meet.feature.docs.data.net.DocsAccessRequestDto> {
+        val result = mutableListOf<com.we.meet.feature.docs.data.net.DocsAccessRequestDto>()
+        var page = 1
+        do {
+            val response = accessRequests(id, page++)
+            result.addAll(response.results)
+        } while (response.next != null)
+        return result.distinctBy { it.id }
+    }
+
+    suspend fun acceptAccessRequest(id: String, requestId: String, role: String) {
+        docsCall { api -> api.acceptAccessRequest(id, requestId, DocsAccessUpdateRequest(role)) }
+    }
+
+    suspend fun rejectAccessRequest(id: String, requestId: String) {
+        docsCall { api -> api.rejectAccessRequest(id, requestId) }
     }
 
     suspend fun userSearchMinLength(): Int = docsCall { it.config().userSearchMinLength.coerceAtLeast(1) }

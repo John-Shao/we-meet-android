@@ -174,7 +174,13 @@
     <string name="docs_share_to_chat_help">Sends a document card and attempts to grant chat members read-only access.</string>
     <string name="docs_link_share">Link sharing</string>
     <string name="docs_save_copy_link">Save &amp; copy link</string>
-    <string name="docs_share_picker_help">Confirm to apply this permission to the selected users. Users who have not used Docs yet receive an email invitation.</string>
-    <string name="docs_share_batch_result">Added: %1$d · Invited: %2$d · Already included: %3$d</string>
-    <string name="docs_share_batch_failed">%d users could not be processed. Retry the remaining selection. Users without an email need to complete their account details first.</string>
+    <string name="docs_share_picker_help">Confirm to grant the selected users access. No email or invitation acceptance is needed.</string>
+    <string name="docs_share_batch_result">Added: %1$d · Already included: %2$d</string>
+    <string name="docs_share_batch_failed">%d users could not be processed. Retry the remaining selection.</string>
+    <string name="docs_access_requests">Pending access requests</string>
+    <string name="docs_requests_load_error">Could not load access requests. Please retry.</string>
+    <string name="docs_request_role">Requested access: %1$s</string>
+    <string name="docs_request_accept">Approve</string>
+    <string name="docs_request_reject">Decline</string>
+    <string name="docs_request_reject_message">Decline the request from %1$s? They can request access again.</string>
 </resources>

@@ -82,8 +82,6 @@ fun ContactPicker(
     enabled: Boolean = true,
     excludeSelf: Boolean = true,
     excludeUserIds: Set<String> = emptySet(),
-    /** Hosts with a separate user-ID namespace can exclude existing members by email. */
-    excludeEmails: Set<String> = emptySet(),
     /** Multi 模式下预勾选的 userId(如从直聊「新建群聊」带入对端);加载到即选中一次。 */
     preselectUserIds: Set<String> = emptySet(),
     /** 已知的完整初始选择；无需等待成员页加载，适合编辑已有成员集合。 */
@@ -127,7 +125,7 @@ fun ContactPicker(
         }
     }
 
-    LaunchedEffect(repository, reloadTick, excludeSelf, excludeUserIds, excludeEmails) {
+    LaunchedEffect(repository, reloadTick, excludeSelf, excludeUserIds) {
         snapshotFlow { query }
             .debounce(300)
             .distinctUntilChanged()
@@ -157,8 +155,7 @@ fun ContactPicker(
                     val page = memberResult.getOrThrow()
                     val external = externalResult.getOrThrow()
                     members = (page.members + external).distinctBy { it.id }.filter { m ->
-                            (!excludeSelf || !m.isSelf) && m.id !in excludeUserIds &&
-                                excludeEmails.none { it.equals(m.email?.trim(), ignoreCase = true) }
+                            (!excludeSelf || !m.isSelf) && m.id !in excludeUserIds
                     }
                 } else {
                     error = true
