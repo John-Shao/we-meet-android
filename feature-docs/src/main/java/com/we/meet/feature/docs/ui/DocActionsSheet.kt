@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.automirrored.outlined.DriveFileMove
+import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -22,14 +23,14 @@ import com.we.meet.feature.docs.data.net.DocumentDto
 import com.we.meet.ui.theme.Dimens
 import kotlinx.coroutines.launch
 
-internal enum class DocAction { COMMENTS, FAVORITE, VERSIONS, LINKS, MEMBERS, RENAME, CHILDREN, MOVE, DUPLICATE, WEB, DELETE }
+internal enum class DocAction { COMMENTS, FAVORITE, VERSIONS, LINKS, MEMBERS, RENAME, CHILDREN, OUTLINE, MOVE, DUPLICATE, WEB, DELETE }
 
 private data class DocActionItem(val action: DocAction, val icon: ImageVector, val label: Int)
 
 /** Reading owns the screen; secondary operations live in a scrollable sheet. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun DocActionsSheet(doc: DocumentDto, info: String, onDismiss: () -> Unit, onAction: (DocAction) -> Unit) {
+internal fun DocActionsSheet(doc: DocumentDto, info: String, hasOutline: Boolean = false, onDismiss: () -> Unit, onAction: (DocAction) -> Unit) {
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     var closing by remember { mutableStateOf(false) }
@@ -62,6 +63,7 @@ internal fun DocActionsSheet(doc: DocumentDto, info: String, onDismiss: () -> Un
     val organization = buildList {
         if (abilities.canRename) add(DocActionItem(DocAction.RENAME, Icons.Outlined.DriveFileRenameOutline, R.string.docs_rename_title))
         if (abilities.childrenList) add(DocActionItem(DocAction.CHILDREN, Icons.Outlined.AccountTree, R.string.docs_tree_open))
+        if (hasOutline) add(DocActionItem(DocAction.OUTLINE, Icons.AutoMirrored.Outlined.FormatListBulleted, R.string.docs_outline))
         if (abilities.move) add(DocActionItem(DocAction.MOVE, Icons.AutoMirrored.Outlined.DriveFileMove, R.string.docs_move_title))
         if (abilities.duplicate) add(DocActionItem(DocAction.DUPLICATE, Icons.Outlined.ContentCopy, R.string.docs_duplicate))
         add(DocActionItem(DocAction.WEB, Icons.AutoMirrored.Outlined.OpenInNew, R.string.docs_open_web))

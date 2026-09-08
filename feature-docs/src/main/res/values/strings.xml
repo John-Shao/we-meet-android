@@ -184,10 +184,10 @@
     <string name="docs_request_reject">Decline</string>
     <string name="docs_request_reject_message">Decline the request from %1$s? They can request access again.</string>
     <string name="docs_directory_count">Directory · %1$d</string>
-    <string name="docs_directory">Document directory</string>
+    <string name="docs_directory">Document tree</string>
     <string name="docs_current_document">Current</string>
     <string name="docs_navigation_error">Could not load document directory</string>
-    <string name="docs_tree_open">Directory</string>
+    <string name="docs_tree_open">Document tree</string>
     <string name="docs_tree_locate">Locate current document</string>
     <string name="docs_tree_level">Level %1$d</string>
     <string name="docs_tree_collapse">Collapse %1$s</string>
@@ -195,4 +195,5 @@
     <string name="docs_tree_actions">Actions for %1$s</string>
     <string name="docs_tree_create">New subpage</string>
     <string name="docs_tree_detach">Move to my docs</string>
+    <string name="docs_outline">Outline</string>
 </resources>

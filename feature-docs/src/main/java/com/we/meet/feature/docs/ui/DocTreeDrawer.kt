@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.stateDescription
@@ -21,7 +20,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.feature.docs.DocsDeps
 import com.we.meet.feature.docs.R
@@ -54,7 +52,6 @@ internal fun DocTreeWorkspace(
     var operation by remember { mutableStateOf<TreeOperation?>(null) }
     val listState = rememberLazyListState()
     val rows = remember(state.root, state.expanded) { visibleTreeRows(state.root, state.expanded) }
-    val width = LocalConfiguration.current.screenWidthDp.dp * 0.8f
     fun close() { scope.launch { drawerState.close() } }
     fun navigate(id: String) {
         scope.launch {
@@ -82,11 +79,12 @@ internal fun DocTreeWorkspace(
         }
     }
     BackHandler(enabled = drawerState.isOpen && operation == null) { close() }
+    key(drawerState) {
     ModalNavigationDrawer(
         drawerState = drawerState,
         gesturesEnabled = drawerState.isOpen && operation == null,
         drawerContent = {
-            ModalDrawerSheet(modifier = Modifier.width(width)) {
+            DocNavigationDrawerSheet {
                 Row(Modifier.fillMaxWidth().padding(start = Dimens.ScreenPadding), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.docs_directory), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
                     IconButton(onClick = { vm.revealCurrent(); located = false }) {
@@ -120,6 +118,7 @@ internal fun DocTreeWorkspace(
         },
         content = content,
     )
+    }
     operation?.let { selected ->
         TreeOperationDialog(deps, selected, state.root, onDismiss = { operation = null },
             onDone = { destination, exit ->

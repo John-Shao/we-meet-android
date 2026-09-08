@@ -104,7 +104,7 @@ fun parseBlockNoteContent(raw: Any?): List<JsonBlockDto> = when (raw) {
     else -> listOf(JsonBlockDto(type = "unsupported"))
 }
 
-private data class FlattenedBlock(
+internal data class FlattenedBlock(
     val block: JsonBlockDto,
     val depth: Int,
     val orderNumber: Int?,
@@ -151,7 +151,7 @@ fun DocReader(
 }
 
 /** Depth-first flatten; ordered-list numbering computed per sibling run. */
-private fun flattenBlocks(blocks: List<JsonBlockDto>): List<FlattenedBlock> {
+internal fun flattenBlocks(blocks: List<JsonBlockDto>): List<FlattenedBlock> {
     val out = mutableListOf<FlattenedBlock>()
     fun walk(list: List<JsonBlockDto>, depth: Int, pathPrefix: String) {
         var number = 1
@@ -693,10 +693,10 @@ private fun contentBackground(name: String, dark: Boolean): Color? {
 
 // ---- block helpers ----
 
-private fun JsonBlockDto.inlineContent(): List<JsonInlineDto> =
+internal fun JsonBlockDto.inlineContent(): List<JsonInlineDto> =
     (content as? List<*>)?.toInlineList() ?: emptyList()
 
-private fun JsonInlineDto.inlineList(): List<JsonInlineDto> =
+internal fun JsonInlineDto.inlineList(): List<JsonInlineDto> =
     (content as? List<*>)?.toInlineList() ?: emptyList()
 
 /**

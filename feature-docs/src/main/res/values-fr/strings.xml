@@ -175,10 +175,10 @@
     <string name="docs_link_share">Partage par lien</string>
     <string name="docs_save_copy_link">Enregistrer et copier le lien</string>
     <string name="docs_directory_count">Répertoire · %1$d</string>
-    <string name="docs_directory">Répertoire des documents</string>
+    <string name="docs_directory">Arborescence des documents</string>
     <string name="docs_current_document">En cours</string>
     <string name="docs_navigation_error">Impossible de charger le répertoire</string>
-    <string name="docs_tree_open">Répertoire</string>
+    <string name="docs_tree_open">Arborescence des documents</string>
     <string name="docs_tree_locate">Localiser le document actuel</string>
     <string name="docs_tree_level">Niveau %1$d</string>
     <string name="docs_tree_collapse">Réduire %1$s</string>
@@ -186,4 +186,5 @@
     <string name="docs_tree_actions">Actions pour %1$s</string>
     <string name="docs_tree_create">Nouvelle sous-page</string>
     <string name="docs_tree_detach">Déplacer vers mes documents</string>
+    <string name="docs_outline">Plan du document</string>
 </resources>

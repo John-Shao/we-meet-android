@@ -2,6 +2,7 @@ package com.we.meet.feature.docs.ui
 
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.AccountTree
+import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -38,10 +39,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.key
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
@@ -54,6 +58,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.we.meet.feature.docs.DocsDeps
 import com.we.meet.feature.docs.R
 import com.we.meet.feature.docs.renderer.DocReader
+import com.we.meet.feature.docs.renderer.documentOutline
+import com.we.meet.feature.docs.renderer.activeOutlineEntry
 import com.we.meet.feature.docs.util.DocLinks
 import com.we.meet.feature.docs.util.formatIsoTime
 import com.we.meet.ui.components.DestructiveConfirmDialog
@@ -104,10 +110,15 @@ fun DocDetailScreen(
     var showComments by rememberSaveable { mutableStateOf(false) }
     var showVersions by rememberSaveable { mutableStateOf(false) }
     var sharingPage by rememberSaveable { mutableStateOf<DocSharingPage?>(null) }
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    // Recreate anchors after resizing so a closed drawer cannot settle open when
+    // Material recalculates the closest anchor for a wider screen.
+    val screenWidth = LocalConfiguration.current.screenWidthDp
+    val drawerState = key(screenWidth) { rememberDrawerState(DrawerValue.Closed) }
+    val outlineDrawerState = key(screenWidth) { rememberDrawerState(DrawerValue.Closed) }
     val drawerScope = rememberCoroutineScope()
     val treeState by treeVm.state.collectAsStateWithLifecycle()
-    fun openDirectory() { drawerScope.launch { drawerState.open() } }
+    fun openDirectory() { drawerScope.launch { outlineDrawerState.close(); drawerState.open() } }
+    fun openOutline() { drawerScope.launch { drawerState.close(); outlineDrawerState.open() } }
 
     LaunchedEffect(Unit) {
         vm.toasts.collect { resId ->
@@ -134,11 +145,29 @@ fun DocDetailScreen(
 
     val doc = state.doc
     val readerState = rememberLazyListState()
+    val outline = remember(state.blocks, state.noAccess, state.contentError, doc) {
+        if (doc == null || state.noAccess || state.contentError) emptyList() else documentOutline(state.blocks)
+    }
+    val latestOutline by rememberUpdatedState(outline)
+    val activeOutline by remember(outline, readerState) {
+        derivedStateOf {
+            val index = if (!readerState.canScrollForward && readerState.canScrollBackward)
+                readerState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: readerState.firstVisibleItemIndex
+            else readerState.firstVisibleItemIndex
+            activeOutlineEntry(outline, index)?.key
+        }
+    }
     val headerScrolledAway by remember { derivedStateOf { readerState.firstVisibleItemIndex > 0 } }
 
     val density = androidx.compose.ui.platform.LocalDensity.current
     var editButtonHeight by remember { mutableStateOf(Dimens.ControlLarge) }
 
+    DocOutlineDrawer(outline, activeOutline, outlineDrawerState, onSelect = { entry ->
+        drawerScope.launch {
+            outlineDrawerState.close()
+            latestOutline.firstOrNull { it.key == entry.key }?.let { readerState.scrollToItem(it.readerIndex) }
+        }
+    }) {
     DocTreeWorkspace(deps, treeVm, docId, drawerState,
         onNavigate = onSwitchDoc, onExitWorkspace = onExitWorkspace, onDocChanged = vm::load) {
     Scaffold(
@@ -161,6 +190,11 @@ fun DocDetailScreen(
                     if (doc != null) {
                         IconButton(onClick = ::openDirectory) {
                             Icon(Icons.Outlined.AccountTree, contentDescription = stringResource(R.string.docs_tree_open),
+                                tint = MaterialTheme.colorScheme.primary)
+                        }
+                        if (outline.isNotEmpty()) IconButton(onClick = ::openOutline) {
+                            Icon(Icons.AutoMirrored.Outlined.FormatListBulleted,
+                                contentDescription = stringResource(R.string.docs_outline),
                                 tint = MaterialTheme.colorScheme.primary)
                         }
                         if (doc.abilities.retrieve) IconButton(onClick = {
@@ -258,9 +292,10 @@ fun DocDetailScreen(
     }
 
     } // Document tree drawer wraps the reader.
+    } // Outline opens on the opposite side.
 
     if (menuExpanded && doc != null) {
-        DocActionsSheet(doc, buildInfoLine(doc), onDismiss = { menuExpanded = false }) { action ->
+        DocActionsSheet(doc, buildInfoLine(doc), hasOutline = outline.isNotEmpty(), onDismiss = { menuExpanded = false }) { action ->
             if (action != DocAction.FAVORITE) menuExpanded = false
             when (action) {
                 DocAction.COMMENTS -> showComments = true
@@ -270,6 +305,7 @@ fun DocDetailScreen(
                 DocAction.MEMBERS -> sharingPage = DocSharingPage.MEMBERS
                 DocAction.RENAME -> showRename = true
                 DocAction.CHILDREN -> openDirectory()
+                DocAction.OUTLINE -> openOutline()
                 DocAction.MOVE -> showMove = true
                 DocAction.DUPLICATE -> vm.duplicate(onOpenDoc)
                 DocAction.WEB -> onOpenWebUrl(DocLinks.webUrl(deps.docsBaseUrl, doc.id))

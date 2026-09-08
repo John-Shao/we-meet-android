@@ -175,10 +175,10 @@
     <string name="docs_link_share">Delen via link</string>
     <string name="docs_save_copy_link">Opslaan en link kopiëren</string>
     <string name="docs_directory_count">Overzicht · %1$d</string>
-    <string name="docs_directory">Documentoverzicht</string>
+    <string name="docs_directory">Documentstructuur</string>
     <string name="docs_current_document">Huidig</string>
     <string name="docs_navigation_error">Documentoverzicht kon niet worden geladen</string>
-    <string name="docs_tree_open">Overzicht</string>
+    <string name="docs_tree_open">Documentstructuur</string>
     <string name="docs_tree_locate">Huidig document zoeken</string>
     <string name="docs_tree_level">Niveau %1$d</string>
     <string name="docs_tree_collapse">%1$s inklappen</string>
@@ -186,4 +186,5 @@
     <string name="docs_tree_actions">Acties voor %1$s</string>
     <string name="docs_tree_create">Nieuwe subpagina</string>
     <string name="docs_tree_detach">Naar mijn documenten verplaatsen</string>
+    <string name="docs_outline">Documentoverzicht</string>
 </resources>

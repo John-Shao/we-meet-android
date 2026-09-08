@@ -187,7 +187,7 @@
     <string name="docs_directory">文档目录</string>
     <string name="docs_current_document">当前阅读</string>
     <string name="docs_navigation_error">文档目录加载失败</string>
-    <string name="docs_tree_open">目录</string>
+    <string name="docs_tree_open">文档目录</string>
     <string name="docs_tree_locate">定位当前文档</string>
     <string name="docs_tree_level">第 %1$d 级</string>
     <string name="docs_tree_collapse">收起 %1$s</string>
@@ -195,4 +195,5 @@
     <string name="docs_tree_actions">%1$s 的操作</string>
     <string name="docs_tree_create">新建子文档</string>
     <string name="docs_tree_detach">移至我的文档</string>
+    <string name="docs_outline">文档大纲</string>
 </resources>
