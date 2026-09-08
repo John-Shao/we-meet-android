@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,6 +35,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.ui.components.WeMeetEmptyState
 import com.we.meet.ui.components.WeMeetErrorState
@@ -96,6 +99,8 @@ fun ContactPicker(
     initialQuery: String = "",
     /** Include accepted cross-organization contacts; never account-search here. */
     includeExternal: Boolean = false,
+    /** Optional heading above search, supplied by the hosting feature. */
+    title: String? = null,
     onConfirm: (List<PickedMember>) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -174,6 +179,14 @@ fun ContactPicker(
                 .fillMaxHeight(0.85f)
                 .padding(horizontal = Dimens.ScreenPadding),
         ) {
+            title?.takeIf { it.isNotBlank() }?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.fillMaxWidth().semantics { heading() }
+                        .padding(bottom = Dimens.SpaceL),
+                )
+            }
             OutlinedTextField(
                 value = query,
                 onValueChange = {
@@ -185,13 +198,14 @@ fun ContactPicker(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+            Spacer(Modifier.height(Dimens.SpaceM))
 
             if (mode == ContactPickerMode.Multi && selected.value.isNotEmpty()) {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = Dimens.SpaceS),
+                        .padding(bottom = Dimens.SpaceS),
                 ) {
                     items(selected.value.values.toList(), key = { it.userId }) { picked ->
                         InputChip(

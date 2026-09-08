@@ -114,12 +114,12 @@ fun DocShareSheet(
         ContactPicker(
             deps = deps,
             mode = ContactPickerMode.Multi,
+            title = stringResource(R.string.docs_share_invite_members),
             enabled = !state.mutating,
             excludeUserIds = state.memberUserIds,
             initialSelection = state.inviteSelection,
             footer = {
                 Column(Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.docs_share_invite_members), style = MaterialTheme.typography.titleMedium)
                     Text(stringResource(R.string.docs_share_picker_help), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
