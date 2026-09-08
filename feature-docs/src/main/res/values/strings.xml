@@ -183,7 +183,7 @@
     <string name="docs_request_accept">Approve</string>
     <string name="docs_request_reject">Decline</string>
     <string name="docs_request_reject_message">Decline the request from %1$s? They can request access again.</string>
-    <string name="docs_children_count">Subpages · %1$d</string>
+    <string name="docs_directory_count">Directory · %1$d</string>
     <string name="docs_directory">Document directory</string>
     <string name="docs_current_document">Current</string>
     <string name="docs_navigation_error">Could not load document directory</string>

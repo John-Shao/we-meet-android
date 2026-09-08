@@ -54,7 +54,7 @@ internal fun DocTreeWorkspace(
     var operation by remember { mutableStateOf<TreeOperation?>(null) }
     val listState = rememberLazyListState()
     val rows = remember(state.root, state.expanded) { visibleTreeRows(state.root, state.expanded) }
-    val width = minOf(LocalConfiguration.current.screenWidthDp.dp * 0.92f, DrawerDefaults.MaximumDrawerWidth)
+    val width = LocalConfiguration.current.screenWidthDp.dp * 0.8f
     fun close() { scope.launch { drawerState.close() } }
     fun navigate(id: String) {
         scope.launch {
@@ -154,8 +154,9 @@ private fun TreeNodeRow(
     Surface(color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow) {
         Row(Modifier.fillMaxWidth().padding(start = Dimens.SpaceM * row.level.coerceAtMost(5)),
             verticalAlignment = Alignment.CenterVertically) {
-            // Keep a touch target for the disclosure arrow; it never opens the document.
-            if (doc.numchild > 0) IconButton(onClick = onToggle) {
+            // The root stays expanded and does not reserve a disclosure button's width.
+            if (row.level == 0) Spacer(Modifier.width(Dimens.SpaceM))
+            else if (doc.numchild > 0) IconButton(onClick = onToggle) {
                 Icon(if (expanded) Icons.Outlined.KeyboardArrowDown else Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                     stringResource(if (expanded) R.string.docs_tree_collapse else R.string.docs_tree_expand, title))
             } else Spacer(Modifier.width(Dimens.MinTouchTarget))

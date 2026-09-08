@@ -1,6 +1,7 @@
 package com.we.meet.feature.docs.ui
 
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.AccountTree
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -25,7 +26,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.rememberDrawerState
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.material3.SnackbarHost
@@ -159,8 +159,9 @@ fun DocDetailScreen(
                 onBack = onBack,
                 actions = {
                     if (doc != null) {
-                        TextButton(onClick = ::openDirectory) {
-                            Text(stringResource(R.string.docs_tree_open))
+                        IconButton(onClick = ::openDirectory) {
+                            Icon(Icons.Outlined.AccountTree, contentDescription = stringResource(R.string.docs_tree_open),
+                                tint = MaterialTheme.colorScheme.primary)
                         }
                         if (doc.abilities.retrieve) IconButton(onClick = {
                             onShareToChat(doc.id, doc.displayTitle.ifBlank { context.getString(R.string.docs_untitled) },
@@ -230,7 +231,7 @@ fun DocDetailScreen(
                                         if (!doc.abilities.canEdit) Text(stringResource(R.string.docs_read_only),
                                             style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.padding(top = Dimens.SpaceS))
-                                        if (doc.abilities.childrenList && doc.numchild > 0) DocChildrenEntry(
+                                        if (doc.depth > 1 && doc.abilities.childrenList && doc.numchild > 0) DocChildrenEntry(
                                             doc, treeState.root?.findTreeNode(docId)?.children.orEmpty(), onClick = ::openDirectory,
                                         )
                                     }

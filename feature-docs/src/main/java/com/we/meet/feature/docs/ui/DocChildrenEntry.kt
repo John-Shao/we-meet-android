@@ -3,7 +3,7 @@ package com.we.meet.feature.docs.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.AccountTree
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,9 +24,9 @@ internal fun DocChildrenEntry(doc: DocumentDto, children: List<DocumentDto>, onC
     ) {
         Row(Modifier.padding(Dimens.SpaceM), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-            Icon(Icons.Outlined.FolderOpen, null, tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Outlined.AccountTree, null, tint = MaterialTheme.colorScheme.primary)
             Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.docs_children_count, doc.numchild), style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.docs_directory_count, doc.numchild), style = MaterialTheme.typography.titleSmall)
                 if (children.isNotEmpty()) Text(
                     children.take(3).joinToString(" · ") { it.displayTitle.ifBlank { "…" } },
                     style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis,

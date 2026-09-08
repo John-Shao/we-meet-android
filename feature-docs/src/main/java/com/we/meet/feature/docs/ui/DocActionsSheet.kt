@@ -61,7 +61,7 @@ internal fun DocActionsSheet(doc: DocumentDto, info: String, onDismiss: () -> Un
     }
     val organization = buildList {
         if (abilities.canRename) add(DocActionItem(DocAction.RENAME, Icons.Outlined.DriveFileRenameOutline, R.string.docs_rename_title))
-        if (abilities.childrenList) add(DocActionItem(DocAction.CHILDREN, Icons.Outlined.FolderOpen, R.string.docs_children))
+        if (abilities.childrenList) add(DocActionItem(DocAction.CHILDREN, Icons.Outlined.AccountTree, R.string.docs_tree_open))
         if (abilities.move) add(DocActionItem(DocAction.MOVE, Icons.AutoMirrored.Outlined.DriveFileMove, R.string.docs_move_title))
         if (abilities.duplicate) add(DocActionItem(DocAction.DUPLICATE, Icons.Outlined.ContentCopy, R.string.docs_duplicate))
         add(DocActionItem(DocAction.WEB, Icons.AutoMirrored.Outlined.OpenInNew, R.string.docs_open_web))
