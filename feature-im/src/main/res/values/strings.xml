@@ -296,6 +296,8 @@
     <string name="im_search_cat_meetings">Meetings</string>
     <string name="im_search_cat_messages">Messages</string>
     <string name="im_search_cat_docs">Docs</string>
+    <string name="im_search_cat_tasks">Tasks</string>
+    <string name="im_search_tasks_more">View more tasks</string>
     <string name="im_search_category_no_results">No matching %1$s</string>
 
     <!-- P1-4 M3 App AI 问答 -->

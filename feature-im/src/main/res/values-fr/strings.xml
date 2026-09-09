@@ -254,6 +254,8 @@
     <string name="im_search_cat_meetings">Réunions</string>
     <string name="im_search_cat_messages">Messages</string>
     <string name="im_search_cat_docs">Documents</string>
+    <string name="im_search_cat_tasks">Tâches</string>
+    <string name="im_search_tasks_more">Voir plus de tâches</string>
     <string name="im_search_category_no_results">Aucun résultat correspondant pour %1$s</string>
 
     <!-- P1-4 M3 App AI 问答 -->

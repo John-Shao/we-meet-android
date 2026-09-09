@@ -279,6 +279,8 @@
     <string name="im_search_cat_meetings">会议</string>
     <string name="im_search_cat_messages">消息</string>
     <string name="im_search_cat_docs">文档</string>
+    <string name="im_search_cat_tasks">任务</string>
+    <string name="im_search_tasks_more">查看更多任务</string>
     <string name="im_search_category_no_results">没有匹配的%1$s</string>
 
     <!-- P1-4 M3 App AI 问答 -->

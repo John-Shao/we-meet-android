@@ -5,6 +5,8 @@
 
 package com.we.meet.ui.tasks
 
+import androidx.compose.foundation.lazy.rememberLazyListState
+
 import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -165,6 +167,7 @@ import com.we.meet.core.directory.ui.PickedMember
 import com.we.meet.ui.components.WeMeetEmptyState
 import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetLoading
+import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 import java.time.LocalDate
@@ -239,12 +242,15 @@ fun TaskScreen(
     onOpenTaskNav: () -> Unit = {},
     onRegisterTaskNav: (TaskNavController) -> Unit = {},
     onDetailVisibilityChanged: (Boolean) -> Unit = {},
+    onOpenSearch: (() -> Unit)? = null,
+    initialTaskId: String? = null,
+    onClose: (() -> Unit)? = null,
 ) {
     val owner = ownerName.ifBlank { stringResource(R.string.task_demo_owner) }
     val vm: TaskViewModel = viewModel(factory = TaskViewModel.Factory(app))
     val ui by vm.ui.collectAsStateWithLifecycle()
-    var page by remember { mutableStateOf(TaskPage.List) }
-    var selectedTaskId by remember { mutableStateOf<String?>(null) }
+    var page by rememberSaveable { mutableStateOf(if (initialTaskId == null) TaskPage.List else TaskPage.Detail) }
+    var selectedTaskId by rememberSaveable { mutableStateOf(initialTaskId) }
     var detailBackStack by remember { mutableStateOf<List<TaskItem>>(emptyList()) }
     var showFilter by remember { mutableStateOf(false) }
     var showDisplaySettings by remember { mutableStateOf(false) }
@@ -324,6 +330,25 @@ fun TaskScreen(
             )
         }
     val snackbar = remember { SnackbarHostState() }
+    fun backFromDetail() {
+        if (detailBackStack.size > 1) {
+            detailBackStack = detailBackStack.dropLast(1)
+            selectedTaskId = detailBackStack.last().id
+        } else if (onClose != null) {
+            onClose()
+        } else {
+            detailBackStack = emptyList()
+            page = TaskPage.List
+        }
+    }
+    androidx.activity.compose.BackHandler(enabled = initialTaskId != null && page == TaskPage.Detail) {
+        backFromDetail()
+    }
+    LaunchedEffect(selectedTask?.id) {
+        if (initialTaskId != null && detailBackStack.isEmpty() && selectedTask != null) {
+            detailBackStack = listOf(selectedTask)
+        }
+    }
     val imSession = remember(app) { ImSession.get(app) }
     val attachmentPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
@@ -364,7 +389,7 @@ fun TaskScreen(
             )
             vm.clearFailure()
             if (failedOperation == TaskFailure.Load && result == SnackbarResult.ActionPerformed) {
-                vm.refresh()
+                if (page == TaskPage.Detail) selectedTaskId?.let(vm::loadDetail) else vm.refresh()
             }
             if (failedOperation == TaskFailure.Activity && result == SnackbarResult.ActionPerformed) {
                 vm.refreshActivityFeed()
@@ -401,7 +426,7 @@ fun TaskScreen(
                     vm.refreshNavigation()
                     onOpenTaskNav()
                 },
-                onSearch = { page = TaskPage.Search },
+                onSearch = { onOpenSearch?.invoke() ?: run { page = TaskPage.Search } },
                 onSettings = onOpenSettings,
                 onFilter = { showFilter = true },
                 onDisplaySettings = { showDisplaySettings = true },
@@ -458,15 +483,7 @@ fun TaskScreen(
                     task = task,
                     detail = ui.detail?.takeIf { it.taskId == task.id },
                     statusMutating = task.id in ui.mutatingIds,
-                    onBack = {
-                        if (detailBackStack.size > 1) {
-                            detailBackStack = detailBackStack.dropLast(1)
-                            selectedTaskId = detailBackStack.last().id
-                        } else {
-                            detailBackStack = emptyList()
-                            page = TaskPage.List
-                        }
-                    },
+                    onBack = ::backFromDetail,
                     onToggleDone = vm::toggleCompleted,
                     onToggleFollow = vm::toggleFollowing,
                     onSendComment = { current, content, onSent ->
@@ -523,7 +540,19 @@ fun TaskScreen(
                     },
                     onMore = { actionTarget = it },
                 )
-            } ?: run { page = TaskPage.List }
+            } ?: if (initialTaskId != null) {
+                Scaffold(topBar = {
+                    WeMeetTopBar(title = stringResource(R.string.task_title), onBack = onClose)
+                }) { padding ->
+                    Box(Modifier.padding(padding).fillMaxSize()) {
+                        if (ui.detail?.loading != false) WeMeetLoading()
+                        else WeMeetErrorState(
+                            onRetry = { selectedTaskId?.let(vm::loadDetail) },
+                            message = stringResource(R.string.task_load_failed),
+                        )
+                    }
+                }
+            } else run { page = TaskPage.List }
 
             TaskPage.Search -> TaskSearchPage(
                 tasks = ui.searchResults,
@@ -637,6 +666,7 @@ fun TaskScreen(
                 vm.deleteTask(request.task, request.subtreeNodeCount) {
                     pendingTaskDelete = null
                     if (page == TaskPage.Detail && selectedTaskId == request.task.id) {
+                        if (onClose != null) onClose()
                         selectedTaskId = null
                         detailBackStack = emptyList()
                         page = TaskPage.List
@@ -3380,7 +3410,7 @@ private fun TaskActivityPage(
 }
 
 @Composable
-private fun TaskSearchPage(
+internal fun TaskSearchPage(
     tasks: List<TaskItem>,
     searching: Boolean,
     failed: Boolean,
@@ -3394,12 +3424,14 @@ private fun TaskSearchPage(
     onFilterChange: (TaskSearchFilter) -> Unit,
     onRetry: () -> Unit,
     onTaskClick: (TaskItem) -> Unit,
+    embedded: Boolean = false,
+    listState: androidx.compose.foundation.lazy.LazyListState = rememberLazyListState(),
 ) {
     var statusMenu by remember { mutableStateOf(false) }
     var dueMenu by remember { mutableStateOf(false) }
     var priorityMenu by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
-        Row(
+        if (!embedded) Row(
             modifier = Modifier.fillMaxWidth().padding(Dimens.SpaceM),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -3559,7 +3591,7 @@ private fun TaskSearchPage(
                     title = stringResource(R.string.task_search_empty),
                     icon = Icons.Outlined.Search,
                 )
-                else -> LazyColumn {
+                else -> LazyColumn(state = listState) {
                     items(tasks, key = { it.id }) { task ->
                         TaskRow(task, { onTaskClick(task) }, {}, {}, showOverdueMarker)
                     }

@@ -62,6 +62,7 @@ import com.we.meet.feature.im.ui.newchat.AddMembersScreen
 import com.we.meet.feature.im.ui.newchat.NewChatScreen
 import com.we.meet.feature.im.ui.search.MessageSearchScreen
 import com.we.meet.feature.im.ui.search.SearchCategory
+import com.we.meet.ui.tasks.toItem
 import com.we.meet.ui.calendar.CreateEventScreen
 import com.we.meet.ui.calendar.CalendarDiscoverScreen
 import com.we.meet.ui.calendar.CalendarEditorScreen
@@ -136,6 +137,9 @@ object Routes {
 
     fun imSearch(category: SearchCategory = SearchCategory.ALL): String =
         "im_search?category=${category.name}"
+    const val TASK_DETAIL = "task_detail/{taskId}"
+    fun taskDetail(taskId: String): String =
+        "task_detail/${URLEncoder.encode(taskId, StandardCharsets.UTF_8.name())}"
     private const val IM_GROUP_INFO_BASE = "im_group_info"
     const val IM_GROUP_INFO = "$IM_GROUP_INFO_BASE/{cid}"
     /** 群成员二级页(对标飞书)——与群机器人同级,不再内联在群信息页里。 */
@@ -598,6 +602,7 @@ fun AppNav() {
                 onNewChat = { navController.navigate(Routes.imNewChat()) },
                 onOpenSearch = { navController.navigate(Routes.imSearch(SearchCategory.MESSAGES)) },
                 onOpenContactsSearch = { navController.navigate(Routes.imSearch(SearchCategory.CONTACTS)) },
+                onOpenTasksSearch = { navController.navigate(Routes.imSearch(SearchCategory.TASKS)) },
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 onOpenStarredContacts = { navController.navigate(Routes.STARRED_CONTACTS) },
                 onOpenMyGroups = { navController.navigate(Routes.MY_GROUPS) },
@@ -898,12 +903,44 @@ fun AppNav() {
                 defaultValue = SearchCategory.ALL.name
             }),
         ) { entry ->
+            val taskSearchVm: com.we.meet.ui.tasks.TaskViewModel = viewModel(
+                key = "aggregate-task-search",
+                factory = viewModelFactory {
+                    initializer {
+                        com.we.meet.ui.tasks.TaskViewModel(app.taskRepository, app.tokenStore.userId, searchOnly = true)
+                    }
+                },
+            )
             // 搜索统一 M2:app 层把 联系人/会议/文档 三个数据源以 provider
             // 注入(feature-im 不反向依赖 app 模块)。
             MessageSearchScreen(
                 deps = app,
                 onOpenContact = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 contactsSearchHint = stringResource(R.string.contacts_search_hint),
+                tasksSearchHint = stringResource(R.string.task_search_hint),
+                taskSearchContent = { query ->
+                    com.we.meet.ui.tasks.TaskAggregateSearchPanel(
+                        vm = taskSearchVm,
+                        query = query,
+                        canFilterSelf = !app.tokenStore.userId.isNullOrBlank(),
+                        onOpenTask = { navController.navigate(Routes.taskDetail(it)) },
+                    )
+                },
+                onOpenTask = { navController.navigate(Routes.taskDetail(it)) },
+                searchTasks = { query ->
+                    app.taskRepository.searchTasks(
+                        query = query, creatorId = null, assigneeId = null,
+                        status = "all", due = "all", priority = "all",
+                    ).getOrThrow().map { dto ->
+                        val task = dto.toItem()
+                        com.we.meet.feature.im.ui.search.GlobalSearchTask(
+                            id = task.id,
+                            title = task.title,
+                            subtitle = listOf(task.assignee, task.dueLabel, task.listName)
+                                .filter { it.isNotBlank() }.joinToString(" · "),
+                        )
+                    }
+                },
                 initialCategory = SearchCategory.entries.firstOrNull {
                     it.name == entry.arguments?.getString("category")
                 } ?: SearchCategory.ALL,
@@ -1010,6 +1047,18 @@ fun AppNav() {
                         question = question,
                     )
                 },
+            )
+        }
+
+        composable(
+            route = Routes.TASK_DETAIL,
+            arguments = listOf(navArgument("taskId") { type = NavType.StringType }),
+        ) { entry ->
+            com.we.meet.ui.tasks.TaskScreen(
+                ownerName = "",
+                app = app,
+                initialTaskId = entry.arguments?.getString("taskId"),
+                onClose = rememberOnceOnly(safePop),
             )
         }
 

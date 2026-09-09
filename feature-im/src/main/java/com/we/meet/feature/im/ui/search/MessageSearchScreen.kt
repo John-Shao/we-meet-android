@@ -41,6 +41,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -94,7 +95,9 @@ data class GlobalSearchDoc(
     val updatedAt: String,
 )
 
-enum class SearchCategory { ALL, CONTACTS, MEETINGS, MESSAGES, DOCS, AI }
+data class GlobalSearchTask(val id: String, val title: String, val subtitle: String?)
+
+enum class SearchCategory { ALL, CONTACTS, MEETINGS, MESSAGES, DOCS, TASKS, AI }
 
 /** AI 问答面板状态(P1-4 M3 App;契约同 Web §D2)。 */
 private data class AskUiState(
@@ -136,6 +139,10 @@ fun MessageSearchScreen(
     askAi: ((String) -> kotlinx.coroutines.flow.Flow<AskEvent>)? = null,
     initialCategory: SearchCategory = SearchCategory.ALL,
     contactsSearchHint: String? = null,
+    tasksSearchHint: String? = null,
+    searchTasks: (suspend (String) -> List<GlobalSearchTask>)? = null,
+    onOpenTask: ((String) -> Unit)? = null,
+    taskSearchContent: (@Composable (String) -> Unit)? = null,
     /** The host supplies document presentation from the docs module. */
     docResultContent: (@Composable (GlobalSearchDoc, () -> Unit) -> Unit)? = null,
 ) {
@@ -146,6 +153,11 @@ fun MessageSearchScreen(
     val selfUid by session.selfUid.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
+    val taskStateHolder = rememberSaveableStateHolder()
+    var taskPreview by remember { mutableStateOf<List<GlobalSearchTask>>(emptyList()) }
+    var taskPreviewLoading by remember { mutableStateOf(false) }
+    var taskPreviewFailed by remember { mutableStateOf(false) }
+    var taskPreviewRetry by remember { mutableIntStateOf(0) }
 
     var query by rememberSaveable { mutableStateOf("") }
     var category by rememberSaveable(initialCategory) { mutableStateOf(initialCategory) }
@@ -412,14 +424,34 @@ fun MessageSearchScreen(
         }
     }
 
+    LaunchedEffect(query, category, taskPreviewRetry) {
+        if (category != SearchCategory.ALL) return@LaunchedEffect
+        taskPreview = emptyList()
+        taskPreviewFailed = false
+        val q = query.trim()
+        if (q.length < 2 || searchTasks == null) return@LaunchedEffect
+        taskPreviewLoading = true
+        try {
+            delay(300)
+            taskPreview = searchTasks(q)
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (_: Throwable) {
+            taskPreviewFailed = true
+        } finally {
+            taskPreviewLoading = false
+        }
+    }
+
     // 分类可见性:provider 缺失的分类不出现(向后兼容宿主未接线的场景)。
-    val categories = remember(searchContacts, searchMeetings, searchDocs, askAi) {
+    val categories = remember(searchContacts, searchMeetings, searchDocs, askAi, taskSearchContent) {
         buildList {
             add(SearchCategory.ALL)
             if (searchContacts != null) add(SearchCategory.CONTACTS)
             if (searchMeetings != null) add(SearchCategory.MEETINGS)
             add(SearchCategory.MESSAGES)
             if (searchDocs != null) add(SearchCategory.DOCS)
+            if (taskSearchContent != null) add(SearchCategory.TASKS)
             if (askAi != null) add(SearchCategory.AI)
         }
     }
@@ -447,6 +479,7 @@ fun MessageSearchScreen(
         SearchCategory.MEETINGS -> stringResource(R.string.im_search_cat_meetings)
         SearchCategory.MESSAGES -> stringResource(R.string.im_search_cat_messages)
         SearchCategory.DOCS -> stringResource(R.string.im_search_cat_docs)
+        SearchCategory.TASKS -> stringResource(R.string.im_search_cat_tasks)
         SearchCategory.AI -> stringResource(R.string.im_search_cat_ai)
     }
 
@@ -466,6 +499,8 @@ fun MessageSearchScreen(
                             Text(
                                 if (category == SearchCategory.CONTACTS && contactsSearchHint != null) {
                                     contactsSearchHint
+                                } else if (category == SearchCategory.TASKS && tasksSearchHint != null) {
+                                    tasksSearchHint
                                 } else if (category == SearchCategory.ALL || category == SearchCategory.AI) {
                                     stringResource(R.string.im_global_search_hint)
                                 } else {
@@ -525,6 +560,13 @@ fun MessageSearchScreen(
                         label = { Text(labelFor(cat)) },
                     )
                 }
+            }
+
+            if (category == SearchCategory.TASKS && taskSearchContent != null) {
+                taskStateHolder.SaveableStateProvider("tasks") {
+                    taskSearchContent(query)
+                }
+                return@Column
             }
 
             if (category == SearchCategory.AI) {
@@ -774,6 +816,33 @@ fun MessageSearchScreen(
                                     labelFor(SearchCategory.DOCS),
                                 ),
                             )
+                        }
+                    }
+                }
+
+                if (inAll && searchTasks != null && query.trim().length >= 2) {
+                    if (taskPreviewLoading || taskPreviewFailed || taskPreview.isNotEmpty()) {
+                        item(key = "sec-tasks") { SectionHeader(stringResource(R.string.im_search_cat_tasks)) }
+                    }
+                    if (taskPreviewLoading) {
+                        item(key = "tasks-loading") { WeMeetInlineLoading() }
+                    } else if (taskPreviewFailed) {
+                        item(key = "tasks-error") {
+                            WeMeetInlineErrorState(onRetry = { taskPreviewRetry += 1 })
+                        }
+                    } else {
+                        items(taskPreview.take(3), key = { "t:${it.id}" }) { task ->
+                            TwoLineRow(
+                                emoji = "☑",
+                                title = task.title,
+                                subtitle = task.subtitle,
+                                onClick = { onOpenTask?.invoke(task.id) },
+                            )
+                        }
+                        if (taskPreview.isNotEmpty()) item(key = "tasks-more") {
+                            androidx.compose.material3.TextButton(onClick = { category = SearchCategory.TASKS }) {
+                                Text(stringResource(R.string.im_search_tasks_more))
+                            }
                         }
                     }
                 }
