@@ -161,7 +161,6 @@ fun HomeScreen(
                 onClick = {},
                 modifier = Modifier.weight(1f),
                 enabled = false,
-                supportingText = stringResource(R.string.home_ai_recording_coming_soon),
             )
         }
 
@@ -225,7 +224,6 @@ private fun ActionCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    supportingText: String? = null,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -252,14 +250,5 @@ private fun ActionCard(
             color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        if (supportingText != null) {
-            Spacer(Modifier.height(Dimens.SpaceXs))
-            Text(
-                text = supportingText,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-        }
     }
 }
