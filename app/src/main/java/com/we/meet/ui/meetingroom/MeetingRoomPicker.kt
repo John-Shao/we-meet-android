@@ -375,7 +375,7 @@ private fun MeetingRoomRow(
     ) {
         Column(modifier = Modifier.padding(vertical = Dimens.SpaceS)) {
             Text(
-                meetingRoomTitle(room.name, room.code),
+                meetingRoomScheduleTitle(room.node?.name, room.code, room.name),
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (busy) {
                     MaterialTheme.colorScheme.onSurfaceVariant
@@ -385,15 +385,10 @@ private fun MeetingRoomRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            val subtitle = buildString {
-                compactMeetingRoomPathLabel(room.pathLabel)
-                    .takeIf { it.isNotBlank() }
-                    ?.let { append(it) }
-                if (room.capacity > 0) {
-                    if (isNotEmpty()) append(" · ")
-                    append(capacityLabel)
-                }
-            }
+            val subtitle = meetingRoomMetadata(
+                capacityLabel = capacityLabel.takeIf { room.capacity > 0 },
+                facilityNames = room.facilities.map { it.name },
+            )
             if (subtitle.isNotEmpty()) {
                 Text(
                     subtitle,
