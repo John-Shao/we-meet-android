@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.we.meet.feature.docs.R
 import com.we.meet.feature.docs.data.DocsRepository
 import com.we.meet.feature.docs.data.net.DocumentDto
+import com.we.meet.feature.docs.data.net.DocsPageDto
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -15,6 +16,21 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+/** Refresh loaded pages atomically; stop early if documents were removed. */
+internal suspend fun reloadDocumentPages(
+    pageCount: Int,
+    fetchPage: suspend (Int) -> DocsPageDto,
+): Pair<Int, DocsPageDto> {
+    var lastPage = 1
+    var response = fetchPage(lastPage)
+    val documents = response.results.toMutableList()
+    while (lastPage < pageCount && response.next != null) {
+        response = fetchPage(++lastPage)
+        documents += response.results
+    }
+    return lastPage to response.copy(results = documents.distinctBy { it.id })
+}
 
 /**
  * Document list screen state machine (设计文档 §4.4 文档主页).
@@ -63,6 +79,7 @@ class DocsHomeViewModel(
 
     fun refresh() {
         val requestGeneration = ++generation
+        val pagesToRefresh = page
         pageJob?.cancel()
         pageJob = viewModelScope.launch {
             if (_state.value.items.isEmpty()) {
@@ -70,12 +87,12 @@ class DocsHomeViewModel(
             } else {
                 _state.update { it.copy(refreshing = true) }
             }
-            // 取消进行中的加载更多(可能用旧 page 拼接造成重复),随刷新整体重置分页。
+            // Reload the visible pages together so returning from search preserves the list position.
             _state.update { it.copy(loadingMore = false) }
-            page = 1
-            val result = runCatching { fetchPage(1) }
+            val result = runCatching { reloadDocumentPages(pagesToRefresh, ::fetchPage) }
             if (requestGeneration != generation) return@launch
-            result.onSuccess { pageDto ->
+            result.onSuccess { (lastPage, pageDto) ->
+                page = lastPage
                 _state.update {
                     it.copy(
                         items = pageDto.results,
@@ -101,6 +118,7 @@ class DocsHomeViewModel(
 
     fun setFilter(filter: Filter) {
         if (_state.value.filter == filter) return
+        page = 1
         _state.update { it.copy(filter = filter, items = emptyList(), hasMore = false) }
         refresh()
     }
@@ -126,6 +144,7 @@ class DocsHomeViewModel(
 
     fun setOrdering(ordering: String) {
         if (_state.value.ordering == ordering) return
+        page = 1
         _state.update { it.copy(ordering = ordering) }
         refresh()
     }

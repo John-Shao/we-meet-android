@@ -61,6 +61,7 @@ import com.we.meet.feature.im.ui.group.MyGroupsScreen
 import com.we.meet.feature.im.ui.newchat.AddMembersScreen
 import com.we.meet.feature.im.ui.newchat.NewChatScreen
 import com.we.meet.feature.im.ui.search.MessageSearchScreen
+import com.we.meet.feature.im.ui.search.SearchCategory
 import com.we.meet.ui.calendar.CreateEventScreen
 import com.we.meet.ui.calendar.CalendarDiscoverScreen
 import com.we.meet.ui.calendar.CalendarEditorScreen
@@ -131,7 +132,10 @@ object Routes {
     private const val IM_CHAT_BASE = "im_chat"
     const val IM_CHAT = "$IM_CHAT_BASE/{cid}?seq={seq}"
     /** P1-M3 全局搜索页(会话过滤 + 消息全文检索)。 */
-    const val IM_SEARCH = "im_search"
+    const val IM_SEARCH = "im_search?category={category}"
+
+    fun imSearch(category: SearchCategory = SearchCategory.ALL): String =
+        "im_search?category=${category.name}"
     private const val IM_GROUP_INFO_BASE = "im_group_info"
     const val IM_GROUP_INFO = "$IM_GROUP_INFO_BASE/{cid}"
     /** 群成员二级页(对标飞书)——与群机器人同级,不再内联在群信息页里。 */
@@ -376,7 +380,6 @@ object Routes {
     // 云文档原生化(M1):原生详情/搜索/回收站路由;WebView 查看器保留为兜底。
     private const val DOCS_DETAIL_BASE = "docs_detail"
     const val DOCS_DETAIL = "$DOCS_DETAIL_BASE/{docId}"
-    const val DOCS_SEARCH = "docs_search"
     const val DOCS_TRASH = "docs_trash"
 
     fun docsDetail(docId: String): String = "$DOCS_DETAIL_BASE/${URLEncoder.encode(docId, StandardCharsets.UTF_8.name())}"
@@ -593,7 +596,7 @@ fun AppNav() {
                 onOpenApproval = { navController.navigate(Routes.APPROVAL) },
                 onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
                 onNewChat = { navController.navigate(Routes.imNewChat()) },
-                onOpenSearch = { navController.navigate(Routes.IM_SEARCH) },
+                onOpenSearch = { navController.navigate(Routes.imSearch()) },
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 onOpenStarredContacts = { navController.navigate(Routes.STARRED_CONTACTS) },
                 onOpenMyGroups = { navController.navigate(Routes.MY_GROUPS) },
@@ -631,7 +634,7 @@ fun AppNav() {
                     navController.navigate(Routes.docsDetail(docId))
                 },
                 onOpenDocsSearch = {
-                    navController.navigate(Routes.DOCS_SEARCH)
+                    navController.navigate(Routes.imSearch(SearchCategory.DOCS))
                 },
                 onOpenDocsTrash = {
                     navController.navigate(Routes.DOCS_TRASH)
@@ -887,11 +890,27 @@ fun AppNav() {
             )
         }
 
-        composable(route = Routes.IM_SEARCH) {
+        composable(
+            route = Routes.IM_SEARCH,
+            arguments = listOf(navArgument("category") {
+                type = NavType.StringType
+                defaultValue = SearchCategory.ALL.name
+            }),
+        ) { entry ->
             // 搜索统一 M2:app 层把 联系人/会议/文档 三个数据源以 provider
             // 注入(feature-im 不反向依赖 app 模块)。
             MessageSearchScreen(
                 deps = app,
+                initialCategory = SearchCategory.entries.firstOrNull {
+                    it.name == entry.arguments?.getString("category")
+                } ?: SearchCategory.ALL,
+                docResultContent = { doc, onClick ->
+                    com.we.meet.feature.docs.ui.DocSearchResultRow(
+                        title = doc.title,
+                        updatedAt = doc.updatedAt,
+                        onClick = onClick,
+                    )
+                },
                 onBack = rememberOnceOnly(safePop),
                 onOpenChat = { cid, seq ->
                     navController.navigate(Routes.imChat(cid, seq))
@@ -1055,14 +1074,6 @@ fun AppNav() {
                     onDismiss = { shareTitle = null },
                 )
             }
-        }
-
-        composable(Routes.DOCS_SEARCH) {
-            com.we.meet.feature.docs.ui.DocsSearchScreen(
-                deps = app,
-                onBack = rememberOnceOnly(safePop),
-                onOpenDoc = { docId -> navController.navigate(Routes.docsDetail(docId)) },
-            )
         }
 
         composable(Routes.DOCS_TRASH) {

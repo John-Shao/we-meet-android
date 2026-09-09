@@ -280,6 +280,8 @@
 
     <!-- P1-M3 全局搜索页 -->
     <string name="im_msg_search_hint">Search messages</string>
+    <string name="im_global_search_hint">Search</string>
+    <string name="im_search_category_hint">Search %1$s</string>
     <string name="im_msg_search_sec_conversations">Conversations</string>
     <string name="im_msg_search_sec_messages">Messages</string>
     <string name="im_msg_search_no_results">No matching messages</string>

@@ -238,6 +238,8 @@
 
     <!-- P1-M3 全局搜索页 -->
     <string name="im_msg_search_hint">Nachrichten durchsuchen</string>
+    <string name="im_global_search_hint">Suchen</string>
+    <string name="im_search_category_hint">%1$s durchsuchen</string>
     <string name="im_msg_search_sec_conversations">Unterhaltungen</string>
     <string name="im_msg_search_sec_messages">Nachrichten</string>
     <string name="im_msg_search_no_results">Keine passenden Nachrichten</string>

@@ -2,9 +2,9 @@ package com.we.meet.feature.im.ui.search
 
 import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,8 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -39,6 +40,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -92,7 +94,7 @@ data class GlobalSearchDoc(
     val updatedAt: String,
 )
 
-private enum class SearchCategory { ALL, CONTACTS, MEETINGS, MESSAGES, DOCS, AI }
+enum class SearchCategory { ALL, CONTACTS, MEETINGS, MESSAGES, DOCS, AI }
 
 /** AI 问答面板状态(P1-4 M3 App;契约同 Web §D2)。 */
 private data class AskUiState(
@@ -131,6 +133,9 @@ fun MessageSearchScreen(
     onOpenScheduled: ((slug: String) -> Unit)? = null,
     /** P1-4 M3:AI 问答 SSE(app 层实现);null = 隐藏 AI 分类。 */
     askAi: ((String) -> kotlinx.coroutines.flow.Flow<AskEvent>)? = null,
+    initialCategory: SearchCategory = SearchCategory.ALL,
+    /** The host supplies document presentation from the docs module. */
+    docResultContent: (@Composable (GlobalSearchDoc, () -> Unit) -> Unit)? = null,
 ) {
     val session = remember(deps) { ImSession.get(deps) }
     val summaries by session.conversations.conversations.collectAsStateWithLifecycle()
@@ -140,8 +145,8 @@ fun MessageSearchScreen(
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
 
-    var query by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf(SearchCategory.ALL) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var category by rememberSaveable(initialCategory) { mutableStateOf(initialCategory) }
     var items by remember { mutableStateOf<List<ImSearchItem>>(emptyList()) }
     var nextBeforeMid by remember { mutableStateOf<Long?>(null) }
     var searching by remember { mutableStateOf(false) }
@@ -427,6 +432,13 @@ fun MessageSearchScreen(
     val showDocs = searchDocs != null &&
         (category == SearchCategory.ALL || category == SearchCategory.DOCS)
     val inAll = category == SearchCategory.ALL
+    val categoryListState = rememberLazyListState(
+        initialFirstVisibleItemIndex = categories.indexOf(category).coerceAtLeast(0),
+    )
+    LaunchedEffect(category, categories) {
+        if (category !in categories) category = SearchCategory.ALL
+        categoryListState.animateScrollToItem(categories.indexOf(category).coerceAtLeast(0))
+    }
 
     @Composable
     fun labelFor(cat: SearchCategory): String = when (cat) {
@@ -450,7 +462,15 @@ fun MessageSearchScreen(
                     TextField(
                         value = query,
                         onValueChange = { query = it },
-                        placeholder = { Text(stringResource(R.string.im_msg_search_hint)) },
+                        placeholder = {
+                            Text(
+                                if (category == SearchCategory.ALL || category == SearchCategory.AI) {
+                                    stringResource(R.string.im_global_search_hint)
+                                } else {
+                                    stringResource(R.string.im_search_category_hint, labelFor(category))
+                                },
+                            )
+                        },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         colors = TextFieldDefaults.colors(
@@ -490,14 +510,13 @@ fun MessageSearchScreen(
                 .padding(padding),
         ) {
             // 分类标签行(飞书式,对齐 Web 面板)。
-            Row(
+            LazyRow(
+                state = categoryListState,
                 horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
+                contentPadding = PaddingValues(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                categories.forEach { cat ->
+                items(categories, key = { it.name }) { cat ->
                     FilterChip(
                         selected = category == cat,
                         onClick = { category = cat },
@@ -786,12 +805,17 @@ fun MessageSearchScreen(
                         SectionHeader(stringResource(R.string.im_search_cat_docs))
                     }
                     items(shown, key = { "d:${it.url}" }) { doc ->
-                        TwoLineRow(
-                            emoji = "📄",
-                            title = doc.title.ifBlank { "—" },
-                            subtitle = doc.updatedAt.takeIf { it.isNotBlank() },
-                            onClick = { onOpenDoc?.invoke(doc.url) },
-                        )
+                        val openDoc: () -> Unit = { onOpenDoc?.invoke(doc.url) }
+                        if (docResultContent != null) {
+                            docResultContent(doc, openDoc)
+                        } else {
+                            TwoLineRow(
+                                emoji = "📄",
+                                title = doc.title.ifBlank { "—" },
+                                subtitle = null,
+                                onClick = openDoc,
+                            )
+                        }
                     }
                 }
             }

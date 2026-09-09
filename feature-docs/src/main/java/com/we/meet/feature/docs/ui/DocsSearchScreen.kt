@@ -169,18 +169,36 @@ private fun SearchResultRow(
     doc: DocumentDto,
     onClick: () -> Unit,
 ) {
+    DocSearchResultRow(
+        title = doc.displayTitle,
+        updatedAt = doc.updatedAt,
+        folder = doc.isFolder,
+        parentTitle = doc.parent?.displayTitle,
+        onClick = onClick,
+    )
+}
+
+/** Document search presentation shared with the host's aggregate search. */
+@Composable
+fun DocSearchResultRow(
+    title: String,
+    updatedAt: String?,
+    onClick: () -> Unit,
+    folder: Boolean = false,
+    parentTitle: String? = null,
+) {
     Column {
         Row(Modifier.fillMaxWidth().clickable(onClick = onClick)
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-            DocsFileIcon(doc.isFolder)
+            DocsFileIcon(folder)
             Column(Modifier.weight(1f)) {
-                Text(doc.displayTitle.ifBlank { stringResource(R.string.docs_untitled) },
+                Text(title.ifBlank { stringResource(R.string.docs_untitled) },
                     style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(doc.parent?.displayTitle?.takeIf { it.isNotBlank() }?.let { parent ->
+                Text(parentTitle?.takeIf { it.isNotBlank() }?.let { parent ->
                     stringResource(R.string.docs_search_in_parent, parent)
-                } ?: stringResource(R.string.docs_updated_at, formatIsoTime(doc.updatedAt)),
+                } ?: stringResource(R.string.docs_updated_at, formatIsoTime(updatedAt)),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
             }

@@ -201,7 +201,7 @@ fun MainTabScreen(
             client?.onEmbedHello = { replyDocsHostHello(webView) }
             // docs 里点搜索 / 按 Ctrl+K:它的自带搜索已收敛,转到 App 自己的全局搜索
             // (那里本来就含文档源,命中进 DocsViewerScreen)。
-            client?.onOpenSearch = { onOpenSearch() }
+            client?.onOpenSearch = { onOpenDocsSearch() }
             onDispose {
                 client?.onShareDoc = null
                 client?.onEmbedHello = null
