@@ -3455,7 +3455,8 @@ internal fun TaskSearchPage(
             horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
         ) {
             item {
-                AssistChip(
+                FilterChip(
+                    selected = filter.creatorSelf,
                     onClick = { onFilterChange(filter.copy(creatorSelf = !filter.creatorSelf)) },
                     enabled = canFilterSelf,
                     label = {
@@ -3473,7 +3474,8 @@ internal fun TaskSearchPage(
                 )
             }
             item {
-                AssistChip(
+                FilterChip(
+                    selected = filter.assigneeSelf,
                     onClick = { onFilterChange(filter.copy(assigneeSelf = !filter.assigneeSelf)) },
                     enabled = canFilterSelf,
                     label = {
@@ -3492,7 +3494,8 @@ internal fun TaskSearchPage(
             }
             item {
                 Box {
-                    AssistChip(
+                    FilterChip(
+                        selected = filter.status != TaskSearchStatus.All,
                         onClick = { statusMenu = true },
                         label = { Text(searchStatusText(filter.status)) },
                     )
@@ -3512,7 +3515,8 @@ internal fun TaskSearchPage(
             }
             item {
                 Box {
-                    AssistChip(
+                    FilterChip(
+                        selected = filter.due != TaskSearchDue.All,
                         onClick = { dueMenu = true },
                         label = { Text(searchDueText(filter.due)) },
                     )
@@ -3532,7 +3536,8 @@ internal fun TaskSearchPage(
             }
             item {
                 Box {
-                    AssistChip(
+                    FilterChip(
+                        selected = filter.priority != null,
                         onClick = { priorityMenu = true },
                         label = {
                             Text(
