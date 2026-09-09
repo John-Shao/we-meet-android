@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -1003,6 +1004,7 @@ private fun MessageInputBar(
     }
 
     var panel by remember { mutableStateOf(InputPanel.None) }
+    var inputFocused by remember { mutableStateOf(false) }
     val inputFocusRequester = remember { FocusRequester() }
     fun openPanel(p: InputPanel) {
         if (panel == p) {
@@ -1145,7 +1147,13 @@ private fun MessageInputBar(
         ) {
             Surface(
                 shape = RoundedCornerShape(Dimens.CornerM),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                color = if (canSend) MaterialTheme.colorScheme.surface
+                    else MaterialTheme.colorScheme.surfaceContainerHigh,
+                border = BorderStroke(
+                    Dimens.BorderThin,
+                    if (canSend && inputFocused) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.outlineVariant,
+                ),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 BasicTextField(
@@ -1195,6 +1203,7 @@ private fun MessageInputBar(
                             }
                         }
                         .onFocusChanged {
+                            inputFocused = it.isFocused
                             // 点击输入框拉起键盘时,自动收起已展开的表情/「+」
                             // 面板(二者互斥)。
                             if (it.isFocused) panel = InputPanel.None
