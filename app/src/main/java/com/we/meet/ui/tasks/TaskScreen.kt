@@ -3618,12 +3618,13 @@ private fun searchDueText(due: TaskSearchDue): String = when (due) {
     TaskSearchDue.NoDate -> stringResource(R.string.task_search_no_due)
 }
 
-private fun selectedFilterIcon(selected: Boolean): (@Composable () -> Unit)? =
+private fun selectedFilterIcon(selected: Boolean): @Composable () -> Unit = {
     if (selected) {
-        { Icon(Icons.Filled.Check, null, Modifier.size(Dimens.IconSmall)) }
+        Icon(Icons.Filled.Check, null, Modifier.size(Dimens.IconSmall))
     } else {
-        null
+        Spacer(Modifier.size(Dimens.IconSmall))
     }
+}
 
 @Composable
 private fun TaskPageTopBar(title: String, onBack: () -> Unit) {
