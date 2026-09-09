@@ -1,30 +1,13 @@
 package com.we.meet.ui.home
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.data.history.HistoryEntry
 import java.text.SimpleDateFormat
@@ -44,12 +27,7 @@ fun HistoryList(
 ) {
     if (entries.isEmpty()) return
     Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = stringResource(R.string.history_section_title),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(vertical = Dimens.SpaceM),
-        )
+        MeetingListSectionTitle(stringResource(R.string.history_section_title))
         entries.forEach { entry ->
             HistoryRow(entry = entry, onClick = { onEntryClick(entry) })
         }
@@ -61,53 +39,14 @@ private fun HistoryRow(
     entry: HistoryEntry,
     onClick: () -> Unit,
 ) {
-    Box(modifier = Modifier.clickable(onClick = onClick)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = Dimens.SpaceM),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(Dimens.ListThumbnail)
-                    .clip(RoundedCornerShape(Dimens.CornerS))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Videocam,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
-            Spacer(Modifier.size(Dimens.SpaceM))
-            Column(
-                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    text = entry.name.ifBlank { entry.slug },
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    // 历史列表带年份(与 Web 端对齐);服务端合成行(本机从未
-                    // 加入)firstJoinedAtMs=0 退回房间创建时间。
-                    text = HistoryTimeFormatter.fullDateTimeLocalized(
-                        LocalContext.current,
-                        entry.firstJoinedAtMs.takeIf { it > 0 } ?: entry.createdAtMs,
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-    HorizontalDivider(
-        modifier = Modifier.padding(start = Dimens.DividerIndentThumbnail),
-        color = MaterialTheme.colorScheme.outlineVariant,
-        thickness = Dimens.DividerThin,
+    MeetingListItem(
+        title = entry.name.ifBlank { entry.slug },
+        timestamp = HistoryTimeFormatter.fullDateTimeLocalized(
+            LocalContext.current,
+            entry.firstJoinedAtMs.takeIf { it > 0 } ?: entry.createdAtMs,
+        ),
+        icon = Icons.Outlined.Videocam,
+        onClick = onClick,
     )
 }
 

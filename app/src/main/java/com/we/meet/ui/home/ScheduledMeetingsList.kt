@@ -1,33 +1,16 @@
 package com.we.meet.ui.home
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.outlined.Event
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.data.api.dto.RoomDto
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
@@ -48,12 +31,7 @@ fun ScheduledMeetingsList(
 ) {
     if (rooms.isEmpty()) return
     Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = stringResource(R.string.scheduled_section_title),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(vertical = Dimens.SpaceM),
-        )
+        MeetingListSectionTitle(stringResource(R.string.scheduled_section_title))
         rooms.forEach { room ->
             if (room.slug == null) return@forEach
             ScheduledRow(room = room, onClick = { onEntryClick(room) })
@@ -66,58 +44,13 @@ private fun ScheduledRow(
     room: RoomDto,
     onClick: () -> Unit,
 ) {
-    Box(modifier = Modifier.clickable(onClick = onClick)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = Dimens.SpaceM),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(Dimens.ListThumbnail)
-                    .clip(RoundedCornerShape(Dimens.CornerS))
-                    // Keep future meetings emphasized; history rows use a
-                    // neutral surface so the two sections keep a clear hierarchy.
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Event,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
-            Spacer(Modifier.size(Dimens.SpaceM))
-            Column(
-                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    text = (room.name?.takeIf { it.isNotBlank() }) ?: room.slug.orEmpty(),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                // 无前缀,当天显示「今天 HH:mm」,否则「M月d日 HH:mm」(不带年,
-                // 预约都是近期未来;与 Web 端同口径)。
-                Text(
-                    text = parseScheduledMs(room.scheduled_at)
-                        ?.let {
-                            HistoryTimeFormatter.relativeListTimestamp(
-                                LocalContext.current, it,
-                            )
-                        }
-                        ?: "—",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
-    }
-    HorizontalDivider(
-        modifier = Modifier.padding(start = Dimens.DividerIndentThumbnail),
-        color = MaterialTheme.colorScheme.outlineVariant,
-        thickness = Dimens.DividerThin,
+    MeetingListItem(
+        title = room.name?.takeIf { it.isNotBlank() } ?: room.slug.orEmpty(),
+        timestamp = parseScheduledMs(room.scheduled_at)
+            ?.let { HistoryTimeFormatter.relativeListTimestamp(LocalContext.current, it) }
+            ?: "—",
+        icon = Icons.Outlined.Event,
+        onClick = onClick,
     )
 }
 

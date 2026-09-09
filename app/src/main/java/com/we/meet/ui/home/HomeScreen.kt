@@ -169,7 +169,7 @@ fun HomeScreen(
         // The fixed gray action area ends exactly where the white list starts.
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-        // Scheduled + History zones — padded inside one column. This is
+        // Scheduled + History zones — full-width rows own their content insets. This is
         // the only scrollable region; the action shelf above stays put.
         // Scheduled list renders nothing when empty, so on a fresh
         // install the history section still sits flush with the divider.
@@ -178,8 +178,7 @@ fun HomeScreen(
                 .weight(1f)
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Dimens.SpaceXl),
+                .verticalScroll(rememberScrollState()),
         ) {
             // P8(对标飞书):行点击进详情,操作(进会/复制/删除)收进详情页。
             ScheduledMeetingsList(
