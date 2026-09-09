@@ -1,7 +1,5 @@
 package com.we.meet.ui.meetingroom
 
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarViewDay
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -69,9 +66,6 @@ private enum class RoomTab { Available, All }
  *  savedStateHandle 回传那一套),嵌套 ModalBottomSheet 又会打架。 */
 private enum class RoomView { List, Timeline }
 
-/** Capacity buckets offered in the filter row. */
-private val CAPACITY_STEPS = listOf(2, 4, 6, 10, 20, 50)
-
 private val hhmm = DateTimeFormatter.ofPattern("HH:mm")
 
 private fun localTime(iso: String): String = runCatching {
@@ -115,7 +109,7 @@ fun MeetingRoomPicker(
     var query by remember { mutableStateOf("") }
     var nodeId by remember { mutableStateOf<String?>(null) }
     var capacityMin by remember {
-        mutableStateOf(CAPACITY_STEPS.firstOrNull { it >= seedCapacity })
+        mutableStateOf(MEETING_ROOM_CAPACITY_STEPS.firstOrNull { it >= seedCapacity })
     }
     var facilityIds by remember { mutableStateOf<Set<String>>(emptySet()) }
 
@@ -276,7 +270,7 @@ fun MeetingRoomPicker(
                     .padding(top = Dimens.SpaceS),
             )
 
-            FilterRow(
+            MeetingRoomPickerFilters(
                 nodes = nodes,
                 facilities = facilities,
                 nodeId = nodeId,
@@ -364,69 +358,15 @@ fun MeetingRoomPicker(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FilterRow(
-    nodes: List<MeetingRoomNodeDto>,
-    facilities: List<MeetingRoomFacilityDto>,
-    nodeId: String?,
-    onNode: (String?) -> Unit,
-    capacityMin: Int?,
-    onCapacity: (Int?) -> Unit,
-    facilityIds: Set<String>,
-    onToggleFacility: (String) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = Dimens.SpaceS)
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        FilterChip(
-            selected = nodeId == null,
-            onClick = { onNode(null) },
-            label = { Text(stringResource(R.string.meeting_room_filter_level_all)) },
-        )
-        nodes.forEach { node ->
-            FilterChip(
-                selected = nodeId == node.id,
-                onClick = { onNode(if (nodeId == node.id) null else node.id) },
-                label = { Text(node.name, maxLines = 1) },
-            )
-        }
-        CAPACITY_STEPS.forEach { step ->
-            FilterChip(
-                selected = capacityMin == step,
-                onClick = { onCapacity(if (capacityMin == step) null else step) },
-                label = {
-                    Text(
-                        pluralStringResource(
-                            R.plurals.meeting_room_capacity_people,
-                            step,
-                            step,
-                        ),
-                    )
-                },
-            )
-        }
-        facilities.forEach { facility ->
-            FilterChip(
-                selected = facility.id in facilityIds,
-                onClick = { onToggleFacility(facility.id) },
-                label = { Text(facility.name, maxLines = 1) },
-            )
-        }
-    }
-}
-
 @Composable
 private fun MeetingRoomRow(
     room: MeetingRoomDto,
     busy: Boolean,
     onClick: () -> Unit,
 ) {
+    val capacityLabel = pluralStringResource(
+        R.plurals.meeting_room_capacity_people, room.capacity, room.capacity,
+    )
     Surface(
         onClick = onClick,
         enabled = !busy,
@@ -451,7 +391,7 @@ private fun MeetingRoomRow(
                     ?.let { append(it) }
                 if (room.capacity > 0) {
                     if (isNotEmpty()) append(" · ")
-                    append(room.capacity)
+                    append(capacityLabel)
                 }
             }
             if (subtitle.isNotEmpty()) {
