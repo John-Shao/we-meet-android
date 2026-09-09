@@ -246,7 +246,7 @@ fun CalendarTabScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(MaterialTheme.colorScheme.surface),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // 首页只保留年月跳转、今天和日历/会议室主 Tab；视图切换位于管理页。
@@ -278,7 +278,9 @@ fun CalendarTabScreen(
                         clearPicks()
                         app.settingsStore.setCalendarTimeRangeMode(TimeRangeMode.FULL)
                     },
-                    modifier = Modifier.padding(horizontal = Dimens.SpaceS),
+                    modifier = Modifier.fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(horizontal = Dimens.SpaceS),
                 ) {
                     Text(
                         pluralStringResource(
@@ -649,7 +651,7 @@ private fun CalendarHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface),
+            .background(MaterialTheme.colorScheme.background),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -730,6 +732,7 @@ private fun CalendarDayStrip(
                 ).accent
             }
         },
+        // The horizontally swipeable date strip belongs to the white content area.
         modifier = Modifier.background(WeMeetTheme.extras.calendar.gridBackground),
     )
     HorizontalDivider(color = WeMeetTheme.extras.calendar.gridLine)

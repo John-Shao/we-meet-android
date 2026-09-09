@@ -38,6 +38,7 @@ import com.we.meet.design.R
  *   是「关掉它」而不是「回上一层」,图标必须跟着变。与 [onBack] 二选一。
  * @param transparent 顶栏压在内容之上(全屏摄像头预览、登录背景图)时置 true,
  *   底色透明。常规页面不要用 —— 顶栏和内容之间需要那层底色来分隔。
+ * @param containerColor 顶栏底色；主页固定头部使用 background，与系统状态栏衔接。
  * @param subtitle 标题下方的第二行小字,用于**跟着标题走的状态**(对端已离职、
  *   对方正在输入)。放不下时同样省略号截断。注意它只该放状态,不该放本属于
  *   正文的信息 —— 顶栏两行已经是高度上限。
@@ -55,6 +56,7 @@ fun WeMeetTopBar(
     onClose: (() -> Unit)? = null,
     transparent: Boolean = false,
     scrollBehavior: TopAppBarScrollBehavior? = null,
+    containerColor: Color = MaterialTheme.colorScheme.surface,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     require(onBack == null || onClose == null) {
@@ -100,7 +102,7 @@ fun WeMeetTopBar(
         colors = if (transparent) {
             TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
         } else {
-            TopAppBarDefaults.topAppBarColors()
+            TopAppBarDefaults.topAppBarColors(containerColor = containerColor)
         },
         scrollBehavior = scrollBehavior,
     )

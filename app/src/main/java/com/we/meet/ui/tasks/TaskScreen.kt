@@ -1329,7 +1329,7 @@ private fun TaskListPage(
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
             FloatingActionButton(
                 modifier = Modifier.testTag(TASK_CREATE_FAB_TEST_TAG),
@@ -1366,7 +1366,8 @@ private fun TaskListPage(
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
 
             LazyColumn(
-                modifier = Modifier.fillMaxWidth().weight(1f).testTag(TASK_LIST_TEST_TAG),
+                modifier = Modifier.fillMaxWidth().weight(1f)
+                    .background(MaterialTheme.colorScheme.surface).testTag(TASK_LIST_TEST_TAG),
                 contentPadding = PaddingValues(bottom = Dimens.Calendar.FabClearance),
             ) {
                 if (!loading && visible.isEmpty() && !grouping.showsSectionHeaders()) {

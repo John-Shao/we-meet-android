@@ -1,5 +1,6 @@
 package com.we.meet.feature.docs.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.outlined.Check
@@ -151,6 +152,7 @@ fun DocsHomeScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             DocsHomeHeader(
                 onOpenNavDrawer = onOpenNavDrawer,
@@ -187,7 +189,7 @@ fun DocsHomeScreen(
                     vm.refresh()
                     vm.refreshCounts()
                 },
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface),
             ) {
                 when {
                     state.loading && state.items.isEmpty() -> WeMeetLoading()

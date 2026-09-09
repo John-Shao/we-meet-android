@@ -577,14 +577,13 @@ private fun MeetingRoomOverview(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(MaterialTheme.colorScheme.surface),
     ) {
-        // 与日历页共用一个连续的 header surface，避免父级 canvas 从组件间隙
-        // 透出后，让相同的 Tab / 日期 token 看起来像两套颜色。
+        // 年月和主 Tab 接状态栏灰底；可横滑的日期栏从这里切换为内容白底。
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface),
+                .background(MaterialTheme.colorScheme.background),
         ) {
             RoomDateToolbar(
                 date = ui.selectedDate,

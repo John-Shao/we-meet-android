@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
@@ -37,7 +38,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.we.meet.ui.theme.Dimens
-import com.we.meet.ui.theme.WeMeetTheme
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -91,10 +91,10 @@ fun HomeScreen(
         onPauseOrDispose { }
     }
 
-    // Header (top bar + action zone + band) stays pinned; only the
+    // Header (top bar + action zone) stays pinned; only the
     // meeting lists below scroll when the user swipes up. Same Feishu /
     // WeChat-style "fixed action shelf + scrolling timeline" layout.
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(modifier = Modifier.fillMaxSize()) {
         // Top bar: tab title on the left, meeting-settings gear on the right.
         // (Scan-QR lives in the 消息 header's "more" menu; profile/app settings
@@ -154,22 +154,18 @@ fun HomeScreen(
             )
         }
 
-        // Full-width tinted band separating the action zone from the
-        // history list — mirrors the Feishu home layout.
-        Spacer(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(Dimens.SpaceS)
-                .background(WeMeetTheme.extras.surfaceBand),
-        )
+        // The fixed gray action area ends exactly where the white list starts.
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
         // Scheduled + History zones — padded inside one column. This is
         // the only scrollable region; the action shelf above stays put.
         // Scheduled list renders nothing when empty, so on a fresh
-        // install the history section still sits flush with the band.
+        // install the history section still sits flush with the divider.
         Column(
             modifier = Modifier
                 .weight(1f)
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Dimens.SpaceXl),
         ) {

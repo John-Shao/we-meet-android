@@ -1,6 +1,7 @@
 package com.we.meet.ui.contacts
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
@@ -79,9 +80,10 @@ fun ContactsTabScreen(
         if (ui.searching) vm.onQueryChange("") else vm.popOne()
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         WeMeetTopBar(
             title = stringResource(R.string.contacts_title),
+            containerColor = MaterialTheme.colorScheme.background,
             actions = {
                 IconButton(onClick = onOpenSearch) {
                     Icon(Icons.Outlined.Search, contentDescription = stringResource(R.string.contacts_search_hint))
@@ -96,6 +98,7 @@ fun ContactsTabScreen(
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
             )
         }
@@ -204,6 +207,7 @@ private fun Breadcrumbs(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
             .horizontalScroll(rememberScrollState())
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
     ) {
