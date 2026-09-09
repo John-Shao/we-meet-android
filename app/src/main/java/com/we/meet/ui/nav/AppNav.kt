@@ -596,7 +596,8 @@ fun AppNav() {
                 onOpenApproval = { navController.navigate(Routes.APPROVAL) },
                 onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
                 onNewChat = { navController.navigate(Routes.imNewChat()) },
-                onOpenSearch = { navController.navigate(Routes.imSearch()) },
+                onOpenSearch = { navController.navigate(Routes.imSearch(SearchCategory.MESSAGES)) },
+                onOpenContactsSearch = { navController.navigate(Routes.imSearch(SearchCategory.CONTACTS)) },
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 onOpenStarredContacts = { navController.navigate(Routes.STARRED_CONTACTS) },
                 onOpenMyGroups = { navController.navigate(Routes.MY_GROUPS) },
@@ -901,6 +902,8 @@ fun AppNav() {
             // 注入(feature-im 不反向依赖 app 模块)。
             MessageSearchScreen(
                 deps = app,
+                onOpenContact = { userId -> navController.navigate(Routes.memberDetail(userId)) },
+                contactsSearchHint = stringResource(R.string.contacts_search_hint),
                 initialCategory = SearchCategory.entries.firstOrNull {
                     it.name == entry.arguments?.getString("category")
                 } ?: SearchCategory.ALL,
@@ -917,8 +920,7 @@ fun AppNav() {
                 },
                 searchContacts = { q ->
                     app.directoryRepository.searchMembers(q)
-                        .getOrNull()?.members.orEmpty()
-                        .take(8)
+                        .getOrThrow().members
                         .map { m ->
                             com.we.meet.feature.im.ui.search.GlobalSearchContact(
                                 userId = m.id,

@@ -130,6 +130,7 @@ fun MainTabScreen(
     onOpenChat: (cid: String) -> Unit,
     onNewChat: () -> Unit,
     onOpenSearch: () -> Unit,
+    onOpenContactsSearch: () -> Unit,
     onMemberClick: (userId: String) -> Unit,
     /** 通讯录顶部的「星标联系人」入口。 */
     onOpenStarredContacts: () -> Unit,
@@ -410,6 +411,7 @@ fun MainTabScreen(
         },
         TabItem(R.string.tab_contacts, Icons.Filled.Contacts, Icons.Outlined.Contacts) {
             ContactsTabScreen(
+                onOpenSearch = onOpenContactsSearch,
                 onMemberClick = onMemberClick,
                 onOpenStarred = onOpenStarredContacts,
                 onOpenMyGroups = onOpenMyGroups,

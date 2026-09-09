@@ -465,6 +465,7 @@
     <!-- Contacts (通讯录) -->
     <string name="contacts_title">通讯录</string>
     <string name="contacts_search_hint">搜索姓名或邮箱</string>
+    <string name="contacts_department_search_hint">搜索当前部门的姓名或邮箱</string>
     <string name="contacts_root_org">组织</string>
     <string name="contacts_empty_dept">该部门暂无成员</string>
     <string name="contacts_empty_search">未找到匹配的成员</string>

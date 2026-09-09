@@ -470,6 +470,7 @@
     <!-- Contacts (通讯录) -->
     <string name="contacts_title">Contacts</string>
     <string name="contacts_search_hint">Search name or email</string>
+    <string name="contacts_department_search_hint">Search name or email in this department</string>
     <string name="contacts_root_org">Organization</string>
     <string name="contacts_empty_dept">No members in this department</string>
     <string name="contacts_empty_search">No matching members</string>

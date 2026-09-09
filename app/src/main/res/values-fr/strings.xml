@@ -467,6 +467,7 @@
     <!-- Contacts -->
     <string name="contacts_title">Contacts</string>
     <string name="contacts_search_hint">Rechercher un nom ou un e-mail</string>
+    <string name="contacts_department_search_hint">Rechercher un nom ou un e-mail dans ce service</string>
     <string name="contacts_root_org">Organisation</string>
     <string name="contacts_empty_dept">Aucun membre dans ce service</string>
     <string name="contacts_empty_search">Aucun membre correspondant</string>

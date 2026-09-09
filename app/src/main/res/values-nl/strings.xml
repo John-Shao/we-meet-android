@@ -462,6 +462,7 @@
     <!-- Contacts -->
     <string name="contacts_title">Contacten</string>
     <string name="contacts_search_hint">Zoek op naam of e-mail</string>
+    <string name="contacts_department_search_hint">Zoek op naam of e-mail binnen deze afdeling</string>
     <string name="contacts_root_org">Organisatie</string>
     <string name="contacts_empty_dept">Geen leden in deze afdeling</string>
     <string name="contacts_empty_search">Geen overeenkomende leden</string>

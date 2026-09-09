@@ -122,6 +122,7 @@ fun MessageSearchScreen(
     deps: ImDeps,
     onBack: () -> Unit,
     onOpenChat: (cid: String, seq: Long?) -> Unit,
+    onOpenContact: (userId: String) -> Unit,
     searchContacts: (suspend (String) -> List<GlobalSearchContact>)? = null,
     searchMeetings: (suspend (String) -> List<GlobalSearchMeeting>)? = null,
     searchDocs: (suspend (String) -> List<GlobalSearchDoc>)? = null,
@@ -134,6 +135,7 @@ fun MessageSearchScreen(
     /** P1-4 M3:AI 问答 SSE(app 层实现);null = 隐藏 AI 分类。 */
     askAi: ((String) -> kotlinx.coroutines.flow.Flow<AskEvent>)? = null,
     initialCategory: SearchCategory = SearchCategory.ALL,
+    contactsSearchHint: String? = null,
     /** The host supplies document presentation from the docs module. */
     docResultContent: (@Composable (GlobalSearchDoc, () -> Unit) -> Unit)? = null,
 ) {
@@ -174,8 +176,6 @@ fun MessageSearchScreen(
     var docsSearched by remember { mutableStateOf(false) }
     var docsRetryNonce by remember { mutableIntStateOf(0) }
     var docsResultQuery by remember { mutableStateOf("") }
-    var openingContactId by remember { mutableStateOf<String?>(null) }
-    val createChatFailedMessage = stringResource(R.string.im_create_chat_failed)
     // AI 问答:仅显式触发(按钮/回车),绝不随输入自动发起(成本闸门,同 Web)。
     var ask by remember { mutableStateOf(AskUiState()) }
     var askJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
@@ -464,7 +464,9 @@ fun MessageSearchScreen(
                         onValueChange = { query = it },
                         placeholder = {
                             Text(
-                                if (category == SearchCategory.ALL || category == SearchCategory.AI) {
+                                if (category == SearchCategory.CONTACTS && contactsSearchHint != null) {
+                                    contactsSearchHint
+                                } else if (category == SearchCategory.ALL || category == SearchCategory.AI) {
                                     stringResource(R.string.im_global_search_hint)
                                 } else {
                                     stringResource(R.string.im_search_category_hint, labelFor(category))
@@ -610,30 +612,7 @@ fun MessageSearchScreen(
                             emoji = "👤",
                             title = contact.name,
                             subtitle = contact.subtitle,
-                            enabled = openingContactId == null,
-                            trailing = if (openingContactId == contact.userId) {
-                                {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(Dimens.IconSmall),
-                                        strokeWidth = Dimens.BorderEmphasis,
-                                    )
-                                }
-                            } else null,
-                            onClick = {
-                                // 联系人命中 = 直接开聊(Web 口径):建/取直聊再进会话。
-                                if (openingContactId != null) return@TwoLineRow
-                                openingContactId = contact.userId
-                                scope.launch {
-                                    val result = runCatching {
-                                        session.bridge.createDirectByUserId(contact.userId)
-                                    }
-                                    openingContactId = null
-                                    result.onSuccess { conv -> onOpenChat(conv.cid, null) }
-                                    if (result.isFailure) {
-                                        snackbar.showSnackbar(createChatFailedMessage)
-                                    }
-                                }
-                            },
+                            onClick = { onOpenContact(contact.userId) },
                         )
                     }
                 }
