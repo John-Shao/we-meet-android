@@ -338,6 +338,11 @@ private fun BlockView(
 
         "columnList", "column" -> Unit // children already flattened recursively
 
+        "divider" -> HorizontalDivider(
+            modifier = baseModifier.padding(vertical = Dimens.SpaceM),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+
         "pageBreak" -> Column(baseModifier) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
