@@ -112,5 +112,6 @@ internal fun docAccessRoleLabel(role: String?): Int = when (role) {
     "reader" -> R.string.im_doc_access_reader
     "commenter" -> R.string.im_doc_access_commenter
     "editor" -> R.string.im_doc_access_editor
-    else -> R.string.im_doc_card_access
+    // Match the share flow and permission dialog's default for legacy cards.
+    else -> R.string.im_doc_access_reader
 }

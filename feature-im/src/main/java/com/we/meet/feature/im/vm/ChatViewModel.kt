@@ -127,8 +127,10 @@ class ChatViewModel internal constructor(
     val docAccessRoles = _docAccessRoles.asStateFlow()
     private val docAccessJobs = mutableMapOf<String, kotlinx.coroutines.Job>()
 
-    fun loadDocAccess(docId: String) {
-        if (docId in _docAccessRoles.value || docId in docAccessJobs) return
+    fun loadDocAccess(docId: String) = requestDocAccess(docId, refresh = false)
+
+    private fun requestDocAccess(docId: String, refresh: Boolean) {
+        if ((!refresh && docId in _docAccessRoles.value) || docId in docAccessJobs) return
         val job = viewModelScope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
             try {
                 val result = session.bridge.docChatAccess(docId, cid)
@@ -152,8 +154,8 @@ class ChatViewModel internal constructor(
 
     fun refreshDocAccess() {
         val docIds = _docAccessRoles.value.keys.toList()
-        _docAccessRoles.value = emptyMap()
-        docIds.forEach(::loadDocAccess)
+        // Keep confirmed labels visible while refreshing, including on failure.
+        docIds.forEach { requestDocAccess(it, refresh = true) }
     }
     val ui: StateFlow<ChatUiState> = _ui.asStateFlow()
 
