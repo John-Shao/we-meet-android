@@ -467,6 +467,7 @@
     <!-- Contacts -->
     <string name="contacts_title">Contacts</string>
     <string name="contacts_search_hint">Rechercher un nom ou un e-mail</string>
+    <string name="contacts_department_search_hint">Rechercher un nom ou un e-mail dans ce service</string>
     <string name="contacts_root_org">Organisation</string>
     <string name="contacts_empty_dept">Aucun membre dans ce service</string>
     <string name="contacts_empty_search">Aucun membre correspondant</string>
@@ -745,6 +746,12 @@
     <string name="meeting_detail_chapters_empty">Pas encore de chapitres — générés avec le compte rendu.</string>
     <string name="meeting_detail_summary_edited">Modifié</string>
     <string name="docs_viewer_title">Document</string>
+    <string name="docs_editor_title">Modifier</string>
+    <string name="docs_editor_title_hint">Titre du document</string>
+    <string name="docs_editor_unsaved_title">Modifications non enregistrées</string>
+    <string name="docs_editor_unsaved_desc">Vous avez des modifications non enregistrées dans le document.</string>
+    <string name="docs_editor_unsaved_save">Enregistrer et quitter</string>
+    <string name="docs_editor_unsaved_continue">Continuer à modifier</string>
 
     <!-- P9 会议室(实体会议室;LiveKit 视频房间用 room_* 前缀,勿混) -->
     <string name="meeting_room_field_label">Salle de réunion</string>
@@ -1043,4 +1050,24 @@
     <string name="waiting_no_token">L’hôte a approuvé votre demande, mais les informations de connexion sont manquantes. Veuillez réessayer.</string>
     <string name="web_login_network_error">Erreur réseau</string>
     <string name="web_login_invalid_callback">Rappel de connexion invalide</string>
+    <string name="docs_editor_save_failed">Saving was not confirmed. Check your connection and retry. This page will stay open.</string>
+    <string name="docs_editor_incompatible">Impossible d’ouvrir l’éditeur. Réessayez plus tard ou revenez au document pour continuer la lecture.</string>
+    <string name="docs_editor_pending_work">Toutes les modifications ne sont pas encore confirmées. Vérifiez la connexion, le titre, les pièces jointes et les commentaires non publiés, puis réessayez.</string>
+    <string name="docs_editor_reloaded">L’éditeur a été rechargé. Seul le contenu enregistré sur le serveur peut être confirmé. Vérifiez vos dernières modifications.</string>
+    <string name="docs_chat_share_title">Partager dans un chat</string>
+    <string name="docs_chat_share_sent">Partagé dans le chat</string>
+    <string name="docs_chat_share_delivery_failed">Envoyé à %1$d chats ; %2$d échecs. Les envois confirmés seront ignorés lors du nouvel essai.</string>
+    <string name="docs_chat_share_access_failed">Certaines cartes ont été envoyées, mais l’accès reste non confirmé. Réessayez ou gérez les autorisations du document.</string>
+    <string name="docs_chat_share_retry">Réessayer</string>
+    <string name="docs_chat_share_close">Fermer</string>
+    <string name="docs_chat_share_next">Suivant</string>
+    <string name="docs_chat_share_targets">Chats sélectionnés : %d</string>
+    <string name="docs_chat_share_permission_retry">Vérification des droits impossible. Réessayer</string>
+    <string name="docs_chat_share_permission">Autorisation</string>
+    <string name="docs_chat_share_reader">Lecture</string>
+    <string name="docs_chat_share_editor">Modification</string>
+    <string name="docs_chat_share_grant_help">Définit les droits des membres actuels. Vos cartes du même document dans chaque chat partagent ce réglage. Les droits supérieurs provenant d’autres sources sont conservés.</string>
+    <string name="docs_chat_share_existing_access">Envoyer uniquement la carte. Les destinataires conservent leurs droits existants.</string>
+    <string name="docs_chat_share_send">Envoyer</string>
+    <string name="docs_chat_share_back">Retour</string>
 </resources>

@@ -28,6 +28,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -58,6 +61,8 @@ import com.we.meet.feature.im.ui.group.MyGroupsScreen
 import com.we.meet.feature.im.ui.newchat.AddMembersScreen
 import com.we.meet.feature.im.ui.newchat.NewChatScreen
 import com.we.meet.feature.im.ui.search.MessageSearchScreen
+import com.we.meet.feature.im.ui.search.SearchCategory
+import com.we.meet.ui.tasks.toItem
 import com.we.meet.ui.calendar.CreateEventScreen
 import com.we.meet.ui.calendar.CalendarDiscoverScreen
 import com.we.meet.ui.calendar.CalendarEditorScreen
@@ -128,7 +133,13 @@ object Routes {
     private const val IM_CHAT_BASE = "im_chat"
     const val IM_CHAT = "$IM_CHAT_BASE/{cid}?seq={seq}"
     /** P1-M3 全局搜索页(会话过滤 + 消息全文检索)。 */
-    const val IM_SEARCH = "im_search"
+    const val IM_SEARCH = "im_search?category={category}"
+
+    fun imSearch(category: SearchCategory = SearchCategory.ALL): String =
+        "im_search?category=${category.name}"
+    const val TASK_DETAIL = "task_detail/{taskId}"
+    fun taskDetail(taskId: String): String =
+        "task_detail/${URLEncoder.encode(taskId, StandardCharsets.UTF_8.name())}"
     private const val IM_GROUP_INFO_BASE = "im_group_info"
     const val IM_GROUP_INFO = "$IM_GROUP_INFO_BASE/{cid}"
     /** 群成员二级页(对标飞书)——与群机器人同级,不再内联在群信息页里。 */
@@ -361,6 +372,22 @@ object Routes {
         return "$DOCS_VIEWER_BASE/$enc"
     }
 
+    // 云文档编辑画布(M3):可编辑文档的「编辑」入口 → 独立 WebView。
+    private const val DOCS_EDITOR_BASE = "docs_editor"
+    const val DOCS_EDITOR = "$DOCS_EDITOR_BASE/{url}"
+
+    fun docsEditor(url: String): String {
+        val enc = URLEncoder.encode(url, StandardCharsets.UTF_8.name())
+        return "$DOCS_EDITOR_BASE/$enc"
+    }
+
+    // 云文档原生化(M1):原生详情/搜索/回收站路由;WebView 查看器保留为兜底。
+    private const val DOCS_DETAIL_BASE = "docs_detail"
+    const val DOCS_DETAIL = "$DOCS_DETAIL_BASE/{docId}"
+    const val DOCS_TRASH = "docs_trash"
+
+    fun docsDetail(docId: String): String = "$DOCS_DETAIL_BASE/${URLEncoder.encode(docId, StandardCharsets.UTF_8.name())}"
+
     fun decode(value: String): String =
         URLDecoder.decode(value, StandardCharsets.UTF_8.name())
 }
@@ -382,6 +409,21 @@ fun AppNav() {
     val safePop: () -> Unit = {
         if (navController.previousBackStackEntry != null) {
             navController.popBackStack()
+        }
+    }
+
+    // 云文档打开入口统一(设计文档 §4.7.2):原生开关开启且 URL 能解析出 docId
+    // → 原生详情;否则走既有 WebView 查看器兜底(老版本/降级行为不变)。
+    val openDocUrl: (String) -> Unit = { url ->
+        val docId = if (com.we.meet.BuildConfig.WE_MEET_DOCS_NATIVE) {
+            com.we.meet.feature.docs.util.DocLinks.docIdFromUrl(url, com.we.meet.BuildConfig.WE_MEET_DOCS_URL)
+        } else {
+            null
+        }
+        if (docId != null) {
+            navController.navigate(Routes.docsDetail(docId))
+        } else {
+            navController.navigate(Routes.docsViewer(url))
         }
     }
 
@@ -558,7 +600,9 @@ fun AppNav() {
                 onOpenApproval = { navController.navigate(Routes.APPROVAL) },
                 onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
                 onNewChat = { navController.navigate(Routes.imNewChat()) },
-                onOpenSearch = { navController.navigate(Routes.IM_SEARCH) },
+                onOpenSearch = { navController.navigate(Routes.imSearch(SearchCategory.MESSAGES)) },
+                onOpenContactsSearch = { navController.navigate(Routes.imSearch(SearchCategory.CONTACTS)) },
+                onOpenTasksSearch = { navController.navigate(Routes.imSearch(SearchCategory.TASKS)) },
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 onOpenStarredContacts = { navController.navigate(Routes.STARRED_CONTACTS) },
                 onOpenMyGroups = { navController.navigate(Routes.MY_GROUPS) },
@@ -590,6 +634,23 @@ fun AppNav() {
                 },
                 onOpenTaskSettings = {
                     navController.navigate(Routes.TASK_SETTINGS)
+                },
+                // 云文档原生化(M1):tab 内的原生路由回调。
+                onOpenDocDetail = { docId ->
+                    navController.navigate(Routes.docsDetail(docId))
+                },
+                onOpenDocsSearch = {
+                    navController.navigate(Routes.imSearch(SearchCategory.DOCS))
+                },
+                onOpenDocsTrash = {
+                    navController.navigate(Routes.DOCS_TRASH)
+                },
+                onOpenDocEditor = { docId ->
+                    val url = com.we.meet.feature.docs.util.DocLinks.editorUrl(
+                        app.docsBaseUrl,
+                        docId,
+                    )
+                    navController.navigate(Routes.docsEditor(url))
                 },
             )
         }
@@ -651,8 +712,8 @@ fun AppNav() {
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 // P8 日程卡片 → 日程详情页(EVENT_DETAIL 已有)。
                 onOpenEvent = { eventId -> navController.navigate(Routes.eventDetail(eventId)) },
-                // 分享云文档卡片 → 复用搜索命中的文档查看器(DOCS_VIEWER 已有)。
-                onOpenDoc = { url -> navController.navigate(Routes.docsViewer(url)) },
+                // 分享云文档卡片 → 原生详情(开启时)或既有 WebView 查看器兜底。
+                onOpenDoc = openDocUrl,
                 // 分享会议卡片 → 按 slug 走入会预览(与会议详情「加入会议」同一路径)。
                 onJoinMeeting = { slug -> navController.navigate(Routes.joinPreview(slug)) },
                 onOpenSchedule = { sourceCid, memberIds ->
@@ -835,19 +896,68 @@ fun AppNav() {
             )
         }
 
-        composable(route = Routes.IM_SEARCH) {
+        composable(
+            route = Routes.IM_SEARCH,
+            arguments = listOf(navArgument("category") {
+                type = NavType.StringType
+                defaultValue = SearchCategory.ALL.name
+            }),
+        ) { entry ->
+            val taskSearchVm: com.we.meet.ui.tasks.TaskViewModel = viewModel(
+                key = "aggregate-task-search",
+                factory = viewModelFactory {
+                    initializer {
+                        com.we.meet.ui.tasks.TaskViewModel(app.taskRepository, app.tokenStore.userId, searchOnly = true)
+                    }
+                },
+            )
             // 搜索统一 M2:app 层把 联系人/会议/文档 三个数据源以 provider
             // 注入(feature-im 不反向依赖 app 模块)。
             MessageSearchScreen(
                 deps = app,
+                onOpenContact = { userId -> navController.navigate(Routes.memberDetail(userId)) },
+                contactsSearchHint = stringResource(R.string.contacts_search_hint),
+                tasksSearchHint = stringResource(R.string.task_search_hint),
+                taskSearchContent = { query ->
+                    com.we.meet.ui.tasks.TaskAggregateSearchPanel(
+                        vm = taskSearchVm,
+                        query = query,
+                        canFilterSelf = !app.tokenStore.userId.isNullOrBlank(),
+                        onOpenTask = { navController.navigate(Routes.taskDetail(it)) },
+                    )
+                },
+                onOpenTask = { navController.navigate(Routes.taskDetail(it)) },
+                searchTasks = { query ->
+                    app.taskRepository.searchTasks(
+                        query = query, creatorId = null, assigneeId = null,
+                        status = "all", due = "all", priority = "all",
+                    ).getOrThrow().map { dto ->
+                        val task = dto.toItem()
+                        com.we.meet.feature.im.ui.search.GlobalSearchTask(
+                            id = task.id,
+                            title = task.title,
+                            subtitle = listOf(task.assignee, task.dueLabel, task.listName)
+                                .filter { it.isNotBlank() }.joinToString(" · "),
+                        )
+                    }
+                },
+                initialCategory = SearchCategory.entries.firstOrNull {
+                    it.name == entry.arguments?.getString("category")
+                } ?: SearchCategory.ALL,
+                docResultContent = { doc, onClick ->
+                    com.we.meet.feature.docs.ui.DocSearchResultRow(
+                        title = doc.title,
+                        updatedAt = doc.updatedAt,
+                        onClick = onClick,
+                    )
+                },
                 onBack = rememberOnceOnly(safePop),
                 onOpenChat = { cid, seq ->
                     navController.navigate(Routes.imChat(cid, seq))
                 },
                 searchContacts = { q ->
                     app.directoryRepository.searchMembers(q)
-                        .getOrNull()?.members.orEmpty()
-                        .take(8)
+                        .getOrThrow().members
                         .map { m ->
                             com.we.meet.feature.im.ui.search.GlobalSearchContact(
                                 userId = m.id,
@@ -920,9 +1030,7 @@ fun AppNav() {
                 onOpenMeeting = { roomId ->
                     navController.navigate(Routes.historyDetail(roomId))
                 },
-                onOpenDoc = { url ->
-                    navController.navigate(Routes.docsViewer(url))
-                },
+                onOpenDoc = openDocUrl,
                 // AI 日历引用:直开事件详情(EventDetailScreen 按 id 自加载)。
                 onOpenEvent = { eventId ->
                     navController.navigate(Routes.eventDetail(eventId))
@@ -943,6 +1051,18 @@ fun AppNav() {
         }
 
         composable(
+            route = Routes.TASK_DETAIL,
+            arguments = listOf(navArgument("taskId") { type = NavType.StringType }),
+        ) { entry ->
+            com.we.meet.ui.tasks.TaskScreen(
+                ownerName = "",
+                app = app,
+                initialTaskId = entry.arguments?.getString("taskId"),
+                onClose = rememberOnceOnly(safePop),
+            )
+        }
+
+        composable(
             route = Routes.DOCS_VIEWER,
             arguments = listOf(navArgument("url") { type = NavType.StringType }),
         ) { entry ->
@@ -950,6 +1070,68 @@ fun AppNav() {
             com.we.meet.ui.docs.DocsViewerScreen(
                 url = url,
                 onClose = rememberOnceOnly(safePop),
+            )
+        }
+
+        composable(
+            route = Routes.DOCS_EDITOR,
+            arguments = listOf(navArgument("url") { type = NavType.StringType }),
+        ) { entry ->
+            val url = Routes.decode(entry.arguments?.getString("url").orEmpty())
+            com.we.meet.ui.docs.DocsEditorScreen(
+                url = url,
+                onClose = rememberOnceOnly(safePop),
+            )
+        }
+
+        composable(
+            route = Routes.DOCS_DETAIL,
+            arguments = listOf(navArgument("docId") { type = NavType.StringType }),
+        ) { entry ->
+            val docId = Routes.decode(entry.arguments?.getString("docId").orEmpty())
+            var shareTitle by androidx.compose.runtime.saveable.rememberSaveable(docId) { mutableStateOf<String?>(null) }
+            var shareUrl by androidx.compose.runtime.saveable.rememberSaveable(docId) { mutableStateOf("") }
+            val treeOwner = remember(navController) { navController.getBackStackEntry(navController.graph.id) }
+            val treeVm: com.we.meet.feature.docs.ui.DocTreeViewModel = viewModel(
+                viewModelStoreOwner = treeOwner,
+                key = "docs-workspace-tree",
+                factory = viewModelFactory {
+                    initializer { com.we.meet.feature.docs.ui.DocTreeViewModel(app.docsRepository, createSavedStateHandle()) }
+                },
+            )
+            com.we.meet.feature.docs.ui.DocDetailScreen(
+                deps = app,
+                docId = docId,
+                onBack = rememberOnceOnly(safePop),
+                onOpenDoc = { otherDocId -> navController.navigate(Routes.docsDetail(otherDocId)) },
+                treeVm = treeVm,
+                onExitWorkspace = { navController.popBackStack(Routes.HOME, false) },
+                onSwitchDoc = { otherDocId ->
+                    if (otherDocId != docId && navController.currentBackStackEntry?.id == entry.id &&
+                        !navController.popBackStack(Routes.docsDetail(otherDocId), false)) {
+                        navController.navigate(Routes.docsDetail(otherDocId)) {
+                            popUpTo(Routes.docsDetail(docId)) { inclusive = true }
+                        }
+                    }
+                },
+                onOpenWebUrl = { url -> navController.navigate(Routes.docsViewer(url)) },
+                onOpenEditor = { url -> navController.navigate(Routes.docsEditor(url)) },
+                onShareToChat = { _, title, url -> shareUrl = url; shareTitle = title },
+            )
+            shareTitle?.let { title ->
+                com.we.meet.ui.docs.DocChatShareFlow(
+                    deps = app,
+                    request = com.we.meet.ui.docs.ShareDocRequest(docId, title, shareUrl),
+                    onDismiss = { shareTitle = null },
+                )
+            }
+        }
+
+        composable(Routes.DOCS_TRASH) {
+            com.we.meet.feature.docs.ui.DocsTrashScreen(
+                deps = app,
+                onBack = rememberOnceOnly(safePop),
+                onOpenDoc = { docId -> navController.navigate(Routes.docsDetail(docId)) },
             )
         }
 

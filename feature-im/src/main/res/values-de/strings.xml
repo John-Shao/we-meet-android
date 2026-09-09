@@ -238,6 +238,8 @@
 
     <!-- P1-M3 全局搜索页 -->
     <string name="im_msg_search_hint">Nachrichten durchsuchen</string>
+    <string name="im_global_search_hint">Suchen</string>
+    <string name="im_search_category_hint">%1$s durchsuchen</string>
     <string name="im_msg_search_sec_conversations">Unterhaltungen</string>
     <string name="im_msg_search_sec_messages">Nachrichten</string>
     <string name="im_msg_search_no_results">Keine passenden Nachrichten</string>
@@ -252,6 +254,8 @@
     <string name="im_search_cat_meetings">Meetings</string>
     <string name="im_search_cat_messages">Nachrichten</string>
     <string name="im_search_cat_docs">Dokumente</string>
+    <string name="im_search_cat_tasks">Aufgaben</string>
+    <string name="im_search_tasks_more">Weitere Aufgaben anzeigen</string>
     <string name="im_search_category_no_results">Keine passenden Ergebnisse für %1$s</string>
 
     <!-- P1-4 M3 App AI 问答 -->
@@ -420,4 +424,14 @@ Grenzwerte: 100 Anfragen pro Minute und 5 pro Sekunde pro Bot, Nachrichtenkörpe
     <string name="im_search_ai_http_error">Anfrage fehlgeschlagen (HTTP %1$d). Bitte erneut versuchen.</string>
     <string name="im_search_ai_empty_body">Der KI-Dienst hat eine leere Antwort geliefert. Bitte erneut versuchen.</string>
     <string name="im_search_ai_server_error">Der KI-Dienst ist fehlgeschlagen. Bitte erneut versuchen.</string>
+    <string name="im_doc_card_access">Chat-Berechtigungen</string>
+    <string name="im_doc_access_reader">Lesen</string>
+    <string name="im_doc_access_editor">Bearbeiten</string>
+    <string name="im_doc_access_help">Ändert Ihre Freigabe für aktuelle Chat-Mitglieder. Höhere Rechte aus anderen Chats, Links und manuellen Freigaben bleiben erhalten, auch bei älteren Karten.</string>
+    <string name="im_doc_access_denied">Sie dürfen die Berechtigungen dieses Dokuments nicht verwalten.</string>
+    <string name="im_doc_access_failed">Zugriff konnte nicht bestätigt werden. Bitte erneut versuchen.</string>
+    <string name="im_doc_access_saved">Berechtigungen aktualisiert</string>
+    <string name="im_doc_access_retry">Erneut versuchen</string>
+    <string name="im_doc_access_save">Speichern</string>
+    <string name="im_doc_access_close">Schließen</string>
 </resources>

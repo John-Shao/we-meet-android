@@ -1,0 +1,287 @@
+package com.we.meet.feature.docs.ui
+
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
+import com.we.meet.ui.components.WeMeetInlineErrorState
+import com.we.meet.ui.components.WeMeetEmptyState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+
+import com.we.meet.feature.docs.util.docsRunCatching as runCatching
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import com.we.meet.feature.docs.DocsDeps
+import com.we.meet.feature.docs.R
+import com.we.meet.feature.docs.data.net.DocumentDto
+import com.we.meet.feature.docs.data.net.DocsMovePositions
+import com.we.meet.ui.components.PrimaryButton
+import com.we.meet.ui.components.WeMeetInlineLoading
+import com.we.meet.ui.theme.Dimens
+import kotlinx.coroutines.launch
+
+/**
+ * 移动目标选择器(设计文档 §4.4 移动):懒加载树 + 顶层选项。
+ *
+ * 顶层 = 与第一棵根文档并列(left);选中某个文档 = 移入其内部(last-child)。
+ * 正在移动的文档从树里排除(不能移入自己)。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DocMoveSheet(
+    deps: DocsDeps,
+    doc: DocumentDto,
+    onDismiss: () -> Unit,
+    onMove: (targetId: String, position: String, onComplete: (Boolean) -> Unit) -> Unit,
+) {
+    var roots by remember { mutableStateOf<List<DocumentDto>>(emptyList()) }
+    var rootsLoading by remember { mutableStateOf(true) }
+    var selected by remember { mutableStateOf<DocMoveSheetSelection>(DocMoveSheetSelection.None) }
+    val scope = rememberCoroutineScope()
+    var moving by remember { mutableStateOf(false) }
+    var moveError by remember { mutableStateOf(false) }
+
+    var rootsError by remember { mutableStateOf(false) }
+    fun loadRoots() {
+        rootsLoading = true
+        rootsError = false
+        scope.launch { runCatching {
+            deps.docsRepository.moveCandidates()
+        }.onSuccess { documents ->
+            roots = documents.filter { it.id != doc.id && (doc.path.isBlank() || !it.path.startsWith(doc.path)) }
+            rootsLoading = false
+        }.onFailure {
+            rootsLoading = false
+            rootsError = true
+        } }
+    }
+    LaunchedEffect(doc.id) { loadRoots() }
+
+    ModalBottomSheet(
+        onDismissRequest = { if (!moving) onDismiss() },
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth().fillMaxHeight(0.75f)
+                .padding(bottom = Dimens.SpaceM),
+        ) {
+            DocsSheetHeader(stringResource(R.string.docs_move_title), { if (!moving) onDismiss() },
+                doc.displayTitle.ifBlank { stringResource(R.string.docs_untitled) })
+            Box(Modifier.weight(1f).padding(top = Dimens.SpaceM)) {
+                when {
+                    rootsLoading -> WeMeetInlineLoading()
+                    rootsError -> WeMeetInlineErrorState(onRetry = { loadRoots() }, message = stringResource(R.string.docs_load_error))
+                    roots.isEmpty() -> WeMeetEmptyState(title = stringResource(R.string.docs_move_empty),
+                        description = stringResource(R.string.docs_move_help))
+                    else -> LazyColumn {
+                        if (roots.any { it.depth == 1 }) {
+                            item(key = "top") {
+                                MoveRow(
+                                    icon = Icons.Outlined.Home,
+                                    label = stringResource(R.string.docs_move_root),
+                                    depth = 0,
+                                    selected = selected == DocMoveSheetSelection.Top,
+                                    expandable = false,
+                                    expanded = false,
+                                    onToggle = null,
+                                    onSelect = { if (!moving) selected = DocMoveSheetSelection.Top },
+                                )
+                            }
+                        }
+                        items(roots, key = { "root-${it.id}" }) { root ->
+                            MoveNodeRow(
+                                deps = deps,
+                                node = root,
+                                docId = doc.id,
+                                depth = 0,
+                                selected = selected,
+                                onSelect = { if (!moving) selected = it },
+                            )
+                        }
+                    }
+                }
+            }
+            if (moveError) Text(stringResource(R.string.docs_action_failed), color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = Dimens.ScreenPadding))
+            Box(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceL)) {
+                PrimaryButton(
+                    text = stringResource(R.string.docs_move_confirm),
+                    loading = moving,
+                    enabled = !rootsLoading && !rootsError && selected != DocMoveSheetSelection.None,
+                    onClick = {
+                        val destination = when (val sel = selected) {
+                            is DocMoveSheetSelection.Into -> sel.docId to DocsMovePositions.LAST_CHILD
+                            DocMoveSheetSelection.Top -> roots.firstOrNull { it.depth == 1 }?.let { it.id to DocsMovePositions.LEFT }
+                            DocMoveSheetSelection.None -> null
+                        }
+                        if (destination != null && !moving) {
+                            moving = true
+                            moveError = false
+                            onMove(destination.first, destination.second) { success ->
+                                moving = false
+                                moveError = !success
+                                if (success) onDismiss()
+                            }
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+/** Move target: none / into a document / top level (left of first root). */
+private sealed interface DocMoveSheetSelection {
+    data object None : DocMoveSheetSelection
+    data object Top : DocMoveSheetSelection
+    data class Into(val docId: String) : DocMoveSheetSelection
+}
+
+@Composable
+private fun MoveNodeRow(
+    deps: DocsDeps,
+    node: DocumentDto,
+    docId: String,
+    depth: Int,
+    selected: DocMoveSheetSelection,
+    onSelect: (DocMoveSheetSelection) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var children by remember { mutableStateOf<List<DocumentDto>>(emptyList()) }
+    var childrenLoading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    Column(Modifier.fillMaxWidth()) {
+        MoveRow(
+            icon = if (node.isFolder) Icons.Outlined.Folder else Icons.Outlined.Description,
+            label = node.displayTitle.ifBlank { stringResource(R.string.docs_untitled) },
+            depth = depth,
+            selected = selected == DocMoveSheetSelection.Into(node.id),
+            selectable = node.abilities.move,
+            expandable = node.numchild > 0,
+            expanded = expanded,
+            onToggle = if (node.numchild > 0) {
+                {
+                    expanded = !expanded
+                    if (expanded && children.isEmpty()) {
+                        childrenLoading = true
+                        scope.launch {
+                            runCatching {
+                                deps.docsRepository.moveCandidates(node.id)
+                            }.onSuccess { documents ->
+                                children = documents.filter { it.id != docId }
+                                childrenLoading = false
+                            }.onFailure {
+                                childrenLoading = false
+                            }
+                        }
+                    }
+                }
+            } else {
+                null
+            },
+            onSelect = { onSelect(DocMoveSheetSelection.Into(node.id)) },
+        )
+        if (expanded) {
+            if (childrenLoading) {
+                Box(Modifier.padding(start = Dimens.SpaceXl)) { WeMeetInlineLoading() }
+            } else {
+                children.forEach { child ->
+                    MoveNodeRow(
+                        deps = deps,
+                        node = child,
+                        docId = docId,
+                        depth = depth + 1,
+                        selected = selected,
+                        onSelect = onSelect,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MoveRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    depth: Int,
+    selected: Boolean,
+    selectable: Boolean = true,
+    expandable: Boolean,
+    expanded: Boolean,
+    onToggle: (() -> Unit)?,
+    onSelect: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = Dimens.MinTouchTarget)
+            .selectable(selected = selected, enabled = selectable, role = Role.RadioButton, onClick = onSelect)
+            .padding(
+                start = Dimens.ScreenPadding + Dimens.SpaceM * depth.coerceAtMost(4),
+                end = Dimens.ScreenPadding,
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(Dimens.IconMedium),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = Dimens.SpaceM),
+        )
+        if (expandable) {
+            IconButton(onClick = { onToggle?.invoke() }) {
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = stringResource(
+                        if (expanded) R.string.cd_docs_collapse else R.string.cd_docs_expand,
+                    ),
+                )
+            }
+        }
+        RadioButton(selected = selected, onClick = onSelect, enabled = selectable)
+    }
+}
+
+private const val MAX_PAGE = 200

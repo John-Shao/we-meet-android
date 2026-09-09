@@ -462,6 +462,7 @@
     <!-- Contacts -->
     <string name="contacts_title">Contacten</string>
     <string name="contacts_search_hint">Zoek op naam of e-mail</string>
+    <string name="contacts_department_search_hint">Zoek op naam of e-mail binnen deze afdeling</string>
     <string name="contacts_root_org">Organisatie</string>
     <string name="contacts_empty_dept">Geen leden in deze afdeling</string>
     <string name="contacts_empty_search">Geen overeenkomende leden</string>
@@ -733,6 +734,12 @@
     <string name="meeting_detail_chapters_empty">Nog geen hoofdstukken — gegenereerd met de samenvatting.</string>
     <string name="meeting_detail_summary_edited">Bewerkt</string>
     <string name="docs_viewer_title">Document</string>
+    <string name="docs_editor_title">Bewerken</string>
+    <string name="docs_editor_title_hint">Documenttitel</string>
+    <string name="docs_editor_unsaved_title">Niet-opgeslagen wijzigingen</string>
+    <string name="docs_editor_unsaved_desc">U heeft niet-opgeslagen wijzigingen in het document.</string>
+    <string name="docs_editor_unsaved_save">Opslaan en afsluiten</string>
+    <string name="docs_editor_unsaved_continue">Doorgaan met bewerken</string>
 
     <!-- P9 会议室(实体会议室;LiveKit 视频房间用 room_* 前缀,勿混) -->
     <string name="meeting_room_field_label">Vergaderruimte</string>
@@ -1024,4 +1031,24 @@
     <string name="waiting_no_token">De host heeft je verzoek goedgekeurd, maar de verbindingsgegevens ontbreken. Probeer het opnieuw.</string>
     <string name="web_login_network_error">Netwerkfout</string>
     <string name="web_login_invalid_callback">Ongeldige aanmeld-callback</string>
+    <string name="docs_editor_save_failed">Saving was not confirmed. Check your connection and retry. This page will stay open.</string>
+    <string name="docs_editor_incompatible">De editor kan niet worden geopend. Probeer het later opnieuw of ga terug om verder te lezen.</string>
+    <string name="docs_editor_pending_work">Nog niet alle wijzigingen zijn bevestigd. Controleer de verbinding, titel, bijlagen en niet-gepubliceerde reacties en probeer opnieuw.</string>
+    <string name="docs_editor_reloaded">De editor is opnieuw geladen. Alleen op de server opgeslagen inhoud kan worden bevestigd. Controleer uw laatste wijzigingen.</string>
+    <string name="docs_chat_share_title">Delen in chat</string>
+    <string name="docs_chat_share_sent">Gedeeld in chat</string>
+    <string name="docs_chat_share_delivery_failed">Verzonden naar %1$d chats; %2$d mislukt. Bevestigde verzendingen worden bij opnieuw proberen overgeslagen.</string>
+    <string name="docs_chat_share_access_failed">Sommige kaarten zijn verzonden, maar toegang is niet bevestigd. Probeer opnieuw of beheer de documentrechten.</string>
+    <string name="docs_chat_share_retry">Opnieuw proberen</string>
+    <string name="docs_chat_share_close">Sluiten</string>
+    <string name="docs_chat_share_next">Volgende</string>
+    <string name="docs_chat_share_targets">Geselecteerde chats: %d</string>
+    <string name="docs_chat_share_permission_retry">Rechten laden mislukt. Opnieuw proberen</string>
+    <string name="docs_chat_share_permission">Toegangsrecht</string>
+    <string name="docs_chat_share_reader">Lezen</string>
+    <string name="docs_chat_share_editor">Bewerken</string>
+    <string name="docs_chat_share_grant_help">Stelt toegang voor huidige chatleden in. Uw kaarten voor hetzelfde document in elke chat delen deze instelling. Hogere rechten uit andere bronnen blijven behouden.</string>
+    <string name="docs_chat_share_existing_access">Alleen de kaart verzenden. Ontvangers behouden hun bestaande toegangsrechten.</string>
+    <string name="docs_chat_share_send">Verzenden</string>
+    <string name="docs_chat_share_back">Terug</string>
 </resources>

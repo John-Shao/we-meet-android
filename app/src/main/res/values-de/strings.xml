@@ -462,6 +462,7 @@
     <!-- Contacts -->
     <string name="contacts_title">Kontakte</string>
     <string name="contacts_search_hint">Name oder E-Mail suchen</string>
+    <string name="contacts_department_search_hint">Name oder E-Mail in dieser Abteilung suchen</string>
     <string name="contacts_root_org">Organisation</string>
     <string name="contacts_empty_dept">Keine Mitglieder in dieser Abteilung</string>
     <string name="contacts_empty_search">Keine passenden Mitglieder</string>
@@ -733,6 +734,12 @@
     <string name="meeting_detail_chapters_empty">Noch keine Kapitel — sie entstehen mit der Zusammenfassung.</string>
     <string name="meeting_detail_summary_edited">Bearbeitet</string>
     <string name="docs_viewer_title">Dokument</string>
+    <string name="docs_editor_title">Bearbeiten</string>
+    <string name="docs_editor_title_hint">Dokumenttitel</string>
+    <string name="docs_editor_unsaved_title">Nicht gespeicherte Änderungen</string>
+    <string name="docs_editor_unsaved_desc">Sie haben nicht gespeicherte Änderungen im Dokument.</string>
+    <string name="docs_editor_unsaved_save">Speichern &amp; beenden</string>
+    <string name="docs_editor_unsaved_continue">Weiter bearbeiten</string>
 
     <!-- P9 会议室(实体会议室;LiveKit 视频房间用 room_* 前缀,勿混) -->
     <string name="meeting_room_field_label">Besprechungsraum</string>
@@ -1024,4 +1031,24 @@
     <string name="waiting_no_token">Der Host hat deine Anfrage genehmigt, aber die Verbindungsdaten fehlen. Bitte versuche es erneut.</string>
     <string name="web_login_network_error">Netzwerkfehler</string>
     <string name="web_login_invalid_callback">Ungültiger Anmelde-Callback</string>
+    <string name="docs_editor_save_failed">Saving was not confirmed. Check your connection and retry. This page will stay open.</string>
+    <string name="docs_editor_incompatible">Der Editor konnte nicht geöffnet werden. Versuchen Sie es später erneut oder gehen Sie zum Lesen zurück.</string>
+    <string name="docs_editor_pending_work">Noch sind nicht alle Änderungen bestätigt. Prüfen Sie Verbindung, Titel, Anhänge und unveröffentlichte Kommentare und versuchen Sie es erneut.</string>
+    <string name="docs_editor_reloaded">Der Editor wurde neu geladen. Nur auf dem Server gespeicherte Inhalte können bestätigt werden. Bitte prüfen Sie Ihre letzten Änderungen.</string>
+    <string name="docs_chat_share_title">Im Chat teilen</string>
+    <string name="docs_chat_share_sent">Im Chat geteilt</string>
+    <string name="docs_chat_share_delivery_failed">An %1$d Chats gesendet; %2$d fehlgeschlagen. Bestätigte Zustellungen werden beim Wiederholen übersprungen.</string>
+    <string name="docs_chat_share_access_failed">Einige Karten wurden gesendet, der Zugriff wurde jedoch nicht bestätigt. Erneut versuchen oder Dokumentberechtigungen verwalten.</string>
+    <string name="docs_chat_share_retry">Erneut versuchen</string>
+    <string name="docs_chat_share_close">Schließen</string>
+    <string name="docs_chat_share_next">Weiter</string>
+    <string name="docs_chat_share_targets">Ausgewählte Chats: %d</string>
+    <string name="docs_chat_share_permission_retry">Berechtigungen nicht geladen. Erneut versuchen</string>
+    <string name="docs_chat_share_permission">Zugriffsrecht</string>
+    <string name="docs_chat_share_reader">Lesen</string>
+    <string name="docs_chat_share_editor">Bearbeiten</string>
+    <string name="docs_chat_share_grant_help">Legt den Zugriff aktueller Chatmitglieder fest. Ihre Karten zum selben Dokument im Chat teilen diese Einstellung. Höhere Rechte aus anderen Quellen bleiben erhalten.</string>
+    <string name="docs_chat_share_existing_access">Nur die Karte senden. Vorhandene Zugriffsrechte bleiben bestehen.</string>
+    <string name="docs_chat_share_send">Senden</string>
+    <string name="docs_chat_share_back">Zurück</string>
 </resources>

@@ -32,9 +32,9 @@ class DirectoryRepository(private val api: DirectoryApi) {
     suspend fun allMembers(page: Int = 1): Result<MemberPage> =
         runCatching { api.listMembers(page = page).toPage(page) }
 
-    /** Name/email search across the org, one page. */
-    suspend fun searchMembers(query: String, page: Int = 1): Result<MemberPage> =
-        runCatching { api.listMembers(query = query, page = page).toPage(page) }
+    /** Name/email search, optionally scoped to a single department. */
+    suspend fun searchMembers(query: String, page: Int = 1, departmentId: String? = null): Result<MemberPage> =
+        runCatching { api.listMembers(query = query, department = departmentId, page = page).toPage(page) }
 
     suspend fun getMember(userId: String): Result<MemberDto> =
         runCatching { api.getMember(userId) }

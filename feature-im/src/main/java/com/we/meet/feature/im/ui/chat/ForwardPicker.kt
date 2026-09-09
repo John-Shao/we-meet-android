@@ -81,6 +81,9 @@ fun ForwardPicker(
     onForward: (List<String>) -> Unit,
     onCreateGroupForward: () -> Unit,
     onDismiss: () -> Unit,
+    selectionOnly: Boolean = false,
+    selectionLabel: String? = null,
+    onSelectionResolved: ((List<String>, Map<String, String>) -> Unit)? = null,
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -139,16 +142,23 @@ fun ForwardPicker(
         /** 通讯录选中的人还没有会话 —— 先 create-or-get(幂等),全部成功才发。 */
         fun forwardResolving(cids: List<String>, userIds: Collection<String>) {
             if (resolving) return
+            val names = targets.filter { it.cid in cids }.associate { it.cid to it.title }
             if (userIds.isEmpty()) {
-                onForward(cids)
+                onSelectionResolved?.invoke(cids, names) ?: onForward(cids)
                 return
             }
             resolving = true
             scope.launch {
                 runCatching {
-                    userIds.map { session.bridge.createDirectByUserId(it).cid }
+                    userIds.associate { uid ->
+                        session.bridge.createDirectByUserId(uid).cid to
+                            (selectedUsers[uid] ?: hits.find { it.id == uid }?.displayName.orEmpty())
+                    }
                 }
-                    .onSuccess { onForward(cids + it) }
+                    .onSuccess { resolved ->
+                        val allCids = (cids + resolved.keys).distinct()
+                        onSelectionResolved?.invoke(allCids, names + resolved) ?: onForward(allCids)
+                    }
                     .onFailure {
                         resolving = false
                         Toast.makeText(
@@ -249,7 +259,7 @@ fun ForwardPicker(
                                     selected = if (t.cid in selected) selected - t.cid
                                     else selected + t.cid
                                 } else {
-                                    confirmTarget = t
+                                    if (selectionOnly) forwardResolving(listOf(t.cid), emptyList()) else confirmTarget = t
                                 }
                             },
                         )
@@ -282,7 +292,7 @@ fun ForwardPicker(
                                         selectedUsers + (m.id to m.displayName)
                                     }
                                 } else {
-                                    confirmMember = m
+                                    if (selectionOnly) forwardResolving(emptyList(), listOf(m.id)) else confirmMember = m
                                 }
                             },
                         )
@@ -307,8 +317,8 @@ fun ForwardPicker(
                                 enabled = total > 0 && !resolving,
                             ) {
                                 Text(
-                                    if (total == 0) stringResource(R.string.im_forward_send)
-                                    else "${stringResource(R.string.im_forward_send)} ($total)",
+                                    if (total == 0) selectionLabel ?: stringResource(R.string.im_forward_send)
+                                    else "${selectionLabel ?: stringResource(R.string.im_forward_send)} ($total)",
                                 )
                             }
                         }

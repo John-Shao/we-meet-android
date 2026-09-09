@@ -106,8 +106,22 @@ internal class ImBridgeRepository(private val api: ImApi) {
         else api.resolveMedia(mapOf("object_keys" to objectKeys.toList()))
 
     /** 分享云文档到聊天:给会话成员授文档只读(best-effort)。 */
-    suspend fun grantDocAccess(docId: String, cids: Collection<String>) {
-        api.grantDocAccess(mapOf("doc_id" to docId, "cids" to cids.toList()))
+    suspend fun grantDocAccess(docId: String, cids: Collection<String>, role: String? = null) {
+        if (role != null) {
+            cids.distinct().forEach { docChatAccess(docId, it, role) }
+            return
+        }
+        val payload = mutableMapOf<String, Any>("doc_id" to docId, "cids" to cids.toList())
+        api.grantDocAccess(payload)
+    }
+
+    suspend fun docChatAccess(docId: String, cid: String, role: String? = null): Map<String, Any> {
+        val payload = mutableMapOf<String, Any>("doc_id" to docId, "cid" to cid)
+        if (role != null) { require(role in listOf("reader", "editor")); payload["role"] = role }
+        val result = api.docChatAccess(payload)
+        check(result["scoped"] == true)
+        if (role != null) check(result["role"] == role && result["complete"] == true)
+        return result
     }
 
     /** P1-M3 消息全文检索(q≥2 才有意义;beforeMid 翻更旧一页)。 */

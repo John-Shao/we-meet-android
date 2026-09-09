@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.DrawerDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +42,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,9 +54,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -61,8 +66,6 @@ import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.feature.im.ImSession
-import com.we.meet.feature.im.ui.chat.ForwardCreateGroupFlow
-import com.we.meet.feature.im.ui.chat.ForwardPicker
 import com.we.meet.feature.im.ui.list.ConversationListScreen
 import com.we.meet.ui.calendar.CalendarTabScreen
 import com.we.meet.ui.calendar.reminder.ReminderEntryRow
@@ -70,7 +73,11 @@ import com.we.meet.ui.calendar.reminder.ReminderWindow
 import com.we.meet.ui.calendar.reminder.loadReminderWindow
 import com.we.meet.ui.calendar.reminder.nearest
 import android.view.ViewGroup
+import android.webkit.WebView
+import com.we.meet.BuildConfig
 import com.we.meet.ui.contacts.ContactsTabScreen
+import com.we.meet.ui.docs.DocChatShareFlow
+import com.we.meet.ui.docs.ShareDocRequest
 import com.we.meet.ui.docs.DocsTabScreen
 import com.we.meet.ui.docs.createDocsWebView
 import com.we.meet.ui.docs.loadDocsTabEntry
@@ -78,6 +85,9 @@ import com.we.meet.ui.docs.postToDocs
 import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.ui.home.HomeScreen
 import com.we.meet.ui.docs.DocsWebViewClient
+import com.we.meet.feature.docs.ui.DocsHomeScreen
+import com.we.meet.feature.docs.ui.DocsNavController
+import com.we.meet.feature.docs.ui.DocsNavDrawer
 import com.we.meet.ui.profile.ProfileScreen
 import com.we.meet.ui.tasks.TaskNavController
 import com.we.meet.ui.tasks.TaskNavigationDrawer
@@ -94,9 +104,6 @@ import org.json.JSONObject
  * That means 消息 is the ONLY route to the profile page.
  */
 enum class MainTab { Messages, Calendar, Meeting, Contacts, Docs, Tasks }
-
-/** 分享云文档到聊天(入口 B)待处理请求:docs WebView 发来的一条「分享到聊天」。 */
-private data class ShareDocRequest(val docId: String, val title: String, val url: String)
 
 private data class TabItem(
     val labelRes: Int,
@@ -123,6 +130,8 @@ fun MainTabScreen(
     onOpenChat: (cid: String) -> Unit,
     onNewChat: () -> Unit,
     onOpenSearch: () -> Unit,
+    onOpenContactsSearch: () -> Unit,
+    onOpenTasksSearch: () -> Unit,
     onMemberClick: (userId: String) -> Unit,
     /** 通讯录顶部的「星标联系人」入口。 */
     onOpenStarredContacts: () -> Unit,
@@ -145,58 +154,74 @@ fun MainTabScreen(
     onOpenCalendarSettings: () -> Unit,
     /** 任务页齿轮与系统设置中的入口共用同一个任务设置页。 */
     onOpenTaskSettings: () -> Unit,
+    /** 云文档原生化(M1):原生 tab 内的路由回调 —— 详情/搜索/回收站。 */
+    onOpenDocDetail: (docId: String) -> Unit,
+    onOpenDocsSearch: () -> Unit,
+    onOpenDocsTrash: () -> Unit,
+    /** 云文档编辑画布(§4.4/4.6):新建空文档后直接进编辑画布填充。 */
+    onOpenDocEditor: (docId: String) -> Unit,
 ) {
     // Default to the Messages tab.
     var selectedTab by rememberSaveable { mutableIntStateOf(MainTab.Messages.ordinal) }
     val ctx = LocalContext.current
     val app = ctx.applicationContext as WeMeetApp
 
+    // 云文档原生化开关(M1):默认 true → tab 用 feature-docs 原生主页;false →
+    // 回退常驻 WebView(p3-docs-app.md D6 同款保险丝)。WebView 实例只在兜底
+    // 模式下创建,原生模式下不预加载、不占内存。
+    val docsNative = BuildConfig.WE_MEET_DOCS_NATIVE
+
+    // 分享云文档到聊天(入口 B)待处理请求状态:WebView 桥回调写入,选择器消费。
+    var shareDocRequest by remember { mutableStateOf<ShareDocRequest?>(null) }
+
     // 云文档 WebView 提升到 tab 层持有:tabs 是 `tabs[safeTab].content()` 重组切换,
     // 若放进 content lambda,每次切 tab 都会重建 WebView、重走加载 + KC SSO 重定向。
     // remember 一次跨 tab 存活;MainTabScreen 退出(登出)时销毁,避免泄漏。
-    val docsDark = WeMeetTheme.isDark
-    // deferInitialLoad:进站 URL 要先向后端换一张 Docs 登录票据(suspend),构造时
-    // 拿不到 —— 直接 load 老入口只会先闪一下没有登录态的那条链路。
-    val docsWebView =
-        remember { createDocsWebView(ctx, darkTheme = docsDark, deferInitialLoad = true) }
-    LaunchedEffect(docsWebView) { loadDocsTabEntry(ctx, docsWebView) }
-    DisposableEffect(Unit) {
-        onDispose {
-            (docsWebView.parent as? ViewGroup)?.removeView(docsWebView)
-            docsWebView.destroy()
+    val docsWebView: WebView? = if (!docsNative) {
+        val docsDark = WeMeetTheme.isDark
+        // deferInitialLoad:进站 URL 要先向后端换一张 Docs 登录票据(suspend),构造时
+        // 拿不到 —— 直接 load 老入口只会先闪一下没有登录态的那条链路。
+        val webView =
+            remember { createDocsWebView(ctx, darkTheme = docsDark, deferInitialLoad = true) }
+        LaunchedEffect(webView) { loadDocsTabEntry(ctx, webView) }
+        DisposableEffect(Unit) {
+            onDispose {
+                (webView.parent as? ViewGroup)?.removeView(webView)
+                com.we.meet.ui.docs.releaseDocsWebView(webView)
+            }
         }
-    }
-
-    // 分享云文档到聊天(入口 B):docs WebView 内点「分享到聊天」→ DocsHostBridge
-    // 收到 postEvent → DocsWebViewClient.onShareDoc → 这里弹会话选择器。
-    var shareDocRequest by remember { mutableStateOf<ShareDocRequest?>(null) }
-    var shareDocCreateGroup by remember { mutableStateOf(false) }
-    DisposableEffect(docsWebView) {
-        val client = docsWebView.webViewClient as? DocsWebViewClient
-        client?.onShareDoc = { docId, title, url ->
-            shareDocRequest = ShareDocRequest(docId, title, url)
+        // 分享云文档到聊天(入口 B):docs WebView 内点「分享到聊天」→ DocsHostBridge
+        // 收到 postEvent → DocsWebViewClient.onShareDoc → 这里弹会话选择器。
+        DisposableEffect(webView) {
+            val client = webView.webViewClient as? DocsWebViewClient
+            client?.onShareDoc = { docId, title, url ->
+                shareDocRequest = ShareDocRequest(docId, title, url)
+            }
+            // 能力握手:docs 挂载后发 wemeet-embed-hello,这里回一条宣告 App 能提供什么。
+            // 挂在这一层而不是 DocsTabScreen —— WebView 在 MainTabScreen 就开始预加载,
+            // 用户可能压根还没点进云文档 tab,握手早已发生。
+            client?.onEmbedHello = { replyDocsHostHello(webView) }
+            // docs 里点搜索 / 按 Ctrl+K:它的自带搜索已收敛,转到 App 自己的全局搜索
+            // (那里本来就含文档源,命中进 DocsViewerScreen)。
+            client?.onOpenSearch = { onOpenDocsSearch() }
+            onDispose {
+                client?.onShareDoc = null
+                client?.onEmbedHello = null
+                client?.onOpenSearch = null
+            }
         }
-        // 能力握手:docs 挂载后发 wemeet-embed-hello,这里回一条宣告 App 能提供什么。
-        // 挂在这一层而不是 DocsTabScreen —— WebView 在 MainTabScreen 就开始预加载,
-        // 用户可能压根还没点进云文档 tab,握手早已发生。
-        client?.onEmbedHello = { replyDocsHostHello(docsWebView) }
-        // docs 里点搜索 / 按 Ctrl+K:它的自带搜索已收敛,转到 App 自己的全局搜索
-        // (那里本来就含文档源,命中进 DocsViewerScreen)。
-        client?.onOpenSearch = { onOpenSearch() }
-        onDispose {
-            client?.onShareDoc = null
-            client?.onEmbedHello = null
-            client?.onOpenSearch = null
+        // 运行时切换深浅:UA 是创建时固化的,靠注入 postMessage 让常驻 docs 立即跟随
+        // (docs ConfigProvider 内嵌时监听 wemeet-theme 消息)。首帧主题已由 UA 覆盖。
+        LaunchedEffect(docsDark) {
+            val scheme = if (docsDark) "dark" else "light"
+            webView.evaluateJavascript(
+                "window.postMessage({type:'wemeet-theme',theme:'$scheme'},'*')",
+                null,
+            )
         }
-    }
-    // 运行时切换深浅:UA 是创建时固化的,靠注入 postMessage 让常驻 docs 立即跟随
-    // (docs ConfigProvider 内嵌时监听 wemeet-theme 消息)。首帧主题已由 UA 覆盖。
-    LaunchedEffect(docsDark) {
-        val scheme = if (docsDark) "dark" else "light"
-        docsWebView.evaluateJavascript(
-            "window.postMessage({type:'wemeet-theme',theme:'$scheme'},'*')",
-            null,
-        )
+        webView
+    } else {
+        null
     }
 
     // Live unread total for the 消息 tab badge — fed by the process-wide IM
@@ -251,6 +276,8 @@ fun MainTabScreen(
     // i.e. swipe-to-close): drawerContent is composed lazily below, and
     // DrawerState exposes no "drag started" signal — `isAnimationRunning` is false
     // during a finger drag — so an edge swipe would drag out an empty sheet.
+    // Keep navigation drawers narrow on landscape/tablet windows.
+    val drawerWidth = minOf(LocalConfiguration.current.screenWidthDp.dp * 0.8f, DrawerDefaults.MaximumDrawerWidth)
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -267,6 +294,28 @@ fun MainTabScreen(
             taskNavDrawerState.close()
         }
         if (safeTab != MainTab.Tasks.ordinal) taskDetailVisible = false
+    }
+
+    // 云文档二级导航抽屉 —— 与 task 抽屉同款提升到本层(遮罩覆盖底部导航栏),
+    // 控制器由 DocsHomeScreen 经 onRegisterDocsNav 注册(它持有 DocsHomeViewModel)。
+    val docsNavDrawerState = rememberDrawerState(DrawerValue.Closed)
+    var previousDrawerWidth by remember { mutableStateOf(drawerWidth) }
+    LaunchedEffect(drawerWidth) {
+        if (previousDrawerWidth == drawerWidth) return@LaunchedEffect
+        previousDrawerWidth = drawerWidth
+        // Let the sheets measure their new anchors before resetting offsets.
+        // Otherwise a closed offset can be nearer to Open after a width change.
+        withFrameNanos { }
+        drawerState.snapTo(DrawerValue.Closed)
+        taskNavDrawerState.snapTo(DrawerValue.Closed)
+        docsNavDrawerState.snapTo(DrawerValue.Closed)
+    }
+    val docsNavScope = rememberCoroutineScope()
+    var docsNavController by remember { mutableStateOf<DocsNavController?>(null) }
+    LaunchedEffect(safeTab) {
+        if (safeTab != MainTab.Docs.ordinal && docsNavDrawerState.isOpen) {
+            docsNavDrawerState.close()
+        }
     }
 
     // Identity for the 消息 header. TokenStore's getters are plain prefs reads, not
@@ -363,16 +412,30 @@ fun MainTabScreen(
         },
         TabItem(R.string.tab_contacts, Icons.Filled.Contacts, Icons.Outlined.Contacts) {
             ContactsTabScreen(
+                onOpenSearch = onOpenContactsSearch,
                 onMemberClick = onMemberClick,
                 onOpenStarred = onOpenStarredContacts,
                 onOpenMyGroups = onOpenMyGroups,
             )
         },
         TabItem(R.string.tab_docs, Icons.Filled.Description, Icons.Outlined.Description) {
-            DocsTabScreen(docsWebView)
+            if (docsNative) {
+                DocsHomeScreen(
+                    deps = app,
+                    onOpenDoc = onOpenDocDetail,
+                    onOpenSearch = onOpenDocsSearch,
+                    onOpenTrash = onOpenDocsTrash,
+                    onOpenEditor = onOpenDocEditor,
+                    onRegisterDocsNav = { docsNavController = it },
+                    onOpenNavDrawer = { docsNavScope.launch { docsNavDrawerState.open() } },
+                )
+            } else {
+                docsWebView?.let { DocsTabScreen(it) }
+            }
         },
         TabItem(R.string.tab_tasks, Icons.Filled.TaskAlt, Icons.Outlined.TaskAlt) {
             TaskScreen(
+                onOpenSearch = onOpenTasksSearch,
                 ownerName = selfName,
                 app = app,
                 onOpenSettings = onOpenTaskSettings,
@@ -397,11 +460,11 @@ fun MainTabScreen(
             // Feishu-style: full-height page that leaves a narrow strip of the
             // underlying content peeking on the right. The drawerState overload of
             // ModalDrawerSheet doesn't apply DrawerDefaults.MaximumDrawerWidth, so
-            // width is unconstrained by default — cap it to 80% of screen width.
+            // width is unconstrained by default — cap it to 80% and the M3 maximum.
             ModalDrawerSheet(
                 drawerState = drawerState,
                 drawerShape = RectangleShape,
-                modifier = Modifier.fillMaxWidth(0.8f),
+                modifier = Modifier.width(drawerWidth),
             ) {
                 // ProfileScreen must stay composed even while closed — gating the
                 // sheet's content composition on drawerState collapses the drawer's
@@ -429,7 +492,7 @@ fun MainTabScreen(
                 ModalDrawerSheet(
                     drawerState = taskNavDrawerState,
                     drawerShape = RectangleShape,
-                    modifier = Modifier.fillMaxWidth(0.8f),
+                    modifier = Modifier.width(drawerWidth),
                 ) {
                     taskNavController
                         ?.takeIf { safeTab == MainTab.Tasks.ordinal }
@@ -491,23 +554,58 @@ fun MainTabScreen(
                 }
             },
         ) {
-            Scaffold(
-                bottomBar = {
-                    if (!(safeTab == MainTab.Tasks.ordinal && taskDetailVisible)) {
-                        CompactTabBar(
-                            tabs = tabs,
-                            selectedTab = safeTab,
-                            onTabSelected = { selectedTab = it },
-                        )
+            // 云文档二级导航抽屉 —— 与 task 抽屉同款宿主在此(遮罩覆盖底部导航栏)。
+            ModalNavigationDrawer(
+                drawerState = docsNavDrawerState,
+                gesturesEnabled = docsNavDrawerState.isOpen,
+                drawerContent = {
+                    ModalDrawerSheet(
+                        drawerState = docsNavDrawerState,
+                        drawerShape = RectangleShape,
+                        modifier = Modifier.width(drawerWidth),
+                    ) {
+                        docsNavController
+                            ?.takeIf { safeTab == MainTab.Docs.ordinal }
+                            ?.let { c ->
+                                val docsUi by c.viewModel.state.collectAsStateWithLifecycle()
+                                DocsNavDrawer(
+                                    selectedFilter = docsUi.filter,
+                                    allCount = docsUi.allCount,
+                                    mineCount = docsUi.mineCount,
+                                    sharedCount = docsUi.sharedCount,
+                                    trashCount = docsUi.trashCount,
+                                    onDismiss = { docsNavScope.launch { docsNavDrawerState.close() } },
+                                    onSelectFilter = { filter ->
+                                        c.viewModel.setFilter(filter)
+                                        docsNavScope.launch { docsNavDrawerState.close() }
+                                    },
+                                    onOpenTrash = {
+                                        docsNavScope.launch { docsNavDrawerState.close() }
+                                        c.onOpenTrash()
+                                    },
+                                )
+                            }
                     }
                 },
-            ) { padding ->
-                Box(
-                    modifier = Modifier
-                        .padding(padding)
-                        .consumeWindowInsets(padding),
-                ) {
-                    tabs[safeTab].content()
+            ) {
+                Scaffold(
+                    bottomBar = {
+                        if (!(safeTab == MainTab.Tasks.ordinal && taskDetailVisible)) {
+                            CompactTabBar(
+                                tabs = tabs,
+                                selectedTab = safeTab,
+                                onTabSelected = { selectedTab = it },
+                            )
+                        }
+                    },
+                ) { padding ->
+                    Box(
+                        modifier = Modifier
+                            .padding(padding)
+                            .consumeWindowInsets(padding),
+                    ) {
+                        tabs[safeTab].content()
+                    }
                 }
             }
         }
@@ -515,49 +613,13 @@ fun MainTabScreen(
 
     // 分享云文档到聊天(入口 B):每个目标先确认 doc-card 已发出，再授予
     // 对应会话成员只读权限。发送失败绝不能留下无聊天记录的授权。
-    shareDocRequest?.let { req ->
-        val docCardBody = JSONObject()
-            .put("v", 1)
-            .put("doc_id", req.docId)
-            .put("title", req.title)
-            .put("url", req.url)
-            .toString()
-        ForwardPicker(
+    shareDocRequest?.let { request ->
+        DocChatShareFlow(
             deps = app,
-            targets = imSession.allForwardTargets(),
-            onForward = { cids ->
-                scope.launch {
-                    val delivered = cids.filter {
-                        imSession.sendMessage(it, docCardBody, "doc-card").isSuccess
-                    }
-                    // Only recipients of a successfully persisted card may
-                    // receive access; authorization itself remains best-effort.
-                    if (imSession.grantDocAccess(req.docId, delivered)) {
-                        notifyDocsAccessUpdated(docsWebView, req.docId)
-                    }
-                }
-                shareDocRequest = null
-            },
-            onCreateGroupForward = { shareDocCreateGroup = true },
+            request = request,
             onDismiss = { shareDocRequest = null },
+            onAccessChanged = { docsWebView?.let { notifyDocsAccessUpdated(it, request.docId) } },
         )
-        if (shareDocCreateGroup) {
-            ForwardCreateGroupFlow(
-                deps = app,
-                onCreated = { newCid ->
-                    scope.launch {
-                        if (imSession.sendMessage(newCid, docCardBody, "doc-card").isSuccess &&
-                            imSession.grantDocAccess(req.docId, listOf(newCid))
-                        ) {
-                            notifyDocsAccessUpdated(docsWebView, req.docId)
-                        }
-                    }
-                    shareDocCreateGroup = false
-                    shareDocRequest = null
-                },
-                onCancel = { shareDocCreateGroup = false },
-            )
-        }
     }
 
 }

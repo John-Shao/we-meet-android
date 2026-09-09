@@ -92,6 +92,7 @@ internal fun TaskUiState.forCustomGroup(groupId: String): TaskUiState = copy(
 class TaskViewModel(
     private val repository: TaskRepository,
     private val selfUserId: String?,
+    private val searchOnly: Boolean = false,
 ) : ViewModel() {
     private val _ui = MutableStateFlow(TaskUiState())
     val ui: StateFlow<TaskUiState> = _ui.asStateFlow()
@@ -104,8 +105,10 @@ class TaskViewModel(
 
     init {
         loadSettings()
-        refreshNavigation()
-        refresh()
+        if (!searchOnly) {
+            refreshNavigation()
+            refresh()
+        }
     }
 
     fun setView(view: TaskView) {
@@ -1202,6 +1205,7 @@ class TaskViewModel(
     }
 
     fun search(query: String) {
+        if (_ui.value.searchQuery == query) return
         _ui.update { it.copy(searchQuery = query) }
         scheduleSearch()
     }
@@ -1212,9 +1216,9 @@ class TaskViewModel(
         scheduleSearch()
     }
 
-    fun retrySearch() = scheduleSearch()
+    fun retrySearch() = scheduleSearch(clearResults = false)
 
-    private fun scheduleSearch() {
+    private fun scheduleSearch(clearResults: Boolean = true) {
         searchJob?.cancel()
         val snapshot = _ui.value
         val query = snapshot.searchQuery.trim()
@@ -1234,10 +1238,10 @@ class TaskViewModel(
         }
         _ui.update {
             it.copy(
-                searchResults = emptyList(),
+                searchResults = if (clearResults) emptyList() else it.searchResults,
                 searching = true,
                 searchFailed = false,
-                searchCompleted = false,
+                searchCompleted = if (clearResults) false else it.searchCompleted,
             )
         }
         searchJob = viewModelScope.launch {

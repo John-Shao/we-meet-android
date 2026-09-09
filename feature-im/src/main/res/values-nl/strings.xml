@@ -238,6 +238,8 @@
 
     <!-- P1-M3 全局搜索页 -->
     <string name="im_msg_search_hint">Berichten zoeken</string>
+    <string name="im_global_search_hint">Zoeken</string>
+    <string name="im_search_category_hint">Zoeken in %1$s</string>
     <string name="im_msg_search_sec_conversations">Gesprekken</string>
     <string name="im_msg_search_sec_messages">Berichten</string>
     <string name="im_msg_search_no_results">Geen overeenkomende berichten</string>
@@ -252,6 +254,8 @@
     <string name="im_search_cat_meetings">Vergaderingen</string>
     <string name="im_search_cat_messages">Berichten</string>
     <string name="im_search_cat_docs">Documenten</string>
+    <string name="im_search_cat_tasks">Taken</string>
+    <string name="im_search_tasks_more">Meer taken bekijken</string>
     <string name="im_search_category_no_results">Geen overeenkomende resultaten voor %1$s</string>
 
     <!-- P1-4 M3 App AI 问答 -->
@@ -420,4 +424,14 @@ Limieten: 100 verzoeken per minuut en 5 per seconde per bot, hoofdteksten tot 20
     <string name="im_search_ai_http_error">Verzoek mislukt (HTTP %1$d). Probeer het opnieuw.</string>
     <string name="im_search_ai_empty_body">De AI-service gaf een leeg antwoord. Probeer het opnieuw.</string>
     <string name="im_search_ai_server_error">De AI-service is mislukt. Probeer het opnieuw.</string>
+    <string name="im_doc_card_access">Chatmachtigingen</string>
+    <string name="im_doc_access_reader">Lezen</string>
+    <string name="im_doc_access_editor">Bewerken</string>
+    <string name="im_doc_access_help">Wijzig de toegang voor huidige chatleden. Hogere rechten uit andere chats, links en handmatige toekenningen blijven behouden, ook bij oudere kaarten.</string>
+    <string name="im_doc_access_denied">U kunt de machtigingen van dit document niet beheren.</string>
+    <string name="im_doc_access_failed">Toegang kon niet worden bevestigd. Probeer opnieuw.</string>
+    <string name="im_doc_access_saved">Machtigingen bijgewerkt</string>
+    <string name="im_doc_access_retry">Opnieuw proberen</string>
+    <string name="im_doc_access_save">Opslaan</string>
+    <string name="im_doc_access_close">Sluiten</string>
 </resources>

@@ -280,6 +280,8 @@
 
     <!-- P1-M3 全局搜索页 -->
     <string name="im_msg_search_hint">Search messages</string>
+    <string name="im_global_search_hint">Search</string>
+    <string name="im_search_category_hint">Search %1$s</string>
     <string name="im_msg_search_sec_conversations">Conversations</string>
     <string name="im_msg_search_sec_messages">Messages</string>
     <string name="im_msg_search_no_results">No matching messages</string>
@@ -294,6 +296,8 @@
     <string name="im_search_cat_meetings">Meetings</string>
     <string name="im_search_cat_messages">Messages</string>
     <string name="im_search_cat_docs">Docs</string>
+    <string name="im_search_cat_tasks">Tasks</string>
+    <string name="im_search_tasks_more">View more tasks</string>
     <string name="im_search_category_no_results">No matching %1$s</string>
 
     <!-- P1-4 M3 App AI 问答 -->
@@ -439,4 +443,14 @@ Limits: 100 requests per minute and 5 per second per bot, bodies up to 20 KB. Se
     <string name="im_search_ai_http_error">Request failed (HTTP %1$d). Please try again.</string>
     <string name="im_search_ai_empty_body">The AI service returned an empty response. Please try again.</string>
     <string name="im_search_ai_server_error">The AI service failed. Please try again.</string>
+    <string name="im_doc_card_access">Chat permissions</string>
+    <string name="im_doc_access_reader">Can read</string>
+    <string name="im_doc_access_editor">Can edit</string>
+    <string name="im_doc_access_help">Change the access you grant current members in this chat. Higher access from other chats, manual grants and links is preserved, including existing access from older cards.</string>
+    <string name="im_doc_access_denied">You cannot manage permissions for this document.</string>
+    <string name="im_doc_access_failed">Access could not be confirmed. Please retry.</string>
+    <string name="im_doc_access_saved">Permissions updated</string>
+    <string name="im_doc_access_retry">Retry</string>
+    <string name="im_doc_access_save">Save</string>
+    <string name="im_doc_access_close">Close</string>
 </resources>

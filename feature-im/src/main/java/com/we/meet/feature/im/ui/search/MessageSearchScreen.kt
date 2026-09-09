@@ -2,9 +2,9 @@ package com.we.meet.feature.im.ui.search
 
 import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,8 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -39,6 +40,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -92,7 +95,9 @@ data class GlobalSearchDoc(
     val updatedAt: String,
 )
 
-private enum class SearchCategory { ALL, CONTACTS, MEETINGS, MESSAGES, DOCS, AI }
+data class GlobalSearchTask(val id: String, val title: String, val subtitle: String?)
+
+enum class SearchCategory { ALL, CONTACTS, MEETINGS, MESSAGES, DOCS, TASKS, AI }
 
 /** AI 问答面板状态(P1-4 M3 App;契约同 Web §D2)。 */
 private data class AskUiState(
@@ -120,6 +125,7 @@ fun MessageSearchScreen(
     deps: ImDeps,
     onBack: () -> Unit,
     onOpenChat: (cid: String, seq: Long?) -> Unit,
+    onOpenContact: (userId: String) -> Unit,
     searchContacts: (suspend (String) -> List<GlobalSearchContact>)? = null,
     searchMeetings: (suspend (String) -> List<GlobalSearchMeeting>)? = null,
     searchDocs: (suspend (String) -> List<GlobalSearchDoc>)? = null,
@@ -131,6 +137,14 @@ fun MessageSearchScreen(
     onOpenScheduled: ((slug: String) -> Unit)? = null,
     /** P1-4 M3:AI 问答 SSE(app 层实现);null = 隐藏 AI 分类。 */
     askAi: ((String) -> kotlinx.coroutines.flow.Flow<AskEvent>)? = null,
+    initialCategory: SearchCategory = SearchCategory.ALL,
+    contactsSearchHint: String? = null,
+    tasksSearchHint: String? = null,
+    searchTasks: (suspend (String) -> List<GlobalSearchTask>)? = null,
+    onOpenTask: ((String) -> Unit)? = null,
+    taskSearchContent: (@Composable (String) -> Unit)? = null,
+    /** The host supplies document presentation from the docs module. */
+    docResultContent: (@Composable (GlobalSearchDoc, () -> Unit) -> Unit)? = null,
 ) {
     val session = remember(deps) { ImSession.get(deps) }
     val summaries by session.conversations.conversations.collectAsStateWithLifecycle()
@@ -139,9 +153,14 @@ fun MessageSearchScreen(
     val selfUid by session.selfUid.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
+    val taskStateHolder = rememberSaveableStateHolder()
+    var taskPreview by remember { mutableStateOf<List<GlobalSearchTask>>(emptyList()) }
+    var taskPreviewLoading by remember { mutableStateOf(false) }
+    var taskPreviewFailed by remember { mutableStateOf(false) }
+    var taskPreviewRetry by remember { mutableIntStateOf(0) }
 
-    var query by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf(SearchCategory.ALL) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var category by rememberSaveable(initialCategory) { mutableStateOf(initialCategory) }
     var items by remember { mutableStateOf<List<ImSearchItem>>(emptyList()) }
     var nextBeforeMid by remember { mutableStateOf<Long?>(null) }
     var searching by remember { mutableStateOf(false) }
@@ -169,8 +188,6 @@ fun MessageSearchScreen(
     var docsSearched by remember { mutableStateOf(false) }
     var docsRetryNonce by remember { mutableIntStateOf(0) }
     var docsResultQuery by remember { mutableStateOf("") }
-    var openingContactId by remember { mutableStateOf<String?>(null) }
-    val createChatFailedMessage = stringResource(R.string.im_create_chat_failed)
     // AI 问答:仅显式触发(按钮/回车),绝不随输入自动发起(成本闸门,同 Web)。
     var ask by remember { mutableStateOf(AskUiState()) }
     var askJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
@@ -407,14 +424,34 @@ fun MessageSearchScreen(
         }
     }
 
+    LaunchedEffect(query, category, taskPreviewRetry) {
+        if (category != SearchCategory.ALL) return@LaunchedEffect
+        taskPreview = emptyList()
+        taskPreviewFailed = false
+        val q = query.trim()
+        if (q.length < 2 || searchTasks == null) return@LaunchedEffect
+        taskPreviewLoading = true
+        try {
+            delay(300)
+            taskPreview = searchTasks(q)
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (_: Throwable) {
+            taskPreviewFailed = true
+        } finally {
+            taskPreviewLoading = false
+        }
+    }
+
     // 分类可见性:provider 缺失的分类不出现(向后兼容宿主未接线的场景)。
-    val categories = remember(searchContacts, searchMeetings, searchDocs, askAi) {
+    val categories = remember(searchContacts, searchMeetings, searchDocs, askAi, taskSearchContent) {
         buildList {
             add(SearchCategory.ALL)
             if (searchContacts != null) add(SearchCategory.CONTACTS)
             if (searchMeetings != null) add(SearchCategory.MEETINGS)
             add(SearchCategory.MESSAGES)
             if (searchDocs != null) add(SearchCategory.DOCS)
+            if (taskSearchContent != null) add(SearchCategory.TASKS)
             if (askAi != null) add(SearchCategory.AI)
         }
     }
@@ -427,6 +464,13 @@ fun MessageSearchScreen(
     val showDocs = searchDocs != null &&
         (category == SearchCategory.ALL || category == SearchCategory.DOCS)
     val inAll = category == SearchCategory.ALL
+    val categoryListState = rememberLazyListState(
+        initialFirstVisibleItemIndex = categories.indexOf(category).coerceAtLeast(0),
+    )
+    LaunchedEffect(category, categories) {
+        if (category !in categories) category = SearchCategory.ALL
+        categoryListState.animateScrollToItem(categories.indexOf(category).coerceAtLeast(0))
+    }
 
     @Composable
     fun labelFor(cat: SearchCategory): String = when (cat) {
@@ -435,6 +479,7 @@ fun MessageSearchScreen(
         SearchCategory.MEETINGS -> stringResource(R.string.im_search_cat_meetings)
         SearchCategory.MESSAGES -> stringResource(R.string.im_search_cat_messages)
         SearchCategory.DOCS -> stringResource(R.string.im_search_cat_docs)
+        SearchCategory.TASKS -> stringResource(R.string.im_search_cat_tasks)
         SearchCategory.AI -> stringResource(R.string.im_search_cat_ai)
     }
 
@@ -450,7 +495,19 @@ fun MessageSearchScreen(
                     TextField(
                         value = query,
                         onValueChange = { query = it },
-                        placeholder = { Text(stringResource(R.string.im_msg_search_hint)) },
+                        placeholder = {
+                            Text(
+                                if (category == SearchCategory.CONTACTS && contactsSearchHint != null) {
+                                    contactsSearchHint
+                                } else if (category == SearchCategory.TASKS && tasksSearchHint != null) {
+                                    tasksSearchHint
+                                } else if (category == SearchCategory.ALL || category == SearchCategory.AI) {
+                                    stringResource(R.string.im_global_search_hint)
+                                } else {
+                                    stringResource(R.string.im_search_category_hint, labelFor(category))
+                                },
+                            )
+                        },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         colors = TextFieldDefaults.colors(
@@ -490,20 +547,26 @@ fun MessageSearchScreen(
                 .padding(padding),
         ) {
             // 分类标签行(飞书式,对齐 Web 面板)。
-            Row(
+            LazyRow(
+                state = categoryListState,
                 horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
+                contentPadding = PaddingValues(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                categories.forEach { cat ->
+                items(categories, key = { it.name }) { cat ->
                     FilterChip(
                         selected = category == cat,
                         onClick = { category = cat },
                         label = { Text(labelFor(cat)) },
                     )
                 }
+            }
+
+            if (category == SearchCategory.TASKS && taskSearchContent != null) {
+                taskStateHolder.SaveableStateProvider("tasks") {
+                    taskSearchContent(query)
+                }
+                return@Column
             }
 
             if (category == SearchCategory.AI) {
@@ -591,30 +654,7 @@ fun MessageSearchScreen(
                             emoji = "👤",
                             title = contact.name,
                             subtitle = contact.subtitle,
-                            enabled = openingContactId == null,
-                            trailing = if (openingContactId == contact.userId) {
-                                {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(Dimens.IconSmall),
-                                        strokeWidth = Dimens.BorderEmphasis,
-                                    )
-                                }
-                            } else null,
-                            onClick = {
-                                // 联系人命中 = 直接开聊(Web 口径):建/取直聊再进会话。
-                                if (openingContactId != null) return@TwoLineRow
-                                openingContactId = contact.userId
-                                scope.launch {
-                                    val result = runCatching {
-                                        session.bridge.createDirectByUserId(contact.userId)
-                                    }
-                                    openingContactId = null
-                                    result.onSuccess { conv -> onOpenChat(conv.cid, null) }
-                                    if (result.isFailure) {
-                                        snackbar.showSnackbar(createChatFailedMessage)
-                                    }
-                                }
-                            },
+                            onClick = { onOpenContact(contact.userId) },
                         )
                     }
                 }
@@ -780,18 +820,50 @@ fun MessageSearchScreen(
                     }
                 }
 
+                if (inAll && searchTasks != null && query.trim().length >= 2) {
+                    if (taskPreviewLoading || taskPreviewFailed || taskPreview.isNotEmpty()) {
+                        item(key = "sec-tasks") { SectionHeader(stringResource(R.string.im_search_cat_tasks)) }
+                    }
+                    if (taskPreviewLoading) {
+                        item(key = "tasks-loading") { WeMeetInlineLoading() }
+                    } else if (taskPreviewFailed) {
+                        item(key = "tasks-error") {
+                            WeMeetInlineErrorState(onRetry = { taskPreviewRetry += 1 })
+                        }
+                    } else {
+                        items(taskPreview.take(3), key = { "t:${it.id}" }) { task ->
+                            TwoLineRow(
+                                emoji = "☑",
+                                title = task.title,
+                                subtitle = task.subtitle,
+                                onClick = { onOpenTask?.invoke(task.id) },
+                            )
+                        }
+                        if (taskPreview.isNotEmpty()) item(key = "tasks-more") {
+                            androidx.compose.material3.TextButton(onClick = { category = SearchCategory.TASKS }) {
+                                Text(stringResource(R.string.im_search_tasks_more))
+                            }
+                        }
+                    }
+                }
+
                 if (showDocs && docs.isNotEmpty()) {
                     val shown = if (inAll) docs.take(3) else docs
                     item(key = "sec-docs") {
                         SectionHeader(stringResource(R.string.im_search_cat_docs))
                     }
                     items(shown, key = { "d:${it.url}" }) { doc ->
-                        TwoLineRow(
-                            emoji = "📄",
-                            title = doc.title.ifBlank { "—" },
-                            subtitle = doc.updatedAt.takeIf { it.isNotBlank() },
-                            onClick = { onOpenDoc?.invoke(doc.url) },
-                        )
+                        val openDoc: () -> Unit = { onOpenDoc?.invoke(doc.url) }
+                        if (docResultContent != null) {
+                            docResultContent(doc, openDoc)
+                        } else {
+                            TwoLineRow(
+                                emoji = "📄",
+                                title = doc.title.ifBlank { "—" },
+                                subtitle = null,
+                                onClick = openDoc,
+                            )
+                        }
                     }
                 }
             }

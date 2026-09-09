@@ -1,5 +1,7 @@
 package com.we.meet.ui.docs
 
+import com.we.meet.feature.docs.util.docsRunCatching as runCatching
+
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -52,6 +54,18 @@ private const val TAG = "WeMeetDocs"
  */
 private const val EMBED_UA_MARKER = "WeMeetApp/1.0 (embedded-docs)"
 
+private val docsWebViews = java.util.Collections.newSetFromMap(java.util.WeakHashMap<WebView, Boolean>())
+
+internal fun releaseDocsWebView(view: WebView) {
+    if (!docsWebViews.remove(view)) return
+    view.stopLoading()
+    view.removeJavascriptInterface("WeMeetHost")
+    (view.parent as? ViewGroup)?.removeView(view)
+    view.destroy()
+}
+
+fun clearDocsWebViews() { docsWebViews.toList().forEach(::releaseDocsWebView) }
+
 /**
  * 云文档 tab (p3-docs-app.md D6): a WebView on La Suite Docs.
  *
@@ -77,6 +91,13 @@ internal class DocsWebViewClient : WebViewClient() {
      * postEvent → 这里转发。Set by [DocsTabScreen] while it is on screen.
      */
     var onShareDoc: ((docId: String, title: String, url: String) -> Unit)? = null
+
+    /**
+     * docs 编辑器保存队列未同步(设计文档 §4.6 脏检查):`wemeet-editor-dirty`
+     * 上报真/假,宿主据此在返回前弹「有未保存更改」守卫。Set by [DocsEditorScreen].
+     */
+    var onEditorEvent: ((JSONObject) -> Unit)? = null
+    var onEditorNavigate: ((String) -> Boolean)? = null
 
     /**
      * docs 挂载后宣告自己支持哪些内嵌协议(`wemeet-embed-hello`)。宿主收到后回一条
@@ -150,6 +171,7 @@ internal class DocsWebViewClient : WebViewClient() {
         val uri = request?.url ?: return false
         val scheme = uri.scheme ?: return false
         val gesture = request.hasGesture()
+        if (request.isForMainFrame && onEditorNavigate?.invoke(uri.toString()) == true) return true
         if (scheme != "http" && scheme != "https") {
             if (gesture) openExternally(view, uri)
             return true
@@ -225,8 +247,9 @@ private class DocsHostBridge(
             // webView.url 必须在主线程读(WebView 非线程安全);顺带在主线程做 host 校验。
             // host 校验对**所有** type 生效,不只分享那条。
             mainHandler.post {
+                if (!docsWebViews.contains(webView)) return@post
                 val host = Uri.parse(webView.url).host?.lowercase(Locale.ROOT)
-                if (host == null || host != DOCS_HOST) {
+                if (host == null || !isDocsOrigin(Uri.parse(webView.url))) {
                     Log.w(TAG, "[bridge] postEvent from non-docs page dropped: $host")
                     return@post
                 }
@@ -244,6 +267,7 @@ private class DocsHostBridge(
                         o.optBoolean("leftPanelOpen"),
                         o.optBoolean("rightPanelOpen"),
                     )
+                    "wemeet-editor-dirty", "wemeet-save-result", "wemeet-editor-ready", "wemeet-editor-navigate" -> client.onEditorEvent?.invoke(o)
                 }
             }
         }.onFailure { Log.w(TAG, "[bridge] malformed postEvent payload", it) }
@@ -255,6 +279,10 @@ private class DocsHostBridge(
             "wemeet-embed-hello",
             "wemeet-open-search",
             "wemeet-panel-state",
+            "wemeet-editor-dirty",
+            "wemeet-save-result",
+            "wemeet-editor-ready",
+            "wemeet-editor-navigate",
         )
     }
 }
@@ -270,7 +298,14 @@ private class DocsHostBridge(
  * TypeError → 白屏级故障。扩展一律加 type。
  */
 internal fun postToDocs(webView: WebView, payload: JSONObject) {
-    webView.evaluateJavascript("window.postMessage($payload,'*')", null)
+    val origin = Uri.parse(BuildConfig.WE_MEET_DOCS_URL).buildUpon().path("").clearQuery().fragment(null).build().toString().trimEnd('/')
+    webView.evaluateJavascript("window.postMessage($payload,${JSONObject.quote(origin)})", null)
+}
+
+internal fun isDocsOrigin(uri: Uri): Boolean {
+    val base = Uri.parse(BuildConfig.WE_MEET_DOCS_URL)
+    fun port(value: Uri) = if (value.port != -1) value.port else if (value.scheme == "https") 443 else 80
+    return uri.scheme == base.scheme && uri.host.equals(base.host, true) && port(uri) == port(base)
 }
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -287,6 +322,7 @@ fun createDocsWebView(
     deferInitialLoad: Boolean = false,
 ): WebView =
     WebView(context).apply {
+        docsWebViews.add(this)
         // A programmatically-built WebView has no LayoutParams, so its host
         // measures it as WRAP_CONTENT — and Chromium then reports a CSS viewport
         // height of 0, making EVERY viewport unit (vh/dvh/svh/lvh) resolve to 0
@@ -355,9 +391,11 @@ fun createDocsWebView(
  */
 internal suspend fun docsEntryUrl(context: Context, next: String, fallback: String): String {
     val app = context.applicationContext as? WeMeetApp ?: return fallback
+    val generation = app.docsSessionManager.generation
     val url = runCatching { app.apiClient.docsApi.createSession(DocsSessionRequest(next)).url }
         .onFailure { Log.w(TAG, "[bootstrap] docs session ticket failed", it) }
         .getOrNull()
+    app.docsSessionManager.checkGeneration(generation)
     return url?.takeIf { it.isNotBlank() } ?: fallback
 }
 
@@ -373,7 +411,7 @@ suspend fun loadDocsTabEntry(context: Context, webView: WebView) {
     // 赌输的话打开一次文档查看器,常驻的云文档 tab 就永久丢了左栏开关。
     val next = "/?embed=1&chrome=full&lang=${Uri.encode(appLanguageTag())}"
     val entryUrl = docsEntryUrl(context, next = next, fallback = docsUrl())
-    withContext(Dispatchers.Main.immediate) { webView.loadUrl(entryUrl) }
+    withContext(Dispatchers.Main.immediate) { if (docsWebViews.contains(webView)) webView.loadUrl(entryUrl) }
 }
 
 /**
@@ -388,7 +426,20 @@ suspend fun loadDocsTabEntry(context: Context, webView: WebView) {
 suspend fun loadDocsDeepLinkEntry(context: Context, webView: WebView, url: String) {
     val next = docsRelativePathOrNull(url)?.let(::withReadingMode)
     val entryUrl = if (next == null) url else docsEntryUrl(context, next = next, fallback = url)
-    withContext(Dispatchers.Main.immediate) { webView.loadUrl(entryUrl) }
+    withContext(Dispatchers.Main.immediate) { if (docsWebViews.contains(webView)) webView.loadUrl(entryUrl) }
+}
+
+/**
+ * 编辑画布进站(设计文档 §4.6):直载 `docs/{id}/?embed=1&chrome=editor`。同样走
+ * 票据优先,拿不到就直载 URL 本身(靠 CookieManager 里已有的 docs 会话)。
+ *
+ * 镜像尚未支持 `chrome=editor` 时该值被当作 `full` 处理 → 渲染完整文档页(可编辑
+ * 用户即编辑器),不破坏加载;待镜像支持后即为收敛的无壳画布。
+ */
+suspend fun loadDocsEditorEntry(context: Context, webView: WebView, url: String) {
+    val next = docsRelativePathOrNull(url)
+    val entryUrl = if (next == null) url else docsEntryUrl(context, next = next, fallback = url)
+    withContext(Dispatchers.Main.immediate) { if (docsWebViews.contains(webView)) webView.loadUrl(entryUrl) }
 }
 
 /** 给站内相对路径追加 `chrome=none`(已有则不重复加)。 */
@@ -403,9 +454,9 @@ private fun withReadingMode(path: String): String = when {
  */
 private fun docsRelativePathOrNull(url: String): String? {
     val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return null
-    if (!uri.host.equals(DOCS_HOST, ignoreCase = true)) return null
-    val path = uri.path.orEmpty().ifEmpty { "/" }
-    val query = uri.query
+    if (!isDocsOrigin(uri)) return null
+    val path = uri.encodedPath.orEmpty().ifEmpty { "/" }
+    val query = uri.encodedQuery
     return if (query.isNullOrEmpty()) path else "$path?$query"
 }
 

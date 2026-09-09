@@ -81,12 +81,14 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Pop to a specific breadcrumb level; index -1 = organization root. */
     fun popTo(index: Int) {
-        _ui.update { it.copy(deptStack = it.deptStack.take(index + 1)) }
+        _ui.update { it.copy(deptStack = it.deptStack.take(index + 1), query = "") }
+        queryFlow.value = ""
         loadMembersForCurrentNode()
     }
 
     fun popOne() {
-        _ui.update { it.copy(deptStack = it.deptStack.dropLast(1)) }
+        _ui.update { it.copy(deptStack = it.deptStack.dropLast(1), query = "") }
+        queryFlow.value = ""
         loadMembersForCurrentNode()
     }
 
@@ -149,7 +151,7 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun fetchPage(page: Int) = with(_ui.value) {
         when {
-            searching -> repository.searchMembers(query.trim(), page)
+            searching -> repository.searchMembers(query.trim(), page, departmentId = currentDept?.id)
             currentDept != null -> repository.departmentMembers(currentDept!!.id, page)
             else -> repository.allMembers(page)
         }

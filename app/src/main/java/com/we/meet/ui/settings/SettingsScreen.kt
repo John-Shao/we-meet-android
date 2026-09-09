@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +52,7 @@ import com.we.meet.core.directory.data.ContactPrefs
 import com.we.meet.feature.im.ImSession
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.data.settings.ThemeMode
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +71,10 @@ fun SettingsScreen(
     val app = LocalContext.current.applicationContext as WeMeetApp
     val settingsStore = app.settingsStore
     val themeMode by settingsStore.themeMode.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
     var showSignOutConfirm by remember { mutableStateOf(false) }
+    var signingOut by remember { mutableStateOf(false) }
+    androidx.activity.compose.BackHandler(enabled = signingOut) { }
 
     var backPending by remember { mutableStateOf(false) }
 
@@ -108,26 +113,32 @@ fun SettingsScreen(
 
     if (showSignOutConfirm) {
         AlertDialog(
-            onDismissRequest = { showSignOutConfirm = false },
+            onDismissRequest = { if (!signingOut) showSignOutConfirm = false },
             title = { Text(stringResource(R.string.profile_sign_out)) },
             text = { Text(stringResource(R.string.profile_sign_out_confirm)) },
             confirmButton = {
-                TextButton(onClick = {
-                    showSignOutConfirm = false
-                    app.authRepository.signOut()
-                    com.we.meet.analytics.Analytics.reset()
-                    // Drop the IM socket + caches so the next login doesn't
-                    // inherit this user's session.
-                    ImSession.shutdown()
-                    // 星标名单同理:换账号后不该还挂着上一个人的星标。
-                    ContactPrefs.clear()
-                    onSignedOut()
+                TextButton(enabled = !signingOut, onClick = {
+                    signingOut = true
+                    app.clearDocsSession()
+                    scope.launch {
+                        // Finish cleanup even if the settings composition is disposed.
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                            app.authRepository.signOut()
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                app.cacheDir.resolve("docs_image_cache").deleteRecursively()
+                            }
+                            com.we.meet.analytics.Analytics.reset()
+                            ImSession.shutdown()
+                            ContactPrefs.clear()
+                            onSignedOut()
+                        }
+                    }
                 }) {
                     Text(stringResource(R.string.ok), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showSignOutConfirm = false }) {
+                TextButton(enabled = !signingOut, onClick = { showSignOutConfirm = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             },

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -20,14 +21,18 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -35,7 +40,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -45,6 +49,7 @@ import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.components.WeMeetLoading
+import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.core.directory.data.DepartmentDto
 import com.we.meet.core.directory.data.MemberDto
@@ -54,14 +59,17 @@ import com.we.meet.core.directory.ui.MemberAvatar
  * 通讯录 tab — Feishu-style department drill-down + member list. Drill state is
  * tab-local (the bottom bar stays visible); member detail is an app route.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContactsTabScreen(
+    onOpenSearch: () -> Unit,
     onMemberClick: (userId: String) -> Unit,
     onOpenStarred: () -> Unit,
     onOpenMyGroups: () -> Unit,
 ) {
     val vm: ContactsViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
+    val listState = key(ui.currentDept?.id, ui.searching) { rememberLazyListState() }
     val app = LocalContext.current.applicationContext as WeMeetApp
     var showExternalContacts by remember { mutableStateOf(false) }
 
@@ -72,21 +80,25 @@ fun ContactsTabScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Text(
-            text = stringResource(R.string.contacts_title),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = Dimens.ScreenPadding, top = Dimens.SpaceM, bottom = Dimens.SpaceXs),
+        WeMeetTopBar(
+            title = stringResource(R.string.contacts_title),
+            actions = {
+                IconButton(onClick = onOpenSearch) {
+                    Icon(Icons.Outlined.Search, contentDescription = stringResource(R.string.contacts_search_hint))
+                }
+            },
         )
-        OutlinedTextField(
-            value = ui.query,
-            onValueChange = vm::onQueryChange,
-            placeholder = { Text(stringResource(R.string.contacts_search_hint)) },
-            singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
-        )
+        if (ui.deptStack.isNotEmpty()) {
+            OutlinedTextField(
+                value = ui.query,
+                onValueChange = vm::onQueryChange,
+                placeholder = { Text(stringResource(R.string.contacts_department_search_hint)) },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
+            )
+        }
 
         if (!ui.searching) {
             Breadcrumbs(
@@ -103,7 +115,7 @@ fun ContactsTabScreen(
                 message = stringResource(R.string.contacts_load_error),
             )
 
-            else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+            else -> LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                 // 星标联系人:只在组织根层级露出(钻进部门/搜索时是另一个上下文),
                 // 对标飞书通讯录里与部门并列的那个独立分组。
                 if (!ui.searching && ui.deptStack.isEmpty()) {

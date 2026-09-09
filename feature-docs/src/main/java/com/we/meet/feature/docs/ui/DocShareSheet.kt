@@ -1,0 +1,657 @@
+package com.we.meet.feature.docs.ui
+
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.PersonRemove
+import androidx.compose.material.icons.outlined.Check
+import com.we.meet.ui.components.WeMeetInlineErrorState
+
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberCoroutineScope
+import com.we.meet.ui.components.SecondaryButton
+
+import com.we.meet.feature.docs.util.docsRunCatching as runCatching
+
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.we.meet.feature.docs.DocsDeps
+import com.we.meet.feature.docs.R
+import com.we.meet.feature.docs.data.DocsRepository
+import com.we.meet.feature.docs.data.DocMemberInviteResult
+import com.we.meet.feature.docs.data.inviteDocMembers
+import com.we.meet.core.directory.ui.ContactPicker
+import com.we.meet.core.directory.ui.ContactPickerMode
+import com.we.meet.core.directory.ui.PickedMember
+import com.we.meet.feature.docs.data.net.DocsAccessDto
+import com.we.meet.feature.docs.data.net.DocsAccessRequestDto
+import com.we.meet.feature.docs.data.net.DocsInvitationDto
+import com.we.meet.feature.docs.data.net.DocumentDto
+import com.we.meet.ui.components.DestructiveConfirmDialog
+import com.we.meet.ui.components.PrimaryButton
+import com.we.meet.ui.components.WeMeetInlineLoading
+import com.we.meet.ui.theme.Dimens
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+enum class DocSharingPage { LINKS, MEMBERS }
+
+/** Independent link and membership pages; invitations are a membership subpage. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DocShareSheet(
+    deps: DocsDeps,
+    doc: DocumentDto,
+    onDismiss: () -> Unit,
+    onDocChanged: () -> Unit,
+    initialPage: DocSharingPage,
+) {
+    val instanceKey = rememberSaveable(doc.id, initialPage) { java.util.UUID.randomUUID().toString() }
+    val vm: DocShareViewModel = viewModel(
+        key = "share:${doc.id}:$instanceKey",
+        factory = viewModelFactory { initializer { DocShareViewModel(deps.docsRepository, doc) } },
+    )
+    val state by vm.state.collectAsStateWithLifecycle()
+    val page = initialPage
+    var inviteRole by rememberSaveable(doc.id) { mutableStateOf("reader") }
+    var showUserPicker by rememberSaveable(doc.id) { mutableStateOf(false) }
+    var showLeave by remember { mutableStateOf(false) }
+    var removeTarget by remember { mutableStateOf<DocsAccessDto?>(null) }
+    var rejectTarget by remember { mutableStateOf<DocsAccessRequestDto?>(null) }
+    val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+    )
+    LaunchedEffect(vm) { vm.errors.collect { snackbar.showSnackbar(context.getString(R.string.docs_action_failed)) } }
+    LaunchedEffect(vm) { if (initialPage == DocSharingPage.LINKS) vm.loadLink() else vm.load() }
+
+    if (showUserPicker) {
+        ContactPicker(
+            deps = deps,
+            mode = ContactPickerMode.Multi,
+            title = stringResource(R.string.docs_share_invite_members),
+            enabled = !state.mutating,
+            excludeUserIds = state.memberUserIds,
+            initialSelection = state.inviteSelection,
+            footer = {
+                Column(Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.docs_share_picker_help), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.docs_share_invite_role), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                        RoleDropdown(inviteRole, SHARABLE_ROLES, { inviteRole = it }, !state.mutating)
+                    }
+                    if (state.mutating) WeMeetInlineLoading()
+                    state.inviteResult?.let { result ->
+                        Text(stringResource(R.string.docs_share_batch_result, result.added, result.existing),
+                            style = MaterialTheme.typography.bodySmall)
+                        if (result.failed.isNotEmpty()) Text(stringResource(R.string.docs_share_batch_failed, result.failed.size),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            },
+            onConfirm = { members -> vm.addMembers(members, inviteRole) { result ->
+                onDocChanged()
+                if (result.failed.isEmpty()) {
+                    showUserPicker = false
+                    inviteRole = "reader"
+                    scope.launch { snackbar.showSnackbar(context.getString(R.string.docs_share_batch_result,
+                        result.added, result.existing)) }
+                }
+            } },
+            onDismiss = { showUserPicker = false },
+        )
+    }
+
+    if (!showUserPicker) ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        properties = androidx.compose.material3.ModalBottomSheetProperties(shouldDismissOnBackPress = false),
+    ) {
+        // Handle navigation in the dialog's dispatcher before dismissing the whole sheet.
+        androidx.activity.compose.BackHandler { onDismiss() }
+        Column(
+            Modifier.fillMaxWidth()
+                .heightIn(max = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp * 0.85f)
+                .imePadding().padding(bottom = Dimens.SpaceM),
+        ) {
+            DocsSheetHeader(
+                title = stringResource(when (page) {
+                    DocSharingPage.LINKS -> R.string.docs_link_share
+                    DocSharingPage.MEMBERS -> R.string.docs_share_collaborators
+                }),
+                onClose = onDismiss,
+                subtitle = if (page == initialPage) doc.displayTitle.ifBlank { stringResource(R.string.docs_untitled) } else null,
+            )
+            if (state.loading || state.mutating || state.linkSaving) WeMeetInlineLoading()
+            androidx.compose.material3.SnackbarHost(snackbar)
+            // Reset scrolling when changing pages; drafts live above page content.
+            androidx.compose.runtime.key(page) {
+                LazyColumn(Modifier.weight(1f, fill = false), contentPadding = PaddingValues(bottom = Dimens.SpaceM)) {
+                    when (page) {
+                        DocSharingPage.LINKS -> {
+                            if (state.error) item("error") {
+                                WeMeetInlineErrorState(onRetry = vm::loadLink, message = stringResource(R.string.docs_load_error))
+                            }
+                            if (state.loaded) item("options") { LinkAccessOptions(state, vm::updateLink) }
+                        }
+                        DocSharingPage.MEMBERS -> {
+                            if (state.loading && !state.loaded) item("loading") { WeMeetInlineLoading() }
+                            if (state.error) item("error") {
+                                WeMeetInlineErrorState(onRetry = vm::load, message = stringResource(R.string.docs_load_error))
+                            }
+                            if (state.requestsError) item("requests-error") {
+                                WeMeetInlineErrorState(onRetry = vm::load, message = stringResource(R.string.docs_requests_load_error))
+                            }
+                            if (state.accessRequests.isNotEmpty()) item("requests-title") {
+                                ShareHint(stringResource(R.string.docs_access_requests))
+                            }
+                            items(state.accessRequests, key = { "request-${it.id}" }) { request ->
+                                AccessRequestRow(request, !state.loading && !state.mutating,
+                                    onAccept = { role -> vm.acceptRequest(request, role, onDocChanged) },
+                                    onReject = { rejectTarget = request })
+                            }
+                            if (state.accessRequests.isNotEmpty()) item("requests-divider") {
+                                HorizontalDivider(Modifier.padding(horizontal = Dimens.ScreenPadding))
+                            }
+                            items(state.accesses, key = { "access-${it.id}" }) { access ->
+                                AccessRow(access, !state.mutating,
+                                    onChangeRole = { vm.updateAccessRole(access, it) },
+                                    onRemove = { removeTarget = access })
+                            }
+                            if (state.loaded && state.accesses.isEmpty()) item("empty") {
+                                ShareHint(stringResource(R.string.docs_share_no_members))
+                            }
+                            if (state.invitations.isNotEmpty()) item("pending-title") {
+                                HorizontalDivider(Modifier.padding(horizontal = Dimens.ScreenPadding))
+                                ShareHint(stringResource(R.string.docs_share_pending_invitations))
+                            }
+                            items(state.invitations, key = { "invitation-${it.id}" }) { invitation ->
+                                InvitationRow(invitation, !state.mutating, onDelete = { vm.deleteInvitation(invitation) })
+                            }
+                            if (state.doc.abilities.accessesManage) item("invite") {
+                                Box(Modifier.padding(Dimens.ScreenPadding)) {
+                                    SecondaryButton(text = stringResource(R.string.docs_share_invite_members),
+                                        enabled = state.loaded && !state.loading && !state.error && !state.mutating,
+                                        onClick = { vm.prepareMemberInvite { scope.launch {
+                                            sheetState.hide()
+                                            showUserPicker = true
+                                        } } })
+                                }
+
+                            }
+                            if (state.doc.abilities.leave) item("leave") {
+                                TextButton(onClick = { showLeave = true }, enabled = !state.mutating,
+                                    modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)) {
+                                    Text(stringResource(R.string.docs_share_leave), color = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        }
+
+                    }
+                }
+            }
+            if (page == DocSharingPage.LINKS) Box(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS)) {
+                PrimaryButton(
+                    text = stringResource(if (state.doc.abilities.linkConfiguration) R.string.docs_save_copy_link else R.string.docs_copy_link),
+                    enabled = state.loaded && !state.loading && !state.error,
+                    loading = state.linkSaving,
+                    onClick = { vm.saveLink {
+                        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                        clipboard?.setPrimaryClip(android.content.ClipData.newPlainText(doc.displayTitle,
+                            com.we.meet.feature.docs.util.DocLinks.webUrl(deps.docsBaseUrl, doc.id)))
+                        onDocChanged()
+                        scope.launch { snackbar.showSnackbar(context.getString(R.string.docs_link_copied)) }
+                    } },
+                )
+            }
+
+        }
+    }
+    rejectTarget?.let { request ->
+        DestructiveConfirmDialog(
+            title = stringResource(R.string.docs_request_reject),
+            message = stringResource(R.string.docs_request_reject_message,
+                request.user?.displayName ?: stringResource(R.string.docs_unknown_user)),
+            confirmLabel = stringResource(R.string.docs_request_reject), dismissLabel = stringResource(R.string.docs_cancel),
+            onConfirm = { rejectTarget = null; vm.rejectRequest(request) }, onDismiss = { rejectTarget = null },
+        )
+    }
+    removeTarget?.let { access ->
+        DestructiveConfirmDialog(
+            title = stringResource(R.string.cd_docs_remove_member),
+            message = stringResource(R.string.docs_remove_member_message,
+                access.user?.displayName ?: access.team ?: stringResource(R.string.docs_unknown_user)),
+            confirmLabel = stringResource(R.string.cd_docs_remove_member), dismissLabel = stringResource(R.string.docs_cancel),
+            onConfirm = { removeTarget = null; vm.removeAccess(access, onDocChanged) }, onDismiss = { removeTarget = null },
+        )
+    }
+    if (showLeave) DestructiveConfirmDialog(
+        title = stringResource(R.string.docs_share_leave_title), message = stringResource(R.string.docs_share_leave_message),
+        confirmLabel = stringResource(R.string.docs_share_leave), dismissLabel = stringResource(R.string.docs_cancel),
+        onConfirm = { showLeave = false; vm.leave { onDocChanged(); onDismiss() } }, onDismiss = { showLeave = false },
+    )
+}
+
+@Composable
+private fun ShareHint(text: String) {
+    Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM))
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LinkAccessOptions(state: DocShareViewModel.UiState, onChange: (String?, String?) -> Unit) {
+    val canChange = state.doc.abilities.retrieve && state.doc.abilities.linkConfiguration
+    val reaches = if (canChange) state.doc.abilities.linkSelectOptions.keys.toList() else listOf(state.linkReach)
+    Column {
+        reaches.forEach { reach ->
+            Row(Modifier.fillMaxWidth().selectable(selected = state.linkReach == reach,
+                enabled = canChange && !state.linkSaving, role = androidx.compose.ui.semantics.Role.RadioButton,
+                onClick = { onChange(reach, null) })
+                .heightIn(min = Dimens.MinTouchTarget).padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+                verticalAlignment = Alignment.CenterVertically) {
+                androidx.compose.material3.RadioButton(selected = state.linkReach == reach, onClick = null,
+                    enabled = canChange && !state.linkSaving)
+                Column(Modifier.weight(1f).padding(start = Dimens.SpaceM)) {
+                    Text(stringResource(reachLabelRes(reach)), style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(when (reach) {
+                        "public" -> R.string.docs_share_public_help
+                        "authenticated" -> R.string.docs_share_authenticated_help
+                        else -> R.string.docs_share_restricted_help
+                    }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        if (state.linkReach != "restricted") {
+            HorizontalDivider(Modifier.padding(horizontal = Dimens.ScreenPadding))
+            ShareHint(stringResource(R.string.docs_share_link_role))
+            if (canChange) FlowRow(Modifier.padding(horizontal = Dimens.ScreenPadding),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                state.doc.abilities.linkSelectOptions[state.linkReach].orEmpty().forEach { role ->
+                    FilterChip(selected = state.linkRole == role, enabled = !state.linkSaving,
+                        onClick = { onChange(null, role) }, label = { Text(stringResource(roleLabelRes(role))) })
+                }
+            } else ShareHint(stringResource(roleLabelRes(state.linkRole)))
+        }
+    }
+}
+
+@Composable
+private fun AccessRow(
+    access: DocsAccessDto,
+    enabled: Boolean,
+    onChangeRole: (String) -> Unit,
+    onRemove: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = Dimens.MinTouchTarget)
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = access.user?.displayName?.takeIf { it.isNotBlank() }
+                ?: access.team
+                ?: stringResource(R.string.docs_unknown_user),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+        )
+        if (access.abilities.setRoleTo.isNotEmpty() || access.abilities.destroy) {
+            RoleDropdown(
+                role = access.role.orEmpty(),
+                enabled = enabled,
+                roles = access.abilities.setRoleTo,
+                onSelect = onChangeRole,
+                onRemove = if (access.abilities.destroy) onRemove else null,
+            )
+        } else {
+            Text(
+                text = stringResource(roleLabelRes(access.role.orEmpty())),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoleDropdown(
+    role: String,
+    roles: List<String>,
+    onSelect: (String) -> Unit,
+    enabled: Boolean = true,
+    onRemove: (() -> Unit)? = null,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        TextButton(onClick = { expanded = true }, enabled = enabled) {
+            Text(stringResource(roleLabelRes(role)), softWrap = false)
+            Icon(Icons.Outlined.ExpandMore, null, modifier = Modifier.size(Dimens.IconSmall))
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            roles.forEach { candidate ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(roleLabelRes(candidate)), softWrap = false) },
+                    enabled = enabled,
+                    trailingIcon = { if (role == candidate) Icon(Icons.Outlined.Check, null) },
+                    onClick = {
+                        expanded = false
+                        onSelect(candidate)
+                    },
+                )
+            }
+            if (onRemove != null) {
+                if (roles.isNotEmpty()) HorizontalDivider()
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.cd_docs_remove_member), color = MaterialTheme.colorScheme.error) },
+                    leadingIcon = { Icon(Icons.Outlined.PersonRemove, null, tint = MaterialTheme.colorScheme.error) },
+                    enabled = enabled,
+                    onClick = { expanded = false; onRemove() },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccessRequestRow(
+    request: DocsAccessRequestDto,
+    enabled: Boolean,
+    onAccept: (String) -> Unit,
+    onReject: () -> Unit,
+) {
+    val roles = request.abilities.setRoleTo.filter { it in SHARABLE_ROLES }
+    var role by rememberSaveable(request.id, request.role, roles) {
+        mutableStateOf(request.role?.takeIf { it in roles } ?: roles.firstOrNull().orEmpty())
+    }
+    Column(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS)) {
+        Text(request.user?.displayName ?: stringResource(R.string.docs_unknown_user),
+            style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.docs_request_role, stringResource(roleLabelRes(request.role.orEmpty()))),
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) {
+                if (request.abilities.accept && roles.isNotEmpty())
+                    RoleDropdown(role, roles, { role = it }, enabled)
+            }
+            if (request.abilities.destroy) TextButton(onClick = onReject, enabled = enabled) {
+                Text(stringResource(R.string.docs_request_reject))
+            }
+            if (request.abilities.accept) TextButton(onClick = { onAccept(role) }, enabled = enabled && role in roles) {
+                Text(stringResource(R.string.docs_request_accept))
+            }
+        }
+    }
+}
+
+@Composable
+private fun InvitationRow(
+    invitation: DocsInvitationDto,
+    enabled: Boolean,
+    onDelete: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = invitation.email,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = stringResource(roleLabelRes(invitation.role.orEmpty())),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (invitation.abilities.destroy) {
+            IconButton(onClick = onDelete, enabled = enabled) {
+                Icon(
+                    imageVector = Icons.Outlined.Close,
+                    contentDescription = stringResource(R.string.cd_docs_remove_invitation),
+                )
+            }
+        }
+    }
+}
+
+// ---- ViewModel ----
+
+class DocShareViewModel(
+    private val repo: DocsRepository,
+    private val doc: DocumentDto,
+) : ViewModel() {
+
+    data class UiState(
+        val doc: DocumentDto = DocumentDto(),
+        val linkReach: String = "",
+        val linkRole: String = "",
+        val accesses: List<DocsAccessDto> = emptyList(),
+        val invitations: List<DocsInvitationDto> = emptyList(),
+        val accessRequests: List<DocsAccessRequestDto> = emptyList(),
+        val requestsError: Boolean = false,
+        val loaded: Boolean = false,
+        val loading: Boolean = false,
+        val mutating: Boolean = false,
+        val linkSaving: Boolean = false,
+        val error: Boolean = false,
+        val memberUserIds: Set<String> = emptySet(),
+        val inviteSelection: List<PickedMember> = emptyList(),
+        internal val inviteResult: DocMemberInviteResult? = null,
+    )
+
+    private val _state = MutableStateFlow(
+        UiState(
+            doc = doc,
+            linkReach = doc.linkReach.orEmpty(),
+            linkRole = doc.linkRole.orEmpty(),
+        ),
+    )
+    val state: StateFlow<UiState> = _state.asStateFlow()
+
+    val errors = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 4)
+    fun load() {
+        viewModelScope.launch {
+            _state.update { it.copy(loading = true, error = false) }
+            val accesses = runCatching { repo.allAccesses(doc.id) }.getOrNull()
+            val invitations = if (doc.abilities.accessesManage) runCatching { repo.allInvitations(doc.id) }.getOrNull() else emptyList()
+            val requests = if (doc.abilities.accessesManage && doc.depth == 1)
+                runCatching { repo.allAccessRequests(doc.id) }.getOrNull() else emptyList()
+            _state.update { it.copy(requestsError = requests == null,
+                accessRequests = requests.orEmpty().filter { request -> request.abilities.accept || request.abilities.destroy }) }
+            if (accesses == null || invitations == null) {
+                _state.update { it.copy(loading = false, error = true) }
+            } else {
+                _state.update {
+                    it.copy(
+                        loaded = true,
+                        accesses = accesses.orEmpty(),
+                        invitations = invitations.orEmpty(),
+                        loading = false,
+                    )
+                }
+            }
+        }
+    }
+
+    fun loadLink() {
+        if (_state.value.loaded || _state.value.loading) return
+        _state.update { it.copy(loading = true, error = false) }
+        viewModelScope.launch {
+            runCatching { repo.document(doc.id) }
+                .onSuccess { fresh -> _state.update { it.copy(doc = fresh, linkReach = fresh.linkReach.orEmpty(),
+                    linkRole = fresh.linkRole.orEmpty(), loaded = true) } }
+                .onFailure { _state.update { it.copy(error = true) } }
+            _state.update { it.copy(loading = false) }
+        }
+    }
+
+    fun updateLink(reach: String? = null, role: String? = null) {
+        val current = _state.value
+        if (current.linkSaving || !current.doc.abilities.linkConfiguration) return
+        val newReach = reach ?: current.linkReach
+        if (!current.doc.abilities.linkSelectOptions.containsKey(newReach)) return
+        val options = current.doc.abilities.linkSelectOptions[newReach].orEmpty()
+        val newRole = if (newReach == "restricted") null else role
+            ?: current.linkRole.takeIf { it in options } ?: options.firstOrNull()
+        if (newReach != "restricted" && newRole !in options) return
+        _state.update { it.copy(linkReach = newReach, linkRole = newRole.orEmpty()) }
+    }
+
+    fun saveLink(onSaved: () -> Unit) {
+        val current = _state.value
+        if (current.linkSaving || !current.loaded || current.error) return
+        val changed = current.linkReach != current.doc.linkReach ||
+            (current.linkReach != "restricted" && current.linkRole != current.doc.linkRole)
+        if (!changed || !current.doc.abilities.linkConfiguration) { onSaved(); return }
+        _state.update { it.copy(linkSaving = true) }
+        viewModelScope.launch {
+            try {
+                runCatching { repo.updateLinkConfiguration(doc.id, current.linkReach,
+                    current.linkRole.takeUnless { current.linkReach == "restricted" }) }
+                    .onSuccess {
+                        _state.update { it.copy(doc = it.doc.copy(linkReach = current.linkReach, linkRole = current.linkRole)) }
+                        onSaved()
+                    }
+                    .onFailure { errors.tryEmit(Unit) }
+            } finally { _state.update { it.copy(linkSaving = false) } }
+        }
+    }
+
+    /** Only one membership mutation at a time; failures remain visible in the sheet. */
+    private fun mutate(action: suspend () -> Unit) {
+        if (_state.value.mutating) return
+        _state.update { it.copy(mutating = true) }
+        viewModelScope.launch {
+            try { runCatching { action() }.onFailure { errors.tryEmit(Unit) } }
+            finally { _state.update { it.copy(mutating = false) } }
+        }
+    }
+
+    fun prepareMemberInvite(onReady: () -> Unit) = mutate {
+        val ids = repo.memberUserIds(doc.id)
+        _state.update { it.copy(memberUserIds = ids.toSet(), inviteSelection = emptyList(), inviteResult = null) }
+        onReady()
+    }
+
+    internal fun addMembers(members: List<PickedMember>, role: String, onComplete: (DocMemberInviteResult) -> Unit) {
+        if (_state.value.mutating || !_state.value.doc.abilities.accessesManage || role !in SHARABLE_ROLES || members.isEmpty()) return
+        val expectedAccount = repo.accountGeneration
+        _state.update { it.copy(mutating = true, inviteSelection = members, inviteResult = null) }
+        viewModelScope.launch {
+            try {
+                val result = inviteDocMembers(members, role) { ids, selectedRole ->
+                    repo.addMembers(doc.id, ids, selectedRole, expectedAccount)
+                }
+                _state.update { it.copy(inviteSelection = result.failed, inviteResult = result) }
+                load()
+                onComplete(result)
+            } finally { _state.update { it.copy(mutating = false) } }
+        }
+    }
+
+    fun updateAccessRole(access: DocsAccessDto, role: String) = mutate {
+        repo.updateAccess(doc.id, access.id, role)
+        load()
+    }
+
+    fun removeAccess(access: DocsAccessDto, onDocChanged: () -> Unit) = mutate {
+        repo.deleteAccess(doc.id, access.id)
+        load()
+        onDocChanged()
+    }
+
+    fun deleteInvitation(invitation: DocsInvitationDto) = mutate {
+        repo.deleteInvitation(doc.id, invitation.id)
+        load()
+    }
+
+    fun acceptRequest(request: DocsAccessRequestDto, role: String, onDocChanged: () -> Unit) = mutate {
+        if (!request.abilities.accept || role !in request.abilities.setRoleTo || role !in SHARABLE_ROLES) return@mutate
+        repo.acceptAccessRequest(doc.id, request.id, role)
+        _state.update { it.copy(accessRequests = it.accessRequests.filterNot { item -> item.id == request.id }) }
+        load()
+        onDocChanged()
+    }
+
+    fun rejectRequest(request: DocsAccessRequestDto) = mutate {
+        if (!request.abilities.destroy) return@mutate
+        repo.rejectAccessRequest(doc.id, request.id)
+        _state.update { it.copy(accessRequests = it.accessRequests.filterNot { item -> item.id == request.id }) }
+        load()
+    }
+
+    fun leave(onLeft: () -> Unit) = mutate {
+        repo.leave(doc.id)
+        onLeft()
+    }
+
+}
+
+// ---- role/reach label helpers ----
+
+internal fun roleLabelRes(role: String): Int = when (role) {
+    "reader" -> R.string.docs_role_reader
+    "commenter" -> R.string.docs_role_commenter
+    "editor" -> R.string.docs_role_editor
+    "administrator" -> R.string.docs_role_administrator
+    "owner" -> R.string.docs_role_owner
+    else -> R.string.docs_role_reader
+}
+
+internal fun reachLabelRes(reach: String): Int = when (reach) {
+    "public" -> R.string.docs_reach_public
+    "authenticated" -> R.string.docs_reach_authenticated
+    else -> R.string.docs_reach_restricted
+}
+
+private val SHARABLE_ROLES = listOf("reader", "commenter", "editor")

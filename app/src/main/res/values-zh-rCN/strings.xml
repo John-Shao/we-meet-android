@@ -465,6 +465,7 @@
     <!-- Contacts (通讯录) -->
     <string name="contacts_title">通讯录</string>
     <string name="contacts_search_hint">搜索姓名或邮箱</string>
+    <string name="contacts_department_search_hint">搜索当前部门的姓名或邮箱</string>
     <string name="contacts_root_org">组织</string>
     <string name="contacts_empty_dept">该部门暂无成员</string>
     <string name="contacts_empty_search">未找到匹配的成员</string>
@@ -787,6 +788,12 @@
     <string name="meeting_detail_chapters_empty">暂无章节——章节随纪要一起生成。</string>
     <string name="meeting_detail_summary_edited">已编辑</string>
     <string name="docs_viewer_title">文档</string>
+    <string name="docs_editor_title">编辑</string>
+    <string name="docs_editor_title_hint">文档标题</string>
+    <string name="docs_editor_unsaved_title">未保存的更改</string>
+    <string name="docs_editor_unsaved_desc">文档中有未保存的更改。</string>
+    <string name="docs_editor_unsaved_save">保存并退出</string>
+    <string name="docs_editor_unsaved_continue">继续编辑</string>
     <string name="docs_load_error">文档加载失败</string>
 
     <!-- P5 建议参会 + 统一邀请面板 -->
@@ -1013,4 +1020,24 @@
     <string name="waiting_no_token">主持人已同意你加入，但连接信息缺失，请重试。</string>
     <string name="web_login_network_error">网络异常</string>
     <string name="web_login_invalid_callback">登录回调无效</string>
+    <string name="docs_editor_save_failed">保存未确认，请检查网络后重试。当前页面会保留。</string>
+    <string name="docs_editor_incompatible">暂时无法打开编辑器，请稍后重试。你可以返回继续阅读文档。</string>
+    <string name="docs_editor_pending_work">尚未确认全部保存。请检查网络、标题、附件上传及未发表的评论，处理后重试。</string>
+    <string name="docs_editor_reloaded">编辑页面已重新加载，目前只能确认服务端已保存的内容，请检查最后的修改。</string>
+    <string name="docs_chat_share_title">分享到聊天</string>
+    <string name="docs_chat_share_sent">已分享到聊天</string>
+    <string name="docs_chat_share_delivery_failed">已发送到 %1$d 个会话，%2$d 个发送失败。重试将跳过已确认发送的会话。</string>
+    <string name="docs_chat_share_access_failed">部分卡片已发送，但未能确认访问授权。可重试授权，或在文档中管理权限。</string>
+    <string name="docs_chat_share_retry">重试</string>
+    <string name="docs_chat_share_close">关闭</string>
+    <string name="docs_chat_share_next">下一步</string>
+    <string name="docs_chat_share_targets">已选 %d 个会话</string>
+    <string name="docs_chat_share_permission_retry">权限加载失败，点击重试</string>
+    <string name="docs_chat_share_permission">授权类型</string>
+    <string name="docs_chat_share_reader">可阅读</string>
+    <string name="docs_chat_share_editor">可编辑</string>
+    <string name="docs_chat_share_grant_help">为当前会话成员设置授权，同一文档在该会话中由你发出的卡片共用此设置。其他来源的更高权限会保留。</string>
+    <string name="docs_chat_share_existing_access">仅发送文档卡片，接收者沿用已有访问权限。</string>
+    <string name="docs_chat_share_send">发送</string>
+    <string name="docs_chat_share_back">返回</string>
 </resources>

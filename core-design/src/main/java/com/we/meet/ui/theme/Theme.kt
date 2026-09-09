@@ -114,6 +114,8 @@ data class WeMeetExtras(
     val aiCall: AiCallColors,
     /** IM 聊天与一对一通话专用色(见 [ImColors])。 */
     val im: ImColors,
+    /** 云文档内容区专用色(见 [DocsColors])。 */
+    val docs: DocsColors,
     /**
      * 无头像时按名字哈希取色的调色板。顺序与长度不可变 —— 见 Color.kt 说明。
      */
@@ -250,6 +252,20 @@ private val SharedImColors = ImColors(
     mentionSelfFg = ImMentionSelfFg,
     groupAvatarPalette = GroupAvatarPalette,
     botAvatarPalette = BotAvatarPalette,
+)
+
+/**
+ * 云文档内容区专用色(设计文档 §4.11.2)。
+ *
+ * 其余内容区样式(引用/callout/代码/表格容器、行内弱化、链接)复用 M3 面色
+ * `surfaceContainerLow/High/Highest` + `onSurfaceVariant`/`primary`,不新增。
+ * 只有「评论锚定高亮」是 M3 没有的语义,成对进这里;取值与对比度见 Color.kt。
+ */
+data class DocsColors(
+    /** 被评论文本段的高亮底色。 */
+    val commentHighlight: Color,
+    /** 压在高亮底上的文字色(已按正文 4.5:1 校过)。 */
+    val commentHighlightText: Color,
 )
 
 /**
@@ -461,6 +477,10 @@ private val LightExtras = WeMeetExtras(
     room = SharedRoomColors,
     aiCall = aiCallColors(LightAiCallControls),
     im = SharedImColors,
+    docs = DocsColors(
+        commentHighlight = LightDocsCommentHighlight,
+        commentHighlightText = LightDocsCommentHighlightText,
+    ),
     avatarPalette = AvatarFallbackPalette,
 )
 
@@ -519,6 +539,10 @@ private val DarkExtras = WeMeetExtras(
     room = SharedRoomColors,
     aiCall = aiCallColors(DarkAiCallControls),
     im = SharedImColors,
+    docs = DocsColors(
+        commentHighlight = DarkDocsCommentHighlight,
+        commentHighlightText = DarkDocsCommentHighlightText,
+    ),
     avatarPalette = AvatarFallbackPalette,
 )
 

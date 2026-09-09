@@ -49,6 +49,12 @@ class ColorContrastTest {
         assertTextPair("out-of-month day", LightCalendarOutOfMonthDay, LightBackground)
         assertTextPair("reminder label", LightCalendarReminderText, Color(0xFFFCECDA))
         assertNonTextPair("reminder icon", CalendarOnReminder, LightCalendarReminder)
+
+        assertTextPair(
+            "docs comment highlight",
+            LightDocsCommentHighlightText,
+            LightDocsCommentHighlight,
+        )
     }
 
     @Test
@@ -88,6 +94,12 @@ class ColorContrastTest {
         )
         assertTextPair("out-of-month day", DarkCalendarOutOfMonthDay, DarkBackground)
         assertNonTextPair("reminder icon", CalendarOnReminder, DarkCalendarReminder)
+
+        assertTextPair(
+            "docs comment highlight",
+            DarkDocsCommentHighlightText,
+            DarkDocsCommentHighlight,
+        )
     }
 
     @Test

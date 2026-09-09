@@ -15,7 +15,7 @@ tasks.register<DesignLintTask>("checkDesignTokens") {
     // isTheme / isComponents)—— 但剩下的规则照常生效。不扫的话,往共享组件
     // 里写死一句中文、或在组件内部写裸 .dp,全 App 跟着错,却没人报警。
     sources.from(
-        listOf("app", "core-design", "core-directory", "feature-assistant", "feature-im")
+        listOf("app", "core-design", "core-directory", "feature-assistant", "feature-docs", "feature-im")
             .map { fileTree("$it/src/main") { include("**/*.kt") } },
     )
     baselineFile.set(layout.projectDirectory.file("config/design-lint-baseline.txt"))
