@@ -17,6 +17,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.feature.docs.R
 import com.we.meet.ui.theme.Dimens
 
+@Composable
+internal fun DocsFileIcon(folder: Boolean = false) {
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+        contentColor = MaterialTheme.colorScheme.primary,
+    ) {
+        Box(Modifier.size(Dimens.ListLeadingIcon), contentAlignment = Alignment.Center) {
+            Icon(if (folder) Icons.Outlined.Folder else Icons.Outlined.Description,
+                contentDescription = null, modifier = Modifier.size(Dimens.IconMedium))
+        }
+    }
+}
+
 /** Shared hierarchy and an explicit, accessible exit for native document sheets. */
 @Composable
 internal fun DocsSheetHeader(title: String, onClose: () -> Unit, subtitle: String? = null, onBack: (() -> Unit)? = null, titleMaxLines: Int = Int.MAX_VALUE) {
@@ -38,20 +52,6 @@ internal fun DocsSheetHeader(title: String, onClose: () -> Unit, subtitle: Strin
         }
         IconButton(onClick = onClose) {
             Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.docs_close))
-        }
-    }
-}
-
-@Composable
-internal fun DocsFileIcon(folder: Boolean = false) {
-    Surface(
-        shape = MaterialTheme.shapes.medium,
-        color = if (folder) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primaryContainer,
-        contentColor = if (folder) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimaryContainer,
-    ) {
-        Box(Modifier.size(Dimens.ListLeadingIcon), contentAlignment = Alignment.Center) {
-            Icon(if (folder) Icons.Outlined.Folder else Icons.Outlined.Description,
-                contentDescription = null, modifier = Modifier.size(Dimens.IconMedium))
         }
     }
 }

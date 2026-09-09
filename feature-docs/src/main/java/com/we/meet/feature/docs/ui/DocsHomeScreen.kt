@@ -1,6 +1,7 @@
 package com.we.meet.feature.docs.ui
 
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Arrangement
@@ -158,11 +159,17 @@ fun DocsHomeScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
+            FloatingActionButton(
                 onClick = { showCreate = true },
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.docs_create_title)) },
-            )
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = CircleShape,
+            ) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.cd_docs_create),
+                )
+            }
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
