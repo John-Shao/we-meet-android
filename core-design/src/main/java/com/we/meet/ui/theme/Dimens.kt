@@ -122,6 +122,8 @@ object Dimens {
     val ListThumbnail = 56.dp
     /** 首页那种大号功能入口方块。 */
     val ActionTile = 72.dp
+    /** 四列功能入口的紧凑方块，适用于会议页快捷操作。 */
+    val ActionTileCompact = 56.dp
 
     /** 键值行左侧标签列的宽度,让冒号后的值对齐成一列。 */
     val LabelColumnWidth = 88.dp

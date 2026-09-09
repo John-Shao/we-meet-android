@@ -7,13 +7,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddBox
@@ -125,8 +126,9 @@ fun HomeScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = Dimens.SpaceXl, end = Dimens.SpaceXl, top = Dimens.SpaceS, bottom = Dimens.SpaceXxl),
-            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
+                .padding(horizontal = Dimens.ScreenPadding)
+                .padding(top = Dimens.SpaceL, bottom = Dimens.SpaceXl),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXl),
         ) {
             ActionCard(
                 icon = Icons.Default.Bolt,
@@ -231,8 +233,9 @@ private fun ActionCard(
     ) {
         Box(
             modifier = Modifier
-                .size(Dimens.ActionTile)
-                .clip(RoundedCornerShape(Dimens.CornerL))
+                .widthIn(max = Dimens.ActionTileCompact)
+                .aspectRatio(1f)
+                .clip(MaterialTheme.shapes.medium)
                 .background(backgroundColor),
             contentAlignment = Alignment.Center,
         ) {
@@ -240,7 +243,7 @@ private fun ActionCard(
                 imageVector = icon,
                 contentDescription = label,
                 tint = iconTint,
-                modifier = Modifier.size(Dimens.IconXl),
+                modifier = Modifier.size(Dimens.IconLarge),
             )
         }
         Spacer(Modifier.height(Dimens.SpaceS))
