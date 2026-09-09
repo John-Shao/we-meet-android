@@ -71,7 +71,6 @@ fun AccountSecurityScreen(
             WeMeetTopBar(
                 title = stringResource(R.string.settings_account_security),
                 onBack = { if (!backPending) { backPending = true; onBack() } },
-                transparent = true,
             )
         },
     ) { padding ->

@@ -74,7 +74,6 @@ fun TaskSettingsScreen(
             WeMeetTopBar(
                 title = stringResource(R.string.task_settings),
                 onBack = { if (!backPending) { backPending = true; onBack() } },
-                transparent = true,
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },

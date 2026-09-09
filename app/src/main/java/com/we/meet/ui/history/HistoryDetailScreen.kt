@@ -207,7 +207,6 @@ fun HistoryDetailScreen(
                         }
                     }
                 },
-                transparent = true,
             )
         },
     ) { padding ->

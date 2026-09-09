@@ -589,6 +589,12 @@ fun MainTabScreen(
                 },
             ) {
                 Scaffold(
+                    // The parent owns the status-bar inset for tab-local task pages.
+                    containerColor = if (safeTab == MainTab.Tasks.ordinal && taskFullScreenVisible) {
+                        MaterialTheme.colorScheme.surface
+                    } else {
+                        MaterialTheme.colorScheme.background
+                    },
                     bottomBar = {
                         if (!(safeTab == MainTab.Tasks.ordinal && taskFullScreenVisible)) {
                             CompactTabBar(

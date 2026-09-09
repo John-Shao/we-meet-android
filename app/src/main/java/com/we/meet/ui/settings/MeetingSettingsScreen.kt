@@ -65,7 +65,6 @@ fun MeetingSettingsScreen(
             WeMeetTopBar(
                 title = stringResource(R.string.meeting_settings_title),
                 onBack = { if (!backPending) { backPending = true; onBack() } },
-                transparent = true,
             )
         },
     ) { padding ->

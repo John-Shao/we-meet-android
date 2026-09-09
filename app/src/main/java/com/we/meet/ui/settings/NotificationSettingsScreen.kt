@@ -133,7 +133,6 @@ fun NotificationSettingsScreen(
             WeMeetTopBar(
                 title = stringResource(R.string.notification_settings_title),
                 onBack = onBack,
-                transparent = true,
             )
         },
     ) { padding ->

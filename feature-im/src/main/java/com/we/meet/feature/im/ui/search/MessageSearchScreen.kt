@@ -1,5 +1,6 @@
 package com.we.meet.feature.im.ui.search
 
+import androidx.compose.foundation.background
 import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -551,7 +552,7 @@ fun MessageSearchScreen(
                 state = categoryListState,
                 horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
                 contentPadding = PaddingValues(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface),
             ) {
                 items(categories, key = { it.name }) { cat ->
                     FilterChip(

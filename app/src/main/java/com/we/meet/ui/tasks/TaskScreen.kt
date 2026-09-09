@@ -2607,7 +2607,6 @@ private fun CreateTaskPage(
             WeMeetTopBar(
                 title = stringResource(R.string.task_create),
                 onClose = onClose,
-                containerColor = MaterialTheme.colorScheme.background,
                 actions = {
                     TextButton(
                         modifier = Modifier.testTag(TASK_CREATE_SUBMIT_TEST_TAG),
@@ -2924,14 +2923,10 @@ private fun TaskDetailPage(
         modifier = Modifier.testTag(TASK_DETAIL_TEST_TAG),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Surface(color = MaterialTheme.colorScheme.background) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().height(Dimens.Task.TopBarHeight)
-                        .padding(horizontal = Dimens.SpaceXs),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.task_back)) }
-                    Spacer(Modifier.weight(1f))
+            WeMeetTopBar(
+                title = "",
+                onBack = onBack,
+                actions = {
                     IconButton(onClick = { onToggleFollow(task) }) {
                         Icon(
                             if (task.followed) Icons.Filled.Star else Icons.Outlined.StarBorder,
@@ -2953,8 +2948,8 @@ private fun TaskDetailPage(
                         onClick = { onMore(task) },
                         modifier = Modifier.testTag(TASK_DETAIL_MORE_TEST_TAG),
                     ) { Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.task_more)) }
-                }
-            }
+                },
+            )
         },
     ) { padding ->
         LazyColumn(
@@ -3425,7 +3420,7 @@ internal fun TaskSearchPage(
     var statusMenu by remember { mutableStateOf(false) }
     var dueMenu by remember { mutableStateOf(false) }
     var priorityMenu by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         if (!embedded) Row(
             modifier = Modifier.fillMaxWidth().padding(Dimens.SpaceM),
             verticalAlignment = Alignment.CenterVertically,
@@ -3581,7 +3576,7 @@ internal fun TaskSearchPage(
             fontWeight = FontWeight.Bold,
         )
         if (searching) LinearProgressIndicator(Modifier.fillMaxWidth())
-        Box(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             when {
                 failed -> WeMeetErrorState(
                     onRetry = onRetry,
@@ -3628,13 +3623,7 @@ private fun selectedFilterIcon(selected: Boolean): @Composable () -> Unit = {
 
 @Composable
 private fun TaskPageTopBar(title: String, onBack: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().height(Dimens.Task.TopBarHeight).padding(horizontal = Dimens.SpaceXs),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconButton(onClick = onBack) { Icon(Icons.Filled.Close, stringResource(R.string.task_close)) }
-        Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-    }
+    WeMeetTopBar(title = title, onClose = onBack)
 }
 
 @Composable

@@ -1,5 +1,6 @@
 package com.we.meet.feature.docs.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.text.style.TextOverflow
@@ -80,6 +81,7 @@ fun DocsSearchScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
                     .statusBarsPadding()
                     .padding(horizontal = Dimens.SpaceXs, vertical = Dimens.SpaceXs),
                 verticalAlignment = Alignment.CenterVertically,

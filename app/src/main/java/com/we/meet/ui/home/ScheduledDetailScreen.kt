@@ -230,7 +230,6 @@ fun ScheduledDetailScreen(
                         }
                     }
                 },
-                transparent = true,
             )
         },
     ) { padding ->
