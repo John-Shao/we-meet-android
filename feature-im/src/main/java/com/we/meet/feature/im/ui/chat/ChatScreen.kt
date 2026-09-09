@@ -1139,60 +1139,62 @@ private fun MessageInputBar(
             modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
         ) {
             Surface(
-                shape = RoundedCornerShape(Dimens.CornerL),
+                shape = RoundedCornerShape(Dimens.CornerM),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-                        if (text.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.im_input_placeholder),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        BasicTextField(
-                            value = field,
-                            onValueChange = { value ->
-                                field = if (value.text.length <= 4000) value
-                                else TextFieldValue(value.text.take(4000), TextRange(4000))
-                                onDraftChange(field.text)
-                                commandIndex = 0
-                                commandMenuDismissed = false
-                            },
-                            enabled = canSend,
-                            maxLines = 5,
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                color = MaterialTheme.colorScheme.onSurface,
-                            ),
-                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                BasicTextField(
+                    value = field,
+                    onValueChange = { value ->
+                        field = if (value.text.length <= 4000) value
+                        else TextFieldValue(value.text.take(4000), TextRange(4000))
+                        onDraftChange(field.text)
+                        commandIndex = 0
+                        commandMenuDismissed = false
+                    },
+                    enabled = canSend,
+                    maxLines = 5,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface,
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    decorationBox = { innerTextField ->
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .focusRequester(inputFocusRequester)
-                                .onPreviewKeyEvent { event ->
-                                    if (commands.isEmpty() || event.type != KeyEventType.KeyDown) false
-                                    else when (event.key) {
-                                        Key.DirectionDown -> { commandIndex = (commandIndex + 1) % commands.size; true }
-                                        Key.DirectionUp -> { commandIndex = (commandIndex - 1 + commands.size) % commands.size; true }
-                                        Key.Enter -> { executeCommand(commands[commandIndex.coerceAtMost(commands.lastIndex)]); true }
-                                        Key.Escape -> { commandMenuDismissed = true; true }
-                                        else -> false
-                                    }
-                                }
-                                .onFocusChanged {
-                                    // 点击输入框拉起键盘时,自动收起已展开的表情/「+」
-                                    // 面板(二者互斥)。
-                                    if (it.isFocused) panel = InputPanel.None
-                                },
-                        )
-                    }
-                }
+                                .heightIn(min = Dimens.ControlLarge)
+                                .padding(Dimens.SpaceM),
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            if (text.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.im_input_placeholder),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            innerTextField()
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(inputFocusRequester)
+                        .onPreviewKeyEvent { event ->
+                            if (commands.isEmpty() || event.type != KeyEventType.KeyDown) false
+                            else when (event.key) {
+                                Key.DirectionDown -> { commandIndex = (commandIndex + 1) % commands.size; true }
+                                Key.DirectionUp -> { commandIndex = (commandIndex - 1 + commands.size) % commands.size; true }
+                                Key.Enter -> { executeCommand(commands[commandIndex.coerceAtMost(commands.lastIndex)]); true }
+                                Key.Escape -> { commandMenuDismissed = true; true }
+                                else -> false
+                            }
+                        }
+                        .onFocusChanged {
+                            // 点击输入框拉起键盘时,自动收起已展开的表情/「+」
+                            // 面板(二者互斥)。
+                            if (it.isFocused) panel = InputPanel.None
+                        },
+                )
             }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = Dimens.SpaceS),
