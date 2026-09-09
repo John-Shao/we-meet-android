@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddBox
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -125,7 +126,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = Dimens.SpaceXl, end = Dimens.SpaceXl, top = Dimens.SpaceS, bottom = Dimens.SpaceXxl),
-            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
         ) {
             ActionCard(
                 icon = Icons.Default.Bolt,
@@ -151,6 +152,16 @@ fun HomeScreen(
                 // 预约会议 = 创建日程:打开日历的创建日程界面(替代旧的轻量弹窗)。
                 onClick = onScheduleMeeting,
                 modifier = Modifier.weight(1f),
+            )
+            ActionCard(
+                icon = Icons.Default.Mic,
+                label = stringResource(R.string.home_ai_recording),
+                backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+                onClick = {},
+                modifier = Modifier.weight(1f),
+                enabled = false,
+                supportingText = stringResource(R.string.home_ai_recording_coming_soon),
             )
         }
 
@@ -213,10 +224,12 @@ private fun ActionCard(
     iconTint: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    supportingText: String? = null,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.clickable(onClick = onClick),
+        modifier = modifier.clickable(enabled = enabled, onClick = onClick),
     ) {
         Box(
             modifier = Modifier
@@ -236,7 +249,17 @@ private fun ActionCard(
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
+            color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+        if (supportingText != null) {
+            Spacer(Modifier.height(Dimens.SpaceXs))
+            Text(
+                text = supportingText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }

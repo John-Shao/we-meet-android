@@ -17,6 +17,8 @@
     <string name="home_create_meeting">Instant meeting</string>
     <string name="home_join_meeting">Join meeting</string>
     <string name="home_create_later_meeting">Schedule meeting</string>
+    <string name="home_ai_recording">AI recording</string>
+    <string name="home_ai_recording_coming_soon">Coming soon</string>
 
     <!-- QR scan / web sign-in confirmation -->
     <string name="qr_scan_confirm_title">Sign in on the web</string>
