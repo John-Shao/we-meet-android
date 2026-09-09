@@ -287,13 +287,13 @@ fun MainTabScreen(
     val taskNavDrawerState = rememberDrawerState(DrawerValue.Closed)
     val taskNavScope = rememberCoroutineScope()
     var taskNavController by remember { mutableStateOf<TaskNavController?>(null) }
-    var taskDetailVisible by remember { mutableStateOf(false) }
+    var taskFullScreenVisible by remember { mutableStateOf(false) }
     // Close the task drawer when the user leaves the Tasks tab.
     LaunchedEffect(safeTab) {
         if (safeTab != MainTab.Tasks.ordinal && taskNavDrawerState.isOpen) {
             taskNavDrawerState.close()
         }
-        if (safeTab != MainTab.Tasks.ordinal) taskDetailVisible = false
+        if (safeTab != MainTab.Tasks.ordinal) taskFullScreenVisible = false
     }
 
     // 云文档二级导航抽屉 —— 与 task 抽屉同款提升到本层(遮罩覆盖底部导航栏),
@@ -441,7 +441,7 @@ fun MainTabScreen(
                 onOpenSettings = onOpenTaskSettings,
                 onOpenTaskNav = { taskNavScope.launch { taskNavDrawerState.open() } },
                 onRegisterTaskNav = { taskNavController = it },
-                onDetailVisibilityChanged = { taskDetailVisible = it },
+                onFullScreenVisibilityChanged = { taskFullScreenVisible = it },
             )
         },
     )
@@ -590,7 +590,7 @@ fun MainTabScreen(
             ) {
                 Scaffold(
                     bottomBar = {
-                        if (!(safeTab == MainTab.Tasks.ordinal && taskDetailVisible)) {
+                        if (!(safeTab == MainTab.Tasks.ordinal && taskFullScreenVisible)) {
                             CompactTabBar(
                                 tabs = tabs,
                                 selectedTab = safeTab,

@@ -243,7 +243,7 @@
     <string name="task_lists">任务清单</string>
     <string name="task_list_group_empty">此分组暂无任务清单</string>
     <string name="task_create">新建任务</string>
-    <string name="task_create_action">创建任务</string>
+    <string name="task_create_action">创建</string>
     <string name="task_search">搜索任务</string>
     <string name="task_search_hint">搜索标题、描述、人员或清单</string>
     <plurals name="task_search_results">

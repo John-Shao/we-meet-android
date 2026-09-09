@@ -236,7 +236,7 @@
     <string name="task_lists">Takenlijsten</string>
     <string name="task_list_group_empty">Geen takenlijsten in deze groep</string>
     <string name="task_create">Nieuwe taak</string>
-    <string name="task_create_action">Taak maken</string>
+    <string name="task_create_action">Maken</string>
     <string name="task_search">Taken zoeken</string>
     <string name="task_search_hint">Zoek titels, beschrijvingen, personen en lijsten</string>
     <plurals name="task_search_results">

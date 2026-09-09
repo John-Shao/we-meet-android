@@ -36,7 +36,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -241,7 +240,7 @@ fun TaskScreen(
     onOpenSettings: () -> Unit = {},
     onOpenTaskNav: () -> Unit = {},
     onRegisterTaskNav: (TaskNavController) -> Unit = {},
-    onDetailVisibilityChanged: (Boolean) -> Unit = {},
+    onFullScreenVisibilityChanged: (Boolean) -> Unit = {},
     onOpenSearch: (() -> Unit)? = null,
     initialTaskId: String? = null,
     onClose: (() -> Unit)? = null,
@@ -311,9 +310,13 @@ fun TaskScreen(
         )
     }
     SideEffect { onRegisterTaskNav(taskNavController) }
-    LaunchedEffect(page) { onDetailVisibilityChanged(page == TaskPage.Detail) }
+    // Creation and detail pages own their bottom actions; the main tab bar must
+    // stay hidden across Create -> Detail and return only when leaving them.
+    LaunchedEffect(page) {
+        onFullScreenVisibilityChanged(page == TaskPage.Create || page == TaskPage.Detail)
+    }
     DisposableEffect(Unit) {
-        onDispose { onDetailVisibilityChanged(false) }
+        onDispose { onFullScreenVisibilityChanged(false) }
     }
     val selectedTask = ui.detail?.task?.takeIf { it.id == selectedTaskId }
         ?: (ui.tasks + ui.searchResults).firstOrNull { it.id == selectedTaskId }
@@ -340,6 +343,9 @@ fun TaskScreen(
             detailBackStack = emptyList()
             page = TaskPage.List
         }
+    }
+    androidx.activity.compose.BackHandler(enabled = page == TaskPage.Create) {
+        page = TaskPage.List
     }
     androidx.activity.compose.BackHandler(enabled = initialTaskId != null && page == TaskPage.Detail) {
         backFromDetail()
@@ -2598,57 +2604,45 @@ private fun CreateTaskPage(
         modifier = Modifier.testTag(TASK_CREATE_PAGE_TEST_TAG),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Surface(color = MaterialTheme.colorScheme.background) {
-                TaskPageTopBar(stringResource(R.string.task_create), onClose)
-            }
-        },
-        bottomBar = {
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = Dimens.ElevationSticky,
-            ) {
-                Button(
-                    modifier = Modifier.fillMaxWidth().navigationBarsPadding()
-                        .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM)
-                        .height(Dimens.ButtonHeight).testTag(TASK_CREATE_SUBMIT_TEST_TAG),
-                    onClick = {
-                        onCreate(
-                            TaskCreateInput(
-                                title = title.trim(),
-                                description = description.trim(),
-                                startDate = startDate,
-                                dueDate = dueDate,
-                                taskListId = selectedListId,
-                                groupId = selectedGroupId,
-                                assigneeIds = selectedAssignees?.map(PickedMember::userId),
-                                followerIds = selectedFollowers.map(PickedMember::userId),
-                                priority = selectedPriority,
-                                reminderEnabled = reminderEnabled,
-                                reminderMinutes = reminderMinutes,
-                                parentId = selectedParentId,
-                                attachmentUri = attachmentUri,
-                            ),
-                        )
-                    },
-                    enabled = title.isNotBlank() && !creating,
-                    shape = MaterialTheme.shapes.extraLarge,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-                ) {
-                    if (creating) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(Dimens.IconMedium),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            strokeWidth = Dimens.ProgressStroke,
-                        )
-                    } else {
-                        Text(stringResource(R.string.task_create_action))
+            WeMeetTopBar(
+                title = stringResource(R.string.task_create),
+                onClose = onClose,
+                containerColor = MaterialTheme.colorScheme.background,
+                actions = {
+                    TextButton(
+                        modifier = Modifier.testTag(TASK_CREATE_SUBMIT_TEST_TAG),
+                        onClick = {
+                            onCreate(
+                                TaskCreateInput(
+                                    title = title.trim(),
+                                    description = description.trim(),
+                                    startDate = startDate,
+                                    dueDate = dueDate,
+                                    taskListId = selectedListId,
+                                    groupId = selectedGroupId,
+                                    assigneeIds = selectedAssignees?.map(PickedMember::userId),
+                                    followerIds = selectedFollowers.map(PickedMember::userId),
+                                    priority = selectedPriority,
+                                    reminderEnabled = reminderEnabled,
+                                    reminderMinutes = reminderMinutes,
+                                    parentId = selectedParentId,
+                                    attachmentUri = attachmentUri,
+                                ),
+                            )
+                        },
+                        enabled = title.isNotBlank() && !creating,
+                    ) {
+                        if (creating) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(Dimens.IconSmall),
+                                strokeWidth = Dimens.ProgressStroke,
+                            )
+                        } else {
+                            Text(stringResource(R.string.task_create_action))
+                        }
                     }
-                }
-            }
+                },
+            )
         },
     ) { padding ->
         LazyColumn(

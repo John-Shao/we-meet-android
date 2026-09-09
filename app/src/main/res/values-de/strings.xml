@@ -236,7 +236,7 @@
     <string name="task_lists">Aufgabenlisten</string>
     <string name="task_list_group_empty">Keine Aufgabenlisten in dieser Gruppe</string>
     <string name="task_create">Neue Aufgabe</string>
-    <string name="task_create_action">Aufgabe erstellen</string>
+    <string name="task_create_action">Erstellen</string>
     <string name="task_search">Aufgaben suchen</string>
     <string name="task_search_hint">Titel, Beschreibungen, Personen und Listen suchen</string>
     <plurals name="task_search_results">

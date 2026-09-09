@@ -244,7 +244,7 @@
     <string name="task_lists">Task lists</string>
     <string name="task_list_group_empty">No task lists in this group</string>
     <string name="task_create">New task</string>
-    <string name="task_create_action">Create task</string>
+    <string name="task_create_action">Create</string>
     <string name="task_search">Search tasks</string>
     <string name="task_search_hint">Search titles, descriptions, people, and lists</string>
     <plurals name="task_search_results">

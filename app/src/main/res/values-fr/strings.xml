@@ -237,7 +237,7 @@
     <string name="task_lists">Listes de tâches</string>
     <string name="task_list_group_empty">Aucune liste de tâches dans ce groupe</string>
     <string name="task_create">Nouvelle tâche</string>
-    <string name="task_create_action">Créer la tâche</string>
+    <string name="task_create_action">Créer</string>
     <string name="task_search">Rechercher des tâches</string>
     <string name="task_search_hint">Rechercher titres, descriptions, personnes et listes</string>
     <plurals name="task_search_results">
