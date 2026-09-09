@@ -1167,8 +1167,8 @@ private fun MessageInputBar(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = Dimens.ControlLarge)
-                                .padding(Dimens.SpaceM),
+                                .heightIn(min = Dimens.ControlDefault)
+                                .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
                             contentAlignment = Alignment.CenterStart,
                         ) {
                             if (text.isEmpty()) {
