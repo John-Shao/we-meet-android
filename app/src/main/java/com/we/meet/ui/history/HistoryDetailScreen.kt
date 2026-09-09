@@ -41,6 +41,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
@@ -55,6 +58,7 @@ import com.we.meet.data.api.dto.TranscriptDto
 import com.we.meet.data.history.HistoryEntry
 import com.we.meet.ui.home.HistoryTimeFormatter
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -80,7 +84,7 @@ fun HistoryDetailScreen(
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val viewModel: MeetingDetailViewModel =
-        viewModel(factory = MeetingDetailViewModel.Factory(app))
+        viewModel(key = roomId, factory = MeetingDetailViewModel.Factory(app))
     val historyEntries by app.historyStore.entries.collectAsStateWithLifecycle()
     val localEntry = remember(historyEntries, roomId) {
         historyEntries.firstOrNull { it.roomId == roomId }
@@ -90,7 +94,19 @@ fun HistoryDetailScreen(
     var deleting by remember { mutableStateOf(false) }
     val deleteFailedText = stringResource(R.string.event_delete_failed)
 
-    LaunchedEffect(roomId) { viewModel.load(roomId) }
+    LaunchedEffect(roomId) { viewModel.loadContent(roomId) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(roomId, lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            do {
+                val latest = viewModel.refreshRoom(roomId)
+                if (!latest?.closed_at.isNullOrBlank()) break
+                delay(15_000)
+            } while (true)
+        }
+    }
+    var joining by remember(roomId) { mutableStateOf(false) }
+    val joinFailedText = stringResource(R.string.error_unknown)
 
     val roomState by viewModel.room.collectAsStateWithLifecycle()
     val summaryState by viewModel.summary.collectAsStateWithLifecycle()
@@ -206,12 +222,40 @@ fun HistoryDetailScreen(
                 .padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceM),
         ) {
             // P8:进入会议(房间仍在,可重进)——操作收进详情页。
-            room?.slug?.takeIf { it.isNotBlank() }?.let { slug ->
+            room?.slug?.takeIf { it.isNotBlank() }?.let {
+                val isClosed = !room.closed_at.isNullOrBlank()
                 Button(
-                    onClick = { onJoinSlug(slug) },
+                    onClick = {
+                        if (!isClosed && !joining) {
+                            joining = true
+                            scope.launch {
+                                try {
+                                    val latest = viewModel.refreshRoom(roomId)
+                                    if (latest == null) {
+                                        Toast.makeText(app, joinFailedText, Toast.LENGTH_SHORT).show()
+                                    } else if (latest.closed_at.isNullOrBlank()) {
+                                        latest.slug?.takeIf { it.isNotBlank() }?.let(onJoinSlug)
+                                    }
+                                } finally {
+                                    joining = false
+                                }
+                            }
+                        }
+                    },
+                    enabled = !isClosed && !joining,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(stringResource(R.string.event_join_meeting))
+                    if (joining) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(Dimens.IconSmall),
+                            strokeWidth = Dimens.BorderEmphasis,
+                        )
+                    } else {
+                        Text(stringResource(
+                            if (isClosed) R.string.error_meeting_ended
+                            else R.string.event_join_meeting,
+                        ))
+                    }
                 }
                 Spacer(Modifier.height(Dimens.SpaceS))
             }

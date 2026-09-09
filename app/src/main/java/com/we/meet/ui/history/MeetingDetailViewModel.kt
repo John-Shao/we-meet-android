@@ -18,6 +18,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Drives the 4-tab meeting detail screen. Each tab owns an independent
@@ -43,6 +46,7 @@ class MeetingDetailViewModel(
 
     private val _room = MutableStateFlow<LoadState<RoomDto>>(LoadState.Loading)
     val room: StateFlow<LoadState<RoomDto>> = _room.asStateFlow()
+    private val roomRefreshMutex = Mutex()
 
     /**
      * Wrapping LoadState carries Loading/Failure; the inner `SummaryDto?`
@@ -66,8 +70,7 @@ class MeetingDetailViewModel(
             ?: tokenStore.phone
             ?: getApplication<Application>().getString(R.string.default_display_name)
 
-    fun load(idOrSlug: String) {
-        loadRoom(idOrSlug)
+    fun loadContent(idOrSlug: String) {
         loadSummary(idOrSlug)
         loadActionItems(idOrSlug)
         loadTranscripts(idOrSlug)
@@ -84,10 +87,19 @@ class MeetingDetailViewModel(
     private fun loadRoom(idOrSlug: String) {
         viewModelScope.launch {
             _room.value = LoadState.Loading
-            repository.getRoom(idOrSlug, displayUsername)
-                .onSuccess { _room.value = LoadState.Success(it) }
-                .onFailure { _room.value = LoadState.Failure(it) }
+            refreshRoom(idOrSlug)
         }
+    }
+
+    /** Serialize foreground refreshes and the last check before joining. */
+    suspend fun refreshRoom(idOrSlug: String): RoomDto? = roomRefreshMutex.withLock {
+        val result = repository.getRoom(idOrSlug, displayUsername)
+        result.onSuccess { _room.value = LoadState.Success(it) }
+            .onFailure {
+                if (it is CancellationException) throw it
+                _room.value = LoadState.Failure(it)
+            }
+        result.getOrNull()
     }
 
     private fun loadSummary(idOrSlug: String) {
