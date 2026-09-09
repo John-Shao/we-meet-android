@@ -1,5 +1,6 @@
 package com.we.meet.ui.meetingroom
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
@@ -55,6 +56,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -193,6 +195,7 @@ fun MeetingRoomsCalendarScreen(
     onCreateEvent: (epochDay: Long) -> Unit,
     onCreateEventInRoom: (startEpochSecond: Long, endEpochSecond: Long, roomId: String) -> Unit,
     onEventClick: (eventId: String) -> Unit,
+    onFullScreenVisibilityChanged: (Boolean) -> Unit = {},
 ) {
     val vm: MeetingRoomsCalendarViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
@@ -246,6 +249,13 @@ fun MeetingRoomsCalendarScreen(
         }
     }
     val selectedRoom = ui.rooms.firstOrNull { it.id == selectedRoomId }
+    val onFullScreenVisibilityChangedNow by rememberUpdatedState(onFullScreenVisibilityChanged)
+    // The main scaffold owns both the module navigation and the status-bar background.
+    SideEffect { onFullScreenVisibilityChangedNow(selectedRoom != null) }
+    DisposableEffect(Unit) {
+        onDispose { onFullScreenVisibilityChangedNow(false) }
+    }
+    BackHandler(enabled = selectedRoom != null) { selectedRoomId = null }
     val selectedBounds = selectedRoomId?.let { bookingBounds[it].orEmpty() }.orEmpty()
     val selectedBlocks = remember(selectedRoom, ui.selectedDate, zone, rangeStart, rangeEnd) {
         selectedRoom?.let { room ->

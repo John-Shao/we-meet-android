@@ -126,6 +126,7 @@ fun CalendarTabScreen(
     /** P8 日历设置页入口(header 齿轮)。 */
     onOpenManagement: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
+    onFullScreenVisibilityChanged: (Boolean) -> Unit = {},
 ) {
     val vm: CalendarViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
@@ -151,6 +152,7 @@ fun CalendarTabScreen(
                 else onCreateEventAt?.invoke(start, end)
             },
             onEventClick = onEventClick,
+            onFullScreenVisibilityChanged = onFullScreenVisibilityChanged,
         )
         return
     }

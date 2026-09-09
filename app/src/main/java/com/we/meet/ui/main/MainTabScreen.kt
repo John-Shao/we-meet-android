@@ -288,12 +288,19 @@ fun MainTabScreen(
     val taskNavScope = rememberCoroutineScope()
     var taskNavController by remember { mutableStateOf<TaskNavController?>(null) }
     var taskFullScreenVisible by remember { mutableStateOf(false) }
+    var calendarFullScreenVisible by remember { mutableStateOf(false) }
+    val fullScreenPageVisible = when (safeTab) {
+        MainTab.Tasks.ordinal -> taskFullScreenVisible
+        MainTab.Calendar.ordinal -> calendarFullScreenVisible
+        else -> false
+    }
     // Close the task drawer when the user leaves the Tasks tab.
     LaunchedEffect(safeTab) {
         if (safeTab != MainTab.Tasks.ordinal && taskNavDrawerState.isOpen) {
             taskNavDrawerState.close()
         }
         if (safeTab != MainTab.Tasks.ordinal) taskFullScreenVisible = false
+        if (safeTab != MainTab.Calendar.ordinal) calendarFullScreenVisible = false
     }
 
     // 云文档二级导航抽屉 —— 与 task 抽屉同款提升到本层(遮罩覆盖底部导航栏),
@@ -396,6 +403,7 @@ fun MainTabScreen(
                 onCreateEventInRoom = onCreateEventInRoom,
                 onOpenManagement = onOpenCalendarManagement,
                 onOpenSettings = onOpenCalendarSettings,
+                onFullScreenVisibilityChanged = { calendarFullScreenVisible = it },
             )
         },
         TabItem(R.string.tab_meeting, Icons.Filled.Videocam, Icons.Outlined.Videocam) {
@@ -589,14 +597,14 @@ fun MainTabScreen(
                 },
             ) {
                 Scaffold(
-                    // The parent owns the status-bar inset for tab-local task pages.
-                    containerColor = if (safeTab == MainTab.Tasks.ordinal && taskFullScreenVisible) {
+                    // Tab-local secondary pages share the white status bar and hide module navigation.
+                    containerColor = if (fullScreenPageVisible) {
                         MaterialTheme.colorScheme.surface
                     } else {
                         MaterialTheme.colorScheme.background
                     },
                     bottomBar = {
-                        if (!(safeTab == MainTab.Tasks.ordinal && taskFullScreenVisible)) {
+                        if (!fullScreenPageVisible) {
                             CompactTabBar(
                                 tabs = tabs,
                                 selectedTab = safeTab,
