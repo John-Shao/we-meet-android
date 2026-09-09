@@ -123,6 +123,38 @@ class ChatViewModel internal constructor(
 ) : ViewModel() {
 
     private val _ui = MutableStateFlow(ChatUiState(cid = cid))
+    private val _docAccessRoles = MutableStateFlow<Map<String, String?>>(emptyMap())
+    val docAccessRoles = _docAccessRoles.asStateFlow()
+    private val docAccessJobs = mutableMapOf<String, kotlinx.coroutines.Job>()
+
+    fun loadDocAccess(docId: String) {
+        if (docId in _docAccessRoles.value || docId in docAccessJobs) return
+        val job = viewModelScope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
+            try {
+                val result = session.bridge.docChatAccess(docId, cid)
+                _docAccessRoles.update { it + (docId to (result["role"] as? String)) }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // Keep the permission dialog available for an explicit retry.
+            } finally {
+                docAccessJobs.remove(docId)
+            }
+        }
+        docAccessJobs[docId] = job
+        job.start()
+    }
+
+    fun confirmDocAccess(docId: String, role: String?) {
+        docAccessJobs.remove(docId)?.cancel()
+        _docAccessRoles.update { it + (docId to role) }
+    }
+
+    fun refreshDocAccess() {
+        val docIds = _docAccessRoles.value.keys.toList()
+        _docAccessRoles.value = emptyMap()
+        docIds.forEach(::loadDocAccess)
+    }
     val ui: StateFlow<ChatUiState> = _ui.asStateFlow()
 
     val connectionState: StateFlow<ConnectionState> = session.connectionState

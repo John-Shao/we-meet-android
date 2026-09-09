@@ -157,6 +157,7 @@ fun ChatScreen(
             factory = remember(deps, cid, locateSeq) { ChatViewModel.Factory(deps, cid, locateSeq) },
         )
     val ui by vm.ui.collectAsStateWithLifecycle()
+    val docAccessRoles by vm.docAccessRoles.collectAsStateWithLifecycle()
     val connection by vm.connectionState.collectAsStateWithLifecycle()
     // Recompose name labels when new identities resolve.
     val directoryVersion by vm.directoryVersion.collectAsStateWithLifecycle()
@@ -187,7 +188,8 @@ fun ChatScreen(
     var docAccessId by androidx.compose.runtime.saveable.rememberSaveable(cid) { mutableStateOf<String?>(null) }
     var docAccessTitle by androidx.compose.runtime.saveable.rememberSaveable(cid) { mutableStateOf("") }
     docAccessId?.let { docId ->
-        DocCardAccessDialog(deps, cid, docId, docAccessTitle) { docAccessId = null }
+        DocCardAccessDialog(deps, cid, docId, docAccessTitle,
+            onRoleConfirmed = { vm.confirmDocAccess(docId, it) }) { docAccessId = null }
     }
     fun exitSelect() { selectMode = false; selectedMids = emptySet() }
     androidx.activity.compose.BackHandler(enabled = selectMode) { exitSelect() }
@@ -197,6 +199,7 @@ fun ChatScreen(
     // and retry the WS if in a terminal state (mirrors ConversationListScreen).
     val currentConn by rememberUpdatedState(connection)
     LifecycleResumeEffect(Unit) {
+        vm.refreshDocAccess()
         vm.setVisible(true)
         vm.reloadHistory()
         if (currentConn == ConnectionState.AUTH_FAILED ||
@@ -539,6 +542,8 @@ fun ChatScreen(
                                     } else null,
                                     onOpenEvent = onOpenEvent,
                                     onOpenDoc = onOpenDoc,
+                                    docAccessRoles = docAccessRoles,
+                                    onLoadDocAccess = vm::loadDocAccess,
                                     onManageDocAccess = if (isOwn && !selectMode) ({ doc ->
                                         docAccessTitle = doc.title
                                         docAccessId = doc.docId

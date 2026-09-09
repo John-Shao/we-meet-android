@@ -30,12 +30,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @Composable
-internal fun DocCardAccessDialog(deps: ImDeps, cid: String, docId: String, title: String, onDismiss: () -> Unit) {
+internal fun DocCardAccessDialog(deps: ImDeps, cid: String, docId: String, title: String,
+    onRoleConfirmed: (String?) -> Unit, onDismiss: () -> Unit) {
     val instance = androidx.compose.runtime.saveable.rememberSaveable { java.util.UUID.randomUUID().toString() }
     val vm: DocCardAccessViewModel = viewModel(key = "doc-card-access:$instance", factory = viewModelFactory {
         initializer { DocCardAccessViewModel(ImSession.get(deps).bridge, docId, cid) }
     })
     val state by vm.state.collectAsStateWithLifecycle()
+    LaunchedEffect(state.loaded, state.confirmedRole) {
+        if (state.loaded) onRoleConfirmed(state.confirmedRole)
+    }
     AlertDialog(
         onDismissRequest = { if (!state.busy) onDismiss() },
         properties = DialogProperties(dismissOnBackPress = !state.busy, dismissOnClickOutside = !state.busy),
@@ -46,12 +50,12 @@ internal fun DocCardAccessDialog(deps: ImDeps, cid: String, docId: String, title
                 if (state.busy) WeMeetInlineLoading()
                 if (state.loaded) {
                     if (state.canManage) {
-                        listOf("reader", "editor").forEach { role ->
+                        listOf("reader", "commenter", "editor").forEach { role ->
                             Row(Modifier.fillMaxWidth().heightIn(min = Dimens.MinTouchTarget)
                                 .selectable(state.role == role, enabled = !state.busy, role = Role.RadioButton,
                                     onClick = { vm.choose(role) }), verticalAlignment = Alignment.CenterVertically) {
                                 RadioButton(state.role == role, onClick = null, enabled = !state.busy)
-                                Text(stringResource(if (role == "reader") R.string.im_doc_access_reader else R.string.im_doc_access_editor))
+                                Text(stringResource(docAccessRoleLabel(role)))
                             }
                         }
                         Text(stringResource(R.string.im_doc_access_help), style = MaterialTheme.typography.bodySmall)
@@ -73,12 +77,13 @@ internal fun DocCardAccessDialog(deps: ImDeps, cid: String, docId: String, title
 
 internal class DocCardAccessViewModel(private val repo: ImBridgeRepository, private val docId: String, private val cid: String) : ViewModel() {
     data class State(val role: String = "reader", val loaded: Boolean = false, val canManage: Boolean = false,
-        val busy: Boolean = false, val error: Boolean = false, val saved: Boolean = false)
+        val busy: Boolean = false, val error: Boolean = false, val saved: Boolean = false,
+        val confirmedRole: String? = null)
     private val mutableState = MutableStateFlow(State())
     val state = mutableState.asStateFlow()
     init { load() }
     fun choose(role: String) {
-        if (!state.value.busy && state.value.canManage && role in listOf("reader", "editor"))
+        if (!state.value.busy && state.value.canManage && role in listOf("reader", "commenter", "editor"))
             mutableState.update { it.copy(role = role, saved = false) }
     }
     fun load() = request(null)
@@ -90,7 +95,8 @@ internal class DocCardAccessViewModel(private val repo: ImBridgeRepository, priv
             try {
                 val result = repo.docChatAccess(docId, cid, role)
                 mutableState.update { it.copy(role = result["role"] as? String ?: "reader", loaded = true,
-                    canManage = result["can_manage"] == true, saved = role != null) }
+                    canManage = result["can_manage"] == true, saved = role != null,
+                    confirmedRole = result["role"] as? String) }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { mutableState.update { it.copy(error = true) } }
             finally { mutableState.update { it.copy(busy = false) } }

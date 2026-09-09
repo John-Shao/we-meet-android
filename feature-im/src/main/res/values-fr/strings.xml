@@ -426,6 +426,7 @@ Limites : 100 requêtes par minute et 5 par seconde par robot, corps limités à
     <string name="im_search_ai_server_error">Le service IA a échoué. Veuillez réessayer.</string>
     <string name="im_doc_card_access">Autorisations du chat</string>
     <string name="im_doc_access_reader">Lecture</string>
+    <string name="im_doc_access_commenter">Commentaire</string>
     <string name="im_doc_access_editor">Modification</string>
     <string name="im_doc_access_help">Modifiez les droits des membres actuels de ce chat. Les droits supérieurs provenant d’autres chats, de liens ou d’autorisations manuelles sont conservés, y compris ceux des anciennes cartes.</string>
     <string name="im_doc_access_denied">Vous ne pouvez pas gérer les autorisations de ce document.</string>

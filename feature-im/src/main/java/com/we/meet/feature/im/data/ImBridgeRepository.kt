@@ -117,7 +117,7 @@ internal class ImBridgeRepository(private val api: ImApi) {
 
     suspend fun docChatAccess(docId: String, cid: String, role: String? = null): Map<String, Any> {
         val payload = mutableMapOf<String, Any>("doc_id" to docId, "cid" to cid)
-        if (role != null) { require(role in listOf("reader", "editor")); payload["role"] = role }
+        if (role != null) { require(role in listOf("reader", "commenter", "editor")); payload["role"] = role }
         val result = api.docChatAccess(payload)
         check(result["scoped"] == true)
         if (role != null) check(result["role"] == role && result["complete"] == true)

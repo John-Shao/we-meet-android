@@ -32,7 +32,7 @@ import com.we.meet.feature.im.model.MessageContent
 
 /**
  * 分享云文档到聊天气泡(content_type='doc-card'):左竖色条 + 文档图标 + 标题 +
- * 底部「查看文档」和发送者的「会话权限」。标题是发送时的快照，授权设置从服务端读取。
+ * 底部「查看文档」和发送者的当前会话权限。标题是发送时的快照，授权设置从服务端读取。
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -40,6 +40,7 @@ internal fun DocCardBubble(
     content: MessageContent.DocCard,
     onLongPress: (() -> Unit)?,
     onManageAccess: (() -> Unit)? = null,
+    accessRole: String? = null,
     onOpen: () -> Unit,
 ) {
     val clickable = content.docId.isNotBlank() && content.url.isNotBlank()
@@ -94,7 +95,7 @@ internal fun DocCardBubble(
                         modifier = Modifier.padding(top = Dimens.SpaceXs),
                     )
                     if (onManageAccess != null) androidx.compose.material3.TextButton(onClick = onManageAccess) {
-                        Text(stringResource(R.string.im_doc_card_access))
+                        Text(stringResource(docAccessRoleLabel(accessRole)))
                         androidx.compose.material3.Icon(
                             androidx.compose.material.icons.Icons.Default.ExpandMore,
                             contentDescription = null,
@@ -104,4 +105,12 @@ internal fun DocCardBubble(
             }
         }
     }
+}
+
+@androidx.annotation.StringRes
+internal fun docAccessRoleLabel(role: String?): Int = when (role) {
+    "reader" -> R.string.im_doc_access_reader
+    "commenter" -> R.string.im_doc_access_commenter
+    "editor" -> R.string.im_doc_access_editor
+    else -> R.string.im_doc_card_access
 }

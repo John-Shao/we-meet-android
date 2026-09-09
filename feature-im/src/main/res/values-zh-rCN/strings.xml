@@ -425,6 +425,7 @@
     <string name="im_search_ai_server_error">AI 服务出错，请重试。</string>
     <string name="im_doc_card_access">会话权限</string>
     <string name="im_doc_access_reader">可阅读</string>
+    <string name="im_doc_access_commenter">可评论</string>
     <string name="im_doc_access_editor">可编辑</string>
     <string name="im_doc_access_help">调整你在本会话授予当前成员的权限。其他聊天、手动授权和链接提供的更高权限会保留。旧卡片的已有授权也会保留。</string>
     <string name="im_doc_access_denied">你当前没有文档权限管理权，无法修改授权。</string>

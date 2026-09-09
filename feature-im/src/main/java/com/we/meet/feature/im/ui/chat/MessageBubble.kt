@@ -123,6 +123,8 @@ fun MessageBubble(
     /** 分享云文档卡片: tap「查看文档」→ 打开该文档(app 层接文档查看器)。 */
     onOpenDoc: ((url: String) -> Unit)? = null,
     onManageDocAccess: ((MessageContent.DocCard) -> Unit)? = null,
+    docAccessRoles: Map<String, String?> = emptyMap(),
+    onLoadDocAccess: ((String) -> Unit)? = null,
     /** 分享会议卡片: tap「加入会议」→ 按 slug 走入会预览(app 层接 joinPreview)。 */
     onJoinMeeting: ((slug: String) -> Unit)? = null,
 ) {
@@ -268,10 +270,16 @@ fun MessageBubble(
                 is MessageContent.EventCard -> EventCardBubble(
                     content, isOwn, onLongPress,
                 ) { onOpenEvent?.invoke(content.eventId) }
-                is MessageContent.DocCard -> DocCardBubble(
-                    content, onLongPress,
-                    onManageAccess = if (isOwn && onManageDocAccess != null) ({ onManageDocAccess(content) }) else null,
-                ) { onOpenDoc?.invoke(content.url) }
+                is MessageContent.DocCard -> {
+                    LaunchedEffect(content.docId, isOwn) {
+                        if (isOwn && content.docId.isNotBlank()) onLoadDocAccess?.invoke(content.docId)
+                    }
+                    DocCardBubble(
+                        content, onLongPress,
+                        onManageAccess = if (isOwn && onManageDocAccess != null) ({ onManageDocAccess(content) }) else null,
+                        accessRole = docAccessRoles[content.docId],
+                    ) { onOpenDoc?.invoke(content.url) }
+                }
                 is MessageContent.MeetingCard -> MeetingCardBubble(
                     content, onLongPress,
                 ) { onJoinMeeting?.invoke(content.slug) }
