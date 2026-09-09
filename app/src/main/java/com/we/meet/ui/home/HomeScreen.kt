@@ -104,7 +104,7 @@ fun HomeScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = Dimens.SpaceXl, end = Dimens.SpaceXs, top = Dimens.SpaceS),
+                .padding(start = Dimens.SpaceXl, end = Dimens.SpaceXs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -127,7 +127,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = Dimens.ScreenPadding)
-                .padding(top = Dimens.SpaceL, bottom = Dimens.SpaceXl),
+                .padding(top = Dimens.SpaceS, bottom = Dimens.SpaceM),
             horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXl),
         ) {
             ActionCard(
@@ -242,10 +242,10 @@ private fun ActionCard(
                 imageVector = icon,
                 contentDescription = label,
                 tint = iconTint,
-                modifier = Modifier.size(Dimens.IconLarge),
+                modifier = Modifier.size(Dimens.ActionTileCompactIcon),
             )
         }
-        Spacer(Modifier.height(Dimens.SpaceS))
+        Spacer(Modifier.height(Dimens.SpaceXs))
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
