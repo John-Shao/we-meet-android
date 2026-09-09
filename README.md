@@ -27,6 +27,11 @@ D:\workspace\we-meet\
 移动端设计与接口说明（位于后端仓库）：
 [../we-meet/docs/extensions/移动端App客户端支持方案.md](../we-meet/docs/extensions/移动端App客户端支持方案.md)
 
+## UI 设计规范
+
+新增和改动移动端页面须遵循[移动端 UI 设计规范：页面层级与配色](docs/page-backgrounds.md)，统一一级与二级及更深页面的背景分区、状态栏衔接、底部模块导航栏和日历日期栏例外。
+Android 组件、主题 token 与提交前检查见 [Android 设计规范](docs/设计规范.md)。
+
 ## 前置要求
 
 - JDK 17

@@ -83,6 +83,7 @@ we-meet-specific notes:
 
 ## Conventions
 
+- Before adding or changing mobile UI, follow the [mobile UI page hierarchy and color rules](docs/page-backgrounds.md) and [Android design specification](docs/设计规范.md). Verify status-bar continuity, primary/secondary background regions, the calendar date-strip exception, and bottom-tab visibility/restoration using the linked acceptance checklist.
 - Application-scoped singleton Retrofit instance (do NOT create per-ViewModel)
 - ViewModels expose `StateFlow<UiState>`; Compose collects via `collectAsStateWithLifecycle`
 - LiveKit SDK 2.x `Room.events: SharedFlow<RoomEvent>` — use this, NOT the legacy listener API
