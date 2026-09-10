@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -988,10 +989,19 @@ private fun RoomDateToolbar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = Dimens.SpaceS, end = Dimens.SpaceXs),
+            // 与日历 tab 的头部同规格：左侧日期文字顶到 ScreenPadding；右侧按钮自带
+            // 12dp 内缩，外侧只留 SpaceXs，使两侧字形都落在 16dp。
+            .padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs)
+            .padding(vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        TextButton(onClick = { showDatePicker = true }) {
+        // TextButton 自带 M3 的 12dp 水平 contentPadding，会让日期文字比其它页面标题
+        // 多缩进 12dp（28dp vs 16dp）。去掉水平内边距让日期左缘对齐 ScreenPadding；
+        // 48dp 最小触控热区由 minimumInteractiveComponentSize 保留。
+        TextButton(
+            onClick = { showDatePicker = true },
+            contentPadding = PaddingValues(Dimens.SpaceNone),
+        ) {
             Text(
                 text = stringResource(
                     R.string.calendar_month_year,
@@ -999,7 +1009,6 @@ private fun RoomDateToolbar(
                     date.year,
                 ),
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
             )
         }
