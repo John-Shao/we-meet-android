@@ -4,6 +4,7 @@ import com.we.meet.ui.theme.Dimens
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.text.format.DateFormat
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -87,9 +88,12 @@ import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.feature.im.vm.ConversationListViewModel
 import com.we.meet.feature.im.vm.ConversationRowUi
 import kotlinx.coroutines.delay
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 /**
@@ -544,20 +548,36 @@ private fun SheetAction(text: String, destructive: Boolean = false, onClick: () 
     }
 }
 
-/** Today → HH:mm; this year → M/d; older → yyyy/M/d. */
+/** 超过这几天就不再用星期几表示,改回具体日期(2~6 天前显示「周X」)。 */
+private const val WEEKDAY_LABEL_MAX_DAYS = 7L
+
+/**
+ * 会话列表右上角的时间戳,按微信式分档:
+ * 今天 → 时分;昨天 → 「昨天」;一周内 → 周X;更早 → 月日(跨年再带上年份)。
+ *
+ * 星期与日期不写死格式串,交给 [DateFormat.getBestDateTimePattern] 按当前语言取
+ * 最佳格式:中文出「周五」「9月2日」,英文出「Fri」「Sep 2」。
+ */
+@Composable
 private fun timeLabel(tsMs: Long): String {
-    val now = Calendar.getInstance()
-    val then = Calendar.getInstance().apply { timeInMillis = tsMs }
-    val sameDay = now.get(Calendar.YEAR) == then.get(Calendar.YEAR) &&
-        now.get(Calendar.DAY_OF_YEAR) == then.get(Calendar.DAY_OF_YEAR)
-    val sameYear = now.get(Calendar.YEAR) == then.get(Calendar.YEAR)
-    val pattern = when {
-        sameDay -> "HH:mm"
-        sameYear -> "M/d"
-        else -> "yyyy/M/d"
+    val zone = ZoneId.systemDefault()
+    val then = Instant.ofEpochMilli(tsMs).atZone(zone)
+    val today = LocalDate.now(zone)
+    val locale = Locale.getDefault()
+    val daysAgo = ChronoUnit.DAYS.between(then.toLocalDate(), today)
+    return when {
+        // 设备时钟回拨会让时间戳落在「未来」,一并按今天显示时分。
+        daysAgo <= 0L -> then.formatWith(locale, "Hm")
+        daysAgo == 1L -> stringResource(R.string.im_time_yesterday)
+        daysAgo < WEEKDAY_LABEL_MAX_DAYS -> then.formatWith(locale, "EEE")
+        then.year == today.year -> then.formatWith(locale, "MMMd")
+        else -> then.formatWith(locale, "yMMMd")
     }
-    return SimpleDateFormat(pattern, Locale.getDefault()).format(Date(tsMs))
 }
+
+/** skeleton → 当前语言的最佳格式串,再渲染(zh:「EEE」→周五、「MMMd」→9月2日)。 */
+private fun ZonedDateTime.formatWith(locale: Locale, skeleton: String): String =
+    format(DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, skeleton), locale))
 
 /** One row of the header's "more" dropdown. */
 @Composable
