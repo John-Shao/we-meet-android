@@ -82,7 +82,7 @@ import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTextStyles
 import com.we.meet.ui.theme.WeMeetTheme
 import java.time.LocalDate
-import java.util.Locale
+import com.we.meet.ui.locale.appLocale
 import kotlin.math.roundToInt
 
 /**
@@ -461,7 +461,7 @@ fun TimelineScaffold(
     // 色相只表示日历/用户归属;RSVP 由图形徽标表示。忙闲块(label == null)
     // 没有日历归属,继续使用中性 busyColor。
     // 短块「标题,时间」分隔符:中文全角逗号(对齐 Web),其他语言半角。
-    val titleTimeSep = if (Locale.getDefault().language == "zh") "，" else ", "
+    val titleTimeSep = if (appLocale().language == "zh") "，" else ", "
     val busyA11yLabel = stringResource(R.string.freebusy_busy)
     val openBlockA11yLabel = stringResource(R.string.calendar_a11y_open_event)
     val moveEarlierA11yLabel = stringResource(R.string.calendar_a11y_move_earlier)

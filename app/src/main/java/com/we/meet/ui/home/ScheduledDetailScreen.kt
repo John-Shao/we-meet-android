@@ -50,6 +50,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.locale.appLocale
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.BuildConfig
 import com.we.meet.R
@@ -253,6 +254,7 @@ fun ScheduledDetailScreen(
                     text = formatScheduledIso(
                         context.getString(R.string.fmt_full_date_time),
                         scheduledAtIso,
+                        context.appLocale(),
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -350,7 +352,8 @@ internal fun formatSlugDigits(slug: String): String {
     }
 }
 
-private fun formatScheduledIso(pattern: String, iso: String): String {
+/** pattern 来自资源串(含月份名),所以 locale 必须传应用内语言,不能取设备语言。 */
+private fun formatScheduledIso(pattern: String, iso: String, locale: Locale): String {
     if (iso.isBlank()) return "—"
     val normalized = iso
         .replace(Regex("\\.\\d+"), "")
@@ -359,5 +362,5 @@ private fun formatScheduledIso(pattern: String, iso: String): String {
         timeZone = TimeZone.getTimeZone("UTC")
     }
     val ms = runCatching { parser.parse(normalized)?.time }.getOrNull() ?: return iso
-    return SimpleDateFormat(pattern, Locale.getDefault()).format(Date(ms))
+    return SimpleDateFormat(pattern, locale).format(Date(ms))
 }

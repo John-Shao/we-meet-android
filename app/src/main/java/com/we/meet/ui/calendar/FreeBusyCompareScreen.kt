@@ -76,7 +76,7 @@ import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
-import java.util.Locale
+import com.we.meet.ui.locale.appLocale
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -479,7 +479,7 @@ fun FreeBusyCompareScreen(
                 Spacer(Modifier.width(Dimens.SpaceXs))
                 Text(
                     text = "${day.monthValue}/${day.dayOfMonth} " +
-                        day.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                        day.dayOfWeek.getDisplayName(TextStyle.SHORT, appLocale()),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Medium,
                 )

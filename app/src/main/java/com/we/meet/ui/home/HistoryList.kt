@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.we.meet.R
 import com.we.meet.data.history.HistoryEntry
+import com.we.meet.ui.locale.appLocale
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -51,8 +52,11 @@ private fun HistoryRow(
 }
 
 object HistoryTimeFormatter {
+    // "HH:mm" 这类纯数字 pattern 的输出与 UI 语言无关,保持设备 locale;
+    // 下面 monthDayFmt 的 pattern 来自资源串(含月份名/年份写法),必须用应用内
+    // 语言 —— 否则应用切英文 + 系统中文会渲染成「9月 11, 10:05」。
     private fun timeFmt() = SimpleDateFormat("HH:mm", Locale.getDefault())
-    private fun monthDayFmt(pattern: String) = SimpleDateFormat(pattern, Locale.getDefault())
+    private fun monthDayFmt(pattern: String, locale: Locale) = SimpleDateFormat(pattern, locale)
     private fun fullDateFmt() = SimpleDateFormat("yyyy/M/d HH:mm", Locale.getDefault())
 
     /** "<today> HH:mm" if same calendar day, else the localized month-day-time.
@@ -62,17 +66,20 @@ object HistoryTimeFormatter {
         if (isToday(epochMs)) {
             "${context.getString(R.string.history_today_prefix)} ${timeFmt().format(Date(epochMs))}"
         } else {
-            monthDayFmt(context.getString(R.string.fmt_month_day_time)).format(Date(epochMs))
+            monthDayFmt(context.getString(R.string.fmt_month_day_time), context.appLocale())
+                .format(Date(epochMs))
         }
 
     fun time(epochMs: Long): String = timeFmt().format(Date(epochMs))
 
     fun monthDayTime(context: android.content.Context, epochMs: Long): String =
-        monthDayFmt(context.getString(R.string.fmt_month_day_time)).format(Date(epochMs))
+        monthDayFmt(context.getString(R.string.fmt_month_day_time), context.appLocale())
+            .format(Date(epochMs))
 
     /** 带年份的完整本地化时刻(会议详情用,列表仍用短格式)。 */
     fun fullDateTimeLocalized(context: android.content.Context, epochMs: Long): String =
-        monthDayFmt(context.getString(R.string.fmt_full_date_time)).format(Date(epochMs))
+        monthDayFmt(context.getString(R.string.fmt_full_date_time), context.appLocale())
+            .format(Date(epochMs))
 
     fun fullDateTime(epochMs: Long): String = fullDateFmt().format(Date(epochMs))
 

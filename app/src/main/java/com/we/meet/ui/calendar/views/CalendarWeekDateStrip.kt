@@ -54,7 +54,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
-import java.util.Locale
+import com.we.meet.ui.locale.appLocale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Job
@@ -271,9 +271,10 @@ internal fun CalendarDateCell(
     modifier: Modifier = Modifier,
     indicatorColor: Color? = null,
 ) {
+    val locale = appLocale()
     val localizedDate = DateTimeFormatter
         .ofLocalizedDate(FormatStyle.FULL)
-        .withLocale(Locale.getDefault())
+        .withLocale(locale)
         .format(date)
     val todayDescription = stringResource(R.string.calendar_today)
     val eventsDescription = stringResource(R.string.calendar_has_events)
@@ -297,7 +298,7 @@ internal fun CalendarDateCell(
         Text(
             text = date.dayOfWeek.getDisplayName(
                 TextStyle.NARROW_STANDALONE,
-                Locale.getDefault(),
+                locale,
             ),
             style = MaterialTheme.typography.labelSmall,
             color = if (selected) {

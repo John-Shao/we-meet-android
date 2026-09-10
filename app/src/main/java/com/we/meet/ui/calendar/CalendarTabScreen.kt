@@ -104,7 +104,7 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
-import java.util.Locale
+import com.we.meet.ui.locale.appLocale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Job
@@ -763,8 +763,9 @@ private fun MonthGrid(
     val firstOfMonth = month.atDay(1)
     val leadingBlanks = (firstOfMonth.dayOfWeek.value - firstDow.value + 7) % 7
     val gridStart = firstOfMonth.minusDays(leadingBlanks.toLong())
-    val dateFormatter = remember {
-        DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(Locale.getDefault())
+    val locale = appLocale()
+    val dateFormatter = remember(locale) {
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale)
     }
     val todayDescription = stringResource(R.string.calendar_today)
     val eventsDescription = stringResource(R.string.calendar_has_events)
@@ -778,7 +779,7 @@ private fun MonthGrid(
         ) {
             (0L..6L).map(firstDow::plus).forEach { dow ->
                 Text(
-                    text = dow.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
+                    text = dow.getDisplayName(TextStyle.NARROW, locale),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,

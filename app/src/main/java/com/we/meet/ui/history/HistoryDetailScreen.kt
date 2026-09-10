@@ -57,6 +57,7 @@ import com.we.meet.data.api.dto.SummaryDto
 import com.we.meet.data.api.dto.TranscriptDto
 import com.we.meet.data.history.HistoryEntry
 import com.we.meet.ui.home.HistoryTimeFormatter
+import com.we.meet.ui.locale.appLocale
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -759,9 +760,9 @@ private fun TranscriptTab(
                 CenteredText(stringResource(R.string.meeting_detail_transcript_empty))
                 return
             }
-            // System language — used to pick a relevant translation row
+            // App language — used to pick a relevant translation row
             // when the speaker's `language` differs.
-            val userLang = Locale.getDefault().language.lowercase()
+            val userLang = appLocale().language.lowercase()
             Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                 rows.forEach { row ->
                     val ts = formatTime(row.started_at)

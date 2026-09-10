@@ -49,7 +49,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
+import com.we.meet.ui.locale.appLocale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -1482,8 +1482,8 @@ private fun TimeDivider(tsMs: Long) {
     val label = imDividerTimeLabel(
         tsMs = tsMs,
         yesterday = stringResource(R.string.im_time_yesterday),
-        // 应用内语言,不是设备语言 —— 理由见 ConversationListScreen.timeLabel。
-        locale = LocalConfiguration.current.locales[0],
+        // 应用内语言,不是设备语言 Locale.getDefault() —— 见 com.we.meet.ui.locale.appLocale。
+        locale = appLocale(),
     )
     Box(
         Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),

@@ -12,7 +12,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalConfiguration
+import com.we.meet.ui.locale.appLocale
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.clickable
@@ -548,10 +548,9 @@ private fun timeLabel(tsMs: Long): String =
     imConversationTimeLabel(
         tsMs = tsMs,
         yesterday = stringResource(R.string.im_time_yesterday),
-        // 应用内语言(我的 → 设置 → 语言),不是 Locale.getDefault() 的设备语言:
-        // 用户把应用切成英文、系统仍是中文时,用设备语言会让日期/星期和旁边的
-        // 「昨天」串成两种语言。取法与 TaskScreen 一致。
-        locale = LocalConfiguration.current.locales[0],
+        // 应用内语言(我的 → 设置 → 语言),不是设备语言 Locale.getDefault();
+        // 理由与取法见 com.we.meet.ui.locale.appLocale。
+        locale = appLocale(),
     )
 
 /** One row of the header's "more" dropdown. */

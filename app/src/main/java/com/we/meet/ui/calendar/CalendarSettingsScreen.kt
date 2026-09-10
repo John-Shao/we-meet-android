@@ -44,7 +44,7 @@ import com.we.meet.data.settings.WORKING_HOURS_STEP_MIN
 import com.we.meet.data.settings.isValidWorkingHours
 import java.time.DayOfWeek
 import java.time.format.TextStyle
-import java.util.Locale
+import com.we.meet.ui.locale.appLocale
 
 /**
  * P8 日历设置页(对标飞书日历设置的 we-meet 可落地子集,纯本地设置):
@@ -72,7 +72,8 @@ fun CalendarSettingsScreen(onBack: () -> Unit) {
         store.synchronizeCalendarPreferences()
     }
 
-    val locale = Locale.getDefault()
+    // 星期选项名跟应用内语言走,和选项文案本身同一种语言。
+    val locale = appLocale()
     val dowLabel: (CalendarWeekStart) -> String = { ws ->
         val dow = if (ws == CalendarWeekStart.SUNDAY) DayOfWeek.SUNDAY else DayOfWeek.MONDAY
         dow.getDisplayName(TextStyle.FULL, locale)

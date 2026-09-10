@@ -118,7 +118,7 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
-import java.util.Locale
+import com.we.meet.ui.locale.appLocale
 import kotlin.math.abs
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -889,9 +889,10 @@ private fun RoomScheduleToolbar(
 ) {
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
     val today = LocalDate.now(zone)
-    val dateFormatter = remember {
+    val locale = appLocale()
+    val dateFormatter = remember(locale) {
         DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-            .withLocale(Locale.getDefault())
+            .withLocale(locale)
     }
 
     Box(

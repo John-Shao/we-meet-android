@@ -29,7 +29,7 @@ import com.we.meet.ui.calendar.EventUi
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
-import java.util.Locale
+import com.we.meet.ui.locale.appLocale
 
 /**
  * 日程视图(对齐 Web AgendaListView 重做):锚点日期起一年 [anchor, +1y)
@@ -135,7 +135,7 @@ private fun AgendaDateHeader(
         )
         Spacer(Modifier.width(Dimens.SpaceXs))
         Text(
-            text = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+            text = date.dayOfWeek.getDisplayName(TextStyle.SHORT, appLocale()),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
             color = color,
