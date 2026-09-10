@@ -49,6 +49,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -59,7 +60,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jusi.lightim.ConnectionState
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.R
-import java.util.Locale
 import com.we.meet.feature.im.data.ChatUploadException
 import com.we.meet.feature.im.ui.common.ConnectionStatusBar
 import com.we.meet.feature.im.ui.common.ErrorBanner
@@ -1482,7 +1482,8 @@ private fun TimeDivider(tsMs: Long) {
     val label = imDividerTimeLabel(
         tsMs = tsMs,
         yesterday = stringResource(R.string.im_time_yesterday),
-        locale = Locale.getDefault(),
+        // 应用内语言,不是设备语言 —— 理由见 ConversationListScreen.timeLabel。
+        locale = LocalConfiguration.current.locales[0],
     )
     Box(
         Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
