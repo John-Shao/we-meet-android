@@ -1,18 +1,14 @@
 package com.we.meet.feature.docs.ui
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarBorder
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Restore
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,9 +31,11 @@ import com.we.meet.ui.theme.Dimens
 /**
  * 文档列表行(设计规范 §1 语义:标题 titleMedium + 副文案 bodySmall + 行高)。
  *
- * 行尾两个动作:收藏星标(可切换,有语义描述)与「更多」溢出菜单(收藏/重命名/
- * 移动/删除,按 `abilities` 逐项显隐);回收站模式只给「恢复」。
+ * 行尾不再放「···」:长按整行弹 [DocCardActionsSheet](收藏/重命名/移动/删除,按
+ * `abilities` 逐项显隐),与消息、任务两个列表的长按操作一致。行尾只留状态类图标 ——
+ * 已收藏的星标(点一下即取消收藏)、回收站的「恢复」。
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DocListItem(
     doc: DocumentDto,
@@ -49,19 +47,30 @@ fun DocListItem(
     onDelete: () -> Unit,
     onRestore: () -> Unit,
 ) {
-    var menuExpanded by remember { mutableStateOf(false) }
+    var sheetOpen by remember { mutableStateOf(false) }
+    val trashMode = mode != DocsHomeViewModel.Mode.HOME
+    // 行尾有图标时外侧只留 SpaceXs(图标自带 12dp 内缩,字形才落在 ScreenPadding);
+    // 没有图标时内边距直接给正文,免得长标题顶到屏幕边上。
+    val rowEndPadding = when {
+        trashMode -> if (doc.abilities.restore) Dimens.SpaceXs else Dimens.ScreenPadding
+        doc.isFavorite -> Dimens.SpaceXs
+        else -> Dimens.ScreenPadding
+    }
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
+                // 与消息、任务两个列表一致:长按整行出操作弹层,行尾不再放「···」。
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClickLabel = stringResource(R.string.cd_docs_more),
+                    onLongClick = { sheetOpen = true },
+                )
                 .padding(
                     start = Dimens.ScreenPadding,
                     top = Dimens.SpaceM,
                     bottom = Dimens.SpaceM,
-                    // 「···」按钮自带 12dp 内缩，外侧只留 SpaceXs，图标字形才能与
-                    // 左侧缩略图同样落在 ScreenPadding(16dp) 上。
-                    end = Dimens.SpaceXs,
+                    end = rowEndPadding,
                 ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -85,82 +94,7 @@ fun DocListItem(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            if (mode == DocsHomeViewModel.Mode.HOME) {
-                if (doc.isFavorite) IconButton(onClick = onToggleFavorite, enabled = doc.abilities.favorite) {
-                    Icon(
-                        imageVector = if (doc.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
-                        contentDescription = stringResource(
-                            if (doc.isFavorite) R.string.cd_docs_unfavorite else R.string.cd_docs_favorite,
-                        ),
-                        tint = if (doc.isFavorite) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                    )
-                }
-                Box {
-                    IconButton(onClick = { menuExpanded = true }) {
-                        Icon(
-                            imageVector = Icons.Outlined.MoreVert,
-                            contentDescription = stringResource(R.string.cd_docs_more),
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false },
-                    ) {
-                        DropdownMenuItem(
-                            enabled = doc.abilities.favorite,
-                            text = {
-                                Text(
-                                    stringResource(
-                                        if (doc.isFavorite) R.string.docs_more_unfavorite else R.string.docs_more_favorite,
-                                    ),
-                                    softWrap = false,
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onToggleFavorite()
-                            },
-                        )
-                        if (doc.abilities.canRename) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.docs_rename_title), softWrap = false) },
-                                onClick = {
-                                    menuExpanded = false
-                                    onRename()
-                                },
-                            )
-                        }
-                        if (doc.abilities.move) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.docs_move_title), softWrap = false) },
-                                onClick = {
-                                    menuExpanded = false
-                                    onMove()
-                                },
-                            )
-                        }
-                        if (doc.abilities.destroy) {
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = stringResource(R.string.docs_delete_title),
-                                        color = MaterialTheme.colorScheme.error,
-                                        softWrap = false,
-                                    )
-                                },
-                                onClick = {
-                                    menuExpanded = false
-                                    onDelete()
-                                },
-                            )
-                        }
-                    }
-                }
-            } else {
+            if (trashMode) {
                 if (doc.abilities.restore) {
                     IconButton(onClick = onRestore) {
                         Icon(
@@ -169,10 +103,31 @@ fun DocListItem(
                         )
                     }
                 }
+            } else if (doc.isFavorite) {
+                // 星标兼作「已收藏」状态,点一下即取消收藏;收藏入口在长按弹层里。
+                IconButton(onClick = onToggleFavorite, enabled = doc.abilities.favorite) {
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = stringResource(R.string.cd_docs_unfavorite),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
         }
         HorizontalDivider(Modifier.padding(start = Dimens.ScreenPadding + Dimens.ListLeadingIcon + Dimens.SpaceM),
             thickness = Dimens.DividerThin, color = MaterialTheme.colorScheme.outlineVariant)
+    }
+    if (sheetOpen) {
+        DocCardActionsSheet(
+            doc = doc,
+            trashMode = trashMode,
+            onDismiss = { sheetOpen = false },
+            onToggleFavorite = onToggleFavorite,
+            onRename = onRename,
+            onMove = onMove,
+            onDelete = onDelete,
+            onRestore = onRestore,
+        )
     }
 }
 
