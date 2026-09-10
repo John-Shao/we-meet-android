@@ -863,32 +863,11 @@ class TaskViewModel(
         }
     }
 
-    fun prepareDelete(item: TaskItem, onReady: (Int) -> Unit) {
+    fun deleteTask(item: TaskItem, onDeleted: () -> Unit) {
         if (!item.canDelete || item.id in _ui.value.mutatingIds) return
         _ui.update { it.copy(mutatingIds = it.mutatingIds + item.id, failure = null) }
         viewModelScope.launch {
-            repository.loadSubtreeImpact(item.id).fold(
-                onSuccess = { impact ->
-                    _ui.update { it.copy(mutatingIds = it.mutatingIds - item.id) }
-                    onReady(impact.nodeCount.coerceAtLeast(1))
-                },
-                onFailure = {
-                    _ui.update {
-                        it.copy(
-                            mutatingIds = it.mutatingIds - item.id,
-                            failure = TaskFailure.Delete,
-                        )
-                    }
-                },
-            )
-        }
-    }
-
-    fun deleteTask(item: TaskItem, confirmedNodeCount: Int, onDeleted: () -> Unit) {
-        if (!item.canDelete || item.id in _ui.value.mutatingIds) return
-        _ui.update { it.copy(mutatingIds = it.mutatingIds + item.id, failure = null) }
-        viewModelScope.launch {
-            repository.deleteTask(item.id, confirmedNodeCount).fold(
+            repository.deleteTask(item.id).fold(
                 onSuccess = {
                     _ui.update {
                         it.copy(

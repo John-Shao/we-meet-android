@@ -125,10 +125,7 @@ interface TaskApi {
     ): TaskDto
 
     @DELETE("api/v1.0/tasks/{id}/")
-    suspend fun deleteTask(
-        @Path("id") id: String,
-        @Query("confirm_subtree_node_count") confirmedNodeCount: Int? = null,
-    )
+    suspend fun deleteTask(@Path("id") id: String)
 
     @POST("api/v1.0/tasks/{id}/follow/")
     suspend fun followTask(

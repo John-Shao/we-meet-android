@@ -446,9 +446,7 @@
     </plurals>
     <string name="task_delete_confirm_title">删除任务？</string>
     <string name="task_delete_confirm_single">删除“%1$s”？此操作无法撤销。</string>
-    <plurals name="task_delete_confirm_tree">
-        <item quantity="other">删除“%1$s”及其任务树中的全部 %2$d 个任务？此操作无法撤销。</item>
-    </plurals>
+    <string name="task_delete_confirm_with_subtasks">删除“%1$s”？它的子任务会保留并成为独立任务。</string>
     <string name="task_search_filter_me">%1$s：我</string>
     <string name="task_search_open">未完成</string>
     <string name="task_search_all_due">全部截止时间</string>

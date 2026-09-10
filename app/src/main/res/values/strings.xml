@@ -450,10 +450,7 @@
     </plurals>
     <string name="task_delete_confirm_title">Delete task?</string>
     <string name="task_delete_confirm_single">Delete “%1$s”? This action cannot be undone.</string>
-    <plurals name="task_delete_confirm_tree">
-        <item quantity="one">Delete “%1$s” and %2$d task in its task tree? This action cannot be undone.</item>
-        <item quantity="other">Delete “%1$s” and all %2$d tasks in its task tree? This action cannot be undone.</item>
-    </plurals>
+    <string name="task_delete_confirm_with_subtasks">Delete “%1$s”? Its subtasks will be kept and become independent tasks.</string>
     <string name="task_search_filter_me">%1$s: Me</string>
     <string name="task_search_open">Open</string>
     <string name="task_search_all_due">Any due date</string>

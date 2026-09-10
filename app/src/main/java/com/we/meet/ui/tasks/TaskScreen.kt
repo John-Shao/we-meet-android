@@ -213,7 +213,6 @@ private data class TaskParentMove(
 
 private data class TaskDeleteRequest(
     val task: TaskItem,
-    val subtreeNodeCount: Int,
 )
 
 private data class TaskCreateInput(
@@ -655,9 +654,7 @@ fun TaskScreen(
             },
             onDelete = {
                 actionTarget = null
-                vm.prepareDelete(target) { nodeCount ->
-                    pendingTaskDelete = TaskDeleteRequest(target, nodeCount)
-                }
+                pendingTaskDelete = TaskDeleteRequest(target)
             },
         )
     }
@@ -665,11 +662,10 @@ fun TaskScreen(
     pendingTaskDelete?.let { request ->
         DeleteTaskDialog(
             task = request.task,
-            nodeCount = request.subtreeNodeCount,
             deleting = request.task.id in ui.mutatingIds,
             onDismiss = { pendingTaskDelete = null },
             onConfirm = {
-                vm.deleteTask(request.task, request.subtreeNodeCount) {
+                vm.deleteTask(request.task) {
                     pendingTaskDelete = null
                     if (page == TaskPage.Detail && selectedTaskId == request.task.id) {
                         if (onClose != null) onClose()
@@ -4725,7 +4721,6 @@ private fun MoveTaskTreeDialog(
 @Composable
 private fun DeleteTaskDialog(
     task: TaskItem,
-    nodeCount: Int,
     deleting: Boolean,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
@@ -4735,12 +4730,10 @@ private fun DeleteTaskDialog(
         title = { Text(stringResource(R.string.task_delete_confirm_title)) },
         text = {
             Text(
-                if (nodeCount > 1) {
-                    pluralStringResource(
-                        R.plurals.task_delete_confirm_tree,
-                        nodeCount,
+                if (task.subtaskProgress != null) {
+                    stringResource(
+                        R.string.task_delete_confirm_with_subtasks,
                         task.title,
-                        nodeCount,
                     )
                 } else {
                     stringResource(R.string.task_delete_confirm_single, task.title)

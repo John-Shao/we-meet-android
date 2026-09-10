@@ -441,10 +441,7 @@
     </plurals>
     <string name="task_delete_confirm_title">Aufgabe löschen?</string>
     <string name="task_delete_confirm_single">„%1$s“ löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
-    <plurals name="task_delete_confirm_tree">
-        <item quantity="one">„%1$s“ mit %2$d Aufgabe in diesem Aufgabenbaum löschen? Diese Aktion kann nicht rückgängig gemacht werden.</item>
-        <item quantity="other">„%1$s“ mit allen %2$d Aufgaben in diesem Aufgabenbaum löschen? Diese Aktion kann nicht rückgängig gemacht werden.</item>
-    </plurals>
+    <string name="task_delete_confirm_with_subtasks">„%1$s“ löschen? Die Unteraufgaben bleiben erhalten und werden eigenständige Aufgaben.</string>
     <string name="task_search_filter_me">%1$s: Ich</string>
     <string name="task_search_open">Offen</string>
     <string name="task_search_all_due">Beliebiges Fälligkeitsdatum</string>

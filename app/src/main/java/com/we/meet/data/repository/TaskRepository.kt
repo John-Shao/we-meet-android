@@ -418,14 +418,12 @@ class TaskRepository(
         withContext(Dispatchers.IO) { api.removeFollower(taskId, userId) }
     }
 
-    suspend fun loadSubtreeImpact(taskId: String): Result<TaskSubtreeImpactDto> = runCatching {
-        withContext(Dispatchers.IO) { api.getSubtreeImpact(taskId) }
-    }
-
-    suspend fun deleteTask(taskId: String, confirmedNodeCount: Int): Result<Unit> = runCatching {
-        withContext(Dispatchers.IO) {
-            api.deleteTask(taskId, confirmedNodeCount.takeIf { it > 1 })
-        }
+    /**
+     * Delete one task. Subtasks are promoted to root tasks by the backend and
+     * are deliberately not part of this request.
+     */
+    suspend fun deleteTask(taskId: String): Result<Unit> = runCatching {
+        withContext(Dispatchers.IO) { api.deleteTask(taskId) }
     }
 
     suspend fun createComment(

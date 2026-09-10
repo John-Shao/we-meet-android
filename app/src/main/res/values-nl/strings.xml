@@ -441,10 +441,7 @@
     </plurals>
     <string name="task_delete_confirm_title">Taak verwijderen?</string>
     <string name="task_delete_confirm_single">‘%1$s’ verwijderen? Deze actie kan niet ongedaan worden gemaakt.</string>
-    <plurals name="task_delete_confirm_tree">
-        <item quantity="one">‘%1$s’ en %2$d taak in de taakstructuur verwijderen? Deze actie kan niet ongedaan worden gemaakt.</item>
-        <item quantity="other">‘%1$s’ en alle %2$d taken in de taakstructuur verwijderen? Deze actie kan niet ongedaan worden gemaakt.</item>
-    </plurals>
+    <string name="task_delete_confirm_with_subtasks">‘%1$s’ verwijderen? De subtaken blijven behouden en worden zelfstandige taken.</string>
     <string name="task_search_filter_me">%1$s: ik</string>
     <string name="task_search_open">Open</string>
     <string name="task_search_all_due">Elke vervaldatum</string>
