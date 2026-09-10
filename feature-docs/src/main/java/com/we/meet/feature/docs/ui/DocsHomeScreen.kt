@@ -35,6 +35,7 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -179,6 +180,12 @@ fun DocsHomeScreen(
                 onSortChanged = { showSortMenu = it },
                 onSelectOrdering = vm::setOrdering,
                 onSelectFilter = vm::setFilter,
+            )
+            // 固定头部的下边线:标题栏 + 筛选栏是浅灰固定区,下面是白底滚动列表。
+            // 与任务页同款(任务页 TaskListPage 的筛选栏下方那条)。
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant,
+                thickness = Dimens.DividerThin,
             )
             PullToRefreshBox(
                 isRefreshing = state.refreshing,

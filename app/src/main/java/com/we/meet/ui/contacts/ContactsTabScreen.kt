@@ -120,6 +120,12 @@ fun ContactsTabScreen(
                 onCrumbClick = { index -> vm.popTo(index) },
             )
         }
+        // 固定头部的下边线(与任务页同款):标题栏 / 部门内搜索框 / 面包屑都是
+        // 浅灰固定区,下边线画出它与白底滚动列表的分界。
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.outlineVariant,
+            thickness = Dimens.DividerThin,
+        )
 
         when {
             ui.loading -> WeMeetLoading()
