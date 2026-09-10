@@ -22,6 +22,7 @@ import com.we.meet.feature.docs.data.net.DocsPageDto
 import com.we.meet.feature.docs.data.net.DocsReactionRequest
 import com.we.meet.feature.docs.data.net.DocsRenameRequest
 import com.we.meet.feature.docs.data.net.DocsSessionManager
+import com.we.meet.feature.docs.data.net.DocsSessionException
 import com.we.meet.feature.docs.data.net.DocsThreadCreateRequest
 import com.we.meet.feature.docs.data.net.DocsThreadDto
 import com.we.meet.feature.docs.data.net.DocsUserDto
@@ -32,8 +33,9 @@ import retrofit2.HttpException
 
 /**
  * Docs REST facade. Every call goes through [docsCall]: it ensures a docs
- * session exists, and on a 401 (12h Django session expired) drops the stored
- * session, re-bootstraps and retries exactly once.
+ * session exists, and on an authentication failure renews it and retries once.
+ * Anonymous collection endpoints return HTTP 200 with no documents, so empty
+ * pages must also be checked against the authenticated users/me endpoint.
  */
 class DocsRepository(private val session: DocsSessionManager) {
 
@@ -46,22 +48,36 @@ class DocsRepository(private val session: DocsSessionManager) {
         session.ensureSession(expected)
         val api = session.api(expected)
         val sessionId = session.store.sessionId
-        try {
+        var checkingSession = false
+        val result = try {
             val result = block(api)
+            if (result is DocsPageDto && result.results.isEmpty()) {
+                // A persisted cookie can outlive its server session. Do not show
+                // "no documents" until we know this is an authenticated empty page.
+                checkingSession = true
+                api.me()
+            }
             session.checkGeneration(expected)
-            return result
+            result
         } catch (error: Exception) {
             session.checkGeneration(expected)
             if (error is kotlinx.coroutines.CancellationException) throw error
             if (error !is HttpException || retries == 0) throw error
             val authFailure = error.code() == 401 || (error.code() == 403 &&
-                (error.response()?.errorBody()?.string().orEmpty().contains("CSRF Failed") ||
+                (checkingSession || error.response()?.errorBody()?.string().orEmpty().contains("CSRF Failed") ||
                     try { api.me(); false } catch (probe: HttpException) { probe.code() == 401 || probe.code() == 403 }))
             session.checkGeneration(expected)
             if (!authFailure) throw error
             session.renewSession(sessionId, expected)
             return docsCall(retries - 1, expected, block)
         }
+        if (checkingSession && session.store.sessionId != sessionId) {
+            // Another list/count request may have renewed the cookie between this
+            // empty response and users/me. Fetch again using that renewed session.
+            if (retries == 0) throw DocsSessionException("docs session changed while loading documents")
+            return docsCall(retries - 1, expected, block)
+        }
+        return result
     }
 
     suspend fun list(
