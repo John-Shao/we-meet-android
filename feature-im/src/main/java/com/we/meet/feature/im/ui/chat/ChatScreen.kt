@@ -59,13 +59,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jusi.lightim.ConnectionState
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.R
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 import com.we.meet.feature.im.data.ChatUploadException
 import com.we.meet.feature.im.ui.common.ConnectionStatusBar
 import com.we.meet.feature.im.ui.common.ErrorBanner
+import com.we.meet.feature.im.ui.common.imDividerTimeLabel
 import com.we.meet.feature.im.vm.ChatEvent
 import com.we.meet.feature.im.vm.ChatViewModel
 import kotlinx.coroutines.launch
@@ -1477,10 +1475,15 @@ private fun MentionDropdown(names: List<String>, onPick: (String) -> Unit) {
 
 private const val TIME_DIVIDER_GAP_MS = 5 * 60 * 1000L
 
-/** 居中时间分隔条(飞书/微信式):今天→HH:mm、昨天→「昨天 HH:mm」、跨天→日期+时间。 */
+/** 居中时间分隔条(飞书/微信式):今天→时分、昨天→「昨天 时分」、一周内→「周X 时分」、更早→「9月2日 时分」。 */
 @Composable
 private fun TimeDivider(tsMs: Long) {
-    val label = dividerLabel(tsMs, stringResource(R.string.im_time_yesterday))
+    // 分档与格式规则和会话列表共用,见 ImTimeLabels.kt。
+    val label = imDividerTimeLabel(
+        tsMs = tsMs,
+        yesterday = stringResource(R.string.im_time_yesterday),
+        locale = Locale.getDefault(),
+    )
     Box(
         Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS),
         contentAlignment = Alignment.Center,
@@ -1491,19 +1494,4 @@ private fun TimeDivider(tsMs: Long) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-}
-
-private fun dividerLabel(tsMs: Long, yesterday: String): String {
-    val now = Calendar.getInstance()
-    val then = Calendar.getInstance().apply { timeInMillis = tsMs }
-    val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(tsMs))
-    fun sameDay(a: Calendar, b: Calendar) =
-        a.get(Calendar.YEAR) == b.get(Calendar.YEAR) &&
-            a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR)
-    if (sameDay(now, then)) return time
-    val y = (now.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, -1) }
-    if (sameDay(y, then)) return "$yesterday $time"
-    val sameYear = now.get(Calendar.YEAR) == then.get(Calendar.YEAR)
-    val pattern = if (sameYear) "M/d HH:mm" else "yyyy/M/d HH:mm"
-    return SimpleDateFormat(pattern, Locale.getDefault()).format(Date(tsMs))
 }
