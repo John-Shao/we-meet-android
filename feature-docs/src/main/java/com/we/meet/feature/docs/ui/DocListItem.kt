@@ -59,7 +59,9 @@ fun DocListItem(
                     start = Dimens.ScreenPadding,
                     top = Dimens.SpaceM,
                     bottom = Dimens.SpaceM,
-                    end = Dimens.ScreenPadding,
+                    // 「···」按钮自带 12dp 内缩，外侧只留 SpaceXs，图标字形才能与
+                    // 左侧缩略图同样落在 ScreenPadding(16dp) 上。
+                    end = Dimens.SpaceXs,
                 ),
             verticalAlignment = Alignment.CenterVertically,
         ) {

@@ -85,7 +85,10 @@ fun ContactsTabScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+                // 左侧标题顶到 ScreenPadding；右侧按钮自带 12dp 内缩，外侧只留 SpaceXs，
+                // 使右侧图标字形与左侧标题同为 16dp(左右对称)。
+                .padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs)
+                .padding(vertical = Dimens.SpaceS),
         ) {
             Text(
                 text = stringResource(R.string.contacts_title),

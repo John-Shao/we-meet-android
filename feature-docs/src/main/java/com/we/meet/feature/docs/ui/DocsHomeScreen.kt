@@ -18,13 +18,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -62,7 +60,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -325,7 +322,10 @@ private fun DocsHomeHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+            // 左右两端的按钮都从 SpaceXs(4dp) 起：24dp 图标在 48dp 热区里居中后字形
+            // 落在 16dp，与其它页面标题左缘齐平，左右两侧也就对称了。
+            .padding(horizontal = Dimens.SpaceXs)
+            .padding(vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onOpenNavDrawer) {
@@ -334,12 +334,12 @@ private fun DocsHomeHeader(
                 contentDescription = stringResource(R.string.cd_docs_nav),
             )
         }
-        Spacer(Modifier.width(Dimens.SpaceS))
+        // 图标居中于 48dp 热区，图标右缘距热区右缘尚有 12dp；这里不再加 Spacer——
+        // 标题与图标的可见间距正好是 SpaceM(12dp)，与消息页「头像—姓名」一致。
         Text(
             text = stringResource(R.string.docs_screen_title),
             modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleLarge,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -365,7 +365,10 @@ private fun DocsListHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+            // 左侧筛选 chip 顶到 ScreenPadding；右侧排序按钮自带 12dp 内缩，外侧只留
+            // SpaceXs，使排序图标与标题栏搜索图标对齐在 16dp。
+            .padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs)
+            .padding(vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()),

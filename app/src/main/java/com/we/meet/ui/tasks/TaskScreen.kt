@@ -1456,18 +1456,21 @@ private fun TaskHomeHeader(
     }
     Row(
         modifier = Modifier.fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+            // 同云文档头部：左右两端的按钮都从 SpaceXs(4dp) 起，24dp 图标在 48dp 热区里
+            // 居中后字形落在 16dp，左右对称。
+            .padding(horizontal = Dimens.SpaceXs)
+            .padding(vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onOpenDrawer) {
             Icon(Icons.Outlined.Menu, stringResource(R.string.task_navigation))
         }
-        Spacer(Modifier.width(Dimens.SpaceS))
+        // 图标居中于 48dp 热区，图标右缘距热区右缘尚有 12dp；这里不再加 Spacer——
+        // 标题与图标的可见间距正好是 SpaceM(12dp)，与消息页「头像—姓名」一致。
         Text(
             text = title,
             modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleLarge,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

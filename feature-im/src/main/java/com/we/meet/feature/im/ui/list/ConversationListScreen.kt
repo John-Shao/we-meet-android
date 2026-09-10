@@ -110,7 +110,6 @@ fun ConversationListScreen(
     deps: ImDeps,
     selfName: String,
     selfAvatarUrl: String?,
-    selfDepartment: String?,
     onAvatarClick: () -> Unit,
     onOpenChat: (cid: String) -> Unit,
     onNewChat: () -> Unit,
@@ -178,7 +177,10 @@ fun ConversationListScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+                    // 左侧头像/文字直接顶到 ScreenPadding；右侧按钮自带 12dp 内缩，
+                    // 所以外侧只留 SpaceXs，让右侧图标字形与左侧同为 16dp(左右对称)。
+                    .padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs)
+                    .padding(vertical = Dimens.SpaceS),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 MemberAvatar(
@@ -194,26 +196,13 @@ fun ConversationListScreen(
                         ),
                 )
                 Spacer(Modifier.width(Dimens.SpaceM))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = selfName.ifBlank { stringResource(R.string.im_list_title) },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    // Feishu shows the company here; we show the department. Hidden
-                    // when the user has no department or the directory fetch failed.
-                    if (!selfDepartment.isNullOrBlank()) {
-                        Text(
-                            text = selfDepartment,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
+                Text(
+                    text = selfName.ifBlank { stringResource(R.string.im_list_title) },
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
                 // P1-M3: 全局搜索页(会话过滤 + 消息全文检索),接替原本地过滤。
                 IconButton(onClick = onOpenSearch) {
                     Icon(

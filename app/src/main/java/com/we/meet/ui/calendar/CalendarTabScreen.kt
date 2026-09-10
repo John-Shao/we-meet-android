@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -659,9 +660,18 @@ private fun CalendarHeader(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+                // 左侧日期文字顶到 ScreenPadding；右侧按钮自带 12dp 内缩，外侧只留
+                // SpaceXs，使右侧图标/文字与左侧同为 16dp(左右对称)。
+                .padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs)
+                .padding(vertical = Dimens.SpaceS),
         ) {
-            TextButton(onClick = onPickDate) {
+            // TextButton 自带 M3 的 12dp 水平 contentPadding，会让日期文字比其它
+            // 页面标题多缩进 12dp（28dp vs 16dp）。去掉水平内边距，让日期文字左缘
+            // 对齐 ScreenPadding；48dp 最小触控热区由 minimumInteractiveComponentSize 保留。
+            TextButton(
+                onClick = onPickDate,
+                contentPadding = PaddingValues(Dimens.SpaceNone),
+            ) {
                 Text(
                     text = stringResource(
                         R.string.calendar_month_year,
@@ -669,7 +679,6 @@ private fun CalendarHeader(
                         ui.monthAnchor.year,
                     ),
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
                 )
             }
             Spacer(Modifier.weight(1f))

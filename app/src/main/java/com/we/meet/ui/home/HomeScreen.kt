@@ -42,7 +42,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.we.meet.ui.theme.Dimens
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -104,13 +103,15 @@ fun HomeScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+                // 左侧标题顶到 ScreenPadding；右侧按钮自带 12dp 内缩，外侧只留 SpaceXs，
+                // 使右侧图标字形与左侧标题同为 16dp(左右对称)。
+                .padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs)
+                .padding(vertical = Dimens.SpaceS),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = stringResource(R.string.tab_meeting),
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
             )
             Spacer(Modifier.weight(1f))
             IconButton(onClick = onOpenSettings) {
