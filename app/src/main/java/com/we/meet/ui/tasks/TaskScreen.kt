@@ -1456,8 +1456,7 @@ private fun TaskHomeHeader(
     }
     Row(
         modifier = Modifier.fillMaxWidth()
-            .height(Dimens.ActionTile)
-            .padding(horizontal = Dimens.ScreenPadding),
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onOpenDrawer) {

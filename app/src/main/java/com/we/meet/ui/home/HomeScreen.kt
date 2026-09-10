@@ -104,7 +104,7 @@ fun HomeScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = Dimens.SpaceXl, end = Dimens.SpaceXs),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(

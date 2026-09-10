@@ -59,7 +59,7 @@ fun DocListItem(
                     start = Dimens.ScreenPadding,
                     top = Dimens.SpaceM,
                     bottom = Dimens.SpaceM,
-                    end = Dimens.SpaceXs,
+                    end = Dimens.ScreenPadding,
                 ),
             verticalAlignment = Alignment.CenterVertically,
         ) {

@@ -50,7 +50,6 @@ import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.components.WeMeetLoading
-import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.core.directory.data.DepartmentDto
 import com.we.meet.core.directory.data.MemberDto
@@ -81,15 +80,24 @@ fun ContactsTabScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
-        WeMeetTopBar(
-            title = stringResource(R.string.contacts_title),
-            containerColor = MaterialTheme.colorScheme.background,
-            actions = {
-                IconButton(onClick = onOpenSearch) {
-                    Icon(Icons.Outlined.Search, contentDescription = stringResource(R.string.contacts_search_hint))
-                }
-            },
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+        ) {
+            Text(
+                text = stringResource(R.string.contacts_title),
+                style = MaterialTheme.typography.titleLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onOpenSearch) {
+                Icon(Icons.Outlined.Search, contentDescription = stringResource(R.string.contacts_search_hint))
+            }
+        }
         if (ui.deptStack.isNotEmpty()) {
             OutlinedTextField(
                 value = ui.query,

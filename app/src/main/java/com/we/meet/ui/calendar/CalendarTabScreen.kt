@@ -659,7 +659,7 @@ private fun CalendarHeader(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = Dimens.SpaceS, end = Dimens.SpaceXs),
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
         ) {
             TextButton(onClick = onPickDate) {
                 Text(

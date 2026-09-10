@@ -178,12 +178,7 @@ fun ConversationListScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(
-                        start = Dimens.SpaceM,
-                        end = Dimens.SpaceXs,
-                        top = Dimens.SpaceS,
-                        bottom = Dimens.SpaceS,
-                    ),
+                    .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 MemberAvatar(
