@@ -454,6 +454,7 @@
 
     <!-- Contacts -->
     <string name="contacts_title">Kontakte</string>
+    <string name="contacts_org_members">Kontakte der Organisation</string>
     <string name="contacts_search_hint">Name, Pinyin oder E-Mail suchen</string>
     <string name="contacts_search_entry_in_dept">In %1$s suchen</string>
     <string name="contacts_scope_all">Gesamte Organisation</string>

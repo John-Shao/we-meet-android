@@ -92,8 +92,11 @@ data class ContactsUiState(
 }
 
 /**
- * 通讯录 tab VM — scoped to the HOME back-stack entry so drill-down state survives
- * tab switches.
+ * 「组织内联系人」那一页的 VM(`OrgContactsScreen` 用它,作用域是 `org_contacts`
+ * 那条路由的 back-stack entry)。
+ *
+ * 因此**离开那一页,下钻状态就清掉了** —— 下次从通讯录首页进来又是组织根。这是
+ * 路由级作用域的自然语义,也符合预期:首页的入口每次都是"从头逛组织"。
  *
  * **只管浏览**:部门下钻 + 当前节点的成员分页 + 部门级发起群聊。名册按拼音排
  * (`?ordering=pinyin`),列表里按首字母插小节头(只在界面语言是简体中文时;见

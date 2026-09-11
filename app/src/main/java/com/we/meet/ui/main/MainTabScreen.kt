@@ -132,7 +132,8 @@ fun MainTabScreen(
     onOpenSearch: () -> Unit,
     onOpenContactsSearch: (departmentId: String?) -> Unit,
     onOpenTasksSearch: () -> Unit,
-    onMemberClick: (userId: String) -> Unit,
+    /** 通讯录首页的「组织内联系人」入口(部门下钻 + 成员名单那一页)。 */
+    onOpenOrgContacts: () -> Unit,
     /** 通讯录顶部的「星标联系人」入口。 */
     onOpenStarredContacts: () -> Unit,
     /** 通讯录顶部的「我的群组」入口(零后端,复用会话列表数据)。 */
@@ -409,13 +410,10 @@ fun MainTabScreen(
         },
         TabItem(R.string.tab_contacts, Icons.Filled.Contacts, Icons.Outlined.Contacts) {
             ContactsTabScreen(
-                onOpenSearch = onOpenContactsSearch,
-                onMemberClick = onMemberClick,
+                onOpenSearch = { onOpenContactsSearch(null) },
+                onOpenOrgContacts = onOpenOrgContacts,
                 onOpenStarred = onOpenStarredContacts,
                 onOpenMyGroups = onOpenMyGroups,
-                // 部门级「发起群聊」建完群直接进会话 —— 与成员详情里的「发消息」
-                // 同一条路径(都走 [onOpenChat],也就是应用级的 im_chat 路由)。
-                onOpenChat = onOpenChat,
             )
         },
         TabItem(R.string.tab_docs, Icons.Filled.Description, Icons.Outlined.Description) {

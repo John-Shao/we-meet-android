@@ -74,6 +74,7 @@ import com.we.meet.ui.calendar.EventDetailScreen
 import com.we.meet.ui.calendar.FreeBusyCompareScreen
 import com.we.meet.ui.contacts.ContactScopeRow
 import com.we.meet.ui.contacts.MemberDetailScreen
+import com.we.meet.ui.contacts.OrgContactsScreen
 import com.we.meet.ui.contacts.StarredContactsScreen
 import com.we.meet.ui.login.LoginScreen
 import com.we.meet.ui.login.WebLoginScreen
@@ -179,6 +180,13 @@ object Routes {
     const val STARRED_CONTACTS = "starred_contacts"
     /** 「我的群组」列表页(通讯录顶部入口进);零后端,复用会话列表数据。 */
     const val MY_GROUPS = "my_groups"
+    /**
+     * 通讯录 › 组织内联系人(部门下钻 + 成员名单)。
+     *
+     * 单独一条路由而不是通讯录 tab 本身:tab 首页只放入口(对标飞书),名单与部门树
+     * 在下一层,进入时自带返回键。
+     */
+    const val ORG_CONTACTS = "org_contacts"
     /** 「设置 › 通知」—— 消息通知相关设置(免打扰时段、特别提醒名单入口)。 */
     const val NOTIFICATION_SETTINGS = "notification_settings"
     /** 「设置 › 通知 › 消息特别提醒」名单页(我给谁开了穿透)。 */
@@ -611,13 +619,12 @@ fun AppNav() {
                 onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
                 onNewChat = { navController.navigate(Routes.imNewChat()) },
                 onOpenSearch = { navController.navigate(Routes.imSearch(SearchCategory.MESSAGES)) },
-                // 从通讯录进来时把当前部门作为预选搜索范围带过去 —— 「在产品部里
-                // 找人」因此仍然只需一次点击,而范围从此刻起是可见、可改的。
+                // 通讯录首页的搜索入口没有部门范围(范围在「组织内联系人」那一页里选)。
                 onOpenContactsSearch = { deptId ->
                     navController.navigate(Routes.imSearch(SearchCategory.CONTACTS, deptId))
                 },
                 onOpenTasksSearch = { navController.navigate(Routes.imSearch(SearchCategory.TASKS)) },
-                onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
+                onOpenOrgContacts = { navController.navigate(Routes.ORG_CONTACTS) },
                 onOpenStarredContacts = { navController.navigate(Routes.STARRED_CONTACTS) },
                 onOpenMyGroups = { navController.navigate(Routes.MY_GROUPS) },
                 onEventClick = { eventId -> navController.navigate(Routes.eventDetail(eventId)) },
@@ -1533,6 +1540,21 @@ fun AppNav() {
                 onMemberClick = { userId ->
                     navController.navigate(Routes.memberDetail(userId))
                 },
+            )
+        }
+
+        composable(Routes.ORG_CONTACTS) {
+            OrgContactsScreen(
+                onBack = rememberOnceOnly(safePop),
+                // 从这一页进搜索时把当前部门作为预选范围带过去 —— 「在产品部里找人」
+                // 因此仍然只需一次点击,而范围从此刻起是可见、可改的。
+                onOpenSearch = { deptId ->
+                    navController.navigate(Routes.imSearch(SearchCategory.CONTACTS, deptId))
+                },
+                onMemberClick = { userId ->
+                    navController.navigate(Routes.memberDetail(userId))
+                },
+                onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
             )
         }
 
