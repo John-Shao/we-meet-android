@@ -15,6 +15,15 @@ interface DirectoryApi {
     @GET("api/v1.0/directory/departments/")
     suspend fun listDepartments(): List<DepartmentDto>
 
+    /**
+     * 调用者自己的组织上下文(组织名 / 角色 / 是否管理员)。
+     *
+     * 通讯录首页顶部要显示「当前组织」—— 那是用户确认「我在哪个组织里浏览名册」的
+     * 唯一凭据,而部门树里没有这个信息。
+     */
+    @GET("api/v1.0/directory/me/")
+    suspend fun getOrgContext(): OrgContextDto
+
     @GET("api/v1.0/directory/departments/{id}/members/")
     suspend fun listDepartmentMembers(
         @Path("id") departmentId: String,

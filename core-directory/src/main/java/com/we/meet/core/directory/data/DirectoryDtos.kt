@@ -17,6 +17,26 @@ data class DeptRefDto(
     val name: String? = null,
 )
 
+/** 组织的最小引用 —— 通讯录首页顶部显示「当前组织」用。 */
+@JsonClass(generateAdapter = true)
+data class OrgRefDto(
+    val id: String,
+    val name: String? = null,
+)
+
+/**
+ * GET directory/me/ —— 调用者自己的组织上下文。
+ *
+ * 这里只取 [organization](首页顶部的组织名/头像);角色与权限点在同一条响应里,
+ * App 目前用不到,但字段留着,免得将来再加一个端点。
+ */
+@JsonClass(generateAdapter = true)
+data class OrgContextDto(
+    val organization: OrgRefDto? = null,
+    @Json(name = "org_role") val orgRole: String? = null,
+    @Json(name = "is_org_admin") val isOrgAdmin: Boolean = false,
+)
+
 @JsonClass(generateAdapter = true)
 data class DeptHeadDto(
     val id: String,

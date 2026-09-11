@@ -31,6 +31,12 @@ class DirectoryRepository(private val api: DirectoryApi) {
             .sortedWith(compareBy({ it.depth }, { it.sortOrder }, { it.name.orEmpty() }))
     }
 
+    /**
+     * 调用者自己的组织上下文。通讯录首页顶部显示组织名用 —— 失败就是不显示那一行
+     * (它不是页面的骨架,拿不到也不该拦住任何东西)。
+     */
+    suspend fun orgContext(): Result<OrgContextDto> = runCatching { api.getOrgContext() }
+
     /** Members of a department (subtree included), one page. */
     suspend fun departmentMembers(
         departmentId: String,
