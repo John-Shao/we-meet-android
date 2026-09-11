@@ -1,7 +1,6 @@
 package com.we.meet.ui.contacts
 
 import com.we.meet.core.directory.data.DeptRefDto
-import com.we.meet.core.directory.data.LetterCountDto
 import com.we.meet.core.directory.data.MemberDto
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -25,18 +24,18 @@ class ContactSectionsTest {
     // ── 语言门槛 ────────────────────────────────────────────────────────────
 
     @Test
-    fun pinyinIndexOnlyForChineseUi() {
+    fun letterHeadersOnlyForChineseUi() {
         // 设置里存的是 zh-CN 这类带地区的标签,所以要 startsWith 而不是等值比较。
-        assertTrue(pinyinIndexEnabled("zh"))
-        assertTrue(pinyinIndexEnabled("zh-CN"))
-        assertTrue(pinyinIndexEnabled("ZH-hans"))
-        assertFalse(pinyinIndexEnabled("en"))
-        assertFalse(pinyinIndexEnabled("fr"))
-        assertFalse(pinyinIndexEnabled("de"))
-        assertFalse(pinyinIndexEnabled("nl"))
-        // 语言还没初始化时不能就先画一条索引条出来(初始化是异步的)。
-        assertFalse(pinyinIndexEnabled(null))
-        assertFalse(pinyinIndexEnabled(""))
+        assertTrue(letterHeadersEnabled("zh"))
+        assertTrue(letterHeadersEnabled("zh-CN"))
+        assertTrue(letterHeadersEnabled("ZH-hans"))
+        assertFalse(letterHeadersEnabled("en"))
+        assertFalse(letterHeadersEnabled("fr"))
+        assertFalse(letterHeadersEnabled("de"))
+        assertFalse(letterHeadersEnabled("nl"))
+        // 语言还没初始化时不能就先画一个字母头出来(初始化是异步的)。
+        assertFalse(letterHeadersEnabled(null))
+        assertFalse(letterHeadersEnabled(""))
     }
 
     // ── 字母分组 ────────────────────────────────────────────────────────────
@@ -113,57 +112,15 @@ class ContactSectionsTest {
         assertEquals("Z", initialOf(member("1", "Zoe", "  ")))
     }
 
-    // ── 索引条 ──────────────────────────────────────────────────────────────
-
     @Test
-    fun alphabetSlotsAlwaysCoverAFullAlphabetInOrder() {
-        val slots = alphabetSlots(
-            letters = listOf(LetterCountDto("L", 3), LetterCountDto("#", 1)),
-            active = "l",
+    fun lettersAreUppercasedSoOneBucketIsNotSplitInTwo() {
+        // 服务端理论上给的就是大写;真给了小写也别把 'l' 和 'L' 分成两个小节。
+        val entries = contactEntries(
+            listOf(member("1", "李四", "l"), member("2", "李雷", "L")),
+            showLetters = true,
         )
-
-        assertEquals(27, slots.size)
-        assertEquals("A", slots.first().letter)
-        assertEquals("#", slots.last().letter)
-        // 顺序固定:A…Z 再 '#' —— 位置不动,手指才有肌肉记忆。
-        assertEquals(ALPHABET_ORDER, slots.map { it.letter })
-    }
-
-    @Test
-    fun emptyLettersAreDisabledAndTheActiveOneIsMarked() {
-        val slots = alphabetSlots(
-            letters = listOf(LetterCountDto("L", 3), LetterCountDto("#", 2)),
-            active = "L",
-        )
-
-        val l = slots.first { it.letter == "L" }
-        assertTrue(l.enabled)
-        assertTrue(l.active)
-        // 已经停在 L 上时,再点它是「取消起点」。
-        assertTrue(l.clearing)
-
-        val other = slots.last()
-        assertTrue(other.enabled)
-        assertFalse(other.active)
-        assertFalse(other.clearing)
-
-        // 没人的字母是禁用态(而不是点了给一片空白)。
-        val empty = slots.first { it.letter == "Q" }
-        assertFalse(empty.enabled)
-        assertEquals(0, empty.count)
-    }
-
-    @Test
-    fun activeLetterIsCaseInsensitive() {
-        val lower = alphabetSlots(listOf(LetterCountDto("l", 1)), active = "L").first { it.letter == "L" }
-        assertTrue(lower.active)
-        val upper = alphabetSlots(listOf(LetterCountDto("L", 1)), active = "l").first { it.letter == "L" }
-        assertTrue(upper.active)
-    }
-
-    @Test
-    fun nullActiveMeansNoStart() {
-        val slots = alphabetSlots(listOf(LetterCountDto("L", 1)), active = null)
-        assertTrue(slots.none { it.active })
+        assertEquals(3, entries.size)
+        assertEquals(ContactEntry.Letter("L"), entries[0])
+        assertEquals(ContactEntry.Person(member("2", "李雷", "L")), entries[2])
     }
 }

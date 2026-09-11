@@ -59,7 +59,7 @@ class DirectoryRequestContractTest {
         return url.encodedPath + "?" + url.encodedQuery
     }
 
-    // ── 成员列表:排序与起点 ────────────────────────────────────────────────
+    // ── 成员列表:排序与范围 ────────────────────────────────────────────────
 
     @Test
     fun memberListAlwaysAsksForPinyinOrder() = runBlocking {
@@ -71,30 +71,18 @@ class DirectoryRequestContractTest {
         assertTrue(url, url.startsWith("/api/v1.0/directory/members/"))
         assertTrue(url, url.contains("ordering=pinyin"))
         assertTrue(url, url.contains("page=2"))
-        // 没点索引条时不该带起点:带了就是从 L 起,前半个名册会凭空消失。
-        assertFalse(url, url.contains("from_initial"))
     }
 
     @Test
-    fun memberListCarriesTheStartLetter() = runBlocking {
+    fun departmentListIncludesTheSubtree() = runBlocking {
         responseBody = """{"count":0,"next":null,"previous":null,"results":[]}"""
 
-        repository.allMembers(page = 1, fromInitial = "L")
-
-        assertTrue(lastUrl(), lastUrl().contains("from_initial=L"))
-    }
-
-    @Test
-    fun departmentListIncludesTheSubtreeAndTheStartLetter() = runBlocking {
-        responseBody = """{"count":0,"next":null,"previous":null,"results":[]}"""
-
-        repository.departmentMembers("dept-1", page = 1, fromInitial = "L")
+        repository.departmentMembers("dept-1", page = 1)
 
         val url = lastUrl()
         assertTrue(url, url.startsWith("/api/v1.0/directory/departments/dept-1/members/"))
         assertTrue(url, url.contains("ordering=pinyin"))
-        assertTrue(url, url.contains("from_initial=L"))
-        // 与浏览同一口径(含下级部门):索引条的人数必须和列表里的人是同一批。
+        // 与浏览同一口径(含下级部门):否则「产品部」在列表里和在搜索里是两拨人。
         assertTrue(url, url.contains("include_subtree=true"))
     }
 
@@ -106,26 +94,6 @@ class DirectoryRequestContractTest {
         repository.departmentMembers("dept-1", page = 1, pageSize = 100)
 
         assertTrue(lastUrl(), lastUrl().contains("page_size=100"))
-    }
-
-    // ── 字母表 ──────────────────────────────────────────────────────────────
-
-    @Test
-    fun alphabetIsScopedLikeTheList() = runBlocking {
-        responseBody = """{"letters":[{"letter":"L","count":3}]}"""
-
-        val all = repository.alphabet()
-        assertEquals(1, all.getOrThrow().size)
-        val allUrl = lastUrl()
-        assertTrue(allUrl, allUrl.startsWith("/api/v1.0/directory/members/alphabet/"))
-        // 全组织:不带 department,也不带只对 department 有意义的 include_subtree。
-        assertFalse(allUrl, allUrl.contains("department="))
-        assertFalse(allUrl, allUrl.contains("include_subtree"))
-
-        repository.alphabet("dept-1")
-        val deptUrl = lastUrl()
-        assertTrue(deptUrl, deptUrl.contains("department=dept-1"))
-        assertTrue(deptUrl, deptUrl.contains("include_subtree=true"))
     }
 
     // ── 字段名(Moshi 会静默丢掉对不上的字段)────────────────────────────

@@ -67,15 +67,11 @@ data class ContactsUiState(
     /** 当前范围内的人数(服务端 count,不是已加载条数)。 */
     val total: Int = 0,
     /**
-     * 界面语言是简体中文 → 画索引条与字母小节头([pinyinIndexEnabled])。
+     * 界面语言是简体中文 → 画字母小节头([letterHeadersEnabled])。
      * 只是「画不画」,排序与分页不受它影响。
      */
-    val indexEnabled: Boolean = false,
-    /** 索引条上每个字母的人数(索引关闭 / 字母表还没到 = 空,那时不画索引条)。 */
-    val alphabet: List<AlphabetSlot> = emptyList(),
-    /** 点索引条选中的起点字母;null = 从这一册的开头看起。 */
-    val fromInitial: String? = null,
-    /** 换起点 / 换范围时自增 —— UI 据此把列表拉回顶部。 */
+    val letterHeadersEnabled: Boolean = false,
+    /** 换范围时自增 —— UI 据此把列表拉回顶部。 */
     val listResetTick: Int = 0,
     /** 非空 = 正在等用户确认「发起群聊」。 */
     val groupChatPrompt: GroupChatPrompt? = null,
@@ -92,14 +88,16 @@ data class ContactsUiState(
      * 列表行(字母头 + 人)。**构造时算一次**:它是 LazyColumn 的 data source,
      * 写成 getter 会在每次重组时重算(几百人的列表白算一遍)。
      */
-    val entries: List<ContactEntry> = contactEntries(members, indexEnabled)
+    val entries: List<ContactEntry> = contactEntries(members, letterHeadersEnabled)
 }
 
 /**
  * 通讯录 tab VM — scoped to the HOME back-stack entry so drill-down state survives
  * tab switches.
  *
- * **只管浏览**:部门下钻 + 当前节点的成员分页 + A–Z 索引条 + 部门级发起群聊。
+ * **只管浏览**:部门下钻 + 当前节点的成员分页 + 部门级发起群聊。名册按拼音排
+ * (`?ordering=pinyin`),列表里按首字母插小节头(只在界面语言是简体中文时;见
+ * [letterHeadersEnabled])。
  *
  * 页内搜索已经拆掉了。原先这里有一个 `query` + 300ms 防抖的服务端搜索,但它和
  * 「去全局搜索页里限定同一个部门搜」是同一件事的两个壳 —— 同一个
@@ -108,9 +106,10 @@ data class ContactsUiState(
  * `include_subtree=true`,搜索走的是「仅直属」)。现在搜索统一走
  * [com.we.meet.ui.nav.Routes.imSearch],范围由 `dept` 参数带过去。
  *
- * **索引条走服务端起点**(`?from_initial=L`),不是「在已加载的那 50 个人里滚」:
- * 一页只有 50 条,本地滚只能滚到已经加载的那几个人身上,而用户点 L 的意思分明是
- * 「让我看 L 开头的人」。
+ * 右侧的 A–Z 索引条已经**去掉**(连同它的字母表请求与起点跳转):一列 27 行的小竖条
+ * 在手机上既挤又突兀,而它换来的「跳到一个字母」这一步,搜索与滚动已经能替代。
+ * 排序与字母头保留 —— 它们回答的是「这份名册是什么顺序、我现在看到哪」,那两件事
+ * 与那条竖条无关。
  */
 class ContactsViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -129,48 +128,18 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
 
     private var loadJob: Job? = null
     private var nextPage: Int = 1
-    private var alphabetJob: Job? = null
 
     init {
         loadDepartments()
         loadMembers()
     }
 
-    // ── 索引条 ──────────────────────────────────────────────────────────────
+    // ── 字母头 ──────────────────────────────────────────────────────────────
 
-    /**
-     * 界面语言决定要不要索引条(由 UI 侧读当前语言后调进来)。
-     *
-     * 语言从中文换成英文时**必须把起点也清掉**:界面上已经没有索引条了,却还停在
-     * 「从 L 起」,用户只会看到半册名册而找不到原因。
-     */
-    fun setIndexEnabled(enabled: Boolean) {
-        if (_ui.value.indexEnabled == enabled) return
-        _ui.update { it.copy(indexEnabled = enabled) }
-        if (enabled) {
-            loadAlphabet()
-        } else {
-            _ui.update { it.copy(alphabet = emptyList()) }
-            if (_ui.value.fromInitial != null) selectInitial(null)
-        }
-    }
-
-    /** 点索引条的字母:从它开始;再点同一个 = 取消起点(回到整册)。 */
-    fun toggleInitial(letter: String) {
-        val current = _ui.value.fromInitial
-        selectInitial(if (letter.equals(current, ignoreCase = true)) null else letter)
-    }
-
-    private fun selectInitial(letter: String?) {
-        _ui.update { state ->
-            state.copy(
-                fromInitial = letter,
-                // 索引条本身不用重新请求(服务端算字母表时忽略起点),只把高亮挪过去。
-                alphabet = state.alphabet.map { it.copy(active = it.letter.equals(letter, true)) },
-                listResetTick = state.listResetTick + 1,
-            )
-        }
-        loadMembers()
+    /** 界面语言决定要不要字母小节头(由 UI 侧读当前语言后调进来)。 */
+    fun setLetterHeadersEnabled(enabled: Boolean) {
+        if (_ui.value.letterHeadersEnabled == enabled) return
+        _ui.update { it.copy(letterHeadersEnabled = enabled) }
     }
 
     // ── 部门下钻 ────────────────────────────────────────────────────────────
@@ -191,30 +160,24 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
         onScopeChanged()
     }
 
-    /**
-     * 换部门 = 换一份名册:起点字母要清掉(在新部门的名单里停在「从 L 开始」只会
-     * 让人以为前面没人),字母表要按新范围重拉。
-     */
+    /** 换部门 = 换一份名册:列表要回到顶部(否则新名单一上来就是半山腰那几行)。 */
     private fun onScopeChanged() {
-        _ui.update { it.copy(fromInitial = null, listResetTick = it.listResetTick + 1) }
+        _ui.update { it.copy(listResetTick = it.listResetTick + 1) }
         loadMembers()
-        loadAlphabet()
     }
 
     fun retry() {
         if (_ui.value.departments.isEmpty()) loadDepartments()
         loadMembers()
-        loadAlphabet()
     }
 
     fun loadMore() {
         val state = _ui.value
         if (state.loadingMore || !state.hasMore) return
         val dept = state.currentDept
-        val fromInitial = state.fromInitial
         _ui.update { it.copy(loadingMore = true, loadMoreError = false) }
         viewModelScope.launch {
-            fetchPage(nextPage, dept, fromInitial)
+            fetchPage(nextPage, dept)
                 .onSuccess { page ->
                     nextPage = page.nextPage
                     _ui.update {
@@ -340,38 +303,12 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /**
-     * 字母表。索引关闭时不请求 —— 索引条不画,那一次往返就是白发的(与 Web 的
-     * `enabled: pinyinIndexEnabled` 同一个取舍)。
-     */
-    private fun loadAlphabet() {
-        alphabetJob?.cancel()
-        if (!_ui.value.indexEnabled) {
-            _ui.update { it.copy(alphabet = emptyList()) }
-            return
-        }
-        val deptId = _ui.value.currentDept?.id
-        alphabetJob = viewModelScope.launch {
-            directory.alphabet(deptId)
-                .onSuccess { letters ->
-                    _ui.update { it.copy(alphabet = alphabetSlots(letters, it.fromInitial)) }
-                }
-                .onFailure { e ->
-                    // 拉不到就是**不画索引条**(空态),不是画一条全是灰字母的竖条 ——
-                    // 后者会让用户以为整个名册都没有首字母。
-                    Log.w(TAG, "alphabet load failed", e)
-                    _ui.update { it.copy(alphabet = emptyList()) }
-                }
-        }
-    }
-
     private fun loadMembers() {
         loadJob?.cancel()
         val dept = _ui.value.currentDept
-        val fromInitial = _ui.value.fromInitial
         _ui.update { it.copy(loading = true, error = false, loadMoreError = false) }
         loadJob = viewModelScope.launch {
-            fetchPage(1, dept, fromInitial)
+            fetchPage(1, dept)
                 .onSuccess { page ->
                     nextPage = page.nextPage
                     _ui.update {
@@ -390,14 +327,10 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private suspend fun fetchPage(
-        page: Int,
-        dept: DepartmentDto?,
-        fromInitial: String?,
-    ) = if (dept != null) {
-        directory.departmentMembers(dept.id, page = page, fromInitial = fromInitial)
+    private suspend fun fetchPage(page: Int, dept: DepartmentDto?) = if (dept != null) {
+        directory.departmentMembers(dept.id, page = page)
     } else {
-        directory.allMembers(page = page, fromInitial = fromInitial)
+        directory.allMembers(page = page)
     }
 
     private companion object {

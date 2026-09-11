@@ -150,21 +150,3 @@ data class PagedMembersDto(
     val previous: String? = null,
     val results: List<MemberDto> = emptyList(),
 )
-
-/** One letter of GET directory/members/alphabet/ — how many people sit in that bucket. */
-@JsonClass(generateAdapter = true)
-data class LetterCountDto(
-    val letter: String = "",
-    val count: Int = 0,
-)
-
-/**
- * Response of GET directory/members/alphabet/.
- *
- * 只返计数、不下发整册:索引条靠它决定哪些字母可点(点一个必然有结果的字母),
- * 而全量成员仍走分页列表 —— 大组织里"先拉全册再本地分桶"是必炸的做法。
- */
-@JsonClass(generateAdapter = true)
-data class AlphabetDto(
-    val letters: List<LetterCountDto> = emptyList(),
-)

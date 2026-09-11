@@ -169,21 +169,22 @@ data class PickedMember(val userId: String /* we-meet uuid */, val displayName: 
 
 ---
 
-## M7 — 通讯录补齐拼音索引(2026-09-11 追加)
+## M7 — 通讯录补齐拼音排序与字母头（2026-09-11 追加；同日二次改动去掉索引条）
 
 > Web 端先上了「拼音排序 + A–Z 索引条」(`we-meet` 的 `0143`/`0144` 两个迁移 + 通讯录列表重构),
-> App 端当时没有跟进,名册还是**编码序**(汉字看着像乱序),也没有索引条。本节是补齐。
+> App 端当时没有跟进,名册还是**编码序**(汉字看着像乱序)。本节是补齐。
+>
+> ⚠️ **右侧 A–Z 索引条当天就被去掉了**(两端一起,见本节最后一小节)。留下的东西是:
+> 拼音排序、字母小节头、部门人数、部门信息与发起群聊。后端能力一个都没删。
 
 ### 后端零改动
 
-四个能力都已在生产可用,App 只是**用起来**:
-
-| 能力 | 接口 |
-|---|---|
-| 按拼音排序 | `?ordering=pinyin`(不传 = 原来的姓名编码序,老调用点不受影响) |
-| 从某字母开始 | `?from_initial=L`(服务端给的是「拼音键 ≥ 起点」,所以还能一路往下滚到 Z;`#` 是单独那一桶) |
-| 每个字母的人数 | `GET /directory/members/alphabet/`(**只返计数,不下发全册**;与列表同一套 `department` + `include_subtree` 过滤) |
-| 卡片上的首字母 | 成员卡片多返回 `initial`(A–Z 或 `#`) |
+| 能力 | 接口 | 现在谁在用 |
+|---|---|---|
+| 按拼音排序 | `?ordering=pinyin`(不传 = 原来的姓名编码序) | App + Web 的浏览列表(都一律带上) |
+| 卡片上的首字母 | 成员卡片返回 `initial`(A–Z 或 `#`) | App + Web 的字母小节头 |
+| 从某字母开始 | `?from_initial=L` | **没有调用方**(随索引条一起下线,见末尾) |
+| 每个字母的人数 | `GET /directory/members/alphabet/` | **没有调用方**(同上) |
 
 依赖的 we-meet 版本:`0143`(建列 + 回填,已是线上)提供以上全部;`0144` 只改动
 `#` 桶的排序键前缀(旧的 `~` 在 `en_US.utf8` collation 下被忽略,那一桶反而排到了最前)。
@@ -192,37 +193,55 @@ data class PickedMember(val userId: String /* we-meet uuid */, val displayName: 
 ### App 侧改动
 
 - `:core-directory`
-  - `DirectoryApi`:成员/部门成员两个端点加 `ordering`、`from_initial`;新增 `listAlphabet(department, include_subtree)`。
-  - `DirectoryRepository`:浏览类接口**一律**带 `ordering=pinyin`(排序与界面语言无关 —— 汉字没有可用的编码序,编码序对谁都是乱序);新增 `alphabet()`;`departmentMembers` 支持自定义页大小(建群时一次拉满页)。
-  - `MemberDto` 加 `initial`;`DepartmentDto` 加 `member_count`;新增 `AlphabetDto`/`LetterCountDto`。
+  - `DirectoryApi` / `DirectoryRepository`:浏览类接口**一律**带 `ordering=pinyin`(排序与界面语言无关 —— 汉字没有可用的编码序,编码序对谁都是乱序);`departmentMembers` 支持自定义页大小(建群时一次拉满页)。
+  - `MemberDto` 加 `initial`;`DepartmentDto` 加 `member_count`。
 - `:app/ui/contacts`
-  - 新增 `ContactSections.kt`(**纯函数**,可在 JVM 单测里钉住):语言门槛 `pinyinIndexEnabled(languageTag)`、`contactEntries(members, showLetters)`(按首字母切小节)、`alphabetSlots(letters, active)`(补齐 A–Z + `#` 的固定顺序、禁用空字母、标出当前起点)、`initialOf(member)`(服务端字段缺失时按姓名首字符兜底,**不做任何拼音猜测**)。
-  - 新增 `ContactsAlphabetRail.kt`:右侧固定索引条。字母位置固定(空字母画成禁用态而不是不画)、选中态用底色、朗读文案带人数与「取消起点」。行高只有 18dp —— 27 个字母要一屏放得下,这是索引条这类控件的固有取舍(见 `Dimens.AlphabetRailRowHeight`)。
-  - `ContactsViewModel`:新增 `indexEnabled`(由 UI 读当前语言后 `setIndexEnabled` 调进来)、`alphabet`、`fromInitial`、`listResetTick`;点字母 = **服务端重新取第一页**(不是本地滚已加载的那 50 人),再点同一个字母 = 取消起点;换部门清掉起点并重拉字母表;索引关闭时**不请求**字母表。
-  - `ContactsTabScreen`:列表改成 `stickyHeader` 字母头 + 索引条并排(`weight(1f)`);部门行显示人数;当前部门多一行信息(负责人 / 直属人数 / 发起群聊);成员行在「全部成员」视图里仍显示部门。
+  - 新增 `ContactSections.kt`(**纯函数**,可在 JVM 单测里钉住):语言门槛 `letterHeadersEnabled(languageTag)`、`contactEntries(members, showLetters)`(按首字母切小节)、`initialOf(member)`(服务端字段缺失时按姓名首字符兜底,**不做任何拼音猜测**)。
+  - `ContactsViewModel`:新增 `letterHeadersEnabled`(由 UI 读当前语言后 `setLetterHeadersEnabled` 调进来)与 `listResetTick`(换部门时把列表拉回顶部)。
+  - `ContactsTabScreen`:成员列表用 `stickyHeader` 画字母小节头;部门行显示人数;当前部门多一行信息(负责人 / 直属人数 / 发起群聊);成员行在「全部成员」视图里仍显示部门。
 - `ImBridgeApi` 加 `createGroupConversation(member_user_ids, name)`(与 feature-im 的建群调用点分开,沿用「:app 自己发的桥接调用」这一约定)。
-- 字符串:5 locale × 15 键(索引条 5、部门信息 6、群聊确认 4,含 2 组 `plurals`)。
+- 字符串:5 locale × 11 键(字母头 1、部门信息 6、群聊确认 4,含 2 组 `plurals`)。
 
 ### 决策与克制的理由
 
-1. **索引条只在界面语言是简体中文时出现**(与 Web 完全一致)。语言从中文切走时**连起点一起清掉** —— 界面上已经没有索引条了却还停在「从 L 起」,用户只会看到半册名册而找不到原因。排序不受语言影响。
-2. **点字母走服务端**(`?from_initial=`),不是本地滚:一页 50 条,本地滚只能滚到已加载的那几个人身上,而用户点 L 的意思分明是「让我看 L 开头的人」。
-3. **建群拉的是屏幕上那批人**(含下级部门,与 App 的部门浏览口径一致),上限 300 人,超了明说拉不了 —— 建半拉的群比拒绝更糟。另:超过上限的判断用服务端 `count`,所以不会先拉完 300+ 人才发现。
-4. **人数写「直属 N 人」**:`member_count` 是直属人数,而 App 的列表含下级部门,两个数字不同必须说清是哪个。
-5. **不做「最近访问的部门」**:Web 的左栏需要它是因为那里的导航位置容易丢;App 有面包屑常驻 + 逐级返回,再记一份最近访问只是多一处要同步的状态。
+1. **字母头只在界面语言是简体中文时出现**(与 Web 完全一致):一串 A–Z 小节加一个「其他(数字或符号)」桶,对一份没有中文名的名册不解释任何事情。排序不受语言影响。
+2. **建群拉的是屏幕上那批人**(含下级部门,与 App 的部门浏览口径一致),上限 300 人,超了明说拉不了 —— 建半拉的群比拒绝更糟。另:超过上限的判断用服务端 `count`,所以不会先拉完 300+ 人才发现。
+3. **人数写「直属 N 人」**:`member_count` 是直属人数,而 App 的列表含下级部门,两个数字不同必须说清是哪个。
+4. **不做「最近访问的部门」**:Web 的左栏需要它是因为那里的导航位置容易丢;App 有面包屑常驻 + 逐级返回,再记一份最近访问只是多一处要同步的状态。
+
+### 二次改动:去掉右侧 A–Z 索引条（同日）
+
+索引条上线后在真机与窄窗口上都不成立:一列 27 行(含 `#`)的小竖条挤在名单右边缘,换来的只有
+「跳到某个字母」这一步 —— 而这一步在 App 上本来就有两个更顺手的替代:滚动(名册已按拼音排好)
+与搜索(可预选部门范围)。两端一起去掉:
+
+- **App**:删 `ContactsAlphabetRail.kt`、`AlphabetSlot`/`alphabetSlots`/`ALPHABET_ORDER`、
+  `DirectoryApi.listAlphabet`、`DirectoryRepository.alphabet()`、`AlphabetDto`/`LetterCountDto`、
+  VM 的 `alphabet`/`fromInitial`/`toggleInitial`/`loadAlphabet`、`Dimens.AlphabetRail*` 两个 token,
+  以及索引条专用的 4 条字符串(× 5 locale)。**字母表请求随之消失** —— 那是每次进部门都白发的
+  一趟往返。
+- **Web**:删 `ContactsAlphabetIndex.tsx`、`alphabet` 查询、`fetchDirectoryAlphabet`、`from_initial`
+  的前端路径(URL 参数 / 查询过滤 / 计数门控)与 3 条 `page.alphabet*` 词条。字母头保留。
+- **后端不动**:`?from_initial=` 与 `/directory/members/alphabet/` 都还在(有测试、有文档),
+  只是暂时没有调用方;要清理是另一次独立的后端改动。
+
+去掉索引条**不影响**名册的顺序与分组:`ordering=pinyin` 与卡片上的 `initial` 都还在,字母头照旧
+按拼音小节显示。
 
 ### 验证
 
 `./gradlew :app:testDebugUnitTest checkDesignTokens :app:assembleDebug`(JDK 17)。
 
-- 单测:`ContactSectionsTest`(11)钉住分组/索引条/语言门槛/兜底;`DirectoryRequestContractTest`(7)钉住**查询契约** —— 不引入 MockWebServer,用 OkHttp `Interceptor` 就地截请求,断言 URL 上真的带了 `ordering=pinyin` / `from_initial` / `include_subtree=true`,并断言 `initial`、`member_count` 的 JSON 字段名解析得出来(Moshi 会静默丢掉对不上的字段,这层不测就没人测)。
+- 单测:`ContactSectionsTest`(8)钉住分组/语言门槛/兜底;`DirectoryRequestContractTest`(5)钉住
+  **查询契约** —— 不引入 MockWebServer,用 OkHttp `Interceptor` 就地截请求,断言 URL 上真的带了
+  `ordering=pinyin` / `include_subtree=true`,并断言 `initial`、`member_count` 的 JSON 字段名解析
+  得出来(Moshi 会静默丢掉对不上的字段,这层不测就没人测)。
 - 设计规范护栏 `checkDesignTokens` 通过(新代码零裸 `N.dp`/`N.sp`/硬编码色值/CJK 字面量)。
 - 手工验收(真机,连 meet.we-meet.online):
   1. 名册是拼音序(张/李/王 按 zhang/li/wang 排,而不是按码点);
-  2. 右侧索引条存在(**界面语言为简体中文时**);切到 English → 索引条消失,顺序不变;
-  3. 点 L → 列表从 L 开头的人开始,滚到底会继续拉下一页(不是只在本页里滚);再点 L → 回到整册;
-  4. 滚动时字母头粘在顶部,跟着当前小节变;
-  5. 部门行右侧有人数;进部门后信息行显示负责人与「直属 N 人」;点「发起群聊」→ 确认框人数 = 该部门人数 → 建完直接进群聊;
-  6. 切到别的部门 → 起点被清掉(不会停在「从 L 起」);
-  7. 空部门不显示「发起群聊」;断网时列表给错误态与重试。
+  2. 右侧**没有**索引条;界面语言为简体中文时列表里有字母小节头,切到 English 后字母头消失、顺序不变;
+  3. 滚动时字母头粘在顶部,跟着当前小节变;
+  4. 部门行右侧有人数;进部门后信息行显示负责人与「直属 N 人」;点「发起群聊」→ 确认框人数 = 该部门人数 → 建完直接进群聊;
+  5. 空部门不显示「发起群聊」;断网时列表给错误态与重试;
+  6. 搜索仍走全局搜索页(通讯录页自己不做搜索)。
 

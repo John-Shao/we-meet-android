@@ -863,11 +863,7 @@
     <string name="contacts_my_groups">我的群组</string>
     <!-- 通讯录:拼音索引条 + 部门信息(负责人 / 直属人数 / 发起群聊)。
          索引条只在界面语言是简体中文时出现,见 ContactsTabScreen 的 KDoc。 -->
-    <string name="contacts_alphabet_rail">按首字母跳转</string>
     <string name="contacts_alphabet_other">其他</string>
-    <string name="contacts_alphabet_jump">跳到「%1$s」开头</string>
-    <string name="contacts_alphabet_clear">取消「%1$s」起点，显示全部</string>
-    <string name="contacts_alphabet_empty">没有「%1$s」开头的成员</string>
     <plurals name="contacts_member_count">
         <item quantity="other">%1$d 人</item>
     </plurals>

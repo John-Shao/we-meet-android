@@ -153,18 +153,7 @@ object Dimens {
     /** 按钮内联转圈的描边粗细。 */
     val ProgressStroke = 2.dp
 
-    /**
-     * 通讯录右侧 A–Z 索引条。
-     *
-     * 27 个字母(含 '#' 桶)必须**一屏放得下**:放不下就得滚动,而一个需要滚动的
-     * 索引条等于没有索引条 —— 找字母的时间比滚列表还长。所以行高取 18dp
-     * (低于 48dp 热区,这是索引条这个控件本身的取舍,和 Material 的按钮热区无关),
-     * 宽度够放下一个字母 + 左右各一点留白。
-     */
-    val AlphabetRailWidth = 28.dp
-    val AlphabetRailRowHeight = 18.dp
-
-    /** 字母小节头(sticky)的高度:一行小字 + 上下不等的留白。 */
+    /** 通讯录字母小节头(sticky)的高度:一行小字 + 上下留白。 */
     val AlphabetHeaderHeight = 22.dp
 
     /**

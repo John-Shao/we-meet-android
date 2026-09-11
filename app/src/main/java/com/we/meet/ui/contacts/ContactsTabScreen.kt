@@ -68,10 +68,11 @@ import com.we.meet.ui.theme.Dimens
  * 这一页**不搜索**,只浏览。搜索入口是标题下面那个胶囊:点一下跳到全局搜索页,
  * 并把当前部门作为预选范围带过去([onOpenSearch] 的参数)。
  *
- * 名册一律按**拼音**排(服务端 `?ordering=pinyin`),右侧再给一条 A–Z 索引条
- * (只在界面语言是简体中文时画,见 [pinyinIndexEnabled])。索引条点一个字母 =
- * 让**服务端**从那个字母开始返回列表,不是「在已加载的这 50 个人里滚」——
- * 一页只有 50 条,本地滚只能滚到已经加载的那几个人身上。
+ * 名册一律按**拼音**排(服务端 `?ordering=pinyin`),列表里按首字母插小节头
+ * (只在界面语言是简体中文时画,见 [letterHeadersEnabled])。
+ *
+ * (右侧的 A–Z 索引条已经去掉:一列 27 行的小竖条在手机上既挤又突兀,而它换来的
+ * 「跳到一个字母」这一步,搜索与滚动已经够用。排序与字母头保留。)
  *
  * 原先部门内还有一个自己的搜索框,拆掉的理由见 [ContactsViewModel] 的 KDoc ——
  * 它是同一件事的第二个壳。连带好处是两条:面包屑不必再在搜索时藏起来(以前
@@ -96,13 +97,13 @@ fun ContactsTabScreen(
     var showExternalContacts by remember { mutableStateOf(false) }
     val currentDept = ui.currentDept
 
-    // 索引条的语言门槛(与 Web 一致)。读的是**当前生效**的语言:设置里的
+    // 字母头的语言门槛(与 Web 一致)。读的是**当前生效**的语言:设置里的
     // per-app locale 与「跟随系统」都会体现在 configuration 里。
     val languageTag = LocalConfiguration.current.locales[0]?.toLanguageTag()
-    LaunchedEffect(languageTag) { vm.setIndexEnabled(pinyinIndexEnabled(languageTag)) }
+    LaunchedEffect(languageTag) { vm.setLetterHeadersEnabled(letterHeadersEnabled(languageTag)) }
 
-    // 换起点字母 / 换部门 = 换了一份名册 → 回到顶部。同一个 listState 会留着
-    // 滚动位置,而「从 L 起」的第一行跟上一份结果没有任何关系。
+    // 换部门 = 换了一份名册 → 回到顶部。同一个 listState 会留着滚动位置,
+    // 而新名单的第一行跟上一份结果没有任何关系。
     LaunchedEffect(ui.listResetTick) {
         if (ui.listResetTick > 0) listState.scrollToItem(0)
     }
@@ -162,29 +163,19 @@ fun ContactsTabScreen(
                 message = stringResource(R.string.contacts_load_error),
             )
 
-            else -> Row(modifier = Modifier.fillMaxSize()) {
-                ContactList(
-                    ui = ui,
-                    currentDept = currentDept,
-                    listState = listState,
-                    onOpenStarred = onOpenStarred,
-                    onOpenMyGroups = onOpenMyGroups,
-                    onOpenExternalContacts = { showExternalContacts = true },
-                    onOpenDept = vm::openDepartment,
-                    onMemberClick = onMemberClick,
-                    onLoadMore = vm::loadMore,
-                    onStartGroupChat = vm::requestGroupChat,
-                    modifier = Modifier.weight(1f),
-                )
-                // 索引条:字母表没到(或后端还没上这个接口)就不画 —— 一条全是
-                // 灰字母的竖条比没有更糟,用户会以为整个名册都没有首字母。
-                if (ui.indexEnabled && ui.alphabet.isNotEmpty()) {
-                    ContactsAlphabetRail(
-                        slots = ui.alphabet,
-                        onPick = vm::toggleInitial,
-                    )
-                }
-            }
+            else -> ContactList(
+                ui = ui,
+                currentDept = currentDept,
+                listState = listState,
+                onOpenStarred = onOpenStarred,
+                onOpenMyGroups = onOpenMyGroups,
+                onOpenExternalContacts = { showExternalContacts = true },
+                onOpenDept = vm::openDepartment,
+                onMemberClick = onMemberClick,
+                onLoadMore = vm::loadMore,
+                onStartGroupChat = vm::requestGroupChat,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 
@@ -205,8 +196,10 @@ fun ContactsTabScreen(
 }
 
 /**
- * 名册本体(左边那列)。抽屉式布局里它是 `weight(1f)` 的那个 —— 索引条要贴着
- * 屏幕右缘固定,不能被列表的滚动带走。
+ * 名册本体:固定头(标题 / 搜索入口 / 面包屑)之下的那一整块。
+ *
+ * `stickyHeader` 用来画字母小节头 —— 它与窗口化的 `LazyColumn` 天然合得来,不需要
+ * 自己算位置。
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

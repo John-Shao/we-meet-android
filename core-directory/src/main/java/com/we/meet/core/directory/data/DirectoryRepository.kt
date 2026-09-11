@@ -35,7 +35,6 @@ class DirectoryRepository(private val api: DirectoryApi) {
     suspend fun departmentMembers(
         departmentId: String,
         page: Int = 1,
-        fromInitial: String? = null,
         /** 每页条数(服务端上限 100)。滑动列表用默认 50 就够,一次拉全部门的地方要更大的页。 */
         pageSize: Int = DEFAULT_PAGE_SIZE,
     ): Result<MemberPage> =
@@ -45,32 +44,16 @@ class DirectoryRepository(private val api: DirectoryApi) {
                 page = page,
                 pageSize = pageSize,
                 ordering = PINYIN_ORDER,
-                fromInitial = fromInitial,
             ).toPage(page)
         }
 
     /** All org members (unscoped), one page. */
-    suspend fun allMembers(page: Int = 1, fromInitial: String? = null): Result<MemberPage> =
+    suspend fun allMembers(page: Int = 1): Result<MemberPage> =
         runCatching {
             api.listMembers(
                 page = page,
                 ordering = PINYIN_ORDER,
-                fromInitial = fromInitial,
             ).toPage(page)
-        }
-
-    /**
-     * A–Z 索引条要的字母表(每字母人数)。
-     *
-     * [departmentId] 为 null = 全组织。子树口径与 [departmentMembers] / [allMembers]
-     * 保持一致(浏览部门时含下级),否则索引条与列表会对不上。
-     */
-    suspend fun alphabet(departmentId: String? = null): Result<List<LetterCountDto>> =
-        runCatching {
-            api.listAlphabet(
-                department = departmentId,
-                includeSubtree = if (departmentId != null) true else null,
-            ).letters
         }
 
     /**
