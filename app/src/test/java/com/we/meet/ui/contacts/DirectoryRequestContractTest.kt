@@ -77,7 +77,7 @@ class DirectoryRequestContractTest {
     }
 
     @Test
-    fun departmentListIncludesTheSubtree() = runBlocking {
+    fun departmentListAsksForDirectMembersOnly() = runBlocking {
         responseBody = """{"count":0,"next":null,"previous":null,"results":[]}"""
 
         repository.departmentMembers("dept-1", page = 1)
@@ -85,8 +85,22 @@ class DirectoryRequestContractTest {
         val url = lastUrl()
         assertTrue(url, url.startsWith("/api/v1.0/directory/departments/dept-1/members/"))
         assertTrue(url, url.contains("ordering=pinyin"))
-        // 与浏览同一口径(含下级部门):否则「产品部」在列表里和在搜索里是两拨人。
-        assertTrue(url, url.contains("include_subtree=true"))
+        // 与 Web 的部门视图同口径:进一个部门只列它的**直属**成员,下级部门是同一页里
+        // 各自的行。这一条以前钉的是 include_subtree=true —— 那让 App 的部门页与 Web
+        // 同一屏看到的人不一样,「发起群聊」的确认框人数也对不上。
+        assertTrue(url, url.contains("include_subtree=false"))
+    }
+
+    @Test
+    fun departmentScopedSearchUsesTheSameScopeAsBrowsing() = runBlocking {
+        responseBody = """{"count":0,"next":null,"previous":null,"results":[]}"""
+
+        repository.searchMembers("王", departmentId = "dept-1")
+
+        val url = lastUrl()
+        // 同一个部门名在「浏览」和「搜索」里必须是同一批人:两处都仅直属。
+        assertTrue(url, url.contains("department=dept-1"))
+        assertTrue(url, url.contains("include_subtree=false"))
     }
 
     @Test

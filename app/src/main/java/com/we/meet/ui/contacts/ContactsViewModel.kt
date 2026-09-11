@@ -48,7 +48,7 @@ data class ContactsUiState(
     val departments: List<DepartmentDto> = emptyList(),
     /** Drill-down path; empty = organization root. */
     val deptStack: List<DepartmentDto> = emptyList(),
-    /** Members of the current node(与 Web 的部门视图同口径,见 [ContactsViewModel]). */
+    /** Members of the current node —— 仅直属,与 Web 的部门视图同口径。 */
     val members: List<MemberDto> = emptyList(),
     val loading: Boolean = false,
     val loadingMore: Boolean = false,
@@ -99,11 +99,13 @@ data class ContactsUiState(
  * (`?ordering=pinyin`),列表里按首字母插小节头(只在界面语言是简体中文时;见
  * [letterHeadersEnabled])。
  *
- * **范围口径**:名册含下级部门(`departments/{id}/members/?include_subtree=true`),
- * 与部门级「发起群聊」拉的是同一批人 —— 屏幕上多少人、群里就多少人。⚠️ 这一点与 Web
- * 不同:Web 的部门视图只列**直属**成员。差异与取舍的理由记在 [GROUP_CHAT_MEMBER_CAP]
- * 的注释与 M7 文档里;要对齐 Web 就得把**浏览、部门内搜索、群聊**三处一起改成直
- * 属(前两处是 `include_subtree=true`,漏改哪一处都会让两边的范围对不上)。
+ * **范围口径**:名册只列当前部门的**直属**成员(`departments/{id}/members/?
+ * include_subtree=false`)。下级部门在同一页里是各自的行,点进去再看那一层 —— 与 Web
+ * 的部门视图、也与飞书的钻取同一个读法。部门内搜索(`DirectoryRepository.searchMembers`)
+ * 与部门级「发起群聊」([planGroupChat])都是同一个口径:看到的、搜到的、拉进群的是同一批人。
+ *
+ * (曾经这里是「含下级部门的整棵子树」,与 Web 不一致:同一个部门两端看到的人不一样,
+ * 「发起群聊」的确认框人数也对不上。走查后按对齐 Web 处理,三处一起改。)
  *
  * 页内搜索已经拆掉了。原先这里有一个 `query` + 300ms 防抖的服务端搜索,但它和
  * 「去全局搜索页里限定同一个部门搜」是同一件事的两个壳 —— 同一个

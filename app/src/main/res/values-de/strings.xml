@@ -461,7 +461,7 @@
     <string name="contacts_scope_title">Suchbereich</string>
     <string name="contacts_scope_open_children">Untergeordnete Abteilungen anzeigen</string>
     <string name="contacts_root_org">Organisation</string>
-    <string name="contacts_empty_dept">Keine Mitglieder in dieser Abteilung</string>
+    <string name="contacts_empty_dept">Keine direkten Mitglieder in dieser Abteilung</string>
     <string name="contacts_empty_search">Keine passenden Mitglieder</string>
     <string name="contacts_load_error">Verzeichnis konnte nicht geladen werden</string>
     <string name="contacts_load_more">Mehr laden</string>

@@ -464,7 +464,7 @@
     <string name="contacts_scope_title">Périmètre de recherche</string>
     <string name="contacts_scope_open_children">Voir les sous-services</string>
     <string name="contacts_root_org">Organisation</string>
-    <string name="contacts_empty_dept">Aucun membre dans ce service</string>
+    <string name="contacts_empty_dept">Aucun membre direct dans ce service</string>
     <string name="contacts_empty_search">Aucun membre correspondant</string>
     <string name="contacts_load_error">Échec du chargement de l\'annuaire</string>
     <string name="contacts_load_more">Charger plus</string>

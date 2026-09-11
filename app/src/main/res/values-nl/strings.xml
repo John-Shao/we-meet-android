@@ -461,7 +461,7 @@
     <string name="contacts_scope_title">Zoekbereik</string>
     <string name="contacts_scope_open_children">Onderliggende afdelingen bekijken</string>
     <string name="contacts_root_org">Organisatie</string>
-    <string name="contacts_empty_dept">Geen leden in deze afdeling</string>
+    <string name="contacts_empty_dept">Geen directe leden in deze afdeling</string>
     <string name="contacts_empty_search">Geen overeenkomende leden</string>
     <string name="contacts_load_error">Adresboek laden mislukt</string>
     <string name="contacts_load_more">Meer laden</string>

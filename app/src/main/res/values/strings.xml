@@ -470,7 +470,7 @@
     <string name="contacts_scope_title">Search scope</string>
     <string name="contacts_scope_open_children">View sub-departments</string>
     <string name="contacts_root_org">Organization</string>
-    <string name="contacts_empty_dept">No members in this department</string>
+    <string name="contacts_empty_dept">No direct members in this department</string>
     <string name="contacts_empty_search">No matching members</string>
     <string name="contacts_load_error">Failed to load the directory</string>
     <string name="contacts_load_more">Load more</string>

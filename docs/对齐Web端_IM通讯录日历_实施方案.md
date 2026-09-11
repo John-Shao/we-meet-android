@@ -278,14 +278,20 @@ data class PickedMember(val userId: String /* we-meet uuid */, val displayName: 
 一次针对本次全部改动的走查(两端 + 后端交叉核对)共提出 5 条「应修」与若干建议,App 侧落实如下。
 其中**只有第 1 条会改变用户看得见的结果**。
 
-1. **部门群聊的成员口径与 Web 不同,而且这件事原来没人说**。App 的部门列表含下级部门
-   (`departments/{id}/members/?include_subtree=true`),「发起群聊」拉的是同一批人;Web 的部门视图
-   只列**直属**成员,它的同名按钮也只拉直属。于是同一个部门可能「Web 建成 5 人群、App 直接说
-   超过 300 上限」。**本次保持 App 的行为**(屏幕上是多少人、群里就多少人,App 内部自洽),但把
-   代码里「与 Web 端同一个数与同一条理由」这句**不成立的注释**改成了对差异的具体说明,并记在这里:
-   要对齐只需给 `DirectoryRepository.departmentMembers` 传 `includeSubtree = false` —— 但**浏览、
-   部门内搜索与群聊必须一起改**(`searchMembers` 也是 `include_subtree=true`),否则「在部门内搜」
-   与眼前的列表会变成两拨人。
+1. **部门名册的范围口径与 Web 不一致,已按 Web 对齐**。App 的部门页原来列的是
+   **含下级的整棵子树**(`departments/{id}/members/?include_subtree=true`),而 Web 的部门视图只列
+   **直属**成员(它的「发起群聊」也只拉直属)。同一个部门因此可能「Web 建成 5 人群、App 直接说
+   超过 300 上限」,而两端的同名按钮说着同一个名字却拉两拨人。现在**三处一起改成仅直属**
+   (`include_subtree=false`),与 Web、也与飞书的钻取同一个读法 —— 进一个部门列它自己那批人,
+   下级部门是同一页里各自的行:
+   - 浏览`DirectoryRepository.departmentMembers`(默认已改为 `false`);
+   - 部门内搜索`DirectoryRepository.searchMembers`(同一口径:同一个部门名在「浏览」和「搜索」
+     里必须是同一批人,否则读起来是「搜索坏了」而不是「范围更窄」);
+   - 部门级「发起群聊」`planGroupChat`(拉的就是屏幕上那批人)。
+   顺带把空态文案从「该部门暂无成员」改成「该部门暂无**直属**成员」(5 语言)—— 下级还有人的
+   部门不属于「没有成员」,与信息行上那句「直属 N 人」的措辞也对齐了。
+   契约测试随之翻转:`DirectoryRequestContractTest` 现在钉的是 `include_subtree=false`(并新增
+   一条部门内搜索的用例),不再钉子树。
 2. **列表 key 唯一性**。`contactEntries` 只在相邻的人之间插字母头,所以同一字母被拆成两段时会插出
    两个同名小节头(旧后端不下发 `initial` 时最容易);而它们是 LazyColumn 的 key —— 重复 key 不是
    「两个头」,是直接抛异常。字母头的 key 现在带位置(`h-$index`);成员行的 key 仍是 user id,因为

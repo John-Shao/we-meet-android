@@ -10,14 +10,9 @@ import com.we.meet.core.directory.data.MemberPage
  * 建群会把所有人拉进一个会话,几百人的群不该是「顺手点一下」的产物 —— 超过就明确说
  * 拉不了,而不是悄悄拉一半(那才是最坏的结果:用户以为全都在群里)。
  *
- * ⚠️ **两端的口径不完全一样,别把这个数当成「两端一定拉同一批人」**:Web 的同名按钮只
- * 拉**直属**成员(`/directory/members/?department=`,不带 `include_subtree`),而 App 的
- * 部门列表本身**含下级部门**(见 [ContactsUiState]),所以这里拉的是整棵子树 —— 与屏幕
- * 上那一批人一致。于是同一个部门可能出现「Web 建成 5 人群、App 直接说超过上限」。
- * 保持现状的理由是 App 内部自洽(屏幕上多少人、群里就多少人);差异记在
- * `docs/对齐Web端_IM通讯录日历_实施方案.md` 的 M7,要对齐只需给
- * [com.we.meet.core.directory.data.DirectoryRepository.departmentMembers] 传
- * `includeSubtree = false`(浏览与群聊要一起改,否则「数人数对不上」)。
+ * 拉的是**这个部门的直属成员**:App 的部门页列的就是这一批(与 Web 的部门视图同口径,
+ * 见 [com.we.meet.core.directory.data.DirectoryRepository.departmentMembers]),所以
+ * 屏幕上多少人、群里就多少人,两端的同名按钮也是同一批人。
  */
 const val GROUP_CHAT_MEMBER_CAP = 300
 

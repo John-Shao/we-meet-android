@@ -27,7 +27,12 @@ interface DirectoryApi {
     @GET("api/v1.0/directory/departments/{id}/members/")
     suspend fun listDepartmentMembers(
         @Path("id") departmentId: String,
-        @Query("include_subtree") includeSubtree: Boolean = true,
+        /**
+         * 含下级部门。**App 一律传 false**(与 Web 的部门视图同口径:进一个部门只列它的
+         * 直属成员,下级部门是列表里各自的行)。显式传 false 而不是省略:服务端在参数缺失
+         * 时也是「仅直属」,但那是它的默认值,哪天变了不该连带改掉这里的行为。
+         */
+        @Query("include_subtree") includeSubtree: Boolean = false,
         @Query("page") page: Int = 1,
         @Query("page_size") pageSize: Int = 50,
         /**
@@ -42,8 +47,8 @@ interface DirectoryApi {
         @Query("q") query: String? = null,
         @Query("department") department: String? = null,
         /**
-         * 只在带 [department] 时有意义:true = 含下级部门。null → 不发送该参数
-         * (服务端默认仅直属成员)。
+         * 只在带 [department] 时有意义:true = 含下级部门。**App 一律传 false**
+         * (与上面那个端点、也与 Web 的部门视图同一个口径)。
          */
         @Query("include_subtree") includeSubtree: Boolean? = null,
         @Query("page") page: Int = 1,

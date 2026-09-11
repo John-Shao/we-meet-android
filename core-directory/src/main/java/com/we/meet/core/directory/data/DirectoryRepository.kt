@@ -37,16 +37,29 @@ class DirectoryRepository(private val api: DirectoryApi) {
      */
     suspend fun orgContext(): Result<OrgContextDto> = runCatching { api.getOrgContext() }
 
-    /** Members of a department (subtree included), one page. */
+    /**
+     * Members of a department, one page.
+     *
+     * 口径是**仅直属成员**(`include_subtree=false`),与 Web 的部门视图一致:点进一个
+     * 部门列的是它自己那批人,它的下级部门在同一页里是各自的行(点进去再看那一层)。
+     * 以前这里是 `include_subtree=true`,于是 App 的部门页把整棵子树摊平成一列 —— 与
+     * Web 同一屏看到的人不一样,「发起群聊」拉的也不是同一批人。
+     */
     suspend fun departmentMembers(
         departmentId: String,
         page: Int = 1,
         /** 每页条数(服务端上限 100)。滑动列表用默认 50 就够,一次拉全部门的地方要更大的页。 */
         pageSize: Int = DEFAULT_PAGE_SIZE,
+        /**
+         * 只在**明确需要子树**时传 true。目前没有任何调用点需要:浏览、部门内搜索与
+         * 部门级发起群聊都是仅直属(与 Web 同口径)。
+         */
+        includeSubtree: Boolean = false,
     ): Result<MemberPage> =
         runCatching {
             api.listDepartmentMembers(
                 departmentId,
+                includeSubtree = includeSubtree,
                 page = page,
                 pageSize = pageSize,
                 ordering = PINYIN_ORDER,
@@ -63,12 +76,11 @@ class DirectoryRepository(private val api: DirectoryApi) {
         }
 
     /**
-     * Name/email search, optionally scoped to a department's **whole subtree**.
+     * Name/email search, optionally scoped to one department's **direct** members.
      *
-     * 子树口径必须和 [departmentMembers] 一致 —— 那是浏览部门时的行为
-     * (`include_subtree=true`)。两边不一致的话,同一个部门名在「浏览」和
-     * 「搜索」里指的是两拨人:浏览产品部看得到子部门的人,搜「王」却搜不到
-     * 子部门的王,读起来就是「搜索坏了」而不是「范围更窄」。
+     * 与 [departmentMembers] 同一个口径(`include_subtree=false`),这一点必须一致:
+     * 同一个部门名在「浏览」和「搜索」里指两拨人的话,浏览产品部看得到这几个人、
+     * 搜「王」却是另一套结果,读起来就是「搜索坏了」而不是「范围更窄」。
      */
     suspend fun searchMembers(
         query: String,
@@ -79,8 +91,8 @@ class DirectoryRepository(private val api: DirectoryApi) {
             api.listMembers(
                 query = query,
                 department = departmentId,
-                // 没带部门时服务端不看这个参数,带上无害;带了部门就必须是子树。
-                includeSubtree = true,
+                // 没带部门时服务端不看这个参数,带上无害;带了部门就必须与浏览同一个口径。
+                includeSubtree = false,
                 page = page,
             ).toPage(page)
         }

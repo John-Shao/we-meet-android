@@ -467,7 +467,7 @@
     <string name="contacts_scope_title">搜索范围</string>
     <string name="contacts_scope_open_children">查看下级部门</string>
     <string name="contacts_root_org">组织</string>
-    <string name="contacts_empty_dept">该部门暂无成员</string>
+    <string name="contacts_empty_dept">该部门暂无直属成员</string>
     <string name="contacts_empty_search">未找到匹配的成员</string>
     <string name="contacts_load_error">通讯录加载失败</string>
     <string name="contacts_load_more">加载更多</string>
