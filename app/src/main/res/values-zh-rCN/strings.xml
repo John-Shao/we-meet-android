@@ -460,7 +460,7 @@
 
     <!-- Contacts (通讯录) -->
     <string name="contacts_title">通讯录</string>
-    <string name="contacts_org_members">组织内联系人</string>
+    <string name="contacts_org_members">内部联系人</string>
     <string name="contacts_search_hint">搜索姓名、拼音或邮箱</string>
     <string name="contacts_search_entry_in_dept">在%1$s内搜索</string>
     <string name="contacts_scope_all">全部组织</string>

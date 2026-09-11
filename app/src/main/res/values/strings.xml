@@ -463,7 +463,7 @@
 
     <!-- Contacts (通讯录) -->
     <string name="contacts_title">Contacts</string>
-    <string name="contacts_org_members">Organization contacts</string>
+    <string name="contacts_org_members">Internal contacts</string>
     <string name="contacts_search_hint">Search name, pinyin or email</string>
     <string name="contacts_search_entry_in_dept">Search in %1$s</string>
     <string name="contacts_scope_all">All organization</string>

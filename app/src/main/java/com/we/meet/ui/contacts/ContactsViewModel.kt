@@ -92,7 +92,7 @@ data class ContactsUiState(
 }
 
 /**
- * 「组织内联系人」那一页的 VM(`OrgContactsScreen` 用它,作用域是 `org_contacts`
+ * 「内部联系人」那一页的 VM(`OrgContactsScreen` 用它,作用域是 `org_contacts`
  * 那条路由的 back-stack entry)。
  *
  * 因此**离开那一页,下钻状态就清掉了** —— 下次从通讯录首页进来又是组织根。这是

@@ -132,7 +132,7 @@ fun MainTabScreen(
     onOpenSearch: () -> Unit,
     onOpenContactsSearch: (departmentId: String?) -> Unit,
     onOpenTasksSearch: () -> Unit,
-    /** 通讯录首页的「组织内联系人」入口(部门下钻 + 成员名单那一页)。 */
+    /** 通讯录首页的「内部联系人」入口(部门下钻 + 成员名单那一页)。 */
     onOpenOrgContacts: () -> Unit,
     /** 通讯录顶部的「星标联系人」入口。 */
     onOpenStarredContacts: () -> Unit,

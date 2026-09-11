@@ -454,7 +454,7 @@
 
     <!-- Contacts -->
     <string name="contacts_title">Contacten</string>
-    <string name="contacts_org_members">Contacten in de organisatie</string>
+    <string name="contacts_org_members">Interne contacten</string>
     <string name="contacts_search_hint">Zoek op naam, pinyin of e-mail</string>
     <string name="contacts_search_entry_in_dept">Zoeken in %1$s</string>
     <string name="contacts_scope_all">Hele organisatie</string>

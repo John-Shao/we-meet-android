@@ -257,10 +257,10 @@ data class PickedMember(val userId: String /* we-meet uuid */, val displayName: 
 首页原来把「固定入口 + 部门树 + 全部成员名单」堆在同一屏 —— 一屏里既有导航又有内容,
 而部门树还只是组织层级的第一层。现在拆成两层:
 
-- **通讯录 tab(一级页)= 入口**:组织内联系人 / 外部联系人 / 星标联系人 / 我的群组,
+- **通讯录 tab(一级页)= 入口**:内部联系人 / 外部联系人 / 星标联系人 / 我的群组,
   分成三组,组间用灰缝分开(飞书的卡片分组)。这一页**不取任何目录数据**(没有 VM、
   没有请求),进来即渲染。
-- **组织内联系人(`org_contacts`,二级页)= 名单**:原来那一整套(部门下钻 + 面包屑 +
+- **内部联系人(`org_contacts`,二级页)= 名单**:原来那一整套(部门下钻 + 面包屑 +
   成员分页 + sticky 字母头 + 部门信息/发起群聊)整体搬到这里,顶栏自带返回键,系统返回
   先退一层部门、退到组织根再退出页面。
 - `ContactsViewModel` 的作用域随之从「tab 的 HOME 条目」变成 `org_contacts` 路由条目:
@@ -268,4 +268,4 @@ data class PickedMember(val userId: String /* we-meet uuid */, val displayName: 
 - 底色按 `docs/page-backgrounds.md`:一级页=浅灰头部 + 白色内容(组之间用浅灰缝),
   二级页=白色顶栏与固定搜索/面包屑 + 浅灰列表。字母头底色因此从 `surfaceVariant` 改成
   `surface` —— 浅色主题里 `LightSurfaceVariant == LightBackground`,粘在浅灰列表上会隐形。
-- 新增字符串 `contacts_org_members`(组织内联系人,5 语言)。
+- 新增字符串 `contacts_org_members`(内部联系人,5 语言)。

@@ -181,7 +181,7 @@ object Routes {
     /** 「我的群组」列表页(通讯录顶部入口进);零后端,复用会话列表数据。 */
     const val MY_GROUPS = "my_groups"
     /**
-     * 通讯录 › 组织内联系人(部门下钻 + 成员名单)。
+     * 通讯录 › 内部联系人(部门下钻 + 成员名单)。
      *
      * 单独一条路由而不是通讯录 tab 本身:tab 首页只放入口(对标飞书),名单与部门树
      * 在下一层,进入时自带返回键。
@@ -619,7 +619,7 @@ fun AppNav() {
                 onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
                 onNewChat = { navController.navigate(Routes.imNewChat()) },
                 onOpenSearch = { navController.navigate(Routes.imSearch(SearchCategory.MESSAGES)) },
-                // 通讯录首页的搜索入口没有部门范围(范围在「组织内联系人」那一页里选)。
+                // 通讯录首页的搜索入口没有部门范围(范围在「内部联系人」那一页里选)。
                 onOpenContactsSearch = { deptId ->
                     navController.navigate(Routes.imSearch(SearchCategory.CONTACTS, deptId))
                 },

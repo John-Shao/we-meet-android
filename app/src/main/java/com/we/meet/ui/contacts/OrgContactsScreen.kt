@@ -59,7 +59,7 @@ import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
 
 /**
- * 通讯录 › **组织内联系人** —— 部门下钻 + 当前节点的成员名单。
+ * 通讯录 › **内部联系人** —— 部门下钻 + 当前节点的成员名单。
  *
  * 这一页是应用级路由(`org_contacts`),不在 tab 内:通讯录首页是入口列表(见
  * [ContactsTabScreen]),真正的「逛组织」在这里,进入时带上返回键。
