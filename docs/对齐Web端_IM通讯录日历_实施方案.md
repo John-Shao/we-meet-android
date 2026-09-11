@@ -166,3 +166,63 @@ data class PickedMember(val userId: String /* we-meet uuid */, val displayName: 
 - **Moshi 反射**：新 DTO 除 id 外全部 nullable/默认值。
 - **重连补偿是必需品不是润色**：ImSession 的 resync（列表刷新+最新页重拉+reads 快照）。
 - **与 MainTabScreen/ImDeps 的改动集中在 M1/M2 前期**，避免自我冲突；`/calendar-events/` 无范围过滤（cap 500，后端 follow-up）。
+
+---
+
+## M7 — 通讯录补齐拼音索引(2026-09-11 追加)
+
+> Web 端先上了「拼音排序 + A–Z 索引条」(`we-meet` 的 `0143`/`0144` 两个迁移 + 通讯录列表重构),
+> App 端当时没有跟进,名册还是**编码序**(汉字看着像乱序),也没有索引条。本节是补齐。
+
+### 后端零改动
+
+四个能力都已在生产可用,App 只是**用起来**:
+
+| 能力 | 接口 |
+|---|---|
+| 按拼音排序 | `?ordering=pinyin`(不传 = 原来的姓名编码序,老调用点不受影响) |
+| 从某字母开始 | `?from_initial=L`(服务端给的是「拼音键 ≥ 起点」,所以还能一路往下滚到 Z;`#` 是单独那一桶) |
+| 每个字母的人数 | `GET /directory/members/alphabet/`(**只返计数,不下发全册**;与列表同一套 `department` + `include_subtree` 过滤) |
+| 卡片上的首字母 | 成员卡片多返回 `initial`(A–Z 或 `#`) |
+
+依赖的 we-meet 版本:`0143`(建列 + 回填,已是线上)提供以上全部;`0144` 只改动
+`#` 桶的排序键前缀(旧的 `~` 在 `en_US.utf8` collation 下被忽略,那一桶反而排到了最前)。
+**App 不需要等 `0144` 才能发**,但 `#` 桶的位置要等它上线才对。
+
+### App 侧改动
+
+- `:core-directory`
+  - `DirectoryApi`:成员/部门成员两个端点加 `ordering`、`from_initial`;新增 `listAlphabet(department, include_subtree)`。
+  - `DirectoryRepository`:浏览类接口**一律**带 `ordering=pinyin`(排序与界面语言无关 —— 汉字没有可用的编码序,编码序对谁都是乱序);新增 `alphabet()`;`departmentMembers` 支持自定义页大小(建群时一次拉满页)。
+  - `MemberDto` 加 `initial`;`DepartmentDto` 加 `member_count`;新增 `AlphabetDto`/`LetterCountDto`。
+- `:app/ui/contacts`
+  - 新增 `ContactSections.kt`(**纯函数**,可在 JVM 单测里钉住):语言门槛 `pinyinIndexEnabled(languageTag)`、`contactEntries(members, showLetters)`(按首字母切小节)、`alphabetSlots(letters, active)`(补齐 A–Z + `#` 的固定顺序、禁用空字母、标出当前起点)、`initialOf(member)`(服务端字段缺失时按姓名首字符兜底,**不做任何拼音猜测**)。
+  - 新增 `ContactsAlphabetRail.kt`:右侧固定索引条。字母位置固定(空字母画成禁用态而不是不画)、选中态用底色、朗读文案带人数与「取消起点」。行高只有 18dp —— 27 个字母要一屏放得下,这是索引条这类控件的固有取舍(见 `Dimens.AlphabetRailRowHeight`)。
+  - `ContactsViewModel`:新增 `indexEnabled`(由 UI 读当前语言后 `setIndexEnabled` 调进来)、`alphabet`、`fromInitial`、`listResetTick`;点字母 = **服务端重新取第一页**(不是本地滚已加载的那 50 人),再点同一个字母 = 取消起点;换部门清掉起点并重拉字母表;索引关闭时**不请求**字母表。
+  - `ContactsTabScreen`:列表改成 `stickyHeader` 字母头 + 索引条并排(`weight(1f)`);部门行显示人数;当前部门多一行信息(负责人 / 直属人数 / 发起群聊);成员行在「全部成员」视图里仍显示部门。
+- `ImBridgeApi` 加 `createGroupConversation(member_user_ids, name)`(与 feature-im 的建群调用点分开,沿用「:app 自己发的桥接调用」这一约定)。
+- 字符串:5 locale × 15 键(索引条 5、部门信息 6、群聊确认 4,含 2 组 `plurals`)。
+
+### 决策与克制的理由
+
+1. **索引条只在界面语言是简体中文时出现**(与 Web 完全一致)。语言从中文切走时**连起点一起清掉** —— 界面上已经没有索引条了却还停在「从 L 起」,用户只会看到半册名册而找不到原因。排序不受语言影响。
+2. **点字母走服务端**(`?from_initial=`),不是本地滚:一页 50 条,本地滚只能滚到已加载的那几个人身上,而用户点 L 的意思分明是「让我看 L 开头的人」。
+3. **建群拉的是屏幕上那批人**(含下级部门,与 App 的部门浏览口径一致),上限 300 人,超了明说拉不了 —— 建半拉的群比拒绝更糟。另:超过上限的判断用服务端 `count`,所以不会先拉完 300+ 人才发现。
+4. **人数写「直属 N 人」**:`member_count` 是直属人数,而 App 的列表含下级部门,两个数字不同必须说清是哪个。
+5. **不做「最近访问的部门」**:Web 的左栏需要它是因为那里的导航位置容易丢;App 有面包屑常驻 + 逐级返回,再记一份最近访问只是多一处要同步的状态。
+
+### 验证
+
+`./gradlew :app:testDebugUnitTest checkDesignTokens :app:assembleDebug`(JDK 17)。
+
+- 单测:`ContactSectionsTest`(11)钉住分组/索引条/语言门槛/兜底;`DirectoryRequestContractTest`(7)钉住**查询契约** —— 不引入 MockWebServer,用 OkHttp `Interceptor` 就地截请求,断言 URL 上真的带了 `ordering=pinyin` / `from_initial` / `include_subtree=true`,并断言 `initial`、`member_count` 的 JSON 字段名解析得出来(Moshi 会静默丢掉对不上的字段,这层不测就没人测)。
+- 设计规范护栏 `checkDesignTokens` 通过(新代码零裸 `N.dp`/`N.sp`/硬编码色值/CJK 字面量)。
+- 手工验收(真机,连 meet.we-meet.online):
+  1. 名册是拼音序(张/李/王 按 zhang/li/wang 排,而不是按码点);
+  2. 右侧索引条存在(**界面语言为简体中文时**);切到 English → 索引条消失,顺序不变;
+  3. 点 L → 列表从 L 开头的人开始,滚到底会继续拉下一页(不是只在本页里滚);再点 L → 回到整册;
+  4. 滚动时字母头粘在顶部,跟着当前小节变;
+  5. 部门行右侧有人数;进部门后信息行显示负责人与「直属 N 人」;点「发起群聊」→ 确认框人数 = 该部门人数 → 建完直接进群聊;
+  6. 切到别的部门 → 起点被清掉(不会停在「从 L 起」);
+  7. 空部门不显示「发起群聊」;断网时列表给错误态与重试。
+

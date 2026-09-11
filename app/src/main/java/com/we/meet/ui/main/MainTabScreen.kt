@@ -413,6 +413,9 @@ fun MainTabScreen(
                 onMemberClick = onMemberClick,
                 onOpenStarred = onOpenStarredContacts,
                 onOpenMyGroups = onOpenMyGroups,
+                // 部门级「发起群聊」建完群直接进会话 —— 与成员详情里的「发消息」
+                // 同一条路径(都走 [onOpenChat],也就是应用级的 im_chat 路由)。
+                onOpenChat = onOpenChat,
             )
         },
         TabItem(R.string.tab_docs, Icons.Filled.Description, Icons.Outlined.Description) {

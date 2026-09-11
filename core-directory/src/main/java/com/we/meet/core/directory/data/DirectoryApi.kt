@@ -21,6 +21,16 @@ interface DirectoryApi {
         @Query("include_subtree") includeSubtree: Boolean = true,
         @Query("page") page: Int = 1,
         @Query("page_size") pageSize: Int = 50,
+        /**
+         * `pinyin` = 按拼音序(汉字没有可用的编码序)。不传就是服务端的姓名编码序。
+         * 通讯录一律传它:同一份名册在 Web 与 App 上必须是同一个顺序。
+         */
+        @Query("ordering") ordering: String? = null,
+        /**
+         * 从某个首字母开始(A–Z 或 '#'):服务端给的是「拼音键 ≥ 起点」,不是
+         * 「首字母 == 起点」,所以从这里还能一路往下滚到 Z。见 [listAlphabet]。
+         */
+        @Query("from_initial") fromInitial: String? = null,
     ): PagedMembersDto
 
     @GET("api/v1.0/directory/members/")
@@ -34,7 +44,22 @@ interface DirectoryApi {
         @Query("include_subtree") includeSubtree: Boolean? = null,
         @Query("page") page: Int = 1,
         @Query("page_size") pageSize: Int = 50,
+        @Query("ordering") ordering: String? = null,
+        @Query("from_initial") fromInitial: String? = null,
     ): PagedMembersDto
+
+    /**
+     * A–Z 索引条:每个字母各有多少人(**只返计数,不下发全册**)。
+     *
+     * 与列表同一套过滤,所以 [department] + [includeSubtree] 的语义必须和浏览
+     * 那一侧完全一致 —— 否则「产品部里 L 有 3 个人」点进去却只有 1 个(或反过来
+     * 索引条上没有 L 却搜得到),读起来就是「这个功能不准」。
+     */
+    @GET("api/v1.0/directory/members/alphabet/")
+    suspend fun listAlphabet(
+        @Query("department") department: String? = null,
+        @Query("include_subtree") includeSubtree: Boolean? = null,
+    ): AlphabetDto
 
     @GET("api/v1.0/directory/members/{userId}/")
     suspend fun getMember(@Path("userId") userId: String): MemberDto

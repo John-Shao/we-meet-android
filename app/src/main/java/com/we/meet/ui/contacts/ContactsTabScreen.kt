@@ -1,6 +1,9 @@
 package com.we.meet.ui.contacts
 
+import android.content.Context
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -9,9 +12,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -21,36 +26,40 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.R
 import com.we.meet.WeMeetApp
+import com.we.meet.core.directory.data.DepartmentDto
+import com.we.meet.core.directory.data.MemberDto
+import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.components.WeMeetSearchEntry
 import com.we.meet.ui.theme.Dimens
-import com.we.meet.core.directory.data.DepartmentDto
-import com.we.meet.core.directory.data.MemberDto
-import com.we.meet.core.directory.ui.MemberAvatar
 
 /**
  * 通讯录 tab — Feishu-style department drill-down + member list. Drill state is
@@ -58,6 +67,11 @@ import com.we.meet.core.directory.ui.MemberAvatar
  *
  * 这一页**不搜索**,只浏览。搜索入口是标题下面那个胶囊:点一下跳到全局搜索页,
  * 并把当前部门作为预选范围带过去([onOpenSearch] 的参数)。
+ *
+ * 名册一律按**拼音**排(服务端 `?ordering=pinyin`),右侧再给一条 A–Z 索引条
+ * (只在界面语言是简体中文时画,见 [pinyinIndexEnabled])。索引条点一个字母 =
+ * 让**服务端**从那个字母开始返回列表,不是「在已加载的这 50 个人里滚」——
+ * 一页只有 50 条,本地滚只能滚到已经加载的那几个人身上。
  *
  * 原先部门内还有一个自己的搜索框,拆掉的理由见 [ContactsViewModel] 的 KDoc ——
  * 它是同一件事的第二个壳。连带好处是两条:面包屑不必再在搜索时藏起来(以前
@@ -71,13 +85,34 @@ fun ContactsTabScreen(
     onMemberClick: (userId: String) -> Unit,
     onOpenStarred: () -> Unit,
     onOpenMyGroups: () -> Unit,
+    /** 部门群建好后进会话。 */
+    onOpenChat: (cid: String) -> Unit,
 ) {
     val vm: ContactsViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
-    val listState = key(ui.currentDept?.id) { rememberLazyListState() }
-    val app = LocalContext.current.applicationContext as WeMeetApp
+    val listState = rememberLazyListState()
+    val context = LocalContext.current
+    val app = context.applicationContext as WeMeetApp
     var showExternalContacts by remember { mutableStateOf(false) }
     val currentDept = ui.currentDept
+
+    // 索引条的语言门槛(与 Web 一致)。读的是**当前生效**的语言:设置里的
+    // per-app locale 与「跟随系统」都会体现在 configuration 里。
+    val languageTag = LocalConfiguration.current.locales[0]?.toLanguageTag()
+    LaunchedEffect(languageTag) { vm.setIndexEnabled(pinyinIndexEnabled(languageTag)) }
+
+    // 换起点字母 / 换部门 = 换了一份名册 → 回到顶部。同一个 listState 会留着
+    // 滚动位置,而「从 L 起」的第一行跟上一份结果没有任何关系。
+    LaunchedEffect(ui.listResetTick) {
+        if (ui.listResetTick > 0) listState.scrollToItem(0)
+    }
+
+    LaunchedEffect(vm) { vm.chatReady.collect { cid -> onOpenChat(cid) } }
+    LaunchedEffect(vm) {
+        vm.notice.collect { notice ->
+            Toast.makeText(context, noticeText(context, notice), Toast.LENGTH_SHORT).show()
+        }
+    }
 
     // 只剩「退一层部门」。搜索拆掉后不再需要先清关键词那一段。
     BackHandler(enabled = ui.deptStack.isNotEmpty()) { vm.popOne() }
@@ -127,68 +162,27 @@ fun ContactsTabScreen(
                 message = stringResource(R.string.contacts_load_error),
             )
 
-            else -> LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
-                // 星标联系人:只在组织根层级露出(钻进部门时是另一个上下文),
-                // 对标飞书通讯录里与部门并列的那个独立分组。
-                if (ui.deptStack.isEmpty()) {
-                    item {
-                        StarredEntryRow(onClick = onOpenStarred)
-                        MyGroupsEntryRow(onClick = onOpenMyGroups)
-                        ExternalContactsEntryRow(onClick = { showExternalContacts = true })
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                            modifier = Modifier.padding(start = Dimens.DividerIndent),
-                        )
-                    }
-                }
-                items(ui.childDepartments, key = { "d-${it.id}" }) { dept ->
-                    DepartmentRow(dept = dept, onClick = { vm.openDepartment(dept) })
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.padding(start = Dimens.DividerIndent),
+            else -> Row(modifier = Modifier.fillMaxSize()) {
+                ContactList(
+                    ui = ui,
+                    currentDept = currentDept,
+                    listState = listState,
+                    onOpenStarred = onOpenStarred,
+                    onOpenMyGroups = onOpenMyGroups,
+                    onOpenExternalContacts = { showExternalContacts = true },
+                    onOpenDept = vm::openDepartment,
+                    onMemberClick = onMemberClick,
+                    onLoadMore = vm::loadMore,
+                    onStartGroupChat = vm::requestGroupChat,
+                    modifier = Modifier.weight(1f),
+                )
+                // 索引条:字母表没到(或后端还没上这个接口)就不画 —— 一条全是
+                // 灰字母的竖条比没有更糟,用户会以为整个名册都没有首字母。
+                if (ui.indexEnabled && ui.alphabet.isNotEmpty()) {
+                    ContactsAlphabetRail(
+                        slots = ui.alphabet,
+                        onPick = vm::toggleInitial,
                     )
-                }
-                if (ui.members.isEmpty()) {
-                    item {
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = Dimens.SpaceXxxl),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.contacts_empty_dept),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                } else {
-                    items(ui.members, key = { "m-${it.id}" }) { member ->
-                        MemberRow(member = member, onClick = { onMemberClick(member.id) })
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                            modifier = Modifier.padding(start = Dimens.DividerIndentAvatar),
-                        )
-                    }
-                    if (ui.hasMore) {
-                        item {
-                            when {
-                                ui.loadingMore -> WeMeetInlineLoading()
-                                ui.loadMoreError -> WeMeetInlineErrorState(
-                                    onRetry = vm::loadMore,
-                                    message = stringResource(R.string.contacts_load_error),
-                                )
-                                else -> TextButton(
-                                    onClick = vm::loadMore,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = Dimens.SpaceXs),
-                                ) {
-                                    Text(stringResource(R.string.contacts_load_more))
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -200,6 +194,271 @@ fun ContactsTabScreen(
             onDismiss = { showExternalContacts = false },
         )
     }
+
+    ui.groupChatPrompt?.let { prompt ->
+        GroupChatConfirmDialog(
+            prompt = prompt,
+            onConfirm = vm::confirmGroupChat,
+            onDismiss = vm::dismissGroupChat,
+        )
+    }
+}
+
+/**
+ * 名册本体(左边那列)。抽屉式布局里它是 `weight(1f)` 的那个 —— 索引条要贴着
+ * 屏幕右缘固定,不能被列表的滚动带走。
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ContactList(
+    ui: ContactsUiState,
+    currentDept: DepartmentDto?,
+    listState: LazyListState,
+    onOpenStarred: () -> Unit,
+    onOpenMyGroups: () -> Unit,
+    onOpenExternalContacts: () -> Unit,
+    onOpenDept: (DepartmentDto) -> Unit,
+    onMemberClick: (String) -> Unit,
+    onLoadMore: () -> Unit,
+    onStartGroupChat: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
+        // 星标联系人:只在组织根层级露出(钻进部门时是另一个上下文),
+        // 对标飞书通讯录里与部门并列的那个独立分组。
+        if (ui.deptStack.isEmpty()) {
+            item(key = "entries") {
+                StarredEntryRow(onClick = onOpenStarred)
+                MyGroupsEntryRow(onClick = onOpenMyGroups)
+                ExternalContactsEntryRow(onClick = onOpenExternalContacts)
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    modifier = Modifier.padding(start = Dimens.DividerIndent),
+                )
+            }
+        }
+        items(ui.childDepartments, key = { "d-${it.id}" }) { dept ->
+            DepartmentRow(dept = dept, onClick = { onOpenDept(dept) })
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant,
+                modifier = Modifier.padding(start = Dimens.DividerIndent),
+            )
+        }
+        // 当前部门的信息行(负责人 / 直属人数 / 发起群聊)。只有真的在部门里才有
+        // —— 组织根层级没有"哪个部门"这回事。放在子部门与成员之间:它既是这个
+        // 部门的一句话摘要,也顺手把「部门」和「人」两块分开。
+        currentDept?.let { dept ->
+            item(key = "dept-info") {
+                DepartmentInfoRow(
+                    dept = dept,
+                    // 直属 0 人但有下级部门的部门是真的存在(人全在下级),那时屏幕上
+                    // 其实有人可拉 —— 所以判据是「这个部门直属有人 or 这一屏有人」,
+                    // 二者皆空才是"点了也只能听到一句没有成员"。
+                    onStartGroupChat = if (dept.memberCount > 0 || ui.members.isNotEmpty()) {
+                        onStartGroupChat
+                    } else {
+                        null
+                    },
+                )
+            }
+        }
+        if (ui.members.isEmpty()) {
+            item(key = "empty") {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = Dimens.SpaceXxxl),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = if (currentDept == null) {
+                            stringResource(R.string.contacts_empty_org)
+                        } else {
+                            stringResource(R.string.contacts_empty_dept)
+                        },
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        } else {
+            ui.entries.forEach { entry ->
+                when (entry) {
+                    // sticky:滚动时始终知道自己看到哪个字母了 —— 索引条只是"能跳",
+                    // 字母头是"知道现在在哪",两件事。
+                    is ContactEntry.Letter -> stickyHeader(key = "h-${entry.initial}") {
+                        LetterHeader(initial = entry.initial)
+                    }
+
+                    is ContactEntry.Person -> item(key = "m-${entry.member.id}") {
+                        MemberRow(
+                            member = entry.member,
+                            // 部门视图里整列都是同一个部门,再写一遍是零信息;
+                            // 「全部成员」里部门恰恰是这个人唯一的区别。
+                            showDepartment = currentDept == null,
+                            onClick = { onMemberClick(entry.member.id) },
+                        )
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                            modifier = Modifier.padding(start = Dimens.DividerIndentAvatar),
+                        )
+                    }
+                }
+            }
+            if (ui.hasMore) {
+                item(key = "more") {
+                    when {
+                        ui.loadingMore -> WeMeetInlineLoading()
+                        ui.loadMoreError -> WeMeetInlineErrorState(
+                            onRetry = onLoadMore,
+                            message = stringResource(R.string.contacts_load_error),
+                        )
+                        else -> TextButton(
+                            onClick = onLoadMore,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = Dimens.SpaceXs),
+                        ) {
+                            Text(stringResource(R.string.contacts_load_more))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** sticky 字母头。'#' 那一桶用文字说明,不显示一个光秃秃的井号。 */
+@Composable
+private fun LetterHeader(initial: String) {
+    val label = if (initial == OTHER_INITIAL) {
+        stringResource(R.string.contacts_alphabet_other)
+    } else {
+        initial
+    }
+    Box(
+        contentAlignment = Alignment.CenterStart,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(Dimens.AlphabetHeaderHeight)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = Dimens.ScreenPadding),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
+    }
+}
+
+/**
+ * 当前部门的信息行:负责人、直属人数、以及部门级「发起群聊」。
+ *
+ * 人数写的是 [DepartmentDto.memberCount](**直属**,服务端 annotate 的值),不是
+ * 当前列表的条数:这份列表含下级部门、还会被索引条的起点字母收窄,拿它当"部门
+ * 有多少人"就会一会儿一个数。直属/全部这层区别由文案说清(「直属 N 人」)。
+ */
+@Composable
+private fun DepartmentInfoRow(
+    dept: DepartmentDto,
+    /** null = 这个部门没人可拉,不显示按钮(与 Web 同一克制:点了必然是一句空话)。 */
+    onStartGroupChat: (() -> Unit)?,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = dept.head?.fullName?.takeIf { it.isNotBlank() }
+                    ?.let { stringResource(R.string.contacts_dept_head, it) }
+                    ?: stringResource(R.string.contacts_dept_head_none),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = pluralStringResource(
+                    R.plurals.contacts_dept_direct_members,
+                    dept.memberCount,
+                    dept.memberCount,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        // 空部门不给按钮:点了必然是一句「没有成员」,不如不给(与 Web 一致)。
+        if (onStartGroupChat != null) {
+            TextButton(onClick = onStartGroupChat) {
+                Text(stringResource(R.string.contacts_dept_start_group_chat))
+            }
+        }
+    }
+    HorizontalDivider(
+        color = MaterialTheme.colorScheme.outlineVariant,
+    )
+}
+
+/**
+ * 建群前的确认框:把「拉几个人进哪个群」说清楚。
+ *
+ * 建群会通知到每一个人,所以这一步不做「点完直接建」——那是不可撤销的社交动作。
+ */
+@Composable
+private fun GroupChatConfirmDialog(
+    prompt: GroupChatPrompt,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = { if (!prompt.creating) onDismiss() },
+        title = { Text(stringResource(R.string.contacts_dept_start_group_chat)) },
+        text = {
+            Text(
+                stringResource(
+                    R.string.contacts_dept_group_chat_confirm,
+                    prompt.deptName,
+                    prompt.memberCount,
+                ),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = !prompt.creating) {
+                if (prompt.creating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(Dimens.IconSmall),
+                        strokeWidth = Dimens.BorderEmphasis,
+                    )
+                } else {
+                    Text(stringResource(R.string.common_confirm))
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !prompt.creating) {
+                Text(stringResource(R.string.common_cancel))
+            }
+        },
+    )
+}
+
+/** 一次性提示的文案(VM 不碰 strings.xml,映射放在 UI 侧)。 */
+private fun noticeText(context: Context, notice: ContactsNotice): String = when (notice) {
+    ContactsNotice.EmptyDepartment -> context.getString(R.string.contacts_dept_group_chat_empty)
+    is ContactsNotice.GroupChatTooMany -> context.getString(
+        R.string.contacts_dept_group_chat_too_many,
+        notice.count,
+        notice.limit,
+    )
+    is ContactsNotice.GroupChatFailed -> context.getString(
+        R.string.contacts_dept_group_chat_failed,
+        notice.message,
+    )
 }
 
 @Composable
@@ -329,10 +588,26 @@ private fun DepartmentRow(dept: DepartmentDto, onClick: () -> Unit) {
         Text(
             text = dept.name.orEmpty(),
             style = MaterialTheme.typography.bodyLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .weight(1f)
                 .padding(start = Dimens.ScreenPadding),
         )
+        // 人数:空部门不写一个「0」,那是纯噪声;有人的部门点进去之前就该知道
+        // 里面有多少人(服务端 annotate,不额外请求 —— 与 Web 的部门树一致)。
+        if (dept.memberCount > 0) {
+            Text(
+                text = pluralStringResource(
+                    R.plurals.contacts_member_count,
+                    dept.memberCount,
+                    dept.memberCount,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = Dimens.SpaceS),
+            )
+        }
         Icon(
             Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
@@ -342,7 +617,11 @@ private fun DepartmentRow(dept: DepartmentDto, onClick: () -> Unit) {
 }
 
 @Composable
-private fun MemberRow(member: MemberDto, onClick: () -> Unit) {
+private fun MemberRow(
+    member: MemberDto,
+    showDepartment: Boolean,
+    onClick: () -> Unit,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -368,7 +647,7 @@ private fun MemberRow(member: MemberDto, onClick: () -> Unit) {
             )
             val subtitle = listOfNotNull(
                 member.title?.takeIf { it.isNotBlank() },
-                member.department?.name?.takeIf { it.isNotBlank() },
+                if (showDepartment) member.department?.name?.takeIf { it.isNotBlank() } else null,
             ).joinToString(" · ")
             if (subtitle.isNotBlank()) {
                 Text(

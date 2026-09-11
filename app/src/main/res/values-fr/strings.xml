@@ -935,6 +935,29 @@
     <string name="room_invite_state_failed">Échec de l’appel</string>
     <string name="room_meeting_code_label">Code de réunion : %1$s</string>
     <string name="contacts_my_groups">Mes groupes</string>
+    <!-- 通讯录:拼音索引条 + 部门信息(负责人 / 直属人数 / 发起群聊)。
+         索引条只在界面语言是简体中文时出现,见 ContactsTabScreen 的 KDoc。 -->
+    <string name="contacts_alphabet_rail">Aller à une lettre</string>
+    <string name="contacts_alphabet_other">Autres</string>
+    <string name="contacts_alphabet_jump">Aller aux noms commençant par %1$s</string>
+    <string name="contacts_alphabet_clear">Annuler le départ à %1$s et tout afficher</string>
+    <string name="contacts_alphabet_empty">Aucun nom ne commence par %1$s</string>
+    <plurals name="contacts_member_count">
+        <item quantity="one">%1$d membre</item>
+        <item quantity="other">%1$d membres</item>
+    </plurals>
+    <string name="contacts_empty_org">L\'organisation n\'a encore aucun membre</string>
+    <string name="contacts_dept_head">Responsable : %1$s</string>
+    <string name="contacts_dept_head_none">Aucun responsable désigné</string>
+    <plurals name="contacts_dept_direct_members">
+        <item quantity="one">%1$d membre direct</item>
+        <item quantity="other">%1$d membres directs</item>
+    </plurals>
+    <string name="contacts_dept_start_group_chat">Créer un groupe</string>
+    <string name="contacts_dept_group_chat_confirm">Créer un groupe avec les %2$d membres de « %1$s » ?</string>
+    <string name="contacts_dept_group_chat_empty">Ce service n\'a pas encore de membres</string>
+    <string name="contacts_dept_group_chat_too_many">Ce service compte %1$d personnes, au-delà de la limite de %2$d personnes pour un seul geste. Créez le groupe depuis la messagerie en choisissant les membres.</string>
+    <string name="contacts_dept_group_chat_failed">Échec de la création du groupe : %1$s</string>
     <string name="calendar_add">Ajouter un calendrier</string>
     <string name="calendar_targets_load_failed">Impossible de charger les calendriers modifiables</string>
     <string name="calendar_group_managed">Gérés par moi</string>

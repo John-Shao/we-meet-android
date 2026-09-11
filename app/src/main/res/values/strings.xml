@@ -873,6 +873,29 @@
     <string name="meeting_room_remove">Remove room</string>
     <string name="starred_title">Starred contacts</string>
     <string name="contacts_my_groups">My groups</string>
+    <!-- 通讯录:拼音索引条 + 部门信息(负责人 / 直属人数 / 发起群聊)。
+         索引条只在界面语言是简体中文时出现,见 ContactsTabScreen 的 KDoc。 -->
+    <string name="contacts_alphabet_rail">Jump by first letter</string>
+    <string name="contacts_alphabet_other">Others</string>
+    <string name="contacts_alphabet_jump">Jump to names starting with %1$s</string>
+    <string name="contacts_alphabet_clear">Clear the %1$s start and show everyone</string>
+    <string name="contacts_alphabet_empty">No names start with %1$s</string>
+    <plurals name="contacts_member_count">
+        <item quantity="one">%1$d member</item>
+        <item quantity="other">%1$d members</item>
+    </plurals>
+    <string name="contacts_empty_org">No members in the organization yet</string>
+    <string name="contacts_dept_head">Head: %1$s</string>
+    <string name="contacts_dept_head_none">No head assigned</string>
+    <plurals name="contacts_dept_direct_members">
+        <item quantity="one">%1$d direct member</item>
+        <item quantity="other">%1$d direct members</item>
+    </plurals>
+    <string name="contacts_dept_start_group_chat">Start a group chat</string>
+    <string name="contacts_dept_group_chat_confirm">Start a group chat with the %2$d members of “%1$s”?</string>
+    <string name="contacts_dept_group_chat_empty">This department has no members yet</string>
+    <string name="contacts_dept_group_chat_too_many">This department has %1$d people, above the %2$d-person limit for one tap. Create the group from the chat tab and pick members instead.</string>
+    <string name="contacts_dept_group_chat_failed">Could not create the group chat: %1$s</string>
     <string name="starred_add">Add</string>
     <string name="starred_remove">Unstar</string>
     <string name="starred_empty">No starred contacts yet</string>

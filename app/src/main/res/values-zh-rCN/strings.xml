@@ -861,6 +861,27 @@
     <string name="meeting_room_remove">移除会议室</string>
     <string name="starred_title">星标联系人</string>
     <string name="contacts_my_groups">我的群组</string>
+    <!-- 通讯录:拼音索引条 + 部门信息(负责人 / 直属人数 / 发起群聊)。
+         索引条只在界面语言是简体中文时出现,见 ContactsTabScreen 的 KDoc。 -->
+    <string name="contacts_alphabet_rail">按首字母跳转</string>
+    <string name="contacts_alphabet_other">其他</string>
+    <string name="contacts_alphabet_jump">跳到「%1$s」开头</string>
+    <string name="contacts_alphabet_clear">取消「%1$s」起点，显示全部</string>
+    <string name="contacts_alphabet_empty">没有「%1$s」开头的成员</string>
+    <plurals name="contacts_member_count">
+        <item quantity="other">%1$d 人</item>
+    </plurals>
+    <string name="contacts_empty_org">组织里还没有成员</string>
+    <string name="contacts_dept_head">负责人：%1$s</string>
+    <string name="contacts_dept_head_none">未指定负责人</string>
+    <plurals name="contacts_dept_direct_members">
+        <item quantity="other">直属 %1$d 人</item>
+    </plurals>
+    <string name="contacts_dept_start_group_chat">发起群聊</string>
+    <string name="contacts_dept_group_chat_confirm">用「%1$s」的 %2$d 名成员创建一个群聊？</string>
+    <string name="contacts_dept_group_chat_empty">这个部门还没有成员</string>
+    <string name="contacts_dept_group_chat_too_many">这个部门有 %1$d 人，超过一次拉群的 %2$d 人上限。请到会话页新建群聊并挑选成员。</string>
+    <string name="contacts_dept_group_chat_failed">创建群聊失败：%1$s</string>
     <string name="starred_add">添加</string>
     <string name="starred_remove">取消星标</string>
     <string name="starred_empty">还没有星标联系人</string>

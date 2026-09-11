@@ -920,6 +920,29 @@
     <string name="room_invite_state_failed">Anruf fehlgeschlagen</string>
     <string name="room_meeting_code_label">Meetingcode: %1$s</string>
     <string name="contacts_my_groups">Meine Gruppen</string>
+    <!-- 通讯录:拼音索引条 + 部门信息(负责人 / 直属人数 / 发起群聊)。
+         索引条只在界面语言是简体中文时出现,见 ContactsTabScreen 的 KDoc。 -->
+    <string name="contacts_alphabet_rail">Nach Anfangsbuchstabe springen</string>
+    <string name="contacts_alphabet_other">Sonstige</string>
+    <string name="contacts_alphabet_jump">Zu Namen mit %1$s springen</string>
+    <string name="contacts_alphabet_clear">Start bei %1$s aufheben und alle anzeigen</string>
+    <string name="contacts_alphabet_empty">Keine Namen mit %1$s</string>
+    <plurals name="contacts_member_count">
+        <item quantity="one">%1$d Mitglied</item>
+        <item quantity="other">%1$d Mitglieder</item>
+    </plurals>
+    <string name="contacts_empty_org">Die Organisation hat noch keine Mitglieder</string>
+    <string name="contacts_dept_head">Leitung: %1$s</string>
+    <string name="contacts_dept_head_none">Keine Leitung festgelegt</string>
+    <plurals name="contacts_dept_direct_members">
+        <item quantity="one">%1$d direktes Mitglied</item>
+        <item quantity="other">%1$d direkte Mitglieder</item>
+    </plurals>
+    <string name="contacts_dept_start_group_chat">Gruppe starten</string>
+    <string name="contacts_dept_group_chat_confirm">Eine Gruppe mit den %2$d Mitgliedern von „%1$s“ starten?</string>
+    <string name="contacts_dept_group_chat_empty">Diese Abteilung hat noch keine Mitglieder</string>
+    <string name="contacts_dept_group_chat_too_many">Diese Abteilung hat %1$d Personen und liegt über der Grenze von %2$d Personen für einen Tipp. Erstellen Sie die Gruppe stattdessen im Chat und wählen Sie die Mitglieder aus.</string>
+    <string name="contacts_dept_group_chat_failed">Gruppe konnte nicht erstellt werden: %1$s</string>
     <string name="calendar_add">Kalender hinzufügen</string>
     <string name="calendar_targets_load_failed">Beschreibbare Kalender konnten nicht geladen werden</string>
     <string name="calendar_group_managed">Von mir verwaltet</string>

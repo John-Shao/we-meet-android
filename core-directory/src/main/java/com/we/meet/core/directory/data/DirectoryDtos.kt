@@ -35,6 +35,11 @@ data class DepartmentDto(
     val head: DeptHeadDto? = null,
     @Json(name = "sort_order") val sortOrder: Int = 0,
     @Json(name = "is_active") val isActive: Boolean = true,
+    /**
+     * 在职**直属**成员数(服务端 annotate,不额外请求)。列表行右侧显示它 ——
+     * 一个部门是空壳还是真有几十人,点进去之前就该看得出来。
+     */
+    @Json(name = "member_count") val memberCount: Int = 0,
 )
 
 @JsonClass(generateAdapter = true)
@@ -57,6 +62,15 @@ data class MemberDto(
     val title: String? = null,
     @Json(name = "org_role") val orgRole: String? = null,
     val department: DeptRefDto? = null,
+    /**
+     * A–Z 分桶用的首字母(A–Z,或 '#' 表示数字/符号/空名字那一桶),服务端按拼音算好
+     * 下发(见 we-meet `core/services/pinyin.py`)。
+     *
+     * 客户端**不重算拼音**:服务端按拼音排序、客户端自己按别的规则分组,两边迟早会
+     * 对不上(改个名字、换一次 pypinyin 版本)。为 null 只可能是服务端还没升级到
+     * 带这个字段的版本 —— 那时由通讯录的分组逻辑用姓名首字符兜底。
+     */
+    @Json(name = "initial") val initial: String? = null,
     @Json(name = "is_self") val isSelf: Boolean = false,
     /**
      * 调用方是否把这个人设成了星标联系人(每张卡片都带,免二次请求)。
@@ -135,4 +149,22 @@ data class PagedMembersDto(
     val next: String? = null,
     val previous: String? = null,
     val results: List<MemberDto> = emptyList(),
+)
+
+/** One letter of GET directory/members/alphabet/ — how many people sit in that bucket. */
+@JsonClass(generateAdapter = true)
+data class LetterCountDto(
+    val letter: String = "",
+    val count: Int = 0,
+)
+
+/**
+ * Response of GET directory/members/alphabet/.
+ *
+ * 只返计数、不下发整册:索引条靠它决定哪些字母可点(点一个必然有结果的字母),
+ * 而全量成员仍走分页列表 —— 大组织里"先拉全册再本地分桶"是必炸的做法。
+ */
+@JsonClass(generateAdapter = true)
+data class AlphabetDto(
+    val letters: List<LetterCountDto> = emptyList(),
 )
