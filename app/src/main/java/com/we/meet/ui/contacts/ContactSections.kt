@@ -44,8 +44,10 @@ sealed interface ContactEntry {
  * [showLetters] 为 false(界面语言不是中文)时就是原来的平铺列表 —— 没有字母头
  * 也说得通,因为那时用户是按姓名/搜索找人的。
  *
- * 只在**连续**的人之间插头:万一服务端返回的顺序里同一个字母被拆成两段,顶多
- * 出现两个同名小节头,不会把行序打乱。
+ * 只在**连续**的人之间插头:万一服务端返回的顺序里同一个字母被拆成两段(旧后端不下发
+ * `initial` 时最容易),会插出两个同名小节头 —— 行序不会乱,但**调用方给 stickyHeader
+ * 的 key 必须带上位置**:同一个字母出现两次就是两个 key 相同的 item,LazyColumn 会因此
+ * 抛异常(见 OrgContactsScreen 的 ContactList)。
  */
 fun contactEntries(members: List<MemberDto>, showLetters: Boolean): List<ContactEntry> {
     if (!showLetters) return members.map(ContactEntry::Person)

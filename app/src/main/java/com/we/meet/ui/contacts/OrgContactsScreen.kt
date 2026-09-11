@@ -10,6 +10,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -221,14 +222,16 @@ private fun ContactList(
             item(key = "dept-info") {
                 DepartmentInfoRow(
                     dept = dept,
-                    // 直属 0 人但有下级部门的部门是真的存在(人全在下级),那时屏幕上
-                    // 其实有人可拉 —— 所以判据是「这个部门直属有人 or 这一屏有人」,
-                    // 二者皆空才是"点了也只能听到一句没有成员"。
-                    onStartGroupChat = if (dept.memberCount > 0 || ui.members.isNotEmpty()) {
+                    // 判据是「这个部门真的有人可拉」—— 直属 0 人但有下级部门的部门是
+                    // 真实存在的(人全在下级),那时屏幕上其实有人。见 canStartGroupChat。
+                    onStartGroupChat = if (canStartGroupChat(dept, ui.members)) {
                         onStartGroupChat
                     } else {
                         null
                     },
+                    // 正在翻整个部门(确认框出现之前的那几趟往返)就按住按钮:
+                    // 否则连点几次 = 几次全量分页,失败时还会连着弹好几条提示。
+                    requesting = ui.requestingGroupChat,
                 )
             }
         }
@@ -251,13 +254,22 @@ private fun ContactList(
                 }
             }
         } else {
-            ui.entries.forEach { entry ->
+            ui.entries.forEachIndexed { index, entry ->
                 when (entry) {
                     // sticky:滚动时始终知道自己看到哪个字母了。
-                    is ContactEntry.Letter -> stickyHeader(key = "h-${entry.initial}") {
+                    //
+                    // key 里带**位置**而不是只有字母:`contactEntries` 只在相邻的人之间插头,
+                    // 所以服务端顺序里同一个字母被拆成两段时会插出两个同名小节头(旧后端
+                    // 不下发 `initial` 时最容易:兜底按姓名首字符分组,编码序下「数字/符号
+                    // 开头」与「汉字名」各是一段 '#')。而 LazyColumn 要求 key 唯一,重复 key
+                    // 不是「两个头」而是直接抛异常。字母头本身没有状态,key 不稳定没有代价。
+                    is ContactEntry.Letter -> stickyHeader(key = "h-$index") {
                         LetterHeader(initial = entry.initial)
                     }
 
+                    // 人用 user id 当 key(稳定:列表变化时不重建行)。这里能安全地用 id,
+                    // 是因为 members 已按人去重(见 ContactsViewModel.loadMembers)—— 部门端点
+                    // 返回的是**成员关系**行,一个人在同一棵子树里可能有两个部门身份。
                     is ContactEntry.Person -> item(key = "m-${entry.member.id}") {
                         MemberRow(
                             member = entry.member,
@@ -328,14 +340,16 @@ private fun LetterHeader(initial: String) {
  * 当前部门的信息行:负责人、直属人数、以及部门级「发起群聊」。
  *
  * 人数写的是 [DepartmentDto.memberCount](**直属**,服务端 annotate 的值),不是
- * 当前列表的条数:这份列表含下级部门、还会被索引条的起点字母收窄,拿它当"部门
- * 有多少人"就会一会儿一个数。直属/全部这层区别由文案说清(「直属 N 人」)。
+ * 当前列表的条数 —— 这份列表含下级部门,拿它当"部门有多少人"就会一会儿一个数。
+ * 直属/含有下级这层区别由文案说清(「直属 N 人」)。
  */
 @Composable
 private fun DepartmentInfoRow(
     dept: DepartmentDto,
     /** null = 这个部门没人可拉,不显示按钮(与 Web 同一克制:点了必然是一句空话)。 */
     onStartGroupChat: (() -> Unit)?,
+    /** 正在翻整个部门:按钮换成转圈并失效,免得连点出好几次全量分页。 */
+    requesting: Boolean = false,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -366,8 +380,15 @@ private fun DepartmentInfoRow(
         }
         // 空部门不给按钮:点了必然是一句「没有成员」,不如不给(与 Web 一致)。
         if (onStartGroupChat != null) {
-            TextButton(onClick = onStartGroupChat) {
-                Text(stringResource(R.string.contacts_dept_start_group_chat))
+            TextButton(onClick = onStartGroupChat, enabled = !requesting) {
+                if (requesting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(Dimens.IconSmall),
+                        strokeWidth = Dimens.BorderEmphasis,
+                    )
+                } else {
+                    Text(stringResource(R.string.contacts_dept_start_group_chat))
+                }
             }
         }
     }
@@ -433,6 +454,14 @@ private fun noticeText(context: Context, notice: ContactsNotice): String = when 
     )
 }
 
+/**
+ * 面包屑(组织根 › … › 当前部门)。
+ *
+ * 每一段的可点区域都由 [BreadcrumbCrumb] 撑到 [Dimens.MinTouchTarget]:`clickable` 直接
+ * 挂在 `Text` 上时热区只有一行 bodyMedium 高(≈20dp),而相邻两段之间只隔一个箭头 ——
+ * 误触的代价是**整屏换内容**(跳到上层部门)。`checkDesignTokens` 的触控区规则只认
+ * IconButton,抓不到这里,所以这条得靠人守。
+ */
 @Composable
 private fun Breadcrumbs(
     stack: List<DepartmentDto>,
@@ -444,31 +473,60 @@ private fun Breadcrumbs(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+            .padding(horizontal = Dimens.ScreenPadding),
     ) {
-        Text(
-            text = stringResource(R.string.contacts_root_org),
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (stack.isEmpty()) MaterialTheme.colorScheme.onSurface
-            else MaterialTheme.colorScheme.primary,
-            modifier = Modifier.clickable(enabled = stack.isNotEmpty()) { onCrumbClick(-1) },
+        BreadcrumbCrumb(
+            label = stringResource(R.string.contacts_root_org),
+            // 已经在根上的那一段不是入口(点它等于什么都没发生)。
+            enabled = stack.isNotEmpty(),
+            current = stack.isEmpty(),
+            onClick = { onCrumbClick(-1) },
         )
         stack.forEachIndexed { index, dept ->
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(Dimens.IconSmall),
+                // padding 必须在 size **之前**:反过来会把箭头压在 18-8=10dp 的框里。
+                modifier = Modifier
+                    .padding(horizontal = Dimens.SpaceXs)
+                    .size(Dimens.IconSmall),
             )
             val isLast = index == stack.lastIndex
-            Text(
-                text = dept.name.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (isLast) MaterialTheme.colorScheme.onSurface
-                else MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable(enabled = !isLast) { onCrumbClick(index) },
+            BreadcrumbCrumb(
+                label = dept.name.orEmpty(),
+                enabled = !isLast,
+                current = isLast,
+                onClick = { onCrumbClick(index) },
             )
         }
+    }
+}
+
+/** 面包屑的一段:热区 ≥ [Dimens.MinTouchTarget],文字居中。 */
+@Composable
+private fun BreadcrumbCrumb(
+    label: String,
+    enabled: Boolean,
+    current: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .defaultMinSize(minHeight = Dimens.MinTouchTarget)
+            .clickable(enabled = enabled, onClick = onClick),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (current) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.primary
+            },
+            maxLines = 1,
+        )
     }
 }
 

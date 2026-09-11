@@ -18,17 +18,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/**
- * 部门级「发起群聊」的规模上限。
- *
- * 建群会把所有人拉进一个会话,几百人的群不该是「顺手点一下」的产物 —— 超过就
- * 明确说拉不了,而不是悄悄拉一半(那才是最坏的结果:用户以为全都在群里)。
- * 与 Web 端同一个数与同一条理由。
- */
-const val GROUP_CHAT_MEMBER_CAP = 300
-
-/** 拉部门成员建群时的每页条数(服务端上限 100):300 人最多三次往返。 */
-private const val GROUP_CHAT_PAGE_SIZE = 100
+// 部门级「发起群聊」的规模上限、每页条数与「翻完整个部门」的纯逻辑都在
+// GroupChatPlanning.kt(那里也写了它与 Web 的口径差在哪)。
 
 /** 一次性的提示,文案在 UI 侧取(VM 不碰 strings.xml)。 */
 sealed interface ContactsNotice {
@@ -57,15 +48,13 @@ data class ContactsUiState(
     val departments: List<DepartmentDto> = emptyList(),
     /** Drill-down path; empty = organization root. */
     val deptStack: List<DepartmentDto> = emptyList(),
-    /** Members of the current node (subtree included). */
+    /** Members of the current node(与 Web 的部门视图同口径,见 [ContactsViewModel]). */
     val members: List<MemberDto> = emptyList(),
     val loading: Boolean = false,
     val loadingMore: Boolean = false,
     val loadMoreError: Boolean = false,
     val hasMore: Boolean = false,
     val error: Boolean = false,
-    /** 当前范围内的人数(服务端 count,不是已加载条数)。 */
-    val total: Int = 0,
     /**
      * 界面语言是简体中文 → 画字母小节头([letterHeadersEnabled])。
      * 只是「画不画」,排序与分页不受它影响。
@@ -75,6 +64,14 @@ data class ContactsUiState(
     val listResetTick: Int = 0,
     /** 非空 = 正在等用户确认「发起群聊」。 */
     val groupChatPrompt: GroupChatPrompt? = null,
+    /**
+     * 正在翻整个部门(确认框出现之前的那几趟往返)。
+     *
+     * 和 [GroupChatPrompt.creating] 是两件事:那个护的是「确认之后建群」,这个护的是
+     * 「确认框还没弹出来」的那段时间 —— 没有它,按钮可以连点,每点一次就是一次全量
+     * 分页 + 一次建群前的拉人(失败时还会连着弹好几条提示)。
+     */
+    val requestingGroupChat: Boolean = false,
 ) {
     val currentDept: DepartmentDto? get() = deptStack.lastOrNull()
 
@@ -102,12 +99,18 @@ data class ContactsUiState(
  * (`?ordering=pinyin`),列表里按首字母插小节头(只在界面语言是简体中文时;见
  * [letterHeadersEnabled])。
  *
+ * **范围口径**:名册含下级部门(`departments/{id}/members/?include_subtree=true`),
+ * 与部门级「发起群聊」拉的是同一批人 —— 屏幕上多少人、群里就多少人。⚠️ 这一点与 Web
+ * 不同:Web 的部门视图只列**直属**成员。差异与取舍的理由记在 [GROUP_CHAT_MEMBER_CAP]
+ * 的注释与 M7 文档里;要对齐 Web 就得把**浏览、部门内搜索、群聊**三处一起改成直
+ * 属(前两处是 `include_subtree=true`,漏改哪一处都会让两边的范围对不上)。
+ *
  * 页内搜索已经拆掉了。原先这里有一个 `query` + 300ms 防抖的服务端搜索,但它和
  * 「去全局搜索页里限定同一个部门搜」是同一件事的两个壳 —— 同一个
  * `directory/members/?department=` 接口、同样的整份替换式结果,却各自维护一套
- * 状态、空态、分页;更糟的是两个入口的范围语义还可能不一致(浏览走
- * `include_subtree=true`,搜索走的是「仅直属」)。现在搜索统一走
- * [com.we.meet.ui.nav.Routes.imSearch],范围由 `dept` 参数带过去。
+ * 状态、空态、分页。现在搜索统一走 [com.we.meet.ui.nav.Routes.imSearch],范围由
+ * `dept` 参数带过去(`DirectoryRepository.searchMembers` 也带 `include_subtree=true`,
+ * 与浏览同一个口径 —— 两边不一致的话,「在部门内搜」会与眼前的列表是两拨人)。
  *
  * 右侧的 A–Z 索引条已经**去掉**(连同它的字母表请求与起点跳转):一列 27 行的小竖条
  * 在手机上既挤又突兀,而它换来的「跳到一个字母」这一步,搜索与滚动已经能替代。
@@ -182,6 +185,10 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             fetchPage(nextPage, dept)
                 .onSuccess { page ->
+                    // 换部门会把 [loadMembers] 的请求取消掉,但**这一趟不受它管**:
+                    // 结果回来时用户可能已经进了别的部门,把上一个部门的第二页拼进新的
+                    // 名册,顺序就乱了(字母头也会跟着乱)。对不上就整页丢掉。
+                    if (_ui.value.currentDept?.id != dept?.id) return@onSuccess
                     nextPage = page.nextPage
                     _ui.update {
                         it.copy(
@@ -193,6 +200,7 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
                     }
                 }
                 .onFailure {
+                    if (_ui.value.currentDept?.id != dept?.id) return@onFailure
                     _ui.update { it.copy(loadingMore = false, loadMoreError = true) }
                 }
         }
@@ -203,59 +211,57 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
     /**
      * 把当前部门的人拉进一个新群。
      *
-     * 三点克制(与 Web 一致):①建群会通知到每个人,所以先弹确认框,把「拉几个人
-     * 进哪个群」说清楚;②**翻完整个部门**干到底 —— 只取第一页的话,60 人的部门
-     * 建出来的群里只有 50 个人,而确认框上写的也是 50,少掉的人事后几乎发现不了;
-     * ③超过上限就明说拉不了,不建半拉的群。
-     *
-     * 拉的是「屏幕上这批人」:部门的浏览列表含下级部门(见 [ContactsUiState]),
-     * 群里也该是同一批,否则用户照着列表数人数会对不上。
+     * 翻页与上限判断都在 [planGroupChat] 里(纯函数,有单测);这里只管三件事:
+     * ①**别重入** —— 确认框弹出来之前的那几趟往返也要拦住连点;②结论只在**还停在同一个
+     * 部门**时才落地:翻页途中下钻到 B 部门,却在 B 的列表上弹出「用 A 部门的人建群」,
+     * 用户看到的上下文与对话框内容对不上;③把结论翻译成状态或一次性提示。
      */
     fun requestGroupChat() {
         val dept = _ui.value.currentDept ?: return
-        if (_ui.value.groupChatPrompt != null) return
+        if (_ui.value.groupChatPrompt != null || _ui.value.requestingGroupChat) return
+        _ui.update { it.copy(requestingGroupChat = true) }
         viewModelScope.launch {
-            val firstPage = directory
-                .departmentMembers(dept.id, page = 1, pageSize = GROUP_CHAT_PAGE_SIZE)
-                .getOrElse { error ->
-                    Log.w(TAG, "group chat member load failed", error)
-                    _notice.tryEmit(ContactsNotice.GroupChatFailed(error.message.orEmpty()))
-                    return@launch
-                }
-            if (firstPage.total > GROUP_CHAT_MEMBER_CAP) {
-                _notice.tryEmit(
-                    ContactsNotice.GroupChatTooMany(firstPage.total, GROUP_CHAT_MEMBER_CAP),
-                )
-                return@launch
+            val result = planGroupChat { page, pageSize ->
+                directory.departmentMembers(dept.id, page = page, pageSize = pageSize)
             }
-            val ids = firstPage.members.filterNot { it.isSelf }.map { it.id }.toMutableList()
-            var page = firstPage.nextPage
-            var hasMore = firstPage.hasMore
-            while (hasMore) {
-                val next = directory
-                    .departmentMembers(dept.id, page = page, pageSize = GROUP_CHAT_PAGE_SIZE)
-                    .getOrElse { error ->
-                        Log.w(TAG, "group chat member page failed", error)
-                        _notice.tryEmit(ContactsNotice.GroupChatFailed(error.message.orEmpty()))
-                        return@launch
+            // 请求期间用户可能已经下钻/退回:这份结论属于上一个部门,丢掉。
+            val stillHere = _ui.value.currentDept?.id == dept.id
+            _ui.update { it.copy(requestingGroupChat = false) }
+            if (!stillHere) return@launch
+            result
+                .onSuccess { plan ->
+                    when (plan) {
+                        is GroupChatPlan.TooMany -> _notice.tryEmit(
+                            ContactsNotice.GroupChatTooMany(
+                                plan.count,
+                                GROUP_CHAT_MEMBER_CAP,
+                            ),
+                        )
+
+                        GroupChatPlan.Empty -> _notice.tryEmit(
+                            ContactsNotice.EmptyDepartment,
+                        )
+
+                        is GroupChatPlan.Ready -> _ui.update {
+                            it.copy(
+                                groupChatPrompt = GroupChatPrompt(
+                                    // 群名沿用部门名,**不截断**:服务端的建群端点对
+                                    // name 没有长度校验(唯一的 60 字上限在「改群名」
+                                    // 那条路径上,im.py),Web 也是原样传 —— 截断只会让
+                                    // 同一个部门在两端建出名字不一样的群。
+                                    deptName = dept.name.orEmpty(),
+                                    memberIds = plan.memberIds,
+                                ),
+                            )
+                        }
                     }
-                ids += next.members.filterNot { it.isSelf }.map { it.id }
-                page = next.nextPage
-                hasMore = next.hasMore
-            }
-            if (ids.isEmpty()) {
-                _notice.tryEmit(ContactsNotice.EmptyDepartment)
-                return@launch
-            }
-            _ui.update {
-                it.copy(
-                    groupChatPrompt = GroupChatPrompt(
-                        // 群名沿用部门名,并且按 IM 的 40 字上限截断(有的部门名带全路径)。
-                        deptName = dept.name.orEmpty().take(GROUP_CHAT_NAME_MAX),
-                        memberIds = ids,
-                    ),
-                )
-            }
+                }
+                .onFailure { error ->
+                    Log.w(TAG, "group chat member load failed", error)
+                    _notice.tryEmit(
+                        ContactsNotice.GroupChatFailed(error.message.orEmpty()),
+                    )
+                }
         }
     }
 
@@ -316,9 +322,12 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
                     nextPage = page.nextPage
                     _ui.update {
                         it.copy(
-                            members = page.members,
+                            // 按人（user id）去重:部门端点返回的是**成员关系**行,一个人
+                            // 在同一棵子树里可以有两个部门身份,于是同一张卡片会出现两次。
+                            // 列表里出现两个同名同头像的行是显示错误,而 LazyColumn 的
+                            // key 撞车会直接抛异常（key 就是 user id）。
+                            members = page.members.distinctBy { member -> member.id },
                             hasMore = page.hasMore,
-                            total = page.total,
                             loading = false,
                         )
                     }
@@ -338,8 +347,5 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
 
     private companion object {
         const val TAG = "ContactsVM"
-
-        /** IM 的群名上限(见 NewChatScreen 的输入框),超了服务端会拒。 */
-        const val GROUP_CHAT_NAME_MAX = 40
     }
 }
