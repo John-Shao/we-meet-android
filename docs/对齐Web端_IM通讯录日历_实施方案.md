@@ -272,3 +272,40 @@ data class PickedMember(val userId: String /* we-meet uuid */, val displayName: 
   二级页=白色顶栏与固定搜索/面包屑 + 浅灰列表。字母头底色因此从 `surfaceVariant` 改成
   `surface` —— 浅色主题里 `LightSurfaceVariant == LightBackground`,粘在浅灰列表上会隐形。
 - 新增字符串 `contacts_org_members`(内部联系人,5 语言)。
+
+### 五次改动:代码走查后的修正（2026-09-11 当日）
+
+一次针对本次全部改动的走查(两端 + 后端交叉核对)共提出 5 条「应修」与若干建议,App 侧落实如下。
+其中**只有第 1 条会改变用户看得见的结果**。
+
+1. **部门群聊的成员口径与 Web 不同,而且这件事原来没人说**。App 的部门列表含下级部门
+   (`departments/{id}/members/?include_subtree=true`),「发起群聊」拉的是同一批人;Web 的部门视图
+   只列**直属**成员,它的同名按钮也只拉直属。于是同一个部门可能「Web 建成 5 人群、App 直接说
+   超过 300 上限」。**本次保持 App 的行为**(屏幕上是多少人、群里就多少人,App 内部自洽),但把
+   代码里「与 Web 端同一个数与同一条理由」这句**不成立的注释**改成了对差异的具体说明,并记在这里:
+   要对齐只需给 `DirectoryRepository.departmentMembers` 传 `includeSubtree = false` —— 但**浏览、
+   部门内搜索与群聊必须一起改**(`searchMembers` 也是 `include_subtree=true`),否则「在部门内搜」
+   与眼前的列表会变成两拨人。
+2. **列表 key 唯一性**。`contactEntries` 只在相邻的人之间插字母头,所以同一字母被拆成两段时会插出
+   两个同名小节头(旧后端不下发 `initial` 时最容易);而它们是 LazyColumn 的 key —— 重复 key 不是
+   「两个头」,是直接抛异常。字母头的 key 现在带位置(`h-$index`);成员行的 key 仍是 user id,因为
+   成员列表已**按人去重**(部门端点返回的是成员关系行,一个人在同一棵子树里可以有两个部门身份,
+   既会显示成两行、也会让 key 撞车)。
+3. **「发起群聊」加了进行中状态**。确认框要等整个部门翻完才出现,那段时间原来没有状态可依 ——
+   连点几次就是几次全量分页 + 几次建群拉人;翻页途中下钻到别的部门,还会在新部门的列表上弹出
+   「用上一个部门的人建群」的确认框。现在 `requestingGroupChat` 期间按钮转圈并失效,结果只在
+   `currentDept` 没变时才落地。顺带修了同一类问题:`loadMore` 的结果回来时若已经换了部门就整页丢掉
+   (原来会把上一个部门的第二页拼进新名册,字母头跟着乱)。
+4. **翻页逻辑抽成纯函数并补测**(`GroupChatPlanning.kt` + `GroupChatPlanningTest`,9 条)。
+   「翻完整个部门」「不把自己传进去」「超上限就不再翻」这三条原来只写在注释里,而它们的失效全是
+   静默的(群里少几个人没人会数)。顺带加了两道防御:服务端一直回 `next` 时按页码上限失败而不是
+   无限请求;`count` 与实际返回条数不一致时不让成员真的涨过上限。
+5. **三处走查建议**:删掉没人读的 `ContactsUiState.total`(死状态);群名不再静默截到 40 字
+   (服务端建群端点对 `name` **没有**长度校验,唯一的 60 字上限在「改群名」那条路径上,Web 也原样传);
+   面包屑每段的触控区从约 20dp 撑到 `Dimens.MinTouchTarget`(48dp,§5.2 / WCAG 2.2 AA)。
+6. **测试与注释**:`DirectoryRequestContractTest` 补上 `GET /directory/me/` 的路径与字段解析(以及
+   `organization: null` 不算失败)—— 原来本次唯一新增的网络调用没有契约测试;清掉几处指向已删除
+   符号的注释(`indexEnabled`、`from_initial`/`alphabet`、以及 5 个 locale 里「拼音索引条」那句)。
+
+验证:`./gradlew --offline :app:testDebugUnitTest checkDesignTokens :app:assembleDebug` ——
+140 条单测全绿(通讯录相关 25 条)、设计规范护栏零漂移、APK 构建通过。真机视觉与触控走查仍未做。

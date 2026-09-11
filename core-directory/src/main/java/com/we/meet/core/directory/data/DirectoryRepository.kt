@@ -160,8 +160,8 @@ class DirectoryRepository(private val api: DirectoryApi) {
          * 通讯录列表一律按拼音排(服务端的 `?ordering=pinyin`)。
          *
          * 不按界面语言开关:排序是「这份名册长什么样」,汉字没有可用的编码序,
-         * 编码序对谁都是乱序。索引条才是「怎么读这份名册」,它才看语言(见
-         * ContactsViewModel 的 indexEnabled)。
+         * 编码序对谁都是乱序。**怎么读**这份名册才看语言 —— 那是字母小节头的开关
+         * (见 `com.we.meet.ui.contacts.letterHeadersEnabled`)。
          */
         const val PINYIN_ORDER = "pinyin"
 

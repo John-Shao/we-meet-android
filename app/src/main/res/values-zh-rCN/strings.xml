@@ -862,8 +862,8 @@
     <string name="meeting_room_remove">移除会议室</string>
     <string name="starred_title">星标联系人</string>
     <string name="contacts_my_groups">我的群组</string>
-    <!-- 通讯录:拼音索引条 + 部门信息(负责人 / 直属人数 / 发起群聊)。
-         索引条只在界面语言是简体中文时出现,见 ContactsTabScreen 的 KDoc。 -->
+    <!-- 通讯录:字母小节头 + 部门信息(负责人 / 直属人数 / 发起群聊)。
+         字母头只在界面语言是简体中文时出现,见 ContactSections.kt 的 letterHeadersEnabled。 -->
     <plurals name="contacts_member_count">
         <item quantity="other">%1$d 人</item>
     </plurals>
