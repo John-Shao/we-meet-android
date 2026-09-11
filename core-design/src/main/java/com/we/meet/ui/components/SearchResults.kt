@@ -43,6 +43,26 @@ fun SearchResultsHeader(count: Int, modifier: Modifier = Modifier) {
 }
 
 /**
+ * 结果区的一句次要说明。
+ *
+ * 和 [SearchResultsHeader] 同一位置、同一内缩,但只是正文级的次要文字 —— 用在
+ * 「这块地方现在是什么情况、该做什么」这类说明上:空查询时的引导文案,或者结果
+ * 可能不是全部时的提示。原先没有这个词,这类话只能挤进计数行、或者干脆不说。
+ */
+@Composable
+fun SearchResultsNote(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        modifier = modifier.padding(
+            horizontal = Dimens.SpaceL,
+            vertical = Dimens.SpaceXs,
+        ),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+/**
  * 把 [text] 中命中 [query] 的片段标成主题主色。
  *
  * 结果行不高亮命中片段,用户就得自己逐字比对「我输的字到底匹配在哪」——

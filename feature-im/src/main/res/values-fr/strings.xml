@@ -240,11 +240,16 @@
     <string name="im_global_search_hint">Rechercher</string>
     <string name="im_search_category_hint">Rechercher : %1$s</string>
     <string name="im_search_need_more_chars">Saisissez au moins %1$d caractères pour rechercher</string>
+    <string name="im_search_empty_hint_all">Saisissez un mot-clé pour rechercher personnes, réunions, messages, documents et tâches</string>
+    <string name="im_search_empty_hint_contacts">Rechercher par nom, e-mail ou intitulé de poste</string>
+    <string name="im_search_sec_starred">Contacts suivis</string>
+    <string name="im_search_all_no_results">Aucun résultat pour “%1$s”</string>
+    <string name="im_search_all_no_results_hint">Essayez d\'autres mots-clés ou changez de catégorie ci-dessus</string>
     <string name="im_msg_search_sec_conversations">Conversations</string>
     <string name="im_msg_search_sec_messages">Messages</string>
     <string name="im_msg_search_no_results">Aucun message correspondant</string>
-    <string name="im_msg_search_more">Charger plus</string>
-    <string name="im_msg_search_loading">Chargement…</string>
+    <string name="im_search_load_more">Charger plus</string>
+    <string name="im_search_load_loading">Chargement…</string>
     <!-- P4-M3 未接会议邀请记录 -->
     <string name="im_calllog_meet_invite">Invitation à la réunion</string>
 

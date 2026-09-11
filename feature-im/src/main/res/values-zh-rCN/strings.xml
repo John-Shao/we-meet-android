@@ -265,11 +265,16 @@
     <string name="im_global_search_hint">搜索</string>
     <string name="im_search_category_hint">搜索%1$s</string>
     <string name="im_search_need_more_chars">至少输入 %1$d 个字开始搜索</string>
+    <string name="im_search_empty_hint_all">输入关键词，搜索联系人、会议、消息、文档和任务</string>
+    <string name="im_search_empty_hint_contacts">输入姓名、邮箱或职务开始搜索</string>
+    <string name="im_search_sec_starred">星标联系人</string>
+    <string name="im_search_all_no_results">没有找到与「%1$s」相关的结果</string>
+    <string name="im_search_all_no_results_hint">换个关键词，或切换上面的分类试试</string>
     <string name="im_msg_search_sec_conversations">会话</string>
     <string name="im_msg_search_sec_messages">消息</string>
     <string name="im_msg_search_no_results">没有匹配的消息</string>
-    <string name="im_msg_search_more">加载更多</string>
-    <string name="im_msg_search_loading">加载中…</string>
+    <string name="im_search_load_more">加载更多</string>
+    <string name="im_search_load_loading">加载中…</string>
     <!-- P4-M3 未接会议邀请记录 -->
     <string name="im_calllog_meet_invite">会议邀请</string>
 

@@ -928,6 +928,23 @@ fun AppNav() {
             var contactDeptId by rememberSaveable {
                 mutableStateOf(entry.arguments?.getString("dept")?.takeIf { it.isNotBlank() })
             }
+            /**
+             * 联系人卡片的投影。搜索结果与空查询时的星标快捷入口共用这一份 ——
+             * 「姓名 / 职务·部门」这两行是用户认人的依据,两处各写一遍迟早漂开。
+             */
+            fun toGlobalSearchContact(
+                m: com.we.meet.core.directory.data.MemberDto,
+            ): com.we.meet.feature.im.ui.search.GlobalSearchContact =
+                com.we.meet.feature.im.ui.search.GlobalSearchContact(
+                    userId = m.id,
+                    name = m.fullName ?: m.shortName ?: m.email ?: m.id,
+                    // 与 Web 全局搜索同款「职务 · 部门」,空则退 email。
+                    subtitle = listOfNotNull(
+                        m.title?.takeIf { it.isNotBlank() },
+                        m.department?.name?.takeIf { it.isNotBlank() },
+                    ).joinToString(" · ").ifBlank { m.email.orEmpty() }
+                        .takeIf { it.isNotBlank() },
+                )
             val taskSearchVm: com.we.meet.ui.tasks.TaskViewModel = viewModel(
                 key = "aggregate-task-search",
                 factory = viewModelFactory {
@@ -991,21 +1008,20 @@ fun AppNav() {
                 onOpenChat = { cid, seq ->
                     navController.navigate(Routes.imChat(cid, seq))
                 },
-                searchContacts = { q, deptId ->
-                    app.directoryRepository.searchMembers(q, departmentId = deptId)
-                        .getOrThrow().members
-                        .map { m ->
-                            com.we.meet.feature.im.ui.search.GlobalSearchContact(
-                                userId = m.id,
-                                name = m.fullName ?: m.shortName ?: m.email ?: m.id,
-                                // 与 Web 全局搜索同款「职务 · 部门」,空则退 email。
-                                subtitle = listOfNotNull(
-                                    m.title?.takeIf { it.isNotBlank() },
-                                    m.department?.name?.takeIf { it.isNotBlank() },
-                                ).joinToString(" · ").ifBlank { m.email.orEmpty() }
-                                    .takeIf { it.isNotBlank() },
-                            )
-                        }
+                searchContacts = { q, deptId, pageNumber ->
+                    val page = app.directoryRepository
+                        .searchMembers(q, page = pageNumber, departmentId = deptId)
+                        .getOrThrow()
+                    com.we.meet.feature.im.ui.search.GlobalSearchContactPage(
+                        contacts = page.members.map { toGlobalSearchContact(it) },
+                        // total/nextPage 一路带到 UI:计数行要报服务端的总数,翻页要页码。
+                        total = page.total,
+                        nextPage = if (page.hasMore) page.nextPage else null,
+                    )
+                },
+                searchStarred = {
+                    app.directoryRepository.listStarred().getOrThrow()
+                        .map { toGlobalSearchContact(it) }
                 },
                 searchMeetings = { q ->
                     val local = app.historyStore.entries.value

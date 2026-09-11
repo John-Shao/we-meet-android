@@ -5,6 +5,13 @@ data class MemberPage(
     val members: List<MemberDto>,
     val hasMore: Boolean,
     val nextPage: Int,
+    /**
+     * 服务端报的命中总数(整册/整部门的,不是本页条数);响应没带时为 0。
+     *
+     * 分页界面需要它把「已加载 N 条」和「共 M 条」分开说 —— 只报本页条数时,
+     * 「找到 50 个结果」在真的有 132 个命中时是句假话。
+     */
+    val total: Int = 0,
 )
 
 /**
@@ -122,5 +129,6 @@ class DirectoryRepository(private val api: DirectoryApi) {
         members = results,
         hasMore = next != null,
         nextPage = page + 1,
+        total = count,
     )
 }

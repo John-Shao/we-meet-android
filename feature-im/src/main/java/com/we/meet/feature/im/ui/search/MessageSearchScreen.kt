@@ -55,6 +55,7 @@ import com.we.meet.feature.im.ui.common.GroupAvatar
 import com.we.meet.feature.im.ui.common.previewText
 import com.we.meet.ui.components.SearchPolicy
 import com.we.meet.ui.components.SearchResultsHeader
+import com.we.meet.ui.components.SearchResultsNote
 import com.we.meet.ui.components.WeMeetChipRow
 import com.we.meet.ui.components.WeMeetInlineEmptyState
 import com.we.meet.ui.components.WeMeetInlineErrorState
@@ -75,6 +76,36 @@ data class GlobalSearchContact(
     val name: String,
     val subtitle: String? = null,
 )
+
+/**
+ * 联系人命中的**一页**。
+ *
+ * 真正翻页而不是只取第一页:只取第一页时,50 条以外的人静默消失,用户把这个缺席读成
+ * 「他不在通讯录里」—— 那是个错误结论,不是体验瑕疵。计数行报服务端的总数,列表底部
+ * 给「加载更多」,用户因此既知道总量,也有路走到后面。
+ *
+ * @param contacts 本页命中。
+ * @param total 服务端报的命中总数(不是本页条数);未知时为 0。
+ * @param nextPage 下一页页码;null = 没有更多了。
+ */
+data class GlobalSearchContactPage(
+    val contacts: List<GlobalSearchContact>,
+    val total: Int = 0,
+    val nextPage: Int? = null,
+) {
+    val hasMore: Boolean get() = nextPage != null
+}
+
+/**
+ * 空查询时最多摆几个星标联系人。
+ *
+ * 这不是一份「星标列表」——那是通讯录里独立的一页。这里只是给空输入框配一个起点,
+ * 摆满整屏反而把「去搜索」这件事挤没了。
+ */
+private const val STARRED_PREVIEW = 5
+
+/** 联系人命中的首页页码(服务端页码从 1 开始;0 在 DRF 里是非法值)。 */
+private const val CONTACTS_FIRST_PAGE = 1
 
 /**
  * 会议命中:本地 HistoryStore(roomId 进历史详情)+ 排期会议(Web 口径:
@@ -126,8 +157,21 @@ fun MessageSearchScreen(
     onBack: () -> Unit,
     onOpenChat: (cid: String, seq: Long?) -> Unit,
     onOpenContact: (userId: String) -> Unit,
-    /** 联系人搜索。[departmentId] 非空 = 限定在该部门(**含下级**)内搜。 */
-    searchContacts: (suspend (String, String?) -> List<GlobalSearchContact>)? = null,
+    /**
+     * 联系人搜索。参数依次是 **[关键词] / [部门 id 或 null] / [页码(从 1 开始)]**。
+     * 部门非空 = 限定在该部门(**含下级**)内搜;翻页时把上一页返回的 nextPage 传回来。
+     */
+    searchContacts: (suspend (String, String?, Int) -> GlobalSearchContactPage)? = null,
+    /**
+     * 星标联系人 —— 空查询时的快捷入口。
+     *
+     * 搜索页原先在空查询时是一片空白:用户面对一个空输入框和一个空列表,唯一的信息
+     * 是 placeholder。放上「常联系的人」既填满了这块地方,也给了最短的一条路径
+     * (点一下直接进详情,不用先想关键词)。
+     *
+     * null = 宿主没接这条线,不显示这一块(只有说明文案)。
+     */
+    searchStarred: (suspend () -> List<GlobalSearchContact>)? = null,
     searchMeetings: (suspend (String) -> List<GlobalSearchMeeting>)? = null,
     searchDocs: (suspend (String) -> List<GlobalSearchDoc>)? = null,
     onOpenMeeting: ((roomId: String) -> Unit)? = null,
@@ -173,6 +217,7 @@ fun MessageSearchScreen(
     var taskPreview by remember { mutableStateOf<List<GlobalSearchTask>>(emptyList()) }
     var taskPreviewLoading by remember { mutableStateOf(false) }
     var taskPreviewFailed by remember { mutableStateOf(false) }
+    var taskPreviewSearched by remember { mutableStateOf(false) }
     var taskPreviewRetry by remember { mutableIntStateOf(0) }
 
     var query by rememberSaveable { mutableStateOf("") }
@@ -192,6 +237,13 @@ fun MessageSearchScreen(
     var contactsSearched by remember { mutableStateOf(false) }
     var contactsRetryNonce by remember { mutableIntStateOf(0) }
     var contactsResultQuery by remember { mutableStateOf("") }
+    /** 服务端报的命中总数(不是本页条数)—— 计数行要报它,否则「找到 50 个」是假话。 */
+    var contactsTotal by remember { mutableStateOf(0) }
+    /** 下一页页码;null = 没有更多了。 */
+    var contactsNextPage by remember { mutableStateOf<Int?>(null) }
+    var contactsLoadingMore by remember { mutableStateOf(false) }
+    var contactsLoadMoreFailed by remember { mutableStateOf(false) }
+    var starred by remember { mutableStateOf<List<GlobalSearchContact>>(emptyList()) }
     var meetings by remember { mutableStateOf<List<GlobalSearchMeeting>>(emptyList()) }
     var meetingsLoading by remember { mutableStateOf(false) }
     var meetingsFailed by remember { mutableStateOf(false) }
@@ -323,6 +375,8 @@ fun MessageSearchScreen(
             contactsFailed = false
             contactsSearched = false
             contactsResultQuery = ""
+            contactsTotal = 0
+            contactsNextPage = null
             return@LaunchedEffect
         }
         // 关键词**和范围**一起当请求标识:只比关键词的话,换部门时上一次的结果
@@ -332,12 +386,18 @@ fun MessageSearchScreen(
             contacts = emptyList()
             contactsSearched = false
             contactsResultQuery = requestKey
+            contactsTotal = 0
+            contactsNextPage = null
+            contactsLoadMoreFailed = false
         }
         delay(300)
         contactsLoading = true
         contactsFailed = false
         try {
-            contacts = searchContacts(q, departmentId)
+            val page = searchContacts(q, departmentId, CONTACTS_FIRST_PAGE)
+            contacts = page.contacts
+            contactsTotal = page.total
+            contactsNextPage = page.nextPage
             contactsSearched = true
         } catch (failure: CancellationException) {
             throw failure
@@ -346,6 +406,65 @@ fun MessageSearchScreen(
             contactsSearched = true
         } finally {
             contactsLoading = false
+        }
+    }
+
+    // 翻页:回调只翻状态,真正的请求由下面那个 state 驱动的 effect 发 —— 和本文件里
+    // 消息分页同一套写法(在回调里直接起协程会读到旧的页码/关键词)。
+    val loadMoreContacts: () -> Unit = {
+        if (!contactsLoadingMore && contactsNextPage != null) {
+            contactsLoadMoreFailed = false
+            contactsLoadingMore = true
+        }
+    }
+    LaunchedEffect(contactsLoadingMore) {
+        if (!contactsLoadingMore) return@LaunchedEffect
+        val page = contactsNextPage
+        val provider = searchContacts
+        val q = query.trim()
+        // 这一页属于哪一次搜索。请求期间用户改了关键词/范围的话,结果回来时
+        // contactsResultQuery 已经变了,那一页就不属于当前列表了。
+        val requestKey = contactsResultQuery
+        if (page == null || provider == null || q.length < SearchPolicy.MinQueryLength) {
+            contactsLoadingMore = false
+            return@LaunchedEffect
+        }
+        try {
+            val res = provider(q, departmentId, page)
+            // 关键:改了关键词就是另一次搜索了,这一页必须丢掉。否则它会被追加到
+            // 已经被重置的列表上,用户看到的是「新关键词的结果 + 上一次的下一页」。
+            if (contactsResultQuery == requestKey) {
+                // 服务端翻页期间有人改名/退出,理论上会重复 —— 按 id 去重,免得
+                // LazyColumn 因为重复 key 崩掉。
+                val seen = contacts.map { it.userId }.toSet()
+                contacts = contacts + res.contacts.filter { it.userId !in seen }
+                contactsTotal = res.total
+                contactsNextPage = res.nextPage
+            }
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (_: Throwable) {
+            contactsLoadMoreFailed = true
+        } finally {
+            contactsLoadingMore = false
+        }
+    }
+
+    // 星标联系人:空查询时的快捷入口。**进页面拉一次**就够 —— 它不随关键词/分类变化。
+    //
+    // key 用 Unit 而不是 provider:宿主传进来的是个 lambda 字面量,它捕获了 app
+    // (不稳定类型),Compose 不会为它做记忆化,于是每次重组都是新实例 —— 拿它当 key
+    // 会把「拉一次」变成「每次重组拉一次」。
+    LaunchedEffect(Unit) {
+        val provider = searchStarred ?: return@LaunchedEffect
+        starred = try {
+            provider()
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (_: Throwable) {
+            // 拉不到就不显示这一块:空查询时的引导本来就是锦上添花,为它弹错误态
+            // 只会让「还没开始搜」看起来像是坏了。
+            emptyList()
         }
     }
 
@@ -448,16 +567,24 @@ fun MessageSearchScreen(
         if (category != SearchCategory.ALL) return@LaunchedEffect
         taskPreview = emptyList()
         taskPreviewFailed = false
+        taskPreviewSearched = false
         val q = query.trim()
-        if (q.length < SearchPolicy.MinQueryLength || searchTasks == null) return@LaunchedEffect
+        if (q.length < SearchPolicy.MinQueryLength || searchTasks == null) {
+            // 没接 provider = 这个分区根本不存在,算「已了结」:否则「全部」的零结果
+            // 空态会一直等一个永远不会来的分区。
+            taskPreviewSearched = searchTasks == null
+            return@LaunchedEffect
+        }
         taskPreviewLoading = true
         try {
             delay(300)
             taskPreview = searchTasks(q)
+            taskPreviewSearched = true
         } catch (failure: CancellationException) {
             throw failure
         } catch (_: Throwable) {
             taskPreviewFailed = true
+            taskPreviewSearched = true
         } finally {
             taskPreviewLoading = false
         }
@@ -489,6 +616,44 @@ fun MessageSearchScreen(
     // 否则用户以为搜索坏了,而不是「还得多打一个字」。
     val belowMinQuery = trimmedQuery.isNotEmpty() &&
         trimmedQuery.length < SearchPolicy.MinQueryLength
+
+    // 空查询引导:只有「全部」和「联系人」两个分类显示。
+    //
+    // 空查询是这两个分类**最常见的初始状态**(刚从通讯录/消息 tab 点进来),原先
+    // 那里是一片空白,唯一信息是 placeholder。会议/消息/文档不显示:在那些分类里
+    // 「常联系的人」是跑题的,而「搜什么资源」这句字段提示已经说了,再写一遍是噪音。
+    val showEmptyGuide = trimmedQuery.isEmpty() &&
+        (category == SearchCategory.ALL || category == SearchCategory.CONTACTS)
+    val emptyGuideHint = if (category == SearchCategory.CONTACTS) {
+        stringResource(R.string.im_search_empty_hint_contacts)
+    } else {
+        stringResource(R.string.im_search_empty_hint_all)
+    }
+
+    // 「全部」下的兜底空态。
+    //
+    // 每个分区都自己判断空态(而且只在选中它时才算),于是「哪儿都没有」时整页
+    // 是空白的 —— 用户分不清「搜完了」和「搜坏了」。
+    //
+    // 关键在**必须等所有分区都了结**才敢说话:少看一个 loading 标志,就会在加载
+    // 途中闪一句「没找到」。provider 缺失的分区算已了结(它根本不存在)。
+    val allSectionsSettled =
+        (searchContacts == null || (contactsSearched && !contactsLoading)) &&
+            (searchMeetings == null || (meetingsSearched && !meetingsLoading)) &&
+            (searchDocs == null || (docsSearched && !docsLoading)) &&
+            (searchTasks == null || (taskPreviewSearched && !taskPreviewLoading)) &&
+            searchedOnce && !searching
+    val allSectionsEmpty = convHits.isEmpty() && contacts.isEmpty() &&
+        meetings.isEmpty() && items.isEmpty() && docs.isEmpty() &&
+        taskPreview.isEmpty()
+    // 有分区在报错时不说话:那时屏幕上已经有重试按钮,再来一句「没找到」等于把
+    // 「请求挂了」说成「确实没有」。
+    val anySectionFailed = contactsFailed || meetingsFailed || docsFailed ||
+        searchFailed || taskPreviewFailed
+    val showAllEmpty = inAll &&
+        trimmedQuery.length >= SearchPolicy.MinQueryLength &&
+        allSectionsSettled && allSectionsEmpty && !anySectionFailed
+
     val categoryListState = rememberLazyListState()
     LaunchedEffect(category, categories) {
         if (category !in categories) category = SearchCategory.ALL
@@ -641,6 +806,29 @@ fun MessageSearchScreen(
                         )
                     }
                 }
+                if (showEmptyGuide) {
+                    item(key = "empty-guide-hint") {
+                        SearchResultsNote(text = emptyGuideHint)
+                    }
+                    // 有星标才显示这一块:没有星标时不摆一个空标题,那时只留上面
+                    // 那句说明 —— 比「你还没有星标联系人」这种自我说明更有用。
+                    if (starred.isNotEmpty()) {
+                        item(key = "sec-starred") {
+                            SectionHeader(stringResource(R.string.im_search_sec_starred))
+                        }
+                        items(
+                            starred.take(STARRED_PREVIEW),
+                            key = { "s:${it.userId}" },
+                        ) { contact ->
+                            TwoLineRow(
+                                emoji = "⭐",
+                                title = contact.name,
+                                subtitle = contact.subtitle,
+                                onClick = { onOpenContact(contact.userId) },
+                            )
+                        }
+                    }
+                }
                 if (showConv && convHits.isNotEmpty()) {
                     item(key = "sec-conv") {
                         SectionHeader(stringResource(R.string.im_msg_search_sec_conversations))
@@ -686,7 +874,17 @@ fun MessageSearchScreen(
                     !inAll && category == SearchCategory.CONTACTS &&
                     contactsSearched && !contactsLoading && !contactsFailed
                 ) {
-                    item(key = "contacts-count") { SearchResultsHeader(contacts.size) }
+                    item(key = "contacts-count") {
+                        SearchResultsHeader(
+                            // 报**服务端给的总数**,不是已加载条数:只加载了 50 条而实际
+                            // 有 132 个命中时写「找到 50 个结果」,那正是这个缺陷本身。
+                            count = if (contactsTotal > contacts.size) {
+                                contactsTotal
+                            } else {
+                                contacts.size
+                            },
+                        )
+                    }
                 }
 
                 if (
@@ -725,6 +923,33 @@ fun MessageSearchScreen(
                             query = query,
                             onClick = { onOpenContact(contact.userId) },
                         )
+                    }
+                    // 翻页入口。「全部」分类不给:那里每个分区只摆三条的**预览**,
+                    // 翻页是「联系人」这个分类视图的事。
+                    if (!inAll && contactsNextPage != null) {
+                        item(key = "contacts-more") {
+                            if (contactsLoadMoreFailed) {
+                                WeMeetInlineErrorState(onRetry = loadMoreContacts)
+                            } else {
+                                Text(
+                                    text = stringResource(
+                                        if (contactsLoadingMore) {
+                                            R.string.im_search_load_loading
+                                        } else {
+                                            R.string.im_search_load_more
+                                        },
+                                    ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable(enabled = !contactsLoadingMore) {
+                                            loadMoreContacts()
+                                        }
+                                        .padding(Dimens.SpaceL),
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -882,8 +1107,8 @@ fun MessageSearchScreen(
                             } else {
                                 Text(
                                     text = stringResource(
-                                        if (loadingMore) R.string.im_msg_search_loading
-                                        else R.string.im_msg_search_more
+                                        if (loadingMore) R.string.im_search_load_loading
+                                        else R.string.im_search_load_more
                                     ),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.primary,
@@ -973,6 +1198,21 @@ fun MessageSearchScreen(
                                 onClick = openDoc,
                             )
                         }
+                    }
+                }
+
+                // 兜底:每个分区都各自判断空态,「哪儿都没有」时得有人说话。
+                // 放最后是因为它只在所有分区都空时才渲染,位置不影响正确性,但放末尾
+                // 让「有结果」这条常见路径的 item 顺序保持不变。
+                if (showAllEmpty) {
+                    item(key = "all-empty") {
+                        WeMeetInlineEmptyState(
+                            title = stringResource(
+                                R.string.im_search_all_no_results,
+                                trimmedQuery,
+                            ),
+                            description = stringResource(R.string.im_search_all_no_results_hint),
+                        )
                     }
                 }
             }
