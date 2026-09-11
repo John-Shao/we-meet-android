@@ -300,9 +300,10 @@ private fun ContactList(
  * sticky 字母头。直接显示服务端下发的 `initial` —— '#' 桶就显示井号本身:
  * 它是一段(数字/符号/空名字),不是「其他」。
  *
- * 底色用 `surface`(白)而不是 `surfaceVariant`:后者在浅色主题里**等于** `background`
- * (见 Color.kt 的 `LightSurfaceVariant = LightBackground`),粘在浅灰的列表上会直接
- * 隐形。
+ * 底色是 `background`(浅灰)——字母头属于**列表的底**,白底条目之间的那道灰缝
+ * 由它给出(与「通讯录」首页的 GroupSeam 同一个读法)。原先这里写的是 `surface`
+ * (白):行没有底色(落成浅灰)、字母头却是白的,底色关系正好反了 —— 名单看着
+ * 是凹进去的,小节头反而成了唯一有底色的一块。
  */
 @Composable
 private fun LetterHeader(initial: String) {
@@ -311,7 +312,7 @@ private fun LetterHeader(initial: String) {
         modifier = Modifier
             .fillMaxWidth()
             .height(Dimens.AlphabetHeaderHeight)
-            .background(MaterialTheme.colorScheme.surface)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = Dimens.ScreenPadding),
     ) {
         Text(
@@ -340,6 +341,7 @@ private fun DepartmentInfoRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -476,6 +478,9 @@ private fun DepartmentRow(dept: DepartmentDto, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
+            // 条目白底、列表浅灰:名字与人数落在白底上,块与块之间由字母头那道
+            // 灰缝分开(见 LetterHeader)。行内不铺白底的话,整张名单是一片浅灰。
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
     ) {
@@ -528,6 +533,7 @@ private fun MemberRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
     ) {

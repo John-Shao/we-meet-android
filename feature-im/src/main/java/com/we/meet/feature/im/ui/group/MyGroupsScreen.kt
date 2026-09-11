@@ -2,6 +2,7 @@ package com.we.meet.feature.im.ui.group
 
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -118,6 +119,10 @@ fun MyGroupsScreen(
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    // 条目白底落在浅灰的滚动区上:列表底是深色、
+                                    // 条目是浅色(与「内部联系人」「星标联系人」
+                                    // 同一套底色关系)。
+                                    .background(MaterialTheme.colorScheme.surface)
                                     .clickable { onOpenChat(row.cid) }
                                     .padding(
                                         horizontal = Dimens.ScreenPadding,

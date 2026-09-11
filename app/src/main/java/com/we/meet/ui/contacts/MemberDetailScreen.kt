@@ -278,8 +278,7 @@ private fun MemberDetailBody(
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = Dimens.SpaceXl),
+            .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(Dimens.SpaceXxl))
@@ -302,26 +301,37 @@ private fun MemberDetailBody(
         )
         Spacer(Modifier.height(Dimens.SpaceXxl))
 
-        InfoRow(stringResource(R.string.member_label_department), member.department?.name)
-        InfoRow(stringResource(R.string.member_label_title), member.title)
-        InfoRow(stringResource(R.string.member_label_email), member.email)
-        PhoneRow(
-            masked = member.phone,
-            isSelf = member.isSelf,
-            revealedPhone = revealedPhone,
-            revealing = revealing,
-            onReveal = onRevealPhone,
-        )
-
-        if (!member.isSelf) {
-            ContactPrefRows(
-                starred = starred,
-                starredUpdating = starredUpdating,
-                onToggleStarred = onToggleStarred,
-                specialAlert = specialAlert,
-                specialAlertUpdating = specialAlertUpdating,
-                onToggleSpecialAlert = onToggleSpecialAlert,
+        // 字段与开关整块铺白底:头像/名字留在浅灰上,信息块是**条目**、底色浅,
+        // 与通讯录各名单同一套关系(白条目落在浅灰的滚动区上)。横向 24dp 内边距
+        // 原先挂在上面那层 Column 上,现在跟着这一块走 —— 文字位置一像素没动,
+        // 白底却能从屏幕左缘铺到右缘。
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = Dimens.SpaceXl),
+        ) {
+            InfoRow(stringResource(R.string.member_label_department), member.department?.name)
+            InfoRow(stringResource(R.string.member_label_title), member.title)
+            InfoRow(stringResource(R.string.member_label_email), member.email)
+            PhoneRow(
+                masked = member.phone,
+                isSelf = member.isSelf,
+                revealedPhone = revealedPhone,
+                revealing = revealing,
+                onReveal = onRevealPhone,
             )
+
+            if (!member.isSelf) {
+                ContactPrefRows(
+                    starred = starred,
+                    starredUpdating = starredUpdating,
+                    onToggleStarred = onToggleStarred,
+                    specialAlert = specialAlert,
+                    specialAlertUpdating = specialAlertUpdating,
+                    onToggleSpecialAlert = onToggleSpecialAlert,
+                )
+            }
         }
 
         Spacer(Modifier.height(Dimens.SpaceXxl))
@@ -329,7 +339,10 @@ private fun MemberDetailBody(
             Button(
                 onClick = onStartChat,
                 enabled = !creatingChat,
-                modifier = Modifier.fillMaxWidth(),
+                // 页面级动作留在浅灰底上:不跟着信息块一起铺白(它是动作,不是条目)。
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.SpaceXl),
             ) {
                 Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null)
                 Spacer(Modifier.padding(start = Dimens.SpaceS))

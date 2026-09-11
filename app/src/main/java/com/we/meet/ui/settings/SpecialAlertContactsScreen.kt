@@ -1,6 +1,7 @@
 package com.we.meet.ui.settings
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -194,6 +195,9 @@ private fun AlertRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
+            // 条目白底落在浅灰的滚动区上(与通讯录其它名单同一套底色关系:
+            // 列表底深、条目浅)。
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs)
             .padding(vertical = Dimens.SpaceS),

@@ -1,6 +1,7 @@
 package com.we.meet.ui.contacts
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -188,6 +189,9 @@ private fun StarredRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
+            // 条目白底落在浅灰的滚动区上(与「内部联系人」同一套底色关系:
+            // 条目是浅色,列表底是深色 —— 见 docs/page-backgrounds.md §2)。
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs)
             .padding(vertical = Dimens.SpaceS),
