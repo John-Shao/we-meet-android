@@ -242,7 +242,6 @@
     <string name="im_search_need_more_chars">Saisissez au moins %1$d caractères pour rechercher</string>
     <string name="im_search_empty_hint_all">Saisissez un mot-clé pour rechercher personnes, réunions, messages, documents et tâches</string>
     <string name="im_search_empty_hint_contacts">Rechercher par nom, e-mail ou intitulé de poste</string>
-    <string name="im_search_sec_starred">Contacts suivis</string>
     <string name="im_search_all_no_results">Aucun résultat pour “%1$s”</string>
     <string name="im_search_all_no_results_hint">Essayez d\'autres mots-clés ou changez de catégorie ci-dessus</string>
     <string name="im_msg_search_sec_conversations">Conversations</string>

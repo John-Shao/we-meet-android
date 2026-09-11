@@ -284,7 +284,6 @@
     <string name="im_search_need_more_chars">Type at least %1$d characters to search</string>
     <string name="im_search_empty_hint_all">Type a keyword to search people, meetings, messages, docs and tasks</string>
     <string name="im_search_empty_hint_contacts">Search by name, email or job title</string>
-    <string name="im_search_sec_starred">Starred contacts</string>
     <string name="im_search_all_no_results">Nothing matched “%1$s”</string>
     <string name="im_search_all_no_results_hint">Try different keywords, or switch to another category above</string>
     <string name="im_msg_search_sec_conversations">Conversations</string>

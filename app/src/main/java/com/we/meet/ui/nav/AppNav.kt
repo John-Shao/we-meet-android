@@ -1019,10 +1019,6 @@ fun AppNav() {
                         nextPage = if (page.hasMore) page.nextPage else null,
                     )
                 },
-                searchStarred = {
-                    app.directoryRepository.listStarred().getOrThrow()
-                        .map { toGlobalSearchContact(it) }
-                },
                 searchMeetings = { q ->
                     val local = app.historyStore.entries.value
                         .filter { it.name.contains(q, ignoreCase = true) }

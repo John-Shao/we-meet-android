@@ -242,7 +242,6 @@
     <string name="im_search_need_more_chars">Typ minimaal %1$d tekens om te zoeken</string>
     <string name="im_search_empty_hint_all">Typ een trefwoord om personen, vergaderingen, berichten, documenten en taken te zoeken</string>
     <string name="im_search_empty_hint_contacts">Zoek op naam, e-mail of functietitel</string>
-    <string name="im_search_sec_starred">Gemarkeerde contacten</string>
     <string name="im_search_all_no_results">Geen resultaten voor “%1$s”</string>
     <string name="im_search_all_no_results_hint">Probeer andere trefwoorden of kies hierboven een andere categorie</string>
     <string name="im_msg_search_sec_conversations">Gesprekken</string>

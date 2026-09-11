@@ -267,7 +267,6 @@
     <string name="im_search_need_more_chars">至少输入 %1$d 个字开始搜索</string>
     <string name="im_search_empty_hint_all">输入关键词，搜索联系人、会议、消息、文档和任务</string>
     <string name="im_search_empty_hint_contacts">输入姓名、邮箱或职务开始搜索</string>
-    <string name="im_search_sec_starred">星标联系人</string>
     <string name="im_search_all_no_results">没有找到与「%1$s」相关的结果</string>
     <string name="im_search_all_no_results_hint">换个关键词，或切换上面的分类试试</string>
     <string name="im_msg_search_sec_conversations">会话</string>

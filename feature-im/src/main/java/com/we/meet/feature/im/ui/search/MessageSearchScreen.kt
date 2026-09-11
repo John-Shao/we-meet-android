@@ -96,14 +96,6 @@ data class GlobalSearchContactPage(
     val hasMore: Boolean get() = nextPage != null
 }
 
-/**
- * 空查询时最多摆几个星标联系人。
- *
- * 这不是一份「星标列表」——那是通讯录里独立的一页。这里只是给空输入框配一个起点,
- * 摆满整屏反而把「去搜索」这件事挤没了。
- */
-private const val STARRED_PREVIEW = 5
-
 /** 联系人命中的首页页码(服务端页码从 1 开始;0 在 DRF 里是非法值)。 */
 private const val CONTACTS_FIRST_PAGE = 1
 
@@ -162,16 +154,6 @@ fun MessageSearchScreen(
      * 部门非空 = 限定在该部门(**含下级**)内搜;翻页时把上一页返回的 nextPage 传回来。
      */
     searchContacts: (suspend (String, String?, Int) -> GlobalSearchContactPage)? = null,
-    /**
-     * 星标联系人 —— 空查询时的快捷入口。
-     *
-     * 搜索页原先在空查询时是一片空白:用户面对一个空输入框和一个空列表,唯一的信息
-     * 是 placeholder。放上「常联系的人」既填满了这块地方,也给了最短的一条路径
-     * (点一下直接进详情,不用先想关键词)。
-     *
-     * null = 宿主没接这条线,不显示这一块(只有说明文案)。
-     */
-    searchStarred: (suspend () -> List<GlobalSearchContact>)? = null,
     searchMeetings: (suspend (String) -> List<GlobalSearchMeeting>)? = null,
     searchDocs: (suspend (String) -> List<GlobalSearchDoc>)? = null,
     onOpenMeeting: ((roomId: String) -> Unit)? = null,
@@ -243,7 +225,6 @@ fun MessageSearchScreen(
     var contactsNextPage by remember { mutableStateOf<Int?>(null) }
     var contactsLoadingMore by remember { mutableStateOf(false) }
     var contactsLoadMoreFailed by remember { mutableStateOf(false) }
-    var starred by remember { mutableStateOf<List<GlobalSearchContact>>(emptyList()) }
     var meetings by remember { mutableStateOf<List<GlobalSearchMeeting>>(emptyList()) }
     var meetingsLoading by remember { mutableStateOf(false) }
     var meetingsFailed by remember { mutableStateOf(false) }
@@ -447,24 +428,6 @@ fun MessageSearchScreen(
             contactsLoadMoreFailed = true
         } finally {
             contactsLoadingMore = false
-        }
-    }
-
-    // 星标联系人:空查询时的快捷入口。**进页面拉一次**就够 —— 它不随关键词/分类变化。
-    //
-    // key 用 Unit 而不是 provider:宿主传进来的是个 lambda 字面量,它捕获了 app
-    // (不稳定类型),Compose 不会为它做记忆化,于是每次重组都是新实例 —— 拿它当 key
-    // 会把「拉一次」变成「每次重组拉一次」。
-    LaunchedEffect(Unit) {
-        val provider = searchStarred ?: return@LaunchedEffect
-        starred = try {
-            provider()
-        } catch (failure: CancellationException) {
-            throw failure
-        } catch (_: Throwable) {
-            // 拉不到就不显示这一块:空查询时的引导本来就是锦上添花,为它弹错误态
-            // 只会让「还没开始搜」看起来像是坏了。
-            emptyList()
         }
     }
 
@@ -807,26 +770,21 @@ fun MessageSearchScreen(
                     }
                 }
                 if (showEmptyGuide) {
+                    // 空查询时**只**给一句说明,不放任何「快捷入口」。
+                    //
+                    // 这里曾经摆过星标联系人,理由写得挺像回事(「数据现成,还能填满
+                    // 这块地方」),但那个理由是错的,三条:
+                    //
+                    //  1. 通讯录第一屏已经有「⭐ 星标联系人 ›」这个独立入口,搜索页再
+                    //     摆一份,同一个东西两个去处,而搜索页的职责是「搜」;
+                    //  2. 星标按它自己的说明是**归类**用的(「仅用于归类:出现在星标
+                    //     联系人里……不改变通知」),不是「常联系」。拿它当常用名单,
+                    //     实际显示的是按姓名排序最靠前的几个 —— 对用户是任意几个人;
+                    //  3. 在「全部」分类里更跑题:那行说明承诺可搜五类,底下只摆人。
+                    //
+                    // 空查询要解决的只是「一片空白、没有任何解释」,一句说明就够了。
                     item(key = "empty-guide-hint") {
                         SearchResultsNote(text = emptyGuideHint)
-                    }
-                    // 有星标才显示这一块:没有星标时不摆一个空标题,那时只留上面
-                    // 那句说明 —— 比「你还没有星标联系人」这种自我说明更有用。
-                    if (starred.isNotEmpty()) {
-                        item(key = "sec-starred") {
-                            SectionHeader(stringResource(R.string.im_search_sec_starred))
-                        }
-                        items(
-                            starred.take(STARRED_PREVIEW),
-                            key = { "s:${it.userId}" },
-                        ) { contact ->
-                            TwoLineRow(
-                                emoji = "⭐",
-                                title = contact.name,
-                                subtitle = contact.subtitle,
-                                onClick = { onOpenContact(contact.userId) },
-                            )
-                        }
                     }
                 }
                 if (showConv && convHits.isNotEmpty()) {
