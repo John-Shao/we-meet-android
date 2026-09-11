@@ -12,17 +12,20 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * App ↔ 后端的**查询契约**:通讯录的排序、起点与字母表到底发了哪些参数。
+ * App ↔ 后端的**查询契约**:通讯录列表发了哪些参数、卡片上的字段名对不对得上。
  *
- * 为什么值得单测:这四个参数(`ordering` / `from_initial` / `department` + `include_subtree`
- * / `alphabet`)决定了名册的顺序与索引条**能不能用**,而它们的失效是**静默**的 ——
- * 少发一个 `ordering=pinyin`,名册退回编码序(汉字看着像乱序);少发 `include_subtree`,
- * 索引条的人数与列表里的人就不是同一批。界面不报错,只有用户觉得"哪里不对"。
+ * 为什么值得单测:这些参数(`ordering` / `include_subtree` / `department` / `page_size`)
+ * 决定了名册的顺序与范围,而它们的失效是**静默**的 —— 少发一个 `ordering=pinyin`,
+ * 名册退回编码序(汉字看着像乱序);少发 `include_subtree`,列表里的人与部门行的人数
+ * 就不是同一批。界面不报错,只有用户觉得"哪里不对"。
+ *
+ * 字段名同理:Moshi 对不上的字段是**静默丢弃**(不抛异常),而通讯录首页那一行组织名
+ * 正好是「服务端没下发这个字段」与「字段名写错了」的同一副面孔 —— 都是不显示。
  *
  * 用 OkHttp 的 Interceptor 就地截请求、回假响应,不引入 MockWebServer(仓库里没有
  * 这个依赖,而为了一个契约测试加一个网络库不划算)。
@@ -97,6 +100,40 @@ class DirectoryRequestContractTest {
     }
 
     // ── 字段名(Moshi 会静默丢掉对不上的字段)────────────────────────────
+
+    @Test
+    fun orgContextRequestHitsTheDirectoryMeEndpoint() = runBlocking {
+        responseBody = """{"organization":{"id":"o1","name":"Acme"},"org_role":"member"}"""
+
+        repository.orgContext()
+
+        // 路径本身就是契约的一部分:打错一个字母是 404,而调用方把失败当作「没有组织」
+        // 静默吞掉(见 ContactsTabScreen),于是通讯录首页那一行永远不显示。
+        val url = lastUrl()
+        assertTrue(url, url.startsWith("/api/v1.0/directory/me/"))
+    }
+
+    @Test
+    fun orgContextParsesTheOrganizationRow() = runBlocking {
+        responseBody = """{"organization":{"id":"o1","name":"Acme"},"org_role":"member"}"""
+
+        val org = repository.orgContext().getOrThrow().organization
+
+        // 首页顶部的组织名/头像就靠这两个字段;名字对不上就等于「服务端没下发」。
+        assertEquals("o1", org?.id)
+        assertEquals("Acme", org?.name)
+    }
+
+    @Test
+    fun orgContextWithoutAMembershipIsNotAnError() = runBlocking {
+        // 没有 membership 的账号(管理台建的、还没进组织)服务端回 organization: null。
+        // 这时首页只是不显示那一行,不该把整页判成失败。
+        responseBody = """{"organization":null,"org_role":null,"is_org_admin":false}"""
+
+        val context = repository.orgContext().getOrThrow()
+
+        assertNull(context.organization)
+    }
 
     @Test
     fun memberCardFieldsMatchTheServerNames() = runBlocking {
