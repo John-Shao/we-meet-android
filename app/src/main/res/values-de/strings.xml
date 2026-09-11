@@ -922,7 +922,6 @@
     <string name="contacts_my_groups">Meine Gruppen</string>
     <!-- 通讯录:拼音索引条 + 部门信息(负责人 / 直属人数 / 发起群聊)。
          索引条只在界面语言是简体中文时出现,见 ContactsTabScreen 的 KDoc。 -->
-    <string name="contacts_alphabet_other">Sonstige</string>
     <plurals name="contacts_member_count">
         <item quantity="one">%1$d Mitglied</item>
         <item quantity="other">%1$d Mitglieder</item>

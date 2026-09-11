@@ -320,14 +320,12 @@ private fun ContactList(
     }
 }
 
-/** sticky 字母头。'#' 那一桶用文字说明,不显示一个光秃秃的井号。 */
+/**
+ * sticky 字母头。直接显示服务端下发的 `initial` —— '#' 桶就显示井号本身:
+ * 它是一段(数字/符号/空名字),不是「其他」。
+ */
 @Composable
 private fun LetterHeader(initial: String) {
-    val label = if (initial == OTHER_INITIAL) {
-        stringResource(R.string.contacts_alphabet_other)
-    } else {
-        initial
-    }
     Box(
         contentAlignment = Alignment.CenterStart,
         modifier = Modifier
@@ -337,7 +335,7 @@ private fun LetterHeader(initial: String) {
             .padding(horizontal = Dimens.ScreenPadding),
     ) {
         Text(
-            text = label,
+            text = initial,
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
