@@ -64,17 +64,30 @@ fun WeMeetChipRow(
             ),
             content = content,
         )
-        if (scrollBack) {
-            EdgeFade(
-                alignment = Alignment.CenterStart,
-                colors = listOf(MaterialTheme.colorScheme.surface, Color.Transparent),
-            )
-        }
-        if (scrollForward) {
-            EdgeFade(
-                alignment = Alignment.CenterEnd,
-                colors = listOf(Color.Transparent, MaterialTheme.colorScheme.surface),
-            )
+        if (scrollBack || scrollForward) {
+            // 渐隐层必须**不参与**外层 Box 的尺寸计算。
+            //
+            // 直接把它放进外层 Box 会踩一个很隐蔽的坑:渐隐条内部用 fillMaxHeight()
+            // 撑满高度,而外层 Box 是 wrap-content —— fillMaxHeight 解析的是**传入的
+            // 最大高度约束**(= 父级剩余的全部空间),于是这一行的 Box 高度变成整屏,
+            // 行本身照常显示在顶部,后面的内容全被挤出屏幕。
+            //
+            // matchParentSize() 正好是干这个的:自身尺寸跟随父 Box,但不反过来影响
+            // 父 Box 的高度测量。
+            Box(modifier = Modifier.matchParentSize()) {
+                if (scrollBack) {
+                    EdgeFade(
+                        alignment = Alignment.CenterStart,
+                        colors = listOf(MaterialTheme.colorScheme.surface, Color.Transparent),
+                    )
+                }
+                if (scrollForward) {
+                    EdgeFade(
+                        alignment = Alignment.CenterEnd,
+                        colors = listOf(Color.Transparent, MaterialTheme.colorScheme.surface),
+                    )
+                }
+            }
         }
     }
 }
