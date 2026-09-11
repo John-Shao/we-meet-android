@@ -247,9 +247,6 @@
     <string name="task_create_action">创建</string>
     <string name="task_search">搜索任务</string>
     <string name="task_search_hint">搜索标题、描述、人员或清单</string>
-    <plurals name="task_search_results">
-        <item quantity="other">找到 %1$d 个结果</item>
-    </plurals>
     <string name="task_search_empty">没有找到匹配的任务</string>
     <string name="task_settings">任务设置</string>
     <string name="task_navigation">任务导航</string>
@@ -464,7 +461,10 @@
     <!-- Contacts (通讯录) -->
     <string name="contacts_title">通讯录</string>
     <string name="contacts_search_hint">搜索姓名或邮箱</string>
-    <string name="contacts_department_search_hint">搜索当前部门的姓名或邮箱</string>
+    <string name="contacts_search_entry_in_dept">在%1$s内搜索</string>
+    <string name="contacts_scope_all">全部组织</string>
+    <string name="contacts_scope_title">搜索范围</string>
+    <string name="contacts_scope_open_children">查看下级部门</string>
     <string name="contacts_root_org">组织</string>
     <string name="contacts_empty_dept">该部门暂无成员</string>
     <string name="contacts_empty_search">未找到匹配的成员</string>

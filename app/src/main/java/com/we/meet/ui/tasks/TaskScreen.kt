@@ -52,6 +52,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ListAlt
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
@@ -163,9 +164,12 @@ import com.we.meet.core.directory.ui.ContactPicker
 import com.we.meet.core.directory.ui.ContactPickerMode
 import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.core.directory.ui.PickedMember
+import com.we.meet.ui.components.SearchResultsHeader
+import com.we.meet.ui.components.WeMeetChipRow
 import com.we.meet.ui.components.WeMeetEmptyState
 import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetLoading
+import com.we.meet.ui.components.WeMeetSearchField
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
@@ -3424,24 +3428,14 @@ internal fun TaskSearchPage(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.task_back)) }
-            OutlinedTextField(
+            WeMeetSearchField(
                 value = query,
                 onValueChange = onQueryChange,
-                placeholder = { Text(stringResource(R.string.task_search_hint)) },
-                leadingIcon = { Icon(Icons.Outlined.Search, null) },
-                trailingIcon = if (query.isNotEmpty()) {{
-                    IconButton(onClick = {
-                        onQueryChange("")
-                    }) { Icon(Icons.Filled.Close, null) }
-                }} else null,
-                singleLine = true,
+                placeholder = stringResource(R.string.task_search_hint),
                 modifier = Modifier.weight(1f),
             )
         }
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = Dimens.SpaceL),
-            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
-        ) {
+        WeMeetChipRow {
             item {
                 FilterChip(
                     selected = filter.creatorSelf,
@@ -3486,6 +3480,13 @@ internal fun TaskSearchPage(
                         selected = filter.status != TaskSearchStatus.All,
                         onClick = { statusMenu = true },
                         label = { Text(searchStatusText(filter.status)) },
+                        // 下拉型 chip 必须和「点一下就切换」的切换型 chip 长得不一样,
+                        // 否则「创建人」(切换)和「全部状态」(弹菜单)在用户眼里是同一个
+                        // 控件,点下去才发现行为不同 —— 同一个筛选行里混两种交互,
+                        // 差别得写在脸上。
+                        trailingIcon = {
+                            Icon(Icons.Filled.ArrowDropDown, null, Modifier.size(Dimens.IconSmall))
+                        },
                     )
                     DropdownMenu(expanded = statusMenu, onDismissRequest = { statusMenu = false }) {
                         TaskSearchStatus.entries.forEach { status ->
@@ -3507,6 +3508,9 @@ internal fun TaskSearchPage(
                         selected = filter.due != TaskSearchDue.All,
                         onClick = { dueMenu = true },
                         label = { Text(searchDueText(filter.due)) },
+                        trailingIcon = {
+                            Icon(Icons.Filled.ArrowDropDown, null, Modifier.size(Dimens.IconSmall))
+                        },
                     )
                     DropdownMenu(expanded = dueMenu, onDismissRequest = { dueMenu = false }) {
                         TaskSearchDue.entries.forEach { due ->
@@ -3535,6 +3539,9 @@ internal fun TaskSearchPage(
                                     priorityText(filter.priority)
                                 },
                             )
+                        },
+                        trailingIcon = {
+                            Icon(Icons.Filled.ArrowDropDown, null, Modifier.size(Dimens.IconSmall))
                         },
                     )
                     DropdownMenu(expanded = priorityMenu, onDismissRequest = { priorityMenu = false }) {
@@ -3567,12 +3574,7 @@ internal fun TaskSearchPage(
                 }
             }
         }
-        Text(
-            pluralStringResource(R.plurals.task_search_results, tasks.size, tasks.size),
-            modifier = Modifier.padding(Dimens.SpaceL),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-        )
+        SearchResultsHeader(tasks.size)
         if (searching) LinearProgressIndicator(Modifier.fillMaxWidth())
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             when {

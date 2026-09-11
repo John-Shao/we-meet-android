@@ -239,10 +239,6 @@
     <string name="task_create_action">Maken</string>
     <string name="task_search">Taken zoeken</string>
     <string name="task_search_hint">Zoek titels, beschrijvingen, personen en lijsten</string>
-    <plurals name="task_search_results">
-        <item quantity="one">%1$d resultaat</item>
-        <item quantity="other">%1$d resultaten</item>
-    </plurals>
     <string name="task_search_empty">Geen overeenkomende taken gevonden</string>
     <string name="task_settings">Taakinstellingen</string>
     <string name="task_navigation">Taaknavigatie</string>
@@ -459,7 +455,10 @@
     <!-- Contacts -->
     <string name="contacts_title">Contacten</string>
     <string name="contacts_search_hint">Zoek op naam of e-mail</string>
-    <string name="contacts_department_search_hint">Zoek op naam of e-mail binnen deze afdeling</string>
+    <string name="contacts_search_entry_in_dept">Zoeken in %1$s</string>
+    <string name="contacts_scope_all">Hele organisatie</string>
+    <string name="contacts_scope_title">Zoekbereik</string>
+    <string name="contacts_scope_open_children">Onderliggende afdelingen bekijken</string>
     <string name="contacts_root_org">Organisatie</string>
     <string name="contacts_empty_dept">Geen leden in deze afdeling</string>
     <string name="contacts_empty_search">Geen overeenkomende leden</string>

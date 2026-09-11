@@ -32,9 +32,28 @@ class DirectoryRepository(private val api: DirectoryApi) {
     suspend fun allMembers(page: Int = 1): Result<MemberPage> =
         runCatching { api.listMembers(page = page).toPage(page) }
 
-    /** Name/email search, optionally scoped to a single department. */
-    suspend fun searchMembers(query: String, page: Int = 1, departmentId: String? = null): Result<MemberPage> =
-        runCatching { api.listMembers(query = query, department = departmentId, page = page).toPage(page) }
+    /**
+     * Name/email search, optionally scoped to a department's **whole subtree**.
+     *
+     * 子树口径必须和 [departmentMembers] 一致 —— 那是浏览部门时的行为
+     * (`include_subtree=true`)。两边不一致的话,同一个部门名在「浏览」和
+     * 「搜索」里指的是两拨人:浏览产品部看得到子部门的人,搜「王」却搜不到
+     * 子部门的王,读起来就是「搜索坏了」而不是「范围更窄」。
+     */
+    suspend fun searchMembers(
+        query: String,
+        page: Int = 1,
+        departmentId: String? = null,
+    ): Result<MemberPage> =
+        runCatching {
+            api.listMembers(
+                query = query,
+                department = departmentId,
+                // 没带部门时服务端不看这个参数,带上无害;带了部门就必须是子树。
+                includeSubtree = true,
+                page = page,
+            ).toPage(page)
+        }
 
     suspend fun getMember(userId: String): Result<MemberDto> =
         runCatching { api.getMember(userId) }

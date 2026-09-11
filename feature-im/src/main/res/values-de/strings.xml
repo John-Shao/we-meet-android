@@ -21,7 +21,6 @@
     <string name="im_open_profile">Profil öffnen</string>
     <string name="im_search">Suchen</string>
     <string name="im_search_hint">Unterhaltungen durchsuchen</string>
-    <string name="im_search_clear">Suche löschen</string>
     <string name="im_search_no_results">Keine passenden Unterhaltungen</string>
     <string name="im_more">Mehr</string>
     <string name="im_conversation_tasks">Unterhaltungsaufgaben</string>
@@ -240,6 +239,7 @@
     <string name="im_msg_search_hint">Nachrichten durchsuchen</string>
     <string name="im_global_search_hint">Suchen</string>
     <string name="im_search_category_hint">%1$s durchsuchen</string>
+    <string name="im_search_need_more_chars">Mindestens %1$d Zeichen eingeben, um zu suchen</string>
     <string name="im_msg_search_sec_conversations">Unterhaltungen</string>
     <string name="im_msg_search_sec_messages">Nachrichten</string>
     <string name="im_msg_search_no_results">Keine passenden Nachrichten</string>

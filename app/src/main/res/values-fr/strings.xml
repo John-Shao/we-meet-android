@@ -240,11 +240,6 @@
     <string name="task_create_action">Créer</string>
     <string name="task_search">Rechercher des tâches</string>
     <string name="task_search_hint">Rechercher titres, descriptions, personnes et listes</string>
-    <plurals name="task_search_results">
-        <item quantity="one">%1$d résultat</item>
-        <item quantity="many">%1$d de résultats</item>
-        <item quantity="other">%1$d résultats</item>
-    </plurals>
     <string name="task_search_empty">Aucune tâche correspondante</string>
     <string name="task_settings">Paramètres des tâches</string>
     <string name="task_navigation">Navigation des tâches</string>
@@ -463,7 +458,10 @@
     <!-- Contacts -->
     <string name="contacts_title">Contacts</string>
     <string name="contacts_search_hint">Rechercher un nom ou un e-mail</string>
-    <string name="contacts_department_search_hint">Rechercher un nom ou un e-mail dans ce service</string>
+    <string name="contacts_search_entry_in_dept">Rechercher dans %1$s</string>
+    <string name="contacts_scope_all">Toute l\'organisation</string>
+    <string name="contacts_scope_title">Périmètre de recherche</string>
+    <string name="contacts_scope_open_children">Voir les sous-services</string>
     <string name="contacts_root_org">Organisation</string>
     <string name="contacts_empty_dept">Aucun membre dans ce service</string>
     <string name="contacts_empty_search">Aucun membre correspondant</string>

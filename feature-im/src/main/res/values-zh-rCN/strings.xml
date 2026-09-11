@@ -19,7 +19,6 @@
     <string name="im_open_profile">打开个人主页</string>
     <string name="im_search">搜索</string>
     <string name="im_search_hint">搜索会话</string>
-    <string name="im_search_clear">清除搜索内容</string>
     <string name="im_search_no_results">没有匹配的会话</string>
     <string name="im_more">更多</string>
     <string name="im_conversation_tasks">会话任务</string>
@@ -265,6 +264,7 @@
     <string name="im_msg_search_hint">搜索消息</string>
     <string name="im_global_search_hint">搜索</string>
     <string name="im_search_category_hint">搜索%1$s</string>
+    <string name="im_search_need_more_chars">至少输入 %1$d 个字开始搜索</string>
     <string name="im_msg_search_sec_conversations">会话</string>
     <string name="im_msg_search_sec_messages">消息</string>
     <string name="im_msg_search_no_results">没有匹配的消息</string>

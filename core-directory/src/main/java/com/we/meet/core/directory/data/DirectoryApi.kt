@@ -27,6 +27,11 @@ interface DirectoryApi {
     suspend fun listMembers(
         @Query("q") query: String? = null,
         @Query("department") department: String? = null,
+        /**
+         * 只在带 [department] 时有意义:true = 含下级部门。null → 不发送该参数
+         * (服务端默认仅直属成员)。
+         */
+        @Query("include_subtree") includeSubtree: Boolean? = null,
         @Query("page") page: Int = 1,
         @Query("page_size") pageSize: Int = 50,
     ): PagedMembersDto

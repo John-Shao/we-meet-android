@@ -10,4 +10,12 @@
     <!-- 无障碍(TalkBack)内容描述 -->
     <string name="cd_back">Retour</string>
     <string name="cd_close">Fermer</string>
+
+    <!-- 搜索组件 -->
+    <string name="cd_clear_search">Effacer la recherche</string>
+    <plurals name="common_search_results">
+        <item quantity="one">%1$d résultat trouvé</item>
+        <item quantity="many">%1$d de résultats trouvés</item>
+        <item quantity="other">%1$d résultats trouvés</item>
+    </plurals>
 </resources>

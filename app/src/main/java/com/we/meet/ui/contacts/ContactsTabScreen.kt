@@ -7,7 +7,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,13 +21,9 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,9 +32,10 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,6 +46,7 @@ import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.components.WeMeetLoading
+import com.we.meet.ui.components.WeMeetSearchEntry
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.core.directory.data.DepartmentDto
 import com.we.meet.core.directory.data.MemberDto
@@ -58,69 +55,64 @@ import com.we.meet.core.directory.ui.MemberAvatar
 /**
  * 通讯录 tab — Feishu-style department drill-down + member list. Drill state is
  * tab-local (the bottom bar stays visible); member detail is an app route.
+ *
+ * 这一页**不搜索**,只浏览。搜索入口是标题下面那个胶囊:点一下跳到全局搜索页,
+ * 并把当前部门作为预选范围带过去([onOpenSearch] 的参数)。
+ *
+ * 原先部门内还有一个自己的搜索框,拆掉的理由见 [ContactsViewModel] 的 KDoc ——
+ * 它是同一件事的第二个壳。连带好处是两条:面包屑不必再在搜索时藏起来(以前
+ * 一输入就没了,用户再不知道结果是"本部门内"还是"全公司"),返回键也回到单调
+ * 语义(以前是"先清搜索、再退部门"两段式)。
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContactsTabScreen(
-    onOpenSearch: () -> Unit,
+    /** 参数 = 要预选的搜索范围(当前部门);根层级为 null。 */
+    onOpenSearch: (departmentId: String?) -> Unit,
     onMemberClick: (userId: String) -> Unit,
     onOpenStarred: () -> Unit,
     onOpenMyGroups: () -> Unit,
 ) {
     val vm: ContactsViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
-    val listState = key(ui.currentDept?.id, ui.searching) { rememberLazyListState() }
+    val listState = key(ui.currentDept?.id) { rememberLazyListState() }
     val app = LocalContext.current.applicationContext as WeMeetApp
     var showExternalContacts by remember { mutableStateOf(false) }
+    val currentDept = ui.currentDept
 
-    // System back clears an active search first, then pops one drill level —
-    // otherwise back while searching would leave the tab entirely.
-    BackHandler(enabled = ui.searching || ui.deptStack.isNotEmpty()) {
-        if (ui.searching) vm.onQueryChange("") else vm.popOne()
-    }
+    // 只剩「退一层部门」。搜索拆掉后不再需要先清关键词那一段。
+    BackHandler(enabled = ui.deptStack.isNotEmpty()) { vm.popOne() }
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        Text(
+            text = stringResource(R.string.contacts_title),
+            style = MaterialTheme.typography.titleLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.background)
-                // 左侧标题顶到 ScreenPadding；右侧按钮自带 12dp 内缩，外侧只留 SpaceXs，
-                // 使右侧图标字形与左侧标题同为 16dp(左右对称)。
-                .padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs)
+                .padding(horizontal = Dimens.ScreenPadding)
                 .padding(vertical = Dimens.SpaceS),
-        ) {
-            Text(
-                text = stringResource(R.string.contacts_title),
-                style = MaterialTheme.typography.titleLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            IconButton(onClick = onOpenSearch) {
-                Icon(Icons.Outlined.Search, contentDescription = stringResource(R.string.contacts_search_hint))
-            }
-        }
-        if (ui.deptStack.isNotEmpty()) {
-            OutlinedTextField(
-                value = ui.query,
-                onValueChange = vm::onQueryChange,
-                placeholder = { Text(stringResource(R.string.contacts_department_search_hint)) },
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
-            )
-        }
+        )
 
-        if (!ui.searching) {
-            Breadcrumbs(
-                stack = ui.deptStack,
-                onCrumbClick = { index -> vm.popTo(index) },
-            )
-        }
-        // 固定头部的下边线(与任务页同款):标题栏 / 部门内搜索框 / 面包屑都是
+        // 导航型搜索入口:看着和别处一样,但不可编辑,点了跳统一搜索页。
+        // 部门名写进文案里 —— 这是用户点之前唯一能知道"会搜到哪"的地方。
+        WeMeetSearchEntry(
+            label = currentDept?.name?.takeIf { it.isNotBlank() }?.let { deptName ->
+                stringResource(R.string.contacts_search_entry_in_dept, deptName)
+            } ?: stringResource(R.string.contacts_search_hint),
+            onClick = { onOpenSearch(currentDept?.id) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
+        )
+
+        Breadcrumbs(
+            stack = ui.deptStack,
+            onCrumbClick = { index -> vm.popTo(index) },
+        )
+        // 固定头部的下边线(与任务页同款):标题栏 / 搜索入口 / 面包屑都是
         // 浅灰固定区,下边线画出它与白底滚动列表的分界。
         HorizontalDivider(
             color = MaterialTheme.colorScheme.outlineVariant,
@@ -136,9 +128,9 @@ fun ContactsTabScreen(
             )
 
             else -> LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
-                // 星标联系人:只在组织根层级露出(钻进部门/搜索时是另一个上下文),
+                // 星标联系人:只在组织根层级露出(钻进部门时是另一个上下文),
                 // 对标飞书通讯录里与部门并列的那个独立分组。
-                if (!ui.searching && ui.deptStack.isEmpty()) {
+                if (ui.deptStack.isEmpty()) {
                     item {
                         StarredEntryRow(onClick = onOpenStarred)
                         MyGroupsEntryRow(onClick = onOpenMyGroups)
@@ -149,14 +141,12 @@ fun ContactsTabScreen(
                         )
                     }
                 }
-                if (!ui.searching) {
-                    items(ui.childDepartments, key = { "d-${it.id}" }) { dept ->
-                        DepartmentRow(dept = dept, onClick = { vm.openDepartment(dept) })
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                            modifier = Modifier.padding(start = Dimens.DividerIndent),
-                        )
-                    }
+                items(ui.childDepartments, key = { "d-${it.id}" }) { dept ->
+                    DepartmentRow(dept = dept, onClick = { vm.openDepartment(dept) })
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        modifier = Modifier.padding(start = Dimens.DividerIndent),
+                    )
                 }
                 if (ui.members.isEmpty()) {
                     item {
@@ -167,10 +157,7 @@ fun ContactsTabScreen(
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                text = stringResource(
-                                    if (ui.searching) R.string.contacts_empty_search
-                                    else R.string.contacts_empty_dept
-                                ),
+                                text = stringResource(R.string.contacts_empty_dept),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -257,67 +244,42 @@ private fun Breadcrumbs(
 /** 「⭐ 星标联系人 ›」—— 部门列表之上的固定入口(仅根层级)。 */
 @Composable
 private fun StarredEntryRow(onClick: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
-    ) {
-        Icon(
-            Icons.Filled.Star,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(Dimens.IconMedium),
-        )
-        Text(
-            text = stringResource(R.string.starred_title),
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = Dimens.ScreenPadding),
-        )
-        Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
+    EntryRow(
+        icon = Icons.Filled.Star,
+        label = stringResource(R.string.starred_title),
+        onClick = onClick,
+    )
 }
 
 /** 「👥 我的群组 ›」—— 紧挨星标联系人的第二个固定入口(仅根层级)。 */
 @Composable
 private fun MyGroupsEntryRow(onClick: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
-    ) {
-        Icon(
-            Icons.Filled.Groups,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(Dimens.IconMedium),
-        )
-        Text(
-            text = stringResource(R.string.contacts_my_groups),
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = Dimens.ScreenPadding),
-        )
-        Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
+    EntryRow(
+        icon = Icons.Filled.Groups,
+        label = stringResource(R.string.contacts_my_groups),
+        onClick = onClick,
+    )
 }
 
 @Composable
 private fun ExternalContactsEntryRow(onClick: () -> Unit) {
+    EntryRow(
+        icon = Icons.Filled.PersonAdd,
+        label = stringResource(R.string.external_contacts_title),
+        onClick = onClick,
+    )
+}
+
+/**
+ * 三个固定入口行长得一模一样(仅图标与文案不同),原先各写了一遍。
+ * 收成一处,免得改一次缩进要改三遍。
+ */
+@Composable
+private fun EntryRow(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -326,13 +288,14 @@ private fun ExternalContactsEntryRow(onClick: () -> Unit) {
             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
     ) {
         Icon(
-            Icons.Filled.PersonAdd,
+            imageVector = icon,
             contentDescription = null,
+            // 这三个是品牌蓝的高价值固定入口;普通部门是导航内容,不抢这个色。
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(Dimens.IconMedium),
         )
         Text(
-            text = stringResource(R.string.external_contacts_title),
+            text = label,
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier
                 .weight(1f)

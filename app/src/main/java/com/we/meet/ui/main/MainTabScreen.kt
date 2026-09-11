@@ -130,7 +130,7 @@ fun MainTabScreen(
     onOpenChat: (cid: String) -> Unit,
     onNewChat: () -> Unit,
     onOpenSearch: () -> Unit,
-    onOpenContactsSearch: () -> Unit,
+    onOpenContactsSearch: (departmentId: String?) -> Unit,
     onOpenTasksSearch: () -> Unit,
     onMemberClick: (userId: String) -> Unit,
     /** 通讯录顶部的「星标联系人」入口。 */

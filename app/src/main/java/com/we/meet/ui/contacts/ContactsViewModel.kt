@@ -7,14 +7,10 @@ import androidx.lifecycle.viewModelScope
 import com.we.meet.WeMeetApp
 import com.we.meet.core.directory.data.DepartmentDto
 import com.we.meet.core.directory.data.MemberDto
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -23,13 +19,12 @@ data class ContactsUiState(
     val departments: List<DepartmentDto> = emptyList(),
     /** Drill-down path; empty = organization root. */
     val deptStack: List<DepartmentDto> = emptyList(),
-    /** Members of the current node (subtree) or search hits. */
+    /** Members of the current node (subtree included). */
     val members: List<MemberDto> = emptyList(),
     val loading: Boolean = false,
     val loadingMore: Boolean = false,
     val loadMoreError: Boolean = false,
     val hasMore: Boolean = false,
-    val query: String = "",
     val error: Boolean = false,
 ) {
     val currentDept: DepartmentDto? get() = deptStack.lastOrNull()
@@ -38,14 +33,22 @@ data class ContactsUiState(
             val parentId = currentDept?.id
             return departments.filter { it.parent == parentId }
         }
-    val searching: Boolean get() = query.isNotBlank()
 }
 
 /**
- * 通讯录 tab VM — scoped to the HOME back-stack entry so drill-down state
- * survives tab switches. Search replaces the browse body while non-blank.
+ * 通讯录 tab VM — scoped to the HOME back-stack entry so drill-down state survives
+ * tab switches.
+ *
+ * **只管浏览**:部门下钻 + 当前节点的成员分页。
+ *
+ * 页内搜索已经拆掉了。原先这里有一个 `query` + 300ms 防抖的服务端搜索,但它和
+ * 「去全局搜索页里限定同一个部门搜」是同一件事的两个壳 —— 同一个
+ * `directory/members/?department=` 接口、同样的整份替换式结果,却各自维护一套
+ * 状态、空态、分页;更糟的是两个入口的范围语义还可能不一致(浏览走
+ * `include_subtree=true`,搜索走的是「仅直属」)。现在搜索统一走
+ * [com.we.meet.ui.nav.Routes.imSearch],范围由 `dept` 参数带过去,这一页只剩
+ * 「我现在在哪个部门、这个部门有谁」。
  */
-@OptIn(FlowPreview::class)
 class ContactsViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repository = (app as WeMeetApp).directoryRepository
@@ -53,42 +56,27 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
     private val _ui = MutableStateFlow(ContactsUiState(loading = true))
     val ui: StateFlow<ContactsUiState> = _ui.asStateFlow()
 
-    private val queryFlow = MutableStateFlow("")
     private var loadJob: Job? = null
     private var nextPage: Int = 1
 
     init {
         loadDepartments()
         loadMembersForCurrentNode()
-        viewModelScope.launch {
-            // drop(1): the initial empty query is served by init's load.
-            queryFlow.drop(1).debounce(300).distinctUntilChanged().collect {
-                loadMembersForCurrentNode()
-            }
-        }
-    }
-
-    fun onQueryChange(q: String) {
-        _ui.update { it.copy(query = q) }
-        queryFlow.value = q
     }
 
     fun openDepartment(dept: DepartmentDto) {
-        _ui.update { it.copy(deptStack = it.deptStack + dept, query = "") }
-        queryFlow.value = ""
+        _ui.update { it.copy(deptStack = it.deptStack + dept) }
         loadMembersForCurrentNode()
     }
 
     /** Pop to a specific breadcrumb level; index -1 = organization root. */
     fun popTo(index: Int) {
-        _ui.update { it.copy(deptStack = it.deptStack.take(index + 1), query = "") }
-        queryFlow.value = ""
+        _ui.update { it.copy(deptStack = it.deptStack.take(index + 1)) }
         loadMembersForCurrentNode()
     }
 
     fun popOne() {
-        _ui.update { it.copy(deptStack = it.deptStack.dropLast(1), query = "") }
-        queryFlow.value = ""
+        _ui.update { it.copy(deptStack = it.deptStack.dropLast(1)) }
         loadMembersForCurrentNode()
     }
 
@@ -150,10 +138,11 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private suspend fun fetchPage(page: Int) = with(_ui.value) {
-        when {
-            searching -> repository.searchMembers(query.trim(), page, departmentId = currentDept?.id)
-            currentDept != null -> repository.departmentMembers(currentDept!!.id, page)
-            else -> repository.allMembers(page)
+        val dept = currentDept
+        if (dept != null) {
+            repository.departmentMembers(dept.id, page)
+        } else {
+            repository.allMembers(page)
         }
     }
 

@@ -248,10 +248,6 @@
     <string name="task_create_action">Create</string>
     <string name="task_search">Search tasks</string>
     <string name="task_search_hint">Search titles, descriptions, people, and lists</string>
-    <plurals name="task_search_results">
-        <item quantity="one">%1$d result</item>
-        <item quantity="other">%1$d results</item>
-    </plurals>
     <string name="task_search_empty">No matching tasks found</string>
     <string name="task_settings">Task settings</string>
     <string name="task_navigation">Task navigation</string>
@@ -468,7 +464,10 @@
     <!-- Contacts (通讯录) -->
     <string name="contacts_title">Contacts</string>
     <string name="contacts_search_hint">Search name or email</string>
-    <string name="contacts_department_search_hint">Search name or email in this department</string>
+    <string name="contacts_search_entry_in_dept">Search in %1$s</string>
+    <string name="contacts_scope_all">All organization</string>
+    <string name="contacts_scope_title">Search scope</string>
+    <string name="contacts_scope_open_children">View sub-departments</string>
     <string name="contacts_root_org">Organization</string>
     <string name="contacts_empty_dept">No members in this department</string>
     <string name="contacts_empty_search">No matching members</string>

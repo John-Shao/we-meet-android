@@ -3,9 +3,8 @@ package com.we.meet.feature.im.ui.search
 import androidx.compose.foundation.background
 import com.we.meet.ui.theme.Dimens
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,13 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -31,8 +27,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,13 +38,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.feature.im.ImDeps
@@ -60,14 +53,20 @@ import com.we.meet.feature.im.data.GroupTile
 import com.we.meet.feature.im.data.ImSearchItem
 import com.we.meet.feature.im.ui.common.GroupAvatar
 import com.we.meet.feature.im.ui.common.previewText
+import com.we.meet.ui.components.SearchPolicy
+import com.we.meet.ui.components.SearchResultsHeader
+import com.we.meet.ui.components.WeMeetChipRow
 import com.we.meet.ui.components.WeMeetInlineEmptyState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
+import com.we.meet.ui.components.WeMeetSearchField
+import com.we.meet.ui.components.highlightMatches
 import com.we.meet.design.R as DesignR
 import java.text.DateFormat
 import java.util.Date
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /** 搜索统一 M2:联系人命中(app 层经 directory 解析后传入)。 */
@@ -127,7 +126,8 @@ fun MessageSearchScreen(
     onBack: () -> Unit,
     onOpenChat: (cid: String, seq: Long?) -> Unit,
     onOpenContact: (userId: String) -> Unit,
-    searchContacts: (suspend (String) -> List<GlobalSearchContact>)? = null,
+    /** 联系人搜索。[departmentId] 非空 = 限定在该部门(**含下级**)内搜。 */
+    searchContacts: (suspend (String, String?) -> List<GlobalSearchContact>)? = null,
     searchMeetings: (suspend (String) -> List<GlobalSearchMeeting>)? = null,
     searchDocs: (suspend (String) -> List<GlobalSearchDoc>)? = null,
     onOpenMeeting: ((roomId: String) -> Unit)? = null,
@@ -139,11 +139,26 @@ fun MessageSearchScreen(
     /** P1-4 M3:AI 问答 SSE(app 层实现);null = 隐藏 AI 分类。 */
     askAi: ((String) -> kotlinx.coroutines.flow.Flow<AskEvent>)? = null,
     initialCategory: SearchCategory = SearchCategory.ALL,
+    /**
+     * 「联系人」分类的搜索范围(部门 id);null = 全组织。
+     *
+     * 由宿主持有、在 [secondRow] 里切换,但**必须传到这里** —— 它要参与联系人
+     * 搜索的 effect key,否则用户在第二行换了范围,结果不会重新查。
+     */
+    departmentId: String? = null,
     contactsSearchHint: String? = null,
     tasksSearchHint: String? = null,
     searchTasks: (suspend (String) -> List<GlobalSearchTask>)? = null,
     onOpenTask: ((String) -> Unit)? = null,
     taskSearchContent: (@Composable (String) -> Unit)? = null,
+    /**
+     * 分类各自的第二行 chip(搜索范围 / 属性筛选),渲染在分类行正下方。
+     * null = 该分类没有第二行。
+     *
+     * 目前只有「联系人」用它渲染搜索范围;「任务」仍由自己的面板渲染筛选行
+     * (TaskAggregateSearchPanel 有意接管了结果区,见其 KDoc)。
+     */
+    secondRow: (@Composable (SearchCategory) -> Unit)? = null,
     /** The host supplies document presentation from the docs module. */
     docResultContent: (@Composable (GlobalSearchDoc, () -> Unit) -> Unit)? = null,
 ) {
@@ -196,7 +211,7 @@ fun MessageSearchScreen(
     fun submitAsk() {
         val provider = askAi ?: return
         val q = query.trim()
-        if (q.length < 2) return
+        if (q.length < SearchPolicy.MinQueryLength) return
         askJob?.cancel()
         ask = AskUiState(status = "asking", question = q)
         askJob = scope.launch {
@@ -233,8 +248,6 @@ fun MessageSearchScreen(
         onDispose { askJob?.cancel() }
     }
 
-    val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
     LaunchedEffect(summaries) {
         session.groupAvatars.requestResolve(
             summaries.filter { it.type == "group" }.map { it.cid },
@@ -255,16 +268,18 @@ fun MessageSearchScreen(
     }
 
     // 「会话」分区:本地标题过滤(直聊标题即时解析,故依赖 directoryVersion 重组)。
+    // 也吃最小长度:这一页其余分区都要 2 个字,只有它会因为纯本地而提前出结果 ——
+    // 同一个输入框里两种脾气,正是这次要收掉的毛病。
     val convHits = remember(summaries, query, directoryVersion, selfUid) {
         val q = query.trim()
-        if (q.isBlank()) emptyList()
+        if (q.length < SearchPolicy.MinQueryLength) emptyList()
         else summaries.filter { titleOf(it.cid).contains(q, ignoreCase = true) }.take(8)
     }
 
     // 消息:300ms debounce 的服务端检索(P1-M3 原状)。
     LaunchedEffect(query, searchRetryNonce) {
         val q = query.trim()
-        if (q.length < 2) {
+        if (q.length < SearchPolicy.MinQueryLength) {
             items = emptyList()
             nextBeforeMid = null
             searchedOnce = false
@@ -298,10 +313,11 @@ fun MessageSearchScreen(
         }
     }
 
-    // 联系人/会议:轻量源,同样 300ms debounce(q≥1)。
-    LaunchedEffect(query, contactsRetryNonce) {
+    // 联系人/会议:轻量源,同样 300ms debounce(关键词下限见 SearchPolicy)。
+    // departmentId 进 key:用户在第二行换了搜索范围就必须重新查。
+    LaunchedEffect(query, departmentId, contactsRetryNonce) {
         val q = query.trim()
-        if (q.isEmpty() || searchContacts == null) {
+        if (q.length < SearchPolicy.MinQueryLength || searchContacts == null) {
             contacts = emptyList()
             contactsLoading = false
             contactsFailed = false
@@ -309,16 +325,19 @@ fun MessageSearchScreen(
             contactsResultQuery = ""
             return@LaunchedEffect
         }
-        if (q != contactsResultQuery) {
+        // 关键词**和范围**一起当请求标识:只比关键词的话,换部门时上一次的结果
+        // 会留在屏幕上冒充新范围的结果。
+        val requestKey = "$q|${departmentId.orEmpty()}"
+        if (requestKey != contactsResultQuery) {
             contacts = emptyList()
             contactsSearched = false
-            contactsResultQuery = q
+            contactsResultQuery = requestKey
         }
         delay(300)
         contactsLoading = true
         contactsFailed = false
         try {
-            contacts = searchContacts(q)
+            contacts = searchContacts(q, departmentId)
             contactsSearched = true
         } catch (failure: CancellationException) {
             throw failure
@@ -332,7 +351,7 @@ fun MessageSearchScreen(
 
     LaunchedEffect(query, meetingsRetryNonce) {
         val q = query.trim()
-        if (q.isEmpty() || searchMeetings == null) {
+        if (q.length < SearchPolicy.MinQueryLength || searchMeetings == null) {
             meetings = emptyList()
             meetingsLoading = false
             meetingsFailed = false
@@ -364,7 +383,7 @@ fun MessageSearchScreen(
     // 文档:网络源,q≥2(与后端校验一致)。
     LaunchedEffect(query, docsRetryNonce) {
         val q = query.trim()
-        if (q.length < 2 || searchDocs == null) {
+        if (q.length < SearchPolicy.MinQueryLength || searchDocs == null) {
             docs = emptyList()
             docsLoading = false
             docsFailed = false
@@ -396,7 +415,7 @@ fun MessageSearchScreen(
     val loadMore: () -> Unit = {
         val before = nextBeforeMid
         val q = query.trim()
-        if (before != null && !loadingMore && q.length >= 2) {
+        if (before != null && !loadingMore && q.length >= SearchPolicy.MinQueryLength) {
             loadingMoreFailed = false
             loadingMore = true
         }
@@ -406,7 +425,7 @@ fun MessageSearchScreen(
         if (!loadingMore) return@LaunchedEffect
         val q = query.trim()
         val before = nextBeforeMid
-        if (q.length < 2 || before == null) {
+        if (q.length < SearchPolicy.MinQueryLength || before == null) {
             loadingMore = false
             return@LaunchedEffect
         }
@@ -430,7 +449,7 @@ fun MessageSearchScreen(
         taskPreview = emptyList()
         taskPreviewFailed = false
         val q = query.trim()
-        if (q.length < 2 || searchTasks == null) return@LaunchedEffect
+        if (q.length < SearchPolicy.MinQueryLength || searchTasks == null) return@LaunchedEffect
         taskPreviewLoading = true
         try {
             delay(300)
@@ -465,12 +484,33 @@ fun MessageSearchScreen(
     val showDocs = searchDocs != null &&
         (category == SearchCategory.ALL || category == SearchCategory.DOCS)
     val inAll = category == SearchCategory.ALL
-    val categoryListState = rememberLazyListState(
-        initialFirstVisibleItemIndex = categories.indexOf(category).coerceAtLeast(0),
-    )
+    val trimmedQuery = query.trim()
+    // 低于最小长度时所有分区都不发请求,于是屏幕一片空白。得说明白「为什么」——
+    // 否则用户以为搜索坏了,而不是「还得多打一个字」。
+    val belowMinQuery = trimmedQuery.isNotEmpty() &&
+        trimmedQuery.length < SearchPolicy.MinQueryLength
+    val categoryListState = rememberLazyListState()
     LaunchedEffect(category, categories) {
         if (category !in categories) category = SearchCategory.ALL
-        categoryListState.animateScrollToItem(categories.indexOf(category).coerceAtLeast(0))
+        val target = categories.indexOf(category).coerceAtLeast(0)
+        // 只在选中项**确实看不到**时才滚。
+        //
+        // 原先无条件 `animateScrollToItem(选中项)`,于是从通讯录进来(默认落在
+        // 「联系人」)也会把「全部」顶出左边界 —— 而那一行根本装得下,白丢了
+        // 一个默认入口,用户还以为分类只有五个。
+        //
+        // 首帧之前 visibleItemsInfo 是空的,直接判断必然误滚,所以等布局报出
+        // 条目再决定。判「完整可见」而不是「出现过」—— 卡在右边缘只露一半的
+        // 选中项和完全看不见一样认不出,那也是要滚的。
+        val laid = snapshotFlow { categoryListState.layoutInfo }
+            .first { it.visibleItemsInfo.isNotEmpty() }
+        val chip = laid.visibleItemsInfo.firstOrNull { it.index == target }
+        val fullyVisible = chip != null &&
+            chip.offset >= laid.viewportStartOffset &&
+            chip.offset + chip.size <= laid.viewportEndOffset
+        if (!fullyVisible) {
+            categoryListState.animateScrollToItem(target)
+        }
     }
 
     @Composable
@@ -493,32 +533,21 @@ fun MessageSearchScreen(
             // 它对其余 20 多个页面的保证也就没了。搜索栏是另一种组件。
             TopAppBar(
                 title = {
-                    TextField(
+                    WeMeetSearchField(
                         value = query,
                         onValueChange = { query = it },
-                        placeholder = {
-                            Text(
-                                if (category == SearchCategory.CONTACTS && contactsSearchHint != null) {
-                                    contactsSearchHint
-                                } else if (category == SearchCategory.TASKS && tasksSearchHint != null) {
-                                    tasksSearchHint
-                                } else if (category == SearchCategory.ALL || category == SearchCategory.AI) {
-                                    stringResource(R.string.im_global_search_hint)
-                                } else {
-                                    stringResource(R.string.im_search_category_hint, labelFor(category))
-                                },
-                            )
+                        placeholder = when {
+                            category == SearchCategory.CONTACTS && contactsSearchHint != null ->
+                                contactsSearchHint
+                            category == SearchCategory.TASKS && tasksSearchHint != null ->
+                                tasksSearchHint
+                            category == SearchCategory.ALL || category == SearchCategory.AI ->
+                                stringResource(R.string.im_global_search_hint)
+                            else ->
+                                stringResource(R.string.im_search_category_hint, labelFor(category))
                         },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(focusRequester),
+                        autoFocus = true,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 },
                 navigationIcon = {
@@ -527,16 +556,6 @@ fun MessageSearchScreen(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(DesignR.string.cd_back),
                         )
-                    }
-                },
-                actions = {
-                    if (query.isNotEmpty()) {
-                        IconButton(onClick = { query = "" }) {
-                            Icon(
-                                Icons.Filled.Close,
-                                contentDescription = stringResource(R.string.im_search_clear),
-                            )
-                        }
                     }
                 },
             )
@@ -548,10 +567,8 @@ fun MessageSearchScreen(
                 .padding(padding),
         ) {
             // 分类标签行(飞书式,对齐 Web 面板)。
-            LazyRow(
+            WeMeetChipRow(
                 state = categoryListState,
-                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
-                contentPadding = PaddingValues(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
                 modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface),
             ) {
                 items(categories, key = { it.name }) { cat ->
@@ -560,6 +577,30 @@ fun MessageSearchScreen(
                         onClick = { category = cat },
                         label = { Text(labelFor(cat)) },
                     )
+                }
+            }
+
+            // 第二行槽位:分类各自的「范围 / 筛选」chip。
+            //
+            // 两行的**视觉层级**必须能分开:分类行换的是「搜什么」,第二行收窄的是
+            // 「在哪搜 / 按什么筛」,后者权重更轻 —— 所以槽位里的填充物用
+            // AssistChip(标签即状态),而不是分类行那种 FilterChip。
+            //
+            // 「联系人」填进来的是搜索范围 chip;「任务」仍由自己的面板渲染筛选行
+            // (TaskAggregateSearchPanel 有意接管了结果区,见其 KDoc)。
+            if (secondRow != null) {
+                // 槽位属于**固定头部**区域,底色必须是白色。
+                //
+                // Scaffold 的容器色默认是 background(浅灰),不铺这一层的话:一来
+                // 它和上面那条白色分类行之间会裂出一道色差,二来 WeMeetChipRow 的
+                // 渐隐是从 surface 渐到透明,压错底就会变成一条白糊。二级页面
+                // 「固定头部白、滚动区浅灰」的分界见 docs/page-backgrounds.md §3。
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface),
+                ) {
+                    secondRow.invoke(category)
                 }
             }
 
@@ -590,6 +631,16 @@ fun MessageSearchScreen(
             }
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
+                if (belowMinQuery) {
+                    item(key = "min-query") {
+                        WeMeetInlineEmptyState(
+                            title = stringResource(
+                                R.string.im_search_need_more_chars,
+                                SearchPolicy.MinQueryLength,
+                            ),
+                        )
+                    }
+                }
                 if (showConv && convHits.isNotEmpty()) {
                     item(key = "sec-conv") {
                         SectionHeader(stringResource(R.string.im_msg_search_sec_conversations))
@@ -625,8 +676,22 @@ fun MessageSearchScreen(
                     }
                 }
 
+                // 单分类视图里分区标题与已选中的 chip 重复,换成结果计数 ——
+                // 「找到 N 个结果」原先只有任务分类有,其余三处搜完一片安静,
+                // 用户分不清「只有这几条」和「还有更多」。
+                //
+                // 失败态不报数:那时下面渲染的是重试按钮,再来一句「找到 0 个结果」
+                // 等于把「请求挂了」说成「确实没有」。
                 if (
-                    category == SearchCategory.CONTACTS && query.trim().isNotEmpty() &&
+                    !inAll && category == SearchCategory.CONTACTS &&
+                    contactsSearched && !contactsLoading && !contactsFailed
+                ) {
+                    item(key = "contacts-count") { SearchResultsHeader(contacts.size) }
+                }
+
+                if (
+                    category == SearchCategory.CONTACTS &&
+                    query.trim().length >= SearchPolicy.MinQueryLength &&
                     contacts.isEmpty()
                 ) {
                     item(key = "contacts-state") {
@@ -647,21 +712,32 @@ fun MessageSearchScreen(
 
                 if (showContacts && contacts.isNotEmpty()) {
                     val shown = if (inAll) contacts.take(3) else contacts
-                    item(key = "sec-contacts") {
-                        SectionHeader(stringResource(R.string.im_search_cat_contacts))
+                    if (inAll) {
+                        item(key = "sec-contacts") {
+                            SectionHeader(stringResource(R.string.im_search_cat_contacts))
+                        }
                     }
                     items(shown, key = { "p:${it.userId}" }) { contact ->
                         TwoLineRow(
                             emoji = "👤",
                             title = contact.name,
                             subtitle = contact.subtitle,
+                            query = query,
                             onClick = { onOpenContact(contact.userId) },
                         )
                     }
                 }
 
                 if (
-                    category == SearchCategory.MEETINGS && query.trim().isNotEmpty() &&
+                    !inAll && category == SearchCategory.MEETINGS &&
+                    meetingsSearched && !meetingsLoading && !meetingsFailed
+                ) {
+                    item(key = "meetings-count") { SearchResultsHeader(meetings.size) }
+                }
+
+                if (
+                    category == SearchCategory.MEETINGS &&
+                    query.trim().length >= SearchPolicy.MinQueryLength &&
                     meetings.isEmpty()
                 ) {
                     item(key = "meetings-state") {
@@ -682,8 +758,10 @@ fun MessageSearchScreen(
 
                 if (showMeetings && meetings.isNotEmpty()) {
                     val shown = if (inAll) meetings.take(3) else meetings
-                    item(key = "sec-meetings") {
-                        SectionHeader(stringResource(R.string.im_search_cat_meetings))
+                    if (inAll) {
+                        item(key = "sec-meetings") {
+                            SectionHeader(stringResource(R.string.im_search_cat_meetings))
+                        }
                     }
                     // key 带 scheduled 标志:app 层已按 roomId 去重(历史优先),
                     // 这里再防一手宿主不去重时的 LazyColumn key 冲突崩溃。
@@ -694,6 +772,7 @@ fun MessageSearchScreen(
                             subtitle = DateFormat.getDateTimeInstance(
                                 DateFormat.SHORT, DateFormat.SHORT,
                             ).format(Date(meeting.timeMs)),
+                            query = query,
                             onClick = {
                                 val slug = meeting.slug
                                 if (meeting.scheduled && slug != null && onOpenScheduled != null) {
@@ -710,9 +789,16 @@ fun MessageSearchScreen(
                 // 「消息」分类保留 spinner/空态反馈。
                 val hideEmptyMsgSection = inAll && !searching && !searchFailed &&
                     searchedOnce && items.isEmpty()
-                if (showMessages && query.trim().length >= 2 && !hideEmptyMsgSection) {
-                    item(key = "sec-msg") {
-                        SectionHeader(stringResource(R.string.im_msg_search_sec_messages))
+                if (
+                    showMessages && query.trim().length >= SearchPolicy.MinQueryLength &&
+                    !hideEmptyMsgSection
+                ) {
+                    if (inAll) {
+                        item(key = "sec-msg") {
+                            SectionHeader(stringResource(R.string.im_msg_search_sec_messages))
+                        }
+                    } else if (searchedOnce && !searching && !searchFailed) {
+                        item(key = "sec-msg-count") { SearchResultsHeader(items.size) }
                     }
                     if (searching && items.isEmpty()) {
                         item(key = "spinner") {
@@ -770,8 +856,18 @@ fun MessageSearchScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
+                            // 只标正文,不把发送人前缀一起标 —— 消息全文检索命中的是
+                            // 正文,把发消息的人也标上会让人误以为是按发送人匹配的。
+                            val hitBody = highlightMatches(
+                                previewText(hit.contentType, hit.body),
+                                query,
+                            )
                             Text(
-                                text = "$sender: ${previewText(hit.contentType, hit.body)}",
+                                text = buildAnnotatedString {
+                                    append(sender)
+                                    append(": ")
+                                    append(hitBody)
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 2,
@@ -802,7 +898,15 @@ fun MessageSearchScreen(
                 }
 
                 if (
-                    category == SearchCategory.DOCS && query.trim().length >= 2 &&
+                    !inAll && category == SearchCategory.DOCS &&
+                    docsSearched && !docsLoading && !docsFailed
+                ) {
+                    item(key = "docs-count") { SearchResultsHeader(docs.size) }
+                }
+
+                if (
+                    category == SearchCategory.DOCS &&
+                    query.trim().length >= SearchPolicy.MinQueryLength &&
                     docs.isEmpty()
                 ) {
                     item(key = "docs-state") {
@@ -821,7 +925,7 @@ fun MessageSearchScreen(
                     }
                 }
 
-                if (inAll && searchTasks != null && query.trim().length >= 2) {
+                if (inAll && searchTasks != null && query.trim().length >= SearchPolicy.MinQueryLength) {
                     if (taskPreviewLoading || taskPreviewFailed || taskPreview.isNotEmpty()) {
                         item(key = "sec-tasks") { SectionHeader(stringResource(R.string.im_search_cat_tasks)) }
                     }
@@ -837,6 +941,7 @@ fun MessageSearchScreen(
                                 emoji = "☑",
                                 title = task.title,
                                 subtitle = task.subtitle,
+                                query = query,
                                 onClick = { onOpenTask?.invoke(task.id) },
                             )
                         }
@@ -850,8 +955,10 @@ fun MessageSearchScreen(
 
                 if (showDocs && docs.isNotEmpty()) {
                     val shown = if (inAll) docs.take(3) else docs
-                    item(key = "sec-docs") {
-                        SectionHeader(stringResource(R.string.im_search_cat_docs))
+                    if (inAll) {
+                        item(key = "sec-docs") {
+                            SectionHeader(stringResource(R.string.im_search_cat_docs))
+                        }
                     }
                     items(shown, key = { "d:${it.url}" }) { doc ->
                         val openDoc: () -> Unit = { onOpenDoc?.invoke(doc.url) }
@@ -862,6 +969,7 @@ fun MessageSearchScreen(
                                 emoji = "📄",
                                 title = doc.title.ifBlank { "—" },
                                 subtitle = null,
+                                query = query,
                                 onClick = openDoc,
                             )
                         }
@@ -895,7 +1003,7 @@ private fun AiAskPanel(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (query.length >= 2) {
+            if (query.length >= SearchPolicy.MinQueryLength) {
                 Spacer(Modifier.padding(top = Dimens.SpaceS))
                 Text(
                     text = stringResource(R.string.im_search_ai_submit, query),
@@ -1021,6 +1129,8 @@ private fun TwoLineRow(
     title: String,
     subtitle: String?,
     enabled: Boolean = true,
+    /** 命中片段要标色,于是每一行都得知道用户输了什么。 */
+    query: String = "",
     trailing: (@Composable () -> Unit)? = null,
     onClick: () -> Unit,
 ) {
@@ -1038,14 +1148,14 @@ private fun TwoLineRow(
                 .padding(start = Dimens.SpaceM),
         ) {
             Text(
-                text = title,
+                text = highlightMatches(title, query),
                 style = MaterialTheme.typography.bodyLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             if (!subtitle.isNullOrBlank()) {
                 Text(
-                    text = subtitle,
+                    text = highlightMatches(subtitle, query),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

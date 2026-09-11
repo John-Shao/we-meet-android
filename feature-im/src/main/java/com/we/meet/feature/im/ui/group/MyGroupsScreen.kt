@@ -9,12 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +34,8 @@ import com.we.meet.ui.components.WeMeetEmptyState
 import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetLoading
+import com.we.meet.ui.components.WeMeetSearchField
+import com.we.meet.ui.components.highlightMatches
 
 /**
  * 「我的群组」——通讯录里的群清单(对标飞书通讯录的同名分组)。
@@ -85,12 +83,10 @@ fun MyGroupsScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            OutlinedTextField(
+            WeMeetSearchField(
                 value = query,
                 onValueChange = { query = it },
-                singleLine = true,
-                placeholder = { Text(stringResource(R.string.im_my_groups_search)) },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                placeholder = stringResource(R.string.im_my_groups_search),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
@@ -143,9 +139,12 @@ fun MyGroupsScreen(
                                             .padding(start = Dimens.SpaceM),
                                     ) {
                                         Text(
-                                            text = row.title.ifBlank {
-                                                stringResource(R.string.im_untitled_chat)
-                                            },
+                                            text = highlightMatches(
+                                                row.title.ifBlank {
+                                                    stringResource(R.string.im_untitled_chat)
+                                                },
+                                                query,
+                                            ),
                                             style = MaterialTheme.typography.bodyLarge,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,

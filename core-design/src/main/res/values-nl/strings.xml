@@ -10,4 +10,11 @@
     <!-- 无障碍(TalkBack)内容描述 -->
     <string name="cd_back">Terug</string>
     <string name="cd_close">Sluiten</string>
+
+    <!-- 搜索组件 -->
+    <string name="cd_clear_search">Zoekopdracht wissen</string>
+    <plurals name="common_search_results">
+        <item quantity="one">%1$d resultaat gevonden</item>
+        <item quantity="other">%1$d resultaten gevonden</item>
+    </plurals>
 </resources>

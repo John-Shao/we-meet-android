@@ -6,4 +6,10 @@
     <!-- 无障碍(TalkBack)内容描述 -->
     <string name="cd_back">返回</string>
     <string name="cd_close">关闭</string>
+
+    <!-- 搜索组件 -->
+    <string name="cd_clear_search">清空搜索</string>
+    <plurals name="common_search_results">
+        <item quantity="other">找到 %1$d 个结果</item>
+    </plurals>
 </resources>

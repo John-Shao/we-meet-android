@@ -21,7 +21,6 @@
     <string name="im_open_profile">Profiel openen</string>
     <string name="im_search">Zoeken</string>
     <string name="im_search_hint">Gesprekken zoeken</string>
-    <string name="im_search_clear">Zoekopdracht wissen</string>
     <string name="im_search_no_results">Geen overeenkomende gesprekken</string>
     <string name="im_more">Meer</string>
     <string name="im_conversation_tasks">Gesprekstaken</string>
@@ -240,6 +239,7 @@
     <string name="im_msg_search_hint">Berichten zoeken</string>
     <string name="im_global_search_hint">Zoeken</string>
     <string name="im_search_category_hint">Zoeken in %1$s</string>
+    <string name="im_search_need_more_chars">Typ minimaal %1$d tekens om te zoeken</string>
     <string name="im_msg_search_sec_conversations">Gesprekken</string>
     <string name="im_msg_search_sec_messages">Berichten</string>
     <string name="im_msg_search_no_results">Geen overeenkomende berichten</string>

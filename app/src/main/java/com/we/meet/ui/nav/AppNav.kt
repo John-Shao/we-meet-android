@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -71,6 +72,7 @@ import com.we.meet.ui.calendar.CalendarOwnerShareScreen
 import com.we.meet.ui.calendar.CalendarShareScreen
 import com.we.meet.ui.calendar.EventDetailScreen
 import com.we.meet.ui.calendar.FreeBusyCompareScreen
+import com.we.meet.ui.contacts.ContactScopeRow
 import com.we.meet.ui.contacts.MemberDetailScreen
 import com.we.meet.ui.contacts.StarredContactsScreen
 import com.we.meet.ui.login.LoginScreen
@@ -133,10 +135,18 @@ object Routes {
     private const val IM_CHAT_BASE = "im_chat"
     const val IM_CHAT = "$IM_CHAT_BASE/{cid}?seq={seq}"
     /** P1-M3 全局搜索页(会话过滤 + 消息全文检索)。 */
-    const val IM_SEARCH = "im_search?category={category}"
+    const val IM_SEARCH = "im_search?category={category}&dept={dept}"
 
-    fun imSearch(category: SearchCategory = SearchCategory.ALL): String =
-        "im_search?category=${category.name}"
+    /**
+     * [departmentId] 预选「联系人」分类的搜索范围 —— 从某个部门页点搜索时带上,
+     * 于是「在产品部里找人」进页面就已经是那个范围,不用再选一次。
+     */
+    fun imSearch(
+        category: SearchCategory = SearchCategory.ALL,
+        departmentId: String? = null,
+    ): String =
+        "im_search?category=${category.name}" +
+            "&dept=${URLEncoder.encode(departmentId.orEmpty(), StandardCharsets.UTF_8.name())}"
     const val TASK_DETAIL = "task_detail/{taskId}"
     fun taskDetail(taskId: String): String =
         "task_detail/${URLEncoder.encode(taskId, StandardCharsets.UTF_8.name())}"
@@ -601,7 +611,11 @@ fun AppNav() {
                 onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
                 onNewChat = { navController.navigate(Routes.imNewChat()) },
                 onOpenSearch = { navController.navigate(Routes.imSearch(SearchCategory.MESSAGES)) },
-                onOpenContactsSearch = { navController.navigate(Routes.imSearch(SearchCategory.CONTACTS)) },
+                // 从通讯录进来时把当前部门作为预选搜索范围带过去 —— 「在产品部里
+                // 找人」因此仍然只需一次点击,而范围从此刻起是可见、可改的。
+                onOpenContactsSearch = { deptId ->
+                    navController.navigate(Routes.imSearch(SearchCategory.CONTACTS, deptId))
+                },
                 onOpenTasksSearch = { navController.navigate(Routes.imSearch(SearchCategory.TASKS)) },
                 onMemberClick = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 onOpenStarredContacts = { navController.navigate(Routes.STARRED_CONTACTS) },
@@ -898,11 +912,22 @@ fun AppNav() {
 
         composable(
             route = Routes.IM_SEARCH,
-            arguments = listOf(navArgument("category") {
-                type = NavType.StringType
-                defaultValue = SearchCategory.ALL.name
-            }),
+            arguments = listOf(
+                navArgument("category") {
+                    type = NavType.StringType
+                    defaultValue = SearchCategory.ALL.name
+                },
+                navArgument("dept") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            ),
         ) { entry ->
+            // 「联系人」的搜索范围。放在这里而不是搜索页内部,是因为它有三方要共用:
+            // 路由预选(从某个部门页进来)、第二行的 scope chip 改、以及 searchContacts。
+            var contactDeptId by rememberSaveable {
+                mutableStateOf(entry.arguments?.getString("dept")?.takeIf { it.isNotBlank() })
+            }
             val taskSearchVm: com.we.meet.ui.tasks.TaskViewModel = viewModel(
                 key = "aggregate-task-search",
                 factory = viewModelFactory {
@@ -918,6 +943,7 @@ fun AppNav() {
                 onOpenContact = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 contactsSearchHint = stringResource(R.string.contacts_search_hint),
                 tasksSearchHint = stringResource(R.string.task_search_hint),
+                departmentId = contactDeptId,
                 taskSearchContent = { query ->
                     com.we.meet.ui.tasks.TaskAggregateSearchPanel(
                         vm = taskSearchVm,
@@ -927,6 +953,16 @@ fun AppNav() {
                     )
                 },
                 onOpenTask = { navController.navigate(Routes.taskDetail(it)) },
+                secondRow = { cat ->
+                    // 只有「联系人」有范围概念 —— 会议/消息/文档/任务没有部门维度。
+                    if (cat == SearchCategory.CONTACTS) {
+                        ContactScopeRow(
+                            repository = app.directoryRepository,
+                            selectedId = contactDeptId,
+                            onSelect = { contactDeptId = it },
+                        )
+                    }
+                },
                 searchTasks = { query ->
                     app.taskRepository.searchTasks(
                         query = query, creatorId = null, assigneeId = null,
@@ -955,8 +991,8 @@ fun AppNav() {
                 onOpenChat = { cid, seq ->
                     navController.navigate(Routes.imChat(cid, seq))
                 },
-                searchContacts = { q ->
-                    app.directoryRepository.searchMembers(q)
+                searchContacts = { q, deptId ->
+                    app.directoryRepository.searchMembers(q, departmentId = deptId)
                         .getOrThrow().members
                         .map { m ->
                             com.we.meet.feature.im.ui.search.GlobalSearchContact(

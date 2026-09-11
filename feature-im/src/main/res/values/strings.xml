@@ -23,7 +23,6 @@
     <string name="im_open_profile">Open profile</string>
     <string name="im_search">Search</string>
     <string name="im_search_hint">Search conversations</string>
-    <string name="im_search_clear">Clear search</string>
     <string name="im_search_no_results">No matching conversations</string>
     <string name="im_more">More</string>
     <string name="im_conversation_tasks">Conversation tasks</string>
@@ -282,6 +281,7 @@
     <string name="im_msg_search_hint">Search messages</string>
     <string name="im_global_search_hint">Search</string>
     <string name="im_search_category_hint">Search %1$s</string>
+    <string name="im_search_need_more_chars">Type at least %1$d characters to search</string>
     <string name="im_msg_search_sec_conversations">Conversations</string>
     <string name="im_msg_search_sec_messages">Messages</string>
     <string name="im_msg_search_no_results">No matching messages</string>
