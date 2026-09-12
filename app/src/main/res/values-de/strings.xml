@@ -598,11 +598,12 @@
     <string name="ai_hub_call_subtitle">Sprach-/Video-Chat in Echtzeit mit der KI</string>
 
     <!-- Profile screen -->
-    <string name="profile_nickname">Nickname</string>
+    <string name="profile_organization">Organisation</string>
+    <string name="profile_nickname">Benutzername</string>
     <string name="profile_phone">Telefon</string>
     <string name="profile_not_set">Nicht festgelegt</string>
-    <string name="profile_set_nickname">Nickname festlegen</string>
-    <string name="profile_nickname_hint">Nickname eingeben</string>
+    <string name="profile_set_nickname">Benutzername festlegen</string>
+    <string name="profile_nickname_hint">Benutzername eingeben</string>
     <string name="profile_sign_out">Abmelden</string>
     <string name="profile_sign_out_confirm">Wirklich abmelden?</string>
     <string name="profile_deregister">Konto löschen</string>
@@ -623,7 +624,7 @@
     <string name="profile_image_error_size">Bild darf höchstens 2 MB groß sein</string>
     <string name="profile_image_error_upload">Upload fehlgeschlagen, bitte erneut versuchen</string>
     <string name="profile_intro_error_save">Bio konnte nicht gespeichert werden</string>
-    <string name="profile_nickname_error_save">Nickname konnte nicht gespeichert werden</string>
+    <string name="profile_nickname_error_save">Benutzername konnte nicht gespeichert werden</string>
 
     <!-- Generic -->
     <string name="error_network">Netzwerkfehler. Bitte Verbindung prüfen und erneut versuchen.</string>

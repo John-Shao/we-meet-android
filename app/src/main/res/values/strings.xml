@@ -632,11 +632,14 @@
     <string name="ai_hub_call_subtitle">Realtime voice / video chat with AI</string>
 
     <!-- Profile screen -->
-    <string name="profile_nickname">Nickname</string>
+    <!-- Label follows the web client ("用户名" / Username). The key still says nickname
+         because that is what the row edits: PATCH /users/me/nickname/ -> full_name. -->
+    <string name="profile_organization">Organization</string>
+    <string name="profile_nickname">Username</string>
     <string name="profile_phone">Phone</string>
     <string name="profile_not_set">Not set</string>
-    <string name="profile_set_nickname">Set nickname</string>
-    <string name="profile_nickname_hint">Enter a nickname</string>
+    <string name="profile_set_nickname">Set username</string>
+    <string name="profile_nickname_hint">Enter a username</string>
     <string name="profile_sign_out">Sign out</string>
     <string name="profile_sign_out_confirm">Are you sure you want to sign out?</string>
     <string name="profile_deregister">Delete account</string>
@@ -657,7 +660,7 @@
     <string name="profile_image_error_size">Image must be 2 MB or smaller</string>
     <string name="profile_image_error_upload">Upload failed, please try again</string>
     <string name="profile_intro_error_save">Failed to save bio</string>
-    <string name="profile_nickname_error_save">Failed to save nickname</string>
+    <string name="profile_nickname_error_save">Failed to save username</string>
 
     <!-- Generic -->
     <string name="error_network">Network error. Please check your connection and try again.</string>

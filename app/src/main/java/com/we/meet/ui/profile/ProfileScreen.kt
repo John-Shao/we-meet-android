@@ -56,6 +56,7 @@ import com.we.meet.WeMeetApp
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.OnMediaOverlay
+import com.we.meet.core.directory.data.OrgRefDto
 import com.we.meet.data.repository.ProfileRepository
 import kotlinx.coroutines.launch
 
@@ -91,6 +92,9 @@ fun ProfileScreen(
     var intro by remember { mutableStateOf(tokenStore.intro.orEmpty()) }
     var avatarUrl by remember { mutableStateOf(tokenStore.avatarUrl.orEmpty()) }
     var coverUrl by remember { mutableStateOf(tokenStore.coverUrl.orEmpty()) }
+    // 组织:用户在哪个组织里。后端 Membership 从第一天就是「一个用户多条」,
+    // 所以这里拿的是**当前**(主)组织;切换组织的入口留到「切换」本身落地时再开。
+    var organization by remember { mutableStateOf<OrgRefDto?>(null) }
 
     var showNicknameDialog by remember { mutableStateOf(false) }
     var showIntroDialog by remember { mutableStateOf(false) }
@@ -159,6 +163,15 @@ fun ProfileScreen(
         }
     }
 
+    // 组织上下文:与通讯录首页同一个端点(`directory/me/`,服务端一个单行查询)。
+    // 与上面那次资料刷新**分开**:一边失败不该连累另一边,而且组织名不是这一页的
+    // 骨架(拿不到就只是不显示那一行)。同样跟 `active` 走 —— 抽屉每次打开都重取,
+    // 管理员中途把人加进/移出组织,这里下次打开就对。
+    LaunchedEffect(active) {
+        if (!active) return@LaunchedEffect
+        app.directoryRepository.orgContext().onSuccess { organization = it.organization }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -222,6 +235,19 @@ fun ProfileScreen(
                 .clip(RoundedCornerShape(Dimens.CornerM))
                 .background(MaterialTheme.colorScheme.surface),
         ) {
+            // 组织放最前面:用户名在组织里才有意义(同名的人分属不同组织)。
+            // 这一行**不可点** —— 一个账号可以属于多个组织,但「切换组织」还没做,
+            // 做成可点却什么都不发生比不点更糟(与通讯录首页的「当前组织」同一口径);
+            // 切换落地时它就是这个入口,所以这里留的是 [OrgRefDto] 而不是一个名字。
+            // 没有组织(membership 还没建)时不显示:没有东西可说的行不如不摆。
+            organization?.name?.takeIf { it.isNotBlank() }?.let { orgName ->
+                SettingsRow(
+                    label = stringResource(R.string.profile_organization),
+                    value = orgName,
+                    onClick = null,
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding))
+            }
             SettingsRow(
                 label = stringResource(R.string.profile_nickname),
                 value = nickname.ifBlank { stringResource(R.string.profile_not_set) },

@@ -607,11 +607,12 @@
     <string name="ai_hub_call_subtitle">Chat vocal / vidéo en temps réel avec l\'IA</string>
 
     <!-- Profile screen -->
-    <string name="profile_nickname">Pseudo</string>
+    <string name="profile_organization">Organisation</string>
+    <string name="profile_nickname">Nom d\'utilisateur</string>
     <string name="profile_phone">Téléphone</string>
     <string name="profile_not_set">Non défini</string>
-    <string name="profile_set_nickname">Définir le pseudo</string>
-    <string name="profile_nickname_hint">Entrez un pseudo</string>
+    <string name="profile_set_nickname">Définir le nom d\'utilisateur</string>
+    <string name="profile_nickname_hint">Entrez un nom d\'utilisateur</string>
     <string name="profile_sign_out">Se déconnecter</string>
     <string name="profile_sign_out_confirm">Voulez-vous vraiment vous déconnecter ?</string>
     <string name="profile_deregister">Supprimer le compte</string>
@@ -632,7 +633,7 @@
     <string name="profile_image_error_size">L\'image doit faire 2 Mo ou moins</string>
     <string name="profile_image_error_upload">Échec de l\'envoi, veuillez réessayer</string>
     <string name="profile_intro_error_save">Échec de l\'enregistrement de la bio</string>
-    <string name="profile_nickname_error_save">Échec de l\'enregistrement du pseudo</string>
+    <string name="profile_nickname_error_save">Échec de l\'enregistrement du nom d\'utilisateur</string>
 
     <!-- Generic -->
     <string name="error_network">Erreur réseau. Vérifiez votre connexion et réessayez.</string>

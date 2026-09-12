@@ -623,11 +623,12 @@
     <string name="ai_hub_call_subtitle">与 AI 实时语音 / 视频对话</string>
 
     <!-- Profile screen -->
-    <string name="profile_nickname">昵称</string>
+    <string name="profile_organization">组织</string>
+    <string name="profile_nickname">用户名</string>
     <string name="profile_phone">手机号</string>
     <string name="profile_not_set">未设置</string>
-    <string name="profile_set_nickname">设置昵称</string>
-    <string name="profile_nickname_hint">请输入昵称</string>
+    <string name="profile_set_nickname">设置用户名</string>
+    <string name="profile_nickname_hint">请输入用户名</string>
     <string name="profile_sign_out">退出登录</string>
     <string name="profile_sign_out_confirm">确定要退出登录吗？</string>
     <string name="profile_deregister">注销账号</string>
@@ -648,7 +649,7 @@
     <string name="profile_image_error_size">图片大小不能超过 2 MB</string>
     <string name="profile_image_error_upload">上传失败，请稍后再试</string>
     <string name="profile_intro_error_save">保存简介失败</string>
-    <string name="profile_nickname_error_save">保存昵称失败</string>
+    <string name="profile_nickname_error_save">保存用户名失败</string>
 
     <!-- Generic -->
     <string name="error_network">网络异常，请检查连接后重试。</string>

@@ -598,11 +598,12 @@
     <string name="ai_hub_call_subtitle">Realtime spraak- of videogesprek met AI</string>
 
     <!-- Profile screen -->
-    <string name="profile_nickname">Bijnaam</string>
+    <string name="profile_organization">Organisatie</string>
+    <string name="profile_nickname">Gebruikersnaam</string>
     <string name="profile_phone">Telefoon</string>
     <string name="profile_not_set">Niet ingesteld</string>
-    <string name="profile_set_nickname">Bijnaam instellen</string>
-    <string name="profile_nickname_hint">Voer een bijnaam in</string>
+    <string name="profile_set_nickname">Gebruikersnaam instellen</string>
+    <string name="profile_nickname_hint">Voer een gebruikersnaam in</string>
     <string name="profile_sign_out">Afmelden</string>
     <string name="profile_sign_out_confirm">Weet je zeker dat je wilt afmelden?</string>
     <string name="profile_deregister">Account verwijderen</string>
@@ -623,7 +624,7 @@
     <string name="profile_image_error_size">Afbeelding mag maximaal 2 MB zijn</string>
     <string name="profile_image_error_upload">Upload mislukt, probeer opnieuw</string>
     <string name="profile_intro_error_save">Bio kon niet worden opgeslagen</string>
-    <string name="profile_nickname_error_save">Bijnaam kon niet worden opgeslagen</string>
+    <string name="profile_nickname_error_save">Gebruikersnaam kon niet worden opgeslagen</string>
 
     <!-- Generic -->
     <string name="error_network">Netwerkfout. Controleer je verbinding en probeer opnieuw.</string>
