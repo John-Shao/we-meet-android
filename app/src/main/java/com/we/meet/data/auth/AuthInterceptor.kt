@@ -24,9 +24,11 @@ class AuthInterceptor(
             )
         }
 
-        val token = tokenStore.accessToken
+        val snapshot = tokenStore.authSnapshot()
+        val token = snapshot.access
         val request = if (!token.isNullOrBlank()) {
             original.newBuilder()
+                .tag(AuthSnapshot::class.java, snapshot)
                 .header("Authorization", "Bearer $token")
                 .header("Accept", "application/json")
                 .build()

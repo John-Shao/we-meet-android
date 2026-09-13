@@ -21,8 +21,9 @@ class SessionExpiredInterceptor(
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         val response = chain.proceed(request)
-        if (response.code == 401 && request.header("Authorization") != null) {
-            tokenStore.clear()
+        val snapshot = response.request.tag(AuthSnapshot::class.java)
+        val rejected = response.request.header("Authorization")?.removePrefix("Bearer ")
+        if (response.code == 401 && snapshot != null && rejected != null && tokenStore.expire(snapshot, rejected)) {
             SessionState.markExpired()
         }
         return response

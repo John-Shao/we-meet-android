@@ -9,35 +9,23 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.Route
 
-/**
- * OkHttp [Authenticator] that silently refreshes the bearer on a 401.
- *
- * Flow:
- *   1. A request comes back with HTTP 401.
- *   2. Bail out for refresh-itself / no-stored-creds cases.
- *   3. If another thread already rotated the access token while we were
- *      blocked here, just retry with the new token — no extra refresh round
- *      trip needed (this is the single-flight optimisation; [@Synchronized]
- *      serialises us against parallel 401s).
- *   4. Otherwise call /api/mobile/auth/refresh/, persist the new
- *      access+refresh pair in [TokenStore], and return the original request
- *      rebuilt with the new bearer so OkHttp transparently retries it.
- *   5. If refresh itself fails (network blip, invalid_grant), return null —
- *      the original 401 propagates to [SessionExpiredInterceptor], which
- *      then clears the tokens and pushes the user back to the login screen.
- *
- * Note: [authApi] MUST be backed by an OkHttpClient that does NOT itself
- * install this authenticator nor [AuthInterceptor]. Routing the refresh
- * through the same client deadlocks: the [runBlocking] call inside the
- * authenticator blocks an OkHttp worker thread and re-enqueues onto the
- * same dispatcher, while [AuthInterceptor] would re-attach the very
- * bearer that triggered the 401 in the first place.
- */
+/** Refresh only the login session attached by AuthInterceptor. Never retarget old writes. */
 class TokenRefreshAuthenticator(
     private val tokenStore: TokenStore,
-    private val authApi: AuthApi,
-    private val keycloakOidc: KeycloakOidc,
+    private val refresh: (AuthSnapshot) -> RefreshedTokens,
 ) : Authenticator {
+    data class RefreshedTokens(val access: String, val refresh: String?, val idToken: String? = null) {
+        override fun toString() = "RefreshedTokens(<private>)"
+    }
+    constructor(tokenStore: TokenStore, authApi: AuthApi, keycloakOidc: KeycloakOidc) : this(tokenStore, { source ->
+        if (source.flow == TokenStore.AUTH_FLOW_WEB) {
+            val tokens = keycloakOidc.refresh(requireNotNull(source.refresh))
+            RefreshedTokens(tokens.accessToken, tokens.refreshToken, tokens.idToken)
+        } else {
+            val tokens = runBlocking { authApi.refresh(RefreshTokenRequest(refresh_token = requireNotNull(source.refresh))) }
+            RefreshedTokens(tokens.access_token, tokens.refresh_token)
+        }
+    })
 
     @Synchronized
     override fun authenticate(route: Route?, response: Response): Request? {
@@ -49,46 +37,21 @@ class TokenRefreshAuthenticator(
             return null
         }
 
-        // Bail if we never had bearer creds (cookie-only flows hit this with
-        // no Authorization header — leave them for the caller to handle).
+        val source = request.tag(AuthSnapshot::class.java) ?: return null
         val sentAuth = request.header("Authorization") ?: return null
-        val storedAccess = tokenStore.accessToken ?: return null
-        val storedRefresh = tokenStore.refreshToken ?: return null
-
-        // Concurrency: another thread refreshed between our 401 and our turn
-        // in the synchronized block. Skip the refresh round trip and just
-        // retry with the new bearer.
-        if (sentAuth != "Bearer $storedAccess") {
-            return request.newBuilder()
-                .header("Authorization", "Bearer $storedAccess")
-                .build()
+        val current = tokenStore.authSnapshot()
+        if (source.session != current.session || current.access == null || current.refresh == null) return null
+        if (response.priorResponse != null) return null // At most one authentication retry.
+        if (sentAuth != "Bearer ${current.access}") {
+            return request.newBuilder().header("Authorization", "Bearer ${current.access}").build()
         }
-
-        // Dual refresh path (p3-docs-app.md D4): a refresh token can only be
-        // refreshed by the client that issued it. Web-login tokens belong to
-        // the public `app` client → refresh directly at Keycloak (no secret,
-        // via KeycloakOidc's own plain OkHttp). Legacy OTP-exchange tokens
-        // keep going through the backend, which holds the client secret.
         val newAccess: String
         try {
-            if (tokenStore.isWebFlow()) {
-                val t = keycloakOidc.refresh(storedRefresh)
-                tokenStore.accessToken = t.accessToken
-                tokenStore.refreshToken = t.refreshToken
-                t.idToken?.let { tokenStore.idToken = it }
-                newAccess = t.accessToken
-            } else {
-                val t = runBlocking {
-                    authApi.refresh(RefreshTokenRequest(refresh_token = storedRefresh))
-                }
-                tokenStore.accessToken = t.access_token
-                tokenStore.refreshToken = t.refresh_token
-                newAccess = t.access_token
-            }
-        } catch (e: Exception) {
-            // 4xx/5xx or network failure. Bail; the 401 propagates so the
-            // user is sent back to login.
-            Log.w(TAG, "refresh failed; surfacing 401", e)
+            val tokens = refresh(current)
+            if (!tokenStore.rotate(current, tokens.access, tokens.refresh, tokens.idToken)) return null
+            newAccess = tokens.access
+        } catch (_: Exception) {
+            Log.w(TAG, "refresh failed; surfacing 401")
             return null
         }
 

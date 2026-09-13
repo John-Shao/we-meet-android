@@ -4,6 +4,11 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import java.util.UUID
+
+data class AuthSnapshot(val session: String, val access: String?, val refresh: String?, val flow: String?) {
+    override fun toString() = "AuthSnapshot(<private>)"
+}
 
 /**
  * Persistent, encrypted storage for the user's auth tokens.
@@ -12,8 +17,8 @@ import androidx.security.crypto.MasterKey
  * disk in plaintext.  Backed by AndroidKeystore via the [MasterKey].
  *
  * MVP scope: we store the access token, refresh token, and a "phone" hint we
- * can show on the home screen.  We do NOT yet implement automatic refresh —
- * if the access token expires the user simply re-logs in.
+ * can show on the home screen. Refresh rotates an exact credential snapshot;
+ * login and logout change its session ID so late responses cannot replace it.
  */
 class TokenStore(context: Context) {
 
@@ -31,12 +36,16 @@ class TokenStore(context: Context) {
     }
 
     var accessToken: String?
+        @Synchronized
         get() = prefs.getString(KEY_ACCESS, null)
-        set(value) = prefs.edit().putString(KEY_ACCESS, value).apply()
+        @Synchronized
+        set(value) { prefs.edit().putString(KEY_ACCESS, value).putString(KEY_SESSION, UUID.randomUUID().toString()).apply() }
 
     var refreshToken: String?
+        @Synchronized
         get() = prefs.getString(KEY_REFRESH, null)
-        set(value) = prefs.edit().putString(KEY_REFRESH, value).apply()
+        @Synchronized
+        set(value) { prefs.edit().putString(KEY_REFRESH, value).putString(KEY_SESSION, UUID.randomUUID().toString()).apply() }
 
     var phone: String?
         get() = prefs.getString(KEY_PHONE, null)
@@ -101,21 +110,44 @@ class TokenStore(context: Context) {
      * from an old install keep refreshing via the backend until re-login.
      */
     var authFlow: String?
+        @Synchronized
         get() = prefs.getString(KEY_AUTH_FLOW, null)
-        set(value) = prefs.edit().putString(KEY_AUTH_FLOW, value).apply()
+        @Synchronized
+        set(value) { prefs.edit().putString(KEY_AUTH_FLOW, value).putString(KEY_SESSION, UUID.randomUUID().toString()).apply() }
 
     fun isWebFlow(): Boolean = authFlow == AUTH_FLOW_WEB
 
     fun isLoggedIn(): Boolean = !accessToken.isNullOrBlank()
 
-    fun clear() {
-        prefs.edit().clear().apply()
+    @Synchronized fun clear() {
+        prefs.edit().clear().putString(KEY_SESSION, UUID.randomUUID().toString()).apply()
+    }
+
+    @Synchronized fun authSnapshot(): AuthSnapshot {
+        val session = prefs.getString(KEY_SESSION, null) ?: UUID.randomUUID().toString().also {
+            prefs.edit().putString(KEY_SESSION, it).apply()
+        }
+        return AuthSnapshot(session, accessToken, refreshToken, authFlow)
+    }
+    @Synchronized fun rotate(expected: AuthSnapshot, access: String, refresh: String?, idToken: String? = null): Boolean {
+        if (authSnapshot() != expected || access.isBlank()) return false
+        prefs.edit().putString(KEY_ACCESS, access).putString(KEY_REFRESH, refresh ?: expected.refresh).apply {
+            if (idToken != null) putString(KEY_ID_TOKEN, idToken)
+        }.apply()
+        return true
+    }
+    @Synchronized fun expire(expected: AuthSnapshot, rejectedAccess: String): Boolean {
+        val current = authSnapshot()
+        if (current.session != expected.session || current.access != rejectedAccess) return false
+        clear()
+        return true
     }
 
     companion object {
         const val AUTH_FLOW_WEB = "web"
         private const val FILE_NAME = "jusi_meet_tokens"
         private const val KEY_ACCESS = "access_token"
+        private const val KEY_SESSION = "auth_session"
         private const val KEY_REFRESH = "refresh_token"
         private const val KEY_PHONE = "phone"
         private const val KEY_NICKNAME = "nickname"
