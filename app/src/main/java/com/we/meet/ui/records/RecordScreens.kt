@@ -203,6 +203,8 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                         RecordSummaryControls(viewer, record, app.meetingSummaryRepository) { app.captureAccount }
                                         RecordHumanSummary(viewer, record, summaries.getOrThrow().results.firstOrNull(), app.meetingReviewRepository,
                                             { app.captureAccount }, onTask) { snapshot, reference -> citation = snapshot to reference }
+                                        RecordQuestions(viewer, record, summaries.getOrThrow().results, app.meetingQuestionRepository,
+                                            { app.captureAccount }) { snapshot, reference -> citation = snapshot to reference }
                                     }
                                 }
                                 if (summaries.getOrThrow().results.isEmpty()) item {

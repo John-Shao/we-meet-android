@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_question_title">会后问答</string>
+    <string name="record_question_scope">请选择一个原文版本。AI 仅根据该版本回答并消耗 AI 用量，问题仅对你可见。</string>
+    <string name="record_question_read_error">暂时无法读取问答，请刷新检查原文访问权限。</string>
+    <string name="record_question_unknown">上次提问结果尚未确认，请先核对原请求，再提出新问题。</string>
+    <string name="record_question_error">未能确认提问结果，请检查当前状态或核对待确认请求。</string>
+    <string name="record_question_choose">选择原文版本</string>
+    <string name="record_question_source">原文修订 %1$d · %2$s 纪要</string>
+    <string name="record_question_historical_source">此前选择的原文版本</string>
+    <string name="record_question_input">输入问题</string>
+    <string name="record_question_ask">向 AI 提问</string>
+    <string name="record_question_disabled">当前暂不支持发起新问题。</string>
+    <string name="record_question_recent">我的最近提问</string>
+    <string name="record_question_running">正在生成回答</string>
+    <string name="record_question_succeeded">回答</string>
+    <string name="record_question_failed">回答失败，不会自动重新生成。</string>
+    <string name="record_question_incomplete">回答结果不完整，不会自动重新生成。</string>
+    <string name="record_question_canceled">问题已取消</string>
+    <string name="record_question_no_answer">所选原文中没有足够信息回答该问题。</string>
+</resources>

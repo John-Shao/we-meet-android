@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_question_title">Meeting questions</string>
+    <string name="record_question_scope">Choose an original transcript version. AI answers use only that source and consume AI usage. Your questions are private.</string>
+    <string name="record_question_read_error">Questions are unavailable. Refresh to check original-source access.</string>
+    <string name="record_question_unknown">The last question has an unknown result. Check its original request before asking another question.</string>
+    <string name="record_question_error">The question could not be confirmed. Check the current state or reconcile the pending request.</string>
+    <string name="record_question_choose">Choose transcript version</string>
+    <string name="record_question_source">Transcript revision %1$d · minutes from %2$s</string>
+    <string name="record_question_historical_source">Previously selected transcript version</string>
+    <string name="record_question_input">Your question</string>
+    <string name="record_question_ask">Ask AI</string>
+    <string name="record_question_disabled">New questions are currently unavailable.</string>
+    <string name="record_question_recent">My recent questions</string>
+    <string name="record_question_running">Answer in progress</string>
+    <string name="record_question_succeeded">Answer</string>
+    <string name="record_question_failed">Answer failed; it will not retry automatically.</string>
+    <string name="record_question_incomplete">Answer result is incomplete; it will not retry automatically.</string>
+    <string name="record_question_canceled">Question canceled</string>
+    <string name="record_question_no_answer">The selected transcript does not contain enough information to answer.</string>
+</resources>
