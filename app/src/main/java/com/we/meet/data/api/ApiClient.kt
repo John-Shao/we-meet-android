@@ -116,6 +116,11 @@ class ApiClient(tokenStore: TokenStore) {
     val meetingReviewApi: MeetingReviewApi = meetingPrivateRetrofit.create(MeetingReviewApi::class.java)
     val meetingDeliveryApi: MeetingDeliveryApi = meetingPrivateRetrofit.create(MeetingDeliveryApi::class.java)
     val meetingSharingApi: MeetingSharingApi = meetingPrivateRetrofit.create(MeetingSharingApi::class.java)
+    val onlineCaptureApi: OnlineCaptureApi = meetingPrivateRetrofit.create(OnlineCaptureApi::class.java)
+    val onlineCaptureNoticeApi: OnlineCaptureNoticeApi = retrofit.newBuilder().client(
+        OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(20, TimeUnit.SECONDS).callTimeout(20, TimeUnit.SECONDS)
+            .followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false).build()
+    ).build().create(OnlineCaptureNoticeApi::class.java)
     // Question POST waits for the server's bounded 30-second provider attempt.
     val meetingQuestionApi: MeetingQuestionApi = meetingPrivateRetrofit.newBuilder()
         .client(meetingPrivateHttp.newBuilder().readTimeout(40, TimeUnit.SECONDS).callTimeout(45, TimeUnit.SECONDS).build())
