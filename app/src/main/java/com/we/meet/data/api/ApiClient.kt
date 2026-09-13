@@ -120,6 +120,7 @@ class ApiClient(tokenStore: TokenStore) {
     val meetingDeliveryApi: MeetingDeliveryApi = meetingPrivateRetrofit.create(MeetingDeliveryApi::class.java)
     val meetingSharingApi: MeetingSharingApi = meetingPrivateRetrofit.create(MeetingSharingApi::class.java)
     val onlineCaptureApi: OnlineCaptureApi = meetingPrivateRetrofit.create(OnlineCaptureApi::class.java)
+    val cloudRecordingApi: CloudRecordingApi = meetingPrivateRetrofit.create(CloudRecordingApi::class.java)
     val meetingTranslationApi: MeetingTranslationApi = meetingPrivateRetrofit.create(MeetingTranslationApi::class.java)
     val meetingInterpretationApi: MeetingInterpretationApi = meetingPrivateRetrofit.newBuilder()
         .client(meetingPrivateHttp.newBuilder().readTimeout(8, TimeUnit.SECONDS).callTimeout(8, TimeUnit.SECONDS).build())
