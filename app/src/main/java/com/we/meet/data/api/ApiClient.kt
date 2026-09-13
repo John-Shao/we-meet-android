@@ -117,6 +117,7 @@ class ApiClient(tokenStore: TokenStore) {
     val meetingDeliveryApi: MeetingDeliveryApi = meetingPrivateRetrofit.create(MeetingDeliveryApi::class.java)
     val meetingSharingApi: MeetingSharingApi = meetingPrivateRetrofit.create(MeetingSharingApi::class.java)
     val onlineCaptureApi: OnlineCaptureApi = meetingPrivateRetrofit.create(OnlineCaptureApi::class.java)
+    val meetingTranslationApi: MeetingTranslationApi = meetingPrivateRetrofit.create(MeetingTranslationApi::class.java)
     val onlineCaptureNoticeApi: OnlineCaptureNoticeApi = retrofit.newBuilder().client(
         OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(20, TimeUnit.SECONDS).callTimeout(20, TimeUnit.SECONDS)
             .followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false).build()
