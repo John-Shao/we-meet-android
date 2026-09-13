@@ -1,0 +1,27 @@
+<resources>
+    <string name="interpretation_title">同声传译</string>
+    <string name="interpretation_description">选择本场会议的收听语言。会议管理者可开启或关闭共享频道；退出频道只影响你自己的收听，译文与原文分别展示。</string>
+    <string name="interpretation_guest">请登录后选择同传频道。</string>
+    <string name="interpretation_unavailable">本场会议暂不可用同声传译。</string>
+    <string name="interpretation_unknown">请先核对原请求，再更改频道或收听选择。</string>
+    <string name="interpretation_retry_channel">核对频道请求</string>
+    <string name="interpretation_retry_listen">核对收听请求</string>
+    <string name="interpretation_zh">中文频道</string>
+    <string name="interpretation_en">英文频道</string>
+    <string name="interpretation_listen_zh">收听中文</string>
+    <string name="interpretation_listen_en">收听英文</string>
+    <string name="interpretation_start_zh">开启中文频道</string>
+    <string name="interpretation_start_en">开启英文频道</string>
+    <string name="interpretation_stop_zh">关闭中文频道</string>
+    <string name="interpretation_stop_en">关闭英文频道</string>
+    <string name="interpretation_leave">退出当前收听</string>
+    <string name="interpretation_connection">请等待当前设备的入会连接确认后再收听。</string>
+    <string name="interpretation_wait_ready">正在等待译声就绪…</string>
+    <string name="interpretation_error">尚未确认操作或收听状态。请刷新或核对原请求，再重新选择频道。</string>
+    <string name="interpretation_start_effect">开启此语言的共享频道。有参会人选择收听后才开始翻译，可能消耗 AI 用量。开启频道不会自动为你开启收听。</string>
+    <string name="interpretation_stop_effect">将关闭此语言频道，所有正在收听的参会人都会停止收到该频道的译声。会议继续。</string>
+    <string name="interpretation_speaker">发言人</string>
+    <string name="interpretation_paused">收听已暂停</string>
+    <string name="interpretation_prepared">等待参会人收听</string>
+    <string name="interpretation_off">频道未开启</string>
+</resources>

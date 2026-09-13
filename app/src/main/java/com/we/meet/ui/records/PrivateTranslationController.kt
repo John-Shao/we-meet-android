@@ -28,6 +28,7 @@ internal class PrivateTranslationController(val session: PrivateTranslationSessi
     var writable by mutableStateOf(false)
     var fresh by mutableStateOf(false)
     var seenRun by mutableStateOf(false)
+    var beforeListen: () -> Unit = {}
     var restart by mutableIntStateOf(0)
     var submit: (PrivateTranslationRequestDto) -> Unit = {}
     var sound: (Boolean) -> Unit = {}
@@ -163,7 +164,10 @@ internal fun rememberPrivateTranslation(viewer: String, room: String, sid: Strin
             }
         }
     }
-    state.sound = { enabled -> if (current() && state.resumed && (!enabled || !state.busy && state.pending == null)) { state.session.setSound(enabled, SystemClock.elapsedRealtime()); update() } }
+    state.sound = { enabled -> if (current() && state.resumed && (!enabled || !state.busy && state.pending == null)) {
+        if (state.session.setSound(enabled, SystemClock.elapsedRealtime()) && enabled) state.beforeListen()
+        update()
+    } }
     state.turn = turn@{ direction, begin, microphone ->
         if (!current() || !state.resumed || state.sending || state.busy || state.pending != null) return@turn
         val command = state.session.turn(direction, begin, microphone, SystemClock.elapsedRealtime()) ?: return@turn

@@ -886,6 +886,19 @@ private fun RoomContent(
         }
         com.we.meet.ui.records.rememberPrivateTranslation(app.captureAccount.orEmpty(), onlineRoomId, onlineSid, app.meetingTranslationRepository, { app.captureAccount }, transport)
     } else null
+    var showInterpretation by remember(onlineSid, localSid) { mutableStateOf(false) }
+    val interpretationTransport = if (onlineSid != null && meetingTrackSubscriptions != null && localSid.value.startsWith("PA_")) {
+        remember(room, onlineSid, localSid, meetingTrackSubscriptions) {
+            com.we.meet.livekit.LiveKitInterpretationTransport(room, meetingTrackSubscriptions, onlineSid, localSid.value)
+        }
+    } else null
+    val interpretation = if (onlineSid != null && interpretationTransport != null) {
+        val app = context.applicationContext as WeMeetApp
+        com.we.meet.ui.records.rememberInterpretation(app.captureAccount.orEmpty(), onlineRoomId, onlineSid,
+            app.meetingInterpretationRepository, { app.captureAccount }, interpretationTransport)
+    } else null
+    privateTranslation?.beforeListen = { interpretation?.sound?.invoke(false) }
+    interpretation?.beforeListen = { privateTranslation?.sound?.invoke(false) }
     var onlineRecordId by remember(onlineSid) { mutableStateOf<String?>(null) }
     var onlineNoticeHeight by remember(onlineSid) { mutableStateOf(Dimens.SpaceNone) }
     val density = LocalDensity.current
@@ -1122,6 +1135,7 @@ private fun RoomContent(
                 com.we.meet.ui.records.OnlineCaptureNotice(onlineRoomId, onlineSid, onlineJoinToken,
                     (context.applicationContext as WeMeetApp).onlineCaptureNoticeRepository, currentOnlineSource)
                 privateTranslation?.let { com.we.meet.ui.records.PrivateTranslationCaption(it) { showPrivateTranslation = true } }
+                interpretation?.let { com.we.meet.ui.records.InterpretationCaption(it) { showInterpretation = true } }
             }
         }
         if (state.subtitlesOverlayOn) {
@@ -1436,9 +1450,17 @@ private fun RoomContent(
             onDismiss = { showMore = false },
             onOnlineCaptureClick = if (onlineSid != null) ({ showMore = false; showOnlineCapture = true }) else null,
             onTranslationClick = if (privateTranslation != null) ({ showMore = false; showPrivateTranslation = true }) else null,
+            onInterpretationClick = if (interpretation != null) ({ showMore = false; showInterpretation = true }) else null,
         )
     }
 
+    if (showInterpretation && interpretation != null && interpretationTransport != null && onlineSid != null) {
+        val app = context.applicationContext as WeMeetApp
+        ModalBottomSheet(onDismissRequest = { showInterpretation = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+            com.we.meet.ui.records.InterpretationPanel(interpretation, app.captureAccount.orEmpty(), onlineRoomId, onlineSid,
+                interpretationTransport::speakerName) { id -> showInterpretation = false; onlineRecordId = id }
+        }
+    }
     if (showPrivateTranslation && privateTranslation != null && onlineSid != null) {
         val app = context.applicationContext as WeMeetApp
         ModalBottomSheet(onDismissRequest = { showPrivateTranslation = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
@@ -2682,6 +2704,7 @@ private fun MoreActionsSheet(
     onDismiss: () -> Unit,
     onOnlineCaptureClick: (() -> Unit)? = null,
     onTranslationClick: (() -> Unit)? = null,
+    onInterpretationClick: (() -> Unit)? = null,
 ) {
     val sheetState = rememberModalBottomSheetState()
     val context = LocalContext.current
@@ -2822,7 +2845,12 @@ private fun MoreActionsSheet(
                         ControlButton(modifier = Modifier.weight(1f), icon = Icons.Default.Translate,
                             label = stringResource(R.string.translation_title), isOn = true, onClick = onTranslationClick,
                             labelColor = sheetTint, iconBgColor = sheetBg, iconTintColor = sheetTint)
-                        Spacer(Modifier.weight(2f))
+                        if (onInterpretationClick != null) {
+                            ControlButton(modifier = Modifier.weight(1f), icon = Icons.Default.Translate,
+                                label = stringResource(R.string.interpretation_title), isOn = true, onClick = onInterpretationClick,
+                                labelColor = sheetTint, iconBgColor = sheetBg, iconTintColor = sheetTint)
+                            Spacer(Modifier.weight(1f))
+                        } else Spacer(Modifier.weight(2f))
                     } else Spacer(Modifier.weight(3f))
                 } else Spacer(Modifier.weight(4f))
             }

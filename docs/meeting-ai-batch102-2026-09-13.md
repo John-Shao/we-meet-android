@@ -1,0 +1,7 @@
+# Batch 102: native shared-interpretation workspace
+
+The meeting menu now exposes simultaneous interpretation with separate manager channel controls and participant listening. Channel start explains shared processing and optional retention; opening a channel does not subscribe the manager. Channel stop confirms its effect on all listeners, while leaving changes only the current device subscription. Existing subscriptions and replayed command receipts never resume audio automatically.
+
+The SDK transport accepts only interpretation events from the current room and participant connection. Playback uses exact, expiring track grants; foreground renewal failures, permission loss and source departures silence locally. Backgrounding clears transient text/audio and stops renewal. Unknown writes retain their original encrypted channel or subscription intent for explicit reconciliation. Personal translation and shared interpretation mute each other's voice when the user chooses listening. Local mute remains available during another channel operation.
+
+Validation: 23 isolated instrumentation tests (10 shared UI, 9 personal translation UI, 4 shared coordinator), enabled/default Debug builds, design tokens and diff checks; light start confirmation and dark listener panel inspected. No real provider, microphone, meeting or deployment invocation. WE_MEET_ONLINE_AI_NATIVE remains off by default. Native retained-translation browsing follows.

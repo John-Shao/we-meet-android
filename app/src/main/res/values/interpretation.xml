@@ -1,0 +1,27 @@
+<resources>
+    <string name="interpretation_title">Simultaneous interpretation</string>
+    <string name="interpretation_description">Choose a listening language for this meeting. Room managers open or close shared channels. Leaving a channel changes only your listening; translated text stays separate from originals.</string>
+    <string name="interpretation_guest">Sign in to choose an interpretation channel.</string>
+    <string name="interpretation_unavailable">Interpretation is unavailable for this meeting.</string>
+    <string name="interpretation_unknown">Check the original request before changing channels or listening.</string>
+    <string name="interpretation_retry_channel">Check channel request</string>
+    <string name="interpretation_retry_listen">Check listening request</string>
+    <string name="interpretation_zh">Chinese channel</string>
+    <string name="interpretation_en">English channel</string>
+    <string name="interpretation_listen_zh">Listen in Chinese</string>
+    <string name="interpretation_listen_en">Listen in English</string>
+    <string name="interpretation_start_zh">Open Chinese channel</string>
+    <string name="interpretation_start_en">Open English channel</string>
+    <string name="interpretation_stop_zh">Close Chinese channel</string>
+    <string name="interpretation_stop_en">Close English channel</string>
+    <string name="interpretation_leave">Leave this channel</string>
+    <string name="interpretation_connection">Wait for this device’s meeting connection to be confirmed before listening.</string>
+    <string name="interpretation_wait_ready">Waiting for translated voice…</string>
+    <string name="interpretation_error">The operation or listening state is unconfirmed. Refresh or check the original request, then choose a channel again.</string>
+    <string name="interpretation_start_effect">Open this shared language channel. Translation begins when someone chooses to listen and may consume AI usage. Opening the channel does not subscribe you automatically.</string>
+    <string name="interpretation_stop_effect">Close this language channel for everyone currently listening. They will stop receiving its translated voice. The meeting continues.</string>
+    <string name="interpretation_speaker">Speaker</string>
+    <string name="interpretation_paused">Listening paused</string>
+    <string name="interpretation_prepared">Ready for listeners</string>
+    <string name="interpretation_off">Channel not open</string>
+</resources>
