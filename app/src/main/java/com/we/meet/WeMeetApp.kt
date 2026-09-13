@@ -128,6 +128,7 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
     val pendingJoinSlug: MutableStateFlow<String?> = MutableStateFlow(null)
     /** Exact record/version from a trusted-origin link; IDs only, retained until login. */
     val pendingRecordLink = MutableStateFlow<com.we.meet.ui.records.RecordLink?>(null)
+    val pendingCaptureViewer = MutableStateFlow<String?>(null)
 
     /**
      * Same pattern as [pendingJoinSlug] but for IM push deep links:

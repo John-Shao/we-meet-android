@@ -126,6 +126,7 @@ fun MainTabScreen(
     onSettingsClick: () -> Unit,
     onOpenMeetingSettings: () -> Unit,
     onOpenRecords: (summariesOnly: Boolean) -> Unit,
+    onOpenCapture: () -> Unit,
     onOpenAiHub: () -> Unit,
     onOpenApproval: () -> Unit,
     onOpenChat: (cid: String) -> Unit,
@@ -414,6 +415,7 @@ fun MainTabScreen(
                 onScheduleMeeting = { onCreateEvent(java.time.LocalDate.now().toEpochDay()) },
                 onOpenSettings = onOpenMeetingSettings,
                 onOpenRecords = onOpenRecords,
+                onOpenCapture = onOpenCapture,
             )
         },
         TabItem(R.string.tab_contacts, Icons.Filled.Contacts, Icons.Outlined.Contacts) {

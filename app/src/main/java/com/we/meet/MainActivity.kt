@@ -121,6 +121,12 @@ class MainActivity : AppCompatActivity() {
      * destination.
      */
     private fun handleDeepLink(intent: Intent?) {
+        val captureViewer = intent?.getStringExtra(com.we.meet.service.CaptureForegroundService.EXTRA_OPEN_CAPTURE)
+        if (captureViewer != null) {
+            intent.removeExtra(com.we.meet.service.CaptureForegroundService.EXTRA_OPEN_CAPTURE)
+            val app = application as? WeMeetApp
+            if (BuildConfig.WE_MEET_CAPTURE_NATIVE && app?.captureAccount == captureViewer) app.pendingCaptureViewer.value = captureViewer
+        }
         val uri: Uri = intent?.data ?: return
         if (intent.action != Intent.ACTION_VIEW) return
         if (BuildConfig.WE_MEET_RECORDS_NATIVE) {

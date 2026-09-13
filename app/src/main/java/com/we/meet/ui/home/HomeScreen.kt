@@ -65,6 +65,7 @@ fun HomeScreen(
     onScheduleMeeting: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenRecords: (summariesOnly: Boolean) -> Unit,
+    onOpenCapture: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(app))
@@ -162,11 +163,11 @@ fun HomeScreen(
             ActionCard(
                 icon = Icons.Default.Mic,
                 label = stringResource(R.string.home_ai_recording),
-                backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
-                onClick = {},
+                backgroundColor = if (BuildConfig.WE_MEET_CAPTURE_NATIVE) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
+                iconTint = if (BuildConfig.WE_MEET_CAPTURE_NATIVE) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                onClick = onOpenCapture,
                 modifier = Modifier.weight(1f),
-                enabled = false,
+                enabled = BuildConfig.WE_MEET_CAPTURE_NATIVE,
             )
         }
 

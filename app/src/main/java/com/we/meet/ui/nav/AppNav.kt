@@ -82,6 +82,7 @@ import com.we.meet.ui.login.WebLoginScreen
 import com.we.meet.ui.main.MainTabScreen
 import com.we.meet.ui.records.RecordLibraryScreen
 import com.we.meet.ui.records.RecordDetailScreen
+import com.we.meet.ui.records.CaptureScreen
 import com.we.meet.ui.preview.PreviewMode
 import com.we.meet.ui.preview.PreviewScreen
 import com.we.meet.ui.qrscan.QrScanResult
@@ -106,6 +107,7 @@ object Routes {
     const val LOGIN = "login"
     const val HOME = "home"
     const val RECORD_LIBRARY = "meeting_records?summaries={summaries}"
+    const val CAPTURE = "meeting_capture"
     const val RECORD_DETAIL = "meeting_record/{recordId}?summary={summary}"
     fun recordDetail(recordId: String, summaryId: String? = null): String =
         "meeting_record/${URLEncoder.encode(recordId, StandardCharsets.UTF_8.name())}" +
@@ -457,6 +459,17 @@ fun AppNav() {
 
     val pendingRecordLink by app.pendingRecordLink.collectAsStateWithLifecycle()
     val currentEntry by navController.currentBackStackEntryAsState()
+    val pendingCaptureViewer by app.pendingCaptureViewer.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingCaptureViewer, currentEntry?.destination?.route) {
+        val viewer = pendingCaptureViewer ?: return@LaunchedEffect
+        if (!com.we.meet.BuildConfig.WE_MEET_CAPTURE_NATIVE || app.captureAccount != viewer) {
+            app.pendingCaptureViewer.value = null
+            return@LaunchedEffect
+        }
+        if (currentEntry == null || currentEntry?.destination?.route == Routes.LOGIN) return@LaunchedEffect
+        app.pendingCaptureViewer.value = null
+        navController.navigate(Routes.CAPTURE) { launchSingleTop = true }
+    }
     LaunchedEffect(pendingRecordLink, currentEntry?.destination?.route) {
         val link = pendingRecordLink ?: return@LaunchedEffect
         if (!com.we.meet.BuildConfig.WE_MEET_RECORDS_NATIVE) {
@@ -620,6 +633,7 @@ fun AppNav() {
         composable(Routes.HOME) {
             MainTabScreen(
                 onOpenRecords = { summariesOnly -> navController.navigate("meeting_records?summaries=$summariesOnly") },
+                onOpenCapture = { navController.navigate(Routes.CAPTURE) { launchSingleTop = true } },
                 onCreateMeeting = { navController.navigate(Routes.createPreview()) },
                 onJoinMeeting = { navController.navigate(Routes.joinPreview()) },
                 onScanQrCode = { navController.navigate(Routes.QR_SCAN) },
@@ -1527,6 +1541,10 @@ fun AppNav() {
             )
         }
 
+        composable(Routes.CAPTURE) {
+            CaptureScreen(app.tokenStore.userId.orEmpty(), onBack = rememberOnceOnly(safePop),
+                onRecord = { id -> navController.navigate(Routes.recordDetail(id)) })
+        }
         composable(Routes.RECORD_LIBRARY, arguments = listOf(navArgument("summaries") { type = NavType.BoolType; defaultValue = false })) { entry ->
             RecordLibraryScreen(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(),
                 summariesOnly = entry.arguments?.getBoolean("summaries") == true,

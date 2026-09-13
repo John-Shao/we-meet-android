@@ -295,7 +295,8 @@ class CaptureForegroundService : Service() {
         })
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         val open = PendingIntent.getActivity(this, NOTIFICATION_ID, Intent(this, MainActivity::class.java)
-            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP), flags)
+            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .putExtra(EXTRA_OPEN_CAPTURE, viewer ?: currentViewer()), flags)
         val pause = PendingIntent.getService(this, NOTIFICATION_ID, Intent(this, CaptureForegroundService::class.java)
             .setAction(ACTION_PAUSE).putExtra(EXTRA_VIEWER, viewer ?: currentViewer()), flags)
         return NotificationCompat.Builder(this, CHANNEL_ID)
@@ -331,6 +332,7 @@ class CaptureForegroundService : Service() {
     }
 
     companion object {
+        const val EXTRA_OPEN_CAPTURE = "com.we.meet.capture.OPEN_VIEWER"
         private const val CHANNEL_ID = "independent_audio_capture"
         private const val NOTIFICATION_ID = 1007
         private const val ACTION_START = "com.we.meet.capture.START"
