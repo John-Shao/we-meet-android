@@ -10,7 +10,7 @@ import java.io.File
 import java.security.MessageDigest
 import java.util.UUID
 
-enum class MeetingIntentKind { CAPTURE_ASR, SUMMARY_REQUEST, SUMMARY_AUTOMATION }
+enum class MeetingIntentKind { CAPTURE_ASR, SUMMARY_REQUEST, SUMMARY_AUTOMATION, HUMAN_REVIEW, SUMMARY_TASK }
 
 data class MeetingIntent(val key: String, val body: String) {
     override fun toString() = "MeetingIntent(<private>)"
