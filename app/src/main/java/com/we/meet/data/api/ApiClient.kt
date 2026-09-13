@@ -111,6 +111,7 @@ class ApiClient(tokenStore: TokenStore) {
         }.build())
         .build()
     val meetingRecordApi: MeetingRecordApi = meetingPrivateRetrofit.create(MeetingRecordApi::class.java)
+    val meetingSummaryApi: MeetingSummaryApi = meetingPrivateRetrofit.create(MeetingSummaryApi::class.java)
     val captureApi: CaptureApi = meetingPrivateRetrofit.create(CaptureApi::class.java)
     val captureTranscriptionApi: CaptureTranscriptionApi = meetingPrivateRetrofit.create(CaptureTranscriptionApi::class.java)
 

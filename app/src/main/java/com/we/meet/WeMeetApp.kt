@@ -65,6 +65,8 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         get() = if (tokenStore.isLoggedIn()) tokenStore.userId else null
     lateinit var captureTranscriptionRepository: com.we.meet.data.repository.CaptureTranscriptionRepository
         private set
+    lateinit var meetingSummaryRepository: com.we.meet.data.repository.MeetingSummaryRepository
+        private set
     lateinit var roomAiRepository: RoomAiRepository
         private set
     lateinit var qrLoginRepository: QrLoginRepository
@@ -174,6 +176,7 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         meetingRecordRepository = MeetingRecordRepository(apiClient.meetingRecordApi) { tokenStore.userId }
         captureRepository = com.we.meet.data.repository.CaptureRepository(apiClient.captureApi) { tokenStore.userId }
         captureTranscriptionRepository = com.we.meet.data.repository.CaptureTranscriptionRepository(apiClient.captureTranscriptionApi) { captureAccount }
+        meetingSummaryRepository = com.we.meet.data.repository.MeetingSummaryRepository(apiClient.meetingSummaryApi) { captureAccount }
         roomAiRepository = RoomAiRepository(apiClient.okHttp)
         qrLoginRepository = QrLoginRepository(apiClient.qrLoginApi)
         historyStore = HistoryStore(this)
