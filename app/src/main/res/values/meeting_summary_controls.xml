@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="summary_controls_title">AI minutes</string>
+    <string name="summary_controls_usage">Generating or retrying minutes uses the AI service. Review the output and its sources before using it.</string>
+    <string name="summary_controls_storage_error">The previous request cannot be read. Retry before starting another request.</string>
+    <string name="summary_controls_read_error">Minutes are unavailable. Refresh to check access and progress.</string>
+    <string name="summary_controls_dispatch">Waiting for the processing service</string>
+    <string name="summary_controls_chunks">Processed %1$d of %2$d sections</string>
+    <string name="summary_controls_unknown">The previous minutes request is unconfirmed. Check that request before generating another version.</string>
+    <string name="summary_controls_reconcile">Check minutes request</string>
+    <string name="summary_controls_retry">Retry minutes generation</string>
+    <string name="summary_controls_blocked">The source cannot currently be processed. Review the recording and try again later.</string>
+    <string name="summary_controls_waiting">Waiting for enough confirmed text to generate the next summary.</string>
+    <string name="summary_controls_next">Next update available: %1$s</string>
+    <string name="summary_controls_operation_error">The action could not be confirmed. Refresh its status before retrying.</string>
+    <string name="summary_controls_realtime">Update live summary</string>
+    <string name="summary_controls_quick">Generate quick minutes</string>
+    <string name="summary_controls_final">Generate full minutes</string>
+    <string name="summary_controls_all_versions">View all minutes</string>
+    <string name="summary_job_queued">Waiting to generate</string>
+    <string name="summary_job_running">Generating minutes</string>
+    <string name="summary_job_succeeded">Minutes generated</string>
+    <string name="summary_job_partial">Minutes partially generated</string>
+    <string name="summary_job_canceled">Generation canceled</string>
+    <string name="summary_job_failed">Generation failed</string>
+    <string name="summary_automation_title">Automatic minutes</string>
+    <string name="summary_automation_usage">When enabled, AI updates the live summary and generates quick and full minutes as the recording becomes ready. This uses model quota. You can stop automatic generation at any time.</string>
+    <string name="summary_automation_read_error">Automatic minutes status is unavailable. Refresh to check it.</string>
+    <string name="summary_automation_unknown">An automatic minutes change is unconfirmed. Check the original change before changing this setting again.</string>
+    <string name="summary_automation_reconcile">Check automatic minutes request</string>
+    <string name="summary_automation_start">Enable automatic minutes</string>
+    <string name="summary_automation_stop">Stop automatic minutes</string>
+    <string name="summary_automation_off">Not enabled</string>
+    <string name="summary_automation_waiting">Waiting for the next summary</string>
+    <string name="summary_automation_generating">Automatically generating minutes</string>
+    <string name="summary_automation_completed">Full minutes ready</string>
+    <string name="summary_automation_attention">Automatic generation needs attention</string>
+</resources>

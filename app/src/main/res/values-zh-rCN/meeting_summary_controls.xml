@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="summary_controls_title">智能纪要</string>
+    <string name="summary_controls_usage">生成或重试纪要将使用 AI 服务。使用前请核对内容及引用原文。</string>
+    <string name="summary_controls_storage_error">暂时无法读取之前的请求，请重试后再发起新请求。</string>
+    <string name="summary_controls_read_error">暂时无法读取纪要，请刷新确认权限和处理进度。</string>
+    <string name="summary_controls_dispatch">等待处理服务接收任务</string>
+    <string name="summary_controls_chunks">已处理 %1$d / %2$d 个分段</string>
+    <string name="summary_controls_unknown">上一次纪要请求结果尚未确认，请先核对原请求，再生成新版本。</string>
+    <string name="summary_controls_reconcile">核对纪要请求</string>
+    <string name="summary_controls_retry">重试生成纪要</string>
+    <string name="summary_controls_blocked">当前原文暂时无法处理，请检查录音内容后再试。</string>
+    <string name="summary_controls_waiting">等待足够的已确认文字，以生成下一阶段总结。</string>
+    <string name="summary_controls_next">下次可更新时间：%1$s</string>
+    <string name="summary_controls_operation_error">暂时无法确认操作结果，请刷新状态后再重试。</string>
+    <string name="summary_controls_realtime">更新实时总结</string>
+    <string name="summary_controls_quick">生成速记版纪要</string>
+    <string name="summary_controls_final">生成完整版纪要</string>
+    <string name="summary_controls_all_versions">查看全部纪要</string>
+    <string name="summary_job_queued">等待生成纪要</string>
+    <string name="summary_job_running">正在生成纪要</string>
+    <string name="summary_job_succeeded">纪要已生成</string>
+    <string name="summary_job_partial">纪要部分生成</string>
+    <string name="summary_job_canceled">已取消生成</string>
+    <string name="summary_job_failed">纪要生成失败</string>
+    <string name="summary_automation_title">自动纪要</string>
+    <string name="summary_automation_usage">开启后，AI 将根据录音处理进度自动更新实时总结，并生成速记版和完整版纪要，消耗模型额度。你可以随时停止自动生成。</string>
+    <string name="summary_automation_read_error">暂时无法读取自动纪要状态，请刷新确认。</string>
+    <string name="summary_automation_unknown">上一次自动纪要设置变更尚未确认，请先核对原操作。</string>
+    <string name="summary_automation_reconcile">核对自动纪要请求</string>
+    <string name="summary_automation_start">开启自动纪要</string>
+    <string name="summary_automation_stop">停止自动纪要</string>
+    <string name="summary_automation_off">尚未开启</string>
+    <string name="summary_automation_waiting">等待下一阶段总结</string>
+    <string name="summary_automation_generating">正在自动生成纪要</string>
+    <string name="summary_automation_completed">完整版纪要已就绪</string>
+    <string name="summary_automation_attention">自动生成需要处理</string>
+</resources>

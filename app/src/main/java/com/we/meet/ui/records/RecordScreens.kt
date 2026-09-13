@@ -30,11 +30,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.we.meet.R
+import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.RecordReferenceDto
 import com.we.meet.data.api.dto.RecordSummaryVersionDto
 import com.we.meet.data.repository.MeetingRecordRepository
@@ -190,12 +192,20 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         when {
                             summaries == null -> WeMeetInlineLoading()
                             summaries.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
-                            summaries.getOrThrow().results.isEmpty() -> WeMeetEmptyState(
-                                stringResource(if (selectedVersion == null) R.string.records_no_versions else R.string.records_linked_version_unavailable),
-                                description = if (selectedVersion == null) stringResource(R.string.records_no_versions_hint) else null,
-                                action = { TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) } },
-                            )
                             else -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                                if (selectedVersion == null) item {
+                                    val app = LocalContext.current.applicationContext as? WeMeetApp
+                                    if (app != null) Column(Modifier.padding(horizontal = Dimens.ScreenPadding)) {
+                                        RecordSummaryControls(viewer, record, app.meetingSummaryRepository) { app.captureAccount }
+                                    }
+                                }
+                                if (summaries.getOrThrow().results.isEmpty()) item {
+                                    WeMeetEmptyState(
+                                        stringResource(if (selectedVersion == null) R.string.records_no_versions else R.string.records_linked_version_unavailable),
+                                        description = if (selectedVersion == null) stringResource(R.string.records_no_versions_hint) else null,
+                                        action = { TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) } },
+                                    )
+                                }
                                 items(summaries.getOrThrow().results, key = { it.id }) { version ->
                                     SummaryCard(version, record.capabilities.readTranscript) { ref -> citation = version.inputSnapshotId to ref }
                                 }
@@ -227,7 +237,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
 }
 
 @Composable
-private fun SummaryCard(version: RecordSummaryVersionDto, originals: Boolean, onSource: (RecordReferenceDto) -> Unit) {
+internal fun SummaryCard(version: RecordSummaryVersionDto, originals: Boolean, onSource: (RecordReferenceDto) -> Unit) {
     Card(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
             Text(stringResource(when (version.stage) {

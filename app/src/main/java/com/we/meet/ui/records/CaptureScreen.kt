@@ -135,6 +135,8 @@ fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit
             val capture = state.local?.remote
             if (app != null && capture != null && state.viewer == viewer) {
                 CaptureAsrPanel(viewer, capture, app.captureTranscriptionRepository) { app.captureAccount }
+                CaptureSummaryWorkspace(viewer, capture, app.meetingRecordRepository, app.meetingSummaryRepository,
+                    { app.captureAccount }, if (BuildConfig.WE_MEET_RECORDS_NATIVE) ({ onRecord(capture.recordId) }) else null)
             }
         })
 }
