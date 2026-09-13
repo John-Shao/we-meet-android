@@ -75,6 +75,7 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
     lateinit var meetingSharingRepository: com.we.meet.data.repository.MeetingSharingRepository
     lateinit var onlineCaptureRepository: com.we.meet.data.repository.OnlineCaptureRepository
     lateinit var cloudRecordingRepository: com.we.meet.data.repository.CloudRecordingRepository
+    lateinit var captureTranslationRepository: com.we.meet.data.repository.CaptureTranslationRepository
     lateinit var meetingTranslationRepository: com.we.meet.data.repository.MeetingTranslationRepository
     lateinit var meetingInterpretationRepository: com.we.meet.data.repository.MeetingInterpretationRepository
     lateinit var onlineCaptureNoticeRepository: com.we.meet.data.repository.OnlineCaptureNoticeRepository
@@ -198,6 +199,7 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         meetingSharingRepository = com.we.meet.data.repository.MeetingSharingRepository(apiClient.meetingSharingApi) { captureAccount }
         onlineCaptureRepository = com.we.meet.data.repository.OnlineCaptureRepository(apiClient.onlineCaptureApi) { captureAccount }
         cloudRecordingRepository = com.we.meet.data.repository.CloudRecordingRepository(apiClient.cloudRecordingApi) { captureAccount }
+        captureTranslationRepository = com.we.meet.data.repository.CaptureTranslationRepository(apiClient.captureTranslationApi) { captureAccount }
         meetingTranslationRepository = com.we.meet.data.repository.MeetingTranslationRepository(apiClient.meetingTranslationApi) { captureAccount }
         meetingInterpretationRepository = com.we.meet.data.repository.MeetingInterpretationRepository(apiClient.meetingInterpretationApi) { captureAccount }
         onlineCaptureNoticeRepository = com.we.meet.data.repository.OnlineCaptureNoticeRepository(apiClient.onlineCaptureNoticeApi)

@@ -1,0 +1,30 @@
+<resources>
+    <string name="capture_translation_title">Recording translation</string>
+    <string name="capture_translation_scope">Uses the current recording microphone. Original transcription and translation are separate. Ending translation keeps recording.</string>
+    <string name="capture_translation_simultaneous">Interpretation</string>
+    <string name="capture_translation_speech">Two-way speech</string>
+    <string name="capture_translation_zh_en">Chinese → English</string>
+    <string name="capture_translation_en_zh">English → Chinese</string>
+    <string name="capture_translation_audio">Play translated speech</string>
+    <string name="capture_translation_headphones">Use headphones so translated speech is not picked up by the microphone.</string>
+    <string name="capture_translation_save">Save translated text for later</string>
+    <string name="capture_translation_start">Start translation</string>
+    <string name="capture_translation_stop">End translation</string>
+    <string name="capture_translation_mute">Mute translation</string>
+    <string name="capture_translation_unmute">Unmute translation</string>
+    <string name="capture_translation_speak">Start speaking %1$s</string>
+    <string name="capture_translation_end_turn">Finish speech and translate</string>
+    <string name="capture_translation_pending">A previous operation needs checking. Checking never reconnects the microphone.</string>
+    <string name="capture_translation_recover">Check previous operation</string>
+    <string name="capture_translation_error">The translation result could not be confirmed. Check pending operations before continuing.</string>
+    <string name="capture_translation_storage_error">Pending operations could not be loaded or saved. Translation is unavailable.</string>
+    <string name="capture_translation_detached">This recording has an active translation, but this page is disconnected. End it before starting again.</string>
+    <string name="capture_translation_connecting">Connecting translation…</string>
+    <string name="capture_translation_ready">Translation ready</string>
+    <string name="capture_translation_listening">Listening…</string>
+    <string name="capture_translation_awaiting">Generating translation…</string>
+    <string name="capture_translation_finishing">Ending translation…</string>
+    <string name="capture_translation_stopped">Translation ended</string>
+    <string name="capture_translation_interrupted">Translation interrupted; original recording is unaffected</string>
+    <string name="capture_translation_unknown">Disconnected; translation result needs checking</string>
+</resources>

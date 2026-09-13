@@ -1,0 +1,30 @@
+<resources>
+    <string name="capture_translation_title">录音翻译</string>
+    <string name="capture_translation_scope">使用当前录音的声音。原文转写与翻译分别处理；翻译结束后，原始录音继续。</string>
+    <string name="capture_translation_simultaneous">同声传译</string>
+    <string name="capture_translation_speech">双向语音翻译</string>
+    <string name="capture_translation_zh_en">中文 → 英语</string>
+    <string name="capture_translation_en_zh">英语 → 中文</string>
+    <string name="capture_translation_audio">播报译文</string>
+    <string name="capture_translation_headphones">请使用耳机，避免扬声器中的译文再次被麦克风录入。</string>
+    <string name="capture_translation_save">保存译文，供录音结束后查看</string>
+    <string name="capture_translation_start">开启翻译</string>
+    <string name="capture_translation_stop">结束翻译</string>
+    <string name="capture_translation_mute">静音译文</string>
+    <string name="capture_translation_unmute">恢复播报</string>
+    <string name="capture_translation_speak">开始说%1$s</string>
+    <string name="capture_translation_end_turn">结束发言并翻译</string>
+    <string name="capture_translation_pending">有一项翻译操作的结果待核对。核对不会自动重连录音。</string>
+    <string name="capture_translation_recover">核对上次操作</string>
+    <string name="capture_translation_error">暂时无法确认翻译结果。请先核对待处理操作，再继续。</string>
+    <string name="capture_translation_storage_error">无法读取或保存待核对操作，暂时不能发起翻译。</string>
+    <string name="capture_translation_detached">此录音仍有翻译正在处理；本页未连接。可以结束后重新开启。</string>
+    <string name="capture_translation_connecting">正在连接翻译…</string>
+    <string name="capture_translation_ready">翻译已就绪</string>
+    <string name="capture_translation_listening">正在接收发言…</string>
+    <string name="capture_translation_awaiting">正在生成译文…</string>
+    <string name="capture_translation_finishing">正在结束翻译…</string>
+    <string name="capture_translation_stopped">翻译已结束</string>
+    <string name="capture_translation_interrupted">翻译已中断，原始录音不受影响</string>
+    <string name="capture_translation_unknown">连接已断开，翻译结果待核对</string>
+</resources>

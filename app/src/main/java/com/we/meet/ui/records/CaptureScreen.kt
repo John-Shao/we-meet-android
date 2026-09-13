@@ -146,6 +146,22 @@ fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit
         extra = {
             val app = context.applicationContext as? WeMeetApp
             val capture = state.local?.remote
+            val bound = service
+            val local = state.local
+            if (BuildConfig.WE_MEET_CAPTURE_TRANSLATION_NATIVE && app != null && bound != null && capture != null && local != null && state.viewer == viewer) {
+                androidx.compose.runtime.key(viewer, capture.id, capture.revision, local.create.deviceId) {
+                    val source = remember(viewer, capture.id, capture.revision) {
+                        com.we.meet.data.repository.CaptureTranslationSource(viewer, capture.id, capture.recordId, local.create.deviceId, local.create.leaseKey)
+                    }
+                    CaptureTranslationPanel(source, capture.revision.toLong(), app.captureTranslationRepository, { app.captureAccount }, {
+                        val snapshot = bound.state.value
+                        snapshot.viewer == viewer && snapshot.local?.remote?.id == capture.id && snapshot.local?.remote?.revision == capture.revision && snapshot.local?.create?.leaseKey == source.lease
+                    }, {
+                        val snapshot = bound.state.value
+                        snapshot.recording && !snapshot.busy && snapshot.local?.let { !com.we.meet.data.capture.CaptureRetention.audioExpired(it) } == true
+                    }, { bound.observePcm(capture.id) })
+                }
+            }
             if (app != null && capture != null && state.viewer == viewer) {
                 androidx.compose.runtime.key(viewer, capture.id) {
                     var audioSeek by remember { mutableStateOf<CaptureAudioSeek?>(null) }
