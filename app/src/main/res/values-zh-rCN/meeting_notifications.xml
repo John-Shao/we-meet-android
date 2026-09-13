@@ -1,0 +1,26 @@
+<resources>
+    <string name="record_notice_title">智能纪要助手通知</string>
+    <string name="record_notice_read_error">无法读取你的通知送达状态</string>
+    <string name="record_notice_owner">录音完成通知默认发给所有者。</string>
+    <string name="record_notice_online">会议完成通知默认发给有访问权限的所有者和发起人。</string>
+    <string name="record_notice_policy">每份完整版纪要完成时确定收件人；下方仅显示发给你的通知。原有会议通知保持不变。</string>
+    <string name="record_notice_future">后续完整版纪要的预计收件人：%1$s</string>
+    <string name="record_notice_no_recipients">无</string>
+    <string name="record_notice_policy_error">暂时无法确定后续通知的收件人</string>
+    <string name="record_notice_unavailable">通知发送暂不可用</string>
+    <string name="record_notice_unknown">重试结果未知，请先核对原请求，再重试其他通知。</string>
+    <string name="record_notice_empty">暂无发给你的纪要完成通知</string>
+    <string name="record_notice_attempt">第 %1$d 次发送</string>
+    <string name="record_notice_open_summary">查看这份纪要</string>
+    <string name="record_notice_retry">查看通知重试</string>
+    <string name="record_notice_confirm">重试原通知</string>
+    <string name="record_notice_retry_effect">此操作可能向你的助手会话发送原纪要卡片。保持原收件人和纪要版本，不新增访问权限。</string>
+    <string name="record_notice_changed">通知状态已变化，请关闭并查看最新状态</string>
+    <string name="record_notice_error">无法确认重试结果，请刷新状态或核对原请求</string>
+    <string name="record_notice_queued">通知等待发送</string>
+    <string name="record_notice_running">通知发送中</string>
+    <string name="record_notice_delivered">通知已送达</string>
+    <string name="record_notice_uncertain">通知送达结果未知</string>
+    <string name="record_notice_failed">通知发送失败</string>
+    <string name="record_notice_canceled">通知发送已取消</string>
+</resources>

@@ -1,0 +1,26 @@
+<resources>
+    <string name="record_notice_title">Minutes assistant delivery</string>
+    <string name="record_notice_read_error">Could not read your delivery status.</string>
+    <string name="record_notice_owner">Recording completion notices go to the owner.</string>
+    <string name="record_notice_online">Meeting completion notices go to owners and initiators with access.</string>
+    <string name="record_notice_policy">Recipients are fixed when each final version completes. The list below contains only your notices. Existing meeting notifications are unchanged.</string>
+    <string name="record_notice_future">Recipients for a future final version: %1$s</string>
+    <string name="record_notice_no_recipients">None</string>
+    <string name="record_notice_policy_error">Could not determine future recipients.</string>
+    <string name="record_notice_unavailable">Notice delivery is unavailable.</string>
+    <string name="record_notice_unknown">The retry result is unknown. Check the original request before retrying another notice.</string>
+    <string name="record_notice_empty">No completion notices for you yet.</string>
+    <string name="record_notice_attempt">Delivery attempt %1$d</string>
+    <string name="record_notice_open_summary">View this minutes version</string>
+    <string name="record_notice_retry">Review notice retry</string>
+    <string name="record_notice_confirm">Retry original notice</string>
+    <string name="record_notice_retry_effect">This may send the original minutes card to your assistant conversation. It keeps the original recipient and version, and grants no new access.</string>
+    <string name="record_notice_changed">Delivery status changed. Close and review the latest status.</string>
+    <string name="record_notice_error">Could not confirm the retry result. Refresh the status or check the original request.</string>
+    <string name="record_notice_queued">Notice queued</string>
+    <string name="record_notice_running">Sending notice</string>
+    <string name="record_notice_delivered">Notice delivered</string>
+    <string name="record_notice_uncertain">Delivery result unknown</string>
+    <string name="record_notice_failed">Notice delivery failed</string>
+    <string name="record_notice_canceled">Notice delivery canceled</string>
+</resources>
