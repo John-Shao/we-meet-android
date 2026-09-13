@@ -81,6 +81,8 @@ class LiveKitController(
     )
 
     val events: EventListenable<RoomEvent> get() = room.events
+    val meetingTrackSubscriptions: MeetingTrackSubscriptions? =
+        if (com.we.meet.BuildConfig.WE_MEET_ONLINE_AI_NATIVE) MeetingTrackSubscriptions(room) else null
 
     /**
      * Connect to the LiveKit room and, if requested, capture+publish mic
@@ -106,7 +108,7 @@ class LiveKitController(
             url = url,
             token = token,
             options = ConnectOptions(
-                autoSubscribe = true,
+                autoSubscribe = meetingTrackSubscriptions == null,
                 audio = audio,
                 video = video,
             ),
@@ -174,10 +176,12 @@ class LiveKitController(
     }
 
     fun disconnect() {
+        meetingTrackSubscriptions?.clear()
         room.disconnect()
     }
 
     fun release() {
+        meetingTrackSubscriptions?.close()
         runCatching { room.unregisterTextStreamHandler(CHAT_TOPIC) }
         runCatching { room.release() }
         // When we provide our own AudioDeviceModule via LiveKitOverrides, the
