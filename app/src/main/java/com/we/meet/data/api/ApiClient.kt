@@ -112,6 +112,7 @@ class ApiClient(tokenStore: TokenStore) {
         .build()
     val meetingRecordApi: MeetingRecordApi = meetingPrivateRetrofit.create(MeetingRecordApi::class.java)
     val captureApi: CaptureApi = meetingPrivateRetrofit.create(CaptureApi::class.java)
+    val captureTranscriptionApi: CaptureTranscriptionApi = meetingPrivateRetrofit.create(CaptureTranscriptionApi::class.java)
 
     private fun normalizedBaseUrl(raw: String): String =
         if (raw.endsWith("/")) raw else "$raw/"
