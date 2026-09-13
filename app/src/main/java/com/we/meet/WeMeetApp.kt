@@ -69,6 +69,8 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         private set
     lateinit var meetingReviewRepository: com.we.meet.data.repository.MeetingReviewRepository
         private set
+    lateinit var meetingQuestionRepository: com.we.meet.data.repository.MeetingQuestionRepository
+        private set
     lateinit var capturePlaybackRepository: com.we.meet.data.repository.CapturePlaybackRepository
         private set
     lateinit var roomAiRepository: RoomAiRepository
@@ -182,6 +184,7 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         captureTranscriptionRepository = com.we.meet.data.repository.CaptureTranscriptionRepository(apiClient.captureTranscriptionApi) { captureAccount }
         meetingSummaryRepository = com.we.meet.data.repository.MeetingSummaryRepository(apiClient.meetingSummaryApi) { captureAccount }
         meetingReviewRepository = com.we.meet.data.repository.MeetingReviewRepository(apiClient.meetingReviewApi) { captureAccount }
+        meetingQuestionRepository = com.we.meet.data.repository.MeetingQuestionRepository(apiClient.meetingQuestionApi) { captureAccount }
         capturePlaybackRepository = com.we.meet.data.repository.CapturePlaybackRepository(captureRepository, meetingRecordRepository, apiClient.capturePlaybackApi) { captureAccount }
         roomAiRepository = RoomAiRepository(apiClient.okHttp)
         qrLoginRepository = QrLoginRepository(apiClient.qrLoginApi)

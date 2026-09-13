@@ -100,19 +100,24 @@ class ApiClient(tokenStore: TokenStore) {
     val docsApi: DocsApi = retrofit.create(DocsApi::class.java)
     val taskApi: TaskApi = retrofit.create(TaskApi::class.java)
     // Meeting sources and credentials cannot be redirected to another origin.
-    private val meetingPrivateRetrofit: Retrofit = retrofit.newBuilder()
-        .client(okHttp.newBuilder().apply {
+    private val meetingPrivateHttp = okHttp.newBuilder().apply {
             followRedirects(false)
             followSslRedirects(false)
             cache(null)
             retryOnConnectionFailure(false)
             callTimeout(20, TimeUnit.SECONDS)
             interceptors().removeAll { it is HttpLoggingInterceptor }
-        }.build())
+        }.build()
+    private val meetingPrivateRetrofit: Retrofit = retrofit.newBuilder()
+        .client(meetingPrivateHttp)
         .build()
     val meetingRecordApi: MeetingRecordApi = meetingPrivateRetrofit.create(MeetingRecordApi::class.java)
     val meetingSummaryApi: MeetingSummaryApi = meetingPrivateRetrofit.create(MeetingSummaryApi::class.java)
     val meetingReviewApi: MeetingReviewApi = meetingPrivateRetrofit.create(MeetingReviewApi::class.java)
+    // Question POST waits for the server's bounded 30-second provider attempt.
+    val meetingQuestionApi: MeetingQuestionApi = meetingPrivateRetrofit.newBuilder()
+        .client(meetingPrivateHttp.newBuilder().readTimeout(40, TimeUnit.SECONDS).callTimeout(45, TimeUnit.SECONDS).build())
+        .build().create(MeetingQuestionApi::class.java)
     val capturePlaybackApi: CapturePlaybackApi = meetingPrivateRetrofit.create(CapturePlaybackApi::class.java)
     val captureApi: CaptureApi = meetingPrivateRetrofit.create(CaptureApi::class.java)
     val captureTranscriptionApi: CaptureTranscriptionApi = meetingPrivateRetrofit.create(CaptureTranscriptionApi::class.java)
