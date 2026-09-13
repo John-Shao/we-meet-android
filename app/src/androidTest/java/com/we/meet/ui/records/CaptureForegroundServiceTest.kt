@@ -112,6 +112,37 @@ class CaptureForegroundServiceTest {
         }
     }
 
+    @Test fun speechTurnFinishKeepsOriginalMicrophoneAndRecordingRunning() = runBlocking {
+        val service = bind()
+        until { service.state.value.ready }
+        ActivityScenario.launch(ComponentActivity::class.java).use { activity ->
+            activity.onActivity { CaptureForegroundService.start(it, "Speech turn fixture") }
+            until { service.state.value.recording && !service.state.value.busy }
+            val input = app.input
+            val captureId = service.state.value.local!!.remote!!.id
+            lateinit var first: CapturePcmTap.Subscription
+            instrumentation.runOnMainSync { first = service.observePcm(captureId) }
+            var held: CapturePcmTap.Frame? = null
+            until { held = first.poll(); held != null }
+            first.finish(); held!!.close()
+            assertEquals(CapturePcmTap.State.FINISHED, first.state)
+            while (true) { val frame = first.poll() ?: break; frame.close() }
+            assertSame(input, app.input)
+            assertTrue(service.state.value.recording && !service.state.value.error)
+            lateinit var next: CapturePcmTap.Subscription
+            instrumentation.runOnMainSync { next = service.observePcm(captureId) }
+            first.finish(); first.close()
+            assertEquals(CapturePcmTap.State.RUNNING, next.state)
+            next.finish(); next.close()
+            until { (service.state.value.local?.durationMs ?: 0) >= 5000 }
+            assertSame(input, app.input)
+            instrumentation.runOnMainSync { service.pause() }
+            until { !service.state.value.recording && !service.state.value.busy }
+            assertTrue(service.state.value.local!!.durationMs >= 5000)
+            assertFalse(service.state.value.error)
+        }
+    }
+
     @Test fun bindRecoversLocalOpenMarkerWithoutStartingHardwareOrNetwork() = runBlocking {
         val viewer = requireNotNull(app.captureAccount)
         CaptureJournal.open(context, viewer, { app.captureAccount }).use { journal ->

@@ -5,6 +5,37 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CapturePcmTapTest {
+    @Test fun finishingOneTurnKeepsSourceReusableAndExcludesBetweenTurnAudio() {
+        val tap = CapturePcmTap(); val first = tap.attach()
+        tap.offer(ShortArray(533) { 7 }, 533)
+        first.finish(); first.finish()
+        assertEquals(CapturePcmTap.State.FINISHED, first.state)
+        val tail = first.poll()!!
+        assertEquals(544, tail.samples.size)
+        assertTrue(tail.samples.take(533).all { it == 7.toShort() })
+        tail.close(); assertNull(first.poll())
+        tap.offer(ShortArray(100) { -5 }, 100)
+        val second = tap.attach()
+        first.finish(); first.close()
+        tap.offer(ShortArray(1600) { 12 }, 1600)
+        assertTrue(second.poll()!!.use { it.samples.all { value -> value == 12.toShort() } })
+        assertEquals(CapturePcmTap.State.RUNNING, second.state)
+        tap.finish()
+        assertTrue(runCatching { tap.attach() }.isFailure)
+    }
+
+    @Test fun revokedOrOverflowingTurnCannotExposeTailOnFinish() {
+        var authorized = true
+        val tap = CapturePcmTap { authorized }; val reader = tap.attach()
+        tap.offer(ShortArray(99) { 8 }, 99)
+        authorized = false; reader.finish()
+        assertEquals(CapturePcmTap.State.CLOSED, reader.state); assertNull(reader.poll())
+        val another = CapturePcmTap(); val next = another.attach()
+        repeat(4) { another.offer(ShortArray(1600) { 8 }, 1600) }
+        another.offer(ShortArray(17) { 8 }, 17); next.finish()
+        assertEquals(CapturePcmTap.State.OVERFLOW, next.state); assertNull(next.poll())
+    }
+
     @Test fun doesNotRetainAudioBeforeExplicitAttachment() {
         val tap = CapturePcmTap()
         tap.offer(ShortArray(1600) { -1 }, 1600)

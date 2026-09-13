@@ -26,6 +26,8 @@ class CapturePcmTap(private val authorized: () -> Boolean = { true }) : Closeabl
         val generation: String
         val state: State
         fun poll(): Frame?
+        /** Flush this turn, while leaving the original microphone and recorder running. */
+        fun finish()
     }
 
     private inner class Reader(private val channel: Channel) : Subscription {
@@ -50,6 +52,10 @@ class CapturePcmTap(private val authorized: () -> Boolean = { true }) : Closeabl
         override fun close() = synchronized(this@CapturePcmTap) {
             clear(channel, State.CLOSED)
             if (active === channel) active = null
+        }
+        override fun finish() = synchronized(this@CapturePcmTap) {
+            checkAuthority()
+            if (active === channel) finishChannel(channel)
         }
         override fun toString() = "CapturePcmSubscription(<private>)"
 
@@ -85,6 +91,10 @@ class CapturePcmTap(private val authorized: () -> Boolean = { true }) : Closeabl
         checkAuthority()
         ended = true
         val channel = active ?: return
+        finishChannel(channel)
+    }
+
+    private fun finishChannel(channel: Channel) {
         if (channel.state != State.RUNNING) return
         if (channel.used > 0) enqueue(channel, channel.used + (16 - channel.used % 16) % 16)
         if (channel.state == State.RUNNING) channel.state = State.FINISHED
