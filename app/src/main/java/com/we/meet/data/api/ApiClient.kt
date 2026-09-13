@@ -100,14 +100,18 @@ class ApiClient(tokenStore: TokenStore) {
     val docsApi: DocsApi = retrofit.create(DocsApi::class.java)
     val taskApi: TaskApi = retrofit.create(TaskApi::class.java)
     // Meeting sources and credentials cannot be redirected to another origin.
-    val meetingRecordApi: MeetingRecordApi = retrofit.newBuilder()
+    private val meetingPrivateRetrofit: Retrofit = retrofit.newBuilder()
         .client(okHttp.newBuilder().apply {
             followRedirects(false)
             followSslRedirects(false)
             cache(null)
+            retryOnConnectionFailure(false)
+            callTimeout(20, TimeUnit.SECONDS)
             interceptors().removeAll { it is HttpLoggingInterceptor }
         }.build())
-        .build().create(MeetingRecordApi::class.java)
+        .build()
+    val meetingRecordApi: MeetingRecordApi = meetingPrivateRetrofit.create(MeetingRecordApi::class.java)
+    val captureApi: CaptureApi = meetingPrivateRetrofit.create(CaptureApi::class.java)
 
     private fun normalizedBaseUrl(raw: String): String =
         if (raw.endsWith("/")) raw else "$raw/"
