@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_notification_channel">AI 录音</string>
+    <string name="capture_notification_title">AI 录音</string>
+    <string name="capture_notification_starting">正在准备录音…</string>
+    <string name="capture_notification_recording">正在录音，点击返回微会</string>
+    <string name="capture_pause">暂停</string>
+</resources>

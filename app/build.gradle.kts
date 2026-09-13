@@ -27,6 +27,7 @@ val oidcClientId = cfg("WE_MEET_OIDC_CLIENT_ID", "app")
 // 云文档 tab 原生化开关(M1):false 回退常驻 WebView(p3-docs-app.md D6 的保险丝同款)。
 val docsNative = cfg("WE_MEET_DOCS_NATIVE", "true")
 val meetingRecords = cfg("WE_MEET_RECORDS_NATIVE", "false").toBoolean().toString()
+val meetingCapture = cfg("WE_MEET_CAPTURE_NATIVE", "false").toBoolean().toString()
 // WebView Keycloak login vs legacy native OTP — the rollback fuse (p3-docs-app.md D1).
 val webLogin = cfg("WE_MEET_WEB_LOGIN", "true")
 // PostHog: leave WE_MEET_POSTHOG_KEY empty to keep analytics off. The
@@ -68,6 +69,7 @@ android {
         buildConfigField("String", "WE_MEET_OIDC_CLIENT_ID", "\"$oidcClientId\"")
         buildConfigField("boolean", "WE_MEET_DOCS_NATIVE", docsNative)
         buildConfigField("boolean", "WE_MEET_RECORDS_NATIVE", meetingRecords)
+        buildConfigField("boolean", "WE_MEET_CAPTURE_NATIVE", meetingCapture)
         buildConfigField("boolean", "WE_MEET_WEB_LOGIN", webLogin)
 
         // Getui: the gtsdk AAR's manifest references ${GETUI_APPID} etc., and
@@ -78,6 +80,7 @@ android {
         manifestPlaceholders["GETUI_APPSECRET"] = getuiAppSecret
         manifestPlaceholders["WE_MEET_APP_LINK_HOST"] = appLinkHost
         manifestPlaceholders["WE_MEET_RECORDS_NATIVE"] = meetingRecords
+        manifestPlaceholders["WE_MEET_CAPTURE_NATIVE"] = meetingCapture
     }
 
     buildTypes {

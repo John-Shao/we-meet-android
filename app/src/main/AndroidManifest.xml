@@ -10,6 +10,7 @@
     <!-- Media capture -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
     <!-- Bluetooth audio (headsets) -->
@@ -140,6 +141,12 @@
             android:name=".service.ConferenceForegroundService"
             android:exported="false"
             android:foregroundServiceType="camera|microphone|mediaPlayback" />
+
+        <service
+            android:name=".service.CaptureForegroundService"
+            android:enabled="${WE_MEET_CAPTURE_NATIVE}"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
 
         <!-- LiveKit ships a bound helper service that pins the MediaProjection
              session while we screen-share. We only need to declare it with the

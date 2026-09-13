@@ -43,7 +43,7 @@ import okhttp3.OkHttpClient
  * If the app grows beyond a few screens, swap this for Hilt without churning
  * the call sites: every screen reads dependencies from a single property.
  */
-class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, DocsDeps, DirectoryDeps, CallHost {
+class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, DocsDeps, DirectoryDeps, CallHost, com.we.meet.service.CaptureServiceHost {
 
     lateinit var tokenStore: TokenStore
         private set
@@ -59,8 +59,10 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         private set
     lateinit var meetingRecordRepository: MeetingRecordRepository
         private set
-    lateinit var captureRepository: com.we.meet.data.repository.CaptureRepository
+    override lateinit var captureRepository: com.we.meet.data.repository.CaptureRepository
         private set
+    override val captureAccount: String?
+        get() = if (tokenStore.isLoggedIn()) tokenStore.userId else null
     lateinit var roomAiRepository: RoomAiRepository
         private set
     lateinit var qrLoginRepository: QrLoginRepository
