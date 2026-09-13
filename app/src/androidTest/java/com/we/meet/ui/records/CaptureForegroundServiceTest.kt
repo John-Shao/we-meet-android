@@ -86,11 +86,13 @@ class CaptureForegroundServiceTest {
         ActivityScenario.launch(ComponentActivity::class.java).use { activity ->
             activity.onActivity { CaptureForegroundService.start(it, "Synthetic recording") }
             until { service.state.value.recording && (app.input?.reads ?: 0) >= 3 }
+            assertTrue(CaptureForegroundService.microphoneActive)
             until { context.getSystemService(NotificationManager::class.java).activeNotifications.any { it.id == 1007 } }
             val notification = context.getSystemService(NotificationManager::class.java).activeNotifications.single { it.id == 1007 }
             notification.notification.actions.first().actionIntent.send()
             until { !service.state.value.busy && !service.state.value.recording }
             assertTrue(app.input!!.closed)
+            assertFalse(CaptureForegroundService.microphoneActive)
             assertTrue(service.state.value.local!!.closed)
             assertFalse(service.state.value.error)
             assertFalse(context.getSystemService(NotificationManager::class.java).activeNotifications.any { it.id == 1007 })
@@ -111,6 +113,7 @@ class CaptureForegroundServiceTest {
             until { service.state.value.recording && app.input != null }
             app.captureAccount = null
             until { service.state.value.viewer == null && app.input!!.closed }
+            assertFalse(CaptureForegroundService.microphoneActive)
             assertNull(service.state.value.local)
             assertFalse(service.state.value.recording)
         }
@@ -129,6 +132,7 @@ class CaptureForegroundServiceTest {
             release.complete(Unit)
             until { !service.state.value.busy }
             assertNull(app.input)
+            assertFalse(CaptureForegroundService.microphoneActive)
             assertFalse(service.state.value.recording)
             assertTrue(service.state.value.local!!.closed)
             assertFalse(service.state.value.error)

@@ -129,6 +129,7 @@ class ConferenceForegroundService : Service() {
             private set
 
         fun start(context: Context, roomName: String) {
+            com.we.meet.data.capture.CapturePlaybackRegistry.stopAll()
             val intent = Intent(context, ConferenceForegroundService::class.java)
                 .putExtra(EXTRA_ROOM_NAME, roomName)
             ContextCompat.startForegroundService(context, intent)

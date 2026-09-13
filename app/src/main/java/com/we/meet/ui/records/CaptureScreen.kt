@@ -15,6 +15,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -134,9 +135,20 @@ fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit
             val app = context.applicationContext as? WeMeetApp
             val capture = state.local?.remote
             if (app != null && capture != null && state.viewer == viewer) {
-                CaptureAsrPanel(viewer, capture, app.captureTranscriptionRepository) { app.captureAccount }
-                CaptureSummaryWorkspace(viewer, capture, app.meetingRecordRepository, app.meetingSummaryRepository,
-                    { app.captureAccount }, if (BuildConfig.WE_MEET_RECORDS_NATIVE) ({ onRecord(capture.recordId) }) else null)
+                androidx.compose.runtime.key(viewer, capture.id) {
+                    var audioSeek by remember { mutableStateOf<CaptureAudioSeek?>(null) }
+                    var summariesSelected by remember { mutableStateOf(capture.status in setOf("stopping", "stopped")) }
+                    LaunchedEffect(capture.status) { if (capture.status in setOf("stopping", "stopped")) summariesSelected = true }
+                    if (capture.status == "stopped") NativeCaptureAudioPlayer(viewer, capture.recordId, app.capturePlaybackRepository, { app.captureAccount }, audioSeek) { audioSeek = null }
+                    Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                        androidx.compose.material3.FilterChip(!summariesSelected, { summariesSelected = false }, label = { Text(stringResource(R.string.records_originals)) })
+                        androidx.compose.material3.FilterChip(summariesSelected, { summariesSelected = true }, label = { Text(stringResource(R.string.records_minutes)) })
+                    }
+                    if (!summariesSelected) CaptureAsrPanel(viewer, capture, app.captureTranscriptionRepository) { app.captureAccount }
+                    else CaptureSummaryWorkspace(viewer, capture, app.meetingRecordRepository, app.meetingSummaryRepository,
+                        { app.captureAccount }, if (BuildConfig.WE_MEET_RECORDS_NATIVE) ({ onRecord(capture.recordId) }) else null,
+                        if (capture.status == "stopped") ({ audioSeek = CaptureAudioSeek(it) }) else null)
+                }
             }
         })
 }

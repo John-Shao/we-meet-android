@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_playback_title">Recording playback</string>
+    <string name="capture_playback_position">Recording position</string>
+    <string name="capture_playback_error">Playback stopped or is unavailable. Reload to check access and try again.</string>
+    <string name="capture_playback_incomplete">Some audio is missing. Playback stops at gaps.</string>
+    <string name="capture_playback_empty">No saved audio</string>
+    <string name="capture_playback_gap">No audio at this position. Choose a saved segment to continue.</string>
+    <string name="capture_playback_pause">Pause playback</string>
+    <string name="capture_playback_play">Play</string>
+    <string name="capture_playback_rate">%1$.2f×</string>
+    <string name="capture_playback_skip">Next saved segment</string>
+    <string name="capture_playback_speed">Playback speed</string>
+    <string name="capture_playback_source">Listen at %1$s</string>
+</resources>

@@ -136,6 +136,8 @@ class CaptureForegroundService : Service() {
                 startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
             else startForeground(NOTIFICATION_ID, notification)
             foreground = true
+            microphoneActive = true
+            com.we.meet.data.capture.CapturePlaybackRegistry.stopAll()
             if (mutableState.value.busy) { removeForeground(); stopSelf(startId); return START_NOT_STICKY }
             startInput(intent.getStringExtra(EXTRA_TITLE).orEmpty())
         } catch (_: Exception) {
@@ -283,6 +285,7 @@ class CaptureForegroundService : Service() {
     }
 
     private fun removeForeground() {
+        microphoneActive = false
         wakeLock?.let { if (it.isHeld) it.release() }
         wakeLock = null
         if (foreground) { stopForeground(STOP_FOREGROUND_REMOVE); foreground = false }
@@ -332,6 +335,8 @@ class CaptureForegroundService : Service() {
     }
 
     companion object {
+        @Volatile var microphoneActive = false
+            private set
         const val EXTRA_OPEN_CAPTURE = "com.we.meet.capture.OPEN_VIEWER"
         private const val CHANNEL_ID = "independent_audio_capture"
         private const val NOTIFICATION_ID = 1007
@@ -347,8 +352,12 @@ class CaptureForegroundService : Service() {
             val app = activity.application as CaptureServiceHost
             check(!ConferenceForegroundService.isRunning)
             val viewer = requireNotNull(app.captureAccount)
-            ContextCompat.startForegroundService(activity, Intent(activity, CaptureForegroundService::class.java)
-                .setAction(ACTION_START).putExtra(EXTRA_VIEWER, viewer).putExtra(EXTRA_TITLE, title))
+            microphoneActive = true
+            com.we.meet.data.capture.CapturePlaybackRegistry.stopAll()
+            try {
+                ContextCompat.startForegroundService(activity, Intent(activity, CaptureForegroundService::class.java)
+                    .setAction(ACTION_START).putExtra(EXTRA_VIEWER, viewer).putExtra(EXTRA_TITLE, title))
+            } catch (error: Exception) { microphoneActive = false; throw error }
         }
 
         fun bindingIntent(context: Context) = Intent(context, CaptureForegroundService::class.java)

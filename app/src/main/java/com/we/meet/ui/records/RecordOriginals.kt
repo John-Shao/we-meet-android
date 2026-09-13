@@ -46,6 +46,7 @@ internal fun RecordOriginals(
     viewer: String,
     record: RecordDto,
     onRefresh: () -> Unit,
+    onSource: ((Long) -> Unit)? = null,
 ) {
     var input by remember(viewer, record.id) { mutableStateOf("") }
     var query by remember(viewer, record.id) { mutableStateOf("") }
@@ -98,6 +99,9 @@ internal fun RecordOriginals(
                                 Text(original.speakerLabel.ifBlank { stringResource(R.string.records_unknown_speaker) }, style = MaterialTheme.typography.titleSmall)
                                 Text(original.startedAt?.let(::recordTime) ?: original.startMs?.let(::sourceTime).orEmpty(), style = MaterialTheme.typography.bodySmall)
                                 Text(original.text, style = MaterialTheme.typography.bodyLarge)
+                                if (onSource != null) original.startMs?.let { position ->
+                                    TextButton(onClick = { onSource(position) }) { Text(stringResource(R.string.capture_playback_source, sourceTime(position))) }
+                                }
                             }
                         }
                     }

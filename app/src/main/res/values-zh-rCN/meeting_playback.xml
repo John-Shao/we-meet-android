@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_playback_title">录音回放</string>
+    <string name="capture_playback_position">录音播放位置</string>
+    <string name="capture_playback_error">播放已中断或暂时不可用，请重新加载，确认权限后再试。</string>
+    <string name="capture_playback_incomplete">部分音频缺失，播放将在缺口处停止。</string>
+    <string name="capture_playback_empty">没有已保存的音频</string>
+    <string name="capture_playback_gap">当前位置没有音频，请选择已保存的片段继续。</string>
+    <string name="capture_playback_pause">暂停播放</string>
+    <string name="capture_playback_play">播放</string>
+    <string name="capture_playback_rate">%1$.2f×</string>
+    <string name="capture_playback_skip">下一段已保存音频</string>
+    <string name="capture_playback_speed">播放速度</string>
+    <string name="capture_playback_source">播放 %1$s 处原音</string>
+</resources>

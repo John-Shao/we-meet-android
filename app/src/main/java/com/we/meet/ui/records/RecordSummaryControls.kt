@@ -143,7 +143,7 @@ internal fun RecordSummaryControls(viewer: String, record: RecordDto, repository
 
 /** Capture preview uses canonical immutable versions and exact citations, including quick drafts. */
 @Composable
-internal fun CaptureSummaryWorkspace(viewer: String, capture: CaptureDto, records: MeetingRecordRepository, summaries: MeetingSummaryRepository, currentViewer: () -> String?, onRecord: (() -> Unit)?) {
+internal fun CaptureSummaryWorkspace(viewer: String, capture: CaptureDto, records: MeetingRecordRepository, summaries: MeetingSummaryRepository, currentViewer: () -> String?, onRecord: (() -> Unit)?, onSource: ((Long) -> Unit)? = null) {
     var refresh by remember(viewer, capture.recordId) { mutableIntStateOf(0) }
     var citation by remember(viewer, capture.recordId) { mutableStateOf<Pair<String, RecordReferenceDto>?>(null) }
     val detail = visibleRead(viewer, capture.recordId, refresh) { records.record(viewer, capture.recordId) }
@@ -168,6 +168,10 @@ internal fun CaptureSummaryWorkspace(viewer: String, capture: CaptureDto, record
                 original == null -> WeMeetInlineLoading()
                 original.isFailure -> WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_source_unavailable))
                 else -> androidx.compose.foundation.lazy.LazyColumn { item { Text(original.getOrThrow().text) } }
+            }
+        }, dismissButton = {
+            if (onSource != null && original?.isSuccess == true && capture.status == "stopped") TextButton(onClick = { onSource(ref.startMs); citation = null }) {
+                Text(stringResource(R.string.capture_playback_source, sourceTime(ref.startMs)))
             }
         }, confirmButton = { TextButton(onClick = { citation = null }) { Text(stringResource(R.string.records_close)) } })
     }

@@ -154,6 +154,8 @@ fun RecordLibraryScreen(
 
 @Composable
 fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String, onBack: () -> Unit, summaryVersionId: String? = null) {
+    val app = LocalContext.current.applicationContext as? WeMeetApp
+    var audioSeek by remember(viewer, recordId) { mutableStateOf<CaptureAudioSeek?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
     var selectedVersion by remember(viewer, recordId, summaryVersionId) { mutableStateOf(summaryVersionId) }
     var cursors by remember(viewer, recordId, selectedVersion) { mutableStateOf(listOf<String?>(null)) }
@@ -161,6 +163,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     var originalsSelected by remember(viewer, recordId, summaryVersionId) { mutableStateOf(false) }
     val detail = visibleRead(viewer, recordId, refresh) { repository.record(viewer, recordId) }
     val record = detail?.getOrNull()
+    val canPlay = app != null && record?.sourceType == "audio_recording" && record.capabilities.readTranscript && record.retentionMode == "media" && !record.isOngoing
     Scaffold(topBar = { WeMeetTopBar(record?.title ?: stringResource(R.string.records_minutes), onBack = onBack) }, containerColor = MaterialTheme.colorScheme.background) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             when {
@@ -174,7 +177,9 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         if (record.capabilities.readTranscript) FilterChip(selected = showOriginals, onClick = { originalsSelected = true }, label = { Text(stringResource(R.string.records_originals)) })
                     }
                     if (showOriginals) {
-                        RecordOriginals(repository, viewer, record, onRefresh = { refresh++ })
+                        Column(Modifier.weight(1f).fillMaxWidth()) {
+                            RecordOriginals(repository, viewer, record, onRefresh = { refresh++ }, onSource = if (canPlay) ({ audioSeek = CaptureAudioSeek(it) }) else null)
+                        }
                     } else if (!record.capabilities.readSummary) {
                         WeMeetEmptyState(stringResource(R.string.records_no_summary_access))
                     } else {
@@ -194,7 +199,6 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             summaries.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
                             else -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                                 if (selectedVersion == null) item {
-                                    val app = LocalContext.current.applicationContext as? WeMeetApp
                                     if (app != null) Column(Modifier.padding(horizontal = Dimens.ScreenPadding)) {
                                         RecordSummaryControls(viewer, record, app.meetingSummaryRepository) { app.captureAccount }
                                     }
@@ -221,6 +225,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                     }
                 }
             }
+            if (canPlay) NativeCaptureAudioPlayer(viewer, recordId, requireNotNull(app).capturePlaybackRepository, { app.captureAccount }, audioSeek) { audioSeek = null }
             if (detail?.isSuccess == true && record?.capabilities?.readTranscript == true) citation?.let { (snapshot, reference) ->
                 val original = visibleRead(viewer, recordId, snapshot, reference, refresh) { repository.citation(viewer, recordId, snapshot, reference) }
                 AlertDialog(onDismissRequest = { citation = null }, title = { Text(stringResource(R.string.records_source)) },
@@ -229,6 +234,10 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             original == null -> WeMeetInlineLoading()
                             original.isFailure -> WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_source_unavailable))
                             else -> LazyColumn { item { Text(original.getOrThrow().text) } }
+                        }
+                    }, dismissButton = {
+                        if (canPlay && original?.isSuccess == true) TextButton(onClick = { audioSeek = CaptureAudioSeek(reference.startMs); citation = null }) {
+                            Text(stringResource(R.string.capture_playback_source, sourceTime(reference.startMs)))
                         }
                     }, confirmButton = { TextButton(onClick = { citation = null }) { Text(stringResource(R.string.records_close)) } })
             }
