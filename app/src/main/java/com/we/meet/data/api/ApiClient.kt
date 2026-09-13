@@ -115,6 +115,7 @@ class ApiClient(tokenStore: TokenStore) {
     val meetingSummaryApi: MeetingSummaryApi = meetingPrivateRetrofit.create(MeetingSummaryApi::class.java)
     val meetingReviewApi: MeetingReviewApi = meetingPrivateRetrofit.create(MeetingReviewApi::class.java)
     val meetingDeliveryApi: MeetingDeliveryApi = meetingPrivateRetrofit.create(MeetingDeliveryApi::class.java)
+    val meetingSharingApi: MeetingSharingApi = meetingPrivateRetrofit.create(MeetingSharingApi::class.java)
     // Question POST waits for the server's bounded 30-second provider attempt.
     val meetingQuestionApi: MeetingQuestionApi = meetingPrivateRetrofit.newBuilder()
         .client(meetingPrivateHttp.newBuilder().readTimeout(40, TimeUnit.SECONDS).callTimeout(45, TimeUnit.SECONDS).build())
