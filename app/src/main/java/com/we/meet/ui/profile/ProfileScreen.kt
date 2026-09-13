@@ -59,7 +59,9 @@ import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.OnMediaOverlay
 import com.we.meet.data.repository.OrgState
 import com.we.meet.data.repository.ProfileRepository
-import com.we.meet.ui.theme.WeMeetTheme
+import com.we.meet.ui.components.SettingsDivider
+import com.we.meet.ui.components.SettingsGroup
+import com.we.meet.ui.components.SettingsRow
 import kotlinx.coroutines.launch
 
 private const val INTRO_MAX_LENGTH = 100
@@ -230,14 +232,9 @@ fun ProfileScreen(
 
         Spacer(Modifier.height(Dimens.SpaceXl))
 
-        // Settings list
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Dimens.ScreenPadding)
-                .clip(RoundedCornerShape(Dimens.CornerM))
-                .background(MaterialTheme.colorScheme.surface),
-        ) {
+        // Settings list —— 卡片与行都走共享的 `SettingsList`(与设置总页/子页面同一套
+        // 版式:白卡片、行高 56dp、分隔线缩进 16dp、值右对齐、箭头 18dp)。
+        SettingsGroup {
             // 组织放最前面:用户名在组织里才有意义(同名的人分属不同组织)。
             // 这一行**不可点** —— 一个账号可以属于多个组织,但「切换组织」还没做,
             // 做成可点却什么都不发生比不点更糟(与通讯录首页的「当前组织」同一口径);
@@ -249,10 +246,9 @@ fun ProfileScreen(
                 SettingsRow(
                     label = stringResource(R.string.profile_organization),
                     value = (orgState as? OrgState.Known)?.org?.name,
-                    onClick = null,
                     valueLoading = orgState is OrgState.Unknown,
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding))
+                SettingsDivider()
             }
             SettingsRow(
                 label = stringResource(R.string.profile_nickname),
@@ -262,7 +258,7 @@ fun ProfileScreen(
                     showNicknameDialog = true
                 },
             )
-            HorizontalDivider(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding))
+            SettingsDivider()
             SettingsRow(
                 label = stringResource(R.string.profile_intro),
                 value = intro.ifBlank { stringResource(R.string.profile_not_set) },
@@ -280,30 +276,21 @@ fun ProfileScreen(
         // video codec — all device-wide preferences, not per-meeting.
         // Routing through onSettingsClick keeps the existing SettingsScreen
         // as the single host for these knobs.
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Dimens.ScreenPadding)
-                .clip(RoundedCornerShape(Dimens.CornerM))
-                .background(MaterialTheme.colorScheme.surface),
-        ) {
+        SettingsGroup {
             // AI hub moved here when its bottom tab was replaced by 日历/通讯录.
             SettingsRow(
                 label = stringResource(R.string.profile_ai_entry),
-                value = null,
                 onClick = onOpenAiHub,
             )
-            HorizontalDivider(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding))
+            SettingsDivider()
             // Approval lives here rather than a 6th bottom tab (Feishu-style workbench app).
             SettingsRow(
                 label = stringResource(R.string.profile_approval_entry),
-                value = null,
                 onClick = onOpenApproval,
             )
-            HorizontalDivider(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding))
+            SettingsDivider()
             SettingsRow(
                 label = stringResource(R.string.profile_settings),
-                value = null,
                 onClick = onSettingsClick,
             )
         }
@@ -491,59 +478,6 @@ private fun AvatarBubble(
                 contentDescription = stringResource(R.string.profile_avatar),
                 tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(Dimens.IconIllustration),
-            )
-        }
-    }
-}
-
-@Composable
-private fun SettingsRow(
-    label: String,
-    value: String?,
-    onClick: (() -> Unit)?,
-    /**
-     * 值还在路上(组织那一行的首次加载):在值的位置画一条灰条。行高由 label 决定,
-     * 所以占位与真值同高 —— 数据回来只是"填进去",不会把下面的行推下去。
-     */
-    valueLoading: Boolean = false,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-        Spacer(Modifier.weight(1f))
-        if (valueLoading) {
-            Box(
-                modifier = Modifier
-                    .padding(end = Dimens.SpaceXs)
-                    .size(width = Dimens.SkeletonBarWidth, height = Dimens.SkeletonBarHeight)
-                    .clip(RoundedCornerShape(Dimens.CornerXs))
-                    // 设计规范里「没有强调」那一档,不是 surfaceVariant(那个带紫调)。
-                    .background(WeMeetTheme.extras.status.neutralContainer),
-            )
-        } else if (value != null) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                modifier = Modifier.padding(end = Dimens.SpaceXs),
-            )
-        }
-        if (onClick != null) {
-            Spacer(Modifier.width(Dimens.SpaceXs))
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(Dimens.IconSmall),
             )
         }
     }

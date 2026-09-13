@@ -1,50 +1,38 @@
 package com.we.meet.ui.settings
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.we.meet.ui.components.SettingsActionRow
+import com.we.meet.ui.components.SettingsDivider
+import com.we.meet.ui.components.SettingsGroup
+import com.we.meet.ui.components.SettingsHint
+import com.we.meet.ui.components.SettingsPickerOption
+import com.we.meet.ui.components.SettingsPickerSheet
+import com.we.meet.ui.components.SettingsRow
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.WeMeetApp
 import com.we.meet.R
@@ -54,6 +42,14 @@ import com.we.meet.ui.theme.Dimens
 import com.we.meet.data.settings.ThemeMode
 import kotlinx.coroutines.launch
 
+/**
+ * 设置总页。版式走共享的 [SettingsGroup] / [SettingsRow](规范见 `SettingsList.kt`
+ * 的表):浅灰页面底 + 白卡片,分组之间 [Dimens.SpaceL],首尾各留一口气,组内多行
+ * 之间用 [SettingsDivider]。
+ *
+ * 这里**不给分组加标题**:每组只有一两行、行名本身就说清了是什么(主题/语言/通知),
+ * 再加一行灰字是重复。需要标题的是「日历设置」那种一组里塞了七八行、必须分段的页面。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -74,7 +70,7 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     var showSignOutConfirm by remember { mutableStateOf(false) }
     var signingOut by remember { mutableStateOf(false) }
-    androidx.activity.compose.BackHandler(enabled = signingOut) { }
+    BackHandler(enabled = signingOut) { }
 
     var backPending by remember { mutableStateOf(false) }
 
@@ -92,21 +88,63 @@ fun SettingsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState()),
         ) {
-            ThemeSection(
+            Spacer(Modifier.height(Dimens.SpaceL))
+
+            ThemeRow(
                 selected = themeMode,
                 onSelect = settingsStore::setThemeMode,
             )
-            LanguageSection()
-            NotificationEntrySection(onClick = onOpenNotificationSettings)
-            ModuleSettingsSection(
-                onMeetingClick = onOpenMeetingSettings,
-                onCalendarClick = onOpenCalendarSettings,
-                onTaskClick = onOpenTaskSettings,
-            )
-            AccountSection(
-                onAccountSecurityClick = onOpenAccountSecurity,
-                onSignOutClick = { showSignOutConfirm = true },
-            )
+            Spacer(Modifier.height(Dimens.SpaceL))
+
+            LanguageRow()
+            Spacer(Modifier.height(Dimens.SpaceL))
+
+            // 通知只是总页上的一行入口:免打扰时段、特别提醒名单都在子页面里
+            // (对标微信/企业微信 —— 通知设置不该摊在总页上)。
+            SettingsGroup {
+                SettingsRow(
+                    label = stringResource(R.string.notification_settings_title),
+                    onClick = onOpenNotificationSettings,
+                )
+            }
+            Spacer(Modifier.height(Dimens.SpaceL))
+
+            // 模块设置(会议/日历/任务):三行一件事,合成一组。
+            SettingsGroup {
+                SettingsRow(
+                    label = stringResource(R.string.meeting_settings_title),
+                    onClick = onOpenMeetingSettings,
+                )
+                SettingsDivider()
+                SettingsRow(
+                    label = stringResource(R.string.calendar_settings_title),
+                    onClick = onOpenCalendarSettings,
+                )
+                SettingsDivider()
+                SettingsRow(
+                    label = stringResource(R.string.task_settings),
+                    onClick = onOpenTaskSettings,
+                )
+            }
+            Spacer(Modifier.height(Dimens.SpaceL))
+
+            SettingsGroup {
+                SettingsRow(
+                    label = stringResource(R.string.settings_account_security),
+                    onClick = onOpenAccountSecurity,
+                )
+            }
+            Spacer(Modifier.height(Dimens.SpaceXl))
+
+            // 退出登录单独一组:它是动作不是设置项,而且要给二次确认。
+            SettingsGroup {
+                SettingsActionRow(
+                    label = stringResource(R.string.profile_sign_out),
+                    onClick = { showSignOutConfirm = true },
+                    contentColor = MaterialTheme.colorScheme.error,
+                )
+            }
+            Spacer(Modifier.height(Dimens.SpaceXl))
         }
     }
 
@@ -149,241 +187,34 @@ fun SettingsScreen(
 
 }
 
-// ── Module settings (P8 设置收敛) ────────────────────────────────────────
-
-/**
- * 模块设置入口(会议设置/日历设置/任务设置):所有设置集中在用户设置里,模块内的
- * 齿轮(会议 tab、日历 tab、任务 tab)只是指向同一页面的快捷入口。
- */
-@Composable
-private fun ModuleSettingsSection(
-    onMeetingClick: () -> Unit,
-    onCalendarClick: () -> Unit,
-    onTaskClick: () -> Unit,
-) {
-    Spacer(Modifier.height(Dimens.SpaceS))
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(Dimens.CornerM))
-            .background(MaterialTheme.colorScheme.surface),
-    ) {
-        Column {
-            ModuleEntryRow(
-                label = stringResource(R.string.meeting_settings_title),
-                onClick = onMeetingClick,
-            )
-            ModuleEntryRow(
-                label = stringResource(R.string.calendar_settings_title),
-                onClick = onCalendarClick,
-            )
-            ModuleEntryRow(
-                label = stringResource(R.string.task_settings),
-                onClick = onTaskClick,
-            )
-        }
-    }
-    Spacer(Modifier.height(Dimens.SpaceS))
-}
+// ── 设备级偏好(主题 / 语言) ─────────────────────────────────────────────
 
 @Composable
-private fun ModuleEntryRow(label: String, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-        Spacer(Modifier.weight(1f))
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-// ── Account ─────────────────────────────────────────────────────────────
-
-@Composable
-private fun AccountSection(
-    onAccountSecurityClick: () -> Unit,
-    onSignOutClick: () -> Unit,
-) {
-    Spacer(Modifier.height(Dimens.SpaceS))
-
-    // 账号与安全 entry (navigates to the account-scoped surface: phone number +
-    // the destructive deregister flow) sits above the reversible sign-out.
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(Dimens.CornerM))
-            .background(MaterialTheme.colorScheme.surface),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onAccountSecurityClick)
-                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(R.string.settings_account_security),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Spacer(Modifier.weight(1f))
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-
-    Spacer(Modifier.height(Dimens.SpaceL))
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(Dimens.CornerM))
-            .background(MaterialTheme.colorScheme.surface),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onSignOutClick)
-                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            Text(
-                text = stringResource(R.string.profile_sign_out),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
-    }
-
-    Spacer(Modifier.height(Dimens.SpaceL))
-}
-
-// ── Notifications ───────────────────────────────────────────────────────
-
-/**
- * 通知设置只留一行入口(对标微信/企业微信):免打扰时段、星标联系人穿透等
- * 消息通知相关的项都收进 [NotificationSettingsScreen],不再摊在总页上。
- */
-@Composable
-private fun NotificationEntrySection(onClick: () -> Unit) {
-    Spacer(Modifier.height(Dimens.SpaceS))
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(Dimens.CornerM))
-            .background(MaterialTheme.colorScheme.surface),
-    ) {
-        ModuleEntryRow(
-            label = stringResource(R.string.notification_settings_title),
-            onClick = onClick,
-        )
-    }
-    Spacer(Modifier.height(Dimens.SpaceL))
-}
-
-// ── Theme ───────────────────────────────────────────────────────────────
-
-@Composable
-private fun ThemeSection(
+private fun ThemeRow(
     selected: ThemeMode,
     onSelect: (ThemeMode) -> Unit,
 ) {
-    Spacer(Modifier.height(Dimens.SpaceS))
+    var picking by remember { mutableStateOf(false) }
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(Dimens.CornerM))
-            .background(MaterialTheme.colorScheme.surface),
-    ) {
-        ThemeDropdownRow(
+    SettingsGroup {
+        SettingsRow(
             label = stringResource(R.string.settings_theme),
-            selected = selected,
-            onSelect = onSelect,
+            value = themeLabel(selected),
+            onClick = { picking = true },
         )
     }
-
-    Spacer(Modifier.height(Dimens.SpaceL))
-}
-
-@Composable
-private fun ThemeDropdownRow(
-    label: String,
-    selected: ThemeMode,
-    onSelect: (ThemeMode) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { expanded = true }
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
+    if (picking) {
+        SettingsPickerSheet(
+            title = stringResource(R.string.settings_theme),
+            options = ThemeMode.entries.map { option ->
+                SettingsPickerOption(
+                    label = themeLabel(option),
+                    selected = option == selected,
+                    onSelect = { onSelect(option) },
+                )
+            },
+            onDismissRequest = { picking = false },
         )
-        Spacer(Modifier.weight(1f))
-        Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = themeLabel(selected),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.width(Dimens.SpaceXxs))
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-            ) {
-                ThemeMode.entries.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(themeLabel(option)) },
-                        onClick = {
-                            onSelect(option)
-                            expanded = false
-                        },
-                        trailingIcon = if (option == selected) {
-                            {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(Dimens.IconSmall),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                        } else null,
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -417,32 +248,8 @@ private val LANGUAGE_OPTIONS = listOf(
 )
 
 @Composable
-private fun LanguageSection() {
-    Spacer(Modifier.height(Dimens.SpaceS))
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(Dimens.CornerM))
-            .background(MaterialTheme.colorScheme.surface),
-    ) {
-        LanguageDropdownRow(label = stringResource(R.string.settings_language))
-    }
-
-    Spacer(Modifier.height(Dimens.SpaceS))
-    Text(
-        text = stringResource(R.string.settings_language_hint),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = Dimens.SpaceXl),
-    )
-    Spacer(Modifier.height(Dimens.SpaceL))
-}
-
-@Composable
-private fun LanguageDropdownRow(label: String) {
-    var expanded by remember { mutableStateOf(false) }
+private fun LanguageRow() {
+    var picking by remember { mutableStateOf(false) }
     // Current selection: AppCompatDelegate is the source of truth — it
     // persists per-app locale on API 33+ via Android's LocaleManager,
     // and uses ConfigurationOverride for older API levels. An empty
@@ -453,76 +260,45 @@ private fun LanguageDropdownRow(label: String) {
     val currentLabel = LANGUAGE_OPTIONS.firstOrNull { it.tag.equals(currentTag, ignoreCase = true) }
         ?.display ?: systemLabel
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { expanded = true }
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
+    SettingsGroup {
+        SettingsRow(
+            label = stringResource(R.string.settings_language),
+            value = currentLabel,
+            onClick = { picking = true },
         )
-        Spacer(Modifier.weight(1f))
-        Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = currentLabel,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.width(Dimens.SpaceXxs))
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-            ) {
-                DropdownMenuItem(
-                    text = { Text(systemLabel) },
-                    onClick = {
-                        AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
-                        expanded = false
-                    },
-                    trailingIcon = if (currentTag.isEmpty()) {
-                        {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(Dimens.IconSmall),
-                                tint = MaterialTheme.colorScheme.primary,
+    }
+    SettingsHint(stringResource(R.string.settings_language_hint))
+
+    if (picking) {
+        SettingsPickerSheet(
+            title = stringResource(R.string.settings_language),
+            options = buildList {
+                add(
+                    SettingsPickerOption(
+                        label = systemLabel,
+                        selected = currentTag.isEmpty(),
+                        onSelect = {
+                            AppCompatDelegate.setApplicationLocales(
+                                LocaleListCompat.getEmptyLocaleList()
                             )
-                        }
-                    } else null,
+                        },
+                    )
                 )
                 LANGUAGE_OPTIONS.forEach { option ->
-                    val selected = option.tag.equals(currentTag, ignoreCase = true)
-                    DropdownMenuItem(
-                        text = { Text(option.display) },
-                        onClick = {
-                            AppCompatDelegate.setApplicationLocales(
-                                LocaleListCompat.forLanguageTags(option.tag)
-                            )
-                            expanded = false
-                        },
-                        trailingIcon = if (selected) {
-                            {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(Dimens.IconSmall),
-                                    tint = MaterialTheme.colorScheme.primary,
+                    add(
+                        SettingsPickerOption(
+                            label = option.display,
+                            selected = option.tag.equals(currentTag, ignoreCase = true),
+                            onSelect = {
+                                AppCompatDelegate.setApplicationLocales(
+                                    LocaleListCompat.forLanguageTags(option.tag)
                                 )
-                            }
-                        } else null,
+                            },
+                        )
                     )
                 }
-            }
-        }
+            },
+            onDismissRequest = { picking = false },
+        )
     }
 }

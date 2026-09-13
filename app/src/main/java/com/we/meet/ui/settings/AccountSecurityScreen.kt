@@ -1,11 +1,7 @@
 package com.we.meet.ui.settings
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,14 +9,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -32,12 +25,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import com.we.meet.ui.components.SettingsActionRow
+import com.we.meet.ui.components.SettingsGroup
+import com.we.meet.ui.components.SettingsRow
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.R
 import com.we.meet.WeMeetApp
@@ -124,65 +118,33 @@ fun AccountSecurityScreen(
 
 @Composable
 private fun PhoneSection(phone: String) {
-    Spacer(Modifier.height(Dimens.SpaceS))
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(Dimens.CornerM))
-            .background(MaterialTheme.colorScheme.surface),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(R.string.profile_phone),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Spacer(Modifier.weight(1f))
-            Text(
-                text = phone.ifBlank { stringResource(R.string.profile_not_set) },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-
     Spacer(Modifier.height(Dimens.SpaceL))
+
+    SettingsGroup {
+        SettingsRow(
+            label = stringResource(R.string.profile_phone),
+            value = phone.ifBlank { stringResource(R.string.profile_not_set) },
+        )
+    }
 }
 
 @Composable
 private fun DeregisterSection(
     onDeregisterClick: () -> Unit,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(Dimens.CornerM))
-            .background(MaterialTheme.colorScheme.surface),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onDeregisterClick)
-                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            Text(
-                text = stringResource(R.string.profile_deregister),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
+    Spacer(Modifier.height(Dimens.SpaceL))
+
+    // 注销是这一页唯一的动作,单独一张卡片(与设置总页的「退出登录」同一形状:
+    // 居中、危险色)。上面那张是只读信息,两者不是一类东西。
+    SettingsGroup {
+        SettingsActionRow(
+            label = stringResource(R.string.profile_deregister),
+            onClick = onDeregisterClick,
+            contentColor = MaterialTheme.colorScheme.error,
+        )
     }
 
-    Spacer(Modifier.height(Dimens.SpaceL))
+    Spacer(Modifier.height(Dimens.SpaceXl))
 }
 
 /**

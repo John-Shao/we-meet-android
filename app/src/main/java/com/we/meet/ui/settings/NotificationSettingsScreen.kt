@@ -1,11 +1,8 @@
 package com.we.meet.ui.settings
 
 import android.widget.Toast
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,17 +10,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
@@ -34,9 +25,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import com.we.meet.ui.components.SettingsDivider
+import com.we.meet.ui.components.SettingsGroup
+import com.we.meet.ui.components.SettingsHint
+import com.we.meet.ui.components.SettingsRow
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.R
@@ -142,8 +136,8 @@ fun NotificationSettingsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState()),
         ) {
-            Spacer(Modifier.height(Dimens.SpaceS))
-            SettingsCard {
+            Spacer(Modifier.height(Dimens.SpaceL))
+            SettingsGroup {
                 when {
                     loadFailed -> WeMeetInlineErrorState(
                         onRetry = { reloadKey += 1 },
@@ -163,151 +157,81 @@ fun NotificationSettingsScreen(
                     }
 
                     else -> Column {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.settings_quiet_hours),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                        Spacer(Modifier.weight(1f))
-                        Switch(
-                            checked = enabled,
-                            enabled = !saving,
-                            onCheckedChange = { next ->
-                                val previous = enabled
-                                enabled = next
-                                save(
-                                    PushPreferencesUpdate(
-                                        quiet_enabled = next,
-                                        quiet_start = start,
-                                        quiet_end = end,
-                                    ),
-                                ) { enabled = previous }
+                        SettingsRow(
+                            label = stringResource(R.string.settings_quiet_hours),
+                            trailing = {
+                                Switch(
+                                    checked = enabled,
+                                    enabled = !saving,
+                                    onCheckedChange = { next ->
+                                        val previous = enabled
+                                        enabled = next
+                                        save(
+                                            PushPreferencesUpdate(
+                                                quiet_enabled = next,
+                                                quiet_start = start,
+                                                quiet_end = end,
+                                            ),
+                                        ) { enabled = previous }
+                                    },
+                                )
                             },
                         )
-                    }
-                    if (enabled) {
-                        QuietTimeRow(
-                            label = stringResource(R.string.settings_quiet_start),
-                            value = start,
-                            enabled = !saving,
-                            onClick = {
-                                pickTime(start) { picked ->
-                                    val previous = start
-                                    start = picked
-                                    save(PushPreferencesUpdate(quiet_start = picked)) {
-                                        start = previous
+                        // 起止时间只在开关打开时出现:关着的时候它们没有意义,
+                        // 摆在那儿只会让人以为"关了也还算数"。
+                        if (enabled) {
+                            SettingsDivider()
+                            SettingsRow(
+                                label = stringResource(R.string.settings_quiet_start),
+                                value = start,
+                                enabled = !saving,
+                                onClick = {
+                                    pickTime(start) { picked ->
+                                        val previous = start
+                                        start = picked
+                                        save(PushPreferencesUpdate(quiet_start = picked)) {
+                                            start = previous
+                                        }
                                     }
-                                }
-                            },
-                        )
-                        QuietTimeRow(
-                            label = stringResource(R.string.settings_quiet_end),
-                            value = end,
-                            enabled = !saving,
-                            onClick = {
-                                pickTime(end) { picked ->
-                                    val previous = end
-                                    end = picked
-                                    save(PushPreferencesUpdate(quiet_end = picked)) {
-                                        end = previous
+                                },
+                            )
+                            SettingsDivider()
+                            SettingsRow(
+                                label = stringResource(R.string.settings_quiet_end),
+                                value = end,
+                                enabled = !saving,
+                                onClick = {
+                                    pickTime(end) { picked ->
+                                        val previous = end
+                                        end = picked
+                                        save(PushPreferencesUpdate(quiet_end = picked)) {
+                                            end = previous
+                                        }
                                     }
-                                }
-                            },
-                        )
-                        Spacer(Modifier.height(Dimens.SpaceXs))
+                                },
+                            )
+                        }
                     }
                 }
-            }
             }
 
             if (loaded) {
-                Spacer(Modifier.height(Dimens.SpaceS))
-                Text(
-                    text = stringResource(R.string.settings_quiet_hint, tz.ifBlank { "-" }),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = Dimens.SpaceXl),
+                SettingsHint(
+                    stringResource(R.string.settings_quiet_hint, tz.ifBlank { "-" }),
                 )
             }
 
-            Spacer(Modifier.height(Dimens.SpaceXl))
+            Spacer(Modifier.height(Dimens.SpaceL))
             // 「消息特别提醒」名单入口:逐个人的开关在各自详情页上,这里是回顾/
             // 批量整理的地方(与星标的「详情页开关 + 名单页」同构)。
-            SettingsCard {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onOpenSpecialAlerts)
-                        .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.ScreenPadding),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(R.string.special_alert_title),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Spacer(Modifier.weight(1f))
-                    Icon(
-                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+            SettingsGroup {
+                SettingsRow(
+                    label = stringResource(R.string.special_alert_title),
+                    onClick = onOpenSpecialAlerts,
+                )
             }
-            Spacer(Modifier.height(Dimens.SpaceS))
-            Text(
-                text = stringResource(R.string.special_alert_entry_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = Dimens.SpaceXl),
-            )
+            SettingsHint(stringResource(R.string.special_alert_entry_hint))
             Spacer(Modifier.height(Dimens.SpaceXl))
         }
-    }
-}
-
-/** 设置页那种圆角卡片容器(与设置总页各节同一观感)。 */
-@Composable
-private fun SettingsCard(content: @Composable () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.ScreenPadding)
-            .clip(RoundedCornerShape(Dimens.CornerM))
-            .background(MaterialTheme.colorScheme.surface),
-    ) {
-        content()
-    }
-}
-
-@Composable
-private fun QuietTimeRow(
-    label: String,
-    value: String,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text = label, style = MaterialTheme.typography.bodyLarge)
-        Spacer(Modifier.weight(1f))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            color = if (enabled) {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-            },
-        )
     }
 }
