@@ -2,6 +2,7 @@ package com.we.meet.data
 
 import com.we.meet.data.capture.CapturePcmPump
 import com.we.meet.data.capture.CapturePcmSource
+import com.we.meet.data.capture.CapturePcmTap
 import com.we.meet.data.capture.CaptureWave
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -10,6 +11,41 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CapturePcmPumpTest {
+    @Test fun slowTranslationTapCannotDropAnyOriginalRecordingSamples() {
+        val samples = ShortArray(80017) { (it % 30000).toShort() }
+        val source = FixtureSource(samples, 997)
+        val tap = CapturePcmTap(); val stream = tap.attach()
+        val saved = mutableListOf<ShortArray>()
+        val pump = CapturePcmPump(source, { saved += it.copyOf() }, { true }, tap)
+        source.ended = { pump.requestStop() }
+        val outcome = pump.run()
+        assertFalse(outcome.failed || outcome.interrupted)
+        assertEquals(CapturePcmTap.State.OVERFLOW, stream.state)
+        assertArrayEquals(samples, saved.flatMap { it.toList() }.take(samples.size).toShortArray())
+    }
+
+    @Test fun normalStopDrainsTheSameShortTailToOriginalAndTap() {
+        val source = FixtureSource(ShortArray(513) { 7 }, 200)
+        val tap = CapturePcmTap(); val stream = tap.attach()
+        val saved = mutableListOf<ShortArray>()
+        val pump = CapturePcmPump(source, { saved += it.copyOf() }, { true }, tap)
+        source.ended = { pump.requestStop() }
+        assertFalse(pump.run().failed)
+        assertEquals(CapturePcmTap.State.FINISHED, stream.state)
+        stream.poll()!!.use { assertArrayEquals(saved.single(), it.samples) }
+        assertNull(stream.poll())
+    }
+
+    @Test fun revokedDuringBlockingReadCannotLeakItsFrameToTap() {
+        var allowed = true
+        val source = FixtureSource(ShortArray(1600) { 8 })
+        val tap = CapturePcmTap(); val stream = tap.attach()
+        source.readHook = { allowed = false }
+        val pump = CapturePcmPump(source, { error("No persistence") }, { allowed }, tap)
+        assertTrue(pump.run().interrupted)
+        assertNull(stream.poll()); assertEquals(CapturePcmTap.State.CLOSED, stream.state)
+    }
+
     @Test fun variableReadSizesKeepExactSampleOrderAcrossFiveSecondChunks() {
         val input = ShortArray(80017) { (it % 30000).toShort() }
         val source = FixtureSource(input, 997)

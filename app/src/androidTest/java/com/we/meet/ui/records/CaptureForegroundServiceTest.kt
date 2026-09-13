@@ -13,6 +13,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.we.meet.BuildConfig
 import com.we.meet.data.capture.CaptureJournal
+import com.we.meet.data.capture.CapturePcmTap
 import com.we.meet.data.capture.CaptureRecovery
 import com.we.meet.service.CaptureForegroundService
 import java.util.concurrent.CountDownLatch
@@ -62,6 +63,54 @@ class CaptureForegroundServiceTest {
         return requireNotNull(service)
     }
     private suspend fun until(check: () -> Boolean) = withTimeout(8000) { while (!check()) delay(20) }
+
+    @Test fun slowPcmTapUsesSameDeviceAndNeverStopsOriginalRecording() = runBlocking {
+        val service = bind()
+        until { service.state.value.ready }
+        assertTrue(runCatching { service.observePcm("not-a-capture") }.isFailure)
+        ActivityScenario.launch(ComponentActivity::class.java).use { activity ->
+            activity.onActivity { CaptureForegroundService.start(it, "PCM tap fixture") }
+            until { service.state.value.recording && !service.state.value.busy }
+            val input = requireNotNull(app.input)
+            val captureId = service.state.value.local!!.remote!!.id
+            assertTrue(runCatching { service.observePcm("another-capture") }.isFailure)
+            lateinit var stream: CapturePcmTap.Subscription
+            instrumentation.runOnMainSync { stream = service.observePcm(captureId) }
+            var held: CapturePcmTap.Frame? = null
+            until { held = stream.poll(); held != null }
+            assertEquals(1600, held!!.samples.size)
+            until { stream.state == CapturePcmTap.State.OVERFLOW }
+            assertTrue(held!!.samples.all { it == 0.toShort() })
+            assertSame(input, app.input)
+            assertTrue(service.state.value.recording && !service.state.value.error)
+            until { (service.state.value.local?.durationMs ?: 0) >= 5000 }
+            instrumentation.runOnMainSync { service.pause() }
+            until { !service.state.value.busy && !service.state.value.recording }
+            assertTrue(service.state.value.local!!.durationMs >= 5000)
+            assertFalse(service.state.value.error)
+            assertTrue(runCatching { service.observePcm(captureId) }.isFailure)
+            held!!.close(); stream.close()
+        }
+    }
+
+    @Test fun accountLossImmediatelyRevokesExistingPcmReader() = runBlocking {
+        val service = bind()
+        until { service.state.value.ready }
+        ActivityScenario.launch(ComponentActivity::class.java).use { activity ->
+            activity.onActivity { CaptureForegroundService.start(it, "Revoked tap fixture") }
+            until { service.state.value.recording && !service.state.value.busy }
+            lateinit var stream: CapturePcmTap.Subscription
+            instrumentation.runOnMainSync { stream = service.observePcm(service.state.value.local!!.remote!!.id) }
+            var held: CapturePcmTap.Frame? = null
+            until { held = stream.poll(); held != null }
+            app.captureAccount = null
+            assertNull(stream.poll())
+            assertEquals(CapturePcmTap.State.CLOSED, stream.state)
+            assertTrue(held!!.samples.all { it == 0.toShort() })
+            until { app.input!!.closed }
+            held!!.close(); stream.close()
+        }
+    }
 
     @Test fun bindRecoversLocalOpenMarkerWithoutStartingHardwareOrNetwork() = runBlocking {
         val viewer = requireNotNull(app.captureAccount)

@@ -17,6 +17,7 @@ class CapturePcmPump(
     private val source: CapturePcmSource,
     private val persist: (ShortArray) -> Unit,
     private val authorized: () -> Boolean,
+    private val tap: CapturePcmTap? = null,
 ) {
     private val stopped = AtomicBoolean()
     private val interrupted = AtomicBoolean()
@@ -24,7 +25,7 @@ class CapturePcmPump(
     private val startup = Any()
 
     fun requestStop(unexpected: Boolean = false) {
-        if (unexpected) interrupted.set(true)
+        if (unexpected) { interrupted.set(true); tap?.close() }
         synchronized(startup) {
             stopped.set(true)
             runCatching { source.stop() }.onFailure { interrupted.set(true) }
@@ -62,6 +63,8 @@ class CapturePcmPump(
                 check(count in 1..readBuffer.size) { "Audio input stopped producing samples" }
                 // A hardware interruption invalidates the in-flight read; a user stop drains it.
                 if (interrupted.get()) break
+                check(authorized()) { "Capture authority changed during read" }
+                tap?.offer(readBuffer, count)
                 var offset = 0
                 while (offset < count) {
                     val take = minOf(count - offset, chunk.size - used)
@@ -88,6 +91,7 @@ class CapturePcmPump(
                 } catch (_: Exception) { interrupted.set(true); failed = true }
             }
             runCatching { source.close() }.onFailure { interrupted.set(true); failed = true }
+            if (failed || interrupted.get()) tap?.close() else tap?.finish()
             readBuffer.fill(0)
             chunk.fill(0)
         }

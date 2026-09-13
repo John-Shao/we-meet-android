@@ -23,6 +23,7 @@ import com.we.meet.MainActivity
 import com.we.meet.R
 import com.we.meet.data.capture.CaptureJournal
 import com.we.meet.data.capture.CapturePcmPump
+import com.we.meet.data.capture.CapturePcmTap
 import com.we.meet.data.capture.CapturePcmSource
 import com.we.meet.data.capture.CapturePumpOutcome
 import com.we.meet.data.capture.CaptureRecovery
@@ -72,6 +73,7 @@ class CaptureForegroundService : Service() {
     private var recovery: CaptureRecovery? = null
     private var viewer: String? = null
     private var pump: CapturePcmPump? = null
+    private var pcmTap: CapturePcmTap? = null
     private var audio: Deferred<CapturePumpOutcome>? = null
     private var upload: Job? = null
     private var initialization: Job? = null
@@ -165,6 +167,15 @@ class CaptureForegroundService : Service() {
     private fun authorized() = !destroyed && viewer != null && currentViewer() == viewer &&
         hasMicrophonePermission() && !ConferenceForegroundService.isRunning
 
+    /** Reuse the current capture device. Creating a tap never starts recording. */
+    fun observePcm(captureId: String): CapturePcmTap.Subscription {
+        val snapshot = mutableState.value
+        val local = requireNotNull(snapshot.local)
+        check(authorized() && snapshot.recording && !snapshot.busy &&
+            local.remote?.id == captureId && !CaptureRetention.audioExpired(local))
+        return requireNotNull(pcmTap).attach()
+    }
+
     private fun startInput(title: String, retentionMode: String) {
         if (mutableState.value.recording || mutableState.value.busy) return
         val epoch = stopEpoch.get()
@@ -186,12 +197,17 @@ class CaptureForegroundService : Service() {
                     setReferenceCounted(false)
                     acquire(CaptureWave.MAX_DURATION_MS + 5000)
                 }
+                val tap = CapturePcmTap {
+                    val current = mutableState.value.local
+                    authorized() && current?.id == local.id && !CaptureRetention.audioExpired(current)
+                }
+                pcmTap = tap
                 val input = CapturePcmPump(requireNotNull(opening), { pcm ->
                     requireNotNull(journal).append(local.id, pcm)
                     scope.launch {
                         if (runCatching { refresh() }.isSuccess) scheduleUpload(local.id)
                     }
-                }, { authorized() })
+                }, { authorized() }, tap)
                 pump = input
                 opening = null // Ownership transferred to the pump, including device release.
                 val running = audioScope.async { input.run() }
@@ -251,6 +267,7 @@ class CaptureForegroundService : Service() {
         pump?.requestStop(unexpected)
         val result = audio?.await()
         pump = null
+        pcmTap = null
         audio = null
         mutableState.value = mutableState.value.copy(recording = false)
         return unexpected || result?.interrupted == true || result?.failed == true
@@ -326,6 +343,7 @@ class CaptureForegroundService : Service() {
 
     override fun onDestroy() {
         destroyed = true
+        pcmTap?.close()
         stopEpoch.incrementAndGet()
         pump?.requestStop(true)
         scope.cancel()
