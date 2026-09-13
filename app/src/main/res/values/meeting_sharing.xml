@@ -1,0 +1,29 @@
+<resources>
+    <string name="record_share_title">Minutes access</string>
+    <string name="record_share_read_error">Could not read sharing permissions or preview.</string>
+    <string name="record_share_scope">Sharing covers all minutes versions in this record, including future versions. It does not grant access to originals, media or separate documents, and sends no messages.</string>
+    <string name="record_share_unavailable">Sharing changes are unavailable.</string>
+    <string name="record_share_unknown">The permission change result is unknown. Check the original request before making another change.</string>
+    <string name="record_share_choose">Choose people to share with</string>
+    <string name="record_share_accepted">Request confirmed. The current explicit permissions are listed below.</string>
+    <string name="record_share_empty">No explicit sharing entries on this page.</string>
+    <string name="record_share_explicit_yes">Minutes explicitly shared</string>
+    <string name="record_share_explicit_no">No explicit minutes access</string>
+    <string name="record_share_inactive">Account inactive</string>
+    <string name="record_share_revoke">Review removal of minutes access</string>
+    <string name="record_share_error">Could not confirm the change. Review the latest preview or check the original request.</string>
+    <string name="record_share_preview">Review minutes permissions</string>
+    <string name="record_share_after_yes">Will be able to read minutes</string>
+    <string name="record_share_after_no">Will no longer be able to read minutes</string>
+    <string name="record_share_inherited">Access inherited from ownership or meeting roles remains.</string>
+    <string name="record_share_original_unchanged">Existing access to originals remains unchanged.</string>
+    <string name="record_share_confirm">Confirm minutes sharing</string>
+    <string name="record_share_confirm_revoke">Remove explicit minutes access</string>
+    <string name="record_share_directory">Directory</string>
+    <string name="record_share_participants">Participants</string>
+    <string name="record_share_search">Search people</string>
+    <string name="record_share_selected">%1$d / 50 selected</string>
+    <string name="record_share_clear">Clear selection</string>
+    <string name="record_share_no_candidates">No eligible people on this page.</string>
+    <string name="record_share_review_selection">Preview selected people</string>
+</resources>

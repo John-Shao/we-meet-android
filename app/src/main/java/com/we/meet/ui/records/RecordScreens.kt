@@ -206,6 +206,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                         RecordQuestions(viewer, record, summaries.getOrThrow().results, app.meetingQuestionRepository,
                                             { app.captureAccount }) { snapshot, reference -> citation = snapshot to reference }
                                         RecordNotifications(viewer, record, app.meetingDeliveryRepository, { app.captureAccount }) { selectedVersion = it }
+                                        RecordSharing(viewer, record, app.meetingSharingRepository) { app.captureAccount }
                                     }
                                 }
                                 if (summaries.getOrThrow().results.isEmpty()) item {

@@ -1,0 +1,29 @@
+<resources>
+    <string name="record_share_title">纪要访问权限</string>
+    <string name="record_share_read_error">无法读取分享权限或预览</string>
+    <string name="record_share_scope">分享范围为此记录的全部纪要版本，包含后续新版本。不授予原文、媒体或独立文档权限，不发送消息。</string>
+    <string name="record_share_unavailable">分享权限修改暂不可用</string>
+    <string name="record_share_unknown">权限修改结果未知，请先核对原请求，再进行其他修改。</string>
+    <string name="record_share_choose">选择分享对象</string>
+    <string name="record_share_accepted">请求已确认，当前显式权限见下方列表</string>
+    <string name="record_share_empty">本页暂无显式分享记录</string>
+    <string name="record_share_explicit_yes">已显式分享纪要</string>
+    <string name="record_share_explicit_no">无显式纪要权限</string>
+    <string name="record_share_inactive">账号未启用</string>
+    <string name="record_share_revoke">查看移除纪要权限</string>
+    <string name="record_share_error">无法确认修改结果，请查看最新预览或核对原请求</string>
+    <string name="record_share_preview">确认纪要权限</string>
+    <string name="record_share_after_yes">操作后可阅读纪要</string>
+    <string name="record_share_after_no">操作后将无法阅读纪要</string>
+    <string name="record_share_inherited">通过所有权或会议角色继承的访问权限仍然有效。</string>
+    <string name="record_share_original_unchanged">已有原文访问权限保持不变。</string>
+    <string name="record_share_confirm">确认分享纪要</string>
+    <string name="record_share_confirm_revoke">移除显式纪要权限</string>
+    <string name="record_share_directory">组织目录</string>
+    <string name="record_share_participants">参会人</string>
+    <string name="record_share_search">搜索人员</string>
+    <string name="record_share_selected">已选 %1$d / 50 人</string>
+    <string name="record_share_clear">清空选择</string>
+    <string name="record_share_no_candidates">本页暂无可选人员</string>
+    <string name="record_share_review_selection">预览所选人员权限</string>
+</resources>
