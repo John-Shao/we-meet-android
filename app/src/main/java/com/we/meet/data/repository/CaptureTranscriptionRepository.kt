@@ -5,6 +5,7 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.we.meet.data.api.CaptureTranscriptionApi
 import com.we.meet.data.api.dto.*
 import com.we.meet.data.capture.CaptureWave
+import com.we.meet.data.capture.CaptureRetention
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import okhttp3.MediaType.Companion.toMediaType
@@ -18,6 +19,7 @@ class CaptureTranscriptionRepository(private val api: CaptureTranscriptionApi, p
     suspend fun state(viewer: String, capture: String): Result<CaptureAsrStateDto> = scoped(viewer) {
         uuid(capture)
         api.state(capture).also { state ->
+            state.audioRetention?.let(CaptureRetention::validate)
             state.activeJobId?.let(::uuid)
             require(state.results.size <= 10 && state.results.map { it.id }.distinct().size == state.results.size)
             var generation = Int.MAX_VALUE

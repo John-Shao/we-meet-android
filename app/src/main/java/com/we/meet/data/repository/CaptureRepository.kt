@@ -3,6 +3,7 @@ package com.we.meet.data.repository
 import com.we.meet.data.api.CaptureApi
 import com.we.meet.data.api.dto.*
 import com.we.meet.data.capture.CaptureWave
+import com.we.meet.data.capture.CaptureRetention
 import kotlinx.coroutines.CancellationException
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
@@ -11,10 +12,21 @@ import java.util.UUID
 
 /** Caller persists keys and bodies before writing; unknown outcomes never create replacement keys here. */
 class CaptureRepository(private val api: CaptureApi, private val currentViewer: () -> String?) {
+    suspend fun textAudioAvailable(viewer: String): Result<Boolean> = scoped(viewer) {
+        api.audioCapabilities().let {
+            require(it.textAudioError in setOf("", "rollout_disabled", "storage_unavailable", "versioned_storage_requires_purge", "unsupported_storage"))
+            require(it.textAudioAvailable == it.textAudioError.isEmpty())
+            it.textAudioAvailable
+        }
+    }
+
     suspend fun create(viewer: String, key: String, request: CreateCaptureDto): Result<CaptureOperationDto> = scoped(viewer) {
         uuid(key); uuid(request.leaseKey, random = true); device(request.deviceId)
-        require(request.title.length <= 500 && request.retentionMode == "media")
-        api.create(key, request).also { operation(it, null, request.deviceId) }
+        require(request.title.length <= 500 && request.retentionMode in setOf("media", "text"))
+        api.create(key, request).also {
+            operation(it, null, request.deviceId)
+            if (request.retentionMode == "text") require(it.result.audioRetention?.mode == "text" && it.capture.audioRetention?.mode == "text")
+        }
     }
 
     suspend fun read(viewer: String, captureId: String): Result<CaptureDto> = scoped(viewer) {
@@ -75,6 +87,7 @@ class CaptureRepository(private val api: CaptureApi, private val currentViewer: 
     }
 
     private fun state(value: CaptureDto) {
+        value.audioRetention?.let(CaptureRetention::validate)
         uuid(value.id); uuid(value.recordId); device(value.deviceId)
         require(value.revision > 0 && value.lastAckedSequence in 0..CaptureWave.MAX_CHUNKS)
         require(value.status in setOf("preparing", "recording", "paused", "interrupted", "stopping", "stopped"))

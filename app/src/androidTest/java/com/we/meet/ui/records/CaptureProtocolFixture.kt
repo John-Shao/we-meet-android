@@ -25,6 +25,7 @@ import retrofit2.Response
 
 /** In-memory protocol fixture only: no server, credentials, microphone or provider. */
 internal class CaptureProtocolFixture : CaptureApi {
+    override suspend fun audioCapabilities() = CaptureAudioCapabilitiesDto(false, "rollout_disabled")
     var failCreate = false
     var failCommand: String? = null
     var rejectCommand = false

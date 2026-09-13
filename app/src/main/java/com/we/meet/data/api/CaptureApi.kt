@@ -8,6 +8,10 @@ import retrofit2.http.*
 /** Fixed paths and explicit idempotency headers. No automatic application retries. */
 interface CaptureApi {
     @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/capture-audio-capabilities/")
+    suspend fun audioCapabilities(): CaptureAudioCapabilitiesDto
+
+    @Headers("Cache-Control: no-store")
     @POST("api/v1.0/capture-sessions/")
     suspend fun create(@Header("Idempotency-Key") key: String, @Body request: CreateCaptureDto): CaptureOperationDto
 

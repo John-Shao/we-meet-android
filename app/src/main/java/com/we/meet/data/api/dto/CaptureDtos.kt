@@ -15,6 +15,22 @@ data class CaptureDto(
     @Json(name = "last_acked_sequence") val lastAckedSequence: Int,
     @Json(name = "missing_sequences") val missingSequences: List<Int>? = null,
     @Json(name = "missing_ranges") val missingRanges: List<CaptureGapDto>? = null,
+    @Json(name = "audio_retention") val audioRetention: CaptureAudioRetentionDto? = null,
+)
+
+data class CaptureAudioRetentionDto(
+    val mode: String,
+    @Json(name = "temporary_until") val temporaryUntil: String?,
+    @Json(name = "retry_until") val retryUntil: String?,
+    val expired: Boolean,
+    @Json(name = "cleanup_status") val cleanupStatus: String,
+    @Json(name = "cleanup_error") val cleanupError: String,
+    @Json(name = "deleted_at") val deletedAt: String?,
+)
+
+data class CaptureAudioCapabilitiesDto(
+    @Json(name = "text_audio_available") val textAudioAvailable: Boolean,
+    @Json(name = "text_audio_error") val textAudioError: String,
 )
 
 data class CaptureGapDto(@Json(name = "start_ms") val startMs: Long, @Json(name = "end_ms") val endMs: Long)

@@ -33,6 +33,8 @@ class CaptureRepositoryTest {
         "revision":$revision,"started_at":"2026-09-13T00:00:00Z","media_status":"not_connected","last_acked_sequence":0}
     """
     private fun operation() = """{"operation_id":"$key","replayed":true,"result":${state()},"capture":${state(3, "paused")}}"""
+    private fun retention() = """{"mode":"text","temporary_until":"2030-01-01T10:00:00Z","retry_until":"2030-01-01T09:30:00Z","expired":false,"cleanup_status":"not_started","cleanup_error":"","deleted_at":null}"""
+    private fun textState() = state().trim().removeSuffix("}") + ",\"audio_retention\":" + retention() + "}"
     private fun receipt(audio: ByteArray, sequence: Int = 1, stored: Boolean = true): String {
         val info = CaptureWave.inspect(audio)
         return """{"id":"$record","sequence":$sequence,"start_ms":0,"duration_ms":${info.durationMs},
@@ -69,6 +71,54 @@ class CaptureRepositoryTest {
         }
         assertEquals(bodies[0], bodies[1])
         assertFalse(create.toString().contains(lease))
+    }
+
+    @Test fun textCaptureRequiresValidRetentionWithoutReplacingItsOriginalIntent() = runBlocking {
+        var response = operation()
+        val repo = repository { 200 to response }
+        val intent = create.copy(retentionMode = "text")
+        assertTrue(repo.create("owner", key, intent).isFailure)
+        response = """{"operation_id":"$key","replayed":true,"result":${textState()},"capture":${textState()}}"""
+        assertEquals("text", repo.create("owner", key, intent).getOrThrow().capture.audioRetention!!.mode)
+        assertEquals(2, requests.size)
+        val bodies = requests.map { Buffer().also { buffer -> it.body!!.writeTo(buffer) }.readUtf8() }
+        assertEquals(bodies[0], bodies[1])
+        assertTrue(requests.all { it.header("Idempotency-Key") == key })
+    }
+
+    @Test fun storagePreflightRequiresExplicitConsistentAvailability() = runBlocking {
+        var reply = """{"text_audio_available":true,"text_audio_error":""}"""
+        val repo = repository { 200 to reply }
+        assertTrue(repo.textAudioAvailable("owner").getOrThrow())
+        assertEquals("/api/v1.0/capture-audio-capabilities/", requests.single().url.encodedPath)
+        reply = """{"text_audio_available":false,"text_audio_error":"versioned_storage_requires_purge"}"""
+        assertFalse(repo.textAudioAvailable("owner").getOrThrow())
+        reply = """{"text_audio_available":true,"text_audio_error":"storage_unavailable"}"""
+        assertTrue(repo.textAudioAvailable("owner").isFailure)
+        reply = "{}"
+        assertTrue(repo.textAudioAvailable("owner").isFailure)
+    }
+
+    @Test fun lateStorageAdmissionCannotCrossAccounts() = runBlocking {
+        val repo = repository {
+            viewer = "other"
+            200 to """{"text_audio_available":true,"text_audio_error":""}"""
+        }
+        assertTrue(repo.textAudioAvailable("owner").isFailure)
+        assertTrue(repo.textAudioAvailable("owner").isFailure)
+        assertEquals(1, requests.size)
+    }
+
+    @Test fun expiredDoesNotImplyDeletedAndMalformedDeletionStateIsRejected() = runBlocking {
+        var response = textState().replace("\"expired\":false", "\"expired\":true")
+        val repo = repository { 200 to response }
+        val expired = repo.read("owner", capture).getOrThrow().audioRetention!!
+        assertTrue(expired.expired)
+        assertNull(expired.deletedAt)
+        response = response.replace("not_started", "complete")
+        assertTrue(repo.read("owner", capture).isFailure)
+        response = response.replace("\"deleted_at\":null", "\"deleted_at\":\"2030-01-01T11:00:00Z\"")
+        assertEquals("complete", repo.read("owner", capture).getOrThrow().audioRetention!!.cleanupStatus)
     }
 
     @Test fun unknownCommandOutcomeIsNotAutomaticallyRetriedOrRekeyed() = runBlocking {
@@ -114,9 +164,9 @@ class CaptureRepositoryTest {
         assertTrue(duplicate.receipts("owner", capture).isFailure)
     }
 
-    @Test fun invalidInputFailsBeforeSendingAudioOrCreatingTextOnlyCapture() = runBlocking {
+    @Test fun invalidInputFailsBeforeSendingAudioOrCreatingCapture() = runBlocking {
         val repo = repository { error("No request allowed") }
-        assertTrue(repo.create("owner", key, create.copy(retentionMode = "text")).isFailure)
+        assertTrue(repo.create("owner", key, create.copy(retentionMode = "unknown")).isFailure)
         assertTrue(repo.create("owner", key, create.copy(leaseKey = "1-1-1-1-1")).isFailure)
         val audio = CaptureWave.encode(ShortArray(16))
         assertTrue(repo.upload("owner", capture, lease, "device", 1, 0, "wrong-checksum", audio).isFailure)

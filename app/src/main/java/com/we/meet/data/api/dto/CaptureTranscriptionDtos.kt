@@ -22,6 +22,7 @@ data class CaptureAsrStateDto(
     @Json(name = "staged_summary_available") val stagedSummaryAvailable: Boolean = false,
     @Json(name = "active_job_id") val activeJobId: String? = null,
     val results: List<CaptureAsrJobDto>,
+    @Json(name = "audio_retention") val audioRetention: CaptureAudioRetentionDto? = null,
 )
 
 data class CaptureAsrRequestDto(
