@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -59,11 +60,12 @@ import java.time.format.FormatStyle
 internal fun <T> visibleRead(vararg keys: Any?, intervalMs: Long = 15_000, read: suspend () -> Result<T>): Result<T>? {
     var result by remember(*keys) { mutableStateOf<Result<T>?>(null) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val latestRead by rememberUpdatedState(read)
     LaunchedEffect(lifecycle, *keys) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             try {
                 do {
-                    result = read()
+                    result = latestRead()
                     if (result?.isFailure == true) break
                     delay(intervalMs)
                 } while (true)
@@ -172,15 +174,19 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                 detail.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
                 record == null -> WeMeetEmptyState(stringResource(R.string.records_unavailable))
                 else -> {
-                    val showTranslations = record.capabilities.readTranscript && app != null && translationsSelected
+                    val canReadTranslations = record.capabilities.readTranscript && app != null && (record.sourceType == "meeting" || record.sourceType == "audio_recording" && record.captureId != null)
+                    val showTranslations = canReadTranslations && translationsSelected
                     val showOriginals = !showTranslations && record.capabilities.readTranscript && (originalsSelected || (!record.capabilities.readSummary && selectedVersion == null))
                     Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).horizontalScroll(rememberScrollState()).padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                         if (record.capabilities.readSummary) FilterChip(selected = !showOriginals && !showTranslations, onClick = { originalsSelected = false; translationsSelected = false }, label = { Text(stringResource(R.string.records_minutes)) })
                         if (record.capabilities.readTranscript) FilterChip(selected = showOriginals, onClick = { originalsSelected = true; translationsSelected = false }, label = { Text(stringResource(R.string.records_originals)) })
-                        if (record.capabilities.readTranscript && app != null) FilterChip(selected = showTranslations, onClick = { translationsSelected = true }, label = { Text(stringResource(R.string.archives_title)) })
+                        if (canReadTranslations) FilterChip(selected = showTranslations, onClick = { translationsSelected = true }, label = { Text(stringResource(R.string.archives_title)) })
                     }
                     if (showTranslations) {
-                        Column(Modifier.weight(1f).fillMaxWidth()) { RecordTranslationArchives(viewer, recordId, requireNotNull(app).translationArchiveRepository) }
+                        Column(Modifier.weight(1f).fillMaxWidth()) {
+                            if (record.sourceType == "audio_recording") CaptureTranslationArchives(viewer, requireNotNull(record.captureId), recordId, requireNotNull(app).captureTranslationRepository)
+                            else RecordTranslationArchives(viewer, recordId, requireNotNull(app).translationArchiveRepository)
+                        }
                     } else if (showOriginals) {
                         Column(Modifier.weight(1f).fillMaxWidth()) {
                             RecordOriginals(repository, viewer, record, onRefresh = { refresh++ }, onSource = if (canPlay) ({ audioSeek = CaptureAudioSeek(it) }) else null)
