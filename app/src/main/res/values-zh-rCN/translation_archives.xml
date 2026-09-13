@@ -1,0 +1,19 @@
+<resources>
+    <string name="archives_title">译文</string>
+    <string name="archives_description">这里展示已保存的确认译文，与原始逐字稿和纪要分别保留。</string>
+    <string name="archives_unavailable">译文暂不可用，或你已没有查看权限。</string>
+    <string name="archives_empty">暂无已保存的译文</string>
+    <string name="archives_no_segments">此页暂无确认译文</string>
+    <string name="archives_private">个人语音翻译</string>
+    <string name="archives_shared">共享同传</string>
+    <string name="archives_count">%1$d 段确认译文</string>
+    <string name="archives_back">返回译文列表</string>
+    <string name="archives_timing">时间表示收到译文的时刻，不对应原始发言时间或音视频播放位置。</string>
+    <string name="archives_private_scope">此个人翻译记录仅所有者可查看。</string>
+    <string name="archives_incomplete_hint">部分译文尚未确认保存，内容可能有缺失。</string>
+    <string name="archives_zh">中文</string>
+    <string name="archives_en">英文</string>
+    <string name="archives_capturing">正在保存译文</string>
+    <string name="archives_complete">已保存</string>
+    <string name="archives_incomplete">部分已保存</string>
+</resources>

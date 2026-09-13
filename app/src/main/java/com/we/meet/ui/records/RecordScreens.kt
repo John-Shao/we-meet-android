@@ -161,6 +161,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     var cursors by remember(viewer, recordId, selectedVersion) { mutableStateOf(listOf<String?>(null)) }
     var citation by remember(viewer, recordId, summaryVersionId) { mutableStateOf<Pair<String, RecordReferenceDto>?>(null) }
     var originalsSelected by remember(viewer, recordId, summaryVersionId) { mutableStateOf(false) }
+    var translationsSelected by remember(viewer, recordId, summaryVersionId) { mutableStateOf(false) }
     val detail = visibleRead(viewer, recordId, refresh) { repository.record(viewer, recordId) }
     val record = detail?.getOrNull()
     val canPlay = app != null && record?.sourceType == "audio_recording" && record.capabilities.readTranscript && record.retentionMode == "media" && !record.isOngoing
@@ -171,12 +172,16 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                 detail.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
                 record == null -> WeMeetEmptyState(stringResource(R.string.records_unavailable))
                 else -> {
-                    val showOriginals = record.capabilities.readTranscript && (originalsSelected || (!record.capabilities.readSummary && selectedVersion == null))
-                    Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                        if (record.capabilities.readSummary) FilterChip(selected = !showOriginals, onClick = { originalsSelected = false }, label = { Text(stringResource(R.string.records_minutes)) })
-                        if (record.capabilities.readTranscript) FilterChip(selected = showOriginals, onClick = { originalsSelected = true }, label = { Text(stringResource(R.string.records_originals)) })
+                    val showTranslations = record.capabilities.readTranscript && app != null && translationsSelected
+                    val showOriginals = !showTranslations && record.capabilities.readTranscript && (originalsSelected || (!record.capabilities.readSummary && selectedVersion == null))
+                    Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).horizontalScroll(rememberScrollState()).padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                        if (record.capabilities.readSummary) FilterChip(selected = !showOriginals && !showTranslations, onClick = { originalsSelected = false; translationsSelected = false }, label = { Text(stringResource(R.string.records_minutes)) })
+                        if (record.capabilities.readTranscript) FilterChip(selected = showOriginals, onClick = { originalsSelected = true; translationsSelected = false }, label = { Text(stringResource(R.string.records_originals)) })
+                        if (record.capabilities.readTranscript && app != null) FilterChip(selected = showTranslations, onClick = { translationsSelected = true }, label = { Text(stringResource(R.string.archives_title)) })
                     }
-                    if (showOriginals) {
+                    if (showTranslations) {
+                        Column(Modifier.weight(1f).fillMaxWidth()) { RecordTranslationArchives(viewer, recordId, requireNotNull(app).translationArchiveRepository) }
+                    } else if (showOriginals) {
                         Column(Modifier.weight(1f).fillMaxWidth()) {
                             RecordOriginals(repository, viewer, record, onRefresh = { refresh++ }, onSource = if (canPlay) ({ audioSeek = CaptureAudioSeek(it) }) else null)
                         }

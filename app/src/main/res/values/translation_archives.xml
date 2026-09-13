@@ -1,0 +1,19 @@
+<resources>
+    <string name="archives_title">Translations</string>
+    <string name="archives_description">Saved confirmed translations are separate from original transcripts and minutes.</string>
+    <string name="archives_unavailable">These translations are unavailable or you no longer have access.</string>
+    <string name="archives_empty">No saved translations</string>
+    <string name="archives_no_segments">No confirmed translations on this page</string>
+    <string name="archives_private">Personal voice translation</string>
+    <string name="archives_shared">Shared interpretation</string>
+    <string name="archives_count">%1$d confirmed segments</string>
+    <string name="archives_back">Back to translation list</string>
+    <string name="archives_timing">Times show when translations were received. They are not original speech timestamps or playback positions.</string>
+    <string name="archives_private_scope">Only the owner can read this personal translation archive.</string>
+    <string name="archives_incomplete_hint">Saving ended before every translation could be confirmed. Some translated content may be missing.</string>
+    <string name="archives_zh">Chinese</string>
+    <string name="archives_en">English</string>
+    <string name="archives_capturing">Saving translations</string>
+    <string name="archives_complete">Saved</string>
+    <string name="archives_incomplete">Partially saved</string>
+</resources>

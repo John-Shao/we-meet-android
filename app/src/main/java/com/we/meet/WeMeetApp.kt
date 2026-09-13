@@ -58,6 +58,7 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
     lateinit var meetingDetailRepository: MeetingDetailRepository
         private set
     lateinit var meetingRecordRepository: MeetingRecordRepository
+    lateinit var translationArchiveRepository: com.we.meet.data.repository.TranslationArchiveRepository
         private set
     override lateinit var captureRepository: com.we.meet.data.repository.CaptureRepository
         private set
@@ -186,6 +187,7 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         roomRepository = RoomRepository(apiClient.roomApi)
         meetingDetailRepository = MeetingDetailRepository(apiClient.roomApi)
         meetingRecordRepository = MeetingRecordRepository(apiClient.meetingRecordApi) { tokenStore.userId }
+        translationArchiveRepository = com.we.meet.data.repository.TranslationArchiveRepository(apiClient.translationArchiveApi) { captureAccount }
         captureRepository = com.we.meet.data.repository.CaptureRepository(apiClient.captureApi) { tokenStore.userId }
         captureTranscriptionRepository = com.we.meet.data.repository.CaptureTranscriptionRepository(apiClient.captureTranscriptionApi) { captureAccount }
         meetingSummaryRepository = com.we.meet.data.repository.MeetingSummaryRepository(apiClient.meetingSummaryApi) { captureAccount }
