@@ -9,11 +9,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material3.Button
@@ -38,6 +42,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
@@ -47,6 +53,7 @@ import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetLoading
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.core.directory.ui.avatarCacheKey
+import com.we.meet.core.directory.ui.memberAvatarShape
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -278,7 +285,10 @@ private fun MemberDetailBody(
 
     Column(
         modifier = Modifier
-            .fillMaxSize(),
+            .fillMaxSize()
+            // 内容可超屏(字号放大、横屏、分屏):这一页是「头像 + 名字 + 若干字段 +
+            // 主按钮」的竖排,不滚动的话主按钮会被切掉且没法够到(规范 §3.2 / §7)。
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(Dimens.SpaceXxl))
@@ -289,7 +299,8 @@ private fun MemberDetailBody(
             size = Dimens.AvatarXl,
             modifier = if (hasAvatar) {
                 Modifier
-                    .clip(RoundedCornerShape(Dimens.AvatarXl * 0.2f))
+                    // 圆角率只有一处(MemberAvatar 里那条 20%),这里不重写。
+                    .clip(memberAvatarShape(Dimens.AvatarXl))
                     .clickable { showAvatar = true }
             } else Modifier,
         )
@@ -298,18 +309,23 @@ private fun MemberDetailBody(
             text = member.displayName,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+            // 长名字换行而不是顶到屏幕边(页面左右边距 = ScreenPadding,§1.3)。
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Dimens.ScreenPadding),
         )
         Spacer(Modifier.height(Dimens.SpaceXxl))
 
         // 字段与开关整块铺白底:头像/名字留在浅灰上,信息块是**条目**、底色浅,
-        // 与通讯录各名单同一套关系(白条目落在浅灰的滚动区上)。横向 24dp 内边距
-        // 原先挂在上面那层 Column 上,现在跟着这一块走 —— 文字位置一像素没动,
-        // 白底却能从屏幕左缘铺到右缘。
+        // 与通讯录各名单同一套关系(白条目落在浅灰的滚动区上)。
+        // 左右内边距用页面的统一值 ScreenPadding(16dp,§1.3);改之前是 24dp,
+        // 全 App 只有这一处这么宽。
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = Dimens.SpaceXl),
+                .padding(horizontal = Dimens.ScreenPadding),
         ) {
             InfoRow(stringResource(R.string.member_label_department), member.department?.name)
             InfoRow(stringResource(R.string.member_label_title), member.title)
@@ -342,7 +358,7 @@ private fun MemberDetailBody(
                 // 页面级动作留在浅灰底上:不跟着信息块一起铺白(它是动作,不是条目)。
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = Dimens.SpaceXl),
+                    .padding(horizontal = Dimens.ScreenPadding),
             ) {
                 Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null)
                 Spacer(Modifier.padding(start = Dimens.SpaceS))
@@ -487,6 +503,19 @@ private fun SwitchRow(
     }
 }
 
+/**
+ * 详情页字段行的统一高度 —— 以「手机号」那行为基准。
+ *
+ * 三行(部门/邮箱/手机号)看上去都是"一行文字",但手机号行尾挂着一个文字按钮,按钮的
+ * 触控区是 [Dimens.MinTouchTarget](48dp),于是它比另外两行高出一大截(实测 70dp vs
+ * 40dp),并排看就是「同样的文字、不一样的高度」。这里给三行同一个**下限**:
+ * 48dp 热区 + 上下各 [Dimens.SpaceS] 内边距。
+ *
+ * 用 `defaultMinSize` 而不是 `height`:字号放大时行必须能自己长高,不能把文字压掉
+ * (规范 §5.2 的可读性下限)。
+ */
+private val MemberFieldRowMinHeight = Dimens.MinTouchTarget + Dimens.SpaceS * 2
+
 @Composable
 private fun InfoRow(label: String, value: String?) {
     if (value.isNullOrBlank()) return
@@ -494,15 +523,26 @@ private fun InfoRow(label: String, value: String?) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .defaultMinSize(minHeight = MemberFieldRowMinHeight)
                 .padding(vertical = Dimens.SpaceS),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Text(text = value, style = MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.width(Dimens.SpaceM))
+            // 值占满剩余宽度并右对齐:**长邮箱/长部门名从左边省略**,而不是折成
+            // 两行把这一行撑高(规范 §7「长文本不会撑破布局」)。
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1f),
+            )
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
@@ -531,8 +571,9 @@ private fun PhoneRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                // 与部门/邮箱同一个下限:这一行是基准,别让它再被按钮撑得更高。
+                .defaultMinSize(minHeight = MemberFieldRowMinHeight)
                 .padding(vertical = Dimens.SpaceS),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -540,22 +581,29 @@ private fun PhoneRow(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = shown, style = MaterialTheme.typography.bodyMedium)
-                Spacer(Modifier.padding(start = Dimens.SpaceM))
-                when {
-                    revealing -> CircularProgressIndicator(
-                        strokeWidth = Dimens.BorderEmphasis,
-                        modifier = Modifier.padding(start = Dimens.SpaceXs).height(Dimens.IconTiny),
-                    )
-                    // Revealed-but-empty (owner had no number after all).
-                    revealedPhone != null && revealedPhone.isBlank() -> Unit
-                    isRevealed -> TextButton(onClick = { dialNumber(context, shown) }) {
-                        Text(stringResource(R.string.member_phone_call))
-                    }
-                    else -> TextButton(onClick = onReveal) {
-                        Text(stringResource(R.string.member_phone_reveal))
-                    }
+            Spacer(Modifier.width(Dimens.SpaceM))
+            Text(
+                text = shown,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(Dimens.SpaceS))
+            // 按钮自带 48dp 的触控区,正好是这个行高的来源(见 MemberFieldRowMinHeight)。
+            when {
+                revealing -> CircularProgressIndicator(
+                    strokeWidth = Dimens.BorderEmphasis,
+                    modifier = Modifier.padding(start = Dimens.SpaceXs).height(Dimens.IconTiny),
+                )
+                // Revealed-but-empty (owner had no number after all).
+                revealedPhone != null && revealedPhone.isBlank() -> Unit
+                isRevealed -> TextButton(onClick = { dialNumber(context, shown) }) {
+                    Text(stringResource(R.string.member_phone_call))
+                }
+                else -> TextButton(onClick = onReveal) {
+                    Text(stringResource(R.string.member_phone_reveal))
                 }
             }
         }

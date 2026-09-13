@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -45,6 +46,15 @@ fun avatarCacheKey(url: String?, stableId: String): String {
 }
 
 /**
+ * 头像的圆角形状 —— 边长 20%,与 Web 的 Avatar 一致。
+ *
+ * 页面需要「热区与头像同形」时(详情页点头像看大图)用它,不要再自己写一遍
+ * `RoundedCornerShape(size * 0.2f)`:那条比例只能有一处,否则改了一边另一边就错位
+ * (规范 §1.4「不要在业务层重复构造圆角」)。
+ */
+fun memberAvatarShape(size: Dp): Shape = RoundedCornerShape(size * 0.2f)
+
+/**
  * Rounded-square avatar (WeChat/企业微信 style, 与 Web Avatar 一致:圆角 = 边长 20%)
  * with an initials fallback.
  *
@@ -71,7 +81,7 @@ fun MemberAvatar(
     Box(
         modifier = modifier
             .size(size)
-            .clip(RoundedCornerShape(size * 0.2f))
+            .clip(memberAvatarShape(size))
             .background(if (showImage) Color.Transparent else fallbackColor(name)),
         contentAlignment = Alignment.Center,
     ) {
