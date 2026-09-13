@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_text_interrupted_hint">录音已中断，临时音频可能缺失。可在到期前继续录音，或确认仅使用服务器已收到的音频结束。</string>
+    <string name="capture_text_only">仅保留文字</string>
+    <string name="capture_text_consent">音频临时用于转写，不提供播放或下载。转写成功后自动清理；结束后 30 分钟内可启动转写或重试，临时音频最迟在开始后 24 小时到期。未上传音频仅缓存在内存中，录音服务结束后无法恢复。转写需另行开启并消耗 AI 额度。</string>
+    <string name="capture_text_unavailable">暂时无法使用仅保留文字模式，可选择保留音频或稍后重试。</string>
+    <string name="capture_text_saved">录音已结束</string>
+    <string name="capture_text_local_hint">仅保留文字。已上传音频按服务端期限处理；未上传音频为临时缓存，录音进程结束后无法恢复。</string>
+    <string name="capture_text_expired">临时音频已到期，录音已停止。请结束录音，继续处理已有文字。</string>
+    <string name="capture_text_finish_hint">停止录音并上传可用音频，然后查看转写和临时音频清理状态。</string>
+    <string name="capture_text_finish_incomplete">按不完整录音结束</string>
+    <string name="capture_text_incomplete_hint">仅使用服务端已收到的音频结束录音。其余本地音频将丢弃，缺失部分无法恢复，结果会标记为不完整。</string>
+    <string name="capture_text_confirm_incomplete">丢弃缺失音频并结束</string>
+    <string name="capture_text_retention_title">临时音频</string>
+    <string name="capture_text_retention_error">暂时无法确认音频保留状态，请刷新后再操作。</string>
+    <string name="capture_text_cleanup_not_started">音频仅临时用于转写，尚未开始清理。</string>
+    <string name="capture_text_cleanup_pending">正在清理临时音频，文字和已有纪要将保留。</string>
+    <string name="capture_text_cleanup_failed">临时音频清理尚未完成，系统将继续重试。</string>
+    <string name="capture_text_cleanup_complete">临时音频已删除，文字和已有纪要保留。</string>
+    <string name="capture_text_access_until">临时音频使用截止：%1$s。到期后无法继续转写，删除进度以上方状态为准。</string>
+    <string name="capture_text_retry_until">启动转写或重试截止：%1$s。</string>
+    <string name="capture_text_retry_closed">已不能启动新的转写。已有请求仍可查询结果。</string>
+</resources>

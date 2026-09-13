@@ -32,6 +32,7 @@ import com.we.meet.data.api.dto.CaptureAsrJobDto
 import com.we.meet.data.api.dto.CaptureAsrRequestDto
 import com.we.meet.data.api.dto.CaptureDto
 import com.we.meet.data.capture.CaptureTranscriptionCoordinator
+import com.we.meet.data.capture.CaptureRetention
 import com.we.meet.data.capture.MeetingIntent
 import com.we.meet.data.capture.MeetingIntentStore
 import com.we.meet.data.repository.CaptureTranscriptionRepository
@@ -91,13 +92,16 @@ internal fun CaptureAsrPanel(viewer: String, capture: CaptureDto, repository: Ca
     val latest = state?.results?.firstOrNull()
     val active = latest?.status in setOf("queued", "running")
     val live = capture.status != "stopped"
-    val available = state != null && if (live) state.liveAvailable && capture.status in setOf("recording", "paused", "interrupted") else state.available
+    val textMode = capture.audioRetention?.mode == "text"
+    val available = state != null && (if (live) state.liveAvailable && capture.status in setOf("recording", "paused", "interrupted") else state.available) &&
+        (!textMode || CaptureRetention.canStartTranscription(state.audioRetention))
 
     fun operate(cancel: Boolean) {
         val controller = coordinator ?: return
         if (busy || !lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
         if (cancel && (!active || latest == null || pending != null)) return
         if (!cancel && pending == null && (!available || active)) return
+        if (!cancel && pending == null && textMode && !CaptureRetention.canStartTranscription(state?.audioRetention)) return
         busy = true
         operationError = false
         action = scope.launch {

@@ -25,6 +25,7 @@ import retrofit2.Response
 
 /** In-memory protocol fixture only: no server, credentials, microphone or provider. */
 internal class CaptureProtocolFixture : CaptureApi {
+    var textLifetimeMs = 86400000L
     var textAudioAvailable = true
     override suspend fun audioCapabilities() = CaptureAudioCapabilitiesDto(textAudioAvailable, if (textAudioAvailable) "" else "rollout_disabled")
     var failCreate = false
@@ -52,7 +53,7 @@ internal class CaptureProtocolFixture : CaptureApi {
         if (!::state.isInitialized) state = CaptureDto(UUID.randomUUID().toString(), UUID.randomUUID().toString(), request.deviceId,
             "preparing", 1, "2026-09-13T00:00:00Z", mediaStatus = "not_connected", lastAckedSequence = 0,
             audioRetention = if (request.retentionMode == "text") CaptureAudioRetentionDto("text",
-                java.time.Instant.now().plusSeconds(86400).toString(), java.time.Instant.now().plusSeconds(86000).toString(),
+                java.time.Instant.now().plusMillis(textLifetimeMs).toString(), java.time.Instant.now().plusMillis(textLifetimeMs - 100).toString(),
                 false, "not_started", "", null) else null)
         val response = operation(key)
         afterCreate?.invoke()

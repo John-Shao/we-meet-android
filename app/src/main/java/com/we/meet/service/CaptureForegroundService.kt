@@ -26,6 +26,7 @@ import com.we.meet.data.capture.CapturePcmPump
 import com.we.meet.data.capture.CapturePcmSource
 import com.we.meet.data.capture.CapturePumpOutcome
 import com.we.meet.data.capture.CaptureRecovery
+import com.we.meet.data.capture.CaptureRetention
 import com.we.meet.data.capture.CaptureWave
 import com.we.meet.data.capture.LocalCapture
 import java.util.concurrent.atomic.AtomicLong
@@ -54,6 +55,7 @@ data class CaptureServiceState(
     val busy: Boolean = false,
     val error: Boolean = false,
     val uploadFailed: Boolean = false,
+    val retentionExpired: Boolean = false,
 ) { override fun toString() = "CaptureServiceState(<private>)" }
 
 /** Bound for local recovery/UI; promoted to microphone FGS only by a visible user action. */
@@ -104,6 +106,14 @@ class CaptureForegroundService : Service() {
                         stopSelf()
                         break
                     }
+                    val local = mutableState.value.local
+                    if (local != null && !local.sealed && !mutableState.value.retentionExpired && CaptureRetention.audioExpired(local)) {
+                        stopEpoch.incrementAndGet()
+                        pump?.requestStop(true)
+                        mutableState.value = mutableState.value.copy(retentionExpired = true)
+                        if (mutableState.value.recording) pause(unexpected = true)
+                        else refresh()
+                    }
                 }
             } catch (canceled: CancellationException) { throw canceled }
             catch (_: Exception) {
@@ -139,7 +149,9 @@ class CaptureForegroundService : Service() {
             microphoneActive = true
             com.we.meet.data.capture.CapturePlaybackRegistry.stopAll()
             if (mutableState.value.busy) { removeForeground(); stopSelf(startId); return START_NOT_STICKY }
-            startInput(intent.getStringExtra(EXTRA_TITLE).orEmpty())
+            val retentionMode = intent.getStringExtra(EXTRA_RETENTION) ?: "media"
+            require(retentionMode in setOf("media", "text"))
+            startInput(intent.getStringExtra(EXTRA_TITLE).orEmpty(), retentionMode)
         } catch (_: Exception) {
             mutableState.value = mutableState.value.copy(error = true)
             removeForeground()
@@ -153,15 +165,15 @@ class CaptureForegroundService : Service() {
     private fun authorized() = !destroyed && viewer != null && currentViewer() == viewer &&
         hasMicrophonePermission() && !ConferenceForegroundService.isRunning
 
-    private fun startInput(title: String) {
+    private fun startInput(title: String, retentionMode: String) {
         if (mutableState.value.recording || mutableState.value.busy) return
         val epoch = stopEpoch.get()
         perform {
             check(authorized() && epoch == stopEpoch.get())
             val controller = requireNotNull(recovery)
             val existing = mutableState.value.local
-            val local = if (existing == null || existing.sealed) controller.prepare(title) else existing
-            mutableState.value = mutableState.value.copy(local = local)
+            val local = if (existing == null || existing.sealed) controller.prepare(title, retentionMode) else existing
+            mutableState.value = mutableState.value.copy(local = local, retentionExpired = CaptureRetention.audioExpired(local))
             controller.start(local.id)
             var opening: CapturePcmSource? = null
             try {
@@ -213,7 +225,7 @@ class CaptureForegroundService : Service() {
         }
     }
 
-    fun finish() {
+    fun finish(allowMissing: Boolean = false) {
         stopEpoch.incrementAndGet()
         pump?.requestStop()
         perform(queue = true) {
@@ -223,7 +235,7 @@ class CaptureForegroundService : Service() {
             removeForeground()
             stopSelf()
             upload?.join()
-            requireNotNull(recovery).finish(local.id)
+            requireNotNull(recovery).finish(local.id, allowMissing)
             refresh()
         }
     }
@@ -344,9 +356,11 @@ class CaptureForegroundService : Service() {
         private const val ACTION_PAUSE = "com.we.meet.capture.PAUSE"
         private const val EXTRA_VIEWER = "capture_viewer"
         private const val EXTRA_TITLE = "capture_title"
+        private const val EXTRA_RETENTION = "capture_retention"
 
-        fun start(activity: ComponentActivity, title: String = "") {
+        fun start(activity: ComponentActivity, title: String = "", retentionMode: String = "media") {
             check(BuildConfig.WE_MEET_CAPTURE_NATIVE && title.length <= 500)
+            require(retentionMode in setOf("media", "text"))
             check(activity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
             check(ContextCompat.checkSelfPermission(activity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
             val app = activity.application as CaptureServiceHost
@@ -356,7 +370,7 @@ class CaptureForegroundService : Service() {
             com.we.meet.data.capture.CapturePlaybackRegistry.stopAll()
             try {
                 ContextCompat.startForegroundService(activity, Intent(activity, CaptureForegroundService::class.java)
-                    .setAction(ACTION_START).putExtra(EXTRA_VIEWER, viewer).putExtra(EXTRA_TITLE, title))
+                    .setAction(ACTION_START).putExtra(EXTRA_VIEWER, viewer).putExtra(EXTRA_TITLE, title).putExtra(EXTRA_RETENTION, retentionMode))
             } catch (error: Exception) { microphoneActive = false; throw error }
         }
 

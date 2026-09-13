@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_text_only">Keep text only</string>
+    <string name="capture_text_consent">Audio is held temporarily for transcription, without playback or download. It is cleaned up after successful transcription. Start or retry transcription within 30 minutes after ending; audio expires within 24 hours after starting. Unuploaded audio stays in memory and cannot be recovered if the recording service ends. Start transcription separately; it uses AI quota.</string>
+    <string name="capture_text_unavailable">Text-only recording is currently unavailable. Choose audio retention or try again later.</string>
+    <string name="capture_text_saved">Recording ended</string>
+    <string name="capture_text_interrupted_hint">Recording was interrupted. Temporary audio may be missing. Resume before expiry, or explicitly end with the audio already received by the server.</string>
+    <string name="capture_text_local_hint">Only text is retained. Uploaded audio follows the server retention window; unuploaded audio is temporary and cannot be recovered after the recording process ends.</string>
+    <string name="capture_text_expired">Temporary audio has expired. Recording has stopped; end the recording to finish processing its available text.</string>
+    <string name="capture_text_finish_hint">Stop recording and finish uploading available audio. Then check transcription and temporary-audio cleanup status.</string>
+    <string name="capture_text_finish_incomplete">End with incomplete audio</string>
+    <string name="capture_text_incomplete_hint">End this recording using only audio already received by the server. Remaining local audio will be discarded and missing parts cannot be recovered. The result will be marked incomplete.</string>
+    <string name="capture_text_confirm_incomplete">Discard missing audio and end</string>
+    <string name="capture_text_retention_title">Temporary audio</string>
+    <string name="capture_text_retention_error">Audio retention status cannot be confirmed. Refresh before continuing.</string>
+    <string name="capture_text_cleanup_not_started">Audio is temporarily held for transcription. Cleanup has not started.</string>
+    <string name="capture_text_cleanup_pending">Temporary audio cleanup is in progress. Text and existing minutes remain.</string>
+    <string name="capture_text_cleanup_failed">Temporary audio cleanup is not complete. The system will retry.</string>
+    <string name="capture_text_cleanup_complete">Temporary audio was deleted. Text and existing minutes remain.</string>
+    <string name="capture_text_access_until">Audio access ends: %1$s. Transcription cannot continue after expiry; deletion progress is shown above.</string>
+    <string name="capture_text_retry_until">Start or retry transcription by: %1$s.</string>
+    <string name="capture_text_retry_closed">New transcription attempts are unavailable. Existing request results can still be checked.</string>
+</resources>

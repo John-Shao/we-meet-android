@@ -119,6 +119,31 @@ class CaptureForegroundServiceTest {
         }
     }
 
+    @Test fun textAudioExpiryStopsSyntheticHardwareAndCannotResume() = runBlocking {
+        app.protocol.textLifetimeMs = 2500
+        val service = bind()
+        until { service.state.value.ready }
+        ActivityScenario.launch(ComponentActivity::class.java).use { activity ->
+            activity.onActivity { CaptureForegroundService.start(it, "Temporary fixture", "text") }
+            until { service.state.value.recording && app.input != null }
+            val firstInput = app.input
+            assertEquals("text", service.state.value.local!!.create.retentionMode)
+            until { service.state.value.retentionExpired && !service.state.value.busy && !service.state.value.recording }
+            assertTrue(firstInput!!.closed)
+            assertFalse(CaptureForegroundService.microphoneActive)
+            assertEquals(0, service.state.value.local!!.pendingBytes)
+            activity.onActivity { CaptureForegroundService.start(it) }
+            until { service.state.value.error && !service.state.value.busy }
+            assertSame(firstInput, app.input)
+            assertFalse(CaptureForegroundService.microphoneActive)
+            instrumentation.runOnMainSync { service.finish(true) }
+            until { !service.state.value.busy }
+            assertFalse(service.state.value.error)
+            assertTrue(service.state.value.local!!.sealed)
+            assertTrue(app.protocol.seals.last().clientInterrupted)
+        }
+    }
+
     @Test fun pauseWhileStartResponseIsPendingNeverOpensInputLater() = runBlocking {
         val entered = CompletableDeferred<Unit>()
         val release = CompletableDeferred<Unit>()

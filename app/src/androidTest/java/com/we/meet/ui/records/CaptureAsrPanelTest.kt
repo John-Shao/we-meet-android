@@ -35,7 +35,7 @@ class CaptureAsrPanelTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private val viewer = "asr-ui-${UUID.randomUUID()}"
-    private val capture = CaptureDto(UUID.randomUUID().toString(), UUID.randomUUID().toString(), "device", "recording", 2,
+    private var capture = CaptureDto(UUID.randomUUID().toString(), UUID.randomUUID().toString(), "device", "recording", 2,
         "2026-09-13T00:00:00Z", mediaStatus = "uploading", lastAckedSequence = 1)
     private val api = Fixture()
     private val repository = CaptureTranscriptionRepository(api) { viewer }
@@ -99,6 +99,31 @@ class CaptureAsrPanelTest {
         assertEquals(listOf(frozen.key), api.keys.toList())
     }
 
+    @Test fun expiredTextBlocksNewTranscriptionButPreservesPendingReconciliation() {
+        val past = java.time.Instant.now().minusSeconds(10).toString()
+        val retention = CaptureAudioRetentionDto("text", past, past, true, "pending", "", null)
+        capture = capture.copy(audioRetention = retention)
+        api.retention = retention
+        val frozen = MeetingIntentStore.open(context, viewer) { viewer }.use {
+            it.getOrCreate(MeetingIntentKind.CAPTURE_ASR, capture.id, "{\"expected_job_id\":null,\"allow_incomplete\":false,\"live\":true}")
+        }
+        show()
+        await(R.string.capture_asr_reconcile)
+        assertTrue(api.keys.isEmpty())
+        compose.onNodeWithText(label(R.string.capture_asr_reconcile)).performScrollTo().performClick()
+        await(R.string.capture_asr_cancel)
+        assertEquals(listOf(frozen.key), api.keys.toList())
+    }
+
+    @Test fun textWithoutValidRetentionCannotStartTranscription() {
+        val until = java.time.Instant.now().plusSeconds(3600).toString()
+        capture = capture.copy(audioRetention = CaptureAudioRetentionDto("text", until, until, false, "not_started", "", null))
+        show()
+        await(R.string.capture_asr_usage)
+        compose.onNodeWithText(label(R.string.capture_asr_start_live)).assertDoesNotExist()
+        assertTrue(api.keys.isEmpty())
+    }
+
     @Test fun previewUsesExactJobAndOlderPagesAndHidesTextAfterReadFailure() {
         api.active = true
         api.job = api.job.copy(status = "running", finalCount = 51)
@@ -133,6 +158,7 @@ class CaptureAsrPanelTest {
     }
 
     private class Fixture : CaptureTranscriptionApi {
+        var retention: CaptureAudioRetentionDto? = null
         @Volatile var enabled = true
         @Volatile var active = false
         @Volatile var loseResponse = false
@@ -143,7 +169,7 @@ class CaptureAsrPanelTest {
         val canceled = CopyOnWriteArrayList<String>()
         val cursors = CopyOnWriteArrayList<Int>()
         val previewJobs = CopyOnWriteArrayList<String>()
-        override suspend fun state(capture: String) = CaptureAsrStateDto(enabled, enabled, results = if (active) listOf(job) else emptyList())
+        override suspend fun state(capture: String) = CaptureAsrStateDto(enabled, enabled, results = if (active) listOf(job) else emptyList(), audioRetention = retention)
         override suspend fun request(capture: String, key: String, request: RequestBody): CaptureAsrCreatedDto {
             keys += key
             bodies += Buffer().also { request.writeTo(it) }.readUtf8()
