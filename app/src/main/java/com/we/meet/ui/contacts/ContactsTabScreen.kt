@@ -15,13 +15,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccountTree
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,13 +33,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.R
 import com.we.meet.WeMeetApp
+import com.we.meet.core.directory.ui.DirectoryEntryRow
+import com.we.meet.core.directory.ui.EntryRowDivider
 import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.data.repository.OrgState
 import com.we.meet.ui.theme.Dimens
@@ -144,15 +143,20 @@ fun ContactsTabScreen(
 
             // 组织内的两种「人」放一组:都是"找某个同事"的入口,只是范围不同
             // (本组织 / 别的组织)。飞书同款分组。
-            EntryRow(
+            //
+            // 图标是**品牌蓝**:首页这几个是固定入口(动作),与部门行那种导航内容
+            // 用次要色区分开 —— 行本身走共享的 DirectoryEntryRow。
+            DirectoryEntryRow(
                 icon = Icons.Filled.AccountTree,
                 label = stringResource(R.string.contacts_org_members),
+                iconTint = MaterialTheme.colorScheme.primary,
                 onClick = onOpenOrgContacts,
             )
-            EntryDivider()
-            EntryRow(
+            EntryRowDivider()
+            DirectoryEntryRow(
                 icon = Icons.Filled.PersonAdd,
                 label = stringResource(R.string.external_contacts_title),
+                iconTint = MaterialTheme.colorScheme.primary,
                 onClick = { showExternalContacts = true },
             )
 
@@ -160,17 +164,19 @@ fun ContactsTabScreen(
 
             // 星标与群组各自成组:它们与「组织架构」不是一类东西
             // (一个是归类,一个是会话)。
-            EntryRow(
+            DirectoryEntryRow(
                 icon = Icons.Filled.Star,
                 label = stringResource(R.string.starred_title),
+                iconTint = MaterialTheme.colorScheme.primary,
                 onClick = onOpenStarred,
             )
 
             GroupSeam()
 
-            EntryRow(
+            DirectoryEntryRow(
                 icon = Icons.Filled.Groups,
                 label = stringResource(R.string.contacts_my_groups),
+                iconTint = MaterialTheme.colorScheme.primary,
                 onClick = onOpenMyGroups,
             )
 
@@ -263,46 +269,3 @@ private fun GroupSeam() {
     )
 }
 
-/** 组内两行之间的分隔线:从文字左缘起(与全站列表一致)。 */
-@Composable
-private fun EntryDivider() {
-    HorizontalDivider(
-        color = MaterialTheme.colorScheme.outlineVariant,
-        modifier = Modifier.padding(start = Dimens.DividerIndent),
-    )
-}
-
-@Composable
-private fun EntryRow(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            // 这几个是入口(不是导航内容),用品牌蓝点出来 —— 与部门行区分开。
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(Dimens.IconMedium),
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = Dimens.ScreenPadding),
-        )
-        Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}

@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -34,7 +33,8 @@ import androidx.compose.ui.text.font.FontWeight
 import com.we.meet.R
 import com.we.meet.core.directory.data.DirectoryRepository
 import com.we.meet.core.directory.data.ExternalContactDto
-import com.we.meet.core.directory.ui.MemberAvatar
+import com.we.meet.core.directory.ui.MemberRow
+import com.we.meet.core.directory.ui.MemberRowDivider
 import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetInlineEmptyState
 import com.we.meet.ui.components.WeMeetInlineErrorState
@@ -105,12 +105,15 @@ fun ExternalContactsSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.88f)
-                .padding(horizontal = Dimens.ScreenPadding),
+                .fillMaxHeight(0.88f),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // 表头/搜索/分组标签各自带左右 16dp,名单行则由行自己带
+                    // (见 DirectoryRows.kt)—— 两边都加就会变成 32dp。
+                    .padding(horizontal = Dimens.ScreenPadding),
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -140,6 +143,7 @@ fun ExternalContactsSheet(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(horizontal = Dimens.ScreenPadding)
                         .padding(vertical = Dimens.SpaceM),
                 ) {
                     OutlinedTextField(
@@ -228,7 +232,9 @@ fun ExternalContactsSheet(
                                 Text(
                                     stringResource(R.string.external_contacts_requests),
                                     style = MaterialTheme.typography.labelLarge,
-                                    modifier = Modifier.padding(top = Dimens.SpaceM),
+                                    modifier = Modifier
+                                        .padding(horizontal = Dimens.ScreenPadding)
+                                        .padding(top = Dimens.SpaceM),
                                 )
                             }
                             items(requests, key = { it.relationshipId ?: it.id }) { contact ->
@@ -286,30 +292,15 @@ private fun ExternalContactRow(
     contact: ExternalContactDto,
     actions: @Composable RowScope.() -> Unit,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = Dimens.SpaceS),
-    ) {
-        MemberAvatar(
-            name = contact.displayName,
-            url = contact.avatarUrl,
-            cacheKey = "external:${contact.id}",
-        )
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = Dimens.SpaceM),
-        ) {
-            Text(contact.displayName, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                contact.organization?.name.orEmpty(),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Row(content = actions)
-    }
-    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    // 行本体走共享的 MemberRow:头像 40dp、左右 16dp、上下 8dp、名字 bodyLarge、
+    // 副标题 bodySmall。这一页只多说两件事 —— 副标题是**对方所在的组织**
+    // (ExternalContactDto.toMember() 把 organization 落进 department,正是这个意思),
+    // 以及行尾那组动作。
+    MemberRow(
+        member = contact.toMember(),
+        // 弹层里没有"点进去"这一步:动作全在行尾。
+        background = false,
+        trailing = { Row(content = actions) },
+    )
+    MemberRowDivider()
 }

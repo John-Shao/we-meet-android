@@ -50,7 +50,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.R
 import com.we.meet.core.directory.data.DepartmentDto
 import com.we.meet.core.directory.data.MemberDto
-import com.we.meet.core.directory.ui.MemberAvatar
+import com.we.meet.core.directory.ui.DirectoryEntryRow
+import com.we.meet.core.directory.ui.DirectoryLetterHeader
+import com.we.meet.core.directory.ui.EntryRowDivider
+import com.we.meet.core.directory.ui.MemberRow
+import com.we.meet.core.directory.ui.MemberRowDivider
 import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
@@ -141,10 +145,12 @@ fun OrgContactsScreen(
                     stringResource(R.string.contacts_search_entry_in_dept, deptName)
                 } ?: stringResource(R.string.contacts_search_hint),
                 onClick = { onOpenSearch(currentDept?.id) },
+                // 固定头部的内边距与「我的群组」那一页取同一个值(SpaceS):
+                // 两个页面都是「白底固定头 + 下边线 + 浅灰名单」,头不能一个高一个矮。
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
+                    .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             )
 
             Breadcrumbs(
@@ -209,11 +215,23 @@ private fun ContactList(
 ) {
     LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
         items(ui.childDepartments, key = { "d-${it.id}" }) { dept ->
-            DepartmentRow(dept = dept, onClick = { onOpenDept(dept) })
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant,
-                modifier = Modifier.padding(start = Dimens.DividerIndent),
+            DirectoryEntryRow(
+                label = dept.name.orEmpty(),
+                icon = Icons.Filled.Folder,
+                onClick = { onOpenDept(dept) },
+                // 人数:空部门不写一个「0」,那是纯噪声;有人的部门点进去之前就该知道
+                // 里面有多少人(服务端 annotate,不额外请求 —— 与 Web 的部门树一致)。
+                trailingText = if (dept.memberCount > 0) {
+                    pluralStringResource(
+                        R.plurals.contacts_member_count,
+                        dept.memberCount,
+                        dept.memberCount,
+                    )
+                } else {
+                    null
+                },
             )
+            EntryRowDivider()
         }
         // 当前部门的信息行(负责人 / 直属人数 / 发起群聊)。只有真的在部门里才有
         // —— 组织根层级没有"哪个部门"这回事。放在子部门与成员之间:它既是这个
@@ -264,7 +282,7 @@ private fun ContactList(
                     // 开头」与「汉字名」各是一段 '#')。而 LazyColumn 要求 key 唯一,重复 key
                     // 不是「两个头」而是直接抛异常。字母头本身没有状态,key 不稳定没有代价。
                     is ContactEntry.Letter -> stickyHeader(key = "h-$index") {
-                        LetterHeader(initial = entry.initial)
+                        DirectoryLetterHeader(initial = entry.initial)
                     }
 
                     // 人用 user id 当 key(稳定:列表变化时不重建行)。这里能安全地用 id,
@@ -278,10 +296,7 @@ private fun ContactList(
                             showDepartment = currentDept == null,
                             onClick = { onMemberClick(entry.member.id) },
                         )
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                            modifier = Modifier.padding(start = Dimens.DividerIndentAvatar),
-                        )
+                        MemberRowDivider()
                     }
                 }
             }
@@ -305,34 +320,6 @@ private fun ContactList(
                 }
             }
         }
-    }
-}
-
-/**
- * sticky 字母头。直接显示服务端下发的 `initial` —— '#' 桶就显示井号本身:
- * 它是一段(数字/符号/空名字),不是「其他」。
- *
- * 底色是 `background`(浅灰)——字母头属于**列表的底**,白底条目之间的那道灰缝
- * 由它给出(与「通讯录」首页的 GroupSeam 同一个读法)。原先这里写的是 `surface`
- * (白):行没有底色(落成浅灰)、字母头却是白的,底色关系正好反了 —— 名单看着
- * 是凹进去的,小节头反而成了唯一有底色的一块。
- */
-@Composable
-private fun LetterHeader(initial: String) {
-    Box(
-        contentAlignment = Alignment.CenterStart,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(Dimens.AlphabetHeaderHeight)
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = Dimens.ScreenPadding),
-    ) {
-        Text(
-            text = initial,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-        )
     }
 }
 
@@ -530,100 +517,3 @@ private fun BreadcrumbCrumb(
     }
 }
 
-@Composable
-private fun DepartmentRow(dept: DepartmentDto, onClick: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            // 条目白底、列表浅灰:名字与人数落在白底上,块与块之间由字母头那道
-            // 灰缝分开(见 LetterHeader)。行内不铺白底的话,整张名单是一片浅灰。
-            .background(MaterialTheme.colorScheme.surface)
-            .clickable(onClick = onClick)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
-    ) {
-        Icon(
-            Icons.Filled.Folder,
-            contentDescription = null,
-            // Ordinary departments are navigation content, not primary actions.
-            // Reserve brand blue for the fixed high-value entries on the home page.
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(Dimens.IconMedium),
-        )
-        Text(
-            text = dept.name.orEmpty(),
-            style = MaterialTheme.typography.bodyLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = Dimens.ScreenPadding),
-        )
-        // 人数:空部门不写一个「0」,那是纯噪声;有人的部门点进去之前就该知道
-        // 里面有多少人(服务端 annotate,不额外请求 —— 与 Web 的部门树一致)。
-        if (dept.memberCount > 0) {
-            Text(
-                text = pluralStringResource(
-                    R.plurals.contacts_member_count,
-                    dept.memberCount,
-                    dept.memberCount,
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = Dimens.SpaceS),
-            )
-        }
-        Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun MemberRow(
-    member: MemberDto,
-    showDepartment: Boolean,
-    onClick: () -> Unit,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .clickable(onClick = onClick)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
-    ) {
-        MemberAvatar(
-            name = member.displayName,
-            url = member.avatarUrl,
-            cacheKey = "avatar:${member.id}",
-        )
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = Dimens.SpaceM),
-        ) {
-            Text(
-                text = member.displayName,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            val subtitle = listOfNotNull(
-                member.title?.takeIf { it.isNotBlank() },
-                if (showDepartment) member.department?.name?.takeIf { it.isNotBlank() } else null,
-            ).joinToString(" · ")
-            if (subtitle.isNotBlank()) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
-}

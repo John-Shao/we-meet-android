@@ -1,12 +1,7 @@
 package com.we.meet.ui.contacts
 
 import android.widget.Toast
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -31,11 +25,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.components.WeMeetEmptyState
@@ -47,7 +39,8 @@ import com.we.meet.core.directory.data.MemberDto
 import com.we.meet.core.directory.data.ContactPrefs
 import com.we.meet.core.directory.ui.ContactPicker
 import com.we.meet.core.directory.ui.ContactPickerMode
-import com.we.meet.core.directory.ui.MemberAvatar
+import com.we.meet.core.directory.ui.MemberRow
+import com.we.meet.core.directory.ui.MemberRowDivider
 import com.we.meet.ui.theme.Dimens
 import kotlinx.coroutines.launch
 
@@ -139,10 +132,7 @@ fun StarredContactsScreen(
                                 members = members.filterNot { it.id == member.id }
                             },
                         )
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                            modifier = Modifier.padding(start = Dimens.DividerIndentAvatar),
-                        )
+                        MemberRowDivider()
                     }
                 }
             }
@@ -185,62 +175,24 @@ private fun StarredRow(
     onClick: () -> Unit,
     onUnstar: () -> Unit,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            // 条目白底落在浅灰的滚动区上(与「内部联系人」同一套底色关系:
-            // 条目是浅色,列表底是深色 —— 见 docs/page-backgrounds.md §2)。
-            .background(MaterialTheme.colorScheme.surface)
-            .clickable(onClick = onClick)
-            .padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs)
-            .padding(vertical = Dimens.SpaceS),
-    ) {
-        MemberAvatar(
-            name = member.displayName,
-            url = member.avatarUrl,
-            cacheKey = "avatar:${member.id}",
-        )
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = Dimens.SpaceM),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = member.displayName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
-                )
-                // 名字后一颗实心星(对标飞书星标列表)。
-                Icon(
-                    Icons.Filled.Star,
-                    contentDescription = stringResource(R.string.starred_title),
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .padding(start = Dimens.SpaceXs)
-                        .size(Dimens.IconTiny),
-                )
+    // 行本体走共享的 MemberRow(几何/字体/分隔线在 DirectoryRows.kt 一处定):
+    // 这一页只多说两件事 —— 名字后那颗星,和行尾的「移除」。
+    MemberRow(
+        member = member,
+        onClick = onClick,
+        badge = {
+            // 名字后一颗实心星(对标飞书星标列表)。
+            Icon(
+                Icons.Filled.Star,
+                contentDescription = stringResource(R.string.starred_title),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(Dimens.IconTiny),
+            )
+        },
+        trailing = {
+            TextButton(onClick = onUnstar) {
+                Text(stringResource(R.string.starred_remove))
             }
-            val subtitle = listOfNotNull(
-                member.title?.takeIf { it.isNotBlank() },
-                member.department?.name?.takeIf { it.isNotBlank() },
-            ).joinToString(" · ")
-            if (subtitle.isNotBlank()) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-        Spacer(Modifier.size(Dimens.SpaceXs))
-        TextButton(onClick = onUnstar) {
-            Text(stringResource(R.string.starred_remove))
-        }
-    }
+        },
+    )
 }

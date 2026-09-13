@@ -176,14 +176,14 @@ fun ContactPicker(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.85f)
-                .padding(horizontal = Dimens.ScreenPadding),
+                .fillMaxHeight(0.85f),
         ) {
             title?.takeIf { it.isNotBlank() }?.let {
                 Text(
                     text = it,
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.fillMaxWidth().semantics { heading() }
+                        .padding(horizontal = Dimens.ScreenPadding)
                         .padding(bottom = Dimens.SpaceL),
                 )
             }
@@ -196,7 +196,11 @@ fun ContactPicker(
                 enabled = enabled,
                 placeholder = { Text(stringResource(R.string.picker_search_hint)) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                // 表头/搜索框/已选 chips 各自带左右 16dp,名单行由行自己带
+                // (见 DirectoryRows.kt)—— 两边都加就成 32dp 了。
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.ScreenPadding),
             )
             Spacer(Modifier.height(Dimens.SpaceM))
 
@@ -205,6 +209,7 @@ fun ContactPicker(
                     horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(horizontal = Dimens.ScreenPadding)
                         .padding(bottom = Dimens.SpaceS),
                 ) {
                     items(selected.value.values.toList(), key = { it.userId }) { picked ->
@@ -232,27 +237,51 @@ fun ContactPicker(
                         title = stringResource(R.string.picker_empty),
                     )
 
-                    else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(members, key = { it.id }) { member ->
-                            MemberRow(
-                                member = member,
-                                mode = mode,
-                                checked = member.id in selected.value,
-                                enabled = enabled,
-                                onClick = {
-                                    val picked = member.toPicked()
-                                    if (mode == ContactPickerMode.Single) {
-                                        onConfirm(listOf(picked))
+                    else -> {
+                        // 点一下:单选 = 直接确认并关闭;多选 = 勾上/取消。
+                        fun pick(member: MemberDto) {
+                            val picked = member.toPicked()
+                            if (mode == ContactPickerMode.Single) {
+                                onConfirm(listOf(picked))
+                            } else {
+                                selected.value = if (member.id in selected.value) {
+                                    selected.value - member.id
+                                } else {
+                                    selected.value + (member.id to picked)
+                                }
+                            }
+                        }
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(members, key = { it.id }) { member ->
+                                // 行本体是共享的那一份(见 DirectoryRows.kt):这一页只说
+                                // 两件自己的事 —— 副标题要带上「外部」标签,以及多选时
+                                // 行尾那个勾选框。
+                                val checkbox: (@Composable () -> Unit)? =
+                                    if (mode == ContactPickerMode.Multi) {
+                                        {
+                                            Checkbox(
+                                                checked = member.id in selected.value,
+                                                onCheckedChange = { pick(member) },
+                                                enabled = enabled,
+                                            )
+                                        }
                                     } else {
-                                        selected.value =
-                                            if (member.id in selected.value) {
-                                                selected.value - member.id
-                                            } else {
-                                                selected.value + (member.id to picked)
-                                            }
+                                        null
                                     }
-                                },
-                            )
+                                MemberRow(
+                                    member = member,
+                                    subtitleOverride = listOfNotNull(
+                                        stringResource(R.string.picker_external_tag)
+                                            .takeIf { member.external },
+                                        member.title?.takeIf { it.isNotBlank() },
+                                        member.department?.name?.takeIf { it.isNotBlank() },
+                                    ).joinToString(" · "),
+                                    background = false,
+                                    enabled = enabled,
+                                    trailing = checkbox,
+                                    onClick = { pick(member) },
+                                )
+                            }
                         }
                     }
                 }
@@ -277,62 +306,6 @@ fun ContactPicker(
     }
 }
 
-@Composable
-private fun MemberRow(
-    member: MemberDto,
-    mode: ContactPickerMode,
-    checked: Boolean,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(vertical = Dimens.SpaceS),
-    ) {
-        MemberAvatar(
-            name = member.displayName,
-            url = member.avatarUrl,
-            cacheKey = "avatar:${member.id}",
-        )
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = Dimens.SpaceM),
-        ) {
-            Text(
-                member.displayName,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            val subtitle = listOfNotNull(
-                stringResource(R.string.picker_external_tag).takeIf { member.external },
-                member.title?.takeIf { it.isNotBlank() },
-                member.department?.name?.takeIf { it.isNotBlank() },
-            ).joinToString(" · ")
-            if (subtitle.isNotBlank()) {
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-        if (mode == ContactPickerMode.Multi) {
-            Spacer(Modifier.width(Dimens.SpaceS))
-            Checkbox(
-                checked = checked,
-                onCheckedChange = { onClick() },
-                enabled = enabled,
-            )
-        }
-    }
-}
 
 private fun MemberDto.toPicked() = PickedMember(
     userId = id,

@@ -1,9 +1,7 @@
 package com.we.meet.feature.im.ui.group
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -13,20 +11,19 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.we.meet.core.directory.ui.ContactListRow
+import com.we.meet.core.directory.ui.MemberRowDivider
 import com.we.meet.feature.im.ImDeps
 import com.we.meet.feature.im.R
 import com.we.meet.feature.im.ui.common.GroupAvatar
@@ -151,10 +148,7 @@ fun MyGroupsScreen(
                             // 条目白底落在浅灰的滚动区上:列表底是深色、
                             // 条目是浅色(与「内部联系人」「星标联系人」「消息」
                             // 同一套底色关系)。线从文字左缘起,不横穿头像。
-                            HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant,
-                                modifier = Modifier.padding(start = Dimens.DividerIndentAvatar),
-                            )
+                            MemberRowDivider()
                         }
                     }
                 }
@@ -166,9 +160,10 @@ fun MyGroupsScreen(
 /**
  * 一行群:九宫格头像 + 群名 + 成员数。
  *
- * 行内几何(头像 [Dimens.AvatarM]、行内距 [Dimens.ScreenPadding]、行间距
- * [Dimens.SpaceS]、名字 bodyLarge、副标题 bodySmall)与「内部联系人」的人行完全
- * 一致 —— 两页并排看时,同一个东西不该有第二种长相。
+ * 行本体走通讯录那份共享的 [ContactListRow](见 DirectoryRows.kt)——「头像 40dp、
+ * 左右 16dp、上下 8dp、名字 bodyLarge、副标题 bodySmall」这些**不该由这一页再说一遍**。
+ * 这里只提供两样这一页独有的东西:群头像是九宫格([GroupAvatar],不是首字母块),以及
+ * 名字要按搜索关键词高亮([highlightMatches] 给的是 AnnotatedString)。
  */
 @Composable
 private fun GroupRow(
@@ -176,45 +171,25 @@ private fun GroupRow(
     query: String,
     onClick: () -> Unit,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .clickable(onClick = onClick)
-            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
-    ) {
-        GroupAvatar(
-            tiles = row.memberTiles,
-            customAvatarUrl = row.avatarUrl,
-            avatarKey = row.cid,
-            size = Dimens.AvatarM,
-        )
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = Dimens.SpaceM),
-        ) {
-            Text(
-                text = highlightMatches(
-                    row.title.ifBlank { stringResource(R.string.im_untitled_chat) },
-                    query,
-                ),
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+    ContactListRow(
+        name = row.title.ifBlank { stringResource(R.string.im_untitled_chat) },
+        nameAnnotated = highlightMatches(
+            row.title.ifBlank { stringResource(R.string.im_untitled_chat) },
+            query,
+        ),
+        subtitle = pluralStringResource(
+            R.plurals.im_my_groups_member_count,
+            row.memberUids.size,
+            row.memberUids.size,
+        ),
+        avatar = {
+            GroupAvatar(
+                tiles = row.memberTiles,
+                customAvatarUrl = row.avatarUrl,
+                avatarKey = row.cid,
+                size = Dimens.AvatarM,
             )
-            Text(
-                text = pluralStringResource(
-                    R.plurals.im_my_groups_member_count,
-                    row.memberUids.size,
-                    row.memberUids.size,
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
+        },
+        onClick = onClick,
+    )
 }
