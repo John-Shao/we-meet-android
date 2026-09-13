@@ -50,6 +50,8 @@ class RecordScreensTest {
         var snapshotReads = 0
         var revision = 3
         val originalQueries = mutableListOf<Pair<String?, String?>>()
+        val summarySelectors = mutableListOf<String?>()
+        var missingVersion = false
         val queries = mutableListOf<Pair<String, String?>>()
         private fun checkAccess() { check(!revoked) { "Fixture access revoked" } }
         override suspend fun record(recordId: String): RecordDto {
@@ -64,6 +66,8 @@ class RecordScreensTest {
         }
         override suspend fun summaries(recordId: String, cursor: String?, versionId: String?): RecordPageDto<RecordSummaryVersionDto> {
             checkAccess()
+            summarySelectors += versionId
+            if (missingVersion && versionId != null) return RecordPageDto(emptyList())
             return RecordPageDto(listOf(RecordSummaryVersionDto(this@RecordScreensTest.versionId, stage, snapshotId, 3, true,
                 "2026-09-13T01:00:00Z", "open", asrStatus = asr,
                 content = RecordSummaryContentDto("Confirm release scope", listOf(RecordSummaryPointDto("Review capture recovery",
@@ -175,5 +179,20 @@ class RecordScreensTest {
         compose.onNodeWithText(label(R.string.records_clear_filters)).performClick()
         awaitText("Full original text")
         screenshot("records-originals-light")
+    }
+
+    @Test fun missingLinkedVersionDoesNotSilentlyOpenLatest() {
+        val fixture = Fixture().apply { missingVersion = true }
+        val repo = MeetingRecordRepository(fixture) { "reader" }
+        compose.setContent {
+            WeMeetTheme(darkTheme = false) { RecordDetailScreen(repo, "reader", recordId, {}, summaryVersionId = versionId) }
+        }
+        awaitText(label(R.string.records_linked_version_unavailable))
+        assertTrue(fixture.summarySelectors.isNotEmpty())
+        assertTrue(fixture.summarySelectors.all { it == versionId })
+        compose.onNodeWithText("Confirm release scope").assertDoesNotExist()
+        compose.onNodeWithText(label(R.string.records_all_versions)).performClick()
+        awaitText("Confirm release scope")
+        assertNull(fixture.summarySelectors.last())
     }
 }

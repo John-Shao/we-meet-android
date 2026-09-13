@@ -120,6 +120,22 @@
             </intent-filter>
         </activity>
 
+        <!-- Disabled together with native records; ordinary web links then stay in the browser. -->
+        <activity-alias
+            android:name=".MeetingRecordLink"
+            android:targetActivity=".MainActivity"
+            android:exported="true"
+            android:enabled="${WE_MEET_RECORDS_NATIVE}">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="${WE_MEET_APP_LINK_HOST}" />
+                <data android:pathPrefix="/meeting/records/" />
+            </intent-filter>
+        </activity-alias>
+
         <service
             android:name=".service.ConferenceForegroundService"
             android:exported="false"

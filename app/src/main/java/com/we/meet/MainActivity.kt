@@ -123,6 +123,12 @@ class MainActivity : AppCompatActivity() {
     private fun handleDeepLink(intent: Intent?) {
         val uri: Uri = intent?.data ?: return
         if (intent.action != Intent.ACTION_VIEW) return
+        if (BuildConfig.WE_MEET_RECORDS_NATIVE) {
+            com.we.meet.ui.records.RecordLinks.parse(uri.toString(), BuildConfig.WE_MEET_BASE_URL)?.let { link ->
+                (application as? WeMeetApp)?.pendingRecordLink?.value = link
+                return
+            }
+        }
         // wemeet://im?cid=<conversation id> — IM offline-push notification tap.
         // Same stash-on-Application pattern as pendingJoinSlug; AppNav owns
         // the consumption side.

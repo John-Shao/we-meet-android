@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="records_linked_version">Viewing the version selected by this link</string>
+    <string name="records_all_versions">All versions</string>
+    <string name="records_linked_version_unavailable">This version is unavailable</string>
     <string name="records_originals">Transcript</string>
     <string name="records_search_originals">Search full transcript</string>
     <string name="records_speakers">Speakers</string>

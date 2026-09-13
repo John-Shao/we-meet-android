@@ -77,6 +77,7 @@ android {
         manifestPlaceholders["GETUI_APPKEY"] = getuiAppKey
         manifestPlaceholders["GETUI_APPSECRET"] = getuiAppSecret
         manifestPlaceholders["WE_MEET_APP_LINK_HOST"] = appLinkHost
+        manifestPlaceholders["WE_MEET_RECORDS_NATIVE"] = meetingRecords
     }
 
     buildTypes {

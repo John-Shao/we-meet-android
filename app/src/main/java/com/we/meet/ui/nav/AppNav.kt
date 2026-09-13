@@ -36,6 +36,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.we.meet.WeMeetApp
@@ -105,7 +106,10 @@ object Routes {
     const val LOGIN = "login"
     const val HOME = "home"
     const val RECORD_LIBRARY = "meeting_records?summaries={summaries}"
-    const val RECORD_DETAIL = "meeting_record/{recordId}"
+    const val RECORD_DETAIL = "meeting_record/{recordId}?summary={summary}"
+    fun recordDetail(recordId: String, summaryId: String? = null): String =
+        "meeting_record/${URLEncoder.encode(recordId, StandardCharsets.UTF_8.name())}" +
+            (summaryId?.let { "?summary=${URLEncoder.encode(it, StandardCharsets.UTF_8.name())}" } ?: "")
     const val SETTINGS = "settings"
     const val ACCOUNT_SECURITY = "account_security"
     const val MEETING_SETTINGS = "meeting_settings"
@@ -450,6 +454,19 @@ fun AppNav() {
     }
 
     val startDestination = if (app.tokenStore.isLoggedIn()) Routes.HOME else Routes.LOGIN
+
+    val pendingRecordLink by app.pendingRecordLink.collectAsStateWithLifecycle()
+    val currentEntry by navController.currentBackStackEntryAsState()
+    LaunchedEffect(pendingRecordLink, currentEntry?.destination?.route) {
+        val link = pendingRecordLink ?: return@LaunchedEffect
+        if (!com.we.meet.BuildConfig.WE_MEET_RECORDS_NATIVE) {
+            app.pendingRecordLink.value = null
+            return@LaunchedEffect
+        }
+        if (!app.tokenStore.isLoggedIn() || currentEntry == null || currentEntry?.destination?.route == Routes.LOGIN) return@LaunchedEffect
+        app.pendingRecordLink.value = null
+        navController.navigate(Routes.recordDetail(link.recordId, link.summaryId)) { launchSingleTop = true }
+    }
 
     // Set by RoomScreen when the server disconnected us because the host
     // ended the meeting. Rendered as a bottom sheet overlay on top of
@@ -1513,11 +1530,15 @@ fun AppNav() {
         composable(Routes.RECORD_LIBRARY, arguments = listOf(navArgument("summaries") { type = NavType.BoolType; defaultValue = false })) { entry ->
             RecordLibraryScreen(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(),
                 summariesOnly = entry.arguments?.getBoolean("summaries") == true,
-                onRecord = { id -> navController.navigate("meeting_record/$id") }, onBack = rememberOnceOnly(safePop))
+                onRecord = { id -> navController.navigate(Routes.recordDetail(id)) }, onBack = rememberOnceOnly(safePop))
         }
-        composable(Routes.RECORD_DETAIL, arguments = listOf(navArgument("recordId") { type = NavType.StringType })) { entry ->
+        composable(Routes.RECORD_DETAIL, arguments = listOf(
+            navArgument("recordId") { type = NavType.StringType },
+            navArgument("summary") { type = NavType.StringType; nullable = true; defaultValue = null },
+        )) { entry ->
             RecordDetailScreen(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(),
-                entry.arguments?.getString("recordId").orEmpty(), onBack = rememberOnceOnly(safePop))
+                entry.arguments?.getString("recordId").orEmpty(), onBack = rememberOnceOnly(safePop),
+                summaryVersionId = entry.arguments?.getString("summary"))
         }
         composable(Routes.MEETING_SETTINGS) {
             MeetingSettingsScreen(

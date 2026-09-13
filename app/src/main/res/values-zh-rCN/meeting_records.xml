@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="records_linked_version">正在查看链接指定的纪要版本</string>
+    <string name="records_all_versions">全部版本</string>
+    <string name="records_linked_version_unavailable">该纪要版本不可用</string>
     <string name="records_originals">文字记录</string>
     <string name="records_search_originals">搜索完整原文</string>
     <string name="records_speakers">发言人</string>
