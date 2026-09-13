@@ -99,6 +99,15 @@ class ApiClient(tokenStore: TokenStore) {
     val searchApi: SearchApi = retrofit.create(SearchApi::class.java)
     val docsApi: DocsApi = retrofit.create(DocsApi::class.java)
     val taskApi: TaskApi = retrofit.create(TaskApi::class.java)
+    // Meeting sources and credentials cannot be redirected to another origin.
+    val meetingRecordApi: MeetingRecordApi = retrofit.newBuilder()
+        .client(okHttp.newBuilder().apply {
+            followRedirects(false)
+            followSslRedirects(false)
+            cache(null)
+            interceptors().removeAll { it is HttpLoggingInterceptor }
+        }.build())
+        .build().create(MeetingRecordApi::class.java)
 
     private fun normalizedBaseUrl(raw: String): String =
         if (raw.endsWith("/")) raw else "$raw/"
@@ -110,5 +119,10 @@ class ApiClient(tokenStore: TokenStore) {
     // the lines visible.
     private fun debugLoggingInterceptor(): HttpLoggingInterceptor =
         HttpLoggingInterceptor { msg -> Log.d("WeMeetHttp", msg) }
-            .apply { level = HttpLoggingInterceptor.Level.HEADERS }
+            .apply {
+                level = HttpLoggingInterceptor.Level.HEADERS
+                redactHeader("Authorization")
+                redactHeader("Cookie")
+                redactHeader("Set-Cookie")
+            }
 }

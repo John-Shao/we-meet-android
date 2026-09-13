@@ -23,6 +23,7 @@ import com.we.meet.data.history.HistoryStore
 import com.we.meet.data.repository.AuthRepository
 import com.we.meet.data.repository.MeetingDetailRepository
 import com.we.meet.data.repository.OrgContextStore
+import com.we.meet.data.repository.MeetingRecordRepository
 import com.we.meet.data.repository.RoomAiRepository
 import com.we.meet.data.repository.ProfileRepository
 import com.we.meet.data.repository.QrLoginRepository
@@ -55,6 +56,8 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
     lateinit var roomRepository: RoomRepository
         private set
     lateinit var meetingDetailRepository: MeetingDetailRepository
+        private set
+    lateinit var meetingRecordRepository: MeetingRecordRepository
         private set
     lateinit var roomAiRepository: RoomAiRepository
         private set
@@ -159,6 +162,7 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         )
         roomRepository = RoomRepository(apiClient.roomApi)
         meetingDetailRepository = MeetingDetailRepository(apiClient.roomApi)
+        meetingRecordRepository = MeetingRecordRepository(apiClient.meetingRecordApi) { tokenStore.userId }
         roomAiRepository = RoomAiRepository(apiClient.okHttp)
         qrLoginRepository = QrLoginRepository(apiClient.qrLoginApi)
         historyStore = HistoryStore(this)
