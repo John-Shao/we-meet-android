@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -33,15 +34,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.R
 import com.we.meet.WeMeetApp
-import com.we.meet.core.directory.data.OrgRefDto
 import com.we.meet.core.directory.ui.MemberAvatar
+import com.we.meet.data.repository.OrgState
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 
 /**
  * 通讯录 tab 的首页 —— **入口列表**,不是名单。
@@ -58,9 +62,11 @@ import com.we.meet.ui.theme.Dimens
  * + 字母小节头 + 部门信息/发起群聊,那一页自带返回键。「星标联系人」「我的群组」→
  * 各自的应用级路由;「外部联系人」仍是一个底部弹层。
  *
- * 首页只多取一份**组织上下文**(一个单行查询),没有 ViewModel 也没有列表请求:
- * 拿不到就只是不显示组织那一行,不拦住任何东西。列表页的 VM 跟着 `org_contacts`
- * 那条路由走 —— 退出那一页,下钻状态就该清掉(下次进来从组织根开始)。
+ * 首页只多取一份**组织上下文**(一个单行查询;进程级共享的那一份见
+ * `com.we.meet.data.repository.OrgContextStore`),没有 ViewModel 也没有列表请求:
+ * 它不是页面的骨架 —— 还不知道时先占住位置、确实没有时不画那一行,都不拦住任何东西。
+ * 列表页的 VM 跟着 `org_contacts` 那条路由走 —— 退出那一页,下钻状态就该清掉
+ * (下次进来从组织根开始)。
  */
 @Composable
 fun ContactsTabScreen(
@@ -74,11 +80,13 @@ fun ContactsTabScreen(
     val context = LocalContext.current
     val app = context.applicationContext as WeMeetApp
     var showExternalContacts by remember { mutableStateOf(false) }
-    var org by remember { mutableStateOf<OrgRefDto?>(null) }
 
-    // 组织上下文:失败就保持 null(不显示那一行)。它不是页面的骨架。
+    // 组织上下文:进程级共享(MainTabScreen 启动时已预热一次),读的是 StateFlow ——
+    // 有本地缓存时第一次组合就有值,不会再"先空着、数据回来才跳出来"。进页面再刷一次
+    // 拿最新的,拉的是同一个 store:与我的页共一份,两处不会各拉一次、也不会说法不一。
+    val orgState by app.orgContextStore.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) {
-        app.directoryRepository.orgContext().onSuccess { org = it.organization }
+        app.orgContextStore.refresh()
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -122,30 +130,16 @@ fun ContactsTabScreen(
         ) {
             // 当前组织:内容区的第一行。只说「你在哪个组织的名册里」,不是入口 ——
             // App 没有「组织详情」页,做成可点却什么都不发生比不点更糟。
-            org?.let { organization ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = Dimens.ScreenPadding)
-                        .padding(top = Dimens.SpaceS, bottom = Dimens.SpaceM),
-                ) {
-                    MemberAvatar(
-                        name = organization.name.orEmpty(),
-                        url = null,
-                        cacheKey = "org:${organization.id}",
-                        size = Dimens.AvatarM,
-                    )
-                    Text(
-                        text = organization.name.orEmpty(),
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = Dimens.SpaceM),
-                    )
-                }
+            //
+            // 三态见 [OrgState]:有就画;还不知道就占住同样的位置(否则值回来时下面四个
+            // 入口会一起往下弹);服务端明确说没有组织时整行不画。
+            when (val state = orgState) {
+                is OrgState.Known -> OrgHeader(
+                    name = state.org.name.orEmpty(),
+                    orgId = state.org.id,
+                )
+                OrgState.Unknown -> OrgHeaderPlaceholder()
+                OrgState.None -> Unit
             }
 
             // 组织内的两种「人」放一组:都是"找某个同事"的入口,只是范围不同
@@ -188,6 +182,69 @@ fun ContactsTabScreen(
         ExternalContactsSheet(
             repository = app.directoryRepository,
             onDismiss = { showExternalContacts = false },
+        )
+    }
+}
+
+/**
+ * 当前组织那一行:头像 + 名字。就一件事 —— 让用户知道自己在哪个组织的名册里。
+ */
+@Composable
+private fun OrgHeader(name: String, orgId: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.ScreenPadding)
+            .padding(top = Dimens.SpaceS, bottom = Dimens.SpaceM),
+    ) {
+        MemberAvatar(
+            name = name,
+            url = null,
+            cacheKey = "org:$orgId",
+            size = Dimens.AvatarM,
+        )
+        Text(
+            text = name,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = Dimens.SpaceM),
+        )
+    }
+}
+
+/**
+ * 组织还不知道时的同一行:几何照抄 [OrgHeader](同样 40dp 的圆角方块 + 名字位置),只把
+ * 内容换成灰块。这样值回来时是"填进去",不是把下面四个入口推下去。
+ *
+ * 用 `neutralContainer`(设计规范里「没有强调」那一档)而不是 `surfaceVariant`:后者在本
+ * App 里带紫调,见 Theme.kt 那段说明。
+ */
+@Composable
+private fun OrgHeaderPlaceholder() {
+    val placeholder = WeMeetTheme.extras.status.neutralContainer
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.ScreenPadding)
+            .padding(top = Dimens.SpaceS, bottom = Dimens.SpaceM),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(Dimens.AvatarM)
+                .clip(RoundedCornerShape(Dimens.CornerS))
+                .background(placeholder),
+        )
+        Box(
+            modifier = Modifier
+                .padding(start = Dimens.SpaceM)
+                .size(width = Dimens.SkeletonBarWidth, height = Dimens.SkeletonBarHeight)
+                .clip(RoundedCornerShape(Dimens.CornerXs))
+                .background(placeholder),
         )
     }
 }

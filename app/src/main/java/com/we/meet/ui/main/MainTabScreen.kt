@@ -343,6 +343,12 @@ fun MainTabScreen(
         selfName = readSelfName()
         selfAvatarUrl = tokenStore.avatarUrl
     }
+    // 组织上下文预热。通讯录首页与我的页都要显示它 —— 两页各拉一次就是两次请求,而且
+    // 谁先打开谁等一次往返;这里先拉一次,进页面时值通常已经在内存里(有本地缓存时
+    // 第一帧就有)。独立于上面那次资料刷新:两个请求并行,谁也不等谁。
+    LaunchedEffect(Unit) {
+        app.orgContextStore.refresh()
+    }
     // The drawer is the only place the user can change their nickname/avatar, so
     // re-read once it closes — ProfileScreen writes TokenStore, not this state.
     LaunchedEffect(drawerState.isOpen) {

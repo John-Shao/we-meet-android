@@ -61,6 +61,28 @@ class TokenStore(context: Context) {
         get() = prefs.getString(KEY_COVER_URL, null)
         set(value) = prefs.edit().putString(KEY_COVER_URL, value).apply()
 
+    /**
+     * 当前组织的 id / 名字(`directory/me/`,与 [nickname]/[intro] 同一个来路)。
+     *
+     * 存本地是为了「打开页面第一帧就有」:通讯录首页顶部和我的页「组织」那一行都要显示
+     * 它,而它是那两个页面上唯一需要联网的东西。不缓存的话每次进页面都得等一次往返,
+     * 数据回来那一行才插进去,下面的内容跟着往下跳一下。
+     *
+     * 组织名是普通字符串(不像头像那种会过期的签名 URL),长期缓存没有副作用;权威值
+     * 仍由服务端定 —— 每次打开页面都会重拉并覆盖,见
+     * [com.we.meet.data.repository.OrgContextStore]。
+     *
+     * 两个键一起读、一起写(写 null = 这个账号没有组织),所以不会一个有、一个没有。
+     */
+    var orgId: String?
+        get() = prefs.getString(KEY_ORG_ID, null)
+        set(value) = prefs.edit().putString(KEY_ORG_ID, value).apply()
+
+    /** 见 [orgId]。 */
+    var orgName: String?
+        get() = prefs.getString(KEY_ORG_NAME, null)
+        set(value) = prefs.edit().putString(KEY_ORG_NAME, value).apply()
+
     /** meet-backend user UUID (needed for PATCH /users/{id}/). */
     var userId: String?
         get() = prefs.getString(KEY_USER_ID, null)
@@ -100,6 +122,8 @@ class TokenStore(context: Context) {
         private const val KEY_INTRO = "intro"
         private const val KEY_AVATAR_URL = "avatar_url"
         private const val KEY_COVER_URL = "cover_url"
+        private const val KEY_ORG_ID = "org_id"
+        private const val KEY_ORG_NAME = "org_name"
         private const val KEY_USER_ID = "user_id"
         private const val KEY_ID_TOKEN = "id_token"
         private const val KEY_AUTH_FLOW = "auth_flow"

@@ -50,14 +50,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.we.meet.WeMeetApp
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.OnMediaOverlay
-import com.we.meet.core.directory.data.OrgRefDto
+import com.we.meet.data.repository.OrgState
 import com.we.meet.data.repository.ProfileRepository
+import com.we.meet.ui.theme.WeMeetTheme
 import kotlinx.coroutines.launch
 
 private const val INTRO_MAX_LENGTH = 100
@@ -92,9 +94,10 @@ fun ProfileScreen(
     var intro by remember { mutableStateOf(tokenStore.intro.orEmpty()) }
     var avatarUrl by remember { mutableStateOf(tokenStore.avatarUrl.orEmpty()) }
     var coverUrl by remember { mutableStateOf(tokenStore.coverUrl.orEmpty()) }
-    // 组织:用户在哪个组织里。后端 Membership 从第一天就是「一个用户多条」,
-    // 所以这里拿的是**当前**(主)组织;切换组织的入口留到「切换」本身落地时再开。
-    var organization by remember { mutableStateOf<OrgRefDto?>(null) }
+    // 组织:用户在哪个组织里。一个账号可以有多条 Membership(后端从第一天就是一对多),
+    // 这里显示的是**当前**(主)组织;切换组织的入口留到「切换」本身落地时再开。
+    // 值来自进程级共享的 store(与通讯录首页同一份),所以有本地缓存时第一帧就有。
+    val orgState by app.orgContextStore.state.collectAsStateWithLifecycle()
 
     var showNicknameDialog by remember { mutableStateOf(false) }
     var showIntroDialog by remember { mutableStateOf(false) }
@@ -163,13 +166,13 @@ fun ProfileScreen(
         }
     }
 
-    // 组织上下文:与通讯录首页同一个端点(`directory/me/`,服务端一个单行查询)。
-    // 与上面那次资料刷新**分开**:一边失败不该连累另一边,而且组织名不是这一页的
-    // 骨架(拿不到就只是不显示那一行)。同样跟 `active` 走 —— 抽屉每次打开都重取,
-    // 管理员中途把人加进/移出组织,这里下次打开就对。
+    // 组织:拉的是进程级共享的 store(与通讯录首页同一份),所以这一页不自己发请求,
+    // 两页也不会各说各话。跟 `active` 走 —— 抽屉每次打开都重拉一次拿最新的(管理员
+    // 中途把人加进/移出组织,下次打开就对);但读的是 StateFlow,那一行从第一帧起就在
+    // (有缓存就是名字,没缓存就是占位条),不会"先空着、值回来才跳出来"。
     LaunchedEffect(active) {
         if (!active) return@LaunchedEffect
-        app.directoryRepository.orgContext().onSuccess { organization = it.organization }
+        app.orgContextStore.refresh()
     }
 
     Column(
@@ -238,13 +241,16 @@ fun ProfileScreen(
             // 组织放最前面:用户名在组织里才有意义(同名的人分属不同组织)。
             // 这一行**不可点** —— 一个账号可以属于多个组织,但「切换组织」还没做,
             // 做成可点却什么都不发生比不点更糟(与通讯录首页的「当前组织」同一口径);
-            // 切换落地时它就是这个入口,所以这里留的是 [OrgRefDto] 而不是一个名字。
-            // 没有组织(membership 还没建)时不显示:没有东西可说的行不如不摆。
-            organization?.name?.takeIf { it.isNotBlank() }?.let { orgName ->
+            // 切换落地时它就是这个入口,所以状态里留的是整个 OrgRefDto 而不只是名字。
+            //
+            // 三态:还不知道时占位 —— 这一行插在用户名前面,晚出现会把用户名和简介一起
+            // 推下去;服务端明确说没有组织时整行不画(没有东西可说的行不如不摆)。
+            if (orgState !is OrgState.None) {
                 SettingsRow(
                     label = stringResource(R.string.profile_organization),
-                    value = orgName,
+                    value = (orgState as? OrgState.Known)?.org?.name,
                     onClick = null,
+                    valueLoading = orgState is OrgState.Unknown,
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = Dimens.ScreenPadding))
             }
@@ -495,6 +501,11 @@ private fun SettingsRow(
     label: String,
     value: String?,
     onClick: (() -> Unit)?,
+    /**
+     * 值还在路上(组织那一行的首次加载):在值的位置画一条灰条。行高由 label 决定,
+     * 所以占位与真值同高 —— 数据回来只是"填进去",不会把下面的行推下去。
+     */
+    valueLoading: Boolean = false,
 ) {
     Row(
         modifier = Modifier
@@ -508,7 +519,16 @@ private fun SettingsRow(
             style = MaterialTheme.typography.bodyLarge,
         )
         Spacer(Modifier.weight(1f))
-        if (value != null) {
+        if (valueLoading) {
+            Box(
+                modifier = Modifier
+                    .padding(end = Dimens.SpaceXs)
+                    .size(width = Dimens.SkeletonBarWidth, height = Dimens.SkeletonBarHeight)
+                    .clip(RoundedCornerShape(Dimens.CornerXs))
+                    // 设计规范里「没有强调」那一档,不是 surfaceVariant(那个带紫调)。
+                    .background(WeMeetTheme.extras.status.neutralContainer),
+            )
+        } else if (value != null) {
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyMedium,

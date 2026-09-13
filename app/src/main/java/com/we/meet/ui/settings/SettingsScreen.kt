@@ -129,6 +129,9 @@ fun SettingsScreen(
                             com.we.meet.analytics.Analytics.reset()
                             ImSession.shutdown()
                             ContactPrefs.clear()
+                            // 组织也一样:内存里那份属于上一个账号(本地那份随
+                            // tokenStore.clear() 一起没了),不能留给下一个。
+                            app.orgContextStore.clear()
                             onSignedOut()
                         }
                     }

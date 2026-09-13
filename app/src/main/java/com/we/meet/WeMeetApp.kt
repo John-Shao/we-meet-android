@@ -7,6 +7,7 @@ import coil.disk.DiskCache
 import com.we.meet.core.directory.DirectoryDeps
 import com.we.meet.core.directory.data.DirectoryRepository
 import com.we.meet.core.directory.data.ContactPrefs
+import com.we.meet.core.directory.data.OrgRefDto
 import com.we.meet.core.directory.net.DirectoryNetwork
 import com.we.meet.feature.assistant.AssistantDeps
 import com.we.meet.feature.docs.DocsDeps
@@ -21,6 +22,7 @@ import com.we.meet.data.auth.TokenStore
 import com.we.meet.data.history.HistoryStore
 import com.we.meet.data.repository.AuthRepository
 import com.we.meet.data.repository.MeetingDetailRepository
+import com.we.meet.data.repository.OrgContextStore
 import com.we.meet.data.repository.RoomAiRepository
 import com.we.meet.data.repository.ProfileRepository
 import com.we.meet.data.repository.QrLoginRepository
@@ -63,6 +65,9 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
     lateinit var settingsStore: SettingsStore
         private set
     lateinit var directoryRepository: DirectoryRepository
+        private set
+    /** 当前组织(通讯录首页顶部 / 我的页「组织」那一行)的共享状态,见 [OrgContextStore]。 */
+    lateinit var orgContextStore: OrgContextStore
         private set
     lateinit var taskRepository: TaskRepository
         private set
@@ -164,6 +169,20 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
             it.bindCalendarApi(apiClient.calendarApi)
         }
         directoryRepository = DirectoryRepository(DirectoryNetwork.directoryApi(this))
+        // 组织名同时存 TokenStore:它是「打开页面就该立刻看到」的东西,和
+        // nickname/intro 同一个待遇 —— 先画本地那份,再由 refresh() 用服务端结果覆盖。
+        orgContextStore = OrgContextStore(
+            repository = directoryRepository,
+            readCached = {
+                val id = tokenStore.orgId
+                val name = tokenStore.orgName
+                if (id.isNullOrBlank() || name.isNullOrBlank()) null else OrgRefDto(id, name)
+            },
+            writeCached = { org ->
+                tokenStore.orgId = org?.id
+                tokenStore.orgName = org?.name
+            },
+        )
         taskRepository = TaskRepository(apiClient.taskApi, contentResolver)
         screenShareOverlay = ScreenShareOverlay(this)
         // 云文档原生栈(M1):票据换 docs 会话 cookie + docs REST。与 WebView 栈

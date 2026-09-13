@@ -315,3 +315,44 @@ data class PickedMember(val userId: String /* we-meet uuid */, val displayName: 
 
 验证:`./gradlew --offline :app:testDebugUnitTest checkDesignTokens :app:assembleDebug` ——
 140 条单测全绿(通讯录相关 25 条)、设计规范护栏零漂移、APK 构建通过。真机视觉与触控走查仍未做。
+
+### 六次改动:组织那一行的加载方式（2026-09-13）
+
+反馈:「打开通讯录、我的页,其它信息都已加载完成,组织信息稍后才跳出来」。查下来是三个原因叠在一起,
+而且**第三个**才是"每次都要等"的那个:
+
+1. **它是那两个页面上唯一需要联网的东西**。通讯录首页其余部分是静态入口;我的页的封面/头像/用户名/
+   简介都先由 `TokenStore` 同步读出,第一帧就齐 —— 只有组织名要等一次往返,于是显得特别慢。
+2. **请求在组合之后才发,数据到达前完全不占位**。两页都靠 `LaunchedEffect` 拉 `directory/me/`,而
+   那一行是"有值才画"(`org?.let {}` / `organization?.name?.let {}`),偏偏它插在其它内容**前面**
+   —— 值回来时下面整块(通讯录四个入口、我的页用户名 + 简介)被推下去,看起来就是页面抖了一下。
+   即使服务端零延迟,也必然存在一帧没有它。
+3. **每次进页面都重拉,且没有任何一层缓存**。`MainTabScreen` 是 `tabs[safeTab].content()` 重组
+   切换,切 tab 会重建内容 → 每进一次通讯录就是一次新请求;我的页那个请求挂在抽屉开合上,也是
+   每次打开都拉;`DirectoryRepository.orgContext()` 与 OkHttp 都没有缓存层(主客户端没配 `Cache`)。
+
+按 A+B+C 三处一起改:
+
+- **A 占位**:状态改成三态 `OrgState`(`Unknown` / `None` / `Known`)。`Unknown` 时照样画那一行、
+  在值的位置画一条灰条,几何与真值同一行高 —— 数据回来是"填进去",不推下面的行;只有服务端明确回
+  `organization: null`(`None`)才整行不画。通讯录那条有自己的 `OrgHeaderPlaceholder`(40dp 圆角
+  方块 + 名字位置),我的页复用 `SettingsRow` 新增的 `valueLoading`。灰条用
+  `WeMeetTheme.extras.status.neutralContainer`(设计规范里「没有强调」那一档,**不是**
+  `surfaceVariant` —— 那个带紫调),尺寸新增两个 token:`Dimens.SkeletonBarHeight` / `SkeletonBarWidth`
+  (间距 token 都带"不用于常规排版"的限制,不能借来当尺寸)。
+- **B 落地**:组织 id/名字进 `TokenStore`(`orgId` / `orgName`,与 nickname/intro 同一个来路)——
+  冷启动、切页面先用本地那份画出来,再由刷新结果覆盖。组织名是普通字符串(不像头像那种会过期的
+  签名 URL),长期缓存没有副作用。
+- **C 共享**:新增 `OrgContextStore`(`WeMeetApp` 持有的 app 级 store),通讯录首页与我的页读同一个
+  `StateFlow`;`MainTabScreen` 启动时预热一次,两个页面进页面时再静默刷一次(store 内 `Mutex` 去重,
+  同一时刻只有一个请求在飞)。于是两页不再各拉一份,也不会出现"一处有一处没有"。
+
+取舍(都落在 `OrgContextStore` 的注释与单测里):刷新失败**保留现状** —— 用户正看着的组织名不该因为
+一次网络抖动消失,只有连缓存都没有时才退回 `None`,否则那条占位会永远挂着;`organization: null`
+会**清掉**本地缓存(被移出组织后旧名字不能继续当当前组织用);退出登录时 `SettingsScreen` 调
+`clear()` 清掉内存那份(本地那份随 `tokenStore.clear()` 一起没了)。
+
+验证(2026-09-13):`./gradlew --offline :app:testDebugUnitTest checkDesignTokens :app:assembleDebug` ——
+157 条单测全绿(新增 `OrgContextStoreTest` 9 条:三态切换、写穿/清理缓存、失败保留现值、失败且无缓存
+不再留占位、登出清状态)、设计规范护栏零漂移、APK 构建通过。**真机走查未做**:灰条的观感、以及
+"进页面不再跳"的实际手感,需要在模拟器上看一眼。

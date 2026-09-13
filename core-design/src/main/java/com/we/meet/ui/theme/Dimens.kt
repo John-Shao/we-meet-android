@@ -30,6 +30,15 @@ object Dimens {
     /** 超大版面分区留白；普通页面和卡片不得使用。 */
     val SpaceXxxxl = 64.dp
 
+    // ---- 骨架占位(内容还没到时的灰块)----
+    /**
+     * 骨架条高度:与一行正文同高。只在"内容马上就到、先把位置占住"时用
+     * (例如组织名那一行的首次加载),不要拿它当间距。
+     */
+    val SkeletonBarHeight = 12.dp
+    /** 骨架条宽度:一行短文本(名字、组织名)量级的占位。 */
+    val SkeletonBarWidth = 64.dp
+
     /**
      * Standard horizontal content inset (screen bodies, dialogs, sheets, list
      * rows). Prefer this over inline `horizontal = 16.dp`.
