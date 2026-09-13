@@ -30,6 +30,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.WeMeetApp
 import com.we.meet.R
+import com.we.meet.BuildConfig
 import com.we.meet.design.R as DesignR
 
 @Composable
@@ -62,6 +64,7 @@ fun HomeScreen(
     /** 预约会议 = 创建日程(对标飞书):打开日历的创建日程界面。 */
     onScheduleMeeting: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenRecords: (summariesOnly: Boolean) -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(app))
@@ -167,6 +170,12 @@ fun HomeScreen(
             )
         }
 
+        if (BuildConfig.WE_MEET_RECORDS_NATIVE) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                TextButton(onClick = { onOpenRecords(false) }) { Text(stringResource(R.string.records_title)) }
+                TextButton(onClick = { onOpenRecords(true) }) { Text(stringResource(R.string.records_minutes)) }
+            }
+        }
         // The fixed gray action area ends exactly where the white list starts.
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="records_title">会议笔记</string>
+    <string name="records_minutes">智能纪要</string>
+    <string name="records_recent">最近</string>
+    <string name="records_owned">归我所有</string>
+    <string name="records_participated">我参与的</string>
+    <string name="records_shared">与我共享</string>
+    <string name="records_all">全部来源</string>
+    <string name="records_online">线上会议</string>
+    <string name="records_audio">AI 录音</string>
+    <string name="records_uploaded">上传音视频</string>
+    <string name="records_search">搜索标题</string>
+    <string name="records_search_action">搜索</string>
+    <string name="records_ongoing">进行中</string>
+    <string name="records_previous">上一页</string>
+    <string name="records_next">下一页</string>
+    <string name="records_refresh">刷新</string>
+    <string name="records_unavailable">暂时无法读取笔记，请检查连接与访问权限后重试。</string>
+    <string name="records_empty">没有符合条件的笔记</string>
+    <string name="records_empty_hint">可以换个筛选条件。网页端保存的笔记，也会在获得权限后出现在这里。</string>
+    <string name="records_no_summary_access">这份纪要尚未与你共享。</string>
+    <string name="records_no_versions">还没有生成纪要</string>
+    <string name="records_no_versions_hint">录音获得足够的确认文字并生成总结后，即可在这里查看。</string>
+    <string name="records_source">原文依据</string>
+    <string name="records_source_unavailable">引用原文暂不可用，可能已变化或不再与你共享。</string>
+    <string name="records_source_at">查看原文 %1$s</string>
+    <string name="records_close">关闭</string>
+    <string name="records_live">实时总结</string>
+    <string name="records_quick">速记摘要</string>
+    <string name="records_final">最终纪要</string>
+    <string name="records_historical">历史版本</string>
+    <string name="records_provisional">这份草稿基于当时已收到的文字，后续讨论可能改变结论。</string>
+    <string name="records_recognizing">正在识别，后续发言及尾段尚未收齐。</string>
+    <string name="records_finished">已观察音频的识别尾段已收齐，整场音频覆盖尚未验证。</string>
+    <string name="records_coverage_unknown">整场音频覆盖尚未验证。</string>
+    <string name="records_incomplete">识别未完整结束，请核对缺失内容。</string>
+    <string name="records_decisions">关键结论</string>
+    <string name="records_chapters">章节纪要</string>
+    <string name="records_actions">行动建议</string>
+    <string name="records_questions">待确认问题</string>
+</resources>

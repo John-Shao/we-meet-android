@@ -26,6 +26,7 @@ val docsUrl = cfg("WE_MEET_DOCS_URL", "https://docs.we-meet.online")
 val oidcClientId = cfg("WE_MEET_OIDC_CLIENT_ID", "app")
 // 云文档 tab 原生化开关(M1):false 回退常驻 WebView(p3-docs-app.md D6 的保险丝同款)。
 val docsNative = cfg("WE_MEET_DOCS_NATIVE", "true")
+val meetingRecords = cfg("WE_MEET_RECORDS_NATIVE", "false").toBoolean().toString()
 // WebView Keycloak login vs legacy native OTP — the rollback fuse (p3-docs-app.md D1).
 val webLogin = cfg("WE_MEET_WEB_LOGIN", "true")
 // PostHog: leave WE_MEET_POSTHOG_KEY empty to keep analytics off. The
@@ -53,7 +54,8 @@ android {
         targetSdk = 34
         versionCode = 2
         versionName = "0.2.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = providers.gradleProperty("WE_MEET_TEST_RUNNER")
+            .getOrElse("androidx.test.runner.AndroidJUnitRunner")
 
         // Surface config to BuildConfig.
         buildConfigField("String", "WE_MEET_BASE_URL", "\"$baseUrl\"")
@@ -65,6 +67,7 @@ android {
         buildConfigField("String", "WE_MEET_DOCS_URL", "\"$docsUrl\"")
         buildConfigField("String", "WE_MEET_OIDC_CLIENT_ID", "\"$oidcClientId\"")
         buildConfigField("boolean", "WE_MEET_DOCS_NATIVE", docsNative)
+        buildConfigField("boolean", "WE_MEET_RECORDS_NATIVE", meetingRecords)
         buildConfigField("boolean", "WE_MEET_WEB_LOGIN", webLogin)
 
         // Getui: the gtsdk AAR's manifest references ${GETUI_APPID} etc., and

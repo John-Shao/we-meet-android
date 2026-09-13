@@ -79,6 +79,8 @@ import com.we.meet.ui.contacts.StarredContactsScreen
 import com.we.meet.ui.login.LoginScreen
 import com.we.meet.ui.login.WebLoginScreen
 import com.we.meet.ui.main.MainTabScreen
+import com.we.meet.ui.records.RecordLibraryScreen
+import com.we.meet.ui.records.RecordDetailScreen
 import com.we.meet.ui.preview.PreviewMode
 import com.we.meet.ui.preview.PreviewScreen
 import com.we.meet.ui.qrscan.QrScanResult
@@ -102,6 +104,8 @@ import java.nio.charset.StandardCharsets
 object Routes {
     const val LOGIN = "login"
     const val HOME = "home"
+    const val RECORD_LIBRARY = "meeting_records?summaries={summaries}"
+    const val RECORD_DETAIL = "meeting_record/{recordId}"
     const val SETTINGS = "settings"
     const val ACCOUNT_SECURITY = "account_security"
     const val MEETING_SETTINGS = "meeting_settings"
@@ -598,6 +602,7 @@ fun AppNav() {
 
         composable(Routes.HOME) {
             MainTabScreen(
+                onOpenRecords = { summariesOnly -> navController.navigate("meeting_records?summaries=$summariesOnly") },
                 onCreateMeeting = { navController.navigate(Routes.createPreview()) },
                 onJoinMeeting = { navController.navigate(Routes.joinPreview()) },
                 onScanQrCode = { navController.navigate(Routes.QR_SCAN) },
@@ -1505,6 +1510,15 @@ fun AppNav() {
             )
         }
 
+        composable(Routes.RECORD_LIBRARY, arguments = listOf(navArgument("summaries") { type = NavType.BoolType; defaultValue = false })) { entry ->
+            RecordLibraryScreen(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(),
+                summariesOnly = entry.arguments?.getBoolean("summaries") == true,
+                onRecord = { id -> navController.navigate("meeting_record/$id") }, onBack = rememberOnceOnly(safePop))
+        }
+        composable(Routes.RECORD_DETAIL, arguments = listOf(navArgument("recordId") { type = NavType.StringType })) { entry ->
+            RecordDetailScreen(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(),
+                entry.arguments?.getString("recordId").orEmpty(), onBack = rememberOnceOnly(safePop))
+        }
         composable(Routes.MEETING_SETTINGS) {
             MeetingSettingsScreen(
                 onBack = rememberOnceOnly(safePop),

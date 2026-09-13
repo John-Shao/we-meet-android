@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="records_title">Meeting notes</string>
+    <string name="records_minutes">Smart minutes</string>
+    <string name="records_recent">Recent</string>
+    <string name="records_owned">Owned by me</string>
+    <string name="records_participated">Participated</string>
+    <string name="records_shared">Shared with me</string>
+    <string name="records_all">All sources</string>
+    <string name="records_online">Online meeting</string>
+    <string name="records_audio">Audio recording</string>
+    <string name="records_uploaded">Uploaded media</string>
+    <string name="records_search">Search titles</string>
+    <string name="records_search_action">Search</string>
+    <string name="records_ongoing">In progress</string>
+    <string name="records_previous">Previous</string>
+    <string name="records_next">Next</string>
+    <string name="records_refresh">Refresh</string>
+    <string name="records_unavailable">These notes are unavailable. Check your connection and access, then retry.</string>
+    <string name="records_empty">No matching notes</string>
+    <string name="records_empty_hint">Try another filter. Notes saved on the web also appear here when you have access.</string>
+    <string name="records_no_summary_access">Minutes have not been shared with you.</string>
+    <string name="records_no_versions">No minutes yet</string>
+    <string name="records_no_versions_hint">Minutes appear after the recording has enough confirmed text and a summary is generated.</string>
+    <string name="records_source">Original source</string>
+    <string name="records_source_unavailable">The referenced text is unavailable, changed, or no longer shared with you.</string>
+    <string name="records_source_at">Original at %1$s</string>
+    <string name="records_close">Close</string>
+    <string name="records_live">Live summary</string>
+    <string name="records_quick">Quick draft</string>
+    <string name="records_final">Final minutes</string>
+    <string name="records_historical">Historical version</string>
+    <string name="records_provisional">This draft uses text received at that time. Later discussion may change its conclusions.</string>
+    <string name="records_recognizing">Recognition is in progress; remaining speech may arrive.</string>
+    <string name="records_finished">Recognition finished for observed audio; full audio coverage is unverified.</string>
+    <string name="records_coverage_unknown">Audio coverage is unverified.</string>
+    <string name="records_incomplete">Recognition ended incompletely. Check for missing content.</string>
+    <string name="records_decisions">Decisions</string>
+    <string name="records_chapters">Topics</string>
+    <string name="records_actions">Suggested actions</string>
+    <string name="records_questions">Open questions</string>
+</resources>

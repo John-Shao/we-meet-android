@@ -125,6 +125,7 @@ fun MainTabScreen(
     onScheduledEventClick: (eventId: String) -> Unit,
     onSettingsClick: () -> Unit,
     onOpenMeetingSettings: () -> Unit,
+    onOpenRecords: (summariesOnly: Boolean) -> Unit,
     onOpenAiHub: () -> Unit,
     onOpenApproval: () -> Unit,
     onOpenChat: (cid: String) -> Unit,
@@ -412,6 +413,7 @@ fun MainTabScreen(
                 // 预约会议 = 创建日程:复用日历的创建日程入口,默认落在今天。
                 onScheduleMeeting = { onCreateEvent(java.time.LocalDate.now().toEpochDay()) },
                 onOpenSettings = onOpenMeetingSettings,
+                onOpenRecords = onOpenRecords,
             )
         },
         TabItem(R.string.tab_contacts, Icons.Filled.Contacts, Icons.Outlined.Contacts) {
