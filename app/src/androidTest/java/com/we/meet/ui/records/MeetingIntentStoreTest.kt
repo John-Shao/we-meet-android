@@ -72,6 +72,35 @@ class MeetingIntentStoreTest {
         MeetingIntentStore.open(context, currentViewer!!) { currentViewer }.use { assertNull(it.get(kind, capture)) }
     }
 
+    @Test fun accessLossAfterUnknownAsrKeepsOriginalKeyUntilExplicitRecovery() = runBlocking {
+        val api = Fixture()
+        val repository = CaptureTranscriptionRepository(api) { currentViewer }
+        var coordinator = CaptureTranscriptionCoordinator(viewer, store, repository)
+        val input = CaptureAsrRequestDto(null, false, true)
+        api.status = 503
+        assertTrue(runCatching { coordinator.submit(capture, input) }.isFailure)
+        val original = coordinator.pending(capture)!!
+        for (status in listOf(401, 403, 404, 408)) {
+            api.status = status
+            assertTrue(runCatching { coordinator.submit(capture, input.copy(allowIncomplete = true)) }.isFailure)
+            assertEquals(original, coordinator.pending(capture))
+        }
+        store.close(); store = MeetingIntentStore.open(context, viewer) { currentViewer }
+        coordinator = CaptureTranscriptionCoordinator(viewer, store, repository)
+        api.status = 200; coordinator.submit(capture, input)
+        assertEquals(1, api.keys.distinct().size); assertEquals(1, api.bodies.distinct().size)
+        assertNull(coordinator.pending(capture))
+    }
+
+    @Test fun invalidAsrGenerationDoesNotPoisonDurableRecovery() = runBlocking {
+        val api = Fixture()
+        val coordinator = CaptureTranscriptionCoordinator(viewer, store, CaptureTranscriptionRepository(api) { currentViewer })
+        assertTrue(runCatching { coordinator.submit(capture, CaptureAsrRequestDto("invalid", false, true)) }.isFailure)
+        assertNull(coordinator.pending(capture)); assertTrue(api.keys.isEmpty())
+        coordinator.submit(capture, CaptureAsrRequestDto(null, false, true))
+        assertEquals(1, api.keys.size)
+    }
+
     @Test fun fullStorePreservesUnknownIntentsInsteadOfExpiringOrOverwritingThem() {
         val first = store.getOrCreate(kind, capture, "{}")
         repeat(127) { store.getOrCreate(kind, UUID.randomUUID().toString(), "{}") }

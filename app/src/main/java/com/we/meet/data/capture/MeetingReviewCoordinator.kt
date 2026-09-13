@@ -34,7 +34,8 @@ class MeetingReviewCoordinator(private val viewer: String, private val store: Me
                 store.resolve(kind, record, intent)
                 result
             } catch (error: HttpException) {
-                if (error.code() in setOf(400, 401, 403, 404, 409, 422)) store.resolve(kind, record, intent)
+                // Access loss cannot establish the outcome of an earlier attempt. Preserve its key/body.
+                if (error.code() in setOf(400, 409, 422)) store.resolve(kind, record, intent)
                 throw error
             }
         }

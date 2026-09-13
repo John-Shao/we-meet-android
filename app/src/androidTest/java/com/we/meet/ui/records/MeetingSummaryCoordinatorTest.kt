@@ -63,6 +63,28 @@ class MeetingSummaryCoordinatorTest {
         assertNull(coordinator().pending(record, MeetingIntentKind.SUMMARY_REQUEST))
         assertTrue(api.keys.isEmpty())
     }
+    @Test fun accessLossPreservesSummaryAndAutomationIntentsIndependently() = runBlocking {
+        val summary = SummaryRequestDto("generate", "quick", 1, null, null)
+        val automation = SummaryAutomationRequestDto(true, 0)
+        api.status = 503
+        assertTrue(runCatching { coordinator().submit(record, summary) }.isFailure)
+        assertTrue(runCatching { coordinator().control(record, automation) }.isFailure)
+        val frozenSummary = coordinator().pending(record, MeetingIntentKind.SUMMARY_REQUEST)!!
+        val frozenAutomation = coordinator().pending(record, MeetingIntentKind.SUMMARY_AUTOMATION)!!
+        for (status in listOf(401, 403, 404, 408)) {
+            api.status = status
+            assertTrue(runCatching { coordinator().submit(record, summary) }.isFailure)
+            assertTrue(runCatching { coordinator().control(record, automation.copy(enabled = false)) }.isFailure)
+            assertEquals(frozenSummary, coordinator().pending(record, MeetingIntentKind.SUMMARY_REQUEST))
+            assertEquals(frozenAutomation, coordinator().pending(record, MeetingIntentKind.SUMMARY_AUTOMATION))
+        }
+        store.close(); store = MeetingIntentStore.open(context, viewer) { viewer }
+        api.status = 200
+        coordinator().submit(record, summary); coordinator().control(record, automation)
+        assertEquals(2, api.keys.distinct().size); assertEquals(2, api.bodies.distinct().size)
+        assertNull(coordinator().pending(record, MeetingIntentKind.SUMMARY_REQUEST))
+        assertNull(coordinator().pending(record, MeetingIntentKind.SUMMARY_AUTOMATION))
+    }
     private class Fixture : MeetingSummaryApi {
         var status = 200
         val keys = mutableListOf<String>()

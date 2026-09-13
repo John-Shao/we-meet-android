@@ -71,6 +71,25 @@ class MeetingReviewCoordinatorTest {
         assertNull(coordinator().pending(record, MeetingIntentKind.SUMMARY_TASK))
         assertTrue(api.bodies.isEmpty())
     }
+    @Test fun accessLossCannotDiscardUnknownHumanEditsOrTaskAssignments() = runBlocking {
+        api.status = 503
+        assertTrue(runCatching { coordinator().save(record, request) }.isFailure)
+        assertTrue(runCatching { coordinator().convert(record, task) }.isFailure)
+        val saved = coordinator().pending(record, MeetingIntentKind.HUMAN_REVIEW)!!
+        val assigned = coordinator().pending(record, MeetingIntentKind.SUMMARY_TASK)!!
+        for (status in listOf(401, 403, 404, 408)) {
+            api.status = status
+            assertTrue(runCatching { coordinator().save(record, request.copy(content = content.copy(overview = "Changed"))) }.isFailure)
+            assertTrue(runCatching { coordinator().convert(record, task.copy(title = "Changed")) }.isFailure)
+            assertEquals(saved, coordinator().pending(record, MeetingIntentKind.HUMAN_REVIEW))
+            assertEquals(assigned, coordinator().pending(record, MeetingIntentKind.SUMMARY_TASK))
+        }
+        store.close(); store = MeetingIntentStore.open(context, viewer) { viewer }
+        api.status = 200; coordinator().save(record, request); coordinator().convert(record, task)
+        assertEquals(2, api.bodies.distinct().size)
+        assertNull(coordinator().pending(record, MeetingIntentKind.HUMAN_REVIEW))
+        assertNull(coordinator().pending(record, MeetingIntentKind.SUMMARY_TASK))
+    }
     private inner class Fixture : MeetingReviewApi {
         var status = 200
         var invalid = false

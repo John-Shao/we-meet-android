@@ -25,6 +25,7 @@ class CaptureTranscriptionCoordinator(
 
     suspend fun submit(capture: String, request: CaptureAsrRequestDto): CaptureAsrCreatedDto = withContext(Dispatchers.IO) {
         lock.withLock {
+            CaptureTranscriptionRepository.validate(request)
             val intent = store.getOrCreate(MeetingIntentKind.CAPTURE_ASR, capture, adapter.toJson(request))
             val body = requireNotNull(adapter.fromJson(intent.body))
             try {
@@ -32,9 +33,10 @@ class CaptureTranscriptionCoordinator(
                 store.resolve(MeetingIntentKind.CAPTURE_ASR, capture, intent)
                 result
             } catch (error: HttpException) {
+                // Access loss cannot establish the outcome of an earlier attempt. Preserve its key/body.
                 // Timeout, throttling and server errors remain uncertain. A definitive rejection
                 // clears this exact intent but still fails the user action; no implicit retry.
-                if (error.code() in setOf(400, 401, 403, 404, 409, 422)) store.resolve(MeetingIntentKind.CAPTURE_ASR, capture, intent)
+                if (error.code() in setOf(400, 409, 422)) store.resolve(MeetingIntentKind.CAPTURE_ASR, capture, intent)
                 throw error
             }
         }

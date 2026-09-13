@@ -56,6 +56,19 @@ class MeetingQuestionCoordinatorTest {
         assertTrue(runCatching { coordinator().ask(record, input.copy(question = "")) }.isFailure)
         assertNull(coordinator().pending(record)); assertTrue(api.bodies.isEmpty())
     }
+    @Test fun accessLossDoesNotForgetPreviouslyDispatchedQuestion() = runBlocking {
+        api.status = 503
+        assertTrue(runCatching { coordinator().ask(record, input) }.isFailure)
+        val original = coordinator().pending(record)!!
+        for (status in listOf(401, 403, 404, 408)) {
+            api.status = status
+            assertTrue(runCatching { coordinator().ask(record, input.copy(question = "Changed")) }.isFailure)
+            assertEquals(original, coordinator().pending(record))
+        }
+        store.close(); store = MeetingIntentStore.open(context, viewer) { viewer }
+        api.status = 200; coordinator().ask(record, input)
+        assertEquals(1, api.bodies.distinct().size); assertNull(coordinator().pending(record))
+    }
     private class Fixture : MeetingQuestionApi {
         var status = 200
         var invalid = false

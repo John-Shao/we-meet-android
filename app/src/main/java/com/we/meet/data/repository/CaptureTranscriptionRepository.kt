@@ -26,7 +26,7 @@ class CaptureTranscriptionRepository(private val api: CaptureTranscriptionApi, p
     }
 
     suspend fun request(viewer: String, capture: String, key: String, request: CaptureAsrRequestDto): Result<CaptureAsrCreatedDto> = scoped(viewer) {
-        uuid(capture); uuid(key); request.expectedJobId?.let(::uuid)
+        uuid(capture); uuid(key); validate(request)
         // expected_job_id:null is required by the server; default Moshi null omission is unsafe here.
         val body = requestAdapter.toJson(request).toRequestBody("application/json".toMediaType())
         api.request(capture, key, body).also { job(it.job); require(it.job.mode == if (request.live) "live" else "sealed") }
@@ -74,6 +74,9 @@ class CaptureTranscriptionRepository(private val api: CaptureTranscriptionApi, p
     catch (error: Exception) { Result.failure(error) }
 
     companion object {
+        fun validate(request: CaptureAsrRequestDto) {
+            request.expectedJobId?.let { require(UUID.fromString(it).toString() == it) }
+        }
         const val MAX_FINALS = 20000
         private val STATUSES = setOf("queued", "running", "succeeded", "incomplete", "canceled")
     }
