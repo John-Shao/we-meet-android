@@ -1,0 +1,26 @@
+<resources>
+    <string name="cloud_recording_title">Cloud recording</string>
+    <string name="cloud_recording_description">Record the meeting audio and video. AI notes can be enabled separately through AI recording.</string>
+    <string name="cloud_recording_guest">Sign in as a meeting host or administrator to manage cloud recordings.</string>
+    <string name="cloud_recording_unavailable">Unable to verify recording controls. Check that you are signed in with current host or administrator access, then refresh.</string>
+    <string name="cloud_recording_start">Start cloud recording</string>
+    <string name="cloud_recording_stop">Stop cloud recording</string>
+    <string name="cloud_recording_confirm">Confirm</string>
+    <string name="cloud_recording_reconcile">Check cloud recording request</string>
+    <string name="cloud_recording_storage_error">Unable to load saved recording requests on this device. Retry before changing the recording.</string>
+    <string name="cloud_recording_start_effect">Record this meeting’s audio and video to cloud storage. Participants will see a recording indicator. Make sure everyone knows recording is starting.</string>
+    <string name="cloud_recording_stop_effect">Stop this cloud recording. The meeting and any separate AI recording will continue. Saving may take a moment.</string>
+    <string name="cloud_recording_unknown">The previous request has no verified response. Check that same request before starting another operation.</string>
+    <string name="cloud_recording_worker_unknown">The recording service has not confirmed the outcome. Status will refresh here; do not start another recording.</string>
+    <string name="cloud_recording_processing">Request accepted. Waiting for the recording service to confirm the result…</string>
+    <string name="cloud_recording_blocked">Another recording is being processed. Refresh after it finishes.</string>
+    <string name="cloud_recording_disabled">New cloud recordings are currently unavailable.</string>
+    <string name="cloud_recording_error">The request could not be confirmed. Refresh the status or check the previous request.</string>
+    <string name="cloud_recording_starting">Preparing cloud recording</string>
+    <string name="cloud_recording_active">Cloud recording in progress</string>
+    <string name="cloud_recording_saving">Recording ended · preparing the file</string>
+    <string name="cloud_recording_saved">Cloud recording saved</string>
+    <string name="cloud_recording_failed">Cloud recording did not complete</string>
+    <string name="cloud_recording_off">Cloud recording is off</string>
+    <string name="cloud_recording_status_unknown">Recording status awaiting confirmation</string>
+</resources>

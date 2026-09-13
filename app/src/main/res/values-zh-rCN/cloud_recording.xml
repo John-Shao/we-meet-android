@@ -1,0 +1,26 @@
+<resources>
+    <string name="cloud_recording_title">云录制</string>
+    <string name="cloud_recording_description">录制会议音视频。智能纪要可通过「AI 记录」单独开启。</string>
+    <string name="cloud_recording_guest">请使用主持人或管理员账号登录后管理云录制。</string>
+    <string name="cloud_recording_unavailable">暂时无法确认录制控制权限。请检查登录状态和当前主持人或管理员权限，再刷新。</string>
+    <string name="cloud_recording_start">开始云录制</string>
+    <string name="cloud_recording_stop">停止云录制</string>
+    <string name="cloud_recording_confirm">确认</string>
+    <string name="cloud_recording_reconcile">查询云录制请求</string>
+    <string name="cloud_recording_storage_error">暂时无法读取本机保存的录制请求，请重试后再操作。</string>
+    <string name="cloud_recording_start_effect">将本次会议的音视频录制并保存到云端，参会人会看到录制提示。请确认已告知大家即将开始录制。</string>
+    <string name="cloud_recording_stop_effect">停止本次云录制。会议和单独开启的 AI 记录会继续，录制文件保存需要一些时间。</string>
+    <string name="cloud_recording_unknown">上次请求尚未取得可信回执，请先查询原请求，再执行其他操作。</string>
+    <string name="cloud_recording_worker_unknown">录制服务尚未确认结果，此处会持续刷新状态，请勿重复发起录制。</string>
+    <string name="cloud_recording_processing">请求已接收，正在等待录制服务确认结果…</string>
+    <string name="cloud_recording_blocked">另有录制正在处理，请等待结束后刷新。</string>
+    <string name="cloud_recording_disabled">当前暂不可发起新的云录制。</string>
+    <string name="cloud_recording_error">未能确认请求结果，请刷新状态或查询上次请求。</string>
+    <string name="cloud_recording_starting">正在准备云录制</string>
+    <string name="cloud_recording_active">云录制进行中</string>
+    <string name="cloud_recording_saving">录制已结束 · 正在准备文件</string>
+    <string name="cloud_recording_saved">云录制已保存</string>
+    <string name="cloud_recording_failed">云录制未能完成</string>
+    <string name="cloud_recording_off">未开启云录制</string>
+    <string name="cloud_recording_status_unknown">录制状态待确认</string>
+</resources>

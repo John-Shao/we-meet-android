@@ -878,6 +878,8 @@ private fun RoomContent(
     val localSid by room.localParticipant::sid.flow.collectAsStateWithLifecycle()
     val onlineSid = roomSid?.sid?.takeIf { BuildConfig.WE_MEET_ONLINE_AI_NATIVE && roomSdkState == io.livekit.android.room.Room.State.CONNECTED }
     var showOnlineCapture by remember(onlineSid) { mutableStateOf(false) }
+    val cloudSid = roomSid?.sid?.takeIf { BuildConfig.WE_MEET_CLOUD_RECORDING_NATIVE && roomSdkState == io.livekit.android.room.Room.State.CONNECTED }
+    var showCloudRecording by remember(cloudSid) { mutableStateOf(false) }
     var showPrivateTranslation by remember(onlineSid, localSid) { mutableStateOf(false) }
     val privateTranslation = if (onlineSid != null && meetingTrackSubscriptions != null && localSid.value.startsWith("PA_")) {
         val app = context.applicationContext as WeMeetApp
@@ -1415,10 +1417,10 @@ private fun RoomContent(
                     showShareChooser = true
                 }
             },
-            onRecordClick = {
+            onRecordClick = if (cloudSid != null) ({
                 showMore = false
-                onToggleRecording()
-            },
+                showCloudRecording = true
+            }) else null,
             onSubtitlesClick = {
                 scope.launch {
                     onToggleSubtitles()
@@ -1466,6 +1468,15 @@ private fun RoomContent(
         ModalBottomSheet(onDismissRequest = { showPrivateTranslation = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
             com.we.meet.ui.records.PrivateTranslationPanel(privateTranslation, app.captureAccount.orEmpty(), onlineRoomId, onlineSid, localSid.value,
                 state.micEnabled) { id -> showPrivateTranslation = false; onlineRecordId = id }
+        }
+    }
+    if (showCloudRecording && cloudSid != null) {
+        val meetingApp = context.applicationContext as WeMeetApp
+        ModalBottomSheet(onDismissRequest = { showCloudRecording = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+            com.we.meet.ui.records.CloudRecordingPanel(meetingApp.captureAccount.orEmpty(), onlineRoomId, cloudSid,
+                meetingApp.cloudRecordingRepository, { meetingApp.captureAccount }) {
+                room.state == io.livekit.android.room.Room.State.CONNECTED && room.sid?.sid == cloudSid
+            }
         }
     }
     if (showOnlineCapture && onlineSid != null) {
@@ -2697,7 +2708,7 @@ private fun MoreActionsSheet(
     subtitlesPending: Boolean,
     onRaiseHandClick: () -> Unit,
     onShareClick: () -> Unit,
-    onRecordClick: () -> Unit,
+    onRecordClick: (() -> Unit)?,
     onSubtitlesClick: () -> Unit,
     onAiClick: () -> Unit,
     onHostSettingsClick: () -> Unit,
@@ -2780,16 +2791,14 @@ private fun MoreActionsSheet(
                     iconBgColor = sheetBg,
                     iconTintColor = shareTint,
                 )
-                // Record: backend RECORDING_ENABLE is off, stays a stub
-                // ("功能开发中") for everyone. Banner still picks up
-                // RecordingStatusChanged if Web ever flips it on.
+                // Cloud video uses its own source-checked controls and rollout gate.
                 ControlButton(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Default.FiberManualRecord,
                     label = stringResource(R.string.room_more_record),
                     isOn = true,
-                    comingSoon = true,
-                    onClick = showStub,
+                    comingSoon = onRecordClick == null,
+                    onClick = onRecordClick ?: showStub,
                     labelColor = sheetTint,
                     iconBgColor = sheetBg,
                     iconTintColor = sheetTint,
