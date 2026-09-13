@@ -32,6 +32,7 @@ data class LocalCapture(
     val closed: Boolean = true,
     val sealed: Boolean = false,
     val interrupted: Boolean = false,
+    val allowMissingAudio: Boolean = false,
 ) {
     override fun toString(): String = "LocalCapture(<private>)"
 }
@@ -46,7 +47,7 @@ data class LocalCaptureChunk(
     val receipt: CaptureAudioReceiptDto?,
 )
 
-/** Synchronous IO for a worker dispatcher. One account, transactional counters, bounded encrypted audio. */
+/** One account with transactional receipts; media audio is encrypted, text audio is memory-only. */
 class CaptureJournal private constructor(
     private val db: SQLiteDatabase,
     private val cipher: CaptureCipher,
@@ -57,6 +58,7 @@ class CaptureJournal private constructor(
     private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
     private val sessionAdapter = moshi.adapter(LocalCapture::class.java)
     private val receiptAdapter = moshi.adapter(CaptureAudioReceiptDto::class.java)
+    private val temporaryAudio = mutableMapOf<Pair<String, Int>, ByteArray>()
 
     @Synchronized
     private fun <T> transaction(run: () -> T): T {
@@ -84,14 +86,34 @@ class CaptureJournal private constructor(
 
     fun list(): List<LocalCapture> = transaction {
         db.rawQuery("SELECT id FROM sessions ORDER BY created_at DESC, id", null).use { cursor ->
-            buildList { while (cursor.moveToNext()) add(load(cursor.getString(0))) }
+            buildList { while (cursor.moveToNext()) add(expire(load(cursor.getString(0)))) }
         }
     }
 
-    fun get(id: String): LocalCapture = transaction { load(id) }
+    fun get(id: String): LocalCapture = transaction { expire(load(id)) }
 
-    fun create(title: String): LocalCapture = transaction {
-        require(title.length <= 500)
+    private fun clearTemporary(id: String) {
+        temporaryAudio.keys.filter { it.first == id }.forEach { temporaryAudio.remove(it)?.fill(0) }
+    }
+
+    private fun discard(row: LocalCapture): LocalCapture {
+        if (row.create.retentionMode != "text") return row
+        clearTemporary(row.id)
+        db.update("chunks", ContentValues().apply { putNull("audio") }, "capture_id=?", arrayOf(row.id))
+        return row.copy(pendingBytes = 0, closed = true, interrupted = row.interrupted || row.pendingBytes > 0).also(::save)
+    }
+
+    private fun expire(row: LocalCapture): LocalCapture =
+        if (CaptureRetention.audioExpired(row) && (!row.closed || row.pendingBytes > 0)) discard(row) else row
+
+    fun discardTextAudio(id: String): LocalCapture = transaction { discard(load(id)) }
+
+    private fun recoverTextAudio() {
+        list().filter { it.create.retentionMode == "text" && it.pendingBytes > 0 }.forEach { discardTextAudio(it.id) }
+    }
+
+    fun create(title: String, retentionMode: String = "media"): LocalCapture = transaction {
+        require(title.length <= 500 && retentionMode in setOf("media", "text"))
         val previous = db.rawQuery("SELECT id FROM sessions ORDER BY created_at DESC, id", null).use { cursor ->
             buildList { while (cursor.moveToNext()) add(load(cursor.getString(0))) }
         }
@@ -99,7 +121,7 @@ class CaptureJournal private constructor(
         // Cloud notes provide full history; keep bounded local completed metadata.
         previous.drop(99).forEach { db.delete("sessions", "id=?", arrayOf(it.id)) }
         val row = LocalCapture(UUID.randomUUID().toString(), System.currentTimeMillis(), UUID.randomUUID().toString(),
-            CreateCaptureDto(UUID.randomUUID().toString(), UUID.randomUUID().toString(), title))
+            CreateCaptureDto(UUID.randomUUID().toString(), UUID.randomUUID().toString(), title, retentionMode))
         db.insertOrThrow("sessions", null, ContentValues().apply {
             put("id", row.id); put("created_at", row.createdAt)
             put("payload", cipher.encrypt("session/${row.id}", sessionAdapter.toJson(row).toByteArray(Charsets.UTF_8)))
@@ -113,8 +135,14 @@ class CaptureJournal private constructor(
         require(after.id == before.id && after.createdAt == before.createdAt && after.createKey == before.createKey && after.create == before.create)
         require(after.nextSequence == before.nextSequence && after.durationMs == before.durationMs && after.pendingBytes == before.pendingBytes)
         require(!before.sealed || after.sealed)
+        require(!before.allowMissingAudio || after.allowMissingAudio)
+        require(!after.allowMissingAudio || (after.create.retentionMode == "text" && after.sealIntent?.clientInterrupted == true))
         require(!after.sealed || (after.closed && after.pendingBytes == 0 && after.remote?.status == "stopped"))
         if (after.remote != null) require(after.remote.deviceId == after.create.deviceId)
+        if (after.remote != null && after.create.retentionMode == "text") {
+            require(after.remote.audioRetention?.mode == "text")
+            CaptureRetention.validate(requireNotNull(after.remote.audioRetention))
+        }
         if (after.command != null) {
             require(after.command.body.deviceId == after.create.deviceId && after.command.body.expectedRevision > 0)
             require(UUID.fromString(after.command.key).toString() == after.command.key)
@@ -128,7 +156,10 @@ class CaptureJournal private constructor(
         if (before.command != null) require(after.command == null || after.command == before.command)
         if (before.sealIntent != null) require(after.sealIntent == before.sealIntent)
         save(after)
-        if (after.sealed && !before.sealed) db.delete("chunks", "capture_id=?", arrayOf(id))
+        if (after.sealed && !before.sealed) {
+            clearTemporary(id)
+            db.delete("chunks", "capture_id=?", arrayOf(id))
+        }
         after
     }
 
@@ -137,14 +168,18 @@ class CaptureJournal private constructor(
         val audio = CaptureWave.encode(samples)
         val info = CaptureWave.inspect(audio)
         check(!row.closed && !row.sealed && row.nextSequence <= CaptureWave.MAX_CHUNKS)
+        check(!CaptureRetention.audioExpired(row)) { "Temporary audio expired" }
         check(row.pendingBytes <= byteLimit - audio.size && row.durationMs <= CaptureWave.MAX_DURATION_MS - info.durationMs)
         val chunk = LocalCaptureChunk(id, row.nextSequence, row.durationMs, info.durationMs, info.checksum, info.byteSize, null)
         db.insertOrThrow("chunks", null, ContentValues().apply {
             put("capture_id", id); put("sequence", chunk.sequence); put("start_ms", chunk.startMs)
             put("duration_ms", chunk.durationMs); put("checksum", chunk.checksum); put("byte_size", chunk.byteSize)
-            put("audio", cipher.encrypt(chunkLabel(chunk), audio))
+            if (row.create.retentionMode == "text") putNull("audio")
+            else put("audio", cipher.encrypt(chunkLabel(chunk), audio))
         })
         save(row.copy(nextSequence = row.nextSequence + 1, durationMs = row.durationMs + info.durationMs, pendingBytes = row.pendingBytes + audio.size))
+        if (row.create.retentionMode == "text") temporaryAudio[id to chunk.sequence] = audio
+        else audio.fill(0)
         chunk
     }
 
@@ -156,16 +191,25 @@ class CaptureJournal private constructor(
         }
     }
 
-    fun audio(id: String, sequence: Int): ByteArray = transaction {
-        load(id)
-        db.rawQuery("SELECT * FROM chunks WHERE capture_id=? AND sequence=?", arrayOf(id, sequence.toString())).use { cursor ->
-            check(cursor.moveToFirst())
-            val value = chunk(cursor)
-            val index = cursor.getColumnIndexOrThrow("audio")
-            check(!cursor.isNull(index)) { "Audio has already been acknowledged" }
-            cipher.decrypt(chunkLabel(value), cursor.getBlob(index)).also {
-                val info = CaptureWave.inspect(it)
-                require(info.checksum == value.checksum && info.durationMs == value.durationMs && info.byteSize == value.byteSize)
+    fun audio(id: String, sequence: Int): ByteArray {
+        get(id) // Commit deadline-driven cleanup even if the subsequent read is rejected.
+        return transaction {
+            val row = load(id)
+            check(!CaptureRetention.audioExpired(row)) { "Temporary audio expired" }
+            db.rawQuery("SELECT * FROM chunks WHERE capture_id=? AND sequence=?", arrayOf(id, sequence.toString())).use { cursor ->
+                check(cursor.moveToFirst())
+                val value = chunk(cursor)
+                val index = cursor.getColumnIndexOrThrow("audio")
+                val audio = if (row.create.retentionMode == "text")
+                    requireNotNull(temporaryAudio[id to sequence]) { "Temporary audio unavailable" }.copyOf()
+                else {
+                    check(!cursor.isNull(index)) { "Audio has already been acknowledged" }
+                    cipher.decrypt(chunkLabel(value), cursor.getBlob(index))
+                }
+                audio.also {
+                    val info = CaptureWave.inspect(it)
+                    require(info.checksum == value.checksum && info.durationMs == value.durationMs && info.byteSize == value.byteSize)
+                }
             }
         }
     }
@@ -178,13 +222,15 @@ class CaptureJournal private constructor(
             require(receipt.stored && receipt.startMs == value.startMs && receipt.durationMs == value.durationMs &&
                 receipt.checksum == value.checksum && receipt.byteSize == value.byteSize)
             if (value.receipt != null) { require(value.receipt == receipt); return@transaction }
-            check(row.pendingBytes >= value.byteSize)
+            val hasAudio = !cursor.isNull(cursor.getColumnIndexOrThrow("audio")) || temporaryAudio.containsKey(id to receipt.sequence)
+            if (hasAudio) check(row.pendingBytes >= value.byteSize)
             // Receipt, local-audio removal and byte accounting commit together.
             db.update("chunks", ContentValues().apply {
                 putNull("audio")
                 put("receipt", cipher.encrypt("receipt/$id/${receipt.sequence}", receiptAdapter.toJson(receipt).toByteArray(Charsets.UTF_8)))
             }, "capture_id=? AND sequence=?", arrayOf(id, receipt.sequence.toString()))
-            save(row.copy(pendingBytes = row.pendingBytes - value.byteSize))
+            save(row.copy(pendingBytes = row.pendingBytes - if (hasAudio) value.byteSize else 0))
+            temporaryAudio.remove(id to receipt.sequence)?.fill(0)
         }
     }
 
@@ -201,7 +247,11 @@ class CaptureJournal private constructor(
     private fun chunkLabel(chunk: LocalCaptureChunk) =
         "audio/${chunk.captureId}/${chunk.sequence}/${chunk.startMs}/${chunk.durationMs}/${chunk.checksum}/${chunk.byteSize}"
 
-    @Synchronized override fun close() { if (db.isOpen) db.close() }
+    @Synchronized override fun close() {
+        temporaryAudio.values.forEach { it.fill(0) }
+        temporaryAudio.clear()
+        if (db.isOpen) db.close()
+    }
 
     companion object {
         @Synchronized
@@ -225,7 +275,7 @@ class CaptureJournal private constructor(
                     }
                     db.setTransactionSuccessful()
                 } finally { db.endTransaction() }
-                return CaptureJournal(db, cipher, viewer, currentViewer, byteLimit)
+                return CaptureJournal(db, cipher, viewer, currentViewer, byteLimit).also { it.recoverTextAudio() }
             } catch (error: Exception) { db.close(); throw error }
         }
     }

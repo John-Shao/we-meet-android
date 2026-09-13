@@ -31,13 +31,20 @@ class CaptureRecovery(
         }
     }
 
-    suspend fun prepare(title: String): LocalCapture = action { journal.create(title) }
+    suspend fun prepare(title: String, retentionMode: String = "media"): LocalCapture = action {
+        if (retentionMode == "text") check(repository.textAudioAvailable(viewer).getOrThrow()) { "Text audio unavailable" }
+        journal.create(title, retentionMode)
+    }
 
     /** Call only after foreground microphone permission has been obtained; returns start authority. */
     suspend fun start(id: String): LocalCapture = action {
         val epoch = closeEpoch.get()
         val local = journal.get(id)
         check(local.closed && !local.sealed && local.sealIntent == null)
+        if (local.create.retentionMode == "text") {
+            check(!CaptureRetention.audioExpired(local)) { "Temporary audio expired" }
+            check(repository.textAudioAvailable(viewer).getOrThrow()) { "Text audio unavailable" }
+        }
         reconcile(id)
         if (journal.get(id).remote!!.status == "recording") {
             // A previous process may have lost the start response or its final hardware tail.
@@ -87,29 +94,37 @@ class CaptureRecovery(
                 if (chunk.receipt != null) continue
                 val current = journal.get(id)
                 check(current.sealIntent == null) { "Recover sealed delivery before uploading" }
-                val receipt = repository.upload(viewer, current.remote!!.id, current.create.leaseKey, current.create.deviceId,
-                    chunk.sequence, chunk.startMs, chunk.checksum, journal.audio(id, chunk.sequence)).getOrThrow()
+                val audio = journal.audio(id, chunk.sequence)
+                val receipt = try {
+                    repository.upload(viewer, current.remote!!.id, current.create.leaseKey, current.create.deviceId,
+                        chunk.sequence, chunk.startMs, chunk.checksum, audio).getOrThrow()
+                } finally { audio.fill(0) }
                 journal.acknowledge(id, receipt)
             }
             journal.get(id)
         }
     }
 
-    suspend fun finish(id: String): LocalCapture = action {
+    suspend fun finish(id: String, allowMissing: Boolean = false): LocalCapture = action {
         val initial = journal.get(id)
         if (initial.sealed) return@action initial
+        val partial = initial.allowMissingAudio || (allowMissing && initial.sealIntent == null)
+        require(!(allowMissing || partial) || initial.create.retentionMode == "text")
         journal.update(id) { it.copy(closed = true) }
         reconcile(id)
         if (journal.get(id).remote!!.status !in setOf("stopping", "stopped")) command(id, "stop")
-        uploadPending(id)
+        if (!partial) uploadPending(id)
+        else uploads.withLock { journal.discardTextAudio(id) }
         val local = journal.get(id)
         check(local.pendingBytes == 0)
         val frozen = journal.update(id) {
-            it.copy(sealIntent = it.sealIntent ?: SealCaptureDto(it.create.deviceId, it.nextSequence - 1, it.interrupted))
+            it.copy(sealIntent = it.sealIntent ?: SealCaptureDto(it.create.deviceId, it.nextSequence - 1, it.interrupted || partial),
+                allowMissingAudio = partial)
         }
         val manifest = repository.seal(viewer, frozen.remote!!.id, frozen.create.leaseKey, frozen.sealIntent!!).getOrThrow()
-        // No automatic partial seal: every locally persisted sample must have an exact receipt.
-        check(manifest.durationMs == frozen.durationMs && manifest.missingSequences.isEmpty() && manifest.gaps.isEmpty())
+        // Only a persisted explicit text-mode choice may accept missing source samples.
+        if (partial) check(manifest.durationMs <= frozen.durationMs)
+        else check(manifest.durationMs == frozen.durationMs && manifest.missingSequences.isEmpty() && manifest.gaps.isEmpty())
         if (journal.get(id).remote!!.status != "stopped") command(id, "finalize")
         journal.update(id) { it.copy(sealed = true) }
     }

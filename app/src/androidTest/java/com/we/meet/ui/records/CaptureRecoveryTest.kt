@@ -38,6 +38,62 @@ class CaptureRecoveryTest {
         return controller()
     }
 
+    @Test fun textAudioAdmissionPrecedesCreatingAnIntentAndIsRecheckedOnStart() = runBlocking {
+        val controller = controller()
+        api.textAudioAvailable = false
+        assertTrue(runCatching { controller.prepare("Text fixture", "text") }.isFailure)
+        assertTrue(journal.list().isEmpty())
+        api.textAudioAvailable = true
+        val local = controller.prepare("Text fixture", "text")
+        api.textAudioAvailable = false
+        assertTrue(runCatching { controller.start(local.id) }.isFailure)
+        assertTrue(api.createKeys.isEmpty())
+        assertTrue(journal.get(local.id).closed)
+    }
+
+    @Test fun textProcessLossRequiresExplicitPartialFinishAndKeepsSourceGaps() = runBlocking {
+        val first = controller()
+        val local = first.prepare("Text fixture", "text")
+        first.start(local.id)
+        journal.append(local.id, ShortArray(16000))
+        val recovered = reopen()
+        recovered.load()
+        assertTrue(runCatching { recovered.finish(local.id) }.isFailure)
+        assertTrue(api.seals.isEmpty())
+        val completed = recovered.finish(local.id, allowMissing = true)
+        assertTrue(completed.sealed && completed.interrupted)
+        assertEquals(1, api.seals.single().finalSequence)
+        assertTrue(api.seals.single().clientInterrupted)
+        assertEquals(0, api.uploadCalls)
+    }
+
+    @Test fun lostTextUploadResponseCanRecoverItsReceiptAfterProcessLoss() = runBlocking {
+        val first = controller()
+        val local = first.prepare("Text fixture", "text")
+        first.start(local.id)
+        journal.append(local.id, ShortArray(16000))
+        api.failUpload = true
+        assertTrue(runCatching { first.uploadPending(local.id) }.isFailure)
+        val recovered = reopen()
+        assertTrue(recovered.finish(local.id).sealed)
+        assertEquals(1, api.uploadCalls)
+    }
+
+    @Test fun unknownPartialSealPreservesConsentAndExactBodyAcrossReopen() = runBlocking {
+        val first = controller()
+        val local = first.prepare("Text fixture", "text")
+        first.start(local.id)
+        journal.append(local.id, ShortArray(16000))
+        api.failSeal = true
+        assertTrue(runCatching { first.finish(local.id, allowMissing = true) }.isFailure)
+        assertTrue(journal.get(local.id).allowMissingAudio)
+        val frozen = api.seals.single()
+        val recovered = reopen()
+        assertTrue(recovered.finish(local.id).sealed)
+        assertEquals(frozen, api.seals.last())
+        assertEquals(0, api.uploadCalls)
+    }
+
     @Test fun unknownCreateUsesSameKeyAndLeaseAfterRestart() = runBlocking {
         val controller = controller()
         val local = controller.prepare("Fixture")

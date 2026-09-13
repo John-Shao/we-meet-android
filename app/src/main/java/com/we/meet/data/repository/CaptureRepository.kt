@@ -61,11 +61,11 @@ class CaptureRepository(private val api: CaptureApi, private val currentViewer: 
         val fields = mapOf("device_id" to deviceId, "sequence" to sequence.toString(), "start_ms" to startMs.toString(), "checksum" to checksum)
             .mapValues { it.value.toRequestBody("text/plain".toMediaType()) }
         val part = MultipartBody.Part.createFormData("audio", "chunk.wav", frozen.toRequestBody("audio/wav".toMediaType()))
-        api.upload(captureId, lease, fields, part).also {
+        try { api.upload(captureId, lease, fields, part).also {
             receipt(it)
             require(it.stored && it.sequence == sequence && it.startMs == startMs && it.checksum == checksum &&
                 it.durationMs == info.durationMs && it.byteSize == info.byteSize)
-        }
+        } } finally { frozen.fill(0) }
     }
 
     suspend fun seal(viewer: String, captureId: String, lease: String, request: SealCaptureDto): Result<CaptureManifestDto> = scoped(viewer) {

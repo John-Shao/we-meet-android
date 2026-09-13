@@ -35,6 +35,59 @@ class CaptureJournalTest {
     }
     @After fun close() { journals.forEach { it.close() } }
 
+    @Test fun textAudioIsMemoryOnlyAndMissingBytesRemainExplicitAfterReopen() {
+        val journal = open()
+        val local = journal.create("Text-only fixture", "text")
+        journal.update(local.id) { it.copy(closed = false) }
+        val samples = ShortArray(16000) { 1024 }
+        val chunk = journal.append(local.id, samples)
+        assertArrayEquals(CaptureWave.encode(samples), journal.audio(local.id, 1))
+        SQLiteDatabase.openDatabase(file().absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+            db.rawQuery("SELECT audio FROM chunks WHERE capture_id=?", arrayOf(local.id)).use {
+                assertTrue(it.moveToFirst())
+                assertTrue(it.isNull(0))
+            }
+        }
+        journal.close()
+        val reopened = open()
+        val after = reopened.get(local.id)
+        assertTrue(after.closed && after.interrupted)
+        assertEquals(0, after.pendingBytes)
+        assertEquals(2, after.nextSequence)
+        assertTrue(runCatching { reopened.audio(local.id, 1) }.isFailure)
+        // A server receipt can still resolve an upload whose response was lost.
+        reopened.acknowledge(local.id, receipt(chunk))
+        assertNotNull(reopened.chunks(local.id).single().receipt)
+        assertEquals(0, reopened.get(local.id).pendingBytes)
+    }
+
+    @Test fun acknowledgedTextAudioIsClearedWithoutLosingReceipt() {
+        val journal = open()
+        val local = journal.create("Text-only fixture", "text")
+        journal.update(local.id) { it.copy(closed = false) }
+        val chunk = journal.append(local.id, ShortArray(16000))
+        journal.acknowledge(local.id, receipt(chunk))
+        assertTrue(runCatching { journal.audio(local.id, 1) }.isFailure)
+        assertEquals(0, journal.get(local.id).pendingBytes)
+        assertNotNull(journal.chunks(local.id).single().receipt)
+    }
+
+    @Test fun expiredTextMetadataClosesJournalAndDropsPendingBytes() {
+        val journal = open()
+        val local = journal.create("Text-only fixture", "text")
+        journal.update(local.id) { it.copy(closed = false) }
+        journal.append(local.id, ShortArray(16000))
+        val remote = CaptureDto(UUID.randomUUID().toString(), UUID.randomUUID().toString(), local.create.deviceId,
+            "recording", 1, "2026-09-13T00:00:00Z", mediaStatus = "uploading", lastAckedSequence = 0,
+            audioRetention = com.we.meet.data.api.dto.CaptureAudioRetentionDto("text", "2000-01-01T00:00:00Z",
+                "2000-01-01T00:00:00Z", true, "not_started", "", null))
+        journal.update(local.id) { it.copy(remote = remote) }
+        assertTrue(journal.get(local.id).closed)
+        assertEquals(0, journal.get(local.id).pendingBytes)
+        assertTrue(runCatching { journal.audio(local.id, 1) }.isFailure)
+        assertTrue(runCatching { journal.append(local.id, ShortArray(16)) }.isFailure)
+    }
+
     @Test fun reopenPreservesOriginalLeaseCommandAndNumbering() {
         val journal = open()
         val local = journal.create("Private title fixture")
@@ -123,14 +176,21 @@ class CaptureJournalTest {
         val raw = String(file().readBytes(), Charsets.ISO_8859_1)
         assertFalse(raw.contains(local.create.leaseKey))
         assertFalse(raw.contains("Private title fixture"))
-        SQLiteDatabase.openDatabase(file().absolutePath, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
+        val tampered = SQLiteDatabase.openDatabase(file().absolutePath, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
             val blob = db.rawQuery("SELECT payload FROM sessions WHERE id=?", arrayOf(local.id)).use { cursor -> cursor.moveToFirst(); cursor.getBlob(0) }
             blob[blob.lastIndex] = (blob.last().toInt() xor 1).toByte()
             db.update("sessions", ContentValues().apply { put("payload", blob) }, "id=?", arrayOf(local.id))
+            blob
         }
-        val reopened = open()
-        assertTrue(runCatching { reopened.list() }.isFailure)
-        assertTrue(runCatching { reopened.create("Must not overwrite") }.isFailure)
+        // Open now reconciles temporary text audio and authenticates metadata first.
+        assertTrue(runCatching { open() }.isFailure)
+        SQLiteDatabase.openDatabase(file().absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+            db.rawQuery("SELECT payload FROM sessions WHERE id=?", arrayOf(local.id)).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertArrayEquals(tampered, cursor.getBlob(0))
+                assertFalse(cursor.moveToNext())
+            }
+        }
     }
 
     @Test fun sealingRequiresAllPendingAudioResolvedAndLocksTheFinalSequence() {

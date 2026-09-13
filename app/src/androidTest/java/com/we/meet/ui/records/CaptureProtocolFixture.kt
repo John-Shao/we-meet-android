@@ -25,7 +25,8 @@ import retrofit2.Response
 
 /** In-memory protocol fixture only: no server, credentials, microphone or provider. */
 internal class CaptureProtocolFixture : CaptureApi {
-    override suspend fun audioCapabilities() = CaptureAudioCapabilitiesDto(false, "rollout_disabled")
+    var textAudioAvailable = true
+    override suspend fun audioCapabilities() = CaptureAudioCapabilitiesDto(textAudioAvailable, if (textAudioAvailable) "" else "rollout_disabled")
     var failCreate = false
     var failCommand: String? = null
     var rejectCommand = false
@@ -49,7 +50,10 @@ internal class CaptureProtocolFixture : CaptureApi {
     override suspend fun create(key: String, request: CreateCaptureDto): CaptureOperationDto {
         createKeys += key
         if (!::state.isInitialized) state = CaptureDto(UUID.randomUUID().toString(), UUID.randomUUID().toString(), request.deviceId,
-            "preparing", 1, "2026-09-13T00:00:00Z", mediaStatus = "not_connected", lastAckedSequence = 0)
+            "preparing", 1, "2026-09-13T00:00:00Z", mediaStatus = "not_connected", lastAckedSequence = 0,
+            audioRetention = if (request.retentionMode == "text") CaptureAudioRetentionDto("text",
+                java.time.Instant.now().plusSeconds(86400).toString(), java.time.Instant.now().plusSeconds(86000).toString(),
+                false, "not_started", "", null) else null)
         val response = operation(key)
         afterCreate?.invoke()
         if (failCreate) { failCreate = false; throw IOException("Synthetic lost response") }
@@ -86,6 +90,6 @@ internal class CaptureProtocolFixture : CaptureApi {
         seals += request
         if (failSeal) { failSeal = false; throw IOException("Synthetic lost response") }
         return CaptureManifestDto(request.finalSequence, if (request.clientInterrupted) "incomplete" else if (request.finalSequence == 0) "empty" else "saved",
-            receipts.values.sumOf { it.durationMs }, emptyList(), emptyList())
+            receipts.values.sumOf { it.durationMs }, (1..request.finalSequence).filter { it !in receipts }, emptyList())
     }
 }
