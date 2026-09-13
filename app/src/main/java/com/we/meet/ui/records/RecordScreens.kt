@@ -153,7 +153,7 @@ fun RecordLibraryScreen(
 }
 
 @Composable
-fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String, onBack: () -> Unit, summaryVersionId: String? = null) {
+fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String, onBack: () -> Unit, summaryVersionId: String? = null, onTask: ((String) -> Unit)? = null) {
     val app = LocalContext.current.applicationContext as? WeMeetApp
     var audioSeek by remember(viewer, recordId) { mutableStateOf<CaptureAudioSeek?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
@@ -202,7 +202,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                     if (app != null) Column(Modifier.padding(horizontal = Dimens.ScreenPadding)) {
                                         RecordSummaryControls(viewer, record, app.meetingSummaryRepository) { app.captureAccount }
                                         RecordHumanSummary(viewer, record, summaries.getOrThrow().results.firstOrNull(), app.meetingReviewRepository,
-                                            { app.captureAccount }) { snapshot, reference -> citation = snapshot to reference }
+                                            { app.captureAccount }, onTask) { snapshot, reference -> citation = snapshot to reference }
                                     }
                                 }
                                 if (summaries.getOrThrow().results.isEmpty()) item {

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="summary_tasks_title">跟进任务</string>
+    <string name="summary_tasks_read_error">暂时无法读取任务转换记录，请刷新检查权限。</string>
+    <string name="summary_tasks_conflict">人工纪要的行动项已更新，请刷新纪要后再创建任务。</string>
+    <string name="summary_tasks_unknown">上次任务创建结果尚未确认，请先核对原请求，再创建其他任务。</string>
+    <string name="summary_tasks_error">未能确认任务创建成功，请检查内容和权限，或核对待确认请求。</string>
+    <string name="summary_tasks_deleted">关联任务已删除，不会自动重新创建。</string>
+    <string name="summary_tasks_converted">已转为任务</string>
+    <string name="summary_tasks_completed">任务已完成</string>
+    <string name="summary_tasks_todo">任务待处理</string>
+    <string name="summary_tasks_open">打开任务</string>
+    <string name="summary_tasks_convert">将此行动项转为任务</string>
+    <string name="summary_tasks_confirm">确认任务信息</string>
+    <string name="summary_tasks_task_title">任务标题</string>
+    <string name="summary_tasks_hints">纪要文字提示：负责人 %1$s；日期 %2$s。请在下方明确选择实际负责人和日期。</string>
+    <string name="summary_tasks_search">搜索负责人</string>
+    <string name="summary_tasks_assignee">负责人：%1$s</string>
+    <string name="summary_tasks_choose">请选择人员</string>
+    <string name="summary_tasks_no_assignees">没有匹配的负责人</string>
+    <string name="summary_tasks_date">截止日期：%1$s</string>
+    <string name="summary_tasks_no_date">未设置</string>
+    <string name="summary_tasks_clear_date">清除截止日期</string>
+    <string name="summary_tasks_set_date">设置日期</string>
+    <string name="summary_tasks_notice">确认后将创建任务并通知负责人。任务标题会对其可见，纪要访问权限仍单独管理。</string>
+    <string name="summary_tasks_create">确认并创建任务</string>
+</resources>

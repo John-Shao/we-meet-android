@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="summary_tasks_title">Follow-up tasks</string>
+    <string name="summary_tasks_read_error">Task conversion details are unavailable. Refresh to check access.</string>
+    <string name="summary_tasks_conflict">The reviewed action items have changed. Refresh the minutes before creating a task.</string>
+    <string name="summary_tasks_unknown">A task request has an unknown result. Check the original request before creating another task.</string>
+    <string name="summary_tasks_error">Could not confirm task creation. Check the fields and current access, or reconcile the pending request.</string>
+    <string name="summary_tasks_deleted">The linked task was deleted. It will not be recreated automatically.</string>
+    <string name="summary_tasks_converted">Already converted</string>
+    <string name="summary_tasks_completed">Task completed</string>
+    <string name="summary_tasks_todo">Task to do</string>
+    <string name="summary_tasks_open">Open task</string>
+    <string name="summary_tasks_convert">Create task from this action</string>
+    <string name="summary_tasks_confirm">Confirm task details</string>
+    <string name="summary_tasks_task_title">Task title</string>
+    <string name="summary_tasks_hints">Text hints in minutes: owner %1$s; date %2$s. Choose the actual assignee and date below.</string>
+    <string name="summary_tasks_search">Search assignees</string>
+    <string name="summary_tasks_assignee">Assignee: %1$s</string>
+    <string name="summary_tasks_choose">Choose a person</string>
+    <string name="summary_tasks_no_assignees">No matching assignees</string>
+    <string name="summary_tasks_date">Due date: %1$s</string>
+    <string name="summary_tasks_no_date">Not set</string>
+    <string name="summary_tasks_clear_date">Clear due date</string>
+    <string name="summary_tasks_set_date">Set date</string>
+    <string name="summary_tasks_notice">Confirmation creates a task and notifies the assignee. The task title is shared with them; access to these minutes is managed separately.</string>
+    <string name="summary_tasks_create">Confirm and create task</string>
+</resources>

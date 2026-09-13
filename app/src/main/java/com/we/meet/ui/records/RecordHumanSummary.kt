@@ -27,7 +27,7 @@ private fun RecordSummaryContentDto.human() = HumanContentDto(overview,
 
 @Composable
 internal fun RecordHumanSummary(viewer: String, record: RecordDto, base: RecordSummaryVersionDto?, repository: MeetingReviewRepository,
-    currentViewer: () -> String?, onSource: (String, RecordReferenceDto) -> Unit) {
+    currentViewer: () -> String?, onTask: ((String) -> Unit)? = null, onSource: (String, RecordReferenceDto) -> Unit) {
     if (!record.capabilities.readSummary) return
     val context = LocalContext.current.applicationContext
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -94,6 +94,7 @@ internal fun RecordHumanSummary(viewer: String, record: RecordDto, base: RecordS
                     if (current != null) {
                         HumanSummaryBody(current, record.capabilities.readTranscript, onSource)
                         TextButton(onClick = { history = true }) { Text(stringResource(R.string.human_summary_history)) }
+                        if (onTask != null) RecordSummaryTasks(viewer, record.id, current, repository, currentViewer, onTask)
                     } else Text(stringResource(R.string.human_summary_empty))
                     if (state.canEdit) {
                         if (storageError) WeMeetInlineErrorState(onRetry = { storageRetry++ }, message = stringResource(R.string.summary_controls_storage_error))
