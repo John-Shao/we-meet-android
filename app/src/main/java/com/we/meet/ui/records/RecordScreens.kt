@@ -201,6 +201,8 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                 if (selectedVersion == null) item {
                                     if (app != null) Column(Modifier.padding(horizontal = Dimens.ScreenPadding)) {
                                         RecordSummaryControls(viewer, record, app.meetingSummaryRepository) { app.captureAccount }
+                                        RecordHumanSummary(viewer, record, summaries.getOrThrow().results.firstOrNull(), app.meetingReviewRepository,
+                                            { app.captureAccount }) { snapshot, reference -> citation = snapshot to reference }
                                     }
                                 }
                                 if (summaries.getOrThrow().results.isEmpty()) item {

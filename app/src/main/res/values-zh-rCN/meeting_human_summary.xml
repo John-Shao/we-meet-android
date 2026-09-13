@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="human_summary_title">人工纪要</string>
+    <string name="human_summary_empty">暂无人工修订，仍可阅读下方 AI 纪要。</string>
+    <string name="human_summary_read_error">暂时无法读取人工纪要，请刷新检查访问权限。</string>
+    <string name="human_summary_edit">编辑人工纪要</string>
+    <string name="human_summary_history">修订历史</string>
+    <string name="human_summary_version">人工修订 %1$d</string>
+    <string name="human_summary_save">保存新修订</string>
+    <string name="human_summary_save_error">未能确认保存成功。草稿已保留，请检查必填文字和 64 KB 长度限制，再刷新或核对待确认请求。</string>
+    <string name="human_summary_unknown">上次保存结果尚未确认，请先核对原请求，再保存新修订。</string>
+    <string name="human_summary_conflict">已有更新的人工版本，当前草稿仍保留在此。请关闭后基于最新版本重新编辑。</string>
+    <string name="human_summary_replace">使用此 AI 版本</string>
+    <string name="human_summary_replace_notice">基于当前展示的 AI 版本开始草稿？保存后会新增人工修订，旧版本仍保留在历史中。</string>
+    <string name="human_summary_continue">开始草稿</string>
+    <string name="human_summary_edit_notice">编辑保留原有引用，新增内容不带原文引用。保存不会创建任务，负责人需要另行确认。</string>
+    <string name="human_summary_overview">总览</string>
+    <string name="human_summary_decisions">关键决策</string>
+    <string name="human_summary_chapters">讨论话题</string>
+    <string name="human_summary_actions">行动项</string>
+    <string name="human_summary_questions">待解决问题</string>
+    <string name="human_summary_owner_hint">建议负责人（仅文字）</string>
+    <string name="human_summary_due_hint">建议日期（仅文字）</string>
+    <string name="human_summary_remove">移除此项</string>
+    <string name="human_summary_add">添加一项</string>
+</resources>

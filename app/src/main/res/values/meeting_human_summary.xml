@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="human_summary_title">Reviewed minutes</string>
+    <string name="human_summary_empty">No human revision yet. AI minutes remain available below.</string>
+    <string name="human_summary_read_error">Reviewed minutes are unavailable. Refresh to check access.</string>
+    <string name="human_summary_edit">Edit reviewed minutes</string>
+    <string name="human_summary_history">Revision history</string>
+    <string name="human_summary_version">Human revision %1$d</string>
+    <string name="human_summary_save">Save new revision</string>
+    <string name="human_summary_save_error">Could not confirm the save. Keep your draft, check required text and the 64 KB limit, then refresh or reconcile the pending request.</string>
+    <string name="human_summary_unknown">The last save has an unknown result. Check that original request before saving another revision.</string>
+    <string name="human_summary_conflict">A newer human revision exists. Your draft is retained here; close and edit the current revision before saving.</string>
+    <string name="human_summary_replace">Use this AI version</string>
+    <string name="human_summary_replace_notice">Start a draft from the displayed AI version? Saving creates a new human revision. Earlier revisions remain in history.</string>
+    <string name="human_summary_continue">Start draft</string>
+    <string name="human_summary_edit_notice">Edits preserve existing source references. Added points have no source citation. Saving does not create tasks; assignments are confirmed separately.</string>
+    <string name="human_summary_overview">Overview</string>
+    <string name="human_summary_decisions">Decisions</string>
+    <string name="human_summary_chapters">Topics</string>
+    <string name="human_summary_actions">Action items</string>
+    <string name="human_summary_questions">Open questions</string>
+    <string name="human_summary_owner_hint">Suggested owner (text only)</string>
+    <string name="human_summary_due_hint">Suggested date (text only)</string>
+    <string name="human_summary_remove">Remove point</string>
+    <string name="human_summary_add">Add point</string>
+</resources>
