@@ -1,0 +1,23 @@
+<resources>
+    <string name="online_capture_title">AI meeting record</string>
+    <string name="online_capture_description">Transcribe this meeting into a record for minutes. Cloud video recording has separate controls.</string>
+    <string name="online_capture_guest">Sign in with a room manager account to control AI recording.</string>
+    <string name="online_capture_unavailable">AI recording controls are unavailable for this meeting.</string>
+    <string name="online_capture_coverage">Transcript delivery does not verify complete audio coverage. Review any missing speech before using the minutes.</string>
+    <string name="online_capture_open">Open this meeting record</string>
+    <string name="online_capture_unknown">The control result is unknown. Check the original request before another action.</string>
+    <string name="online_capture_start">Start AI recording</string>
+    <string name="online_capture_stop">Stop AI recording</string>
+    <string name="online_capture_manager">Only current room managers can start or stop AI recording.</string>
+    <string name="online_capture_error">Could not confirm the operation. Refresh or check the original request.</string>
+    <string name="online_capture_start_effect">This starts speech processing and saves the transcript in this meeting record. Processing may consume AI usage. Participants see the recording status.</string>
+    <string name="online_capture_stop_effect">This stops speech collection for the record and waits for the final received text. The meeting continues.</string>
+    <string name="online_capture_confirm">Confirm</string>
+    <string name="online_capture_unknown_state">Status unconfirmed</string>
+    <string name="online_capture_starting">Starting</string>
+    <string name="online_capture_recording">Recording speech</string>
+    <string name="online_capture_stopping">Finishing transcript</string>
+    <string name="online_capture_stopped">Recording stopped</string>
+    <string name="online_capture_incomplete">Recording ended incompletely</string>
+    <string name="online_capture_off">Not recording</string>
+</resources>

@@ -118,7 +118,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -152,6 +156,7 @@ import com.we.meet.feature.im.ui.call.MinimalVideoCallScreen
 import com.we.meet.feature.im.ui.call.MinimalVoiceCallScreen
 import io.livekit.android.compose.ui.ScaleType
 import io.livekit.android.compose.ui.VideoTrackView
+import io.livekit.android.util.flow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -465,6 +470,8 @@ fun RoomScreen(
                         RoomContent(
                         state = state,
                         room = viewModel.room,
+                        onlineRoomId = roomId,
+                        onlineJoinToken = livekitToken,
                         meetInviteChips = overlayChips,
                         pinPreferredAudioDevice = viewModel.callAudioDeviceModule::setPreferredDevice,
                         roomName = roomName,
@@ -803,6 +810,8 @@ private fun MeetInviteChipsRow(
 private fun RoomContent(
     state: RoomUiState,
     room: io.livekit.android.room.Room,
+    onlineRoomId: String,
+    onlineJoinToken: String,
     pinPreferredAudioDevice: (android.media.AudioDeviceInfo?) -> Boolean,
     roomName: String,
     roomSlug: String,
@@ -861,6 +870,14 @@ private fun RoomContent(
     var toolbarsVisible by remember { mutableStateOf(true) }
     var showParticipants by remember { mutableStateOf(false) }
     var showMore by remember { mutableStateOf(false) }
+    val roomSdkState by room::state.flow.collectAsStateWithLifecycle()
+    val roomSid by room::sid.flow.collectAsStateWithLifecycle()
+    val onlineSid = roomSid?.sid?.takeIf { BuildConfig.WE_MEET_ONLINE_AI_NATIVE && roomSdkState == io.livekit.android.room.Room.State.CONNECTED }
+    var showOnlineCapture by remember(onlineSid) { mutableStateOf(false) }
+    var onlineRecordId by remember(onlineSid) { mutableStateOf<String?>(null) }
+    var onlineNoticeHeight by remember(onlineSid) { mutableStateOf(Dimens.SpaceNone) }
+    val density = LocalDensity.current
+    val currentOnlineSource: () -> Boolean = { room.state == io.livekit.android.room.Room.State.CONNECTED && room.sid?.sid == onlineSid && onlineSid != null }
     var showLeaveDialog by remember { mutableStateOf(false) }
     var showAudioSheet by remember { mutableStateOf(false) }
     var showMessages by remember { mutableStateOf(false) }
@@ -1019,7 +1036,7 @@ private fun RoomContent(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = topInset, bottom = bottomInset + subtitleInset),
+                .padding(top = topInset, bottom = bottomInset + subtitleInset + onlineNoticeHeight),
         ) {
             VideoGrid(
                 state = state,
@@ -1087,6 +1104,11 @@ private fun RoomContent(
         // subtitleInset, so captions never draw over participant video. The
         // region follows the bottom toolbar while it is visible and moves to
         // the screen bottom with the toolbar hidden.
+        if (onlineSid != null) Box(Modifier.align(Alignment.BottomCenter).padding(bottom = bottomInset + subtitleInset)
+            .onSizeChanged { onlineNoticeHeight = with(density) { it.height.toDp() } }) {
+            com.we.meet.ui.records.OnlineCaptureNotice(onlineRoomId, onlineSid, onlineJoinToken,
+                (context.applicationContext as WeMeetApp).onlineCaptureNoticeRepository, currentOnlineSource)
+        }
         if (state.subtitlesOverlayOn) {
             Box(
                 modifier = Modifier
@@ -1397,7 +1419,22 @@ private fun RoomContent(
                 }
             },
             onDismiss = { showMore = false },
+            onOnlineCaptureClick = if (onlineSid != null) ({ showMore = false; showOnlineCapture = true }) else null,
         )
+    }
+
+    if (showOnlineCapture && onlineSid != null) {
+        val meetingApp = context.applicationContext as WeMeetApp
+        ModalBottomSheet(onDismissRequest = { showOnlineCapture = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+            com.we.meet.ui.records.OnlineCapturePanel(meetingApp.captureAccount.orEmpty(), onlineRoomId, onlineSid, meetingApp.onlineCaptureRepository,
+                { meetingApp.captureAccount }, currentOnlineSource) { id -> showOnlineCapture = false; onlineRecordId = id }
+        }
+    }
+    if (onlineSid != null) onlineRecordId?.let { id ->
+        val meetingApp = context.applicationContext as WeMeetApp
+        Dialog(onDismissRequest = { onlineRecordId = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+            com.we.meet.ui.records.RecordDetailScreen(meetingApp.meetingRecordRepository, meetingApp.captureAccount.orEmpty(), id, onBack = { onlineRecordId = null })
+        }
     }
 
     if (showAiSheet) {
@@ -2620,6 +2657,7 @@ private fun MoreActionsSheet(
     onAiClick: () -> Unit,
     onHostSettingsClick: () -> Unit,
     onDismiss: () -> Unit,
+    onOnlineCaptureClick: (() -> Unit)? = null,
 ) {
     val sheetState = rememberModalBottomSheetState()
     val context = LocalContext.current
@@ -2752,7 +2790,12 @@ private fun MoreActionsSheet(
                 // 〔邀请〕钮,统一邀请面板),More 面板不再重复放置。
                 // Reserve empty cells so Settings keeps the col-1
                 // position when more entries land on row 2 later.
-                Spacer(Modifier.weight(4f))
+                if (onOnlineCaptureClick != null) {
+                    ControlButton(modifier = Modifier.weight(1f), icon = Icons.Default.AutoAwesome,
+                        label = stringResource(R.string.online_capture_title), isOn = true, onClick = onOnlineCaptureClick,
+                        labelColor = sheetTint, iconBgColor = sheetBg, iconTintColor = sheetTint)
+                    Spacer(Modifier.weight(3f))
+                } else Spacer(Modifier.weight(4f))
             }
         }
         Spacer(Modifier.height(Dimens.SpaceXl))

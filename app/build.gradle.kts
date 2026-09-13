@@ -28,6 +28,7 @@ val oidcClientId = cfg("WE_MEET_OIDC_CLIENT_ID", "app")
 val docsNative = cfg("WE_MEET_DOCS_NATIVE", "true")
 val meetingRecords = cfg("WE_MEET_RECORDS_NATIVE", "false").toBoolean().toString()
 val meetingCapture = cfg("WE_MEET_CAPTURE_NATIVE", "false").toBoolean().toString()
+val meetingOnlineAi = cfg("WE_MEET_ONLINE_AI_NATIVE", "false").toBoolean().toString()
 // WebView Keycloak login vs legacy native OTP — the rollback fuse (p3-docs-app.md D1).
 val webLogin = cfg("WE_MEET_WEB_LOGIN", "true")
 // PostHog: leave WE_MEET_POSTHOG_KEY empty to keep analytics off. The
@@ -70,6 +71,7 @@ android {
         buildConfigField("boolean", "WE_MEET_DOCS_NATIVE", docsNative)
         buildConfigField("boolean", "WE_MEET_RECORDS_NATIVE", meetingRecords)
         buildConfigField("boolean", "WE_MEET_CAPTURE_NATIVE", meetingCapture)
+        buildConfigField("boolean", "WE_MEET_ONLINE_AI_NATIVE", meetingOnlineAi)
         buildConfigField("boolean", "WE_MEET_WEB_LOGIN", webLogin)
 
         // Getui: the gtsdk AAR's manifest references ${GETUI_APPID} etc., and

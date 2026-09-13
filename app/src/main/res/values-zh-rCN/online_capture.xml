@@ -1,0 +1,23 @@
+<resources>
+    <string name="online_capture_title">会议智能记录</string>
+    <string name="online_capture_description">将本场会议语音转为文字，保存到会议笔记以生成纪要。云视频录制单独控制。</string>
+    <string name="online_capture_guest">请使用会议管理者账号登录后控制智能记录</string>
+    <string name="online_capture_unavailable">本场会议的智能记录控制暂不可用</string>
+    <string name="online_capture_coverage">文字送达不代表完整音频覆盖，使用纪要前请核对是否有缺失发言。</string>
+    <string name="online_capture_open">打开本场会议笔记</string>
+    <string name="online_capture_unknown">控制结果未知，请先核对原请求，再进行其他操作。</string>
+    <string name="online_capture_start">开始智能记录</string>
+    <string name="online_capture_stop">停止智能记录</string>
+    <string name="online_capture_manager">只有当前会议管理者可以开始或停止智能记录</string>
+    <string name="online_capture_error">无法确认操作结果，请刷新或核对原请求</string>
+    <string name="online_capture_start_effect">将开始处理本场会议语音，并保存逐字稿到会议笔记，可能消耗 AI 用量。参会人可见记录状态。</string>
+    <string name="online_capture_stop_effect">将停止本次记录的语音采集，等待已收到的尾段文字完成送达；会议继续进行。</string>
+    <string name="online_capture_confirm">确认</string>
+    <string name="online_capture_unknown_state">状态尚未确认</string>
+    <string name="online_capture_starting">正在启动</string>
+    <string name="online_capture_recording">正在记录语音</string>
+    <string name="online_capture_stopping">正在收齐文字</string>
+    <string name="online_capture_stopped">记录已停止</string>
+    <string name="online_capture_incomplete">记录未完整结束</string>
+    <string name="online_capture_off">未开启记录</string>
+</resources>
