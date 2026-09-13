@@ -66,6 +66,7 @@ import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.MoreHoriz
@@ -472,6 +473,7 @@ fun RoomScreen(
                         room = viewModel.room,
                         onlineRoomId = roomId,
                         onlineJoinToken = livekitToken,
+                        meetingTrackSubscriptions = viewModel.meetingTrackSubscriptions,
                         meetInviteChips = overlayChips,
                         pinPreferredAudioDevice = viewModel.callAudioDeviceModule::setPreferredDevice,
                         roomName = roomName,
@@ -812,6 +814,7 @@ private fun RoomContent(
     room: io.livekit.android.room.Room,
     onlineRoomId: String,
     onlineJoinToken: String,
+    meetingTrackSubscriptions: com.we.meet.livekit.MeetingTrackSubscriptions?,
     pinPreferredAudioDevice: (android.media.AudioDeviceInfo?) -> Boolean,
     roomName: String,
     roomSlug: String,
@@ -872,8 +875,17 @@ private fun RoomContent(
     var showMore by remember { mutableStateOf(false) }
     val roomSdkState by room::state.flow.collectAsStateWithLifecycle()
     val roomSid by room::sid.flow.collectAsStateWithLifecycle()
+    val localSid by room.localParticipant::sid.flow.collectAsStateWithLifecycle()
     val onlineSid = roomSid?.sid?.takeIf { BuildConfig.WE_MEET_ONLINE_AI_NATIVE && roomSdkState == io.livekit.android.room.Room.State.CONNECTED }
     var showOnlineCapture by remember(onlineSid) { mutableStateOf(false) }
+    var showPrivateTranslation by remember(onlineSid, localSid) { mutableStateOf(false) }
+    val privateTranslation = if (onlineSid != null && meetingTrackSubscriptions != null && localSid.value.startsWith("PA_")) {
+        val app = context.applicationContext as WeMeetApp
+        val transport = remember(room, onlineSid, localSid, meetingTrackSubscriptions) {
+            com.we.meet.livekit.LiveKitPrivateTranslationTransport(room, meetingTrackSubscriptions, onlineSid, localSid.value)
+        }
+        com.we.meet.ui.records.rememberPrivateTranslation(app.captureAccount.orEmpty(), onlineRoomId, onlineSid, app.meetingTranslationRepository, { app.captureAccount }, transport)
+    } else null
     var onlineRecordId by remember(onlineSid) { mutableStateOf<String?>(null) }
     var onlineNoticeHeight by remember(onlineSid) { mutableStateOf(Dimens.SpaceNone) }
     val density = LocalDensity.current
@@ -1106,8 +1118,11 @@ private fun RoomContent(
         // the screen bottom with the toolbar hidden.
         if (onlineSid != null) Box(Modifier.align(Alignment.BottomCenter).padding(bottom = bottomInset + subtitleInset)
             .onSizeChanged { onlineNoticeHeight = with(density) { it.height.toDp() } }) {
-            com.we.meet.ui.records.OnlineCaptureNotice(onlineRoomId, onlineSid, onlineJoinToken,
-                (context.applicationContext as WeMeetApp).onlineCaptureNoticeRepository, currentOnlineSource)
+            Column {
+                com.we.meet.ui.records.OnlineCaptureNotice(onlineRoomId, onlineSid, onlineJoinToken,
+                    (context.applicationContext as WeMeetApp).onlineCaptureNoticeRepository, currentOnlineSource)
+                privateTranslation?.let { com.we.meet.ui.records.PrivateTranslationCaption(it) { showPrivateTranslation = true } }
+            }
         }
         if (state.subtitlesOverlayOn) {
             Box(
@@ -1420,9 +1435,17 @@ private fun RoomContent(
             },
             onDismiss = { showMore = false },
             onOnlineCaptureClick = if (onlineSid != null) ({ showMore = false; showOnlineCapture = true }) else null,
+            onTranslationClick = if (privateTranslation != null) ({ showMore = false; showPrivateTranslation = true }) else null,
         )
     }
 
+    if (showPrivateTranslation && privateTranslation != null && onlineSid != null) {
+        val app = context.applicationContext as WeMeetApp
+        ModalBottomSheet(onDismissRequest = { showPrivateTranslation = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+            com.we.meet.ui.records.PrivateTranslationPanel(privateTranslation, app.captureAccount.orEmpty(), onlineRoomId, onlineSid, localSid.value,
+                state.micEnabled) { id -> showPrivateTranslation = false; onlineRecordId = id }
+        }
+    }
     if (showOnlineCapture && onlineSid != null) {
         val meetingApp = context.applicationContext as WeMeetApp
         ModalBottomSheet(onDismissRequest = { showOnlineCapture = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
@@ -2658,6 +2681,7 @@ private fun MoreActionsSheet(
     onHostSettingsClick: () -> Unit,
     onDismiss: () -> Unit,
     onOnlineCaptureClick: (() -> Unit)? = null,
+    onTranslationClick: (() -> Unit)? = null,
 ) {
     val sheetState = rememberModalBottomSheetState()
     val context = LocalContext.current
@@ -2794,7 +2818,12 @@ private fun MoreActionsSheet(
                     ControlButton(modifier = Modifier.weight(1f), icon = Icons.Default.AutoAwesome,
                         label = stringResource(R.string.online_capture_title), isOn = true, onClick = onOnlineCaptureClick,
                         labelColor = sheetTint, iconBgColor = sheetBg, iconTintColor = sheetTint)
-                    Spacer(Modifier.weight(3f))
+                    if (onTranslationClick != null) {
+                        ControlButton(modifier = Modifier.weight(1f), icon = Icons.Default.Translate,
+                            label = stringResource(R.string.translation_title), isOn = true, onClick = onTranslationClick,
+                            labelColor = sheetTint, iconBgColor = sheetBg, iconTintColor = sheetTint)
+                        Spacer(Modifier.weight(2f))
+                    } else Spacer(Modifier.weight(3f))
                 } else Spacer(Modifier.weight(4f))
             }
         }
