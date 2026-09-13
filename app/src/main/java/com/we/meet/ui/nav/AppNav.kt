@@ -1556,7 +1556,8 @@ fun AppNav() {
         )) { entry ->
             RecordDetailScreen(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(),
                 entry.arguments?.getString("recordId").orEmpty(), onBack = rememberOnceOnly(safePop),
-                summaryVersionId = entry.arguments?.getString("summary"), onTask = { navController.navigate(Routes.taskDetail(it)) })
+                summaryVersionId = entry.arguments?.getString("summary"), onTask = { navController.navigate(Routes.taskDetail(it)) },
+                onDocument = { navController.navigate(Routes.docsDetail(it)) })
         }
         composable(Routes.MEETING_SETTINGS) {
             MeetingSettingsScreen(

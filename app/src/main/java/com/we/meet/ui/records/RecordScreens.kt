@@ -153,7 +153,7 @@ fun RecordLibraryScreen(
 }
 
 @Composable
-fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String, onBack: () -> Unit, summaryVersionId: String? = null, onTask: ((String) -> Unit)? = null) {
+fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String, onBack: () -> Unit, summaryVersionId: String? = null, onTask: ((String) -> Unit)? = null, onDocument: ((String) -> Unit)? = null) {
     val app = LocalContext.current.applicationContext as? WeMeetApp
     var audioSeek by remember(viewer, recordId) { mutableStateOf<CaptureAudioSeek?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
@@ -214,6 +214,10 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                         description = if (selectedVersion == null) stringResource(R.string.records_no_versions_hint) else null,
                                         action = { TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) } },
                                     )
+                                }
+                                if (app != null && onDocument != null) item {
+                                    RecordExports(viewer, record, summaries.getOrThrow().results, app.meetingDeliveryRepository,
+                                        app.meetingReviewRepository, { app.captureAccount }, onDocument)
                                 }
                                 items(summaries.getOrThrow().results, key = { it.id }) { version ->
                                     SummaryCard(version, record.capabilities.readTranscript) { ref -> citation = version.inputSnapshotId to ref }

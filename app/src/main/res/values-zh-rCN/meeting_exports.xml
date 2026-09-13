@@ -1,0 +1,32 @@
+<resources>
+    <string name="record_export_title">纪要文档</string>
+    <string name="record_export_read_error">无法读取文档预览或交付状态</string>
+    <string name="record_export_unavailable">文档创建暂不可用</string>
+    <string name="record_export_choose">选择版本并预览</string>
+    <string name="record_export_language_hint">选择文档标题与章节标题的语言，此选项不会翻译纪要正文。</string>
+    <string name="record_export_zh">中文</string>
+    <string name="record_export_en">英文</string>
+    <string name="record_export_unknown">请求结果未知，请先核对原请求，再创建或重试其他文档。</string>
+    <string name="record_export_reconcile_create">核对原文档创建请求</string>
+    <string name="record_export_reconcile_retry">核对原文档重试请求</string>
+    <string name="record_export_accepted">请求已确认，文档交付状态见下方</string>
+    <string name="record_export_empty">暂无由你创建的纪要文档</string>
+    <string name="record_export_human">已保存的人工纪要版本</string>
+    <string name="record_export_ai">已保存的 AI 纪要版本</string>
+    <string name="record_export_details">%1$s · %2$s · 第 %3$d 次交付</string>
+    <string name="record_export_open">打开文档</string>
+    <string name="record_export_retry_preview">查看原文档重试预览</string>
+    <string name="record_export_error">无法确认文档请求结果，请刷新状态或核对原请求</string>
+    <string name="record_export_preview">确认文档副本</string>
+    <string name="record_export_effect">确认后将在你的账号下创建私有文档副本。不会自动分享给参会人，也不会随后续纪要修改而更新。</string>
+    <string name="record_export_frozen">本次重试使用原来冻结的文档副本和请求身份。</string>
+    <string name="record_export_changed">交付状态已变化，请关闭并查看最新状态</string>
+    <string name="record_export_confirm">创建这份文档</string>
+    <string name="record_export_confirm_retry">重试原文档</string>
+    <string name="record_export_queued">文档等待创建</string>
+    <string name="record_export_running">文档创建中</string>
+    <string name="record_export_ready">文档已就绪</string>
+    <string name="record_export_uncertain">文档创建结果未知</string>
+    <string name="record_export_failed">文档创建失败</string>
+    <string name="record_export_canceled">文档创建已取消</string>
+</resources>

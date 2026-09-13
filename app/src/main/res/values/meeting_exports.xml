@@ -1,0 +1,32 @@
+<resources>
+    <string name="record_export_title">Minutes documents</string>
+    <string name="record_export_read_error">Could not read the document preview or delivery status.</string>
+    <string name="record_export_unavailable">Document creation is unavailable.</string>
+    <string name="record_export_choose">Choose a version to preview</string>
+    <string name="record_export_language_hint">Choose the document heading language. This does not translate the minutes.</string>
+    <string name="record_export_zh">Chinese</string>
+    <string name="record_export_en">English</string>
+    <string name="record_export_unknown">The result is unknown. Check the original request before creating or retrying another document.</string>
+    <string name="record_export_reconcile_create">Check original document request</string>
+    <string name="record_export_reconcile_retry">Check original document retry</string>
+    <string name="record_export_accepted">Request confirmed. Document delivery status is shown below.</string>
+    <string name="record_export_empty">No documents created by you yet.</string>
+    <string name="record_export_human">Saved human minutes version</string>
+    <string name="record_export_ai">Saved AI minutes version</string>
+    <string name="record_export_details">%1$s · %2$s · attempt %3$d</string>
+    <string name="record_export_open">Open document</string>
+    <string name="record_export_retry_preview">Review original document retry</string>
+    <string name="record_export_error">Could not confirm the document request. Refresh its status or check the original request.</string>
+    <string name="record_export_preview">Review document copy</string>
+    <string name="record_export_effect">Confirming creates a private document copy under your account. It does not share with attendees or update with later minutes edits.</string>
+    <string name="record_export_frozen">This retry uses the original frozen copy and document request.</string>
+    <string name="record_export_changed">Delivery status changed. Close and review the latest status.</string>
+    <string name="record_export_confirm">Create this document</string>
+    <string name="record_export_confirm_retry">Retry original document</string>
+    <string name="record_export_queued">Document queued</string>
+    <string name="record_export_running">Creating document</string>
+    <string name="record_export_ready">Document ready</string>
+    <string name="record_export_uncertain">Document result unknown</string>
+    <string name="record_export_failed">Document creation failed</string>
+    <string name="record_export_canceled">Document creation canceled</string>
+</resources>
