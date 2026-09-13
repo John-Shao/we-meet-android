@@ -34,4 +34,24 @@
     <string name="capture_finish_hint">停止录音并保存音频。若上传失败，本地音频将保留，可稍后重试。</string>
     <string name="capture_finish_confirm">结束并保存</string>
     <string name="capture_keep_recording">取消</string>
+    <string name="capture_asr_title">文字记录</string>
+    <string name="capture_asr_usage">开启转写将调用 AI 服务并产生模型用量。生成文字请核对后使用。</string>
+    <string name="capture_asr_read_error">暂时无法读取转写，请刷新核对权限和进度。</string>
+    <string name="capture_asr_unknown">上次请求的结果尚未确认，请先核对该请求，再开启新的转写。</string>
+    <string name="capture_asr_operation_error">未能确认操作结果，请核对当前状态后重试。</string>
+    <string name="capture_asr_allow_incomplete">允许使用不完整音频转写</string>
+    <string name="capture_asr_reconcile">核对上次请求</string>
+    <string name="capture_asr_start_live">开启实时转写</string>
+    <string name="capture_asr_start_sealed">转写已保存音频</string>
+    <string name="capture_asr_cancel">取消转写</string>
+    <string name="capture_asr_queued">等待转写</string>
+    <string name="capture_asr_running">正在转写</string>
+    <string name="capture_asr_succeeded">逐字稿已发布</string>
+    <string name="capture_asr_incomplete">转写未完整完成</string>
+    <string name="capture_asr_canceled">转写已取消</string>
+    <string name="capture_asr_preview_hint">仅自己可见的确认文字预览，录音结束后的正式逐字稿可能更新。</string>
+    <string name="capture_asr_waiting_text">等待确认文字…</string>
+    <string name="capture_asr_previous">上一页</string>
+    <string name="capture_asr_next">下一页</string>
+    <string name="capture_asr_latest">跟随最新</string>
 </resources>

@@ -47,6 +47,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.withResumed
 import com.we.meet.BuildConfig
 import com.we.meet.R
+import com.we.meet.WeMeetApp
 import com.we.meet.service.CaptureForegroundService
 import com.we.meet.service.CaptureServiceHost
 import com.we.meet.service.CaptureServiceState
@@ -128,7 +129,14 @@ fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit
     }, onPause = { service?.pause() }, onFinish = { service?.finish() },
         onRetry = { if (state.ready) service?.retryUploads() else retry++ },
         onRecord = if (BuildConfig.WE_MEET_RECORDS_NATIVE) onRecord else null,
-        notificationsAvailable = context.getSystemService(NotificationManager::class.java).areNotificationsEnabled())
+        notificationsAvailable = context.getSystemService(NotificationManager::class.java).areNotificationsEnabled(),
+        extra = {
+            val app = context.applicationContext as? WeMeetApp
+            val capture = state.local?.remote
+            if (app != null && capture != null && state.viewer == viewer) {
+                CaptureAsrPanel(viewer, capture, app.captureTranscriptionRepository) { app.captureAccount }
+            }
+        })
 }
 
 /** Pure rendering boundary, usable with fixture states without starting a service or microphone. */
@@ -143,6 +151,7 @@ internal fun CaptureContent(
     onRetry: () -> Unit,
     onRecord: ((String) -> Unit)?,
     notificationsAvailable: Boolean = true,
+    extra: @Composable () -> Unit = {},
 ) {
     var title by remember(state.viewer, state.local?.id) { mutableStateOf("") }
     var confirmEnd by remember(state.viewer, state.local?.id) { mutableStateOf(false) }
@@ -206,6 +215,7 @@ internal fun CaptureContent(
                         }
                     }
                 }
+                extra()
             }
         }
     }

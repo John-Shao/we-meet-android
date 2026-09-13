@@ -34,4 +34,24 @@
     <string name="capture_finish_hint">Stop recording and save the audio. If an upload fails, the local audio stays available for retry.</string>
     <string name="capture_finish_confirm">End and save</string>
     <string name="capture_keep_recording">Cancel</string>
+    <string name="capture_asr_title">Transcription</string>
+    <string name="capture_asr_usage">Starting transcription uses the AI service and incurs model usage. Check the generated text before using it.</string>
+    <string name="capture_asr_read_error">Transcription is unavailable. Refresh to check access and progress.</string>
+    <string name="capture_asr_unknown">A previous request has an unknown result. Check that request before starting another.</string>
+    <string name="capture_asr_operation_error">The action could not be confirmed. Check its current status before retrying.</string>
+    <string name="capture_asr_allow_incomplete">Allow transcription from incomplete audio</string>
+    <string name="capture_asr_reconcile">Check previous request</string>
+    <string name="capture_asr_start_live">Start live transcription</string>
+    <string name="capture_asr_start_sealed">Transcribe saved audio</string>
+    <string name="capture_asr_cancel">Cancel transcription</string>
+    <string name="capture_asr_queued">Waiting for transcription</string>
+    <string name="capture_asr_running">Transcribing</string>
+    <string name="capture_asr_succeeded">Transcript published</string>
+    <string name="capture_asr_incomplete">Transcription incomplete</string>
+    <string name="capture_asr_canceled">Transcription canceled</string>
+    <string name="capture_asr_preview_hint">Private preview of confirmed text. The published transcript may change after recording ends.</string>
+    <string name="capture_asr_waiting_text">Waiting for confirmed text…</string>
+    <string name="capture_asr_previous">Previous</string>
+    <string name="capture_asr_next">Next</string>
+    <string name="capture_asr_latest">Follow latest</string>
 </resources>

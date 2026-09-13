@@ -54,7 +54,7 @@ import java.time.format.FormatStyle
 
 /** Read only while visible. Errors and backgrounding remove the last private body. */
 @Composable
-internal fun <T> visibleRead(vararg keys: Any?, read: suspend () -> Result<T>): Result<T>? {
+internal fun <T> visibleRead(vararg keys: Any?, intervalMs: Long = 15_000, read: suspend () -> Result<T>): Result<T>? {
     var result by remember(*keys) { mutableStateOf<Result<T>?>(null) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(lifecycle, *keys) {
@@ -63,7 +63,7 @@ internal fun <T> visibleRead(vararg keys: Any?, read: suspend () -> Result<T>): 
                 do {
                     result = read()
                     if (result?.isFailure == true) break
-                    delay(15_000)
+                    delay(intervalMs)
                 } while (true)
             } finally {
                 // Leave a failed result visible for explicit retry; clear on pause/disposal.
