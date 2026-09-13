@@ -76,6 +76,56 @@ class MeetingRecordRepositoryTest {
         assertFalse(dto.capabilities.generateSummary)
     }
 
+    @Test fun originalsKeepSearchSpeakerRevisionAndCursorOnFixedEndpoint() = runBlocking {
+        val repo = repository { request ->
+            if (!request.url.encodedPath.endsWith("/original-segments/")) 200 to record()
+            else {
+                assertEquals("3", request.url.queryParameter("expected_revision"))
+                assertEquals("Budget 中文 & 100%", request.url.queryParameter("q"))
+                assertEquals(sourceId, request.url.queryParameter("speaker_id"))
+                assertEquals("opaque & page", request.url.queryParameter("cursor"))
+                200 to """{"results":[{"id":"$recordId","revision":1,"capture_session_id":"$snapshotId",
+                    "speaker_id":"$sourceId","speaker_label":"Speaker 1","start_ms":5000,"end_ms":6000,"text":"Original"}]}"""
+            }
+        }
+        val row = repo.originals("reader", recordId, 3, "Budget 中文 & 100%", sourceId, "opaque & page").getOrThrow().results.single()
+        assertEquals(5000L, row.startMs)
+        assertNull(row.startedAt)
+        assertEquals(3, requests.size)
+    }
+
+    @Test fun originalReadRejectsRevisionChangeAfterBodyBeforeDisplay() = runBlocking {
+        var detailReads = 0
+        val repo = repository { request ->
+            if (request.url.encodedPath.endsWith("/original-segments/")) 200 to """{"results":[]}"""
+            else { detailReads++; 200 to if (detailReads == 1) record() else record().replace("\"revision\":3", "\"revision\":4") }
+        }
+        assertTrue(repo.originals("reader", recordId, 3).exceptionOrNull() is com.we.meet.data.repository.RecordSourceChangedException)
+        assertEquals(3, requests.size)
+    }
+
+    @Test fun summaryOnlySearchCannotReadOriginalsOrSpeakerNames() = runBlocking {
+        val repo = repository { 200 to record("""{"read_summary":true}""") }
+        assertTrue(repo.originals("reader", recordId, 3, "private").isFailure)
+        assertTrue(repo.speakers("reader", recordId, 3).isFailure)
+        assertTrue(requests.all { it.url.encodedPath.endsWith("/$recordId/") })
+    }
+
+    @Test fun onlineOriginalsVerifyExactSessionAndDoNotInventMediaOffsets() = runBlocking {
+        var wrongSession = false
+        val repo = repository { request ->
+            if (!request.url.encodedPath.endsWith("/transcripts/")) 200 to record().replace("audio_recording", "meeting")
+                .replace("\"revision\":3", "\"revision\":3,\"meeting_session_id\":\"$snapshotId\"")
+            else 200 to """{"results":[{"id":"$sourceId","session_id":"${if (wrongSession) sourceId else snapshotId}",
+                "speaker_name":"Verified name","text":"Session original","started_at":"2026-09-13T01:00:00Z"}]}"""
+        }
+        val row = repo.originals("reader", recordId, 3).getOrThrow().results.single()
+        assertEquals("2026-09-13T01:00:00Z", row.startedAt)
+        assertNull(row.startMs)
+        wrongSession = true
+        assertTrue(repo.originals("reader", recordId, 3).isFailure)
+    }
+
     @Test fun switchingAccountsWhileLoadingDiscardsReturnedPrivateContent() = runBlocking {
         val repo = repository { viewer = "different-reader"; 200 to record() }
         assertTrue(repo.record("reader", recordId).isFailure)

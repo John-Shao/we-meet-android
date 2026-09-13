@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="records_originals">Transcript</string>
+    <string name="records_search_originals">Search full transcript</string>
+    <string name="records_speakers">Speakers</string>
+    <string name="records_speaker_filtered">Speaker filter active</string>
+    <string name="records_all_speakers">All speakers</string>
+    <string name="records_clear_filters">Clear filters</string>
+    <string name="records_no_speakers">No published speakers yet.</string>
+    <string name="records_unknown_speaker">Unknown speaker</string>
+    <string name="records_no_originals">No matching transcript</string>
+    <string name="records_no_originals_hint">Try another search or refresh after transcription finishes.</string>
+    <string name="records_source_changed">The transcript changed. Refresh to load the current version.</string>
     <string name="records_title">Meeting notes</string>
     <string name="records_minutes">Smart minutes</string>
     <string name="records_recent">Recent</string>

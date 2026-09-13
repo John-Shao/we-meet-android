@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -47,11 +48,13 @@ class RecordScreensTest {
         var stage = "realtime"
         var asr = "in_progress"
         var snapshotReads = 0
+        var revision = 3
+        val originalQueries = mutableListOf<Pair<String?, String?>>()
         val queries = mutableListOf<Pair<String, String?>>()
         private fun checkAccess() { check(!revoked) { "Fixture access revoked" } }
         override suspend fun record(recordId: String): RecordDto {
             checkAccess()
-            return RecordDto(recordId, "audio_recording", "Private planning meeting", "2026-09-13T00:00:00Z", 3,
+            return RecordDto(recordId, "audio_recording", "Private planning meeting", "2026-09-13T00:00:00Z", revision,
                 RecordCapabilitiesDto(readSummary = true, readTranscript = originals), isOngoing = true)
         }
         override suspend fun records(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?): RecordPageDto<RecordDto> {
@@ -71,6 +74,15 @@ class RecordScreensTest {
             snapshotReads++
             return RecordSnapshotDto(snapshotId, 3, listOf(RecordSnapshotSegmentDto(segmentId, 2, 1000, 3000, "Exact recorded evidence")))
         }
+        override suspend fun transcripts(recordId: String, revision: Int, query: String?, cursor: String?): RecordPageDto<RecordOnlineTranscriptDto> = error("Wrong source endpoint")
+        override suspend fun originals(recordId: String, revision: Int, query: String?, speakerId: String?, cursor: String?): RecordPageDto<RecordOriginalSegmentDto> {
+            checkAccess()
+            originalQueries += query to speakerId
+            return RecordPageDto(listOf(RecordOriginalSegmentDto(segmentId, 1, snapshotId, versionId, "Speaker 1", 1000, 3000,
+                if (query == null) "Full original text" else "Search matched original")))
+        }
+        override suspend fun speakers(recordId: String, cursor: String?): RecordPageDto<RecordSpeakerDto> =
+            RecordPageDto(listOf(RecordSpeakerDto(versionId, "Speaker 1", "diarized")))
         override suspend fun resolve(roomId: String, sessionId: String?): RecordDto = error("No room fallback")
     }
     private fun awaitText(text: String) {
@@ -146,5 +158,22 @@ class RecordScreensTest {
         compose.onNodeWithText(label(R.string.records_final)).assertDoesNotExist()
         compose.onNodeWithText(label(R.string.records_incomplete)).assertIsDisplayed()
         screenshot("records-summary-dark")
+    }
+
+    @Test fun originalSearchAndSpeakerSelectionUseServerFilters() {
+        val fixture = Fixture()
+        detail(fixture)
+        compose.onNodeWithText(label(R.string.records_originals)).performClick()
+        awaitText("Full original text")
+        compose.onNodeWithText(label(R.string.records_search_originals)).performTextInput("release 中文")
+        compose.onNodeWithText(label(R.string.records_search_action)).performClick()
+        awaitText("Search matched original")
+        compose.onNodeWithText(label(R.string.records_speakers)).performClick()
+        awaitText(label(R.string.records_all_speakers))
+        compose.onAllNodesWithText("Speaker 1")[1].performClick()
+        compose.waitUntil(5_000) { fixture.originalQueries.lastOrNull() == ("release 中文" to versionId) }
+        compose.onNodeWithText(label(R.string.records_clear_filters)).performClick()
+        awaitText("Full original text")
+        screenshot("records-originals-light")
     }
 }

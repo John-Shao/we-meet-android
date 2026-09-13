@@ -81,3 +81,31 @@ data class RecordSnapshotDto(
     val revision: Int,
     val segments: List<RecordSnapshotSegmentDto>,
 )
+
+data class RecordOnlineTranscriptDto(
+    val id: String,
+    @Json(name = "session_id") val sessionId: String,
+    @Json(name = "speaker_name") val speakerName: String = "",
+    val text: String,
+    val language: String = "",
+    @Json(name = "started_at") val startedAt: String,
+    @Json(name = "ended_at") val endedAt: String? = null,
+)
+
+data class RecordOriginalSegmentDto(
+    val id: String,
+    val revision: Int,
+    @Json(name = "capture_session_id") val captureSessionId: String,
+    @Json(name = "speaker_id") val speakerId: String,
+    @Json(name = "speaker_label") val speakerLabel: String = "",
+    @Json(name = "start_ms") val startMs: Long,
+    @Json(name = "end_ms") val endMs: Long? = null,
+    val text: String,
+    val language: String = "",
+)
+
+data class RecordSpeakerDto(
+    val id: String,
+    val label: String,
+    @Json(name = "identity_type") val identityType: String,
+)

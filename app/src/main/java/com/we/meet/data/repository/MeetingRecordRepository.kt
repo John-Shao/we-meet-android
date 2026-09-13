@@ -6,11 +6,24 @@ import com.we.meet.data.api.dto.RecordPageDto
 import com.we.meet.data.api.dto.RecordReferenceDto
 import com.we.meet.data.api.dto.RecordSnapshotSegmentDto
 import com.we.meet.data.api.dto.RecordSummaryVersionDto
+import com.we.meet.data.api.dto.RecordSpeakerDto
 import kotlinx.coroutines.CancellationException
 import java.util.UUID
 
 enum class RecordScope(val wire: String) { RECENT("recent"), OWNED("owned"), PARTICIPATED("participated"), SHARED("shared") }
 enum class RecordSource(val wire: String) { MEETING("meeting"), AUDIO("audio_recording"), UPLOAD("upload") }
+
+class RecordSourceChangedException : IllegalStateException("Record source changed")
+
+/** Wall time and source offsets are distinct; an online timestamp is not a media seek position. */
+data class RecordOriginalRow(
+    val id: String,
+    val speakerLabel: String,
+    val text: String,
+    val language: String,
+    val startedAt: String? = null,
+    val startMs: Long? = null,
+)
 
 /** No disk cache or cross-account memory; every response is checked against its reader. */
 class MeetingRecordRepository(
@@ -36,6 +49,74 @@ class MeetingRecordRepository(
     suspend fun record(viewer: String, recordId: String): Result<RecordDto> = scoped(viewer) {
         requireUuid(recordId)
         api.record(recordId).also { require(it.id == recordId); validateRecord(it) }
+    }
+
+    suspend fun originals(
+        viewer: String,
+        recordId: String,
+        revision: Int,
+        query: String? = null,
+        speakerId: String? = null,
+        cursor: String? = null,
+    ): Result<RecordPageDto<RecordOriginalRow>> = scoped(viewer) {
+        requireUuid(recordId)
+        require(revision > 0 && (query == null || query.length <= 200))
+        speakerId?.let(::requireUuid)
+        validateCursor(cursor)
+        val record = originalRecord(recordId, revision)
+        val page = when (record.sourceType) {
+            "meeting" -> {
+                require(speakerId == null && record.meetingSessionId != null)
+                val rows = api.transcripts(recordId, revision, query, cursor)
+                validatePage(rows)
+                RecordPageDto(rows.results.map {
+                    requireUuid(it.id)
+                    require(it.sessionId == record.meetingSessionId)
+                    RecordOriginalRow(it.id, it.speakerName, it.text, it.language, startedAt = it.startedAt)
+                }, rows.nextCursor)
+            }
+            "audio_recording" -> {
+                val rows = api.originals(recordId, revision, query, speakerId, cursor)
+                validatePage(rows)
+                RecordPageDto(rows.results.map {
+                    requireUuid(it.id)
+                    requireUuid(it.captureSessionId)
+                    requireUuid(it.speakerId)
+                    require(it.revision > 0 && it.startMs >= 0 && (it.endMs == null || it.endMs >= it.startMs))
+                    require(record.captureId == null || it.captureSessionId == record.captureId)
+                    require(speakerId == null || speakerId == it.speakerId)
+                    RecordOriginalRow(it.id, it.speakerLabel, it.text, it.language, startMs = it.startMs)
+                }, rows.nextCursor)
+            }
+            else -> error("Unsupported original source")
+        }
+        originalRecord(recordId, revision)
+        page
+    }
+
+    suspend fun speakers(
+        viewer: String,
+        recordId: String,
+        revision: Int,
+        cursor: String? = null,
+    ): Result<RecordPageDto<RecordSpeakerDto>> = scoped(viewer) {
+        requireUuid(recordId)
+        require(revision > 0)
+        validateCursor(cursor)
+        require(originalRecord(recordId, revision).sourceType == "audio_recording")
+        val page = api.speakers(recordId, cursor)
+        validatePage(page)
+        page.results.forEach { requireUuid(it.id) }
+        originalRecord(recordId, revision)
+        page
+    }
+
+    private suspend fun originalRecord(recordId: String, revision: Int): RecordDto {
+        val record = api.record(recordId)
+        require(record.id == recordId && record.capabilities.readTranscript)
+        validateRecord(record)
+        if (record.revision != revision) throw RecordSourceChangedException()
+        return record
     }
 
     suspend fun summaries(

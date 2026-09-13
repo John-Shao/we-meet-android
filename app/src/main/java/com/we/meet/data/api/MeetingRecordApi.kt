@@ -4,6 +4,9 @@ import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.api.dto.RecordPageDto
 import com.we.meet.data.api.dto.RecordSnapshotDto
 import com.we.meet.data.api.dto.RecordSummaryVersionDto
+import com.we.meet.data.api.dto.RecordOriginalSegmentDto
+import com.we.meet.data.api.dto.RecordOnlineTranscriptDto
+import com.we.meet.data.api.dto.RecordSpeakerDto
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.Path
@@ -39,6 +42,32 @@ interface MeetingRecordApi {
         @Path("record") recordId: String,
         @Path("snapshot") snapshotId: String,
     ): RecordSnapshotDto
+
+    @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/meeting-records/{record}/transcripts/")
+    suspend fun transcripts(
+        @Path("record") recordId: String,
+        @Query("expected_revision") revision: Int,
+        @Query("q") query: String?,
+        @Query("cursor") cursor: String?,
+    ): RecordPageDto<RecordOnlineTranscriptDto>
+
+    @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/meeting-records/{record}/original-segments/")
+    suspend fun originals(
+        @Path("record") recordId: String,
+        @Query("expected_revision") revision: Int,
+        @Query("q") query: String?,
+        @Query("speaker_id") speakerId: String?,
+        @Query("cursor") cursor: String?,
+    ): RecordPageDto<RecordOriginalSegmentDto>
+
+    @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/meeting-records/{record}/speakers/")
+    suspend fun speakers(
+        @Path("record") recordId: String,
+        @Query("cursor") cursor: String?,
+    ): RecordPageDto<RecordSpeakerDto>
 
     @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/resolve/")

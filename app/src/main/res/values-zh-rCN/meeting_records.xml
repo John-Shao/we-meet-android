@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="records_originals">文字记录</string>
+    <string name="records_search_originals">搜索完整原文</string>
+    <string name="records_speakers">发言人</string>
+    <string name="records_speaker_filtered">已筛选发言人</string>
+    <string name="records_all_speakers">全部发言人</string>
+    <string name="records_clear_filters">清除筛选</string>
+    <string name="records_no_speakers">暂无已发布的发言人。</string>
+    <string name="records_unknown_speaker">未知发言人</string>
+    <string name="records_no_originals">没有匹配的文字记录</string>
+    <string name="records_no_originals_hint">请调整搜索条件，或在转写完成后刷新。</string>
+    <string name="records_source_changed">原文已更新，请刷新后查看当前版本。</string>
     <string name="records_title">会议笔记</string>
     <string name="records_minutes">智能纪要</string>
     <string name="records_recent">最近</string>

@@ -54,7 +54,7 @@ import java.time.format.FormatStyle
 
 /** Read only while visible. Errors and backgrounding remove the last private body. */
 @Composable
-private fun <T> visibleRead(vararg keys: Any?, read: suspend () -> Result<T>): Result<T>? {
+internal fun <T> visibleRead(vararg keys: Any?, read: suspend () -> Result<T>): Result<T>? {
     var result by remember(*keys) { mutableStateOf<Result<T>?>(null) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(lifecycle, *keys) {
@@ -155,6 +155,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     var refresh by remember { mutableIntStateOf(0) }
     var cursors by remember(viewer, recordId) { mutableStateOf(listOf<String?>(null)) }
     var citation by remember(viewer, recordId) { mutableStateOf<Pair<String, RecordReferenceDto>?>(null) }
+    var originalsSelected by remember(viewer, recordId) { mutableStateOf(false) }
     val detail = visibleRead(viewer, recordId, refresh) { repository.record(viewer, recordId) }
     val record = detail?.getOrNull()
     Scaffold(topBar = { WeMeetTopBar(record?.title ?: stringResource(R.string.records_minutes), onBack = onBack) }, containerColor = MaterialTheme.colorScheme.background) { padding ->
@@ -162,32 +163,43 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
             when {
                 detail == null -> WeMeetInlineLoading()
                 detail.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
-                record?.capabilities?.readSummary != true -> WeMeetEmptyState(stringResource(R.string.records_no_summary_access))
+                record == null -> WeMeetEmptyState(stringResource(R.string.records_unavailable))
                 else -> {
-                    val cursor = cursors.last()
-                    val summaries = visibleRead(viewer, recordId, cursor, refresh) { repository.summaries(viewer, recordId, cursor) }
-                    Text(recordTime(record.originAt), Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(Dimens.ScreenPadding), style = MaterialTheme.typography.bodySmall)
-                    when {
-                        summaries == null -> WeMeetInlineLoading()
-                        summaries.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
-                        summaries.getOrThrow().results.isEmpty() -> WeMeetEmptyState(
-                            stringResource(R.string.records_no_versions),
-                            description = stringResource(R.string.records_no_versions_hint),
-                            action = { TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) } },
-                        )
-                        else -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-                            items(summaries.getOrThrow().results, key = { it.id }) { version ->
-                                SummaryCard(version, record.capabilities.readTranscript) { ref -> citation = version.inputSnapshotId to ref }
-                            }
-                            item {
-                                Row(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
-                                    summaries.getOrThrow().nextCursor?.let { next -> TextButton(onClick = { cursors = cursors + next }) { Text(stringResource(R.string.records_next)) } }
+                    val showOriginals = record.capabilities.readTranscript && (originalsSelected || !record.capabilities.readSummary)
+                    Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                        if (record.capabilities.readSummary) FilterChip(selected = !showOriginals, onClick = { originalsSelected = false }, label = { Text(stringResource(R.string.records_minutes)) })
+                        if (record.capabilities.readTranscript) FilterChip(selected = showOriginals, onClick = { originalsSelected = true }, label = { Text(stringResource(R.string.records_originals)) })
+                    }
+                    if (showOriginals) {
+                        RecordOriginals(repository, viewer, record, onRefresh = { refresh++ })
+                    } else if (!record.capabilities.readSummary) {
+                        WeMeetEmptyState(stringResource(R.string.records_no_summary_access))
+                    } else {
+                        val cursor = cursors.last()
+                        val summaries = visibleRead(viewer, recordId, cursor, refresh) { repository.summaries(viewer, recordId, cursor) }
+                        Text(recordTime(record.originAt), Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(Dimens.ScreenPadding), style = MaterialTheme.typography.bodySmall)
+                        when {
+                            summaries == null -> WeMeetInlineLoading()
+                            summaries.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
+                            summaries.getOrThrow().results.isEmpty() -> WeMeetEmptyState(
+                                stringResource(R.string.records_no_versions),
+                                description = stringResource(R.string.records_no_versions_hint),
+                                action = { TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) } },
+                            )
+                            else -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                                items(summaries.getOrThrow().results, key = { it.id }) { version ->
+                                    SummaryCard(version, record.capabilities.readTranscript) { ref -> citation = version.inputSnapshotId to ref }
+                                }
+                                item {
+                                    Row(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
+                                        summaries.getOrThrow().nextCursor?.let { next -> TextButton(onClick = { cursors = cursors + next }) { Text(stringResource(R.string.records_next)) } }
+                                    }
                                 }
                             }
                         }
+                        TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
                     }
-                    TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
                 }
             }
             if (detail?.isSuccess == true && record?.capabilities?.readTranscript == true) citation?.let { (snapshot, reference) ->
@@ -254,7 +266,7 @@ private fun sourceLabel(source: String?): Int = when (source) {
     "upload" -> R.string.records_uploaded
     else -> R.string.records_all
 }
-private fun recordTime(value: String): String = runCatching {
+internal fun recordTime(value: String): String = runCatching {
     OffsetDateTime.parse(value).atZoneSameInstant(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT))
 }.getOrDefault("")
-private fun sourceTime(ms: Long): String = "${ms / 60000}:${(ms / 1000 % 60).toString().padStart(2, '0')}"
+internal fun sourceTime(ms: Long): String = "${ms / 60000}:${(ms / 1000 % 60).toString().padStart(2, '0')}"
