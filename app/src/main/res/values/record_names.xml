@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_default_title_prefix">New recording-</string>
+    <string name="record_rename">Rename</string>
+    <string name="record_name">Recording name</string>
+    <string name="record_rename_save">Save</string>
+    <string name="record_renaming">Saving…</string>
+    <string name="record_rename_error">Could not save the name. Close this dialog and refresh the record before trying again.</string>
+</resources>

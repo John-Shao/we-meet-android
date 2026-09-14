@@ -52,6 +52,16 @@ class MeetingRecordRepository(
         api.record(recordId).also { require(it.id == recordId); validateRecord(it) }
     }
 
+    suspend fun rename(viewer: String, recordId: String, title: String, expectedTitle: String): Result<RecordDto> = scoped(viewer) {
+        requireUuid(recordId)
+        val name = title.trim()
+        require(name.isNotEmpty() && name.length <= 500 && expectedTitle.length <= 500)
+        api.rename(recordId, com.we.meet.data.api.dto.RecordTitleRequestDto(name, expectedTitle)).also {
+            require(it.id == recordId && it.title == name && it.sourceType == "audio_recording")
+            validateRecord(it)
+        }
+    }
+
     suspend fun originals(
         viewer: String,
         recordId: String,

@@ -50,14 +50,16 @@ class CaptureScreenTest {
         file.outputStream().use { InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot().compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 
-    @Test fun readyScreenStartsOnlyAfterExplicitClickAndKeepsEnteredTitle() {
+    @Test fun readyScreenHasNoTitleFormAndGeneratesNameOnlyOnStart() {
         var started: String? = null
         compose.setContent { WeMeetTheme { CaptureContent(CaptureServiceState("viewer", ready = true), false,
             {}, { started = it }, {}, {}, {}, null) } }
         assertNull(started)
-        compose.onNodeWithText(label(R.string.capture_title_label)).performTextInput("Product review")
+        compose.onNodeWithText(label(R.string.capture_title_label)).assertDoesNotExist()
+        compose.onNodeWithText(label(R.string.capture_untitled)).assertDoesNotExist()
+        compose.onNodeWithText(label(R.string.capture_keep_audio)).assertDoesNotExist()
         compose.onNodeWithText(label(R.string.capture_start)).performClick()
-        assertEquals("Product review", started)
+        assertTrue(requireNotNull(started).matches(Regex(Regex.escape(label(R.string.capture_default_title_prefix)) + "[0-9]{6}-[0-9]{6}")))
         screenshot("ready")
     }
 
@@ -74,6 +76,14 @@ class CaptureScreenTest {
         assertFalse(finished)
         compose.onNodeWithText(label(R.string.capture_finish_confirm)).performClick()
         assertTrue(finished)
+    }
+
+    @Test fun resumingPreservesTheExistingRecordingName() {
+        var title: String? = null
+        compose.setContent { WeMeetTheme { CaptureContent(CaptureServiceState("viewer", local(), ready = true),
+            false, {}, { title = it }, {}, {}, {}, null) } }
+        compose.onNodeWithText(label(R.string.capture_resume)).performClick()
+        assertEquals("Private interview fixture", title)
     }
 
     @Test fun sealedIntentCannotResumeAndPendingAudioCanBeRetried() {

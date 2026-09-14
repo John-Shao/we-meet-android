@@ -14,14 +14,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Tune
-import androidx.compose.material.icons.outlined.Mic
-import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,7 +25,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -173,6 +166,7 @@ fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit
                     var audioSeek by remember { mutableStateOf<CaptureAudioSeek?>(null) }
                     var summariesSelected by remember { mutableStateOf(capture.status in setOf("stopping", "stopped")) }
                     LaunchedEffect(capture.status) { if (capture.status in setOf("stopping", "stopped")) summariesSelected = true }
+                    if (state.local?.sealed == true) CaptureSavedRecordTitle(app.meetingRecordRepository, viewer, capture.recordId)
                     val textMode = state.local?.create?.retentionMode == "text"
                     if (textMode) CaptureRetentionPanel(viewer, capture, app.captureTranscriptionRepository)
                     if (capture.status == "stopped" && !textMode) NativeCaptureAudioPlayer(viewer, capture.recordId, app.capturePlaybackRepository, { app.captureAccount }, audioSeek) { audioSeek = null }
@@ -203,7 +197,7 @@ internal fun CaptureContent(
     tools: @Composable () -> Unit = {},
     extra: @Composable () -> Unit = {},
 ) {
-    var title by remember(state.viewer, state.local?.id) { mutableStateOf("") }
+    val titlePrefix = stringResource(R.string.capture_default_title_prefix)
     var confirmEnd by remember(state.viewer, state.local?.id) { mutableStateOf(false) }
     var confirmIncomplete by remember(state.viewer, state.local?.id) { mutableStateOf(false) }
     var textOnly by remember(state.viewer, state.local?.id) { mutableStateOf(false) }
@@ -211,7 +205,11 @@ internal fun CaptureContent(
     var emptySummary by remember(state.viewer, state.local?.id) { mutableStateOf(false) }
     val local = state.local
     val textMode = if (local != null && !local.sealed) local.create.retentionMode == "text" else textOnly
-    fun start() { if (textOnly && (local == null || local.sealed)) onStartText?.invoke(title) else onStart(title) }
+    fun start() {
+        val title = if (local == null || local.sealed) com.we.meet.data.capture.defaultCaptureTitle(titlePrefix)
+            else local.create.title
+        if (textOnly && (local == null || local.sealed)) onStartText?.invoke(title) else onStart(title)
+    }
     val ending = local != null && !local.sealed && (local.sealIntent != null || local.remote?.status in setOf("stopping", "stopped"))
     val canStart = state.ready && !state.busy && !state.recording &&
         (local == null || local.sealed || !CaptureRetention.audioExpired(local)) &&
@@ -252,23 +250,11 @@ internal fun CaptureContent(
             }
             if (state.retentionExpired) Text(stringResource(R.string.capture_text_expired), color = MaterialTheme.colorScheme.error)
             if (state.ready) {
-                if (local == null) {
-                    Text(stringResource(R.string.capture_untitled), style = MaterialTheme.typography.headlineMedium)
-                    OutlinedTextField(title, { title = it.take(500) }, modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.capture_title_label)) }, singleLine = true, enabled = !state.busy)
-                } else {
-                    Text(local.create.title.ifBlank { stringResource(R.string.capture_untitled) }, style = MaterialTheme.typography.headlineMedium)
+                if (local != null && !local.sealed) {
+                    Text(local.create.title, style = MaterialTheme.typography.headlineMedium)
                     Text(java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT)
                         .format(java.util.Date(local.createdAt)), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (local.sealed) OutlinedTextField(title, { title = it.take(500) }, modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.capture_next_title)) }, singleLine = true, enabled = !state.busy)
-                }
-                TextButton(onClick = { audioSettings = true }) {
-                    Icon(Icons.Outlined.Mic, contentDescription = null, modifier = Modifier.size(Dimens.IconTiny))
-                    Spacer(Modifier.width(Dimens.SpaceS))
-                    Text(stringResource(if (textMode) R.string.capture_text_only else R.string.capture_keep_audio))
-                    Icon(Icons.Outlined.ExpandMore, contentDescription = null, modifier = Modifier.size(Dimens.IconTiny))
                 }
                 if (textOnly && onStartText == null) Text(stringResource(R.string.capture_text_unavailable), color = MaterialTheme.colorScheme.error)
                 if (textMode && local == null) Text(stringResource(R.string.capture_text_consent), style = MaterialTheme.typography.bodySmall)

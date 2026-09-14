@@ -167,7 +167,8 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     val detail = visibleRead(viewer, recordId, refresh) { repository.record(viewer, recordId) }
     val record = detail?.getOrNull()
     val canPlay = app != null && record?.sourceType == "audio_recording" && record.capabilities.readTranscript && record.retentionMode == "media" && !record.isOngoing
-    Scaffold(topBar = { WeMeetTopBar(record?.title ?: stringResource(R.string.records_minutes), onBack = onBack) }, containerColor = MaterialTheme.colorScheme.background) { padding ->
+    Scaffold(topBar = { WeMeetTopBar(record?.title ?: stringResource(R.string.records_minutes), onBack = onBack,
+        actions = { record?.let { RecordRenameAction(repository, viewer, it) { refresh++ } } }) }, containerColor = MaterialTheme.colorScheme.background) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             when {
                 detail == null -> WeMeetInlineLoading()

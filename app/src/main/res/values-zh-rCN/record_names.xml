@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_default_title_prefix">新录音-</string>
+    <string name="record_rename">重命名</string>
+    <string name="record_name">录音名称</string>
+    <string name="record_rename_save">保存</string>
+    <string name="record_renaming">正在保存…</string>
+    <string name="record_rename_error">名称未能保存，请关闭窗口并刷新记录后重试。</string>
+</resources>

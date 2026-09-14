@@ -12,6 +12,8 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -43,6 +45,10 @@ class RecordScreensTest {
         override val lifecycle: Lifecycle get() = registry
     }
     private inner class Fixture : MeetingRecordApi {
+        var renameAllowed = false
+        var failRename = false
+        var recordTitle = "Private planning meeting"
+        val renames = mutableListOf<RecordTitleRequestDto>()
         var revoked = false
         var originals = true
         var stage = "realtime"
@@ -54,10 +60,18 @@ class RecordScreensTest {
         var missingVersion = false
         val queries = mutableListOf<Pair<String, String?>>()
         private fun checkAccess() { check(!revoked) { "Fixture access revoked" } }
+        override suspend fun rename(recordId: String, body: RecordTitleRequestDto): RecordDto {
+            checkAccess()
+            check(renameAllowed && !failRename && body.expectedTitle == recordTitle)
+            assertEquals(this@RecordScreensTest.recordId, recordId)
+            renames += body
+            recordTitle = body.title
+            return record(recordId)
+        }
         override suspend fun record(recordId: String): RecordDto {
             checkAccess()
-            return RecordDto(recordId, "audio_recording", "Private planning meeting", "2026-09-13T00:00:00Z", revision,
-                RecordCapabilitiesDto(readSummary = true, readTranscript = originals), isOngoing = true)
+            return RecordDto(recordId, "audio_recording", recordTitle, "2026-09-13T00:00:00Z", revision,
+                RecordCapabilitiesDto(readSummary = true, readTranscript = originals, rename = renameAllowed), isOngoing = !renameAllowed)
         }
         override suspend fun records(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?, isOngoing: Boolean?): RecordPageDto<RecordDto> {
             checkAccess()
@@ -91,6 +105,40 @@ class RecordScreensTest {
     }
     private fun awaitText(text: String) {
         compose.waitUntil(5_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    @Test fun ownerCanRenameAndBlankNameCannotBeSaved() {
+        val fixture = Fixture().apply { renameAllowed = true }
+        val repository = MeetingRecordRepository(fixture) { "owner" }
+        compose.setContent { WeMeetTheme { RecordDetailScreen(repository, "owner", recordId, {}) } }
+        awaitText(label(R.string.record_rename))
+        compose.onNodeWithText(label(R.string.record_rename)).performClick()
+        compose.onNodeWithText(label(R.string.record_name)).performTextReplacement("  ")
+        compose.onNodeWithText(label(R.string.record_rename_save)).assertIsNotEnabled()
+        compose.onNodeWithText(label(R.string.record_name)).performTextReplacement("Design review")
+        compose.waitForIdle()
+        Thread.sleep(300)
+        File(context.getExternalFilesDir(null), "record-rename-dialog.png").outputStream().use {
+            InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot().compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
+        compose.onNodeWithText(label(R.string.record_rename_save)).performClick()
+        awaitText("Design review")
+        assertEquals("Design review", fixture.recordTitle)
+        assertEquals("Private planning meeting", fixture.renames.single().expectedTitle)
+    }
+
+    @Test fun failedRenameKeepsOriginalNameAndDraftForRetry() {
+        val fixture = Fixture().apply { renameAllowed = true; failRename = true }
+        val repository = MeetingRecordRepository(fixture) { "owner" }
+        compose.setContent { WeMeetTheme { RecordDetailScreen(repository, "owner", recordId, {}) } }
+        awaitText(label(R.string.record_rename))
+        compose.onNodeWithText(label(R.string.record_rename)).performClick()
+        compose.onNodeWithText(label(R.string.record_name)).performTextReplacement("Draft name")
+        compose.onNodeWithText(label(R.string.record_rename_save)).performClick()
+        awaitText(label(R.string.record_rename_error))
+        compose.onNodeWithText("Draft name").assertIsDisplayed()
+        assertEquals("Private planning meeting", fixture.recordTitle)
+        assertTrue(fixture.renames.isEmpty())
     }
     private fun screenshot(name: String) {
         val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()

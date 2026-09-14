@@ -37,12 +37,12 @@ class MeetingRecordRepositoryTest {
         {"id":"$id","revision":4,"segments":[{"segment_id":"$sourceId","segment_revision":$revision,
          "start_ms":1000,"end_ms":3000,"text":"Exact original"}]}
     """
-    private fun repository(reply: (Request) -> Pair<Int, String>): MeetingRecordRepository {
+    private fun repository(method: String = "GET", reply: (Request) -> Pair<Int, String>): MeetingRecordRepository {
         val client = OkHttpClient.Builder().addInterceptor { chain ->
             val request = chain.request()
             requests += request
             assertEquals("no-store", request.header("Cache-Control"))
-            assertEquals("GET", request.method)
+            assertEquals(method, request.method)
             val (code, body) = reply(request)
             Response.Builder().request(request).protocol(Protocol.HTTP_1_1).code(code)
                 .message("Fixture").body(body.toResponseBody()).build()
@@ -74,6 +74,31 @@ class MeetingRecordRepositoryTest {
         assertFalse(dto.capabilities.readSummary)
         assertFalse(dto.capabilities.readTranscript)
         assertFalse(dto.capabilities.generateSummary)
+        assertFalse(dto.capabilities.rename)
+    }
+
+    @Test fun renameUsesExactRecordAndExpectedTitle() = runBlocking {
+        val repo = repository("PATCH") { request ->
+            assertEquals("/api/v1.0/meeting-records/$recordId/title/", request.url.encodedPath)
+            val json = okio.Buffer().also { requireNotNull(request.body).writeTo(it) }.readUtf8()
+            assertEquals("""{"title":"Design review","expected_title":"Private source"}""", json)
+            200 to record().replace("Private source", "Design review")
+        }
+        assertEquals("Design review", repo.rename("reader", recordId, "  Design review  ", "Private source").getOrThrow().title)
+    }
+
+    @Test fun renameRejectsInvalidNamesWithoutRequest() = runBlocking {
+        val repo = repository("PATCH") { error("Unexpected request") }
+        for (name in listOf("", "  ", "x".repeat(501))) assertTrue(repo.rename("reader", recordId, name, "Private source").isFailure)
+        assertTrue(requests.isEmpty())
+    }
+
+    @Test fun renameDoesNotAcceptResponseAfterAccountChange() = runBlocking {
+        val repo = repository("PATCH") {
+            viewer = "another account"
+            200 to record().replace("Private source", "Changed")
+        }
+        assertTrue(repo.rename("reader", recordId, "Changed", "Private source").isFailure)
     }
 
     @Test fun completedRecordingPagesFilterOnServerBeforePaginationWithoutRequiringSummary() = runBlocking {

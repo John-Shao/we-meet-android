@@ -11,6 +11,9 @@ import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.PATCH
+import retrofit2.http.Body
+import com.we.meet.data.api.dto.RecordTitleRequestDto
 
 /** Canonical record IDs, never the latest summary of a reused room. */
 interface MeetingRecordApi {
@@ -28,6 +31,10 @@ interface MeetingRecordApi {
     @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/{record}/")
     suspend fun record(@Path("record") recordId: String): RecordDto
+
+    @Headers("Cache-Control: no-store")
+    @PATCH("api/v1.0/meeting-records/{record}/title/")
+    suspend fun rename(@Path("record") recordId: String, @Body body: RecordTitleRequestDto): RecordDto
 
     @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/{record}/summary-versions/")
