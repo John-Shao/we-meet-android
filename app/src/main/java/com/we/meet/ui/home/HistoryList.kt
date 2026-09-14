@@ -4,12 +4,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Videocam
+import androidx.compose.material.icons.outlined.Mic
+import androidx.compose.runtime.key
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.we.meet.R
 import com.we.meet.data.history.HistoryEntry
+import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.ui.locale.appLocale
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -24,13 +29,35 @@ import java.util.Locale
 fun HistoryList(
     entries: List<HistoryEntry>,
     onEntryClick: (entry: HistoryEntry) -> Unit,
+    recordings: List<RecordDto>,
+    onRecordingClick: (recordId: String) -> Unit,
+    recordingsLoading: Boolean,
+    hasMoreRecordings: Boolean,
+    onLoadMoreRecordings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (entries.isEmpty()) return
+    val timeline = historyTimeline(entries, recordings)
+    if (timeline.isEmpty() && !recordingsLoading && !hasMoreRecordings) return
     Column(modifier = modifier.fillMaxWidth()) {
         MeetingListSectionTitle(stringResource(R.string.history_section_title))
-        entries.forEach { entry ->
-            HistoryRow(entry = entry, onClick = { onEntryClick(entry) })
+        timeline.forEach { item ->
+            key(item.key) {
+                when (item) {
+                    is HistoryTimelineItem.Meeting -> HistoryRow(item.entry) { onEntryClick(item.entry) }
+                    is HistoryTimelineItem.Recording -> MeetingListItem(
+                        title = item.record.title.ifBlank { stringResource(R.string.home_ai_recording) },
+                        timestamp = stringResource(R.string.records_audio) + " · " +
+                            HistoryTimeFormatter.fullDateTimeLocalized(LocalContext.current, item.originMs),
+                        icon = Icons.Outlined.Mic,
+                        onClick = { onRecordingClick(item.record.id) },
+                    )
+                }
+            }
+        }
+        if (hasMoreRecordings || recordingsLoading) {
+            TextButton(onClick = onLoadMoreRecordings, enabled = !recordingsLoading, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(if (recordingsLoading) R.string.history_recordings_loading else R.string.history_recordings_more))
+            }
         }
     }
 }

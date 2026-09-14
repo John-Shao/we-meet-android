@@ -65,11 +65,15 @@ fun HomeScreen(
     onScheduleMeeting: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenRecords: (summariesOnly: Boolean) -> Unit,
+    onOpenRecord: (recordId: String) -> Unit,
     onOpenCapture: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(app))
     val history by homeViewModel.history.collectAsStateWithLifecycle()
+    val recordings by homeViewModel.recordings.collectAsStateWithLifecycle()
+    val recordingsLoading by homeViewModel.recordingsLoading.collectAsStateWithLifecycle()
+    val recordingsNextCursor by homeViewModel.recordingsNextCursor.collectAsStateWithLifecycle()
     val scheduledMeetings by homeViewModel.scheduledMeetings.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val refreshFailedText = stringResource(DesignR.string.common_load_error)
@@ -211,6 +215,11 @@ fun HomeScreen(
             )
             HistoryList(
                 entries = history,
+                recordings = recordings,
+                onRecordingClick = onOpenRecord,
+                recordingsLoading = recordingsLoading,
+                hasMoreRecordings = recordingsNextCursor != null,
+                onLoadMoreRecordings = homeViewModel::loadMoreRecordings,
                 // P8 实测修正:统一点击进详情页。此前按 closed_at 分流
                 // (进行中→重进会议),但大量房间从未显式结束、closed_at
                 // 恒空,同一列表头尾行为不一致;重进会议在详情页一键可达。

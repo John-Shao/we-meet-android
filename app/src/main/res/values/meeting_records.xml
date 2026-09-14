@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="history_recordings_loading">Loading recordings…</string>
+    <string name="history_recordings_more">Load more recordings</string>
     <string name="records_linked_version">Viewing the version selected by this link</string>
     <string name="records_all_versions">All versions</string>
     <string name="records_linked_version_unavailable">This version is unavailable</string>

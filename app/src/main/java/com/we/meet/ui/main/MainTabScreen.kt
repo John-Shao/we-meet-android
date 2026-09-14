@@ -126,6 +126,7 @@ fun MainTabScreen(
     onSettingsClick: () -> Unit,
     onOpenMeetingSettings: () -> Unit,
     onOpenRecords: (summariesOnly: Boolean) -> Unit,
+    onOpenRecord: (recordId: String) -> Unit,
     onOpenCapture: () -> Unit,
     onOpenAiHub: () -> Unit,
     onOpenApproval: () -> Unit,
@@ -415,6 +416,7 @@ fun MainTabScreen(
                 onScheduleMeeting = { onCreateEvent(java.time.LocalDate.now().toEpochDay()) },
                 onOpenSettings = onOpenMeetingSettings,
                 onOpenRecords = onOpenRecords,
+                onOpenRecord = onOpenRecord,
                 onOpenCapture = onOpenCapture,
             )
         },

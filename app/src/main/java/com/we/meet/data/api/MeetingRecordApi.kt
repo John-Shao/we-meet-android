@@ -22,6 +22,7 @@ interface MeetingRecordApi {
         @Query("has_summary") hasSummary: Boolean? = null,
         @Query("q") query: String? = null,
         @Query("cursor") cursor: String? = null,
+        @Query("is_ongoing") isOngoing: Boolean? = null,
     ): RecordPageDto<RecordDto>
 
     @Headers("Cache-Control: no-store")

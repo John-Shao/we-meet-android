@@ -59,7 +59,7 @@ class RecordScreensTest {
             return RecordDto(recordId, "audio_recording", "Private planning meeting", "2026-09-13T00:00:00Z", revision,
                 RecordCapabilitiesDto(readSummary = true, readTranscript = originals), isOngoing = true)
         }
-        override suspend fun records(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?): RecordPageDto<RecordDto> {
+        override suspend fun records(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?, isOngoing: Boolean?): RecordPageDto<RecordDto> {
             checkAccess()
             queries += scope to cursor
             return if (cursor == null) RecordPageDto(listOf(record(recordId)), "next-page") else RecordPageDto(emptyList())

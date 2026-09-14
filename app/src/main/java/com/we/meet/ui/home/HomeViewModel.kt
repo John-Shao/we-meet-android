@@ -6,8 +6,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.we.meet.R
+import com.we.meet.BuildConfig
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.RoomDto
+import com.we.meet.data.api.dto.RecordDto
+import com.we.meet.data.repository.MeetingRecordRepository
+import com.we.meet.data.repository.RecordScope
+import com.we.meet.data.repository.RecordSource
+import kotlinx.coroutines.Job
 import com.we.meet.data.auth.TokenStore
 import com.we.meet.data.history.HistoryEntry
 import com.we.meet.data.history.HistoryStore
@@ -31,6 +37,7 @@ class HomeViewModel(
     private val tokenStore: TokenStore,
     private val roomRepository: RoomRepository,
     private val historyStore: HistoryStore,
+    private val recordRepository: MeetingRecordRepository,
 ) : AndroidViewModel(application) {
 
     private val localHistory: StateFlow<List<HistoryEntry>> = historyStore.entries
@@ -39,6 +46,15 @@ class HomeViewModel(
     private val _remoteRooms = MutableStateFlow<List<RoomDto>>(emptyList())
     private val _refreshFailures = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val refreshFailures: SharedFlow<Unit> = _refreshFailures.asSharedFlow()
+    private val _recordings = MutableStateFlow<List<RecordDto>>(emptyList())
+    val recordings: StateFlow<List<RecordDto>> = _recordings
+    private val _recordingsLoading = MutableStateFlow(false)
+    val recordingsLoading: StateFlow<Boolean> = _recordingsLoading
+    private val _recordingsNextCursor = MutableStateFlow<String?>(null)
+    val recordingsNextCursor: StateFlow<String?> = _recordingsNextCursor
+    private var recordingsJob: Job? = null
+    private var recordingsGeneration = 0
+    private var recordingsViewer: String? = null
 
     /**
      * Local + remote rooms merged by slug. Local wins for participant
@@ -90,11 +106,51 @@ class HomeViewModel(
      * local store remains the source of truth for offline-able state.
      */
     fun refreshRemoteRooms() {
+        loadRecordings(refresh = true)
         viewModelScope.launch {
             roomRepository.fetchMyRooms().onSuccess { rooms ->
                 _remoteRooms.value = rooms.filterNot { it.isAiSession() }
             }.onFailure {
                 _refreshFailures.tryEmit(Unit)
+            }
+        }
+    }
+
+    fun loadMoreRecordings() = loadRecordings(refresh = false)
+
+    private fun loadRecordings(refresh: Boolean) {
+        if (!BuildConfig.WE_MEET_RECORDS_NATIVE) return
+        if (!refresh && (_recordingsLoading.value || _recordingsNextCursor.value == null)) return
+        recordingsJob?.cancel()
+        val generation = ++recordingsGeneration
+        val viewer = tokenStore.userId
+        if (viewer != recordingsViewer || viewer == null) {
+            _recordings.value = emptyList()
+            _recordingsNextCursor.value = null
+        }
+        recordingsViewer = viewer
+        if (viewer == null) { _recordingsLoading.value = false; return }
+        val cursor = if (refresh) null else _recordingsNextCursor.value
+        recordingsJob = viewModelScope.launch {
+            _recordingsLoading.value = true
+            try {
+                recordRepository.records(
+                    viewer, scope = RecordScope.OWNED, source = RecordSource.AUDIO,
+                    cursor = cursor, isOngoing = false,
+                ).onSuccess { page ->
+                    if (generation != recordingsGeneration || tokenStore.userId != viewer) return@onSuccess
+                    val completed = page.results.filter { it.sourceType == "audio_recording" && !it.isOngoing }
+                    _recordings.value = ((if (refresh) emptyList() else _recordings.value) + completed).distinctBy { it.id }
+                    _recordingsNextCursor.value = page.nextCursor?.takeUnless { it == cursor }
+                }.onFailure {
+                    if (generation == recordingsGeneration) {
+                        _recordings.value = emptyList()
+                        _recordingsNextCursor.value = null
+                        _refreshFailures.tryEmit(Unit)
+                    }
+                }
+            } finally {
+                if (generation == recordingsGeneration) _recordingsLoading.value = false
             }
         }
     }
@@ -272,6 +328,7 @@ class HomeViewModel(
                 tokenStore = app.tokenStore,
                 roomRepository = app.roomRepository,
                 historyStore = app.historyStore,
+                recordRepository = app.meetingRecordRepository,
             ) as T
     }
 

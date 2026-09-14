@@ -37,10 +37,11 @@ class MeetingRecordRepository(
         summariesOnly: Boolean = false,
         query: String? = null,
         cursor: String? = null,
+        isOngoing: Boolean? = null,
     ): Result<RecordPageDto<RecordDto>> = scoped(viewer) {
         require(query == null || query.length <= 200)
         validateCursor(cursor)
-        api.records(scope.wire, source?.wire, if (summariesOnly) true else null, query, cursor).also { page ->
+        api.records(scope.wire, source?.wire, if (summariesOnly) true else null, query, cursor, isOngoing).also { page ->
             validatePage(page)
             page.results.forEach(::validateRecord)
         }

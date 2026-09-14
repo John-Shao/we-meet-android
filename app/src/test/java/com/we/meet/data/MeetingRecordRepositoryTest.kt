@@ -76,6 +76,26 @@ class MeetingRecordRepositoryTest {
         assertFalse(dto.capabilities.generateSummary)
     }
 
+    @Test fun completedRecordingPagesFilterOnServerBeforePaginationWithoutRequiringSummary() = runBlocking {
+        val repo = repository { request ->
+            assertEquals("owned", request.url.queryParameter("scope"))
+            assertEquals("audio_recording", request.url.queryParameter("source_type"))
+            assertEquals("false", request.url.queryParameter("is_ongoing"))
+            assertNull(request.url.queryParameter("has_summary"))
+            val cursor = request.url.queryParameter("cursor")
+            if (cursor == null) 200 to """{"results":[${record()}],"next_cursor":"next & page"}"""
+            else {
+                assertEquals("next & page", cursor)
+                200 to """{"results":[],"next_cursor":null}"""
+            }
+        }
+        val first = repo.records("reader", RecordScope.OWNED, RecordSource.AUDIO, isOngoing = false).getOrThrow()
+        val last = repo.records("reader", RecordScope.OWNED, RecordSource.AUDIO, cursor = first.nextCursor, isOngoing = false).getOrThrow()
+        assertEquals(recordId, first.results.single().id)
+        assertNull(last.nextCursor)
+        assertEquals(2, requests.size)
+    }
+
     @Test fun originalsKeepSearchSpeakerRevisionAndCursorOnFixedEndpoint() = runBlocking {
         val repo = repository { request ->
             if (!request.url.encodedPath.endsWith("/original-segments/")) 200 to record()
