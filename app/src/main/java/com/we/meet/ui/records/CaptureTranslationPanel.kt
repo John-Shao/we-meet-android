@@ -1,6 +1,9 @@
 package com.we.meet.ui.records
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -22,7 +25,7 @@ import kotlinx.coroutines.*
 
 @Composable
 internal fun CaptureTranslationPanel(source: CaptureTranslationSource, revision: Long, repository: CaptureTranslationRepository,
-    currentViewer: () -> String?, currentSource: () -> Boolean, recording: () -> Boolean, observe: () -> CapturePcmTap.Subscription) {
+    currentViewer: () -> String?, currentSource: () -> Boolean, recording: () -> Boolean, observe: () -> CapturePcmTap.Subscription, compact: Boolean = false) {
     val context = LocalContext.current.applicationContext
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
@@ -67,7 +70,7 @@ internal fun CaptureTranslationPanel(source: CaptureTranslationSource, revision:
     }
     CaptureTranslationControls(state, choice, controller != null && viewer() == source.viewer && sourceCurrent() && sourceRecording(),
         { choice = it }, { perform("start") }, { if (controller?.finishConnected() != true) perform("stop") },
-        { perform("start", true) }, { controller?.begin(it) }, { controller?.endTurn() }, { controller?.mute(!state.muted) }, { refresh++ })
+        { perform("start", true) }, { controller?.begin(it) }, { controller?.endTurn() }, { controller?.mute(!state.muted) }, { refresh++ }, compact = compact)
 }
 
 /** Rendering boundary: settings never start a microphone or issue a paid request by themselves. */
@@ -75,19 +78,38 @@ internal fun CaptureTranslationPanel(source: CaptureTranslationSource, revision:
 @OptIn(ExperimentalLayoutApi::class)
 internal fun CaptureTranslationControls(state: CaptureTranslationViewState, choice: CaptureTranslationChoiceDto, canRecord: Boolean,
     change: (CaptureTranslationChoiceDto) -> Unit, start: () -> Unit, stop: () -> Unit, recover: () -> Unit,
-    begin: (String) -> Unit, endTurn: () -> Unit, mute: () -> Unit, refresh: () -> Unit) {
+    begin: (String) -> Unit, endTurn: () -> Unit, mute: () -> Unit, refresh: () -> Unit, compact: Boolean = false) {
     val live = state.live
     val connected = live != null && live.phase !in CaptureTranslationController.terminal
     val frozen = state.busy || state.pending != null || connected || state.remote?.current?.status in CaptureTranslationRepository.activeStates
     if (state.remote?.available == false && state.remote.current == null && state.pending == null) return
-    OutlinedCard(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-            Text(stringResource(R.string.capture_translation_title), style = MaterialTheme.typography.titleMedium)
+    // Keep the controller above the sheet. Dismissing a sheet never stops a live translation.
+    var sheet by remember { mutableStateOf<String?>(null) }
+    if (compact) {
+        CaptureTool(Icons.Outlined.Language, stringResource(R.string.capture_tool_interpret), {
+            if (!frozen) change(choice.copy(mode = "simultaneous", audio = true))
+            sheet = "interpret"
+        }, active = connected && choice.audio)
+        CaptureTool(Icons.Outlined.Translate, stringResource(R.string.capture_tool_translate), {
+            if (!frozen) change(choice.copy(mode = "simultaneous", audio = false))
+            sheet = "translate"
+        }, active = connected && !choice.audio)
+        if (sheet != null) CaptureSettingsSheet(
+            stringResource(if (sheet == "interpret") R.string.capture_interpret_title else R.string.capture_language_title),
+            { sheet = null },
+        ) {
+            CaptureTranslationControls(state, choice, canRecord, change, start, stop, recover, begin, endTurn, mute, refresh)
+        }
+        return
+    }
+    Column(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(vertical = Dimens.SpaceS), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
             Text(stringResource(R.string.capture_translation_scope), style = MaterialTheme.typography.bodySmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                 FilterChip(choice.mode == "simultaneous", { change(choice.copy(mode = "simultaneous")) }, enabled = !frozen, label = { Text(stringResource(R.string.capture_translation_simultaneous)) })
                 FilterChip(choice.mode == "push_to_talk", { change(choice.copy(mode = "push_to_talk")) }, enabled = !frozen, label = { Text(stringResource(R.string.capture_translation_speech)) })
             }
+            Text(stringResource(R.string.capture_translation_direction), style = MaterialTheme.typography.labelLarge)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                 FilterChip(choice.sourceLanguage == "zh", { change(choice.copy(sourceLanguage = "zh", targetLanguage = "en")) }, enabled = !frozen, label = { Text(stringResource(R.string.capture_translation_zh_en)) })
                 FilterChip(choice.sourceLanguage == "en", { change(choice.copy(sourceLanguage = "en", targetLanguage = "zh")) }, enabled = !frozen, label = { Text(stringResource(R.string.capture_translation_en_zh)) })
@@ -106,9 +128,9 @@ internal fun CaptureTranslationControls(state: CaptureTranslationViewState, choi
             }
             if (live != null) Text(stringResource(translationPhase(live.phase)), style = MaterialTheme.typography.labelLarge)
             if (!connected && state.remote?.current?.status in CaptureTranslationRepository.activeStates) Text(stringResource(R.string.capture_translation_detached), style = MaterialTheme.typography.bodySmall)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                Button(start, enabled = canRecord && !frozen && !state.storageError && state.remote?.canStart == true && (!choice.saveTranslations || state.remote.canSaveTranslations)) { Text(stringResource(R.string.capture_translation_start)) }
-                if (connected || state.remote?.canStop == true) OutlinedButton(stop, enabled = !state.busy && state.pending == null && live?.phase != "finishing") { Text(stringResource(R.string.capture_translation_stop)) }
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                Button(start, modifier = Modifier.fillMaxWidth().heightIn(min = Dimens.ButtonHeight), enabled = canRecord && !frozen && !state.storageError && state.remote?.canStart == true && (!choice.saveTranslations || state.remote.canSaveTranslations)) { Text(stringResource(R.string.capture_translation_start)) }
+                if (connected || state.remote?.canStop == true) OutlinedButton(stop, modifier = Modifier.fillMaxWidth(), enabled = !state.busy && state.pending == null && live?.phase != "finishing") { Text(stringResource(R.string.capture_translation_stop)) }
             }
             if (connected && choice.audio) TextButton(mute) { Text(stringResource(if (state.muted) R.string.capture_translation_unmute else R.string.capture_translation_mute)) }
             if (connected && choice.mode == "push_to_talk") {

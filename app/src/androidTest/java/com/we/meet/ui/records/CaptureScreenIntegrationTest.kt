@@ -46,7 +46,7 @@ class CaptureScreenIntegrationTest {
             compose.waitUntil(8000) { compose.onAllNodesWithText(text(R.string.capture_pause)).fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText(text(R.string.capture_pause)).performClick()
             compose.waitUntil(8000) { app.input!!.closed }
-            compose.onNodeWithText(text(R.string.capture_finish)).performScrollTo().performClick()
+            compose.onNodeWithText(text(R.string.capture_finish)).performClick()
             compose.onNodeWithText(text(R.string.capture_finish_confirm)).performClick()
             compose.waitUntil(8000) { compose.onAllNodesWithText(text(R.string.capture_status_saved)).fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText(text(R.string.capture_status_saved)).assertIsDisplayed()

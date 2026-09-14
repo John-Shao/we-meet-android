@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_audio_settings">音频设置</string>
+    <string name="capture_keep_audio">保留音频</string>
+    <string name="capture_keep_audio_hint">保存原始录音，支持回听和下载</string>
+    <string name="capture_text_only_hint">音频仅临时用于转写，不提供回听</string>
+    <string name="capture_audio_settings_hint">选择下一次录音的保存方式</string>
+    <string name="capture_audio_settings_locked">本次录音的保存方式已锁定，下次录音前可重新选择。</string>
+    <string name="capture_settings_done">完成</string>
+    <string name="capture_live_summary">实时总结</string>
+    <string name="capture_document_empty_title">让每一句话都有迹可循</string>
+    <string name="capture_document_empty_hint">开始录音后，可开启实时转写。\n文字记录会显示在这里。</string>
+    <string name="capture_summary_empty_title">专注讨论，让 AI 整理重点</string>
+    <string name="capture_summary_empty_hint">录音开始并有转写内容后，可开启总结，\n查看讨论要点和行动项。</string>
+    <string name="capture_document_preparing">正在准备录音内容，连接成功后可开启 AI 功能。</string>
+    <string name="capture_next_title">下一次录音标题（选填）</string>
+    <string name="capture_tool_interpret">同传</string>
+    <string name="capture_tool_translate">翻译</string>
+    <string name="capture_interpret_title">AI 同声传译</string>
+    <string name="capture_language_title">AI 翻译</string>
+    <string name="capture_translation_direction">说话语言 → 翻译语言</string>
+    <string name="capture_translation_active_badge">翻译进行中</string>
+</resources>

@@ -27,13 +27,28 @@ class CaptureTranslationPanelTest {
     private var choice by mutableStateOf(CaptureTranslationChoiceDto("zh", "en", "simultaneous", false, false))
     private var recording by mutableStateOf(true)
     private val actions = mutableListOf<String>()
-    private fun show() = compose.setContent { WeMeetTheme { Surface {
+    private fun show(compact: Boolean = false) = compose.setContent { WeMeetTheme { Surface {
         Column(Modifier.verticalScroll(rememberScrollState())) {
             CaptureTranslationControls(state, choice, recording, { choice = it }, { actions += "start" }, { actions += "stop" },
-                { actions += "recover" }, { actions += it }, { actions += "end" }, { actions += "mute" }, { actions += "refresh" })
+                { actions += "recover" }, { actions += it }, { actions += "end" }, { actions += "mute" }, { actions += "refresh" }, compact = compact)
         }
     } } }
     private fun button(id: Int) = compose.onNode(hasText(label(id)) and hasClickAction())
+    @Test fun toolbarSettingsRequireExplicitStartAndDismissDoesNotStopTranslation() {
+        show(compact = true)
+        button(R.string.capture_tool_interpret).performClick()
+        assertTrue(choice.audio)
+        assertTrue(actions.isEmpty())
+        button(R.string.capture_translation_start).performScrollTo().performClick()
+        assertEquals(listOf("start"), actions)
+        compose.runOnIdle { state = state.copy(live = CaptureTranslationLiveState("ready")) }
+        compose.onNodeWithContentDescription(label(R.string.records_close)).performClick()
+        assertEquals(listOf("start"), actions)
+        button(R.string.capture_tool_translate).performClick()
+        assertTrue(choice.audio) // A live session cannot be reconfigured by opening another sheet.
+        button(R.string.capture_translation_stop).performScrollTo().performClick()
+        assertEquals(listOf("start", "stop"), actions)
+    }
     @Test fun defaultsRequireExplicitStartAndConsent() {
         show()
         compose.onNodeWithContentDescription(label(R.string.capture_translation_audio)).assertIsOff()

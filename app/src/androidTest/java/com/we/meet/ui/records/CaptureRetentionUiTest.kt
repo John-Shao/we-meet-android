@@ -40,12 +40,13 @@ class CaptureRetentionUiTest {
         var textTitle: String? = null
         compose.setContent { WeMeetTheme { CaptureContent(CaptureServiceState("viewer", ready = true), false,
             {}, { mediaStarts++ }, {}, {}, {}, null, onStartText = { textTitle = it }) } }
-        compose.onNode(isToggleable()).assertIsOff()
         compose.onNodeWithText(label(R.string.capture_title_label)).performTextInput("Interview")
-        compose.onNode(isToggleable()).performClick().assertIsOn()
-        compose.onNodeWithText(label(R.string.capture_text_consent)).assertExists()
+        compose.onNodeWithText(label(R.string.capture_audio_settings)).performClick()
+        compose.onNode(hasText(label(R.string.capture_text_only)) and isSelectable()).performClick().assertIsSelected()
+        compose.onAllNodesWithText(label(R.string.capture_text_consent)).onLast().assertExists()
         screenshot("consent-light")
-        compose.onNodeWithText(label(R.string.capture_start)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.capture_settings_done)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.capture_start)).performClick()
         assertEquals("Interview", textTitle)
         assertEquals(0, mediaStarts)
     }
@@ -56,11 +57,15 @@ class CaptureRetentionUiTest {
         var mediaStarts = 0
         compose.setContent { WeMeetTheme { CaptureContent(CaptureServiceState("viewer", ready = true), false,
             {}, { mediaStarts++ }, {}, {}, {}, null, onStartText = if (available.value) ({ textStarts++ }) else null) } }
-        compose.onNode(isToggleable()).performClick()
+        compose.onNodeWithText(label(R.string.capture_audio_settings)).performClick()
+        compose.onNode(hasText(label(R.string.capture_text_only)) and isSelectable()).performClick()
+        compose.onNodeWithText(label(R.string.capture_settings_done)).performScrollTo().performClick()
         compose.runOnIdle { available.value = false }
-        compose.onNodeWithText(label(R.string.capture_start)).performScrollTo().assertIsNotEnabled()
-        compose.onNode(isToggleable()).performScrollTo().performClick()
-        compose.onNodeWithText(label(R.string.capture_start)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.capture_start)).assertIsNotEnabled()
+        compose.onNodeWithText(label(R.string.capture_audio_settings)).performClick()
+        compose.onNode(hasText(label(R.string.capture_keep_audio)) and isSelectable()).performClick()
+        compose.onNodeWithText(label(R.string.capture_settings_done)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.capture_start)).performClick()
         assertEquals(0, textStarts)
         assertEquals(1, mediaStarts)
     }
@@ -73,7 +78,7 @@ class CaptureRetentionUiTest {
         compose.setContent { WeMeetTheme(darkTheme = true) { CaptureContent(
             CaptureServiceState("viewer", local, ready = true, retentionExpired = true), false,
             {}, {}, {}, {}, {}, null, onFinishIncomplete = { finished = true }) } }
-        compose.onNodeWithText(label(R.string.capture_resume)).performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText(label(R.string.capture_resume)).assertIsNotEnabled()
         compose.onNodeWithText(label(R.string.capture_interrupted_hint)).assertDoesNotExist()
         compose.onNodeWithText(label(R.string.capture_text_finish_incomplete)).performScrollTo().performClick()
         assertFalse(finished)

@@ -124,8 +124,7 @@ internal fun CaptureAsrPanel(viewer: String, capture: CaptureDto, repository: Ca
 
     if (state != null && !state.available && !state.liveAvailable && state.results.isEmpty() && pending == null && !storageError) return
     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Column(Modifier.padding(Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-            Text(stringResource(R.string.capture_asr_title), style = MaterialTheme.typography.titleMedium)
+        Column(Modifier.padding(vertical = Dimens.SpaceM), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
             if (query == null || (coordinator == null && !storageError)) WeMeetInlineLoading()
             if (query?.isFailure == true || storageError) {
                 WeMeetInlineErrorState(onRetry = { retry++; if (storageError) storageRetry++ }, message = stringResource(R.string.capture_asr_read_error))
@@ -176,8 +175,7 @@ private fun CaptureAsrPreview(viewer: String, capture: String, job: CaptureAsrJo
         if (preview.results.isEmpty()) Text(stringResource(R.string.capture_asr_waiting_text))
         preview.results.forEach { row ->
             val seconds = row.startMs / 1000
-            Text(String.format(Locale.ROOT, "%02d:%02d", seconds / 60, seconds % 60), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(row.text, style = MaterialTheme.typography.bodyMedium)
+            CaptureTranscriptEntry(String.format(Locale.ROOT, "%02d:%02d", seconds / 60, seconds % 60), row.text)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
             if (after > 0) TextButton(onClick = { older = maxOf(0, after - 50) }) { Text(stringResource(R.string.capture_asr_previous)) }

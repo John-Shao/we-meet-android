@@ -13,21 +13,24 @@ import android.os.IBinder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Mic
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -62,7 +65,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
-import java.util.Locale
 
 private fun bindCapture(context: Context) = callbackFlow {
     val connection = object : ServiceConnection {
@@ -143,7 +145,7 @@ fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit
         onRetry = { if (state.ready) service?.retryUploads() else retry++ },
         onRecord = if (BuildConfig.WE_MEET_RECORDS_NATIVE) onRecord else null,
         notificationsAvailable = context.getSystemService(NotificationManager::class.java).areNotificationsEnabled(),
-        extra = {
+        tools = {
             val app = context.applicationContext as? WeMeetApp
             val capture = state.local?.remote
             val bound = service
@@ -159,9 +161,13 @@ fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit
                     }, {
                         val snapshot = bound.state.value
                         snapshot.recording && !snapshot.busy && snapshot.local?.let { !com.we.meet.data.capture.CaptureRetention.audioExpired(it) } == true
-                    }, { bound.observePcm(capture.id) })
+                    }, { bound.observePcm(capture.id) }, compact = true)
                 }
             }
+        },
+        extra = {
+            val app = context.applicationContext as? WeMeetApp
+            val capture = state.local?.remote
             if (app != null && capture != null && state.viewer == viewer) {
                 androidx.compose.runtime.key(viewer, capture.id) {
                     var audioSeek by remember { mutableStateOf<CaptureAudioSeek?>(null) }
@@ -170,10 +176,7 @@ fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit
                     val textMode = state.local?.create?.retentionMode == "text"
                     if (textMode) CaptureRetentionPanel(viewer, capture, app.captureTranscriptionRepository)
                     if (capture.status == "stopped" && !textMode) NativeCaptureAudioPlayer(viewer, capture.recordId, app.capturePlaybackRepository, { app.captureAccount }, audioSeek) { audioSeek = null }
-                    Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                        androidx.compose.material3.FilterChip(!summariesSelected, { summariesSelected = false }, label = { Text(stringResource(R.string.records_originals)) })
-                        androidx.compose.material3.FilterChip(summariesSelected, { summariesSelected = true }, label = { Text(stringResource(R.string.records_minutes)) })
-                    }
+                    CaptureDocumentTabs(summariesSelected, { summariesSelected = it }, capture.status == "stopped")
                     if (!summariesSelected) CaptureAsrPanel(viewer, capture, app.captureTranscriptionRepository) { app.captureAccount }
                     else CaptureSummaryWorkspace(viewer, capture, app.meetingRecordRepository, app.meetingSummaryRepository,
                         { app.captureAccount }, if (BuildConfig.WE_MEET_RECORDS_NATIVE) ({ onRecord(capture.recordId) }) else null,
@@ -197,12 +200,15 @@ internal fun CaptureContent(
     notificationsAvailable: Boolean = true,
     onStartText: ((String) -> Unit)? = null,
     onFinishIncomplete: (() -> Unit)? = null,
+    tools: @Composable () -> Unit = {},
     extra: @Composable () -> Unit = {},
 ) {
     var title by remember(state.viewer, state.local?.id) { mutableStateOf("") }
     var confirmEnd by remember(state.viewer, state.local?.id) { mutableStateOf(false) }
     var confirmIncomplete by remember(state.viewer, state.local?.id) { mutableStateOf(false) }
     var textOnly by remember(state.viewer, state.local?.id) { mutableStateOf(false) }
+    var audioSettings by remember(state.viewer, state.local?.id) { mutableStateOf(false) }
+    var emptySummary by remember(state.viewer, state.local?.id) { mutableStateOf(false) }
     val local = state.local
     val textMode = if (local != null && !local.sealed) local.create.retentionMode == "text" else textOnly
     fun start() { if (textOnly && (local == null || local.sealed)) onStartText?.invoke(title) else onStart(title) }
@@ -220,10 +226,25 @@ internal fun CaptureContent(
         local != null -> R.string.capture_status_paused
         else -> R.string.capture_status_ready
     }
-    Scaffold(containerColor = MaterialTheme.colorScheme.background,
-        topBar = { WeMeetTopBar(title = stringResource(R.string.capture_notification_title), onBack = onBack) }) { insets ->
-        Column(Modifier.fillMaxSize().padding(insets).verticalScroll(rememberScrollState())
-            .padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)) {
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
+        topBar = {
+            WeMeetTopBar(title = stringResource(R.string.capture_notification_title), onBack = onBack,
+                actions = {
+                    if (state.ready) {
+                        tools()
+                        CaptureTool(Icons.Outlined.Tune, stringResource(R.string.capture_audio_settings), { audioSettings = true })
+                    }
+                })
+        },
+        bottomBar = {
+            if (state.ready) CaptureRecordingDock(state, status, canStart, ending, onStart = { start() },
+                onPause = onPause, onFinish = { if (ending) onFinish() else confirmEnd = true })
+        },
+    ) { insets ->
+        Column(Modifier.fillMaxSize().padding(insets).consumeWindowInsets(insets)
+            .verticalScroll(rememberScrollState()).padding(horizontal = Dimens.ScreenPadding)
+            .padding(bottom = Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
             if (!state.ready && !state.error) WeMeetInlineLoading()
             if (state.error || permissionError) {
                 WeMeetInlineErrorState(message = stringResource(if (permissionError) R.string.capture_permission_error else R.string.capture_operation_error),
@@ -231,59 +252,59 @@ internal fun CaptureContent(
             }
             if (state.retentionExpired) Text(stringResource(R.string.capture_text_expired), color = MaterialTheme.colorScheme.error)
             if (state.ready) {
-                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                    Column(Modifier.padding(Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-                        Text(stringResource(status), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                        if (local == null || local.sealed) {
-                            OutlinedTextField(title, { title = it.take(500) }, modifier = Modifier.fillMaxWidth(),
-                                label = { Text(stringResource(R.string.capture_title_label)) }, singleLine = true, enabled = !state.busy)
-                        } else Text(local.create.title.ifBlank { stringResource(R.string.capture_untitled) }, style = MaterialTheme.typography.titleLarge)
-                        if ((local == null || local.sealed) && (onStartText != null || textOnly)) Row {
-                            Checkbox(textOnly, { textOnly = it }, enabled = !state.busy)
-                            Text(stringResource(R.string.capture_text_only), Modifier.padding(top = Dimens.SpaceM))
-                        }
-                        if (textMode) Text(stringResource(R.string.capture_text_consent), style = MaterialTheme.typography.bodyMedium)
-                        if (textOnly && onStartText == null) Text(stringResource(R.string.capture_text_unavailable), color = MaterialTheme.colorScheme.error)
-                        val seconds = (local?.durationMs ?: 0L) / 1000
-                        Text(String.format(Locale.ROOT, "%02d:%02d:%02d", seconds / 3600, seconds / 60 % 60, seconds % 60),
-                            style = MaterialTheme.typography.headlineLarge)
-                        Text(stringResource(R.string.capture_saved_duration), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        if (state.recording) Text(stringResource(if (notificationsAvailable) R.string.capture_background_hint else R.string.capture_background_without_notifications), style = MaterialTheme.typography.bodyMedium)
-                        else if (ending) Text(stringResource(R.string.capture_finish_pending_hint), style = MaterialTheme.typography.bodyMedium)
-                        else if (local?.interrupted == true && !local.sealed) Text(stringResource(if (textMode) R.string.capture_text_interrupted_hint else R.string.capture_interrupted_hint), style = MaterialTheme.typography.bodyMedium)
-                        else if (local == null && !textMode) Text(stringResource(R.string.capture_intro), style = MaterialTheme.typography.bodyMedium)
-                        if (state.busy) WeMeetInlineLoading()
-                        if (state.recording) OutlinedButton(onClick = onPause, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.capture_pause)) }
-                        else if (!ending) Button(onClick = { start() }, enabled = canStart, modifier = Modifier.fillMaxWidth()) {
-                            Text(stringResource(if (local == null || local.sealed) R.string.capture_start else R.string.capture_resume))
-                        }
-                        if (local != null && !local.sealed) OutlinedButton(onClick = { if (ending) onFinish() else confirmEnd = true }, modifier = Modifier.fillMaxWidth()) {
-                            Text(stringResource(if (ending) R.string.capture_complete_save else R.string.capture_finish))
-                        }
-                        if (local?.create?.retentionMode == "text" && !local.sealed && !state.recording && !state.busy &&
-                            (local.interrupted || state.error || state.uploadFailed || state.retentionExpired) && onFinishIncomplete != null) {
-                            TextButton(onClick = { confirmIncomplete = true }, modifier = Modifier.fillMaxWidth()) {
-                                Text(stringResource(R.string.capture_text_finish_incomplete))
-                            }
-                        }
+                if (local == null) {
+                    Text(stringResource(R.string.capture_untitled), style = MaterialTheme.typography.headlineMedium)
+                    OutlinedTextField(title, { title = it.take(500) }, modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.capture_title_label)) }, singleLine = true, enabled = !state.busy)
+                } else {
+                    Text(local.create.title.ifBlank { stringResource(R.string.capture_untitled) }, style = MaterialTheme.typography.headlineMedium)
+                    Text(java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT)
+                        .format(java.util.Date(local.createdAt)), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (local.sealed) OutlinedTextField(title, { title = it.take(500) }, modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.capture_next_title)) }, singleLine = true, enabled = !state.busy)
+                }
+                TextButton(onClick = { audioSettings = true }) {
+                    Icon(Icons.Outlined.Mic, contentDescription = null, modifier = Modifier.size(Dimens.IconTiny))
+                    Spacer(Modifier.width(Dimens.SpaceS))
+                    Text(stringResource(if (textMode) R.string.capture_text_only else R.string.capture_keep_audio))
+                    Icon(Icons.Outlined.ExpandMore, contentDescription = null, modifier = Modifier.size(Dimens.IconTiny))
+                }
+                if (textOnly && onStartText == null) Text(stringResource(R.string.capture_text_unavailable), color = MaterialTheme.colorScheme.error)
+                if (textMode && local == null) Text(stringResource(R.string.capture_text_consent), style = MaterialTheme.typography.bodySmall)
+                if (ending) CaptureNotice(stringResource(R.string.capture_finish_pending_hint))
+                else if (local?.interrupted == true && !local.sealed) CaptureNotice(stringResource(if (textMode) R.string.capture_text_interrupted_hint else R.string.capture_interrupted_hint))
+                if (state.recording && !notificationsAvailable) CaptureNotice(stringResource(R.string.capture_background_without_notifications))
+                if (local != null && (state.uploadFailed || local.interrupted && local.pendingBytes > 0 || local.sealed && local.pendingBytes > 0)) {
+                    CaptureNotice(stringResource(if (local.create.retentionMode == "text") R.string.capture_text_local_hint else R.string.capture_local_hint)) {
+                        Text(stringResource(R.string.capture_pending_count, local.pendingBytes / 1024), style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = onRetry, enabled = !state.busy) { Text(stringResource(R.string.capture_retry_uploads)) }
                     }
                 }
-                if (local != null) Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                    Column(Modifier.padding(Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-                        Text(stringResource(if (local.create.retentionMode == "text") R.string.capture_text_local_hint else if (local.sealed) R.string.capture_saved_hint else R.string.capture_local_hint), style = MaterialTheme.typography.bodyMedium)
-                        if (local.pendingBytes > 0 || state.uploadFailed) {
-                            Text(stringResource(R.string.capture_pending_count, local.pendingBytes / 1024), style = MaterialTheme.typography.bodySmall)
-                            TextButton(onClick = onRetry, enabled = !state.busy) { Text(stringResource(R.string.capture_retry_uploads)) }
-                        }
-                        if (local.sealed && onRecord != null && local.remote != null) TextButton(onClick = { onRecord(local.remote.recordId) }) {
-                            Text(stringResource(R.string.capture_open_record))
-                        }
-                    }
+                if (local?.create?.retentionMode == "text" && !local.sealed && !state.recording && !state.busy &&
+                    (local.interrupted || state.error || state.uploadFailed || state.retentionExpired) && onFinishIncomplete != null) {
+                    TextButton(onClick = { confirmIncomplete = true }) { Text(stringResource(R.string.capture_text_finish_incomplete)) }
+                }
+                if (local?.remote == null) {
+                    CaptureDocumentTabs(emptySummary, { emptySummary = it })
+                    CaptureDocumentEmpty(emptySummary, local != null)
                 }
                 extra()
+                if (local?.sealed == true && onRecord != null && local.remote != null) {
+                    TextButton(onClick = { onRecord(local.remote.recordId) }, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.capture_open_record))
+                    }
+                }
             }
         }
     }
+    if (audioSettings) CaptureAudioSettings(
+        textOnly = textMode,
+        editable = (local == null || local.sealed) && !state.busy,
+        textAvailable = onStartText != null,
+        change = { textOnly = it },
+        onDismiss = { audioSettings = false },
+    )
     if (confirmEnd) AlertDialog(onDismissRequest = { confirmEnd = false },
         title = { Text(stringResource(R.string.capture_finish)) }, text = { Text(stringResource(if (textMode) R.string.capture_text_finish_hint else R.string.capture_finish_hint)) },
         confirmButton = { TextButton(onClick = { confirmEnd = false; onFinish() }) { Text(stringResource(R.string.capture_finish_confirm)) } },

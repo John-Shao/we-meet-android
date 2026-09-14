@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_audio_settings">Audio settings</string>
+    <string name="capture_keep_audio">Keep audio</string>
+    <string name="capture_keep_audio_hint">Save the recording for playback and download</string>
+    <string name="capture_text_only_hint">Use audio temporarily for transcription; no playback</string>
+    <string name="capture_audio_settings_hint">Choose how to save this recording</string>
+    <string name="capture_audio_settings_locked">The storage mode is fixed for this recording. Choose again before your next recording.</string>
+    <string name="capture_settings_done">Done</string>
+    <string name="capture_live_summary">Live summary</string>
+    <string name="capture_document_empty_title">Keep every word in view</string>
+    <string name="capture_document_empty_hint">Start recording, then enable live transcription. Your transcript will appear here.</string>
+    <string name="capture_summary_empty_title">Focus on the conversation</string>
+    <string name="capture_summary_empty_hint">Once recording and transcription begin, enable summaries to review key points and action items.</string>
+    <string name="capture_document_preparing">Preparing your recording. AI features are available once connected.</string>
+    <string name="capture_next_title">Next recording title (optional)</string>
+    <string name="capture_tool_interpret">Interpret</string>
+    <string name="capture_tool_translate">Translate</string>
+    <string name="capture_interpret_title">AI interpretation</string>
+    <string name="capture_language_title">AI translation</string>
+    <string name="capture_translation_direction">Spoken language to translation language</string>
+    <string name="capture_translation_active_badge">Translation active</string>
+</resources>
