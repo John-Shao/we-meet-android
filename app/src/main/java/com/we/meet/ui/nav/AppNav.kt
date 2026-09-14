@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -25,6 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.DialogProperties
@@ -425,6 +427,15 @@ fun AppNav() {
     val context = LocalContext.current
     val app = context.applicationContext as WeMeetApp
     val navController = rememberNavController()
+    val externalUriHandler = LocalUriHandler.current
+    val recordUriHandler = remember(app, externalUriHandler) {
+        com.we.meet.ui.records.RecordUriHandler(
+            com.we.meet.BuildConfig.WE_MEET_BASE_URL,
+            com.we.meet.BuildConfig.WE_MEET_RECORDS_NATIVE,
+            { link -> app.pendingRecordLink.value = link },
+            externalUriHandler,
+        )
+    }
     // Scope for one-shot host actions triggered from screen callbacks (e.g. the
     // P3 reveal-phone → system-dial handoff), which outlive a single frame.
     val dialScope = rememberCoroutineScope()
@@ -612,6 +623,7 @@ fun AppNav() {
         }
     }
 
+    CompositionLocalProvider(LocalUriHandler provides recordUriHandler) {
     NavHost(navController = navController, startDestination = startDestination) {
 
         composable(Routes.LOGIN) {
@@ -1824,6 +1836,8 @@ fun AppNav() {
     if (hostEndedSheetVisible) {
         HostEndedSheet(onDismiss = { hostEndedSheetVisible = false })
     }
+
+    } // LocalUriHandler for hosted screens, including chat and forwarded cards.
 
     // Global session-expired handler. Any authed 401 caught by
     // SessionExpiredInterceptor flips this flag; we overlay a modal dialog
