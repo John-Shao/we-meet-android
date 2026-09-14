@@ -164,6 +164,27 @@ class CaptureRepositoryTest {
         assertTrue(duplicate.receipts("owner", capture).isFailure)
     }
 
+    @Test fun receiptPaginationAcceptsThreeHundredFiveSecondChunks() = runBlocking {
+        val audio = CaptureWave.encode(ShortArray(80000))
+        val repo = repository { request ->
+            val after = request.url.queryParameter("after_sequence")!!.toInt()
+            val last = minOf(after + 100, 302)
+            val rows = (after + 1..last).joinToString(",") {
+                receipt(audio, it).replace("\"start_ms\":0", "\"start_ms\":${(it - 1) * 5000}")
+            }
+            200 to """{"results":[$rows],"next_after_sequence":${if (last < 302) last.toString() else "null"}}"""
+        }
+        var after = 0
+        var count = 0
+        do {
+            val page = repo.receipts("owner", capture, after).getOrThrow()
+            count += page.results.size
+            after = page.nextAfterSequence ?: break
+        } while (true)
+        assertEquals(302, count)
+        assertEquals(listOf("0", "100", "200", "300"), requests.map { it.url.queryParameter("after_sequence") })
+    }
+
     @Test fun invalidInputFailsBeforeSendingAudioOrCreatingCapture() = runBlocking {
         val repo = repository { error("No request allowed") }
         assertTrue(repo.create("owner", key, create.copy(retentionMode = "unknown")).isFailure)
