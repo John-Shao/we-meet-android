@@ -19,6 +19,8 @@ import com.we.meet.R
 import com.we.meet.data.capture.AndroidCapturePlaybackOutput
 import com.we.meet.data.capture.CapturePlaybackEngine
 import com.we.meet.data.capture.CapturePlaybackRegistry
+import com.we.meet.data.capture.playbackFailureReason
+import android.util.Log
 import com.we.meet.data.repository.CapturePlaybackRepository
 import com.we.meet.data.repository.CapturePlaylist
 import com.we.meet.service.CaptureForegroundService
@@ -72,11 +74,14 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
                 val result = load()
                 check(allowed() && result.recordId == recordId)
                 playlist = result
-                position = 0
+                position = position.coerceIn(0, result.endMs)
                 state = "ready"
                 awaitCancellation()
             } catch (canceled: CancellationException) { throw canceled }
-            catch (_: Exception) { state = "error"; consumeSeek() }
+            catch (error: Exception) {
+                Log.w("CapturePlayback", "Playlist unavailable: reason=${playbackFailureReason(error)}")
+                state = "error"; consumeSeek()
+            }
             finally {
                 stop()
                 if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
@@ -101,12 +106,17 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
         CapturePlaybackRegistry.activate(current)
         work = scope.launch {
             try {
-                val end = current.play(data, position, rate) {
+                val end = current.play(data, position, rate, onBuffering = {
+                    if (engine === current && allowed()) state = "buffering"
+                }) {
                     if (engine === current && allowed()) { position = it; state = "playing" }
                 }
                 if (engine === current && allowed()) { position = end.positionMs; state = if (end.gap) "gap" else "ready" }
             } catch (canceled: CancellationException) { throw canceled }
-            catch (_: Exception) { if (engine === current) { playlist = null; state = "error" } }
+            catch (error: Exception) {
+                Log.w("CapturePlayback", "Playback stopped: reason=${playbackFailureReason(error)}")
+                if (engine === current) { playlist = null; state = "error" }
+            }
             finally {
                 current.close()
                 CapturePlaybackRegistry.release(current)

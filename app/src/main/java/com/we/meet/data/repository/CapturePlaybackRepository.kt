@@ -10,6 +10,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 
 data class CapturePlaylist(
     val recordId: String,
@@ -24,7 +26,7 @@ data class CapturePlaylist(
     override fun toString() = "CapturePlaylist(<private>)"
 }
 
-/** Owner-only sealed audio. No files, URL cache, large-body buffering or automatic retry. */
+/** Owner-only sealed audio. No files, URL cache or large-body buffering; the engine bounds read retries. */
 class CapturePlaybackRepository(
     private val captures: CaptureRepository,
     private val records: MeetingRecordRepository,
@@ -67,12 +69,17 @@ class CapturePlaybackRepository(
     }
     suspend fun checkAccess(viewer: String, playlist: CapturePlaylist): Result<Unit> = scoped(viewer) { verifyAccess(viewer, playlist) }
 
-    private suspend fun verifyAccess(viewer: String, playlist: CapturePlaylist) {
-        val record = records.record(viewer, playlist.recordId).getOrThrow()
+    private suspend fun verifyAccess(viewer: String, playlist: CapturePlaylist) = coroutineScope {
+        // All three endpoints independently authorize the viewer. Read concurrently so
+        // mobile round trips do not accumulate inside the player's short access lease.
+        val recordRead = async { records.record(viewer, playlist.recordId).getOrThrow() }
+        val captureRead = async { captures.read(viewer, playlist.captureId).getOrThrow() }
+        val manifestRead = async { captures.receipts(viewer, playlist.captureId, CaptureWave.MAX_CHUNKS).getOrThrow() }
+        val record = recordRead.await()
         require(record.capabilities.readTranscript && record.sourceType == "audio_recording" && record.retentionMode == "media" && record.captureId == playlist.captureId)
-        val capture = captures.read(viewer, playlist.captureId).getOrThrow()
+        val capture = captureRead.await()
         require(capture.recordId == record.id && capture.status == "stopped" && capture.revision == playlist.captureRevision)
-        val access = captures.receipts(viewer, capture.id, CaptureWave.MAX_CHUNKS).getOrThrow()
+        val access = manifestRead.await()
         require(access.results.isEmpty() && access.nextAfterSequence == null && access.manifest == playlist.manifest)
     }
     suspend fun audio(viewer: String, playlist: CapturePlaylist, index: Int): Result<ByteArray> = scoped(viewer) {

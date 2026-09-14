@@ -40,18 +40,18 @@ class CapturePlaybackEngine(
         check(!stopped.get() && authorized()) { "Playback no longer authorized" }
         check(clockMs() - checkedAt in 0..5000) { "Playback access expired" }
     }
-    suspend fun play(playlist: CapturePlaylist, startMs: Long, rate: Float = 1f, onPosition: (Long) -> Unit): CapturePlaybackEnd = coroutineScope {
+    suspend fun play(playlist: CapturePlaylist, startMs: Long, rate: Float = 1f, onBuffering: () -> Unit = {}, onPosition: (Long) -> Unit): CapturePlaybackEnd = coroutineScope {
         check(consumed.compareAndSet(false, true))
         require(rate in setOf(0.75f, 1f, 1.25f, 1.5f, 2f) && startMs >= 0)
         var index = playlist.locate(startMs) ?: return@coroutineScope CapturePlaybackEnd(startMs, true)
         check(!stopped.get() && authorized())
-        checkAccess(playlist)
+        retryPlaybackRead({ check(!stopped.get() && authorized()) }) { checkAccess(playlist) }
         checkedAt = clockMs()
         val heartbeat = launch {
             while (true) {
-                delay(2000)
-                withTimeout(2500) { checkAccess(playlist) }
-                check(!stopped.get() && authorized())
+                delay(1000)
+                retryPlaybackRead(::guard) { withTimeout(2500) { checkAccess(playlist) } }
+                guard()
                 checkedAt = clockMs()
             }
         }
@@ -60,7 +60,8 @@ class CapturePlaybackEngine(
         try {
             while (true) {
                 currentCoroutineContext().ensureActive()
-                val bytes = next?.await() ?: download(playlist, index)
+                if (next?.isCompleted != true) onBuffering()
+                val bytes = next?.await() ?: retryPlaybackRead(::guard) { download(playlist, index) }
                 synchronized(resources) { if (buffered === bytes) buffered = null }
                 try {
                     guard()
@@ -74,7 +75,7 @@ class CapturePlaybackEngine(
                     next = if (contiguous) {
                         val followingIndex = index + 1
                         async {
-                            val value = download(playlist, followingIndex)
+                            val value = retryPlaybackRead(::guard) { download(playlist, followingIndex) }
                             synchronized(resources) {
                                 if (stopped.get()) { value.fill(0); error("Playback stopped") }
                                 check(buffered == null)

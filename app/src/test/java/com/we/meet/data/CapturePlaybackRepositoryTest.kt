@@ -8,6 +8,8 @@ import com.we.meet.data.capture.CaptureWave
 import com.we.meet.data.repository.*
 import java.util.UUID
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import java.util.concurrent.CopyOnWriteArrayList
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -37,7 +39,8 @@ class CapturePlaybackRepositoryTest {
         var otherViewerAfterDownload = false
         var stored = true
         var binaryReads = 0
-        val requests = mutableListOf<Request>()
+        val requests = CopyOnWriteArrayList<Request>()
+        @Volatile var metadataDelayMs = 0L
         val audio = CaptureWave.encode(ShortArray(16000) { (it % 40).toShort() })
         val checksum = CaptureWave.inspect(audio).checksum
         val ids = (1..205).map { UUID.randomUUID().toString() }
@@ -48,6 +51,7 @@ class CapturePlaybackRepositoryTest {
             1000, if (badHash) "0".repeat(64) else checksum, audio.size, stored)
         private fun response(request: Request): ResponseBody {
             val path = request.url.encodedPath
+            if (!ids.any { path.endsWith("/$it/") }) Thread.sleep(metadataDelayMs)
             if (path == "/api/v1.0/meeting-records/$record/") return json(RecordDto(record, "audio_recording", "Fixture audio", "2026-09-13T00:00:00Z", 3,
                 RecordCapabilitiesDto(true, permission), captureId = capture, retentionMode = retention))
             if (path == "/api/v1.0/capture-sessions/$capture/") return json(CaptureDto(capture, record, "device", status, revision, "2026-09-13T00:00:00Z", mediaStatus = "saved", lastAckedSequence = count))
@@ -99,6 +103,15 @@ class CapturePlaybackRepositoryTest {
         assertArrayEquals(fixture.audio, bytes)
         assertEquals(1, fixture.binaryReads)
         assertTrue(fixture.requests.any { it.url.queryParameter("after_sequence") == "4320" })
+    }
+
+    @Test fun accessReadsOverlapRatherThanAccumulatingThreeMobileRoundTrips() = runBlocking {
+        val fixture = Fixture()
+        val playlist = fixture.repo.playlist("owner", fixture.record).getOrThrow()
+        fixture.metadataDelayMs = 1100
+        withTimeout(2500) { fixture.repo.checkAccess("owner", playlist).getOrThrow() }
+        fixture.permission = false
+        assertTrue(withTimeout(2500) { fixture.repo.checkAccess("owner", playlist) }.isFailure)
     }
     @Test fun gapsRemainExplicitAndUnstoredRowsAreNeverPlayable() = runBlocking {
         val fixture = Fixture().apply { gap = true }

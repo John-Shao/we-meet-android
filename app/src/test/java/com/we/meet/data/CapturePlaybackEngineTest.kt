@@ -6,6 +6,7 @@ import com.we.meet.data.api.dto.CaptureManifestDto
 import com.we.meet.data.capture.*
 import com.we.meet.data.repository.CapturePlaylist
 import java.util.UUID
+import java.io.IOException
 import kotlinx.coroutines.*
 import org.junit.Assert.*
 import org.junit.Test
@@ -114,5 +115,47 @@ class CapturePlaybackEngineTest {
         assertTrue(sink.closed)
         val invalid = CapturePlaybackEngine({ _, _ -> error("Invalid request") }, {}, { error("Invalid request") }, { true })
         assertTrue(runCatching { invalid.play(playlist(), 0, 8f) {} }.isFailure)
+    }
+
+    @Test fun transientPrefetchFailureRetriesSameChunkWithoutInterruptingCurrentOutput() = runBlocking {
+        val sink = Sink().apply { step = 50 }
+        val downloads = mutableListOf<Int>()
+        val bytes = mutableListOf<ByteArray>()
+        var failed = false
+        val engine = CapturePlaybackEngine({ _, index ->
+            downloads += index
+            if (index == 1 && !failed) { failed = true; throw IOException("fixture") }
+            wave.copyOf().also { bytes += it }
+        }, {}, { sink }, { true })
+        val end = withTimeout(4000) { engine.play(playlist(), 0) {} }
+        assertEquals(CapturePlaybackEnd(2000, false), end)
+        assertEquals(listOf(0, 1, 1), downloads)
+        assertEquals(2, sink.starts.size)
+        assertTrue(bytes.all { it.all { value -> value == 0.toByte() } })
+    }
+
+    @Test fun timedOutHeartbeatCanRecoverWithinExistingAccessLease() = runBlocking {
+        val sink = Sink().apply { step = 50 }
+        var checks = 0
+        val engine = CapturePlaybackEngine({ _, _ -> wave.copyOf() }, {
+            checks++
+            if (checks == 2) delay(2800)
+        }, { sink }, { true })
+        val end = withTimeout(8000) { engine.play(playlist(count = 1, duration = 6000), 0) {} }
+        assertEquals(CapturePlaybackEnd(6000, false), end)
+        assertTrue(checks >= 3)
+        assertEquals(1, sink.starts.size)
+        assertTrue(sink.closed)
+    }
+
+    @Test fun persistentNetworkFailureNeverExtendsAccessLease() = runBlocking {
+        val sink = Sink().apply { step = 50 }
+        var checks = 0
+        val engine = CapturePlaybackEngine({ _, _ -> wave.copyOf() }, {
+            if (++checks > 1) throw IOException("offline")
+        }, { sink }, { true })
+        assertTrue(runCatching { withTimeout(6000) { engine.play(playlist(count = 1, duration = 10000), 0) {} } }.isFailure)
+        assertEquals(4, checks)
+        assertTrue(sink.closed)
     }
 }
