@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ViewList
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -113,7 +114,7 @@ fun RecordLibraryScreen(
                         Icon(Icons.Outlined.ExpandMore, null)
                     }
                     IconButton(onClick = { grid = !grid }) {
-                        Icon(if (grid) Icons.Outlined.ViewList else Icons.Outlined.GridView,
+                        Icon(if (grid) Icons.AutoMirrored.Outlined.ViewList else Icons.Outlined.GridView,
                             stringResource(if (grid) R.string.records_list_view else R.string.records_grid_view))
                     }
                 }
@@ -128,7 +129,7 @@ fun RecordLibraryScreen(
                     }
                 }
                 IconButton(onClick = { grid = !grid }) {
-                    Icon(if (grid) Icons.Outlined.ViewList else Icons.Outlined.GridView,
+                    Icon(if (grid) Icons.AutoMirrored.Outlined.ViewList else Icons.Outlined.GridView,
                         stringResource(if (grid) R.string.records_list_view else R.string.records_grid_view))
                 }
             }
