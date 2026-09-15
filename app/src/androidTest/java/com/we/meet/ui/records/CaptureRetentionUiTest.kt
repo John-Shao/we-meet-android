@@ -40,7 +40,7 @@ class CaptureRetentionUiTest {
         var textTitle: String? = null
         compose.setContent { WeMeetTheme { CaptureContent(CaptureServiceState("viewer", ready = true), false,
             {}, { mediaStarts++ }, {}, {}, {}, null, onStartText = { textTitle = it }) } }
-        compose.onNodeWithText(label(R.string.capture_audio_settings)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.capture_audio_settings)).performClick()
         compose.onNode(hasText(label(R.string.capture_text_only)) and isSelectable()).performClick().assertIsSelected()
         compose.onAllNodesWithText(label(R.string.capture_text_consent)).onLast().assertExists()
         screenshot("consent-light")
@@ -56,12 +56,12 @@ class CaptureRetentionUiTest {
         var mediaStarts = 0
         compose.setContent { WeMeetTheme { CaptureContent(CaptureServiceState("viewer", ready = true), false,
             {}, { mediaStarts++ }, {}, {}, {}, null, onStartText = if (available.value) ({ textStarts++ }) else null) } }
-        compose.onNodeWithText(label(R.string.capture_audio_settings)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.capture_audio_settings)).performClick()
         compose.onNode(hasText(label(R.string.capture_text_only)) and isSelectable()).performClick()
         compose.onNodeWithText(label(R.string.capture_settings_done)).performScrollTo().performClick()
         compose.runOnIdle { available.value = false }
         compose.onNodeWithText(label(R.string.capture_start)).assertIsNotEnabled()
-        compose.onNodeWithText(label(R.string.capture_audio_settings)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.capture_audio_settings)).performClick()
         compose.onNode(hasText(label(R.string.capture_keep_audio)) and isSelectable()).performClick()
         compose.onNodeWithText(label(R.string.capture_settings_done)).performScrollTo().performClick()
         compose.onNodeWithText(label(R.string.capture_start)).performClick()

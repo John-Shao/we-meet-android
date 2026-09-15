@@ -23,21 +23,22 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
 import com.we.meet.service.CaptureServiceState
 import java.util.Locale
 
-/** Labeled, minimum 48dp targets keep the toolbar discoverable without guessing icons. */
+/**
+ * 顶栏工具按钮：形态与「会议实录」等页面的顶栏 actions 一致 —— 纯图标 [IconButton]，
+ * 不再在图标下占一行可见文字。文字只作为 TalkBack 名称保留（[IconButton] 默认
+ * 48dp 热区，见设计规范 §5.2）。
+ * 开启态改用 `primary` 着色表达，与会议实录的筛选按钮同一套写法。
+ */
 @Composable
 internal fun CaptureTool(icon: ImageVector, label: String, onClick: () -> Unit, active: Boolean = false) {
-    TextButton(onClick, contentPadding = PaddingValues(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs)) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(icon, contentDescription = null, Modifier.size(Dimens.IconMedium))
-            Text(label, style = MaterialTheme.typography.labelSmall,
-                fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
-        }
+    IconButton(onClick) {
+        Icon(icon, contentDescription = label,
+            tint = if (active) MaterialTheme.colorScheme.primary else LocalContentColor.current)
     }
 }
 

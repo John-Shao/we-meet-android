@@ -34,9 +34,10 @@ class CaptureTranslationPanelTest {
         }
     } } }
     private fun button(id: Int) = compose.onNode(hasText(label(id)) and hasClickAction())
+    private fun tool(id: Int) = compose.onNodeWithContentDescription(label(id))
     @Test fun toolbarSettingsRequireExplicitStartAndDismissDoesNotStopTranslation() {
         show(compact = true)
-        button(R.string.capture_tool_interpret).performClick()
+        tool(R.string.capture_tool_interpret).performClick()
         assertTrue(choice.audio)
         assertTrue(actions.isEmpty())
         button(R.string.capture_translation_start).performScrollTo().performClick()
@@ -44,7 +45,7 @@ class CaptureTranslationPanelTest {
         compose.runOnIdle { state = state.copy(live = CaptureTranslationLiveState("ready")) }
         compose.onNodeWithContentDescription(label(R.string.records_close)).performClick()
         assertEquals(listOf("start"), actions)
-        button(R.string.capture_tool_translate).performClick()
+        tool(R.string.capture_tool_translate).performClick()
         assertTrue(choice.audio) // A live session cannot be reconfigured by opening another sheet.
         button(R.string.capture_translation_stop).performScrollTo().performClick()
         assertEquals(listOf("start", "stop"), actions)
