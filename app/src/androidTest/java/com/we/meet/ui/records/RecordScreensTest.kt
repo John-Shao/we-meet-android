@@ -62,6 +62,7 @@ class RecordScreensTest {
         val queries = mutableListOf<Pair<String, String?>>()
         var searchQuery: String? = null
         var sourceFilter: String? = null
+        val summaryFilters = mutableListOf<Boolean?>()
         private fun checkAccess() { check(!revoked) { "Fixture access revoked" } }
         override suspend fun rename(recordId: String, body: RecordTitleRequestDto): RecordDto {
             checkAccess()
@@ -81,6 +82,7 @@ class RecordScreensTest {
             queries += scope to cursor
             searchQuery = query
             sourceFilter = source
+            summaryFilters += hasSummary
             return if (cursor == null) RecordPageDto(listOf(record(recordId)), "next-page") else RecordPageDto(emptyList())
         }
         override suspend fun summaries(recordId: String, cursor: String?, versionId: String?): RecordPageDto<RecordSummaryVersionDto> {
@@ -198,6 +200,40 @@ class RecordScreensTest {
         compose.waitUntil(5_000) { fixture.sourceFilter == null }
         compose.onNodeWithText(label(R.string.records_start_recording)).performClick()
         assertTrue(started)
+    }
+
+    @Test fun minutesLibraryUsesOwnershipTabsAndOpensSummaryReader() {
+        val fixture = Fixture()
+        var opened: String? = null
+        compose.setContent { WeMeetTheme(darkTheme = false) {
+            RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", true,
+                onRecord = { error("Minutes must open the summary reader") }, onBack = {}, onSummaryRecord = { opened = it })
+        } }
+        awaitText("Private planning meeting")
+        assertEquals("owned" to null, fixture.queries.last())
+        compose.onNodeWithText(label(R.string.minutes_participated)).performClick()
+        compose.waitUntil(5_000) { fixture.queries.lastOrNull() == ("participated" to null) }
+        compose.onNodeWithText(label(R.string.minutes_shared)).performClick()
+        compose.waitUntil(5_000) { fixture.queries.lastOrNull() == ("shared" to null) }
+        assertTrue(fixture.summaryFilters.all { it == true })
+        screenshot("minutes-library-light")
+        compose.onNodeWithText("Private planning meeting").performClick()
+        assertEquals(recordId, opened)
+    }
+
+    @Test fun summaryEntryShowsOverviewAndCollapsibleDecisionsWithoutTranscriptReads() {
+        val fixture = Fixture().apply { stage = "final"; asr = "finished" }
+        compose.setContent { WeMeetTheme(darkTheme = false) {
+            RecordDetailScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", recordId, {}, initialSummary = true)
+        } }
+        awaitText("Confirm release scope")
+        assertTrue(fixture.originalQueries.isEmpty())
+        assertTrue(fixture.summarySelectors.all { it == null })
+        compose.onNodeWithText("${label(R.string.records_decisions)} · 1").performScrollTo().performClick()
+        compose.onNodeWithText("Review capture recovery").assertDoesNotExist()
+        compose.onNodeWithText("${label(R.string.records_decisions)} · 1").performClick()
+        compose.onNodeWithText("Review capture recovery").assertIsDisplayed()
+        screenshot("minutes-reader-light")
     }
 
     @Test fun backgroundClearsPrivateBodyAndRevocationFailsClosedOnReturn() {

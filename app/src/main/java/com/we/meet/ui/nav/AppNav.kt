@@ -110,10 +110,15 @@ object Routes {
     const val HOME = "home"
     const val RECORD_LIBRARY = "meeting_records?summaries={summaries}"
     const val CAPTURE = "meeting_capture"
-    const val RECORD_DETAIL = "meeting_record/{recordId}?summary={summary}"
-    fun recordDetail(recordId: String, summaryId: String? = null): String =
-        "meeting_record/${URLEncoder.encode(recordId, StandardCharsets.UTF_8.name())}" +
-            (summaryId?.let { "?summary=${URLEncoder.encode(it, StandardCharsets.UTF_8.name())}" } ?: "")
+    const val RECORD_DETAIL = "meeting_record/{recordId}?summary={summary}&tab={tab}"
+    fun recordDetail(recordId: String, summaryId: String? = null, summaryView: Boolean = false): String {
+        val query = listOfNotNull(
+            summaryId?.let { "summary=${URLEncoder.encode(it, StandardCharsets.UTF_8.name())}" },
+            if (summaryView) "tab=summary" else null,
+        ).joinToString("&")
+        return "meeting_record/${URLEncoder.encode(recordId, StandardCharsets.UTF_8.name())}" +
+            if (query.isEmpty()) "" else "?$query"
+    }
     const val SETTINGS = "settings"
     const val ACCOUNT_SECURITY = "account_security"
     const val MEETING_SETTINGS = "meeting_settings"
@@ -645,6 +650,7 @@ fun AppNav() {
         composable(Routes.HOME) {
             MainTabScreen(
                 onOpenRecord = { recordId -> navController.navigate(Routes.recordDetail(recordId)) },
+                onOpenSummaryRecord = { recordId -> navController.navigate(Routes.recordDetail(recordId, summaryView = true)) },
                 onCreateMeeting = { navController.navigate(Routes.createPreview()) },
                 onJoinMeeting = { navController.navigate(Routes.joinPreview()) },
                 onScanQrCode = { navController.navigate(Routes.QR_SCAN) },
@@ -1561,15 +1567,17 @@ fun AppNav() {
                 summariesOnly = entry.arguments?.getBoolean("summaries") == true,
                 onStartRecording = if (com.we.meet.BuildConfig.WE_MEET_CAPTURE_NATIVE) ({ navController.navigate(Routes.CAPTURE) }) else null,
                 uploadRepository = app.recordingUploadRepository,
+                onSummaryRecord = { id -> navController.navigate(Routes.recordDetail(id, summaryView = true)) },
                 onRecord = { id -> navController.navigate(Routes.recordDetail(id)) }, onBack = rememberOnceOnly(safePop))
         }
         composable(Routes.RECORD_DETAIL, arguments = listOf(
             navArgument("recordId") { type = NavType.StringType },
             navArgument("summary") { type = NavType.StringType; nullable = true; defaultValue = null },
+            navArgument("tab") { type = NavType.StringType; nullable = true; defaultValue = null },
         )) { entry ->
             RecordDetailScreen(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(),
                 entry.arguments?.getString("recordId").orEmpty(), onBack = rememberOnceOnly(safePop),
-                summaryVersionId = entry.arguments?.getString("summary"), onTask = { navController.navigate(Routes.taskDetail(it)) },
+                summaryVersionId = entry.arguments?.getString("summary"), initialSummary = entry.arguments?.getString("tab") == "summary", onTask = { navController.navigate(Routes.taskDetail(it)) },
                 onDocument = { navController.navigate(Routes.docsDetail(it)) })
         }
         composable(Routes.MEETING_SETTINGS) {

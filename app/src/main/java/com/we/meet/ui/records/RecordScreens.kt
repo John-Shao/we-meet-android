@@ -12,7 +12,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -86,14 +92,16 @@ internal fun <T> visibleRead(vararg keys: Any?, intervalMs: Long = 15_000, stopW
 }
 
 @Composable
-fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String, onBack: () -> Unit, summaryVersionId: String? = null, onTask: ((String) -> Unit)? = null, onDocument: ((String) -> Unit)? = null) {
+fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String, onBack: () -> Unit, summaryVersionId: String? = null, onTask: ((String) -> Unit)? = null, onDocument: ((String) -> Unit)? = null, initialSummary: Boolean = false) {
     val app = LocalContext.current.applicationContext as? WeMeetApp
     var audioSeek by remember(viewer, recordId) { mutableStateOf<CaptureAudioSeek?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
     var selectedVersion by remember(viewer, recordId, summaryVersionId) { mutableStateOf(summaryVersionId) }
     var cursors by remember(viewer, recordId, selectedVersion) { mutableStateOf(listOf<String?>(null)) }
     var citation by remember(viewer, recordId, summaryVersionId) { mutableStateOf<Pair<String, RecordReferenceDto>?>(null) }
-    var detailTab by remember(viewer, recordId, summaryVersionId) { mutableStateOf(if (summaryVersionId != null) "summary" else "text") }
+    var tool by remember(viewer, recordId, summaryVersionId) { mutableStateOf<String?>(null) }
+    var history by remember(viewer, recordId, summaryVersionId) { mutableStateOf(false) }
+    var detailTab by remember(viewer, recordId, summaryVersionId, initialSummary) { mutableStateOf(if (summaryVersionId != null || initialSummary) "summary" else "text") }
     val detail = visibleRead(viewer, recordId, refresh) { repository.record(viewer, recordId) }
     val record = detail?.getOrNull()
     val canPlay = app != null && record?.sourceType == "audio_recording" && record.capabilities.readTranscript && record.retentionMode == "media" && !record.isOngoing
@@ -145,7 +153,6 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         val summaries = visibleRead(viewer, recordId, cursor, selectedVersion, refresh) {
                             repository.summaries(viewer, recordId, if (selectedVersion == null) cursor else null, selectedVersion)
                         }
-                        Text(recordTime(record.originAt), Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(Dimens.ScreenPadding), style = MaterialTheme.typography.bodySmall)
                         if (selectedVersion != null) {
                             Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = Dimens.ScreenPadding)) {
                                 Text(stringResource(R.string.records_linked_version), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
@@ -155,41 +162,67 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         when {
                             summaries == null -> WeMeetInlineLoading()
                             summaries.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
-                            else -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-                                if (selectedVersion == null) item {
-                                    if (app != null) Column(Modifier.padding(horizontal = Dimens.ScreenPadding)) {
-                                        RecordSummaryControls(viewer, record, app.meetingSummaryRepository) { app.captureAccount }
-                                        RecordHumanSummary(viewer, record, summaries.getOrThrow().results.firstOrNull(), app.meetingReviewRepository,
-                                            { app.captureAccount }, onTask) { snapshot, reference -> citation = snapshot to reference }
-                                        RecordQuestions(viewer, record, summaries.getOrThrow().results, app.meetingQuestionRepository,
-                                            { app.captureAccount }) { snapshot, reference -> citation = snapshot to reference }
-                                        RecordNotifications(viewer, record, app.meetingDeliveryRepository, { app.captureAccount }) { selectedVersion = it }
-                                        RecordSharing(viewer, record, app.meetingSharingRepository) { app.captureAccount }
+                            else -> {
+                                val versions = summaries.getOrThrow().results
+                                val primary = versions.firstOrNull { it.isCurrent } ?: versions.firstOrNull()
+                                val older = versions.filter { it.id != primary?.id }
+                                LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                                    if (primary != null) item(key = primary.id) {
+                                        SummaryCard(primary, record.capabilities.readTranscript) { ref -> citation = primary.inputSnapshotId to ref }
+                                    }
+                                    if (versions.isEmpty()) item {
+                                        WeMeetEmptyState(
+                                            stringResource(if (selectedVersion == null) R.string.records_no_versions else R.string.records_linked_version_unavailable),
+                                            description = if (selectedVersion == null) stringResource(R.string.records_no_versions_hint) else null,
+                                            action = { TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) } },
+                                        )
+                                    }
+                                    if (older.isNotEmpty() || summaries.getOrThrow().nextCursor != null || cursors.size > 1) item {
+                                        TextButton(onClick = { history = !history }, modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding)) {
+                                            Text(stringResource(R.string.minutes_history), Modifier.weight(1f))
+                                            Icon(if (history) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null)
+                                        }
+                                    }
+                                    if (history) {
+                                        items(older, key = { it.id }) { version ->
+                                            SummaryCard(version, record.capabilities.readTranscript) { ref -> citation = version.inputSnapshotId to ref }
+                                        }
+                                        item {
+                                            Row(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
+                                                if (selectedVersion == null) summaries.getOrThrow().nextCursor?.let { next -> TextButton(onClick = { cursors = cursors + next }) { Text(stringResource(R.string.records_next)) } }
+                                            }
+                                        }
                                     }
                                 }
-                                if (summaries.getOrThrow().results.isEmpty()) item {
-                                    WeMeetEmptyState(
-                                        stringResource(if (selectedVersion == null) R.string.records_no_versions else R.string.records_linked_version_unavailable),
-                                        description = if (selectedVersion == null) stringResource(R.string.records_no_versions_hint) else null,
-                                        action = { TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) } },
-                                    )
+                                if (app != null) Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    if (record.capabilities.readTranscript) TextButton(onClick = { tool = "ask" }) { Text(stringResource(R.string.minutes_ask)) }
+                                    TextButton(onClick = { tool = "manage" }) { Text(stringResource(R.string.minutes_manage)) }
+                                    TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
                                 }
-                                if (app != null && onDocument != null) item {
-                                    RecordExports(viewer, record, summaries.getOrThrow().results, app.meetingDeliveryRepository,
-                                        app.meetingReviewRepository, { app.captureAccount }, onDocument)
-                                }
-                                items(summaries.getOrThrow().results, key = { it.id }) { version ->
-                                    SummaryCard(version, record.capabilities.readTranscript) { ref -> citation = version.inputSnapshotId to ref }
-                                }
-                                item {
-                                    Row(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
-                                        if (selectedVersion == null) summaries.getOrThrow().nextCursor?.let { next -> TextButton(onClick = { cursors = cursors + next }) { Text(stringResource(R.string.records_next)) } }
+                                if (app != null && tool != null) ModalBottomSheet(onDismissRequest = { tool = null }) {
+                                    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                                        Text(stringResource(if (tool == "ask") R.string.minutes_ask else R.string.minutes_manage), style = MaterialTheme.typography.titleLarge)
+                                        if (tool == "ask" && record.capabilities.readTranscript) {
+                                            RecordQuestions(viewer, record, versions, app.meetingQuestionRepository,
+                                                { app.captureAccount }) { snapshot, reference -> citation = snapshot to reference }
+                                        } else {
+                                            if (selectedVersion == null) {
+                                                RecordSummaryControls(viewer, record, app.meetingSummaryRepository) { app.captureAccount }
+                                                RecordHumanSummary(viewer, record, primary, app.meetingReviewRepository,
+                                                    { app.captureAccount }, onTask) { snapshot, reference -> citation = snapshot to reference }
+                                            }
+                                            RecordNotifications(viewer, record, app.meetingDeliveryRepository, { app.captureAccount }) { selectedVersion = it; tool = null }
+                                            RecordSharing(viewer, record, app.meetingSharingRepository) { app.captureAccount }
+                                            if (onDocument != null) RecordExports(viewer, record, versions, app.meetingDeliveryRepository,
+                                                app.meetingReviewRepository, { app.captureAccount }, onDocument)
+                                        }
+                                        TextButton(onClick = { tool = null }) { Text(stringResource(R.string.minutes_close_tools)) }
                                     }
                                 }
                             }
                         }
-                        TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
+                        if (app == null || summaries?.isSuccess != true) TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
                     }
                 }
             }
@@ -215,37 +248,59 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
 
 @Composable
 internal fun SummaryCard(version: RecordSummaryVersionDto, originals: Boolean, onSource: (RecordReferenceDto) -> Unit) {
-    Card(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Column(Modifier.padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+    var sourceInfo by remember(version.id) { mutableStateOf(false) }
+    Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)) {
+        Text(stringResource(R.string.minutes_generated_at, recordTime(version.createdAt)),
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (!version.isCurrent) Text(stringResource(R.string.records_historical), style = MaterialTheme.typography.labelMedium)
+        if (version.stage != "final") Text(stringResource(R.string.records_provisional), style = MaterialTheme.typography.bodySmall)
+        if (version.asrStatus == "incomplete") Text(stringResource(R.string.records_incomplete), style = MaterialTheme.typography.bodySmall)
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = MaterialTheme.shapes.large) {
+            Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                Text(stringResource(R.string.minutes_overview), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(version.content.overview, style = MaterialTheme.typography.bodyLarge)
+            }
+        }
+        listOf(R.string.records_decisions to version.content.decisions, R.string.records_actions to version.content.actionItems,
+            R.string.records_chapters to version.content.chapters, R.string.records_questions to version.content.openQuestions).forEach { (label, points) ->
+            if (points.isNotEmpty()) {
+                var expanded by remember(version.id, label) { mutableStateOf(true) }
+                Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                    TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth()) {
+                        Text("${stringResource(label)} · ${points.size}", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null)
+                    }
+                    if (expanded) points.forEach { point ->
+                        Column(Modifier.padding(start = Dimens.SpaceM), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                            Text(point.text, style = MaterialTheme.typography.bodyLarge)
+                            listOfNotNull(point.ownerText, point.dueText).filter { it.isNotBlank() }.joinToString(" · ").takeIf { it.isNotBlank() }?.let {
+                                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            if (originals) point.sourceRefs.forEach { ref ->
+                                TextButton(onClick = { onSource(ref) }) { Text(stringResource(R.string.records_source_at, sourceTime(ref.startMs))) }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        TextButton(onClick = { sourceInfo = !sourceInfo }) {
+            Text(stringResource(R.string.minutes_source_info))
+            Icon(if (sourceInfo) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null)
+        }
+        if (sourceInfo) {
             Text(stringResource(when (version.stage) {
                 "realtime" -> R.string.records_live
                 "quick" -> R.string.records_quick
                 "final" -> R.string.records_final
                 else -> R.string.records_minutes
-            }), style = MaterialTheme.typography.titleMedium)
-            Text(recordTime(version.createdAt), style = MaterialTheme.typography.bodySmall)
-            if (!version.isCurrent) Text(stringResource(R.string.records_historical), style = MaterialTheme.typography.labelMedium)
-            if (version.stage != "final") Text(stringResource(R.string.records_provisional), style = MaterialTheme.typography.bodySmall)
+            }), style = MaterialTheme.typography.bodySmall)
             Text(stringResource(when (version.asrStatus) {
                 "in_progress" -> R.string.records_recognizing
                 "finished" -> R.string.records_finished
                 "incomplete" -> R.string.records_incomplete
                 else -> R.string.records_coverage_unknown
             }), style = MaterialTheme.typography.bodySmall)
-            Text(version.content.overview)
-            listOf(R.string.records_decisions to version.content.decisions, R.string.records_chapters to version.content.chapters,
-                R.string.records_actions to version.content.actionItems, R.string.records_questions to version.content.openQuestions).forEach { (label, points) ->
-                if (points.isNotEmpty()) {
-                    Text(stringResource(label), style = MaterialTheme.typography.titleSmall)
-                    points.forEach { point ->
-                        Text(point.text)
-                        listOfNotNull(point.ownerText, point.dueText).filter { it.isNotBlank() }.joinToString(" · ").takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-                        if (originals) point.sourceRefs.forEach { ref ->
-                            TextButton(onClick = { onSource(ref) }) { Text(stringResource(R.string.records_source_at, sourceTime(ref.startMs))) }
-                        }
-                    }
-                }
-            }
         }
     }
 }

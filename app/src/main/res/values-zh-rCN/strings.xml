@@ -1059,4 +1059,18 @@
     <string name="docs_chat_share_existing_access">仅发送文档卡片，接收者沿用已有访问权限。</string>
     <string name="docs_chat_share_send">发送</string>
     <string name="docs_chat_share_back">返回</string>
+    <string name="minutes_all">全部智能纪要</string>
+    <string name="minutes_owned">归我所有</string>
+    <string name="minutes_participated">我参与的</string>
+    <string name="minutes_shared">与我共享</string>
+    <string name="minutes_recorded_at">会议时间：%1$s</string>
+    <string name="minutes_generated_at">生成于 %1$s</string>
+    <string name="minutes_empty">暂无智能纪要</string>
+    <string name="minutes_empty_hint">试试其他分类或搜索词，也可以在会议实录中生成纪要。</string>
+    <string name="minutes_overview">总结</string>
+    <string name="minutes_ask">问问 AI</string>
+    <string name="minutes_manage">管理纪要</string>
+    <string name="minutes_history">历史版本</string>
+    <string name="minutes_source_info">生成信息</string>
+    <string name="minutes_close_tools">收起工具</string>
 </resources>

@@ -131,6 +131,7 @@ fun MainTabScreen(
     onSettingsClick: () -> Unit,
     onOpenMeetingSettings: () -> Unit,
     onOpenRecord: (recordId: String) -> Unit,
+    onOpenSummaryRecord: (String) -> Unit = onOpenRecord,
     onOpenAiHub: () -> Unit,
     onOpenApproval: () -> Unit,
     onOpenChat: (cid: String) -> Unit,
@@ -439,7 +440,7 @@ fun MainTabScreen(
                     MeetingSection.RECORDS, MeetingSection.MINUTES -> RecordLibraryScreen(
                         app.meetingRecordRepository, meetingViewer,
                         summariesOnly = meetingSection == MeetingSection.MINUTES,
-                        onRecord = onOpenRecord, onBack = {}, onOpenNavDrawer = openMeetingNavigation,
+                        onRecord = onOpenRecord, onSummaryRecord = onOpenSummaryRecord, onBack = {}, onOpenNavDrawer = openMeetingNavigation,
                         onStartRecording = if (BuildConfig.WE_MEET_CAPTURE_NATIVE) ({ meetingSectionName = MeetingSection.RECORDING.name }) else null,
                         uploadRepository = app.recordingUploadRepository,
                     )

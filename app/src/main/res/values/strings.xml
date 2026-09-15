@@ -1080,4 +1080,18 @@
     <string name="docs_chat_share_existing_access">Send the card only. Recipients keep their existing access permissions.</string>
     <string name="docs_chat_share_send">Send</string>
     <string name="docs_chat_share_back">Back</string>
+    <string name="minutes_all">All smart minutes</string>
+    <string name="minutes_owned">Owned by me</string>
+    <string name="minutes_participated">I participated</string>
+    <string name="minutes_shared">Shared with me</string>
+    <string name="minutes_recorded_at">Meeting time: %1$s</string>
+    <string name="minutes_generated_at">Generated: %1$s</string>
+    <string name="minutes_empty">No smart minutes yet</string>
+    <string name="minutes_empty_hint">Try another category or search, or generate minutes from a meeting record.</string>
+    <string name="minutes_overview">Overview</string>
+    <string name="minutes_ask">Ask AI</string>
+    <string name="minutes_manage">Manage minutes</string>
+    <string name="minutes_history">Version history</string>
+    <string name="minutes_source_info">Generation details</string>
+    <string name="minutes_close_tools">Close tools</string>
 </resources>

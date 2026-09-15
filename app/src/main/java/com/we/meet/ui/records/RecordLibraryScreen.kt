@@ -40,8 +40,9 @@ fun RecordLibraryScreen(
     onOpenNavDrawer: (() -> Unit)? = null,
     onStartRecording: (() -> Unit)? = null,
     uploadRepository: RecordingUploadRepository? = null,
+    onSummaryRecord: (String) -> Unit = onRecord,
 ) {
-    var scope by remember(viewer) { mutableStateOf(RecordScope.RECENT) }
+    var scope by remember(viewer, summariesOnly) { mutableStateOf(if (summariesOnly) RecordScope.OWNED else RecordScope.RECENT) }
     var source by remember(viewer) { mutableStateOf<RecordSource?>(null) }
     var input by remember(viewer) { mutableStateOf("") }
     var query by remember(viewer) { mutableStateOf("") }
@@ -90,9 +91,26 @@ fun RecordLibraryScreen(
                 }
             }
         },
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = if (summariesOnly) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
+            if (summariesOnly) {
+                val scopes = listOf(RecordScope.OWNED, RecordScope.PARTICIPATED, RecordScope.SHARED)
+                TabRow(selectedTabIndex = scopes.indexOf(scope).coerceAtLeast(0), containerColor = MaterialTheme.colorScheme.surface) {
+                    scopes.forEach { value -> Tab(selected = scope == value, onClick = { scope = value },
+                        text = { Text(stringResource(minutesScopeLabel(value))) }) }
+                }
+                Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { filtersVisible = true }, modifier = Modifier.weight(1f)) {
+                        Text(stringResource(source?.let { sourceLabel(it.wire) } ?: R.string.minutes_all), modifier = Modifier.weight(1f))
+                        Icon(Icons.Outlined.ExpandMore, null)
+                    }
+                    IconButton(onClick = { grid = !grid }) {
+                        Icon(if (grid) Icons.Outlined.ViewList else Icons.Outlined.GridView,
+                            stringResource(if (grid) R.string.records_list_view else R.string.records_grid_view))
+                    }
+                }
+            } else
             Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), verticalAlignment = Alignment.CenterVertically) {
                 Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                     listOf(RecordScope.RECENT, RecordScope.OWNED, RecordScope.SHARED).forEach { value ->
@@ -113,7 +131,7 @@ fun RecordLibraryScreen(
                 leadingIcon = { Icon(Icons.Outlined.Search, null) }, trailingIcon = {
                     TextButton(onClick = search) { Text(stringResource(R.string.records_search_action)) }
                 }, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), keyboardActions = KeyboardActions(onSearch = { search() }))
-            if (source != null || scope == RecordScope.PARTICIPATED) Row(Modifier.padding(horizontal = Dimens.ScreenPadding), verticalAlignment = Alignment.CenterVertically) {
+            if (!summariesOnly && (source != null || scope == RecordScope.PARTICIPATED)) Row(Modifier.padding(horizontal = Dimens.ScreenPadding), verticalAlignment = Alignment.CenterVertically) {
                 Text(listOfNotNull(source?.let { stringResource(sourceLabel(it.wire)) },
                     if (scope == RecordScope.PARTICIPATED) stringResource(R.string.records_participated) else null).joinToString(" · "),
                     modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
@@ -122,8 +140,8 @@ fun RecordLibraryScreen(
             when {
                 result == null -> WeMeetInlineLoading()
                 result.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
-                result.getOrThrow().results.isEmpty() -> WeMeetEmptyState(stringResource(R.string.records_empty),
-                    description = stringResource(R.string.records_empty_hint),
+                result.getOrThrow().results.isEmpty() -> WeMeetEmptyState(stringResource(if (summariesOnly) R.string.minutes_empty else R.string.records_empty),
+                    description = stringResource(if (summariesOnly) R.string.minutes_empty_hint else R.string.records_empty_hint),
                     action = { TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) } })
                 else -> {
                     val page = result.getOrThrow()
@@ -131,18 +149,18 @@ fun RecordLibraryScreen(
                         modifier = Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(Dimens.ScreenPadding),
                         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                         items(page.results, key = { it.id }) { record ->
-                            Card(onClick = { onRecord(record.id) }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge,
+                            Card(onClick = { if (summariesOnly) onSummaryRecord(record.id) else onRecord(record.id) }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge,
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                                 Row(Modifier.padding(Dimens.ScreenPadding), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                                     if (!grid) Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.primaryContainer) {
-                                        Icon(when (record.sourceType) { "meeting" -> Icons.Outlined.Videocam; "upload" -> Icons.Outlined.UploadFile; else -> Icons.Outlined.GraphicEq },
+                                        Icon(if (summariesOnly) Icons.Outlined.Description else when (record.sourceType) { "meeting" -> Icons.Outlined.Videocam; "upload" -> Icons.Outlined.UploadFile; else -> Icons.Outlined.GraphicEq },
                                             null, Modifier.padding(Dimens.SpaceM).size(Dimens.IconMedium), tint = MaterialTheme.colorScheme.primary)
                                     }
                                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                                         Text(record.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                        Text(recordTime(record.originAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text(stringResource(sourceLabel(record.sourceType)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        if (record.isOngoing || record.hasSummary) Text(stringResource(if (record.isOngoing) R.string.records_ongoing else R.string.records_minutes_ready),
+                                        Text(if (summariesOnly) "${stringResource(R.string.minutes_recorded_at, recordTime(record.originAt))} · ${stringResource(sourceLabel(record.sourceType))}" else recordTime(record.originAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        if (!summariesOnly) Text(stringResource(sourceLabel(record.sourceType)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        if (!summariesOnly && (record.isOngoing || record.hasSummary)) Text(stringResource(if (record.isOngoing) R.string.records_ongoing else R.string.records_minutes_ready),
                                             color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
                                     }
                                 }
@@ -164,7 +182,7 @@ fun RecordLibraryScreen(
         Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
             Text(stringResource(R.string.records_filters), style = MaterialTheme.typography.titleLarge)
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                RecordScope.entries.forEach { value -> FilterChip(scope == value, onClick = { scope = value }, label = { Text(stringResource(scopeLabel(value))) }) }
+                RecordScope.entries.filter { !summariesOnly || it != RecordScope.RECENT }.forEach { value -> FilterChip(scope == value, onClick = { scope = value }, label = { Text(stringResource(if (summariesOnly) minutesScopeLabel(value) else scopeLabel(value))) }) }
             }
             Text(stringResource(R.string.records_source_filter), style = MaterialTheme.typography.titleSmall)
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
@@ -173,4 +191,11 @@ fun RecordLibraryScreen(
             Button(onClick = { filtersVisible = false }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.records_filters_done)) }
         }
     }
+}
+
+private fun minutesScopeLabel(scope: RecordScope): Int = when (scope) {
+    RecordScope.OWNED -> R.string.minutes_owned
+    RecordScope.PARTICIPATED -> R.string.minutes_participated
+    RecordScope.SHARED -> R.string.minutes_shared
+    RecordScope.RECENT -> R.string.records_recent
 }
