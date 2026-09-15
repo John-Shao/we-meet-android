@@ -42,13 +42,14 @@ fun RecordLibraryScreen(
     uploadRepository: RecordingUploadRepository? = null,
     onSummaryRecord: (String) -> Unit = onRecord,
     onSearchMeetingAi: (() -> Unit)? = null,
+    initialSource: RecordSource? = null,
 ) {
     var scope by remember(viewer, summariesOnly) { mutableStateOf(if (summariesOnly) RecordScope.OWNED else RecordScope.RECENT) }
-    var source by remember(viewer) { mutableStateOf<RecordSource?>(null) }
+    var source by remember(viewer, initialSource) { mutableStateOf(initialSource) }
     var input by remember(viewer) { mutableStateOf("") }
     var query by remember(viewer) { mutableStateOf("") }
     var searchVisible by remember(viewer) { mutableStateOf(false) }
-    var filtersVisible by remember { mutableStateOf(false) }
+    var filtersVisible by remember(initialSource) { mutableStateOf(initialSource != null) }
     var grid by remember { mutableStateOf(false) }
     var cursors by remember(viewer, scope, source, query, summariesOnly) { mutableStateOf(listOf<String?>(null)) }
     var refresh by remember { mutableIntStateOf(0) }

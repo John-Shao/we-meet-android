@@ -1,0 +1,12 @@
+<resources>
+    <string name="video_history_empty">No past or ongoing video meetings</string>
+    <string name="video_active">In progress</string>
+    <string name="video_ended">Ended</string>
+    <string name="video_more">More</string>
+    <string name="video_material_loading">Loading meeting material…</string>
+    <string name="video_material_unavailable">No accessible material yet</string>
+    <string name="video_record_hint">Open this session’s recordings and transcript</string>
+    <string name="video_summary_pending">No generated minutes yet</string>
+    <string name="video_view_record">View record</string>
+    <string name="video_view_summary">View minutes</string>
+</resources>

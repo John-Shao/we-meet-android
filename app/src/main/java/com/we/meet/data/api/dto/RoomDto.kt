@@ -53,6 +53,10 @@ data class RoomDto(
      * participant list when transcripts are absent.
      */
     val accesses: List<RoomAccessDto>? = null,
+    val meeting_session_id: String? = null,
+    val started_at: String? = null,
+    val ended_at: String? = null,
+    val status: String? = null,
 )
 
 @JsonClass(generateAdapter = true)
@@ -61,3 +65,6 @@ data class LiveKitDto(
     val room: String,
     val token: String,
 )
+
+@JsonClass(generateAdapter = true)
+data class VideoMeetingsDto(val scheduled: List<RoomDto>, val recent: List<RoomDto>)

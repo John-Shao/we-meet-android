@@ -1,0 +1,12 @@
+<resources>
+    <string name="video_history_empty">暂无历史会议</string>
+    <string name="video_active">进行中</string>
+    <string name="video_ended">已结束</string>
+    <string name="video_more">更多</string>
+    <string name="video_material_loading">正在加载会议资料…</string>
+    <string name="video_material_unavailable">暂无可访问的资料</string>
+    <string name="video_record_hint">查看本场会议的录音、录像和文字记录</string>
+    <string name="video_summary_pending">暂无已生成的纪要</string>
+    <string name="video_view_record">查看实录</string>
+    <string name="video_view_summary">查看纪要</string>
+</resources>

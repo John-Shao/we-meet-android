@@ -15,10 +15,8 @@ import java.util.Locale
 import java.util.TimeZone
 
 /**
- * "预约会议" list — surfaces rooms with a future `scheduled_at` that the
- * user hasn't joined from this device yet. Sits above the standard
- * history list on Home; renders nothing when there's no upcoming meeting
- * so it doesn't push the rest of the page down on cold-start home.
+ * Pending video meetings from the server overview. The section stays visible
+ * even when empty; delayed appointments are retained until they actually start.
  *
  * P8(对标飞书):点行经 [onEntryClick] 打开预约会议详情页,进入会议 /
  * 复制 / 删除等操作全部收进详情(ScheduledDetailScreen);长按删除已移除。
@@ -29,7 +27,6 @@ fun ScheduledMeetingsList(
     onEntryClick: (room: RoomDto) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (rooms.isEmpty()) return
     Column(modifier = modifier.fillMaxWidth()) {
         MeetingListSectionTitle(stringResource(R.string.scheduled_section_title))
         rooms.forEach { room ->

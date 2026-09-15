@@ -123,7 +123,7 @@ fun MainTabScreen(
     onCreateMeeting: () -> Unit,
     onJoinMeeting: () -> Unit,
     onScanQrCode: () -> Unit,
-    onHistoryClick: (roomId: String) -> Unit,
+    onHistoryClick: (roomId: String, sessionId: String?) -> Unit,
     /** P8:预约会议行 → 预约详情页。 */
     onScheduledClick: (slug: String, name: String, scheduledAtIso: String) -> Unit,
     /** 预约会议关联了日程 → 走统一的日程详情(一场会一个详情页)。 */
@@ -321,6 +321,7 @@ fun MainTabScreen(
     var meetingSectionName by rememberSaveable(meetingViewer) {
         mutableStateOf(meetingPreferences.getString("section:$meetingViewer", MeetingSection.VIDEO.name))
     }
+    var videoRecordsOnly by rememberSaveable(meetingViewer) { mutableStateOf(false) }
     val meetingSections = MeetingSection.available(BuildConfig.WE_MEET_CAPTURE_NATIVE, BuildConfig.WE_MEET_RECORDS_NATIVE)
     val meetingSection = MeetingSection.restore(meetingSectionName, BuildConfig.WE_MEET_CAPTURE_NATIVE, BuildConfig.WE_MEET_RECORDS_NATIVE)
     val openMeetingNavigation: () -> Unit = { scope.launch { meetingNavDrawerState.open() } }
@@ -429,8 +430,8 @@ fun MainTabScreen(
                     MeetingSection.VIDEO -> HomeScreen(
                         onCreateMeeting = onCreateMeeting,
                         onJoinMeeting = onJoinMeeting,
-                        onOpenRecords = if (BuildConfig.WE_MEET_RECORDS_NATIVE) ({ meetingSectionName = MeetingSection.RECORDS.name }) else null,
-                        onOpenMinutes = if (BuildConfig.WE_MEET_RECORDS_NATIVE) ({ meetingSectionName = MeetingSection.MINUTES.name }) else null,
+                        onOpenRecords = if (BuildConfig.WE_MEET_RECORDS_NATIVE) ({ videoRecordsOnly = true; meetingSectionName = MeetingSection.RECORDS.name }) else null,
+                        onHistoryClick = onHistoryClick,
                         onScheduledClick = onScheduledClick,
                         onScheduledEventClick = onScheduledEventClick,
                         onScheduleMeeting = { onCreateEvent(java.time.LocalDate.now().toEpochDay()) },
@@ -442,6 +443,7 @@ fun MainTabScreen(
                     MeetingSection.RECORDS, MeetingSection.MINUTES -> RecordLibraryScreen(
                         app.meetingRecordRepository, meetingViewer,
                         summariesOnly = meetingSection == MeetingSection.MINUTES,
+                        initialSource = if (videoRecordsOnly && meetingSection == MeetingSection.RECORDS) com.we.meet.data.repository.RecordSource.MEETING else null,
                         onRecord = onOpenRecord, onSummaryRecord = onOpenSummaryRecord, onBack = {}, onOpenNavDrawer = openMeetingNavigation,
                         onStartRecording = if (BuildConfig.WE_MEET_CAPTURE_NATIVE) ({ meetingSectionName = MeetingSection.RECORDING.name }) else null,
                         uploadRepository = app.recordingUploadRepository,
@@ -639,6 +641,7 @@ fun MainTabScreen(
                                 onSelect = { section ->
                                     scope.launch {
                                         meetingNavDrawerState.close()
+                                        videoRecordsOnly = false
                                         meetingSectionName = section.name
                                         meetingPreferences.edit().putString("section:$meetingViewer", section.name).apply()
                                     }

@@ -42,7 +42,10 @@ import com.we.meet.ui.theme.Dimens
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.delay
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.WeMeetApp
@@ -56,7 +59,7 @@ fun HomeScreen(
     onCreateMeeting: () -> Unit,
     onJoinMeeting: () -> Unit,
     onOpenRecords: (() -> Unit)?,
-    onOpenMinutes: (() -> Unit)?,
+    onHistoryClick: (roomId: String, sessionId: String?) -> Unit,
     /** P8:预约会议行 → 预约详情页(进会/复制/删除收进详情)。 */
     onScheduledClick: (slug: String, name: String, scheduledAtIso: String) -> Unit,
     /** 预约会议关联了日程 → 走统一的日程详情(一场会一个详情页)。 */
@@ -67,8 +70,9 @@ fun HomeScreen(
     onOpenNavDrawer: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
-    val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(app))
+    val homeViewModel: HomeViewModel = viewModel(key = "video:${app.tokenStore.userId}", factory = HomeViewModel.Factory(app))
     val scheduledMeetings by homeViewModel.scheduledMeetings.collectAsStateWithLifecycle()
+    val recentMeetings by homeViewModel.recentMeetings.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val refreshFailedText = stringResource(DesignR.string.common_load_error)
     val retryText = stringResource(DesignR.string.common_retry)
@@ -89,9 +93,14 @@ fun HomeScreen(
     // again — covers returning from a meeting, the room-end flow, or a
     // create-on-another-device case (the user opened the App expecting
     // to see a room their Web session just made).
-    LifecycleResumeEffect(homeViewModel) {
-        homeViewModel.refreshRemoteRooms()
-        onPauseOrDispose { }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(homeViewModel, lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                homeViewModel.refreshRemoteRooms()
+                delay(15_000)
+            }
+        }
     }
 
     // Header (top bar + action zone) stays pinned; only the
@@ -179,7 +188,7 @@ fun HomeScreen(
                 Text(stringResource(R.string.home_no_upcoming), Modifier.padding(Dimens.ScreenPadding),
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            if (onOpenRecords != null && onOpenMinutes != null) MeetingMaterialsLinks(onOpenRecords, onOpenMinutes)
+            VideoHistoryList(recentMeetings, { room -> onHistoryClick(room.id, room.meeting_session_id) }, onOpenRecords)
 
         }
         }

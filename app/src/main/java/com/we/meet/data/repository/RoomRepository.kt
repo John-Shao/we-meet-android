@@ -60,6 +60,10 @@ class RoomRepository(
      * here, the local store contributes the per-device "last visited"
      * timestamps and observed participants.
      */
+    suspend fun fetchVideoMeetings() = runCatching { roomApi.videoMeetings() }
+
+    suspend fun fetchVideoSession(roomId: String, sessionId: String) = runCatching { roomApi.videoSession(roomId, sessionId) }
+
     suspend fun fetchMyRooms(): Result<List<RoomDto>> = runCatching {
         roomApi.listMyRooms().results.map { applyLivekitOverride(it) }
     }

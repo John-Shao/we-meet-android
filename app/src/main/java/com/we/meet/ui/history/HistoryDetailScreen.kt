@@ -51,10 +51,7 @@ import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.WeMeetApp
 import com.we.meet.R
-import com.we.meet.data.api.dto.ActionItemDto
 import com.we.meet.data.api.dto.RoomDto
-import com.we.meet.data.api.dto.SummaryDto
-import com.we.meet.data.api.dto.TranscriptDto
 import com.we.meet.data.history.HistoryEntry
 import com.we.meet.ui.home.HistoryTimeFormatter
 import com.we.meet.ui.locale.appLocale
@@ -65,20 +62,14 @@ import java.util.Locale
 import java.util.TimeZone
 import retrofit2.HttpException
 
-/**
- * Meeting-detail screen. Mirrors the Web frontend's MeetingDetail page —
- * 4 tabs (Info / Summary / Action items / Transcript) loaded from the
- * same backend endpoints. Kept the file/function name to avoid touching
- * nav (the previous "history detail" was a subset of this).
- *
- * The Info tab augments the server response with the device's local
- * HistoryEntry (join/leave times, observed participants) — that data
- * never reaches the backend, so the Web page can't show it.
- */
+/** Meeting information and links to the exact session's native material workspaces. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryDetailScreen(
     roomId: String,
+    sessionId: String? = null,
+    onOpenRecord: (String) -> Unit = {},
+    onOpenSummary: (String) -> Unit = {},
     onBack: () -> Unit,
     /** P8 操作收进详情:进入会议(房间仍可重进)。 */
     onJoinSlug: (slug: String) -> Unit = {},
@@ -95,7 +86,6 @@ fun HistoryDetailScreen(
     var deleting by remember { mutableStateOf(false) }
     val deleteFailedText = stringResource(R.string.event_delete_failed)
 
-    LaunchedEffect(roomId) { viewModel.loadContent(roomId) }
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(roomId, lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
@@ -110,10 +100,11 @@ fun HistoryDetailScreen(
     val joinFailedText = stringResource(R.string.error_unknown)
 
     val roomState by viewModel.room.collectAsStateWithLifecycle()
-    val summaryState by viewModel.summary.collectAsStateWithLifecycle()
-    val actionItemsState by viewModel.actionItems.collectAsStateWithLifecycle()
-    val transcriptsState by viewModel.transcripts.collectAsStateWithLifecycle()
-    val regenerating by viewModel.regenerating.collectAsStateWithLifecycle()
+    var sessionRefresh by remember(roomId, sessionId) { mutableStateOf(0) }
+    val sessionResult = if (sessionId != null) com.we.meet.ui.records.visibleRead(app.tokenStore.userId, roomId, sessionId, sessionRefresh) {
+        app.roomRepository.fetchVideoSession(roomId, sessionId)
+    } else null
+    val selectedSession = sessionResult?.getOrNull()
 
     // Guard against a double-tap on the back arrow popping two entries
     // off the back stack — the second pop empties the stack, which
@@ -211,9 +202,7 @@ fun HistoryDetailScreen(
             )
         },
     ) { padding ->
-        // Flat single-scroll layout — earlier 4-tab design was awkward on a
-        // phone; each section is now a labelled block separated by a
-        // horizontal divider so users only have to scroll.
+        // Keep the detail compact: basic metadata and material links only.
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -223,7 +212,8 @@ fun HistoryDetailScreen(
         ) {
             // P8:进入会议(房间仍在,可重进)——操作收进详情页。
             room?.slug?.takeIf { it.isNotBlank() }?.let {
-                val isClosed = !room.closed_at.isNullOrBlank()
+                val isClosed = !room.closed_at.isNullOrBlank() || selectedSession?.status == "ended"
+                val sessionJoinable = sessionId == null || selectedSession?.status == "active"
                 Button(
                     onClick = {
                         if (!isClosed && !joining) {
@@ -231,9 +221,10 @@ fun HistoryDetailScreen(
                             scope.launch {
                                 try {
                                     val latest = viewModel.refreshRoom(roomId)
+                                    val sessionActive = sessionId == null || app.roomRepository.fetchVideoSession(roomId, sessionId).getOrNull()?.status == "active"
                                     if (latest == null) {
                                         Toast.makeText(app, joinFailedText, Toast.LENGTH_SHORT).show()
-                                    } else if (latest.closed_at.isNullOrBlank()) {
+                                    } else if (latest.closed_at.isNullOrBlank() && sessionActive) {
                                         latest.slug?.takeIf { it.isNotBlank() }?.let(onJoinSlug)
                                     }
                                 } finally {
@@ -242,7 +233,7 @@ fun HistoryDetailScreen(
                             }
                         }
                     },
-                    enabled = !isClosed && !joining,
+                    enabled = !isClosed && !joining && sessionJoinable,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     if (joining) {
@@ -261,55 +252,19 @@ fun HistoryDetailScreen(
             }
 
             SectionHeader(stringResource(R.string.meeting_detail_tab_info))
-            InfoTab(
+            if (sessionId != null && sessionResult == null) WeMeetInlineLoading()
+            else if (sessionResult?.isFailure == true) WeMeetInlineErrorState(onRetry = { sessionRefresh++ })
+            else InfoTab(
                 roomState = roomState,
-                transcriptsState = transcriptsState,
-                localEntry = localEntry,
+                selectedSession = selectedSession,
+                localEntry = if (sessionId == null) localEntry else null,
                 onRetry = { viewModel.retryRoom(roomId) },
             )
             SectionSpacer()
 
-            SectionHeader(
-                title = stringResource(R.string.meeting_detail_tab_summary),
-                trailing = {
-                    Button(
-                        onClick = { viewModel.regenerateSummary(roomId) },
-                        enabled = !regenerating,
-                    ) {
-                        Text(
-                            if (regenerating)
-                                stringResource(R.string.meeting_detail_summary_regenerating)
-                            else stringResource(R.string.meeting_detail_summary_regenerate)
-                        )
-                    }
-                },
-            )
-            SummaryTab(
-                state = summaryState,
-                onRetry = { viewModel.retrySummary(roomId) },
-            )
-            SectionSpacer()
-
-            SectionHeader(stringResource(R.string.meeting_detail_tab_action_items))
-            ActionItemsTab(
-                state = actionItemsState,
-                onRetry = { viewModel.retryActionItems(roomId) },
-            )
-            SectionSpacer()
-
-            // 纪要闭环 M3:智能章节区块(与 Web 三板块对齐,App 只读)。
-            SectionHeader(stringResource(R.string.meeting_detail_tab_chapters))
-            ChaptersTab(
-                state = summaryState,
-                onRetry = { viewModel.retrySummary(roomId) },
-            )
-            SectionSpacer()
-
-            SectionHeader(stringResource(R.string.meeting_detail_tab_transcript))
-            TranscriptTab(
-                state = transcriptsState,
-                onRetry = { viewModel.retryTranscripts(roomId) },
-            )
+            if (com.we.meet.BuildConfig.WE_MEET_RECORDS_NATIVE) {
+                MeetingRecordLinks(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(), roomId, sessionId, onOpenRecord, onOpenSummary)
+            }
             Spacer(Modifier.height(Dimens.SpaceXl))
         }
     }
@@ -354,7 +309,7 @@ private fun SectionSpacer() {
 @Composable
 private fun InfoTab(
     roomState: MeetingDetailViewModel.LoadState<RoomDto>,
-    transcriptsState: MeetingDetailViewModel.LoadState<List<TranscriptDto>>,
+    selectedSession: RoomDto?,
     localEntry: HistoryEntry?,
     onRetry: () -> Unit,
 ) {
@@ -366,34 +321,18 @@ private fun InfoTab(
             val emptyMark = stringResource(R.string.meeting_detail_info_empty)
             val ongoing = stringResource(R.string.meeting_detail_info_ongoing)
 
-            // Server-side participant list: transcript speakers when
-            // available (catches guests who never got an access row),
-            // fall back to `accesses` members.
-            val speakerNames: List<String> =
-                (transcriptsState as? MeetingDetailViewModel.LoadState.Success)
-                    ?.value
-                    ?.let { rows ->
-                        val seen = linkedSetOf<String>()
-                        rows.forEach { row ->
-                            val name = row.speaker_name.takeIf { it.isNotBlank() }
-                                ?: row.speaker_identity.take(12)
-                            if (name.isNotBlank()) seen += name
-                        }
-                        seen.toList()
-                    }
-                    ?: emptyList()
             val memberNames: List<String> = (room.accesses ?: emptyList()).map {
                 it.user.full_name?.takeIf { n -> n.isNotBlank() }
                     ?: it.user.short_name?.takeIf { n -> n.isNotBlank() }
                     ?: it.user.email
                     ?: emptyMark
             }
-            val participantNames = speakerNames.ifEmpty { memberNames }
+            val participantNames = memberNames
 
             val timeText = buildTimeText(
                 context = LocalContext.current,
-                createdAtIso = room.created_at,
-                closedAtIso = room.closed_at,
+                createdAtIso = selectedSession?.started_at ?: room.created_at,
+                closedAtIso = selectedSession?.ended_at ?: room.closed_at,
                 ongoingLabel = ongoing,
             )
 
@@ -515,315 +454,6 @@ private fun TimelineRow(time: String, label: String) {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Summary tab
-// ---------------------------------------------------------------------------
-
-@Composable
-private fun SummaryTab(
-    state: MeetingDetailViewModel.LoadState<SummaryDto?>,
-    onRetry: () -> Unit,
-) {
-    when (state) {
-        is MeetingDetailViewModel.LoadState.Loading -> WeMeetInlineLoading()
-        is MeetingDetailViewModel.LoadState.Failure -> WeMeetInlineErrorState(onRetry = onRetry)
-        is MeetingDetailViewModel.LoadState.Success -> {
-            val summary = state.value
-            // For end users, "no summary generated yet" (404), "summary
-            // exists but content is blank", and "backend tried but
-            // failed (e.g. no transcripts to summarise)" all read the
-            // same: there's no summary to show. Web surfaces the raw
-            // error_message; the App keeps it simple — the regenerate
-            // button is the action the user can take regardless.
-            // 纪要闭环 M2:展示编辑版优先(effective_content),App 端只读。
-            val body = summary?.effective_content?.takeIf { it.isNotBlank() }
-                ?: summary?.content.orEmpty()
-            val showEmpty = summary == null ||
-                body.isBlank() ||
-                summary.status == "failed"
-            if (showEmpty) {
-                Text(stringResource(R.string.meeting_detail_summary_empty))
-            } else {
-                if (summary!!.is_edited) {
-                    Text(
-                        text = stringResource(R.string.meeting_detail_summary_edited),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = Dimens.SpaceXs),
-                    )
-                }
-                MarkdownText(content = body)
-            }
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Chapters section (纪要闭环 M3:智能章节原生渲染,只读)
-// ---------------------------------------------------------------------------
-
-@Composable
-private fun ChaptersTab(
-    state: MeetingDetailViewModel.LoadState<SummaryDto?>,
-    onRetry: () -> Unit,
-) {
-    when (state) {
-        is MeetingDetailViewModel.LoadState.Loading -> WeMeetInlineLoading()
-        is MeetingDetailViewModel.LoadState.Failure -> WeMeetInlineErrorState(onRetry = onRetry)
-        is MeetingDetailViewModel.LoadState.Success -> {
-            val chapters = state.value?.chapters.orEmpty()
-            if (chapters.isEmpty()) {
-                Text(stringResource(R.string.meeting_detail_chapters_empty))
-                return
-            }
-            Column {
-                chapters.forEach { chapter ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = Dimens.SpaceXs),
-                    ) {
-                        Text(
-                            text = chapterTimeLabel(chapter.started_at, chapter.ended_at),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.widthIn(min = Dimens.AvatarXl),
-                        )
-                        Column(Modifier.padding(start = Dimens.SpaceS)) {
-                            Text(
-                                text = chapter.title,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            if (chapter.digest.isNotBlank()) {
-                                Text(
-                                    text = chapter.digest,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(top = Dimens.SpaceXxs),
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-/** ISO 时刻对 → 「HH:mm – HH:mm」;无合法时间窗时退化为 「—」。 */
-private fun chapterTimeLabel(startIso: String?, endIso: String?): String {
-    fun fmt(iso: String?): String? = try {
-        iso?.let {
-            java.time.OffsetDateTime.parse(it)
-                .atZoneSameInstant(java.time.ZoneId.systemDefault())
-                .toLocalTime()
-                .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
-        }
-    } catch (_: Throwable) {
-        null
-    }
-    val start = fmt(startIso) ?: return "—"
-    val end = fmt(endIso)
-    return if (end != null) "$start – $end" else start
-}
-
-/**
- * Minimal markdown renderer — enough to keep summary output readable
- * without dragging in a markdown library. Recognizes `#`-style headings,
- * `-`/`*` bullet lines, and paragraphs separated by blank lines.
- * Inline emphasis (`**bold**`, `*italic*`) is left as-is — the LLM
- * rarely produces it for meeting summaries.
- */
-@Composable
-private fun MarkdownText(content: String) {
-    Column {
-        content.lineSequence().forEach { rawLine ->
-            val line = rawLine.trimEnd()
-            when {
-                line.isBlank() -> Spacer(Modifier.height(Dimens.SpaceS))
-                line.startsWith("### ") -> Text(
-                    text = line.removePrefix("### "),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(top = Dimens.SpaceS, bottom = Dimens.SpaceXs),
-                )
-                line.startsWith("## ") -> Text(
-                    text = line.removePrefix("## "),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(top = Dimens.SpaceS, bottom = Dimens.SpaceXs),
-                )
-                line.startsWith("# ") -> Text(
-                    text = line.removePrefix("# "),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = Dimens.SpaceM, bottom = Dimens.SpaceXs),
-                )
-                line.trimStart().startsWith("- ") || line.trimStart().startsWith("* ") -> {
-                    val text = line.trimStart().removePrefix("- ").removePrefix("* ")
-                    Row(modifier = Modifier.padding(vertical = Dimens.SpaceXxs)) {
-                        Text("• ", style = MaterialTheme.typography.bodyMedium)
-                        Text(text, style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-                else -> Text(
-                    text = line,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(vertical = Dimens.SpaceXxs),
-                )
-            }
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Action items tab
-// ---------------------------------------------------------------------------
-
-@Composable
-private fun ActionItemsTab(
-    state: MeetingDetailViewModel.LoadState<List<ActionItemDto>>,
-    onRetry: () -> Unit,
-) {
-    when (state) {
-        is MeetingDetailViewModel.LoadState.Loading -> WeMeetInlineLoading()
-        is MeetingDetailViewModel.LoadState.Failure -> WeMeetInlineErrorState(onRetry = onRetry)
-        is MeetingDetailViewModel.LoadState.Success -> {
-            val items = state.value
-            if (items.isEmpty()) {
-                CenteredText(stringResource(R.string.meeting_detail_action_items_empty))
-                return
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                items.forEach { item ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(Dimens.CornerS))
-                            .background(
-                                if (item.is_completed)
-                                    MaterialTheme.colorScheme.surfaceContainerHigh
-                                else MaterialTheme.colorScheme.surface
-                            )
-                            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
-                    ) {
-                        Text(
-                            text = item.content,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium,
-                        )
-                        if (item.owner_text.isNotBlank() || item.due_text.isNotBlank()) {
-                            Spacer(Modifier.height(Dimens.SpaceXs))
-                            Row {
-                                if (item.owner_text.isNotBlank()) {
-                                    Text(
-                                        text = stringResource(R.string.meeting_detail_action_items_owner) +
-                                            ": " + item.owner_text,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    Spacer(Modifier.width(Dimens.SpaceM))
-                                }
-                                if (item.due_text.isNotBlank()) {
-                                    Text(
-                                        text = stringResource(R.string.meeting_detail_action_items_due) +
-                                            ": " + item.due_text,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Transcript tab
-// ---------------------------------------------------------------------------
-
-@Composable
-private fun TranscriptTab(
-    state: MeetingDetailViewModel.LoadState<List<TranscriptDto>>,
-    onRetry: () -> Unit,
-) {
-    when (state) {
-        is MeetingDetailViewModel.LoadState.Loading -> WeMeetInlineLoading()
-        is MeetingDetailViewModel.LoadState.Failure -> WeMeetInlineErrorState(onRetry = onRetry)
-        is MeetingDetailViewModel.LoadState.Success -> {
-            val rows = state.value
-            if (rows.isEmpty()) {
-                CenteredText(stringResource(R.string.meeting_detail_transcript_empty))
-                return
-            }
-            // App language — used to pick a relevant translation row
-            // when the speaker's `language` differs.
-            val userLang = appLocale().language.lowercase()
-            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                rows.forEach { row ->
-                    val ts = formatTime(row.started_at)
-                    val speaker = row.speaker_name.takeIf { it.isNotBlank() }
-                        ?: row.speaker_identity.take(12)
-                    val translationKey = row.translations.keys.firstOrNull {
-                        it.lowercase().substringBefore('-') == userLang
-                    }
-                    val translation = translationKey
-                        ?.let { row.translations[it] }
-                        ?.takeIf { row.language.lowercase().substringBefore('-') != userLang }
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = Dimens.SpaceM)
-                            .background(
-                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                shape = RoundedCornerShape(Dimens.CornerXs),
-                            )
-                            .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
-                    ) {
-                        Text(
-                            text = "$ts · $speaker",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = row.text,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        translation?.let {
-                            Text(
-                                text = it,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Normal,
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-@Composable
-private fun CenteredText(text: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = Dimens.SpaceXl),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text = text, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
 private fun formatSlug(slug: String): String {
     val digits = slug.filter { it.isDigit() }
     return when (digits.length) {
@@ -867,9 +497,4 @@ private fun sameDay(aMs: Long, bMs: Long): Boolean {
     val b = java.util.Calendar.getInstance().apply { timeInMillis = bMs }
     return a.get(java.util.Calendar.YEAR) == b.get(java.util.Calendar.YEAR) &&
         a.get(java.util.Calendar.DAY_OF_YEAR) == b.get(java.util.Calendar.DAY_OF_YEAR)
-}
-
-private fun formatTime(iso: String): String {
-    val ms = parseIsoToMillis(iso) ?: return iso
-    return HistoryTimeFormatter.time(ms)
 }

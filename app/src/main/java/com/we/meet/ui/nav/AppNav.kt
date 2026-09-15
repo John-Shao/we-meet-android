@@ -363,7 +363,7 @@ object Routes {
     const val ROOM = "$ROOM_BASE/{roomId}/{url}/{token}/{name}/{slug}/{host}/{createdAt}/{isAdmin}/{mic}/{cam}?peerUid={peerUid}&peerName={peerName}&media={media}&meet={meet}"
 
     private const val HISTORY_BASE = "history_detail"
-    const val HISTORY_DETAIL = "$HISTORY_BASE/{roomId}"
+    const val HISTORY_DETAIL = "$HISTORY_BASE/{roomId}?session={session}"
 
     /** P8 预约会议详情页:列表行数据直传(slug/name/预约时刻 ISO),零请求。 */
     const val SCHEDULED_DETAIL = "scheduled_detail?slug={slug}&name={name}&at={at}"
@@ -394,9 +394,9 @@ object Routes {
         return if (query.isEmpty()) base else "$base?${query.joinToString("&")}"
     }
 
-    fun historyDetail(roomId: String): String {
+    fun historyDetail(roomId: String, sessionId: String? = null): String {
         val enc = URLEncoder.encode(roomId, StandardCharsets.UTF_8.name())
-        return "$HISTORY_BASE/$enc"
+        return "$HISTORY_BASE/$enc" + (sessionId?.let { "?session=${URLEncoder.encode(it, StandardCharsets.UTF_8.name())}" } ?: "")
     }
 
     // 搜索统一 M2:全局搜索「文档」命中的应用内查看器。
@@ -655,8 +655,8 @@ fun AppNav() {
                 onCreateMeeting = { navController.navigate(Routes.createPreview()) },
                 onJoinMeeting = { navController.navigate(Routes.joinPreview()) },
                 onScanQrCode = { navController.navigate(Routes.QR_SCAN) },
-                onHistoryClick = { roomId ->
-                    navController.navigate(Routes.historyDetail(roomId))
+                onHistoryClick = { roomId, sessionId ->
+                    navController.navigate(Routes.historyDetail(roomId, sessionId))
                 },
                 // P8:预约会议行 → 预约详情页(操作收进详情)。
                 onScheduledClick = { slug, name, at ->
@@ -1820,12 +1820,16 @@ fun AppNav() {
             route = Routes.HISTORY_DETAIL,
             arguments = listOf(
                 navArgument("roomId") { type = NavType.StringType },
+                navArgument("session") { type = NavType.StringType; nullable = true; defaultValue = null },
             ),
         ) { entry ->
             val args = entry.arguments!!
             com.we.meet.ui.history.HistoryDetailScreen(
                 roomId = Routes.decode(args.getString("roomId").orEmpty()),
                 onBack = rememberOnceOnly(safePop),
+                sessionId = args.getString("session"),
+                onOpenRecord = { id -> navController.navigate(Routes.recordDetail(id)) },
+                onOpenSummary = { id -> navController.navigate(Routes.recordDetail(id, summaryView = true)) },
                 // P8:操作收进详情——进入会议走既有入会预览。
                 onJoinSlug = { slug -> navController.navigate(Routes.joinPreview(slug)) },
             )

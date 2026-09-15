@@ -36,6 +36,12 @@ import retrofit2.http.Query
  * AuthInterceptor) for non-public rooms.
  */
 interface RoomApi {
+    @GET("api/v1.0/rooms/video-meetings/")
+    suspend fun videoMeetings(): com.we.meet.data.api.dto.VideoMeetingsDto
+
+    @GET("api/v1.0/rooms/{roomId}/video-session/")
+    suspend fun videoSession(@Path("roomId") roomId: String, @Query("session_id") sessionId: String): RoomDto
+
 
     @GET("api/v1.0/rooms/{idOrSlug}/")
     suspend fun getRoom(
