@@ -83,7 +83,7 @@ private fun Context.captureActivity(): ComponentActivity? = when (this) {
 private data class CaptureLaunch(val title: String, val retentionMode: String)
 
 @Composable
-fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit, onOpenNavDrawer: (() -> Unit)? = null) {
+fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit, onOpenNavDrawer: (() -> Unit)? = null, onSummaryRecord: ((String) -> Unit)? = null) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var retry by remember(viewer) { mutableIntStateOf(0) }
@@ -138,13 +138,14 @@ fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit
         onPause = { service?.pause() }, onFinish = { service?.finish() },
         onRetry = { if (state.ready) service?.retryUploads() else retry++ },
         onRecord = if (BuildConfig.WE_MEET_RECORDS_NATIVE) onRecord else null,
+        onSummaryRecord = if (BuildConfig.WE_MEET_RECORDS_NATIVE) onSummaryRecord else null,
         notificationsAvailable = context.getSystemService(NotificationManager::class.java).areNotificationsEnabled(),
         tools = {
             val app = context.applicationContext as? WeMeetApp
             val capture = state.local?.remote
             val bound = service
             val local = state.local
-            if (BuildConfig.WE_MEET_CAPTURE_TRANSLATION_NATIVE && app != null && bound != null && capture != null && local != null && state.viewer == viewer) {
+            if (BuildConfig.WE_MEET_CAPTURE_TRANSLATION_NATIVE && app != null && bound != null && capture != null && local != null && !local.sealed && state.viewer == viewer) {
                 androidx.compose.runtime.key(viewer, capture.id, capture.revision, local.create.deviceId) {
                     val source = remember(viewer, capture.id, capture.revision) {
                         com.we.meet.data.repository.CaptureTranslationSource(viewer, capture.id, capture.recordId, local.create.deviceId, local.create.leaseKey)
@@ -164,18 +165,10 @@ fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit
             val capture = state.local?.remote
             if (app != null && capture != null && state.viewer == viewer) {
                 androidx.compose.runtime.key(viewer, capture.id) {
-                    var audioSeek by remember { mutableStateOf<CaptureAudioSeek?>(null) }
-                    var summariesSelected by remember { mutableStateOf(capture.status in setOf("stopping", "stopped")) }
-                    LaunchedEffect(capture.status) { if (capture.status in setOf("stopping", "stopped")) summariesSelected = true }
-                    if (state.local?.sealed == true) CaptureSavedRecordTitle(app.meetingRecordRepository, viewer, capture.recordId)
-                    val textMode = state.local?.create?.retentionMode == "text"
-                    if (textMode) CaptureRetentionPanel(viewer, capture, app.captureTranscriptionRepository)
-                    if (capture.status == "stopped" && !textMode) NativeCaptureAudioPlayer(viewer, capture.recordId, app.capturePlaybackRepository, { app.captureAccount }, audioSeek) { audioSeek = null }
-                    CaptureDocumentTabs(summariesSelected, { summariesSelected = it }, capture.status == "stopped")
-                    if (!summariesSelected) CaptureAsrPanel(viewer, capture, app.captureTranscriptionRepository) { app.captureAccount }
-                    else CaptureSummaryWorkspace(viewer, capture, app.meetingRecordRepository, app.meetingSummaryRepository,
-                        { app.captureAccount }, if (BuildConfig.WE_MEET_RECORDS_NATIVE) ({ onRecord(capture.recordId) }) else null,
-                        if (capture.status == "stopped" && !textMode) ({ audioSeek = CaptureAudioSeek(it) }) else null)
+                    if (state.local?.sealed != true) {
+                        if (state.local?.create?.retentionMode == "text") CaptureRetentionPanel(viewer, capture, app.captureTranscriptionRepository)
+                        CaptureAsrPanel(viewer, capture, app.captureTranscriptionRepository) { app.captureAccount }
+                    }
                 }
             }
         })
@@ -198,13 +191,13 @@ internal fun CaptureContent(
     tools: @Composable () -> Unit = {},
     extra: @Composable () -> Unit = {},
     onOpenNavDrawer: (() -> Unit)? = null,
+    onSummaryRecord: ((String) -> Unit)? = null,
 ) {
     val titlePrefix = stringResource(R.string.capture_default_title_prefix)
     var confirmEnd by remember(state.viewer, state.local?.id) { mutableStateOf(false) }
     var confirmIncomplete by remember(state.viewer, state.local?.id) { mutableStateOf(false) }
     var textOnly by remember(state.viewer, state.local?.id) { mutableStateOf(false) }
     var audioSettings by remember(state.viewer, state.local?.id) { mutableStateOf(false) }
-    var emptySummary by remember(state.viewer, state.local?.id) { mutableStateOf(false) }
     val local = state.local
     val textMode = if (local != null && !local.sealed) local.create.retentionMode == "text" else textOnly
     fun start() {
@@ -276,13 +269,17 @@ internal fun CaptureContent(
                     TextButton(onClick = { confirmIncomplete = true }) { Text(stringResource(R.string.capture_text_finish_incomplete)) }
                 }
                 if (local?.remote == null) {
-                    CaptureDocumentTabs(emptySummary, { emptySummary = it })
-                    CaptureDocumentEmpty(emptySummary, local != null)
+                    CaptureNotice(stringResource(R.string.capture_acquisition_hint))
                 }
                 extra()
                 if (local?.sealed == true && onRecord != null && local.remote != null) {
+                    Text(local.create.title, style = MaterialTheme.typography.titleLarge)
+                    CaptureNotice(stringResource(R.string.capture_saved_destination))
                     TextButton(onClick = { onRecord(local.remote.recordId) }, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.capture_open_record))
+                    }
+                    if (onSummaryRecord != null) TextButton(onClick = { onSummaryRecord(local.remote.recordId) }, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.capture_open_summary))
                     }
                 }
             }

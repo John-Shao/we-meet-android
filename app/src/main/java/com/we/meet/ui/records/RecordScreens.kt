@@ -144,6 +144,9 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         }
                     } else if (showOriginals) {
                         Column(Modifier.weight(1f).fillMaxWidth()) {
+                            if (app != null && record.sourceType == "audio_recording") RecordCaptureTools(
+                                viewer, record, app.captureRepository, app.captureTranscriptionRepository,
+                                { app.captureAccount }, onRefresh = { refresh++ })
                             RecordOriginals(repository, viewer, record, onRefresh = { refresh++ }, onSource = if (canPlay) ({ audioSeek = CaptureAudioSeek(it) }) else null)
                         }
                     } else if (!record.capabilities.readSummary) {

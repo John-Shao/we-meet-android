@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_no_upcoming">No upcoming meetings</string>
+    <string name="meeting_materials_title">After the meeting</string>
+    <string name="meeting_materials_hint">Find recordings and transcripts in meeting records. Generate and share minutes and follow up on action items in smart minutes.</string>
+    <string name="capture_acquisition_hint">Record an in-person discussion or interview. After saving, open the record for playback and transcription, and smart minutes for summaries and follow-up.</string>
+    <string name="capture_saved_destination">Recording saved. Playback and transcription are in meeting records; generation, sharing and action items are in smart minutes.</string>
+    <string name="capture_open_summary">View smart minutes</string>
+    <string name="records_transcription_manage">Manage transcription</string>
+</resources>

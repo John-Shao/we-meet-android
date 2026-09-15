@@ -67,6 +67,28 @@ class CaptureAsrPanelTest {
         assertEquals(listOf(api.job.id), api.canceled)
     }
 
+    @Test fun savedRecordOwnsFileTranscriptionAndRefreshesOnClose() {
+        capture = capture.copy(status = "stopped")
+        api.job = api.job.copy(mode = "sealed", inputClosed = true, audioStatus = "saved")
+        val captures = CaptureProtocolFixture().also { it.state = capture }
+        val record = RecordDto(capture.recordId, "audio_recording", "Saved interview", "2026-09-13T00:00:00Z", 1,
+            RecordCapabilitiesDto(readSummary = true, readTranscript = true), captureId = capture.id)
+        var refreshed = false
+        compose.setContent { WeMeetTheme { RecordCaptureTools(viewer, record,
+            com.we.meet.data.repository.CaptureRepository(captures) { viewer }, repository, { viewer }, { refreshed = true }) } }
+        assertTrue(api.keys.isEmpty())
+        compose.onNodeWithText(label(R.string.records_transcription_manage)).performClick()
+        await(R.string.capture_asr_start_sealed)
+        compose.waitUntil(8000) { !compose.onNodeWithText(label(R.string.capture_asr_start_sealed)).fetchSemanticsNode().config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled) }
+        assertTrue(api.keys.isEmpty())
+        compose.onNodeWithText(label(R.string.capture_asr_start_sealed)).performScrollTo().performClick()
+        await(R.string.capture_asr_cancel)
+        assertEquals(1, api.keys.size)
+        assertFalse(api.bodies.single().contains("\"live\":true"))
+        compose.onNodeWithText(label(R.string.records_close)).performScrollTo().performClick()
+        assertTrue(refreshed)
+    }
+
     @Test fun lostResponseRequiresExplicitReconciliationWithOriginalKeyAndBody() {
         api.loseResponse = true
         show()

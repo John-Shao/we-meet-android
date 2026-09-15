@@ -58,6 +58,8 @@ class CaptureScreenTest {
         compose.onNodeWithText(label(R.string.capture_title_label)).assertDoesNotExist()
         compose.onNodeWithText(label(R.string.capture_untitled)).assertDoesNotExist()
         compose.onNodeWithText(label(R.string.capture_keep_audio)).assertDoesNotExist()
+        compose.onNodeWithText(label(R.string.records_minutes)).assertDoesNotExist()
+        compose.onNodeWithText(label(R.string.capture_acquisition_hint)).assertIsDisplayed()
         compose.onNodeWithText(label(R.string.capture_start)).performClick()
         assertTrue(requireNotNull(started).matches(Regex(Regex.escape(label(R.string.capture_default_title_prefix)) + "[0-9]{6}-[0-9]{6}")))
         screenshot("ready")
@@ -110,10 +112,13 @@ class CaptureScreenTest {
 
     @Test fun savedRecordingOpensExactRecordWithoutResumingAudio() {
         var opened: String? = null
+        var summary: String? = null
         compose.setContent { WeMeetTheme { CaptureContent(CaptureServiceState("viewer", local().copy(sealed = true, pendingBytes = 0), ready = true), false,
-            {}, {}, {}, {}, {}, { opened = it }) } }
+            {}, {}, {}, {}, {}, { opened = it }, onSummaryRecord = { summary = it }) } }
         compose.onNodeWithText(label(R.string.capture_open_record)).performScrollTo().performClick()
         assertEquals("record", opened)
+        compose.onNodeWithText(label(R.string.capture_open_summary)).performScrollTo().performClick()
+        assertEquals("record", summary)
         compose.onNodeWithText(label(R.string.capture_finish)).assertDoesNotExist()
     }
 

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_no_upcoming">暂无待开始的会议</string>
+    <string name="meeting_materials_title">会后资料</string>
+    <string name="meeting_materials_hint">实录中查看录音与文字记录，智能纪要中生成、分享纪要和跟进待办。</string>
+    <string name="capture_acquisition_hint">录制线下讨论或访谈。保存后，在会议实录中回放和转写，在智能纪要中生成纪要和跟进待办。</string>
+    <string name="capture_saved_destination">录音已保存。回放与转写请进入会议实录，纪要生成、分享和待办请进入智能纪要。</string>
+    <string name="capture_open_summary">查看智能纪要</string>
+    <string name="records_transcription_manage">转写管理</string>
+</resources>

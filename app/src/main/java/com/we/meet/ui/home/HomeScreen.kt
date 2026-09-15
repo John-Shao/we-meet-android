@@ -55,7 +55,8 @@ import com.we.meet.design.R as DesignR
 fun HomeScreen(
     onCreateMeeting: () -> Unit,
     onJoinMeeting: () -> Unit,
-    onHistoryClick: (roomId: String) -> Unit,
+    onOpenRecords: (() -> Unit)?,
+    onOpenMinutes: (() -> Unit)?,
     /** P8:预约会议行 → 预约详情页(进会/复制/删除收进详情)。 */
     onScheduledClick: (slug: String, name: String, scheduledAtIso: String) -> Unit,
     /** 预约会议关联了日程 → 走统一的日程详情(一场会一个详情页)。 */
@@ -67,7 +68,6 @@ fun HomeScreen(
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(app))
-    val history by homeViewModel.history.collectAsStateWithLifecycle()
     val scheduledMeetings by homeViewModel.scheduledMeetings.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val refreshFailedText = stringResource(DesignR.string.common_load_error)
@@ -149,10 +149,7 @@ fun HomeScreen(
         // The fixed gray action area ends exactly where the white list starts.
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-        // Scheduled + History zones — full-width rows own their content insets. This is
-        // the only scrollable region; the action shelf above stays put.
-        // Scheduled list renders nothing when empty, so on a fresh
-        // install the history section still sits flush with the divider.
+        // Upcoming meetings stay here; saved material opens in its owning module.
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -178,18 +175,12 @@ fun HomeScreen(
                     }
                 },
             )
-            HistoryList(
-                entries = history,
-                recordings = emptyList(),
-                onRecordingClick = {},
-                recordingsLoading = false,
-                hasMoreRecordings = false,
-                onLoadMoreRecordings = {},
-                // P8 实测修正:统一点击进详情页。此前按 closed_at 分流
-                // (进行中→重进会议),但大量房间从未显式结束、closed_at
-                // 恒空,同一列表头尾行为不一致;重进会议在详情页一键可达。
-                onEntryClick = { entry -> onHistoryClick(entry.roomId) },
-            )
+            if (scheduledMeetings.isEmpty()) {
+                Text(stringResource(R.string.home_no_upcoming), Modifier.padding(Dimens.ScreenPadding),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (onOpenRecords != null && onOpenMinutes != null) MeetingMaterialsLinks(onOpenRecords, onOpenMinutes)
+
         }
         }
         SnackbarHost(

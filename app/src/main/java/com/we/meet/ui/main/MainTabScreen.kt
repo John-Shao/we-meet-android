@@ -429,7 +429,8 @@ fun MainTabScreen(
                     MeetingSection.VIDEO -> HomeScreen(
                         onCreateMeeting = onCreateMeeting,
                         onJoinMeeting = onJoinMeeting,
-                        onHistoryClick = onHistoryClick,
+                        onOpenRecords = if (BuildConfig.WE_MEET_RECORDS_NATIVE) ({ meetingSectionName = MeetingSection.RECORDS.name }) else null,
+                        onOpenMinutes = if (BuildConfig.WE_MEET_RECORDS_NATIVE) ({ meetingSectionName = MeetingSection.MINUTES.name }) else null,
                         onScheduledClick = onScheduledClick,
                         onScheduledEventClick = onScheduledEventClick,
                         onScheduleMeeting = { onCreateEvent(java.time.LocalDate.now().toEpochDay()) },
@@ -437,7 +438,7 @@ fun MainTabScreen(
                         onOpenNavDrawer = openMeetingNavigation,
                     )
                     MeetingSection.RECORDING -> CaptureScreen(meetingViewer,
-                        onBack = {}, onRecord = onOpenRecord, onOpenNavDrawer = openMeetingNavigation)
+                        onBack = {}, onRecord = onOpenRecord, onOpenNavDrawer = openMeetingNavigation, onSummaryRecord = onOpenSummaryRecord)
                     MeetingSection.RECORDS, MeetingSection.MINUTES -> RecordLibraryScreen(
                         app.meetingRecordRepository, meetingViewer,
                         summariesOnly = meetingSection == MeetingSection.MINUTES,
