@@ -1,0 +1,71 @@
+package com.we.meet.ui.home
+
+import android.graphics.Bitmap
+import androidx.compose.runtime.*
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.we.meet.R
+import com.we.meet.service.CaptureServiceState
+import com.we.meet.ui.records.CaptureContent
+import com.we.meet.ui.theme.WeMeetTheme
+import java.io.File
+import org.junit.Assert.*
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+
+@RunWith(AndroidJUnit4::class)
+class MeetingNavigationTest {
+    @get:Rule val compose = createComposeRule()
+    private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
+
+    @Test fun drawerSelectsEachSectionAndExposesCurrentSelection() {
+        var dismissed = false
+        compose.setContent {
+            var selected by remember { mutableStateOf(MeetingSection.VIDEO) }
+            WeMeetTheme {
+                MeetingNavigationDrawer(selected, MeetingSection.available(true, true),
+                    onSelect = { selected = it }, onDismiss = { dismissed = true })
+            }
+        }
+        for (section in MeetingSection.entries) {
+            compose.onNodeWithTag("meeting-section-${section.name}").performClick().assertIsSelected()
+            MeetingSection.entries.filter { it != section }.forEach {
+                compose.onNodeWithTag("meeting-section-${it.name}").assertIsNotSelected()
+            }
+        }
+        compose.waitForIdle()
+        File(context.getExternalFilesDir(null), "meeting-navigation-drawer.png").outputStream().use {
+            InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot().compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
+        compose.onNodeWithContentDescription(context.getString(R.string.meeting_navigation_close)).performClick()
+        assertTrue(dismissed)
+    }
+
+    @Test fun restoredUnavailableOrUnknownSectionFallsBackToVideo() {
+        assertEquals(MeetingSection.VIDEO, MeetingSection.restore(null, true, true))
+        assertEquals(MeetingSection.VIDEO, MeetingSection.restore("retired", true, true))
+        assertEquals(MeetingSection.VIDEO, MeetingSection.restore("RECORDING", false, true))
+        assertEquals(MeetingSection.VIDEO, MeetingSection.restore("MINUTES", true, false))
+        assertEquals(MeetingSection.RECORDS, MeetingSection.restore("RECORDS", true, true))
+        assertEquals(listOf(MeetingSection.VIDEO), MeetingSection.available(false, false))
+    }
+
+    @Test fun recordingMenuDoesNotStartAudioAndKeepsExplicitStart() {
+        var opened = false
+        var starts = 0
+        compose.setContent { WeMeetTheme {
+            CaptureContent(CaptureServiceState("fixture", ready = true), false,
+                onBack = { fail("Module root must not use a back action") },
+                onStart = { starts++ }, onPause = {}, onFinish = {}, onRetry = {}, onRecord = null,
+                onOpenNavDrawer = { opened = true })
+        } }
+        compose.onNodeWithContentDescription(context.getString(R.string.meeting_navigation)).performClick()
+        assertTrue(opened)
+        assertEquals(0, starts)
+        compose.onNodeWithText(context.getString(R.string.capture_start)).performClick()
+        assertEquals(1, starts)
+    }
+}

@@ -19,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddBox
 import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -30,7 +29,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,9 +47,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.WeMeetApp
 import com.we.meet.R
-import com.we.meet.BuildConfig
+import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.design.R as DesignR
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onCreateMeeting: () -> Unit,
@@ -64,16 +63,11 @@ fun HomeScreen(
     /** 预约会议 = 创建日程(对标飞书):打开日历的创建日程界面。 */
     onScheduleMeeting: () -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenRecords: (summariesOnly: Boolean) -> Unit,
-    onOpenRecord: (recordId: String) -> Unit,
-    onOpenCapture: () -> Unit,
+    onOpenNavDrawer: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(app))
     val history by homeViewModel.history.collectAsStateWithLifecycle()
-    val recordings by homeViewModel.recordings.collectAsStateWithLifecycle()
-    val recordingsLoading by homeViewModel.recordingsLoading.collectAsStateWithLifecycle()
-    val recordingsNextCursor by homeViewModel.recordingsNextCursor.collectAsStateWithLifecycle()
     val scheduledMeetings by homeViewModel.scheduledMeetings.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val refreshFailedText = stringResource(DesignR.string.common_load_error)
@@ -105,31 +99,17 @@ fun HomeScreen(
     // WeChat-style "fixed action shelf + scrolling timeline" layout.
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(modifier = Modifier.fillMaxSize()) {
-        // Top bar: tab title on the left, meeting-settings gear on the right.
-        // (Scan-QR lives in the 消息 header's "more" menu; profile/app settings
-        // stay behind the 消息 avatar — only meeting-scoped settings are here.)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                // 左侧标题顶到 ScreenPadding；右侧按钮自带 12dp 内缩，外侧只留 SpaceXs，
-                // 使右侧图标字形与左侧标题同为 16dp(左右对称)。
-                .padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs)
-                .padding(vertical = Dimens.SpaceS),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(R.string.tab_meeting),
-                style = MaterialTheme.typography.titleLarge,
-            )
-            Spacer(Modifier.weight(1f))
-            IconButton(onClick = onOpenSettings) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = stringResource(R.string.meeting_settings_title),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        }
+        WeMeetTopBar(
+            title = stringResource(R.string.meeting_video),
+            onMenu = onOpenNavDrawer,
+            menuDescription = stringResource(R.string.meeting_navigation),
+            containerColor = MaterialTheme.colorScheme.background,
+            actions = {
+                IconButton(onClick = onOpenSettings) {
+                    Icon(Icons.Default.Settings, stringResource(R.string.meeting_settings_title))
+                }
+            },
+        )
 
         // Action zone — padded, same background as the page.
         Row(
@@ -164,23 +144,8 @@ fun HomeScreen(
                 onClick = onScheduleMeeting,
                 modifier = Modifier.weight(1f),
             )
-            ActionCard(
-                icon = Icons.Default.Mic,
-                label = stringResource(R.string.home_ai_recording),
-                backgroundColor = if (BuildConfig.WE_MEET_CAPTURE_NATIVE) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
-                iconTint = if (BuildConfig.WE_MEET_CAPTURE_NATIVE) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                onClick = onOpenCapture,
-                modifier = Modifier.weight(1f),
-                enabled = BuildConfig.WE_MEET_CAPTURE_NATIVE,
-            )
         }
 
-        if (BuildConfig.WE_MEET_RECORDS_NATIVE) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-                TextButton(onClick = { onOpenRecords(false) }) { Text(stringResource(R.string.records_title)) }
-                TextButton(onClick = { onOpenRecords(true) }) { Text(stringResource(R.string.records_minutes)) }
-            }
-        }
         // The fixed gray action area ends exactly where the white list starts.
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
@@ -215,11 +180,11 @@ fun HomeScreen(
             )
             HistoryList(
                 entries = history,
-                recordings = recordings,
-                onRecordingClick = onOpenRecord,
-                recordingsLoading = recordingsLoading,
-                hasMoreRecordings = recordingsNextCursor != null,
-                onLoadMoreRecordings = homeViewModel::loadMoreRecordings,
+                recordings = emptyList(),
+                onRecordingClick = {},
+                recordingsLoading = false,
+                hasMoreRecordings = false,
+                onLoadMoreRecordings = {},
                 // P8 实测修正:统一点击进详情页。此前按 closed_at 分流
                 // (进行中→重进会议),但大量房间从未显式结束、closed_at
                 // 恒空,同一列表头尾行为不一致;重进会议在详情页一键可达。

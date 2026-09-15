@@ -644,9 +644,7 @@ fun AppNav() {
 
         composable(Routes.HOME) {
             MainTabScreen(
-                onOpenRecords = { summariesOnly -> navController.navigate("meeting_records?summaries=$summariesOnly") },
                 onOpenRecord = { recordId -> navController.navigate(Routes.recordDetail(recordId)) },
-                onOpenCapture = { navController.navigate(Routes.CAPTURE) { launchSingleTop = true } },
                 onCreateMeeting = { navController.navigate(Routes.createPreview()) },
                 onJoinMeeting = { navController.navigate(Routes.joinPreview()) },
                 onScanQrCode = { navController.navigate(Routes.QR_SCAN) },

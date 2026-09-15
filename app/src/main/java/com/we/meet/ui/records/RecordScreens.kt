@@ -85,6 +85,7 @@ fun RecordLibraryScreen(
     summariesOnly: Boolean,
     onRecord: (String) -> Unit,
     onBack: () -> Unit,
+    onOpenNavDrawer: (() -> Unit)? = null,
 ) {
     var scope by remember(viewer) { mutableStateOf(RecordScope.RECENT) }
     var source by remember(viewer) { mutableStateOf<RecordSource?>(null) }
@@ -97,7 +98,9 @@ fun RecordLibraryScreen(
         repository.records(viewer, scope, source, summariesOnly, query.ifBlank { null }, cursor)
     }
     Scaffold(
-        topBar = { WeMeetTopBar(stringResource(if (summariesOnly) R.string.records_minutes else R.string.records_title), onBack = onBack) },
+        topBar = { WeMeetTopBar(stringResource(if (summariesOnly) R.string.records_minutes else R.string.records_title),
+            onBack = if (onOpenNavDrawer == null) onBack else null,
+            onMenu = onOpenNavDrawer, menuDescription = stringResource(R.string.meeting_navigation)) },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {

@@ -83,6 +83,11 @@ import com.we.meet.ui.docs.createDocsWebView
 import com.we.meet.ui.docs.loadDocsTabEntry
 import com.we.meet.ui.docs.postToDocs
 import com.we.meet.ui.theme.WeMeetTheme
+import com.we.meet.ui.home.MeetingSection
+import com.we.meet.ui.home.MeetingNavigationDrawer
+import com.we.meet.ui.records.CaptureScreen
+import com.we.meet.ui.records.RecordLibraryScreen
+import androidx.compose.runtime.key
 import com.we.meet.ui.home.HomeScreen
 import com.we.meet.ui.docs.DocsWebViewClient
 import com.we.meet.feature.docs.ui.DocsHomeScreen
@@ -125,9 +130,7 @@ fun MainTabScreen(
     onScheduledEventClick: (eventId: String) -> Unit,
     onSettingsClick: () -> Unit,
     onOpenMeetingSettings: () -> Unit,
-    onOpenRecords: (summariesOnly: Boolean) -> Unit,
     onOpenRecord: (recordId: String) -> Unit,
-    onOpenCapture: () -> Unit,
     onOpenAiHub: () -> Unit,
     onOpenApproval: () -> Unit,
     onOpenChat: (cid: String) -> Unit,
@@ -310,6 +313,18 @@ fun MainTabScreen(
     // 云文档二级导航抽屉 —— 与 task 抽屉同款提升到本层(遮罩覆盖底部导航栏),
     // 控制器由 DocsHomeScreen 经 onRegisterDocsNav 注册(它持有 DocsHomeViewModel)。
     val docsNavDrawerState = rememberDrawerState(DrawerValue.Closed)
+    val meetingNavDrawerState = rememberDrawerState(DrawerValue.Closed)
+    val meetingViewer = app.tokenStore.userId.orEmpty()
+    val meetingPreferences = remember { ctx.getSharedPreferences("meeting_navigation", android.content.Context.MODE_PRIVATE) }
+    var meetingSectionName by rememberSaveable(meetingViewer) {
+        mutableStateOf(meetingPreferences.getString("section:$meetingViewer", MeetingSection.VIDEO.name))
+    }
+    val meetingSections = MeetingSection.available(BuildConfig.WE_MEET_CAPTURE_NATIVE, BuildConfig.WE_MEET_RECORDS_NATIVE)
+    val meetingSection = MeetingSection.restore(meetingSectionName, BuildConfig.WE_MEET_CAPTURE_NATIVE, BuildConfig.WE_MEET_RECORDS_NATIVE)
+    val openMeetingNavigation: () -> Unit = { scope.launch { meetingNavDrawerState.open() } }
+    LaunchedEffect(safeTab) {
+        if (safeTab != MainTab.Meeting.ordinal) meetingNavDrawerState.close()
+    }
     var previousDrawerWidth by remember { mutableStateOf(drawerWidth) }
     LaunchedEffect(drawerWidth) {
         if (previousDrawerWidth == drawerWidth) return@LaunchedEffect
@@ -320,6 +335,7 @@ fun MainTabScreen(
         drawerState.snapTo(DrawerValue.Closed)
         taskNavDrawerState.snapTo(DrawerValue.Closed)
         docsNavDrawerState.snapTo(DrawerValue.Closed)
+        meetingNavDrawerState.snapTo(DrawerValue.Closed)
     }
     val docsNavScope = rememberCoroutineScope()
     var docsNavController by remember { mutableStateOf<DocsNavController?>(null) }
@@ -406,19 +422,27 @@ fun MainTabScreen(
             )
         },
         TabItem(R.string.tab_meeting, Icons.Filled.Videocam, Icons.Outlined.Videocam) {
-            HomeScreen(
-                onCreateMeeting = onCreateMeeting,
-                onJoinMeeting = onJoinMeeting,
-                onHistoryClick = onHistoryClick,
-                onScheduledClick = onScheduledClick,
-                onScheduledEventClick = onScheduledEventClick,
-                // 预约会议 = 创建日程:复用日历的创建日程入口,默认落在今天。
-                onScheduleMeeting = { onCreateEvent(java.time.LocalDate.now().toEpochDay()) },
-                onOpenSettings = onOpenMeetingSettings,
-                onOpenRecords = onOpenRecords,
-                onOpenRecord = onOpenRecord,
-                onOpenCapture = onOpenCapture,
-            )
+            key(meetingViewer, meetingSection) {
+                when (meetingSection) {
+                    MeetingSection.VIDEO -> HomeScreen(
+                        onCreateMeeting = onCreateMeeting,
+                        onJoinMeeting = onJoinMeeting,
+                        onHistoryClick = onHistoryClick,
+                        onScheduledClick = onScheduledClick,
+                        onScheduledEventClick = onScheduledEventClick,
+                        onScheduleMeeting = { onCreateEvent(java.time.LocalDate.now().toEpochDay()) },
+                        onOpenSettings = onOpenMeetingSettings,
+                        onOpenNavDrawer = openMeetingNavigation,
+                    )
+                    MeetingSection.RECORDING -> CaptureScreen(meetingViewer,
+                        onBack = {}, onRecord = onOpenRecord, onOpenNavDrawer = openMeetingNavigation)
+                    MeetingSection.RECORDS, MeetingSection.MINUTES -> RecordLibraryScreen(
+                        app.meetingRecordRepository, meetingViewer,
+                        summariesOnly = meetingSection == MeetingSection.MINUTES,
+                        onRecord = onOpenRecord, onBack = {}, onOpenNavDrawer = openMeetingNavigation,
+                    )
+                }
+            }
         },
         TabItem(R.string.tab_contacts, Icons.Filled.Contacts, Icons.Outlined.Contacts) {
             ContactsTabScreen(
@@ -598,29 +622,48 @@ fun MainTabScreen(
                     }
                 },
             ) {
-                Scaffold(
-                    // Tab-local secondary pages share the white status bar and hide module navigation.
-                    containerColor = if (fullScreenPageVisible) {
-                        MaterialTheme.colorScheme.surface
-                    } else {
-                        MaterialTheme.colorScheme.background
-                    },
-                    bottomBar = {
-                        if (!fullScreenPageVisible) {
-                            CompactTabBar(
-                                tabs = tabs,
-                                selectedTab = safeTab,
-                                onTabSelected = { selectedTab = it },
-                            )
+                ModalNavigationDrawer(
+                    drawerState = meetingNavDrawerState,
+                    gesturesEnabled = meetingNavDrawerState.isOpen,
+                    drawerContent = {
+                        ModalDrawerSheet(drawerState = meetingNavDrawerState,
+                            drawerShape = RectangleShape, modifier = Modifier.width(drawerWidth)) {
+                            MeetingNavigationDrawer(meetingSection, meetingSections,
+                                onDismiss = { scope.launch { meetingNavDrawerState.close() } },
+                                onSelect = { section ->
+                                    scope.launch {
+                                        meetingNavDrawerState.close()
+                                        meetingSectionName = section.name
+                                        meetingPreferences.edit().putString("section:$meetingViewer", section.name).apply()
+                                    }
+                                })
                         }
                     },
-                ) { padding ->
-                    Box(
-                        modifier = Modifier
-                            .padding(padding)
-                            .consumeWindowInsets(padding),
-                    ) {
-                        tabs[safeTab].content()
+                ) {
+                    Scaffold(
+                        // Tab-local secondary pages share the white status bar and hide module navigation.
+                        containerColor = if (fullScreenPageVisible) {
+                            MaterialTheme.colorScheme.surface
+                        } else {
+                            MaterialTheme.colorScheme.background
+                        },
+                        bottomBar = {
+                            if (!fullScreenPageVisible) {
+                                CompactTabBar(
+                                    tabs = tabs,
+                                    selectedTab = safeTab,
+                                    onTabSelected = { selectedTab = it },
+                                )
+                            }
+                        },
+                    ) { padding ->
+                        Box(
+                            modifier = Modifier
+                                .padding(padding)
+                                .consumeWindowInsets(padding),
+                        ) {
+                            tabs[safeTab].content()
+                        }
                     }
                 }
             }

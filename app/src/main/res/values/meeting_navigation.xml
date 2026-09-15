@@ -1,0 +1,5 @@
+<resources>
+    <string name="meeting_video">Video meetings</string>
+    <string name="meeting_navigation">Open meeting navigation</string>
+    <string name="meeting_navigation_close">Close meeting navigation</string>
+</resources>

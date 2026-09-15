@@ -83,7 +83,7 @@ private fun Context.captureActivity(): ComponentActivity? = when (this) {
 private data class CaptureLaunch(val title: String, val retentionMode: String)
 
 @Composable
-fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit) {
+fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit, onOpenNavDrawer: (() -> Unit)? = null) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var retry by remember(viewer) { mutableIntStateOf(0) }
@@ -132,6 +132,7 @@ fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit
         else { requestedTitle = request; microphone.launch(Manifest.permission.RECORD_AUDIO) }
     }
     CaptureContent(state, permissionError, onBack, onStart = { requestStart(it, "media") },
+        onOpenNavDrawer = onOpenNavDrawer,
         onStartText = if (admission?.getOrNull() == true) ({ requestStart(it, "text") }) else null,
         onFinishIncomplete = { service?.finish(allowMissing = true) },
         onPause = { service?.pause() }, onFinish = { service?.finish() },
@@ -196,6 +197,7 @@ internal fun CaptureContent(
     onFinishIncomplete: (() -> Unit)? = null,
     tools: @Composable () -> Unit = {},
     extra: @Composable () -> Unit = {},
+    onOpenNavDrawer: (() -> Unit)? = null,
 ) {
     val titlePrefix = stringResource(R.string.capture_default_title_prefix)
     var confirmEnd by remember(state.viewer, state.local?.id) { mutableStateOf(false) }
@@ -227,7 +229,9 @@ internal fun CaptureContent(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            WeMeetTopBar(title = stringResource(R.string.capture_notification_title), onBack = onBack,
+            WeMeetTopBar(title = stringResource(R.string.capture_notification_title),
+                onBack = if (onOpenNavDrawer == null) onBack else null,
+                onMenu = onOpenNavDrawer, menuDescription = stringResource(R.string.meeting_navigation),
                 actions = {
                     if (state.ready) {
                         tools()

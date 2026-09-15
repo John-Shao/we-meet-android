@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,11 +59,14 @@ fun WeMeetTopBar(
     transparent: Boolean = false,
     scrollBehavior: TopAppBarScrollBehavior? = null,
     containerColor: Color = MaterialTheme.colorScheme.surface,
+    onMenu: (() -> Unit)? = null,
+    menuDescription: String? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     require(onBack == null || onClose == null) {
         "Pass either onBack or onClose, not both -- one nav slot, one icon"
     }
+    require(onMenu == null || (onBack == null && onClose == null && menuDescription != null))
     TopAppBar(
         modifier = modifier,
         title = {
@@ -85,6 +89,9 @@ fun WeMeetTopBar(
         },
         navigationIcon = {
             when {
+                onMenu != null -> IconButton(onClick = onMenu) {
+                    Icon(Icons.Filled.Menu, contentDescription = menuDescription)
+                }
                 onBack != null -> IconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
