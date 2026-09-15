@@ -202,7 +202,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun ActionCard(
+internal fun ActionCard(
     icon: ImageVector,
     label: String,
     backgroundColor: Color,

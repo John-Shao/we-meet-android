@@ -1,0 +1,5 @@
+<resources>
+    <string name="recording_history">Recording history</string>
+    <string name="recording_history_empty">No completed recordings yet</string>
+    <string name="recording_detail">Recording details</string>
+</resources>

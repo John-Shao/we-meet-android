@@ -85,7 +85,7 @@ import com.we.meet.ui.docs.postToDocs
 import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.ui.home.MeetingSection
 import com.we.meet.ui.home.MeetingNavigationDrawer
-import com.we.meet.ui.records.CaptureScreen
+import com.we.meet.ui.records.RecordingHomeScreen
 import com.we.meet.ui.records.RecordLibraryScreen
 import androidx.compose.runtime.key
 import com.we.meet.ui.home.HomeScreen
@@ -131,6 +131,8 @@ fun MainTabScreen(
     onSettingsClick: () -> Unit,
     onOpenMeetingSettings: () -> Unit,
     onOpenRecord: (recordId: String) -> Unit,
+    onOpenCapture: () -> Unit,
+    onRecordingDetail: (recordId: String) -> Unit,
     onOpenSummaryRecord: (String) -> Unit = onOpenRecord,
     onOpenAiHub: () -> Unit,
     onOpenApproval: () -> Unit,
@@ -321,7 +323,7 @@ fun MainTabScreen(
     var meetingSectionName by rememberSaveable(meetingViewer) {
         mutableStateOf(meetingPreferences.getString("section:$meetingViewer", MeetingSection.VIDEO.name))
     }
-    var videoRecordsOnly by rememberSaveable(meetingViewer) { mutableStateOf(false) }
+    var recordsSource by rememberSaveable(meetingViewer) { mutableStateOf<String?>(null) }
     val meetingSections = MeetingSection.available(BuildConfig.WE_MEET_CAPTURE_NATIVE, BuildConfig.WE_MEET_RECORDS_NATIVE)
     val meetingSection = MeetingSection.restore(meetingSectionName, BuildConfig.WE_MEET_CAPTURE_NATIVE, BuildConfig.WE_MEET_RECORDS_NATIVE)
     val openMeetingNavigation: () -> Unit = { scope.launch { meetingNavDrawerState.open() } }
@@ -430,7 +432,7 @@ fun MainTabScreen(
                     MeetingSection.VIDEO -> HomeScreen(
                         onCreateMeeting = onCreateMeeting,
                         onJoinMeeting = onJoinMeeting,
-                        onOpenRecords = if (BuildConfig.WE_MEET_RECORDS_NATIVE) ({ videoRecordsOnly = true; meetingSectionName = MeetingSection.RECORDS.name }) else null,
+                        onOpenRecords = if (BuildConfig.WE_MEET_RECORDS_NATIVE) ({ recordsSource = "MEETING"; meetingSectionName = MeetingSection.RECORDS.name }) else null,
                         onHistoryClick = onHistoryClick,
                         onScheduledClick = onScheduledClick,
                         onScheduledEventClick = onScheduledEventClick,
@@ -438,14 +440,17 @@ fun MainTabScreen(
                         onOpenSettings = onOpenMeetingSettings,
                         onOpenNavDrawer = openMeetingNavigation,
                     )
-                    MeetingSection.RECORDING -> CaptureScreen(meetingViewer,
-                        onBack = {}, onRecord = onOpenRecord, onOpenNavDrawer = openMeetingNavigation, onSummaryRecord = onOpenSummaryRecord)
+                    MeetingSection.RECORDING -> RecordingHomeScreen(app.meetingRecordRepository, meetingViewer,
+                        historyEnabled = BuildConfig.WE_MEET_RECORDS_NATIVE,
+                        onOpenNavDrawer = openMeetingNavigation, onCapture = onOpenCapture,
+                        onDetail = onRecordingDetail,
+                        onMore = { recordsSource = "AUDIO"; meetingSectionName = MeetingSection.RECORDS.name })
                     MeetingSection.RECORDS, MeetingSection.MINUTES -> RecordLibraryScreen(
                         app.meetingRecordRepository, meetingViewer,
                         summariesOnly = meetingSection == MeetingSection.MINUTES,
-                        initialSource = if (videoRecordsOnly && meetingSection == MeetingSection.RECORDS) com.we.meet.data.repository.RecordSource.MEETING else null,
+                        initialSource = if (meetingSection == MeetingSection.RECORDS) com.we.meet.data.repository.RecordSource.entries.find { it.name == recordsSource } else null,
                         onRecord = onOpenRecord, onSummaryRecord = onOpenSummaryRecord, onBack = {}, onOpenNavDrawer = openMeetingNavigation,
-                        onStartRecording = if (BuildConfig.WE_MEET_CAPTURE_NATIVE) ({ meetingSectionName = MeetingSection.RECORDING.name }) else null,
+                        onStartRecording = if (BuildConfig.WE_MEET_CAPTURE_NATIVE) onOpenCapture else null,
                         uploadRepository = app.recordingUploadRepository,
                         onSearchMeetingAi = onSearchMeetingAi,
                     )
@@ -641,7 +646,7 @@ fun MainTabScreen(
                                 onSelect = { section ->
                                     scope.launch {
                                         meetingNavDrawerState.close()
-                                        videoRecordsOnly = false
+                                        recordsSource = null
                                         meetingSectionName = section.name
                                         meetingPreferences.edit().putString("section:$meetingViewer", section.name).apply()
                                     }

@@ -1,0 +1,5 @@
+<resources>
+    <string name="recording_history">历史录音</string>
+    <string name="recording_history_empty">暂无已完成的录音</string>
+    <string name="recording_detail">录音详情</string>
+</resources>

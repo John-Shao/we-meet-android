@@ -85,6 +85,7 @@ import com.we.meet.ui.main.MainTabScreen
 import com.we.meet.ui.records.RecordLibraryScreen
 import com.we.meet.ui.records.RecordDetailScreen
 import com.we.meet.ui.records.CaptureScreen
+import com.we.meet.ui.records.RecordingDetailScreen
 import com.we.meet.ui.preview.PreviewMode
 import com.we.meet.ui.preview.PreviewScreen
 import com.we.meet.ui.qrscan.QrScanResult
@@ -110,6 +111,7 @@ object Routes {
     const val HOME = "home"
     const val RECORD_LIBRARY = "meeting_records?summaries={summaries}"
     const val CAPTURE = "meeting_capture"
+    const val RECORDING_DETAIL = "recording_detail/{recordId}"
     const val RECORD_DETAIL = "meeting_record/{recordId}?summary={summary}&tab={tab}"
     fun recordDetail(recordId: String, summaryId: String? = null, summaryView: Boolean = false, reviewed: Boolean = false): String {
         val query = listOfNotNull(
@@ -650,6 +652,8 @@ fun AppNav() {
 
         composable(Routes.HOME) {
             MainTabScreen(
+                onOpenCapture = { navController.navigate(Routes.CAPTURE) { launchSingleTop = true } },
+                onRecordingDetail = { id -> navController.navigate("recording_detail/${URLEncoder.encode(id, StandardCharsets.UTF_8.name())}") },
                 onOpenRecord = { recordId -> navController.navigate(Routes.recordDetail(recordId)) },
                 onOpenSummaryRecord = { recordId -> navController.navigate(Routes.recordDetail(recordId, summaryView = true)) },
                 onCreateMeeting = { navController.navigate(Routes.createPreview()) },
@@ -1569,7 +1573,14 @@ fun AppNav() {
 
         composable(Routes.CAPTURE) {
             CaptureScreen(app.tokenStore.userId.orEmpty(), onBack = rememberOnceOnly(safePop),
+                onSummaryRecord = { id -> navController.navigate(Routes.recordDetail(id, summaryView = true)) },
                 onRecord = { id -> navController.navigate(Routes.recordDetail(id)) })
+        }
+        composable(Routes.RECORDING_DETAIL, arguments = listOf(navArgument("recordId") { type = NavType.StringType })) { entry ->
+            RecordingDetailScreen(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(),
+                entry.arguments?.getString("recordId").orEmpty(), onBack = rememberOnceOnly(safePop),
+                onRecord = { id -> navController.navigate(Routes.recordDetail(id)) },
+                onSummary = { id -> navController.navigate(Routes.recordDetail(id, summaryView = true)) })
         }
         composable(Routes.RECORD_LIBRARY, arguments = listOf(navArgument("summaries") { type = NavType.BoolType; defaultValue = false })) { entry ->
             RecordLibraryScreen(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(),
