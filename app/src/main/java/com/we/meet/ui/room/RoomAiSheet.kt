@@ -122,6 +122,10 @@ fun RoomAiSheet(
                 verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
             ) {
                 if (messages.isEmpty()) {
+                    listOf(R.string.room_ai_prompt_summary, R.string.room_ai_prompt_decisions, R.string.room_ai_prompt_actions).forEach { resource ->
+                        val prompt = stringResource(resource)
+                        TextButton(onClick = { onSend(prompt) }, enabled = !asking) { Text(prompt) }
+                    }
                     Text(
                         text = stringResource(R.string.room_ai_empty_hint),
                         style = MaterialTheme.typography.bodyMedium,

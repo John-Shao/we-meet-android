@@ -18,6 +18,10 @@ data class AskCitation(
     val cid: String? = null,
     val seq: Long? = null,
     val roomId: String? = null,
+    val reviewed: Boolean = false,
+    val recordId: String? = null,
+    val summaryId: String? = null,
+    val ability: String? = null,
     val date: String? = null,
     /** calendar 引用的具体场次 id(重复系列=最近一场),直开事件详情。 */
     val eventId: String? = null,

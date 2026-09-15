@@ -29,8 +29,15 @@ fun globalAskStream(
     okHttp: OkHttpClient,
     baseUrl: String,
     question: String,
+    scope: String = "all",
+    dateFrom: String? = null,
+    dateTo: String? = null,
 ): Flow<AskEvent> = callbackFlow {
-    val body = JSONObject().put("question", question).toString()
+    val body = JSONObject().put("question", question).put("scope", scope)
+        .apply {
+            dateFrom?.let { put("date_from", it) }
+            dateTo?.let { put("date_to", it) }
+        }.toString()
         .toRequestBody("application/json; charset=utf-8".toMediaType())
     val request = Request.Builder()
         .url(baseUrl.trimEnd('/') + "/api/v1.0/search/ask-stream/")
@@ -97,6 +104,10 @@ private fun parseEvent(payload: String): AskEvent? = runCatching {
                             snippet = c.optString("snippet"),
                             cid = c.optString("cid").takeIf { it.isNotBlank() },
                             seq = if (c.has("seq") && !c.isNull("seq")) c.optLong("seq") else null,
+                            reviewed = c.optBoolean("reviewed", false),
+                            recordId = c.optString("record_id").takeIf { it.isNotBlank() && it != "null" },
+                            summaryId = c.optString("summary_id").takeIf { it.isNotBlank() && it != "null" },
+                            ability = c.optString("ability").takeIf { it.isNotBlank() },
                             roomId = c.optString("room_id").takeIf { it.isNotBlank() },
                             date = c.optString("date").takeIf { it.isNotBlank() },
                             eventId = c.optString("event_id").takeIf { it.isNotBlank() },

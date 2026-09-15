@@ -137,6 +137,7 @@ fun MainTabScreen(
     onOpenChat: (cid: String) -> Unit,
     onNewChat: () -> Unit,
     onOpenSearch: () -> Unit,
+    onSearchMeetingAi: () -> Unit = onOpenSearch,
     onOpenContactsSearch: (departmentId: String?) -> Unit,
     onOpenTasksSearch: () -> Unit,
     /** 通讯录首页的「内部联系人」入口(部门下钻 + 成员名单那一页)。 */
@@ -443,6 +444,7 @@ fun MainTabScreen(
                         onRecord = onOpenRecord, onSummaryRecord = onOpenSummaryRecord, onBack = {}, onOpenNavDrawer = openMeetingNavigation,
                         onStartRecording = if (BuildConfig.WE_MEET_CAPTURE_NATIVE) ({ meetingSectionName = MeetingSection.RECORDING.name }) else null,
                         uploadRepository = app.recordingUploadRepository,
+                        onSearchMeetingAi = onSearchMeetingAi,
                     )
                 }
             }

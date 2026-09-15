@@ -111,10 +111,10 @@ object Routes {
     const val RECORD_LIBRARY = "meeting_records?summaries={summaries}"
     const val CAPTURE = "meeting_capture"
     const val RECORD_DETAIL = "meeting_record/{recordId}?summary={summary}&tab={tab}"
-    fun recordDetail(recordId: String, summaryId: String? = null, summaryView: Boolean = false): String {
+    fun recordDetail(recordId: String, summaryId: String? = null, summaryView: Boolean = false, reviewed: Boolean = false): String {
         val query = listOfNotNull(
             summaryId?.let { "summary=${URLEncoder.encode(it, StandardCharsets.UTF_8.name())}" },
-            if (summaryView) "tab=summary" else null,
+            if (reviewed) "tab=review" else if (summaryView) "tab=summary" else null,
         ).joinToString("&")
         return "meeting_record/${URLEncoder.encode(recordId, StandardCharsets.UTF_8.name())}" +
             if (query.isEmpty()) "" else "?$query"
@@ -153,7 +153,7 @@ object Routes {
     private const val IM_CHAT_BASE = "im_chat"
     const val IM_CHAT = "$IM_CHAT_BASE/{cid}?seq={seq}"
     /** P1-M3 全局搜索页(会话过滤 + 消息全文检索)。 */
-    const val IM_SEARCH = "im_search?category={category}&dept={dept}"
+    const val IM_SEARCH = "im_search?category={category}&dept={dept}&meetingAi={meetingAi}"
 
     /**
      * [departmentId] 预选「联系人」分类的搜索范围 —— 从某个部门页点搜索时带上,
@@ -162,9 +162,10 @@ object Routes {
     fun imSearch(
         category: SearchCategory = SearchCategory.ALL,
         departmentId: String? = null,
+        meetingAi: Boolean = false,
     ): String =
         "im_search?category=${category.name}" +
-            "&dept=${URLEncoder.encode(departmentId.orEmpty(), StandardCharsets.UTF_8.name())}"
+            "&dept=${URLEncoder.encode(departmentId.orEmpty(), StandardCharsets.UTF_8.name())}&meetingAi=$meetingAi"
     const val TASK_DETAIL = "task_detail/{taskId}"
     fun taskDetail(taskId: String): String =
         "task_detail/${URLEncoder.encode(taskId, StandardCharsets.UTF_8.name())}"
@@ -671,6 +672,7 @@ fun AppNav() {
                 onOpenApproval = { navController.navigate(Routes.APPROVAL) },
                 onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
                 onNewChat = { navController.navigate(Routes.imNewChat()) },
+                onSearchMeetingAi = { navController.navigate(Routes.imSearch(SearchCategory.AI, meetingAi = true)) },
                 onOpenSearch = { navController.navigate(Routes.imSearch(SearchCategory.MESSAGES)) },
                 // 通讯录首页的搜索入口没有部门范围(范围在「内部联系人」那一页里选)。
                 onOpenContactsSearch = { deptId ->
@@ -977,6 +979,7 @@ fun AppNav() {
                     type = NavType.StringType
                     defaultValue = SearchCategory.ALL.name
                 },
+                navArgument("meetingAi") { type = NavType.BoolType; defaultValue = false },
                 navArgument("dept") {
                     type = NavType.StringType
                     defaultValue = ""
@@ -1016,6 +1019,12 @@ fun AppNav() {
             // 搜索统一 M2:app 层把 联系人/会议/文档 三个数据源以 provider
             // 注入(feature-im 不反向依赖 app 模块)。
             MessageSearchScreen(
+                initialMeetingScope = entry.arguments?.getBoolean("meetingAi") == true,
+                onOpenRecord = { id, summaryId, ability, reviewed -> navController.navigate(Routes.recordDetail(id, summaryId, summaryView = ability != "read_transcript", reviewed = reviewed)) },
+                askMeetingAi = { question, from, to ->
+                    com.we.meet.data.api.globalAskStream(app.apiClient.okHttp, com.we.meet.BuildConfig.WE_MEET_BASE_URL,
+                        question, scope = "meetings", dateFrom = from, dateTo = to)
+                },
                 deps = app,
                 onOpenContact = { userId -> navController.navigate(Routes.memberDetail(userId)) },
                 contactsSearchHint = stringResource(R.string.contacts_search_hint),
@@ -1564,6 +1573,7 @@ fun AppNav() {
         }
         composable(Routes.RECORD_LIBRARY, arguments = listOf(navArgument("summaries") { type = NavType.BoolType; defaultValue = false })) { entry ->
             RecordLibraryScreen(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(),
+                onSearchMeetingAi = { navController.navigate(Routes.imSearch(SearchCategory.AI, meetingAi = true)) },
                 summariesOnly = entry.arguments?.getBoolean("summaries") == true,
                 onStartRecording = if (com.we.meet.BuildConfig.WE_MEET_CAPTURE_NATIVE) ({ navController.navigate(Routes.CAPTURE) }) else null,
                 uploadRepository = app.recordingUploadRepository,
@@ -1577,7 +1587,7 @@ fun AppNav() {
         )) { entry ->
             RecordDetailScreen(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(),
                 entry.arguments?.getString("recordId").orEmpty(), onBack = rememberOnceOnly(safePop),
-                summaryVersionId = entry.arguments?.getString("summary"), initialSummary = entry.arguments?.getString("tab") == "summary", onTask = { navController.navigate(Routes.taskDetail(it)) },
+                summaryVersionId = entry.arguments?.getString("summary"), initialReview = entry.arguments?.getString("tab") == "review", initialSummary = entry.arguments?.getString("tab") in listOf("summary", "review"), onTask = { navController.navigate(Routes.taskDetail(it)) },
                 onDocument = { navController.navigate(Routes.docsDetail(it)) })
         }
         composable(Routes.MEETING_SETTINGS) {

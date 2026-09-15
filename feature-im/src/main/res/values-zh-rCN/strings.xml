@@ -438,4 +438,10 @@
     <string name="im_doc_access_retry">重试</string>
     <string name="im_doc_access_save">保存</string>
     <string name="im_doc_access_close">关闭</string>
+    <string name="im_search_meeting_ai">问问会议 AI</string>
+    <string name="im_search_ai_scope_all">全部可访问内容</string>
+    <string name="im_search_ai_scope_meetings">会议与录音</string>
+    <string name="im_search_ai_date_from">开始日期（可选）</string>
+    <string name="im_search_ai_date_to">结束日期（可选）</string>
+    <string name="im_search_ai_dates_invalid">请输入 YYYY-MM-DD，结束日期不能早于开始日期。</string>
 </resources>

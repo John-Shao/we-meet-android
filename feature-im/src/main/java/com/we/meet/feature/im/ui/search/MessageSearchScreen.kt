@@ -27,6 +27,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -164,6 +166,9 @@ fun MessageSearchScreen(
     onOpenScheduled: ((slug: String) -> Unit)? = null,
     /** P1-4 M3:AI 问答 SSE(app 层实现);null = 隐藏 AI 分类。 */
     askAi: ((String) -> kotlinx.coroutines.flow.Flow<AskEvent>)? = null,
+    askMeetingAi: ((String, String?, String?) -> kotlinx.coroutines.flow.Flow<AskEvent>)? = null,
+    onOpenRecord: ((String, String?, String?, Boolean) -> Unit)? = null,
+    initialMeetingScope: Boolean = false,
     initialCategory: SearchCategory = SearchCategory.ALL,
     /**
      * 「联系人」分类的搜索范围(部门 id);null = 全组织。
@@ -241,8 +246,20 @@ fun MessageSearchScreen(
     var ask by remember { mutableStateOf(AskUiState()) }
     var askJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
 
+    var meetingScope by rememberSaveable { mutableStateOf(initialMeetingScope) }
+    var dateFrom by rememberSaveable { mutableStateOf("") }
+    var dateTo by rememberSaveable { mutableStateOf("") }
+    fun resetAsk() { askJob?.cancel(); ask = AskUiState() }
+    fun validDate(value: String) = value.isBlank() || runCatching { java.time.LocalDate.parse(value) }.isSuccess
+    val datesValid = validDate(dateFrom) && validDate(dateTo) &&
+        (dateFrom.isBlank() || dateTo.isBlank() || dateFrom <= dateTo)
+
     fun submitAsk() {
-        val provider = askAi ?: return
+        if (meetingScope && !datesValid) return
+        val provider = if (meetingScope) {
+            val meetingProvider = askMeetingAi ?: return
+            { q: String -> meetingProvider(q, dateFrom.ifBlank { null }, dateTo.ifBlank { null }) }
+        } else askAi ?: return
         val q = query.trim()
         if (q.length < SearchPolicy.MinQueryLength) return
         askJob?.cancel()
@@ -261,7 +278,7 @@ fun MessageSearchScreen(
                             degraded = event.degraded,
                         )
                         is AskEvent.Failure -> ask = ask.copy(
-                            status = "done", error = event,
+                            status = "done", error = event, answer = "", citations = emptyList(), citationsUsed = emptyList(),
                         )
                     }
                 }
@@ -270,10 +287,11 @@ fun MessageSearchScreen(
                     ask = ask.copy(
                         status = "done",
                         error = AskEvent.Failure(AskEvent.Failure.Code.NETWORK),
+                        answer = "", citations = emptyList(), citationsUsed = emptyList(),
                     )
                 }
             }
-            if (ask.status == "asking") ask = ask.copy(status = "done")
+            if (kotlinx.coroutines.currentCoroutineContext()[kotlinx.coroutines.Job]?.isActive == true && ask.status == "asking") ask = ask.copy(status = "done")
         }
     }
     // 离开页面即断流(SSE 占用服务端 worker,同 Web 关面板 abort 红线)。
@@ -702,7 +720,10 @@ fun MessageSearchScreen(
                 items(categories, key = { it.name }) { cat ->
                     FilterChip(
                         selected = category == cat,
-                        onClick = { category = cat },
+                        onClick = {
+                            if (cat == SearchCategory.AI && category == SearchCategory.MEETINGS && askMeetingAi != null) { resetAsk(); meetingScope = true }
+                            category = cat
+                        },
                         label = { Text(labelFor(cat)) },
                     )
                 }
@@ -739,15 +760,46 @@ fun MessageSearchScreen(
                 return@Column
             }
 
+            if (category == SearchCategory.MEETINGS && askMeetingAi != null) {
+                TextButton(onClick = { resetAsk(); meetingScope = true; category = SearchCategory.AI }) {
+                    Text(stringResource(R.string.im_search_meeting_ai))
+                }
+            }
             if (category == SearchCategory.AI) {
+                if (askMeetingAi != null) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding)) {
+                        FilterChip(selected = !meetingScope, onClick = { resetAsk(); meetingScope = false },
+                            label = { Text(stringResource(R.string.im_search_ai_scope_all)) })
+                        Spacer(Modifier.width(Dimens.SpaceS))
+                        FilterChip(selected = meetingScope, onClick = { resetAsk(); meetingScope = true },
+                            label = { Text(stringResource(R.string.im_search_ai_scope_meetings)) })
+                    }
+                    if (meetingScope) {
+                        Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding)) {
+                            OutlinedTextField(value = dateFrom, onValueChange = { resetAsk(); dateFrom = it },
+                                label = { Text(stringResource(R.string.im_search_ai_date_from)) },
+                                placeholder = { Text("YYYY-MM-DD") }, singleLine = true,
+                                isError = !datesValid, modifier = Modifier.weight(1f))
+                            Spacer(Modifier.width(Dimens.SpaceS))
+                            OutlinedTextField(value = dateTo, onValueChange = { resetAsk(); dateTo = it },
+                                label = { Text(stringResource(R.string.im_search_ai_date_to)) },
+                                placeholder = { Text("YYYY-MM-DD") }, singleLine = true,
+                                isError = !datesValid, modifier = Modifier.weight(1f))
+                        }
+                        if (!datesValid) Text(stringResource(R.string.im_search_ai_dates_invalid),
+                            color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = Dimens.ScreenPadding))
+                    }
+                }
                 AiAskPanel(
                     state = ask,
-                    query = query.trim(),
+                    query = if (meetingScope && !datesValid) "" else query.trim(),
                     onSubmit = { submitAsk() },
                     onOpenCitation = { citation ->
                         when {
                             citation.kind == "im" && citation.cid != null ->
                                 onOpenChat(citation.cid, citation.seq)
+                            citation.kind == "meeting" && citation.recordId != null ->
+                                onOpenRecord?.invoke(citation.recordId, citation.summaryId, citation.ability, citation.reviewed)
                             citation.kind == "meeting" && citation.roomId != null ->
                                 onOpenMeeting?.invoke(citation.roomId)
                             citation.kind == "calendar" && citation.eventId != null ->

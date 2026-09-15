@@ -41,6 +41,7 @@ fun RecordLibraryScreen(
     onStartRecording: (() -> Unit)? = null,
     uploadRepository: RecordingUploadRepository? = null,
     onSummaryRecord: (String) -> Unit = onRecord,
+    onSearchMeetingAi: (() -> Unit)? = null,
 ) {
     var scope by remember(viewer, summariesOnly) { mutableStateOf(if (summariesOnly) RecordScope.OWNED else RecordScope.RECENT) }
     var source by remember(viewer) { mutableStateOf<RecordSource?>(null) }
@@ -66,6 +67,11 @@ fun RecordLibraryScreen(
                 onBack = if (onOpenNavDrawer == null) onBack else null,
                 onMenu = onOpenNavDrawer, menuDescription = stringResource(R.string.meeting_navigation),
                 actions = {
+                    onSearchMeetingAi?.let { search ->
+                        IconButton(onClick = search) {
+                            Icon(Icons.Outlined.AutoAwesome, stringResource(R.string.meeting_ai_search))
+                        }
+                    }
                     IconButton(onClick = { searchVisible = !searchVisible; if (!searchVisible) { input = ""; query = "" } }) {
                         Icon(if (searchVisible) Icons.Outlined.Close else Icons.Outlined.Search,
                             stringResource(if (searchVisible) R.string.records_clear_search else R.string.records_search))

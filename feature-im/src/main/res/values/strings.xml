@@ -458,4 +458,10 @@ Limits: 100 requests per minute and 5 per second per bot, bodies up to 20 KB. Se
     <string name="im_doc_access_retry">Retry</string>
     <string name="im_doc_access_save">Save</string>
     <string name="im_doc_access_close">Close</string>
+    <string name="im_search_meeting_ai">Ask about meetings</string>
+    <string name="im_search_ai_scope_all">All accessible content</string>
+    <string name="im_search_ai_scope_meetings">Meetings and recordings</string>
+    <string name="im_search_ai_date_from">From (optional)</string>
+    <string name="im_search_ai_date_to">To (optional)</string>
+    <string name="im_search_ai_dates_invalid">Use YYYY-MM-DD; the end date must be on or after the start date.</string>
 </resources>
