@@ -5,6 +5,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Replay
+import androidx.compose.material.icons.outlined.FastForward
+import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -134,7 +141,6 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
     val positionLabel = stringResource(R.string.capture_playback_position)
     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.padding(Dimens.SpaceM), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-            Text(stringResource(R.string.capture_playback_title), style = MaterialTheme.typography.titleSmall)
             if (state == "loading" || state == "buffering") WeMeetInlineLoading()
             if (state == "error") WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.capture_playback_error))
             if (data != null) {
@@ -145,11 +151,13 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
                     Slider(position.coerceAtMost(maxOf(1, data.endMs - 1)).toFloat(), onValueChange = { stop(); position = it.toLong(); state = "ready"; consumeSeek() },
                         valueRange = 0f..maxOf(1, data.endMs - 1).toFloat(), modifier = Modifier.semantics { contentDescription = positionLabel })
                     if (state == "gap") Text(stringResource(R.string.capture_playback_gap), style = MaterialTheme.typography.bodySmall)
-                    Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                        TextButton(onClick = { if (playing) { stop(); state = "ready"; consumeSeek() } else play(if (position >= data.endMs) 0 else position) }) {
-                            Text(stringResource(if (playing) R.string.capture_playback_pause else R.string.capture_playback_play))
-                        }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
                         TextButton(onClick = { stop(); state = "ready"; consumeSeek(); ratesVisible = true }) { Text(stringResource(R.string.capture_playback_rate, rate)) }
+                        IconButton(onClick = { play(maxOf(0, position - 15_000)) }) { Icon(Icons.Outlined.Replay, stringResource(R.string.records_skip_back)) }
+                        FilledTonalIconButton(modifier = Modifier.size(Dimens.ButtonHeight), onClick = { if (playing) { stop(); state = "ready"; consumeSeek() } else play(if (position >= data.endMs) 0 else position) }) {
+                            Icon(if (playing) Icons.Outlined.Pause else Icons.Outlined.PlayArrow, stringResource(if (playing) R.string.capture_playback_pause else R.string.capture_playback_play), Modifier.size(Dimens.IconXl))
+                        }
+                        IconButton(onClick = { play(minOf(data.endMs - 1, position + 15_000)) }) { Icon(Icons.Outlined.FastForward, stringResource(R.string.records_skip_forward)) }
                         if (state == "gap") data.chunks.firstOrNull { it.startMs >= position }?.let { next ->
                             TextButton(onClick = { play(next.startMs) }) { Text(stringResource(R.string.capture_playback_skip)) }
                         }

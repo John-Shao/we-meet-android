@@ -39,7 +39,7 @@ class CaptureAudioPlayerTest {
     @Volatile private var fail = false
     @Volatile private var reads = 0
     private fun label(id: Int) = context.getString(id)
-    private fun await(id: Int) { compose.waitUntil(8000) { compose.onAllNodesWithText(label(id)).fetchSemanticsNodes().isNotEmpty() } }
+    private fun await(id: Int) { compose.waitUntil(8000) { compose.onAllNodes(hasText(label(id)) or hasContentDescription(label(id))).fetchSemanticsNodes().isNotEmpty() } }
     private fun show(dark: Boolean = false) {
         compose.setContent { WeMeetTheme(darkTheme = dark) { Surface {
             CaptureAudioPlayer("fixture", record, { reads++; check(!fail); playlist }, { guard ->
@@ -58,9 +58,9 @@ class CaptureAudioPlayerTest {
         show()
         assertTrue(downloads.isEmpty())
         screenshot("ready")
-        compose.onNodeWithText(label(R.string.capture_playback_play)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
         compose.waitUntil(8000) { sinks.isNotEmpty() && sinks.first().started }
-        compose.onNodeWithText(label(R.string.capture_playback_pause)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_pause)).performClick()
         assertTrue(sinks.single().closed)
         assertEquals(listOf(0), downloads.toList())
         compose.waitForIdle()
@@ -77,7 +77,7 @@ class CaptureAudioPlayerTest {
         assertTrue(sinks.first().closed)
         compose.onNodeWithText(context.getString(R.string.capture_playback_rate, 1.5f)).performClick()
         assertEquals(1, sinks.size)
-        compose.onNodeWithText(label(R.string.capture_playback_play)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
         compose.waitUntil(8000) { sinks.size == 2 && sinks.last().started }
         assertEquals(1.5f, sinks.last().rate)
     }
@@ -94,7 +94,7 @@ class CaptureAudioPlayerTest {
     }
     @Test fun backgroundClosesAndReturnRechecksWithoutAutoplay() {
         show()
-        compose.onNodeWithText(label(R.string.capture_playback_play)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
         compose.waitUntil(8000) { sinks.isNotEmpty() && sinks.first().started }
         compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
         assertTrue(sinks.single().closed)
@@ -106,12 +106,12 @@ class CaptureAudioPlayerTest {
     }
     @Test fun accountLossStopsAndFailedReloadCannotReplayOldPlaylist() {
         show()
-        compose.onNodeWithText(label(R.string.capture_playback_play)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
         compose.waitUntil(8000) { sinks.isNotEmpty() && sinks.first().started }
         allowed = false
         await(R.string.capture_playback_error)
         assertTrue(sinks.single().closed)
-        compose.onNodeWithText(label(R.string.capture_playback_play)).assertDoesNotExist()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).assertDoesNotExist()
         screenshot("error")
         fail = true
         compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
@@ -121,7 +121,7 @@ class CaptureAudioPlayerTest {
     }
     @Test fun recorderExclusionClosesRegisteredPlayerImmediately() {
         show()
-        compose.onNodeWithText(label(R.string.capture_playback_play)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
         compose.waitUntil(8000) { sinks.isNotEmpty() && sinks.first().started }
         CapturePlaybackRegistry.stopAll()
         assertTrue(sinks.single().closed)

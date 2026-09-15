@@ -149,6 +149,15 @@ class MeetingRecordRepositoryTest {
         assertEquals(3, requests.size)
     }
 
+    @Test fun uploadedRecordingReadsOriginalsWithoutACaptureId() = runBlocking {
+        val repo = repository { request ->
+            if (request.url.encodedPath.endsWith("/original-segments/")) 200 to """{"results":[{"id":"$recordId","revision":1,"capture_session_id":"$snapshotId",
+                "speaker_id":"$sourceId","speaker_label":"Speaker 1","start_ms":1000,"text":"Uploaded original"}]}"""
+            else 200 to record().replace("audio_recording", "upload")
+        }
+        assertEquals("Uploaded original", repo.originals("reader", recordId, 3).getOrThrow().results.single().text)
+    }
+
     @Test fun summaryOnlySearchCannotReadOriginalsOrSpeakerNames() = runBlocking {
         val repo = repository { 200 to record("""{"read_summary":true}""") }
         assertTrue(repo.originals("reader", recordId, 3, "private").isFailure)

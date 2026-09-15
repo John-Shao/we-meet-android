@@ -1559,6 +1559,8 @@ fun AppNav() {
         composable(Routes.RECORD_LIBRARY, arguments = listOf(navArgument("summaries") { type = NavType.BoolType; defaultValue = false })) { entry ->
             RecordLibraryScreen(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(),
                 summariesOnly = entry.arguments?.getBoolean("summaries") == true,
+                onStartRecording = if (com.we.meet.BuildConfig.WE_MEET_CAPTURE_NATIVE) ({ navController.navigate(Routes.CAPTURE) }) else null,
+                uploadRepository = app.recordingUploadRepository,
                 onRecord = { id -> navController.navigate(Routes.recordDetail(id)) }, onBack = rememberOnceOnly(safePop))
         }
         composable(Routes.RECORD_DETAIL, arguments = listOf(

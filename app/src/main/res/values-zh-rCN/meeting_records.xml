@@ -19,9 +19,9 @@
     <string name="records_title">会议实录</string>
     <string name="records_minutes">智能纪要</string>
     <string name="records_recent">最近</string>
-    <string name="records_owned">归我所有</string>
+    <string name="records_owned">我的内容</string>
     <string name="records_participated">我参与的</string>
-    <string name="records_shared">与我共享</string>
+    <string name="records_shared">共享内容</string>
     <string name="records_all">全部来源</string>
     <string name="records_online">线上会议</string>
     <string name="records_audio">AI 录音</string>

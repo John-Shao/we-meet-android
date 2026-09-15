@@ -19,7 +19,7 @@
     <string name="records_title">Meeting records</string>
     <string name="records_minutes">Smart minutes</string>
     <string name="records_recent">Recent</string>
-    <string name="records_owned">Owned by me</string>
+    <string name="records_owned">My content</string>
     <string name="records_participated">Participated</string>
     <string name="records_shared">Shared with me</string>
     <string name="records_all">All sources</string>

@@ -131,6 +131,8 @@ object Dimens {
     val ListThumbnail = 56.dp
     /** 首页那种大号功能入口方块。 */
     val ActionTile = 72.dp
+    /** Minimum readable card width in the adaptive meeting-record library grid. */
+    val RecordGridMinWidth = 180.dp
     /** 四列功能入口的紧凑方块，比列表图标底块略大且保留完整触控区域。 */
     val ActionTileCompact = 48.dp
     /** 紧凑功能入口图标，比列表中的 IconMedium 略大。 */

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="records_filter_speaker">Filter by speaker</string>
+    <string name="records_info">Recording info</string>
+    <string name="records_start_time">Started</string>
+    <string name="records_retention">Storage</string>
+    <string name="records_retention_media">Audio or video retained</string>
+    <string name="records_retention_text">Text only</string>
+    <string name="records_retention_unknown">Not recorded</string>
+    <string name="records_skip_back">Back 15 seconds</string>
+    <string name="records_skip_forward">Forward 15 seconds</string>
+    <string name="records_filters">Filters</string>
+    <string name="records_source_filter">Source</string>
+    <string name="records_filters_done">Done</string>
+    <string name="records_reset_filters">Reset</string>
+    <string name="records_clear_search">Close search</string>
+    <string name="records_grid_view">Switch to grid view</string>
+    <string name="records_list_view">Switch to list view</string>
+    <string name="records_minutes_ready">Minutes ready</string>
+    <string name="records_start_recording">Record</string>
+    <string name="records_upload">Upload</string>
+    <string name="record_upload_title">Transcribe a recording</string>
+    <string name="record_upload_hint">Choose an audio or video file, up to %1$d MB. Transcription continues after upload.</string>
+    <string name="record_upload_choose">Choose a file</string>
+    <string name="record_upload_advanced">Improve recognition (optional)</string>
+    <string name="record_upload_context">Meeting context (up to 400 characters)</string>
+    <string name="record_upload_hotwords">Keywords (one per line, up to 40 characters each)</string>
+    <string name="record_upload_consent">Make sure you have permission to upload and transcribe this recording.</string>
+    <string name="record_upload_wait">Uploading… Keep this screen open until the upload finishes.</string>
+    <string name="record_upload_error">Upload failed. Check the file format, size and connection, then retry.</string>
+    <string name="record_upload_submit">Upload and transcribe</string>
+    <string name="record_upload_queued">Waiting to transcribe. You can leave this page.</string>
+    <string name="record_upload_transcribing">Transcribing… You can leave this page and return later.</string>
+    <string name="record_upload_failed">Transcription failed</string>
+    <string name="record_upload_retry">Retry transcription</string>
+</resources>

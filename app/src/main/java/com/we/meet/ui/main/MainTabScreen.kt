@@ -440,6 +440,8 @@ fun MainTabScreen(
                         app.meetingRecordRepository, meetingViewer,
                         summariesOnly = meetingSection == MeetingSection.MINUTES,
                         onRecord = onOpenRecord, onBack = {}, onOpenNavDrawer = openMeetingNavigation,
+                        onStartRecording = if (BuildConfig.WE_MEET_CAPTURE_NATIVE) ({ meetingSectionName = MeetingSection.RECORDING.name }) else null,
+                        uploadRepository = app.recordingUploadRepository,
                     )
                 }
             }

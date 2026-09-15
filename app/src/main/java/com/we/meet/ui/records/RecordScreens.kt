@@ -22,6 +22,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,6 +54,7 @@ import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.awaitCancellation
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -57,16 +62,18 @@ import java.time.format.FormatStyle
 
 /** Read only while visible. Errors and backgrounding remove the last private body. */
 @Composable
-internal fun <T> visibleRead(vararg keys: Any?, intervalMs: Long = 15_000, read: suspend () -> Result<T>): Result<T>? {
+internal fun <T> visibleRead(vararg keys: Any?, intervalMs: Long = 15_000, stopWhen: (T) -> Boolean = { false }, read: suspend () -> Result<T>): Result<T>? {
     var result by remember(*keys) { mutableStateOf<Result<T>?>(null) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val latestRead by rememberUpdatedState(read)
+    val latestStopWhen by rememberUpdatedState(stopWhen)
     LaunchedEffect(lifecycle, *keys) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             try {
                 do {
                     result = latestRead()
                     if (result?.isFailure == true) break
+                    if (result?.getOrNull()?.let(latestStopWhen) == true) awaitCancellation()
                     delay(intervalMs)
                 } while (true)
             } finally {
@@ -79,85 +86,6 @@ internal fun <T> visibleRead(vararg keys: Any?, intervalMs: Long = 15_000, read:
 }
 
 @Composable
-fun RecordLibraryScreen(
-    repository: MeetingRecordRepository,
-    viewer: String,
-    summariesOnly: Boolean,
-    onRecord: (String) -> Unit,
-    onBack: () -> Unit,
-    onOpenNavDrawer: (() -> Unit)? = null,
-) {
-    var scope by remember(viewer) { mutableStateOf(RecordScope.RECENT) }
-    var source by remember(viewer) { mutableStateOf<RecordSource?>(null) }
-    var input by remember(viewer) { mutableStateOf("") }
-    var query by remember(viewer) { mutableStateOf("") }
-    var cursors by remember(viewer, scope, source, query) { mutableStateOf(listOf<String?>(null)) }
-    var refresh by remember { mutableIntStateOf(0) }
-    val cursor = cursors.last()
-    val result = visibleRead(viewer, scope, source, query, cursor, summariesOnly, refresh) {
-        repository.records(viewer, scope, source, summariesOnly, query.ifBlank { null }, cursor)
-    }
-    Scaffold(
-        topBar = { WeMeetTopBar(stringResource(if (summariesOnly) R.string.records_minutes else R.string.records_title),
-            onBack = if (onOpenNavDrawer == null) onBack else null,
-            onMenu = onOpenNavDrawer, menuDescription = stringResource(R.string.meeting_navigation)) },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(bottom = Dimens.SpaceS)) {
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                    RecordScope.entries.forEach { value ->
-                        FilterChip(selected = scope == value, onClick = { scope = value }, label = { Text(stringResource(scopeLabel(value))) })
-                    }
-                }
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                    listOf(null, RecordSource.MEETING, RecordSource.AUDIO).forEach { value ->
-                        FilterChip(selected = source == value, onClick = { source = value }, label = { Text(stringResource(sourceLabel(value?.wire))) })
-                    }
-                }
-                Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                    OutlinedTextField(value = input, onValueChange = { if (it.length <= 200) input = it }, singleLine = true,
-                        label = { Text(stringResource(R.string.records_search)) }, modifier = Modifier.weight(1f))
-                    TextButton(onClick = { query = input.trim(); refresh++ }) { Text(stringResource(R.string.records_search_action)) }
-                }
-            }
-            when {
-                result == null -> WeMeetInlineLoading()
-                result.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
-                result.getOrThrow().results.isEmpty() -> WeMeetEmptyState(
-                    stringResource(R.string.records_empty),
-                    description = stringResource(R.string.records_empty_hint),
-                    action = { TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) } },
-                )
-                else -> {
-                    val page = result.getOrThrow()
-                    LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                        items(page.results, key = { it.id }) { record ->
-                            Card(onClick = { onRecord(record.id) }, modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                                Column(Modifier.padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
-                                    Text(record.title, style = MaterialTheme.typography.titleMedium)
-                                    Text(stringResource(sourceLabel(record.sourceType)), style = MaterialTheme.typography.labelMedium)
-                                    Text(recordTime(record.originAt), style = MaterialTheme.typography.bodySmall)
-                                    if (record.isOngoing) Text(stringResource(R.string.records_ongoing), color = MaterialTheme.colorScheme.primary)
-                                }
-                            }
-                        }
-                        item {
-                            Row(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), horizontalArrangement = Arrangement.SpaceBetween) {
-                                if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
-                                page.nextCursor?.let { next -> TextButton(onClick = { cursors = cursors + next }) { Text(stringResource(R.string.records_next)) } }
-                                TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String, onBack: () -> Unit, summaryVersionId: String? = null, onTask: ((String) -> Unit)? = null, onDocument: ((String) -> Unit)? = null) {
     val app = LocalContext.current.applicationContext as? WeMeetApp
     var audioSeek by remember(viewer, recordId) { mutableStateOf<CaptureAudioSeek?>(null) }
@@ -165,28 +93,43 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     var selectedVersion by remember(viewer, recordId, summaryVersionId) { mutableStateOf(summaryVersionId) }
     var cursors by remember(viewer, recordId, selectedVersion) { mutableStateOf(listOf<String?>(null)) }
     var citation by remember(viewer, recordId, summaryVersionId) { mutableStateOf<Pair<String, RecordReferenceDto>?>(null) }
-    var originalsSelected by remember(viewer, recordId, summaryVersionId) { mutableStateOf(false) }
-    var translationsSelected by remember(viewer, recordId, summaryVersionId) { mutableStateOf(false) }
+    var detailTab by remember(viewer, recordId, summaryVersionId) { mutableStateOf(if (summaryVersionId != null) "summary" else "text") }
     val detail = visibleRead(viewer, recordId, refresh) { repository.record(viewer, recordId) }
     val record = detail?.getOrNull()
     val canPlay = app != null && record?.sourceType == "audio_recording" && record.capabilities.readTranscript && record.retentionMode == "media" && !record.isOngoing
-    Scaffold(topBar = { WeMeetTopBar(record?.title ?: stringResource(R.string.records_minutes), onBack = onBack,
-        actions = { record?.let { RecordRenameAction(repository, viewer, it) { refresh++ } } }) }, containerColor = MaterialTheme.colorScheme.background) { padding ->
+    Scaffold(topBar = { WeMeetTopBar(stringResource(R.string.records_title), onBack = onBack,
+        actions = { record?.let { RecordRenameAction(repository, viewer, it) { refresh++ } } }) }, containerColor = MaterialTheme.colorScheme.surface) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             when {
                 detail == null -> WeMeetInlineLoading()
                 detail.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
                 record == null -> WeMeetEmptyState(stringResource(R.string.records_unavailable))
                 else -> {
-                    val canReadTranslations = record.capabilities.readTranscript && app != null && (record.sourceType == "meeting" || record.sourceType == "audio_recording" && record.captureId != null)
-                    val showTranslations = canReadTranslations && translationsSelected
-                    val showOriginals = !showTranslations && record.capabilities.readTranscript && (originalsSelected || (!record.capabilities.readSummary && selectedVersion == null))
-                    Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).horizontalScroll(rememberScrollState()).padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                        if (record.capabilities.readSummary) FilterChip(selected = !showOriginals && !showTranslations, onClick = { originalsSelected = false; translationsSelected = false }, label = { Text(stringResource(R.string.records_minutes)) })
-                        if (record.capabilities.readTranscript) FilterChip(selected = showOriginals, onClick = { originalsSelected = true; translationsSelected = false }, label = { Text(stringResource(R.string.records_originals)) })
-                        if (canReadTranslations) FilterChip(selected = showTranslations, onClick = { translationsSelected = true }, label = { Text(stringResource(R.string.archives_title)) })
+                    Column(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                        Text(record.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text("${recordTime(record.originAt)} · ${stringResource(sourceLabel(record.sourceType))}",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    if (showTranslations) {
+                    val canReadTranslations = record.capabilities.readTranscript && app != null && (record.sourceType == "meeting" || record.sourceType == "audio_recording" && record.captureId != null)
+                    val tabs = buildList {
+                        if (record.capabilities.readTranscript) add("text" to R.string.records_originals)
+                        if (record.capabilities.readSummary) add("summary" to R.string.records_minutes)
+                        if (record.capabilities.readTranscript && record.sourceType in listOf("audio_recording", "upload")) add("speakers" to R.string.records_speakers)
+                        add("info" to R.string.records_info)
+                        if (canReadTranslations) add("translations" to R.string.archives_title)
+                    }
+                    val selectedTab = detailTab.takeIf { tab -> tabs.any { it.first == tab } } ?: tabs.first().first
+                    val showTranslations = selectedTab == "translations"
+                    val showOriginals = selectedTab == "text"
+                    if (record.sourceType == "upload" && app != null) RecordingUploadStatus(app.recordingUploadRepository, viewer, recordId)
+                    ScrollableTabRow(selectedTabIndex = tabs.indexOfFirst { it.first == selectedTab }, edgePadding = Dimens.SpaceS, containerColor = MaterialTheme.colorScheme.surface) {
+                        tabs.forEach { (value, label) -> Tab(selected = value == selectedTab, onClick = { detailTab = value }, text = { Text(stringResource(label)) }) }
+                    }
+                    if (selectedTab == "info") {
+                        RecordInfo(record, Modifier.weight(1f))
+                    } else if (selectedTab == "speakers") {
+                        RecordSpeakers(repository, viewer, record, Modifier.weight(1f))
+                    } else if (showTranslations) {
                         Column(Modifier.weight(1f).fillMaxWidth()) {
                             if (record.sourceType == "audio_recording") CaptureTranslationArchives(viewer, requireNotNull(record.captureId), recordId, requireNotNull(app).captureTranslationRepository)
                             else RecordTranslationArchives(viewer, recordId, requireNotNull(app).translationArchiveRepository)
@@ -307,13 +250,13 @@ internal fun SummaryCard(version: RecordSummaryVersionDto, originals: Boolean, o
     }
 }
 
-private fun scopeLabel(scope: RecordScope): Int = when (scope) {
+internal fun scopeLabel(scope: RecordScope): Int = when (scope) {
     RecordScope.RECENT -> R.string.records_recent
     RecordScope.OWNED -> R.string.records_owned
     RecordScope.PARTICIPATED -> R.string.records_participated
     RecordScope.SHARED -> R.string.records_shared
 }
-private fun sourceLabel(source: String?): Int = when (source) {
+internal fun sourceLabel(source: String?): Int = when (source) {
     "meeting" -> R.string.records_online
     "audio_recording" -> R.string.records_audio
     "upload" -> R.string.records_uploaded

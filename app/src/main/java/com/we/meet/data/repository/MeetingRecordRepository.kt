@@ -86,7 +86,7 @@ class MeetingRecordRepository(
                     RecordOriginalRow(it.id, it.speakerName, it.text, it.language, startedAt = it.startedAt)
                 }, rows.nextCursor)
             }
-            "audio_recording" -> {
+            "audio_recording", "upload" -> {
                 val rows = api.originals(recordId, revision, query, speakerId, cursor)
                 validatePage(rows)
                 RecordPageDto(rows.results.map {
@@ -114,7 +114,7 @@ class MeetingRecordRepository(
         requireUuid(recordId)
         require(revision > 0)
         validateCursor(cursor)
-        require(originalRecord(recordId, revision).sourceType == "audio_recording")
+        require(originalRecord(recordId, revision).sourceType in listOf("audio_recording", "upload"))
         val page = api.speakers(recordId, cursor)
         validatePage(page)
         page.results.forEach { requireUuid(it.id) }

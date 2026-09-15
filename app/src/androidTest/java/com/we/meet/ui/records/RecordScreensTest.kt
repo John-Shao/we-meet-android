@@ -9,6 +9,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
@@ -59,6 +60,8 @@ class RecordScreensTest {
         val summarySelectors = mutableListOf<String?>()
         var missingVersion = false
         val queries = mutableListOf<Pair<String, String?>>()
+        var searchQuery: String? = null
+        var sourceFilter: String? = null
         private fun checkAccess() { check(!revoked) { "Fixture access revoked" } }
         override suspend fun rename(recordId: String, body: RecordTitleRequestDto): RecordDto {
             checkAccess()
@@ -76,6 +79,8 @@ class RecordScreensTest {
         override suspend fun records(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?, isOngoing: Boolean?): RecordPageDto<RecordDto> {
             checkAccess()
             queries += scope to cursor
+            searchQuery = query
+            sourceFilter = source
             return if (cursor == null) RecordPageDto(listOf(record(recordId)), "next-page") else RecordPageDto(emptyList())
         }
         override suspend fun summaries(recordId: String, cursor: String?, versionId: String?): RecordPageDto<RecordSummaryVersionDto> {
@@ -153,6 +158,8 @@ class RecordScreensTest {
                 WeMeetTheme(darkTheme = dark) { RecordDetailScreen(repo, "reader", recordId, {}) }
             }
         }
+        awaitText(label(R.string.records_minutes))
+        compose.onNodeWithText(label(R.string.records_minutes)).performClick()
         awaitText("Confirm release scope")
         return owner
     }
@@ -170,6 +177,27 @@ class RecordScreensTest {
         compose.onNodeWithText(label(R.string.records_shared)).performScrollTo().performClick()
         compose.waitUntil(5_000) { fixture.queries.lastOrNull() == ("shared" to null) }
         assertTrue(fixture.queries.contains("recent" to "next-page"))
+    }
+
+    @Test fun librarySearchFiltersAndRecordingShortcut() {
+        val fixture = Fixture()
+        var started = false
+        compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", false, {}, {}, onStartRecording = { started = true }) } }
+        awaitText("Private planning meeting")
+        compose.onNodeWithContentDescription(label(R.string.records_search)).performClick()
+        compose.onNodeWithText(label(R.string.records_search)).performTextInput("Design")
+        compose.onNodeWithText(label(R.string.records_search_action)).performClick()
+        compose.waitUntil(5_000) { fixture.searchQuery == "Design" }
+        compose.onNodeWithContentDescription(label(R.string.records_clear_search)).performClick()
+        compose.waitUntil(5_000) { fixture.searchQuery == null }
+        compose.onNodeWithContentDescription(label(R.string.records_filters)).performClick()
+        compose.onNodeWithText(label(R.string.records_uploaded)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.records_filters_done)).performClick()
+        compose.waitUntil(5_000) { fixture.sourceFilter == "upload" }
+        compose.onNodeWithText(label(R.string.records_reset_filters)).performClick()
+        compose.waitUntil(5_000) { fixture.sourceFilter == null }
+        compose.onNodeWithText(label(R.string.records_start_recording)).performClick()
+        assertTrue(started)
     }
 
     @Test fun backgroundClearsPrivateBodyAndRevocationFailsClosedOnReturn() {
@@ -217,15 +245,17 @@ class RecordScreensTest {
         detail(fixture)
         compose.onNodeWithText(label(R.string.records_originals)).performClick()
         awaitText("Full original text")
+        compose.onNodeWithText(label(R.string.records_search_originals)).performClick()
         compose.onNodeWithText(label(R.string.records_search_originals)).performTextInput("release 中文")
         compose.onNodeWithText(label(R.string.records_search_action)).performClick()
         awaitText("Search matched original")
-        compose.onNodeWithText(label(R.string.records_speakers)).performClick()
+        compose.onNodeWithText(label(R.string.records_filter_speaker)).performClick()
         awaitText(label(R.string.records_all_speakers))
         compose.onAllNodesWithText("Speaker 1")[1].performClick()
         compose.waitUntil(5_000) { fixture.originalQueries.lastOrNull() == ("release 中文" to versionId) }
         compose.onNodeWithText(label(R.string.records_clear_filters)).performClick()
         awaitText("Full original text")
+        compose.onNodeWithText(label(R.string.records_clear_search)).performClick()
         screenshot("records-originals-light")
     }
 

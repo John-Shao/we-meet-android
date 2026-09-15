@@ -9,6 +9,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
@@ -50,6 +57,7 @@ internal fun RecordOriginals(
 ) {
     var input by remember(viewer, record.id) { mutableStateOf("") }
     var query by remember(viewer, record.id) { mutableStateOf("") }
+    var searchVisible by remember(viewer, record.id) { mutableStateOf(false) }
     var speakerId by remember(viewer, record.id, record.revision) { mutableStateOf<String?>(null) }
     var selectSpeaker by remember(viewer, record.id, record.revision) { mutableStateOf(false) }
     var cursors by remember(viewer, record.id, record.revision, query, speakerId) { mutableStateOf(listOf<String?>(null)) }
@@ -60,7 +68,7 @@ internal fun RecordOriginals(
     val search = { query = input.trim(); cursors = listOf(null); keyboard?.hide(); Unit }
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = Dimens.ScreenPadding)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+            if (searchVisible) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                 OutlinedTextField(
                     value = input,
                     onValueChange = { input = it.take(200) },
@@ -73,9 +81,12 @@ internal fun RecordOriginals(
                 TextButton(onClick = search) { Text(stringResource(R.string.records_search_action)) }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                if (record.sourceType == "audio_recording") {
+                TextButton(onClick = { searchVisible = !searchVisible; if (!searchVisible) { input = ""; query = ""; keyboard?.hide() } }) {
+                    Text(stringResource(if (searchVisible) R.string.records_clear_search else R.string.records_search_originals))
+                }
+                if (record.sourceType in listOf("audio_recording", "upload")) {
                     TextButton(onClick = { selectSpeaker = true }) {
-                        Text(stringResource(if (speakerId == null) R.string.records_speakers else R.string.records_speaker_filtered))
+                        Text(stringResource(if (speakerId == null) R.string.records_filter_speaker else R.string.records_speaker_filtered))
                     }
                 }
                 if (query.isNotBlank() || speakerId != null) {
@@ -94,16 +105,18 @@ internal fun RecordOriginals(
                 )
                 else -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                     items(page.getOrThrow().results, key = { it.id }) { original ->
-                        Card(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                            Column(Modifier.padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                                Text(original.speakerLabel.ifBlank { stringResource(R.string.records_unknown_speaker) }, style = MaterialTheme.typography.titleSmall)
-                                Text(original.startedAt?.let(::recordTime) ?: original.startMs?.let(::sourceTime).orEmpty(), style = MaterialTheme.typography.bodySmall)
-                                Text(original.text, style = MaterialTheme.typography.bodyLarge)
-                                if (onSource != null) original.startMs?.let { position ->
-                                    TextButton(onClick = { onSource(position) }) { Text(stringResource(R.string.capture_playback_source, sourceTime(position))) }
+                            Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
+                                        Icon(Icons.Outlined.Person, null, Modifier.padding(Dimens.SpaceS).size(Dimens.IconSmall), tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    Text(original.speakerLabel.ifBlank { stringResource(R.string.records_unknown_speaker) }, Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    if (onSource != null && original.startMs != null) {
+                                        TextButton(onClick = { onSource(original.startMs) }) { Text(stringResource(R.string.capture_playback_source, sourceTime(original.startMs))) }
+                                    } else Text(original.startedAt?.let(::recordTime) ?: original.startMs?.let(::sourceTime).orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
+                                Text(original.text, style = MaterialTheme.typography.bodyLarge)
                             }
-                        }
                     }
                 }
             }
