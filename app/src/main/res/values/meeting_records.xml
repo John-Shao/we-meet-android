@@ -16,7 +16,7 @@
     <string name="records_no_originals">No matching transcript</string>
     <string name="records_no_originals_hint">Try another search or refresh after transcription finishes.</string>
     <string name="records_source_changed">The transcript changed. Refresh to load the current version.</string>
-    <string name="records_title">Meeting notes</string>
+    <string name="records_title">Meeting records</string>
     <string name="records_minutes">Smart minutes</string>
     <string name="records_recent">Recent</string>
     <string name="records_owned">Owned by me</string>
@@ -32,9 +32,9 @@
     <string name="records_previous">Previous</string>
     <string name="records_next">Next</string>
     <string name="records_refresh">Refresh</string>
-    <string name="records_unavailable">These notes are unavailable. Check your connection and access, then retry.</string>
-    <string name="records_empty">No matching notes</string>
-    <string name="records_empty_hint">Try another filter. Notes saved on the web also appear here when you have access.</string>
+    <string name="records_unavailable">These records are unavailable. Check your connection and access, then retry.</string>
+    <string name="records_empty">No matching records</string>
+    <string name="records_empty_hint">Try another filter. Records saved on the web also appear here when you have access.</string>
     <string name="records_no_summary_access">Minutes have not been shared with you.</string>
     <string name="records_no_versions">No minutes yet</string>
     <string name="records_no_versions_hint">Minutes appear after the recording has enough confirmed text and a summary is generated.</string>

@@ -9,7 +9,7 @@
     <string name="translation_manual">双向语音翻译</string>
     <string name="translation_audio">生成译声</string>
     <string name="translation_text_only">仅生成译文</string>
-    <string name="translation_save">将已确认译文保存到会议笔记</string>
+    <string name="translation_save">将已确认译文保存到会议实录</string>
     <string name="translation_no_save">会话结束后不保存译文</string>
     <string name="translation_unknown">暂未确认操作结果，请先核对原请求，再进行其他操作。</string>
     <string name="translation_start">开始翻译</string>
@@ -26,7 +26,7 @@
     <string name="translation_speak_zh">开始说中文</string>
     <string name="translation_speak_en">开始说英文</string>
     <string name="translation_end_turn">结束本轮发言</string>
-    <string name="translation_open_archive">打开关联会议笔记</string>
+    <string name="translation_open_archive">打开关联会议实录</string>
     <string name="translation_text">译文 · 与原文分别展示</string>
     <string name="translation_confirmed">已确认译文</string>
     <string name="translation_candidate">临时译文</string>
