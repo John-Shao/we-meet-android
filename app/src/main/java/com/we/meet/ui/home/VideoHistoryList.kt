@@ -15,13 +15,20 @@ import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+/**
+ * 历史会议最多显示的条数。三处上限必须同源：这里、[HomeViewModel] 的入站裁剪，
+ * 以及后端 `rooms/video-meetings/` 的 `recent` 查询上限；Web 端
+ * `RecentMeetingsList` 的 `COLLAPSED_COUNT` 是同一个数。
+ */
+internal const val VIDEO_HISTORY_LIMIT = 20
+
 /** Ongoing and ended sessions, including sessions without generated material. */
 @Composable
 fun VideoHistoryList(rooms: List<RoomDto>, onSelect: (RoomDto) -> Unit, onMore: (() -> Unit)?) {
     Column(Modifier.fillMaxWidth()) {
         MeetingListSectionTitle(stringResource(R.string.history_section_title))
         if (rooms.isEmpty()) Text(stringResource(R.string.video_history_empty), Modifier.padding(Dimens.ScreenPadding), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        rooms.take(10).forEach { room ->
+        rooms.take(VIDEO_HISTORY_LIMIT).forEach { room ->
             key(room.meeting_session_id ?: room.id) {
                 val time = runCatching {
                     OffsetDateTime.parse(room.started_at).atZoneSameInstant(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("yyyy/M/d HH:mm"))

@@ -31,10 +31,10 @@ class VideoMeetingOverviewTest {
     private val record = RecordDto("33333333-3333-4333-8333-333333333333", "meeting", "Meeting fixture", "2026-09-15T00:00:00Z", 1, RecordCapabilitiesDto(readSummary = true, readTranscript = true), meetingSessionId = sessionId, sourceSessionId = sessionId, hasSummary = true)
     private fun label(id: Int) = context.getString(id)
 
-    @Test fun historyHasTenRowsAndMoreSelectsVideoRecords() {
+    @Test fun historyHasTwentyRowsAndMoreSelectsVideoRecords() {
         var more = false
         var selected: RoomDto? = null
-        val rows = (0..11).map { RoomDto(roomId, "Session $it", "12345678", null, null, livekit = null, meeting_session_id = "session-$it", started_at = "2026-09-15T00:00:00Z", status = if (it == 0) "active" else "ended") }
+        val rows = (0..23).map { RoomDto(roomId, "Session $it", "12345678", null, null, livekit = null, meeting_session_id = "session-$it", started_at = "2026-09-15T00:00:00Z", status = if (it == 0) "active" else "ended") }
         compose.setContent { WeMeetTheme { Column(Modifier.verticalScroll(rememberScrollState())) {
             ScheduledMeetingsList(emptyList(), {})
             VideoHistoryList(rows, { selected = it }, { more = true })
@@ -42,8 +42,8 @@ class VideoMeetingOverviewTest {
         compose.onNodeWithText(label(R.string.scheduled_section_title)).assertExists()
         compose.onNodeWithText("Session 2").performScrollTo().performClick()
         assertEquals("session-2", selected?.meeting_session_id)
-        compose.onNodeWithText("Session 9").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Session 10").assertDoesNotExist()
+        compose.onNodeWithText("Session 19").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Session 20").assertDoesNotExist()
         compose.onNodeWithText(label(R.string.video_more)).performScrollTo().performClick()
         assertTrue(more)
     }

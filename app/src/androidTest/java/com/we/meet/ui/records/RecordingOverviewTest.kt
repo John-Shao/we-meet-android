@@ -23,13 +23,13 @@ class RecordingOverviewTest {
         "2026-09-16T02:00:00Z", 1, RecordCapabilitiesDto(readSummary = true, readTranscript = true),
         hasSummary = true, retentionMode = "media")
 
-    @Test fun homeOnlyOpensCaptureOnActionAndLimitsHistoryToTen() {
+    @Test fun homeOnlyOpensCaptureOnActionAndLimitsHistoryToTwenty() {
         var captures = 0
         var menus = 0
         var more = 0
         var selected: String? = null
         compose.setContent { WeMeetTheme {
-            RecordingHomeContent(Result.success((1..12).map(::record)), true, { menus++ }, { captures++ },
+            RecordingHomeContent(Result.success((1..24).map(::record)), true, { menus++ }, { captures++ },
                 { selected = it }, { more++ }, {})
         } }
         assertEquals(0, captures)
@@ -39,8 +39,8 @@ class RecordingOverviewTest {
         assertEquals(1, captures)
         compose.onNodeWithText("Recording 1").performClick()
         assertEquals("record-1", selected)
-        compose.onNodeWithText("Recording 10").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Recording 11").assertDoesNotExist()
+        compose.onNodeWithText("Recording 20").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Recording 21").assertDoesNotExist()
         compose.onNodeWithText(label(R.string.video_more)).performScrollTo().performClick()
         assertEquals(1, more)
     }

@@ -31,7 +31,7 @@ class HomeViewModel(application: Application, private val roomRepository: RoomRe
             mutex.withLock {
                 roomRepository.fetchVideoMeetings().onSuccess {
                     pending.value = it.scheduled
-                    recent.value = it.recent.take(10)
+                    recent.value = it.recent.take(VIDEO_HISTORY_LIMIT)
                 }.onFailure {
                     if (it is CancellationException) throw it
                     pending.value = emptyList()
