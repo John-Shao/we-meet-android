@@ -82,4 +82,26 @@ class RecordingOverviewTest {
         compose.onNodeWithText(label(R.string.video_view_record)).assertDoesNotExist()
         compose.onNodeWithText(label(R.string.video_view_summary)).assertDoesNotExist()
     }
+
+    @Test fun importedVideoHasSourceStatusAndOpensDetail() {
+        var selected: String? = null
+        val imported = record().copy(sourceType = "upload", upload = com.we.meet.data.api.dto.RecordUploadDto("video", "Demo.mp4", 1024, "failed"))
+        compose.setContent { WeMeetTheme {
+            RecordingHomeContent(Result.success(listOf(imported)), true, {}, {}, { selected = it }, {}, {})
+        } }
+        compose.onNodeWithText(label(R.string.record_import_video), substring = true).assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.record_upload_failed), substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Recording 1").performClick()
+        assertEquals(imported.id, selected)
+    }
+
+    @Test fun importedVideoDetailShowsFileMetadataAndLinks() {
+        val imported = record().copy(sourceType = "upload", upload = com.we.meet.data.api.dto.RecordUploadDto("video", "Demo.mp4", 1024, "succeeded"))
+        compose.setContent { WeMeetTheme { Column(Modifier.verticalScroll(rememberScrollState())) {
+            RecordingDetailContent(imported, {}, {})
+        } } }
+        compose.onNodeWithText("Demo.mp4").assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.record_import_ready)).assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.video_view_record)).performScrollTo().assertIsDisplayed()
+    }
 }

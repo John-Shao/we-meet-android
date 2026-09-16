@@ -318,6 +318,7 @@ internal fun sourceLabel(source: String?): Int = when (source) {
     "meeting" -> R.string.records_online
     "audio_recording" -> R.string.records_audio
     "upload" -> R.string.records_uploaded
+    "recordings" -> R.string.record_import_all
     else -> R.string.records_all
 }
 internal fun recordTime(value: String): String = runCatching {

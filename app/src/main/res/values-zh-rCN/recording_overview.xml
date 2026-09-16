@@ -1,5 +1,14 @@
 <resources>
     <string name="recording_history">历史录音</string>
-    <string name="recording_history_empty">暂无已完成的录音</string>
+    <string name="recording_history_empty">暂无录音，可开始录音或导入音视频</string>
+    <string name="record_import_audio">导入音频</string>
+    <string name="record_import_video">导入视频</string>
+    <string name="record_import_all">录音与导入</string>
+    <string name="record_import_video_hint">保留原视频，仅识别其中的语音，用于生成文字记录和纪要。</string>
+    <string name="record_import_invalid">文件格式或大小不支持，请重新选择。</string>
+    <string name="record_import_size_unknown">大小未知</string>
+    <string name="record_import_pending">等待转写</string>
+    <string name="record_import_processing">正在转写</string>
+    <string name="record_import_ready">转写完成</string>
     <string name="recording_detail">录音详情</string>
 </resources>

@@ -11,7 +11,7 @@ import kotlinx.coroutines.CancellationException
 import java.util.UUID
 
 enum class RecordScope(val wire: String) { RECENT("recent"), OWNED("owned"), PARTICIPATED("participated"), SHARED("shared") }
-enum class RecordSource(val wire: String) { MEETING("meeting"), AUDIO("audio_recording"), UPLOAD("upload") }
+enum class RecordSource(val wire: String) { MEETING("meeting"), AUDIO("audio_recording"), UPLOAD("upload"), RECORDINGS("recordings") }
 
 class RecordSourceChangedException : IllegalStateException("Record source changed")
 

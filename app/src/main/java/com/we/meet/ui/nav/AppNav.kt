@@ -1578,7 +1578,8 @@ fun AppNav() {
         }
         composable(Routes.RECORDING_DETAIL, arguments = listOf(navArgument("recordId") { type = NavType.StringType })) { entry ->
             RecordingDetailScreen(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(),
-                entry.arguments?.getString("recordId").orEmpty(), onBack = rememberOnceOnly(safePop),
+                entry.arguments?.getString("recordId").orEmpty(),
+                uploadRepository = app.recordingUploadRepository, onBack = rememberOnceOnly(safePop),
                 onRecord = { id -> navController.navigate(Routes.recordDetail(id)) },
                 onSummary = { id -> navController.navigate(Routes.recordDetail(id, summaryView = true)) })
         }

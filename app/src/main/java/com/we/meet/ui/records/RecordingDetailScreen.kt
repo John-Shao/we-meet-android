@@ -12,16 +12,17 @@ import androidx.compose.ui.res.stringResource
 import com.we.meet.R
 import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.repository.MeetingRecordRepository
+import com.we.meet.data.repository.RecordingUploadRepository
 import com.we.meet.ui.components.*
 import com.we.meet.ui.theme.Dimens
 
 @Composable
 fun RecordingDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String,
-    onBack: () -> Unit, onRecord: (String) -> Unit, onSummary: (String) -> Unit) {
+    onBack: () -> Unit, onRecord: (String) -> Unit, onSummary: (String) -> Unit, uploadRepository: RecordingUploadRepository? = null) {
     var refresh by remember(viewer, recordId) { mutableIntStateOf(0) }
     val result = visibleRead(viewer, recordId, refresh) {
         repository.record(viewer, recordId).mapCatching { record ->
-            require(record.sourceType == "audio_recording")
+            require(record.sourceType in listOf("audio_recording", "upload"))
             record
         }
     }
@@ -31,7 +32,12 @@ fun RecordingDetailScreen(repository: MeetingRecordRepository, viewer: String, r
             when {
                 result == null -> WeMeetInlineLoading()
                 result.isFailure -> WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
-                else -> RecordingDetailContent(result.getOrThrow(), onRecord, onSummary)
+                else -> {
+                    val record = result.getOrThrow()
+                    RecordingDetailContent(record, onRecord, onSummary)
+                    if (record.sourceType == "upload" && record.upload?.canControl == true && uploadRepository != null)
+                        RecordingUploadStatus(uploadRepository, viewer, recordId)
+                }
             }
         }
     }
@@ -41,9 +47,14 @@ fun RecordingDetailScreen(repository: MeetingRecordRepository, viewer: String, r
 @Composable
 internal fun RecordingDetailContent(record: RecordDto, onRecord: (String) -> Unit, onSummary: (String) -> Unit) {
     Text(record.title.ifBlank { stringResource(R.string.home_ai_recording) }, style = MaterialTheme.typography.headlineSmall)
-    Text(stringResource(R.string.home_ai_recording) + " · " + recordingDate(record.originAt),
+    Text(stringResource(recordingSourceLabel(record)) + " · " + recordingDate(record.originAt),
         color = MaterialTheme.colorScheme.onSurfaceVariant)
-    if (record.retentionMode in listOf("media", "text")) Text(stringResource(
+    record.upload?.let {
+        Text(it.name)
+        Text(android.text.format.Formatter.formatFileSize(androidx.compose.ui.platform.LocalContext.current, it.size))
+        Text(stringResource(uploadStatusLabel(it.status)))
+    }
+    if (record.sourceType != "upload" && record.retentionMode in listOf("media", "text")) Text(stringResource(
         if (record.retentionMode == "text") R.string.capture_text_only else R.string.capture_keep_audio),
         color = MaterialTheme.colorScheme.onSurfaceVariant)
     listOf(false, true).forEach { summary ->

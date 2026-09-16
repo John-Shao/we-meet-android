@@ -18,8 +18,8 @@
     <string name="records_list_view">Switch to list view</string>
     <string name="records_minutes_ready">Minutes ready</string>
     <string name="records_start_recording">Record</string>
-    <string name="records_upload">Upload</string>
-    <string name="record_upload_title">Transcribe a recording</string>
+    <string name="records_upload">Import</string>
+    <string name="record_upload_title">Confirm import</string>
     <string name="record_upload_hint">Choose an audio or video file, up to %1$d MB. Transcription continues after upload.</string>
     <string name="record_upload_choose">Choose a file</string>
     <string name="record_upload_advanced">Improve recognition (optional)</string>
@@ -28,7 +28,7 @@
     <string name="record_upload_consent">Make sure you have permission to upload and transcribe this recording.</string>
     <string name="record_upload_wait">Uploading… Keep this screen open until the upload finishes.</string>
     <string name="record_upload_error">Upload failed. Check the file format, size and connection, then retry.</string>
-    <string name="record_upload_submit">Upload and transcribe</string>
+    <string name="record_upload_submit">Import and transcribe</string>
     <string name="record_upload_queued">Waiting to transcribe. You can leave this page.</string>
     <string name="record_upload_transcribing">Transcribing… You can leave this page and return later.</string>
     <string name="record_upload_failed">Transcription failed</string>

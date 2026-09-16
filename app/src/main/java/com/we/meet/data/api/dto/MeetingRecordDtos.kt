@@ -17,6 +17,12 @@ data class RecordCapabilitiesDto(
 
 data class RecordTitleRequestDto(val title: String, @Json(name = "expected_title") val expectedTitle: String)
 
+data class RecordUploadDto(
+    @Json(name = "media_type") val mediaType: String = "audio",
+    val name: String = "", val size: Long = 0, val status: String = "queued",
+    @Json(name = "can_control") val canControl: Boolean = false,
+)
+
 data class RecordDto(
     val id: String,
     @Json(name = "source_type") val sourceType: String,
@@ -31,6 +37,7 @@ data class RecordDto(
     @Json(name = "is_ongoing") val isOngoing: Boolean = false,
     @Json(name = "has_summary") val hasSummary: Boolean = false,
     @Json(name = "retention_mode") val retentionMode: String = "unknown",
+    val upload: RecordUploadDto? = null,
 )
 
 data class RecordReferenceDto(

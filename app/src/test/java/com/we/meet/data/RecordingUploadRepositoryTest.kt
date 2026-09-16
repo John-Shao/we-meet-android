@@ -55,4 +55,10 @@ class RecordingUploadRepositoryTest {
         repository.retry("owner", id, 3).getOrThrow()
         assertEquals(3, retryAttempt)
     }
+
+    @Test fun acceptsVideoWithUppercaseSuffixAndStreamsOriginalBytes() = runBlocking {
+        val videoConfig = config.copy(extensions = listOf("mov", "mp4", "wav"))
+        assertEquals(queued, repository.upload("owner", id, "Meeting.MOV", 5, videoConfig, "", "") { "audio".byteInputStream() }.getOrThrow())
+        assertEquals(1, uploads)
+    }
 }

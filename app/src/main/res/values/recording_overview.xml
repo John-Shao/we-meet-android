@@ -1,5 +1,14 @@
 <resources>
     <string name="recording_history">Recording history</string>
-    <string name="recording_history_empty">No completed recordings yet</string>
+    <string name="recording_history_empty">No recordings yet. Record or import audio and video.</string>
+    <string name="record_import_audio">Imported audio</string>
+    <string name="record_import_video">Imported video</string>
+    <string name="record_import_all">Recordings and imports</string>
+    <string name="record_import_video_hint">Keep the original video and transcribe its speech for the transcript and minutes.</string>
+    <string name="record_import_invalid">Unsupported file format or size. Choose another file.</string>
+    <string name="record_import_size_unknown">Size unknown</string>
+    <string name="record_import_pending">Waiting to transcribe</string>
+    <string name="record_import_processing">Transcribing</string>
+    <string name="record_import_ready">Transcription complete</string>
     <string name="recording_detail">Recording details</string>
 </resources>

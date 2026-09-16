@@ -16,6 +16,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import com.we.meet.ui.home.ActionCard
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.data.api.RecordingUploadCapabilities
@@ -28,7 +29,7 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 
 @Composable
-internal fun RecordingUploadAction(repository: RecordingUploadRepository, viewer: String, onRecord: (String) -> Unit, modifier: Modifier = Modifier) {
+internal fun RecordingUploadAction(repository: RecordingUploadRepository, viewer: String, onRecord: (String) -> Unit, modifier: Modifier = Modifier, tile: Boolean = false) {
     // Capabilities contain no record content. Keep them while the system document picker pauses us.
     val capabilities by produceState<Result<RecordingUploadCapabilities>?>(null, repository, viewer) {
         value = repository.capabilities(viewer)
@@ -58,12 +59,20 @@ internal fun RecordingUploadAction(repository: RecordingUploadRepository, viewer
                     } ?: error("Missing document")
                 }
                 name = metadata.first; size = metadata.second; uri = selected.toString()
-                key = UUID.randomUUID().toString(); error = false
+                key = UUID.randomUUID().toString(); error = false; open = true
             } catch (cancelled: CancellationException) { throw cancelled
-            } catch (_: Exception) { error = true }
+            } catch (_: Exception) { uri = null; error = true; open = true }
         }
     }
-    OutlinedButton(onClick = { open = true }, modifier = modifier.heightIn(min = Dimens.MinTouchTarget), shape = CircleShape) {
+    val valid = uri != null && name.substringAfterLast('.', "").lowercase() in config.extensions &&
+        (size == null || size!! in 1..config.maxBytes)
+    val video = name.substringAfterLast('.', "").lowercase() in setOf("avi", "flv", "mkv", "mov", "mp4", "mpeg", "webm", "wmv")
+    val mimeTypes = remember(config.extensions) { recordingImportMimeTypes(config.extensions) }
+    val choose = { picker.launch(mimeTypes) }
+    if (tile) ActionCard(Icons.Outlined.UploadFile, stringResource(R.string.records_upload),
+        MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer,
+        choose, modifier, enabled = !busy)
+    else OutlinedButton(onClick = choose, enabled = !busy, modifier = modifier.heightIn(min = Dimens.MinTouchTarget), shape = CircleShape) {
         Icon(Icons.Outlined.UploadFile, null, Modifier.size(Dimens.ComponentIconMedium)); Spacer(Modifier.width(Dimens.SpaceS))
         Text(stringResource(R.string.records_upload))
     }
@@ -72,9 +81,14 @@ internal fun RecordingUploadAction(repository: RecordingUploadRepository, viewer
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                 Text(stringResource(R.string.record_upload_hint, config.maxBytes / 1024 / 1024))
-                OutlinedButton(onClick = { picker.launch(arrayOf("audio/*", "video/*", "application/ogg")) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(onClick = choose, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
                     Text(name.ifBlank { stringResource(R.string.record_upload_choose) })
                 }
+                Text(stringResource(if (video) R.string.record_import_video else R.string.record_import_audio))
+                Text(size?.let { android.text.format.Formatter.formatFileSize(LocalContext.current, it) }
+                    ?: stringResource(R.string.record_import_size_unknown))
+                if (video) Text(stringResource(R.string.record_import_video_hint))
+                if (uri != null && !valid) Text(stringResource(R.string.record_import_invalid), color = MaterialTheme.colorScheme.error)
                 TextButton(onClick = { advanced = !advanced }) { Text(stringResource(R.string.record_upload_advanced)) }
                 if (advanced) {
                     OutlinedTextField(context, onValueChange = { context = it.take(400); key = UUID.randomUUID().toString() }, enabled = !busy,
@@ -88,7 +102,7 @@ internal fun RecordingUploadAction(repository: RecordingUploadRepository, viewer
             }
         },
         confirmButton = {
-            TextButton(enabled = uri != null && !busy, onClick = {
+            TextButton(enabled = valid && !busy, onClick = {
                 val document = Uri.parse(uri ?: return@TextButton)
                 busy = true; error = false
                 jobs.launch {
@@ -133,4 +147,21 @@ internal fun RecordingUploadStatus(repository: RecordingUploadRepository, viewer
         if (state?.isFailure == true) TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
         if (error) Text(stringResource(R.string.record_upload_error), color = MaterialTheme.colorScheme.error)
     }
+}
+
+/** Android document providers filter by MIME; the selected extension is also validated. */
+internal fun recordingImportMimeTypes(extensions: List<String>): Array<String> {
+    val types = mapOf(
+        "aac" to listOf("audio/aac", "audio/x-aac"), "amr" to listOf("audio/amr"),
+        "aiff" to listOf("audio/aiff", "audio/x-aiff"), "avi" to listOf("video/x-msvideo"),
+        "flac" to listOf("audio/flac", "audio/x-flac"), "flv" to listOf("video/x-flv"),
+        "m4a" to listOf("audio/mp4", "audio/x-m4a"), "mkv" to listOf("video/x-matroska", "audio/x-matroska"),
+        "mov" to listOf("video/quicktime"), "mp3" to listOf("audio/mpeg"),
+        "mp4" to listOf("video/mp4", "audio/mp4"), "mpeg" to listOf("video/mpeg"),
+        "ogg" to listOf("audio/ogg", "video/ogg", "application/ogg"), "opus" to listOf("audio/opus", "audio/ogg", "application/ogg"),
+        "wav" to listOf("audio/wav", "audio/x-wav"), "webm" to listOf("video/webm", "audio/webm"),
+        "wma" to listOf("audio/x-ms-wma"), "wmv" to listOf("video/x-ms-wmv")
+    )
+    return extensions.flatMap { types[it.lowercase()].orEmpty() }.distinct()
+        .ifEmpty { listOf("audio/*", "video/*") }.toTypedArray()
 }

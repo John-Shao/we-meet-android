@@ -444,7 +444,8 @@ fun MainTabScreen(
                         historyEnabled = BuildConfig.WE_MEET_RECORDS_NATIVE,
                         onOpenNavDrawer = openMeetingNavigation, onCapture = onOpenCapture,
                         onDetail = onRecordingDetail,
-                        onMore = { recordsSource = "AUDIO"; meetingSectionName = MeetingSection.RECORDS.name })
+                        uploadRepository = app.recordingUploadRepository,
+                        onMore = { recordsSource = "RECORDINGS"; meetingSectionName = MeetingSection.RECORDS.name })
                     MeetingSection.RECORDS, MeetingSection.MINUTES -> RecordLibraryScreen(
                         app.meetingRecordRepository, meetingViewer,
                         summariesOnly = meetingSection == MeetingSection.MINUTES,

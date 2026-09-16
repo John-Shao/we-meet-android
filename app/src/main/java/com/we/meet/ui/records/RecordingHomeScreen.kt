@@ -8,6 +8,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Mic
+import androidx.compose.material.icons.outlined.Videocam
+import com.we.meet.data.repository.RecordingUploadRepository
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -37,13 +39,15 @@ fun RecordingHomeScreen(
     repository: MeetingRecordRepository, viewer: String, historyEnabled: Boolean,
     onOpenNavDrawer: () -> Unit, onCapture: () -> Unit,
     onDetail: (String) -> Unit, onMore: () -> Unit,
+    uploadRepository: RecordingUploadRepository? = null,
 ) {
     var refresh by remember(viewer) { mutableIntStateOf(0) }
     val result = if (historyEnabled) visibleRead(viewer, refresh) {
-        repository.records(viewer, source = RecordSource.AUDIO, isOngoing = false)
+        repository.records(viewer, source = RecordSource.RECORDINGS, isOngoing = false)
             .map { it.results.take(RECORDING_HISTORY_LIMIT) }
     } else null
-    RecordingHomeContent(result, historyEnabled, onOpenNavDrawer, onCapture, onDetail, onMore, { refresh++ })
+    RecordingHomeContent(result, historyEnabled, onOpenNavDrawer, onCapture, onDetail, onMore, { refresh++ },
+        importAction = { modifier -> if (uploadRepository != null) RecordingUploadAction(uploadRepository, viewer, onDetail, modifier, tile = true) })
 }
 
 @Composable
@@ -51,6 +55,7 @@ internal fun RecordingHomeContent(
     result: Result<List<RecordDto>>?, historyEnabled: Boolean,
     onOpenNavDrawer: () -> Unit, onCapture: () -> Unit,
     onDetail: (String) -> Unit, onMore: () -> Unit, onRetry: () -> Unit,
+    importAction: @Composable (Modifier) -> Unit = {},
 ) {
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         WeMeetTopBar(stringResource(R.string.home_ai_recording), onMenu = onOpenNavDrawer,
@@ -61,7 +66,8 @@ internal fun RecordingHomeContent(
             ActionCard(Icons.Outlined.Mic, stringResource(R.string.records_start_recording),
                 MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer,
                 onCapture, Modifier.weight(1f))
-            Spacer(Modifier.weight(2f))
+            Box(Modifier.weight(1f)) { importAction(Modifier.fillMaxWidth()) }
+            Spacer(Modifier.weight(1f))
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         if (historyEnabled) Column(Modifier.weight(1f).fillMaxWidth()
@@ -76,7 +82,9 @@ internal fun RecordingHomeContent(
                         Modifier.padding(Dimens.ScreenPadding), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     rows.forEach { record -> key(record.id) {
                         MeetingListItem(record.title.ifBlank { stringResource(R.string.home_ai_recording) },
-                            recordingDate(record.originAt), Icons.Outlined.Mic, { onDetail(record.id) })
+                            listOfNotNull(stringResource(recordingSourceLabel(record)), recordingDate(record.originAt),
+                                record.upload?.let { stringResource(uploadStatusLabel(it.status)) }).joinToString(" · "),
+                            if (record.upload?.mediaType == "video") Icons.Outlined.Videocam else Icons.Outlined.Mic, { onDetail(record.id) })
                     } }
                 }
             }
@@ -89,3 +97,16 @@ internal fun recordingDate(value: String): String = runCatching {
     OffsetDateTime.parse(value).atZoneSameInstant(ZoneId.systemDefault())
         .format(DateTimeFormatter.ofPattern("yyyy/M/d HH:mm"))
 }.getOrDefault("")
+
+internal fun recordingSourceLabel(record: RecordDto): Int = when {
+    record.sourceType != "upload" -> R.string.home_ai_recording
+    record.upload?.mediaType == "video" -> R.string.record_import_video
+    else -> R.string.record_import_audio
+}
+
+internal fun uploadStatusLabel(status: String): Int = when (status) {
+    "succeeded" -> R.string.record_import_ready
+    "failed" -> R.string.record_upload_failed
+    "queued" -> R.string.record_import_pending
+    else -> R.string.record_import_processing
+}
