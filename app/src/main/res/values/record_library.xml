@@ -28,6 +28,7 @@
     <string name="record_upload_consent">Make sure you have permission to upload and transcribe this recording.</string>
     <string name="record_upload_wait">Uploading… Keep this screen open until the upload finishes.</string>
     <string name="record_upload_error">Upload failed. Check the file format, size and connection, then retry.</string>
+    <string name="record_upload_unconfirmed">Import could not be confirmed; the file may already be uploaded. Retry here with the same file and settings, or close and check recording history.</string>
     <string name="record_upload_submit">Import and transcribe</string>
     <string name="record_upload_queued">Waiting to transcribe. You can leave this page.</string>
     <string name="record_upload_transcribing">Transcribing… You can leave this page and return later.</string>

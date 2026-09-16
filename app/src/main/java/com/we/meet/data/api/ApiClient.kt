@@ -88,7 +88,9 @@ class ApiClient(tokenStore: TokenStore) {
 
     val authApi: AuthApi = retrofit.create(AuthApi::class.java)
     val roomApi: RoomApi = retrofit.create(RoomApi::class.java)
-    val recordingUploadApi: RecordingUploadApi = retrofit.create(RecordingUploadApi::class.java)
+    val recordingUploadApi: RecordingUploadApi = retrofit.newBuilder()
+        .client(recordingUploadHttp(okHttp))
+        .build().create(RecordingUploadApi::class.java)
     val userApi: UserApi = retrofit.create(UserApi::class.java)
     val qrLoginApi: QrLoginApi = retrofit.create(QrLoginApi::class.java)
     val imBridgeApi: ImBridgeApi = retrofit.create(ImBridgeApi::class.java)

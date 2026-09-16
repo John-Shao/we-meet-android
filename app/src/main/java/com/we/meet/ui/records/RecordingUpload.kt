@@ -27,6 +27,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
+import retrofit2.HttpException
 
 @Composable
 internal fun RecordingUploadAction(repository: RecordingUploadRepository, viewer: String, onRecord: (String) -> Unit, modifier: Modifier = Modifier, tile: Boolean = false) {
@@ -43,6 +44,9 @@ internal fun RecordingUploadAction(repository: RecordingUploadRepository, viewer
     var context by rememberSaveable(viewer) { mutableStateOf("") }
     var hotwords by rememberSaveable(viewer) { mutableStateOf("") }
     var advanced by rememberSaveable(viewer) { mutableStateOf(false) }
+    // An unanswered request may already have committed. Keep its key AND options for retries.
+    var submitted by rememberSaveable(viewer) { mutableStateOf(false) }
+    var uncertain by rememberSaveable(viewer) { mutableStateOf(false) }
     var busy by remember(viewer) { mutableStateOf(false) }
     var error by remember(viewer) { mutableStateOf(false) }
     val resolver = LocalContext.current.contentResolver
@@ -58,8 +62,11 @@ internal fun RecordingUploadAction(repository: RecordingUploadRepository, viewer
                             if (length >= 0 && !rows.isNull(length)) rows.getLong(length).takeIf { it >= 0 } else null
                     } ?: error("Missing document")
                 }
+                if (uri != selected.toString() || name != metadata.first || size != metadata.second) {
+                    key = UUID.randomUUID().toString(); submitted = false; uncertain = false
+                }
                 name = metadata.first; size = metadata.second; uri = selected.toString()
-                key = UUID.randomUUID().toString(); error = false; open = true
+                error = false; open = true
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (_: Exception) { uri = null; error = true; open = true }
         }
@@ -91,27 +98,40 @@ internal fun RecordingUploadAction(repository: RecordingUploadRepository, viewer
                 if (uri != null && !valid) Text(stringResource(R.string.record_import_invalid), color = MaterialTheme.colorScheme.error)
                 TextButton(onClick = { advanced = !advanced }) { Text(stringResource(R.string.record_upload_advanced)) }
                 if (advanced) {
-                    OutlinedTextField(context, onValueChange = { context = it.take(400); key = UUID.randomUUID().toString() }, enabled = !busy,
+                    OutlinedTextField(context, onValueChange = { context = it.take(400) }, enabled = !busy && !submitted,
                         label = { Text(stringResource(R.string.record_upload_context)) }, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(hotwords, onValueChange = { hotwords = it.take(4000); key = UUID.randomUUID().toString() }, enabled = !busy,
+                    OutlinedTextField(hotwords, onValueChange = { hotwords = it.take(4000) }, enabled = !busy && !submitted,
                         label = { Text(stringResource(R.string.record_upload_hotwords)) }, modifier = Modifier.fillMaxWidth())
                 }
                 Text(stringResource(R.string.record_upload_consent), style = MaterialTheme.typography.bodySmall)
                 if (busy) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text(stringResource(R.string.record_upload_wait)) }
-                if (error) Text(stringResource(R.string.record_upload_error), color = MaterialTheme.colorScheme.error)
+                if (uncertain && !busy) Text(stringResource(R.string.record_upload_unconfirmed), color = MaterialTheme.colorScheme.error)
+                else if (error) Text(stringResource(R.string.record_upload_error), color = MaterialTheme.colorScheme.error)
             }
         },
         confirmButton = {
             TextButton(enabled = valid && !busy, onClick = {
                 val document = Uri.parse(uri ?: return@TextButton)
-                busy = true; error = false
+                if (busy) return@TextButton
+                busy = true; error = false; submitted = true
                 jobs.launch {
                     try {
                         val result = repository.upload(viewer, key, name, size, config, context, hotwords) {
                             resolver.openInputStream(document) ?: error("Document unavailable")
                         }
-                        if (result.isSuccess) { open = false; uri = null; name = ""; onRecord(result.getOrThrow().recordId) }
-                        else error = true
+                        if (result.isSuccess) {
+                            open = false; uri = null; name = ""; submitted = false; uncertain = false
+                            onRecord(result.getOrThrow().recordId)
+                        } else {
+                            val failure = result.exceptionOrNull()
+                            // Only a definite rejection permits changing the original options.
+                            // A 409 on a retry can still refer to a previously accepted intent.
+                            val rejected = failure is IllegalArgumentException ||
+                                (failure is HttpException && failure.code() in 400..499 && failure.code() !in setOf(408, 409))
+                            if (!uncertain && rejected) submitted = false
+                            uncertain = uncertain || !rejected
+                            error = true
+                        }
                     } finally { busy = false }
                 }
             }) { Text(stringResource(R.string.record_upload_submit)) }
