@@ -23,9 +23,6 @@ import com.we.meet.ui.home.ActionCard
 import com.we.meet.ui.home.MeetingListItem
 import com.we.meet.ui.home.MeetingListSectionTitle
 import com.we.meet.ui.theme.Dimens
-import java.time.OffsetDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /**
  * 历史录音最多显示的条数。两处裁剪（入站映射与渲染）必须同源；Web 端
@@ -61,42 +58,45 @@ internal fun RecordingHomeContent(
         WeMeetTopBar(stringResource(R.string.home_ai_recording), onMenu = onOpenNavDrawer,
             menuDescription = stringResource(R.string.meeting_navigation),
             containerColor = MaterialTheme.colorScheme.background)
+        // 两个入口平铺整行：与「视频会议」区的三个入口同一骨架，右侧不留空档。
         Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding)
-            .padding(top = Dimens.SpaceS, bottom = Dimens.SpaceM)) {
+            .padding(top = Dimens.SpaceS, bottom = Dimens.SpaceM),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXl)) {
             ActionCard(Icons.Outlined.Mic, stringResource(R.string.records_start_recording),
                 MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer,
                 onCapture, Modifier.weight(1f))
             Box(Modifier.weight(1f)) { importAction(Modifier.fillMaxWidth()) }
-            Spacer(Modifier.weight(1f))
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        if (historyEnabled) Column(Modifier.weight(1f).fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface).verticalScroll(rememberScrollState())) {
-            MeetingListSectionTitle(stringResource(R.string.recording_history))
-            when {
-                result == null -> WeMeetInlineLoading()
-                result.isFailure -> WeMeetInlineErrorState(onRetry = onRetry, message = stringResource(R.string.records_unavailable))
-                else -> {
-                    val rows = result.getOrThrow().take(RECORDING_HISTORY_LIMIT)
-                    if (rows.isEmpty()) Text(stringResource(R.string.recording_history_empty),
+        if (historyEnabled) {
+            val rows = result?.getOrNull()?.take(RECORDING_HISTORY_LIMIT).orEmpty()
+            Column(Modifier.weight(1f).fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface).verticalScroll(rememberScrollState())) {
+                MeetingListSectionTitle(stringResource(R.string.recording_history))
+                when {
+                    result == null -> WeMeetInlineLoading()
+                    result.isFailure -> WeMeetInlineErrorState(onRetry = onRetry, message = stringResource(R.string.records_unavailable))
+                    rows.isEmpty() -> Text(stringResource(R.string.recording_history_empty),
                         Modifier.padding(Dimens.ScreenPadding), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    rows.forEach { record -> key(record.id) {
+                    else -> rows.forEach { record -> key(record.id) {
                         MeetingListItem(record.title.ifBlank { stringResource(R.string.home_ai_recording) },
-                            listOfNotNull(stringResource(recordingSourceLabel(record)), recordingDate(record.originAt),
-                                record.upload?.let { stringResource(uploadStatusLabel(it.status)) }).joinToString(" · "),
+                            // 与「会议实录」页同一条读数:时间 · 来源 · 上传状态,一行读完。
+                            // Web 端两个列表页共用这一版式(「同一条记录在两个栏目里不该是
+                            // 两种版式」),上传处理状态在这一页也要看得见。
+                            listOfNotNull(
+                                recordTime(record.originAt),
+                                stringResource(recordingSourceLabel(record)),
+                                record.upload?.let { stringResource(uploadStatusLabel(it.status)) },
+                            ).joinToString(" · "),
                             if (record.upload?.mediaType == "video") Icons.Outlined.Videocam else Icons.Outlined.Mic, { onDetail(record.id) })
                     } }
                 }
+                // 列表为空时「更多」无处可去，不显示。
+                if (rows.isNotEmpty()) TextButton(onClick = onMore, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.video_more)) }
             }
-            TextButton(onClick = onMore, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.video_more)) }
         }
     }
 }
-
-internal fun recordingDate(value: String): String = runCatching {
-    OffsetDateTime.parse(value).atZoneSameInstant(ZoneId.systemDefault())
-        .format(DateTimeFormatter.ofPattern("yyyy/M/d HH:mm"))
-}.getOrDefault("")
 
 internal fun recordingSourceLabel(record: RecordDto): Int = when {
     record.sourceType != "upload" -> R.string.home_ai_recording

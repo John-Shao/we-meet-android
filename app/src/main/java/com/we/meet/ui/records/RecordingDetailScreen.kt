@@ -47,7 +47,7 @@ fun RecordingDetailScreen(repository: MeetingRecordRepository, viewer: String, r
 @Composable
 internal fun RecordingDetailContent(record: RecordDto, onRecord: (String) -> Unit, onSummary: (String) -> Unit) {
     Text(record.title.ifBlank { stringResource(R.string.home_ai_recording) }, style = MaterialTheme.typography.headlineSmall)
-    Text(stringResource(recordingSourceLabel(record)) + " · " + recordingDate(record.originAt),
+    Text(stringResource(recordingSourceLabel(record)) + " · " + recordTime(record.originAt),
         color = MaterialTheme.colorScheme.onSurfaceVariant)
     record.upload?.let {
         Text(it.name)

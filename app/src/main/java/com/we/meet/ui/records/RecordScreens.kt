@@ -48,6 +48,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.we.meet.R
 import com.we.meet.WeMeetApp
+import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.api.dto.RecordReferenceDto
 import com.we.meet.data.api.dto.RecordSummaryVersionDto
 import com.we.meet.data.repository.MeetingRecordRepository
@@ -64,7 +65,6 @@ import kotlinx.coroutines.awaitCancellation
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 
 /** Read only while visible. Errors and backgrounding remove the last private body. */
 @Composable
@@ -115,7 +115,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                 else -> {
                     Column(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                         Text(record.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        Text("${recordTime(record.originAt)} · ${stringResource(sourceLabel(record.sourceType))}",
+                        Text("${recordTime(record.originAt)} · ${stringResource(recordSourceLabel(record))}",
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     val canReadTranslations = record.capabilities.readTranscript && app != null && (record.sourceType == "meeting" || record.sourceType == "audio_recording" && record.captureId != null)
@@ -201,7 +201,9 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                 if (app != null) Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.SpaceBetween) {
                                     if (record.capabilities.readTranscript) TextButton(onClick = { tool = "ask" }) { Text(stringResource(R.string.minutes_ask)) }
                                     TextButton(onClick = { tool = "manage" }) { Text(stringResource(R.string.minutes_manage)) }
-                                    TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
+                                    // 还没有纪要时空态自己就带一个「刷新」,底栏再放一个就是同一屏两个同名动作;
+                                    // 有内容时页面每 15 秒也会自动重读,这里只留一份手动刷新。
+                                    if (versions.isNotEmpty()) TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
                                 }
                                 if (app != null && tool != null) ModalBottomSheet(onDismissRequest = { tool = null }) {
                                     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
@@ -321,7 +323,28 @@ internal fun sourceLabel(source: String?): Int = when (source) {
     "recordings" -> R.string.record_import_all
     else -> R.string.records_all
 }
+
+/**
+ * 行内展示用的来源标签:导入件再按媒体类型细分成「导入音频 / 导入视频」。
+ *
+ * 两条理由:①「AI 录音」页对同一条记录写的已经是「导入视频」,记录库退回笼统的
+ * 「上传音视频」,同一条记录就有两个说法;②两个库的导入件共用一个通用图标(与 Web
+ * 一致),音视频之分只能靠这行字。
+ *
+ * 筛选器那种拿不到媒体类型的场合仍用 [sourceLabel] 的通用标签。
+ */
+internal fun recordSourceLabel(record: RecordDto): Int = when {
+    record.sourceType != "upload" -> sourceLabel(record.sourceType)
+    record.upload?.mediaType == "video" -> R.string.record_import_video
+    else -> R.string.record_import_audio
+}
+
+/**
+ * 会议模块内唯一的时间格式。录制历史、记录库、智能纪要、详情页全部用它 —— 同一个
+ * 会议在这几个子区里必须显示成同一串时间，不能一处 `yyyy/M/d HH:mm`、一处本地化
+ * 短格式（英文环境下会变成 `9/18/26, 1:30 AM`）。
+ */
 internal fun recordTime(value: String): String = runCatching {
-    OffsetDateTime.parse(value).atZoneSameInstant(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT))
+    OffsetDateTime.parse(value).atZoneSameInstant(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("yyyy/M/d HH:mm"))
 }.getOrDefault("")
 internal fun sourceTime(ms: Long): String = "${ms / 60000}:${(ms / 1000 % 60).toString().padStart(2, '0')}"

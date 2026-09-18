@@ -25,7 +25,7 @@
     <string name="records_all">全部来源</string>
     <string name="records_online">线上会议</string>
     <string name="records_audio">AI 录音</string>
-    <string name="records_uploaded">上传音视频</string>
+    <string name="records_uploaded">导入文件</string>
     <string name="records_search">搜索标题</string>
     <string name="records_search_action">搜索</string>
     <string name="records_ongoing">进行中</string>

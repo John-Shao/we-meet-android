@@ -121,11 +121,13 @@ internal fun RecordOriginals(
                 }
             }
         }
-        if (page?.isSuccess == true) {
+        val current = page?.getOrNull()
+        // 单页时这一行只剩下一个孤立的「刷新」挂在底部,不如不显示;失败/空态各自带重试。
+        if (current != null && (cursors.size > 1 || current.nextCursor != null)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.SpaceBetween) {
                 if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
-                page.getOrThrow().nextCursor?.let { next -> TextButton(onClick = { cursors = cursors + next }) { Text(stringResource(R.string.records_next)) } }
-                if (page.getOrThrow().results.isNotEmpty()) TextButton(onClick = onRefresh) { Text(stringResource(R.string.records_refresh)) }
+                current.nextCursor?.let { next -> TextButton(onClick = { cursors = cursors + next }) { Text(stringResource(R.string.records_next)) } }
+                TextButton(onClick = onRefresh) { Text(stringResource(R.string.records_refresh)) }
             }
         }
     }

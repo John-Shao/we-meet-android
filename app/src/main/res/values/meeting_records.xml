@@ -25,7 +25,7 @@
     <string name="records_all">All sources</string>
     <string name="records_online">Online meeting</string>
     <string name="records_audio">Audio recording</string>
-    <string name="records_uploaded">Uploaded media</string>
+    <string name="records_uploaded">Imported file</string>
     <string name="records_search">Search titles</string>
     <string name="records_search_action">Search</string>
     <string name="records_ongoing">In progress</string>

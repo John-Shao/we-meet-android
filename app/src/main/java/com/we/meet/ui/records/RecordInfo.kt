@@ -15,14 +15,33 @@ import com.we.meet.ui.theme.Dimens
 
 @Composable
 internal fun RecordInfo(record: RecordDto, modifier: Modifier = Modifier) {
-    LazyColumn(modifier.fillMaxWidth(), contentPadding = PaddingValues(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-        item { Text(stringResource(R.string.records_source_filter), color = MaterialTheme.colorScheme.onSurfaceVariant); Text(stringResource(sourceLabel(record.sourceType))) }
-        item { Text(stringResource(R.string.records_start_time), color = MaterialTheme.colorScheme.onSurfaceVariant); Text(recordTime(record.originAt)) }
-        item {
-            Text(stringResource(R.string.records_retention), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(stringResource(when (record.retentionMode) { "media" -> R.string.records_retention_media; "text" -> R.string.records_retention_text; else -> R.string.records_retention_unknown }))
-        }
+    // 与 Web 端 `MeetingRecordWorkspace` 的「录音信息」同一版式:两列键值表 ——
+    // 左列定宽、值左对齐成一列。原来是「标签一行、值一行」堆三对,读起来是三段
+    // 独立文字,扫不出「哪一行的值是什么」。
+    Column(
+        modifier.fillMaxWidth().padding(Dimens.ScreenPadding),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
+    ) {
+        InfoRow(R.string.records_source_filter, stringResource(recordSourceLabel(record)))
+        InfoRow(R.string.records_start_time, recordTime(record.originAt))
+        InfoRow(R.string.records_retention, stringResource(retentionLabel(record.retentionMode)))
     }
+}
+
+/** 键值行:标签走次要色且定宽,值与正文同色(对齐 Web `dl` 的 `dt`/`dd`)。 */
+@Composable
+private fun InfoRow(label: Int, value: String) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+        Text(stringResource(label), Modifier.width(Dimens.LabelColumnWidth),
+            style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+private fun retentionLabel(mode: String): Int = when (mode) {
+    "media" -> R.string.records_retention_media
+    "text" -> R.string.records_retention_text
+    else -> R.string.records_retention_unknown
 }
 
 @Composable

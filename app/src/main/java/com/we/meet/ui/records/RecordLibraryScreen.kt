@@ -2,6 +2,9 @@
 
 package com.we.meet.ui.records
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
@@ -18,12 +21,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.R
+import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.repository.MeetingRecordRepository
 import com.we.meet.data.repository.RecordScope
 import com.we.meet.data.repository.RecordSource
@@ -68,6 +73,9 @@ fun RecordLibraryScreen(
             WeMeetTopBar(stringResource(if (summariesOnly) R.string.records_minutes else R.string.records_title),
                 onBack = if (onOpenNavDrawer == null) onBack else null,
                 onMenu = onOpenNavDrawer, menuDescription = stringResource(R.string.meeting_navigation),
+                // 记录/纪要是会议模块的抽屉一级分区(有汉堡菜单、有底部模块导航栏),
+                // 固定头部用浅灰与状态栏、兄弟分区(视频会议/AI 录音)对齐。
+                containerColor = MaterialTheme.colorScheme.background,
                 actions = {
                     onSearchMeetingAi?.let { search ->
                         IconButton(onClick = search) {
@@ -78,7 +86,9 @@ fun RecordLibraryScreen(
                         Icon(if (searchVisible) Icons.Outlined.Close else Icons.Outlined.Search,
                             stringResource(if (searchVisible) R.string.records_clear_search else R.string.records_search))
                     }
-                    IconButton(onClick = { filtersVisible = true }) {
+                    // 纪要子区正文里已有带当前值的「全部智能纪要」筛选入口，
+                    // 顶栏再放一个同样的图标只是重复入口。
+                    if (!summariesOnly) IconButton(onClick = { filtersVisible = true }) {
                         Icon(Icons.Outlined.Tune, stringResource(R.string.records_filters),
                             tint = if (source != null || scope == RecordScope.PARTICIPATED) MaterialTheme.colorScheme.primary else LocalContentColor.current)
                     }
@@ -99,12 +109,12 @@ fun RecordLibraryScreen(
                 }
             }
         },
-        containerColor = if (summariesOnly) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background,
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (summariesOnly) {
                 val scopes = listOf(RecordScope.OWNED, RecordScope.PARTICIPATED, RecordScope.SHARED)
-                TabRow(selectedTabIndex = scopes.indexOf(scope).coerceAtLeast(0), containerColor = MaterialTheme.colorScheme.surface) {
+                TabRow(selectedTabIndex = scopes.indexOf(scope).coerceAtLeast(0), containerColor = MaterialTheme.colorScheme.background) {
                     scopes.forEach { value -> Tab(selected = scope == value, onClick = { scope = value },
                         text = { Text(stringResource(minutesScopeLabel(value))) }) }
                 }
@@ -145,6 +155,8 @@ fun RecordLibraryScreen(
                     modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                 TextButton(onClick = { source = null; scope = RecordScope.RECENT }) { Text(stringResource(R.string.records_reset_filters)) }
             }
+            // 一级页的下一半:白色滚动区,加载态/空态/错误态也得把白底铺满。
+            Box(Modifier.weight(1f).fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
             when {
                 result == null -> WeMeetInlineLoading()
                 result.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
@@ -154,28 +166,18 @@ fun RecordLibraryScreen(
                 else -> {
                     val page = result.getOrThrow()
                     LazyVerticalGrid(columns = if (grid) GridCells.Adaptive(Dimens.RecordGridMinWidth) else GridCells.Fixed(1), state = listState,
-                        modifier = Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(Dimens.ScreenPadding),
-                        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = if (grid) PaddingValues(Dimens.ScreenPadding) else PaddingValues(),
+                        // 列表模式的行自带内边距和内缩分隔线,不能再叠一层行距;网格模式才需要。
+                        verticalArrangement = if (grid) Arrangement.spacedBy(Dimens.SpaceM) else Arrangement.Top,
+                        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                         items(page.results, key = { it.id }) { record ->
-                            Card(onClick = { if (summariesOnly) onSummaryRecord(record.id) else onRecord(record.id) }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge,
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                                Row(Modifier.padding(Dimens.ScreenPadding), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-                                    if (!grid) Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.primaryContainer) {
-                                        Icon(if (summariesOnly) Icons.Outlined.Description else when (record.sourceType) { "meeting" -> Icons.Outlined.Videocam; "upload" -> Icons.Outlined.UploadFile; else -> Icons.Outlined.GraphicEq },
-                                            null, Modifier.padding(Dimens.SpaceM).size(Dimens.IconMedium), tint = MaterialTheme.colorScheme.primary)
-                                    }
-                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                                        Text(record.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                        Text(if (summariesOnly) "${stringResource(R.string.minutes_recorded_at, recordTime(record.originAt))} · ${stringResource(sourceLabel(record.sourceType))}" else recordTime(record.originAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        if (!summariesOnly) Text(stringResource(sourceLabel(record.sourceType)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        if (!summariesOnly && (record.isOngoing || record.hasSummary)) Text(stringResource(if (record.isOngoing) R.string.records_ongoing else R.string.records_minutes_ready),
-                                            color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
-                                    }
-                                }
-                            }
+                            val open = { if (summariesOnly) onSummaryRecord(record.id) else onRecord(record.id) }
+                            if (grid) RecordLibraryCard(record, summariesOnly, open) else RecordLibraryRow(record, summariesOnly, open)
                         }
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        // 没有上一页/下一页时不放这一行 —— 否则只剩一个孤零零的「刷新」挂在底部。
+                        if (cursors.size > 1 || page.nextCursor != null) item(span = { GridItemSpan(maxLineSpan) }) {
+                            Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.SpaceBetween) {
                                 if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
                                 page.nextCursor?.let { next -> TextButton(onClick = { cursors = cursors + next }) { Text(stringResource(R.string.records_next)) } }
                                 TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
@@ -183,6 +185,7 @@ fun RecordLibraryScreen(
                         }
                     }
                 }
+            }
             }
         }
     }
@@ -199,6 +202,88 @@ fun RecordLibraryScreen(
             Button(onClick = { filtersVisible = false }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.records_filters_done)) }
         }
     }
+}
+
+/**
+ * 列表行:与「视频会议」「AI 录音」同款骨架 —— 图标块 + 标题 + 说明,行间内缩分隔线。
+ * 记录库/纪要库和它们同属会议模块的抽屉一级分区,行样式不该各说各话。
+ */
+@Composable
+private fun RecordLibraryRow(record: RecordDto, summariesOnly: Boolean, onClick: () -> Unit) {
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
+                .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM)
+                .heightIn(min = Dimens.MinTouchTarget),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // 与 [com.we.meet.ui.home.MeetingListItem] 同一块图标底,四个分区的行长得一样。
+            Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)) {
+                Box(Modifier.size(Dimens.ListLeadingIcon), contentAlignment = Alignment.Center) {
+                    Icon(recordLibraryIcon(record, summariesOnly), null, Modifier.size(Dimens.IconMedium), tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+            Column(Modifier.weight(1f).padding(start = Dimens.SpaceM), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                RecordLibraryText(record, summariesOnly)
+            }
+        }
+        HorizontalDivider(
+            modifier = Modifier.padding(start = Dimens.ScreenPadding + Dimens.ListLeadingIcon + Dimens.SpaceM),
+            thickness = Dimens.DividerThin,
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+    }
+}
+
+/** 网格卡片:白底上要靠描边立住形状,不能用和底色同色的实心卡。 */
+@Composable
+private fun RecordLibraryCard(record: RecordDto, summariesOnly: Boolean, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(Dimens.DividerThin, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column(Modifier.padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+            Icon(recordLibraryIcon(record, summariesOnly), null, Modifier.size(Dimens.IconMedium), tint = MaterialTheme.colorScheme.primary)
+            RecordLibraryText(record, summariesOnly)
+        }
+    }
+}
+
+/**
+ * 两种排布共用的文字块:标题 / 副行 / 状态签。
+ *
+ * 副行与「AI 录音」页逐字同构:一行「时间 · 来源 · 上传状态」。Web 端
+ * `MeetingLibrary` / `RecordingOverview` 的注释把这条写死了 ——
+ * 「同一条记录在两个栏目里不该是两种版式」,上传处理状态两个列表页都要看得见,
+ * 因为记录库才是管理记录的入口。进行中 / 已有纪要仍是独立的状态签。
+ */
+@Composable
+private fun RecordLibraryText(record: RecordDto, summariesOnly: Boolean) {
+    Text(record.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    Text(recordMetaLine(record, summariesOnly), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    if (!summariesOnly && (record.isOngoing || record.hasSummary)) Text(
+        stringResource(if (record.isOngoing) R.string.records_ongoing else R.string.records_minutes_ready),
+        color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall,
+    )
+}
+
+/** 纪要库里时间前面要写「会议时间」,否则分不清这是开会时刻还是纪要生成时刻。 */
+@Composable
+internal fun recordMetaLine(record: RecordDto, summariesOnly: Boolean): String = listOfNotNull(
+    if (summariesOnly) stringResource(R.string.minutes_recorded_at, recordTime(record.originAt)) else recordTime(record.originAt),
+    stringResource(recordSourceLabel(record)),
+    record.upload?.let { stringResource(uploadStatusLabel(it.status)) },
+).joinToString(" · ")
+
+/** 来源图标在列表和网格里必须一致 —— 网格丢掉图标就只剩文字能区分会议/录音/导入。 */
+private fun recordLibraryIcon(record: RecordDto, summariesOnly: Boolean): ImageVector = when {
+    summariesOnly -> Icons.Outlined.Description
+    record.sourceType == "meeting" -> Icons.Outlined.Videocam
+    record.sourceType == "upload" -> Icons.Outlined.UploadFile
+    else -> Icons.Outlined.GraphicEq
 }
 
 private fun minutesScopeLabel(scope: RecordScope): Int = when (scope) {
