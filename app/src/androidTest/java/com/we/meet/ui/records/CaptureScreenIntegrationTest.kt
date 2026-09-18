@@ -46,8 +46,23 @@ class CaptureScreenIntegrationTest {
             compose.waitUntil(8000) { compose.onAllNodesWithText(text(R.string.capture_pause)).fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText(text(R.string.capture_pause)).performClick()
             compose.waitUntil(8000) { app.input!!.closed }
+            // 结束按钮 enabled = !state.busy:暂停/封存还在飞的时候它是禁用的,此时
+            // performClick 会静默无效(不抛错),于是后面既等不到确认弹层也等不到已保存。
+            // 先等它真的可点。
+            compose.waitUntil(8000) {
+                compose.onAllNodesWithText(text(R.string.capture_finish)).fetchSemanticsNodes().firstOrNull()
+                    ?.config?.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled) == false
+            }
             compose.onNodeWithText(text(R.string.capture_finish)).performClick()
-            compose.onNodeWithText(text(R.string.capture_finish_confirm)).performClick()
+            // 结束有两条合法路径(CaptureScreen 的 dock):还能继续录 → 弹「结束并保存」确认；
+            // 已经在收尾 → 直接结束。原来假定一定弹确认，于是偶发/稳定地找不到确认按钮。
+            compose.waitUntil(8000) {
+                compose.onAllNodesWithText(text(R.string.capture_finish_confirm)).fetchSemanticsNodes().isNotEmpty() ||
+                    compose.onAllNodesWithText(text(R.string.capture_status_saved)).fetchSemanticsNodes().isNotEmpty()
+            }
+            if (compose.onAllNodesWithText(text(R.string.capture_finish_confirm)).fetchSemanticsNodes().isNotEmpty()) {
+                compose.onNodeWithText(text(R.string.capture_finish_confirm)).performClick()
+            }
             compose.waitUntil(8000) { compose.onAllNodesWithText(text(R.string.capture_status_saved)).fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText(text(R.string.capture_status_saved)).assertIsDisplayed()
         } finally {

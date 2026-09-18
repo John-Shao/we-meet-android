@@ -45,6 +45,7 @@ class RecordQuestionsTest {
     private val sources = CopyOnWriteArrayList<Pair<String, RecordReferenceDto>>()
     private fun label(id: Int) = context.getString(id)
     private fun await(id: Int) { compose.waitUntil(8000) { compose.onAllNodesWithText(label(id)).fetchSemanticsNodes().isNotEmpty() } }
+    private fun awaitText(text: String) { compose.waitUntil(8000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() } }
     private fun show(dark: Boolean = false, originals: Boolean = true) {
         compose.setContent { WeMeetTheme(darkTheme = dark) { Surface { Column(Modifier.verticalScroll(rememberScrollState())) {
             RecordQuestions(viewer, record.copy(capabilities = record.capabilities.copy(readTranscript = originals)), listOf(version), MeetingQuestionRepository(api) { viewer }, { viewer }) { id, ref -> sources += id to ref }
@@ -54,7 +55,13 @@ class RecordQuestionsTest {
         await(R.string.record_question_choose)
         compose.waitUntil(8000) { compose.onNodeWithText(label(R.string.record_question_choose)).fetchSemanticsNode().config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled).not() }
         compose.onNodeWithText(label(R.string.record_question_choose)).performScrollTo().performClick()
-        compose.onNodeWithText(context.getString(R.string.record_question_source, 2, recordTime(version.createdAt))).performClick()
+        // 选源弹的是 AlertDialog —— 它在自己的窗口里合成，「点开」到「窗口挂载 + 首帧」之间
+        // 有一段空档。这里原来点完就查文本，中间没有任何等待：全量并发跑时会偶发查不到，
+        // 2026-09-18 的 records-tests11 就是两条用例都倒在这一行（同一句里的输入框查询没
+        // 事，因为输入框一直在主窗口里，只有弹层内容是后挂上来的）。
+        val option = context.getString(R.string.record_question_source, version.inputRevision, recordTime(version.createdAt))
+        awaitText(option)
+        compose.onNodeWithText(option).performClick()
         compose.onNodeWithText(label(R.string.record_question_input)).performScrollTo().performTextReplacement("What did we decide?")
     }
     private fun ask() {
