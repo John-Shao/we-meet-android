@@ -79,6 +79,10 @@ class RecordScreensTest {
         }
         override suspend fun records(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?, isOngoing: Boolean?): RecordPageDto<RecordDto> {
             checkAccess()
+            // 列表页现在会并行问两次:进行中一段 + 历史一段(见 RecordLibraryScreen)。
+            // 这个 fixture 模拟的是「名下没有正在录制的记录」的账号,所以进行中那一段恒空,
+            // 分页/空态行为与单列表时完全一致。
+            if (isOngoing == true) return RecordPageDto(emptyList())
             queries += scope to cursor
             searchQuery = query
             sourceFilter = source
@@ -181,10 +185,9 @@ class RecordScreensTest {
         assertTrue(fixture.queries.contains("recent" to "next-page"))
     }
 
-    @Test fun librarySearchFiltersAndRecordingShortcut() {
+    @Test fun librarySearchAndFiltersDriveTheQuery() {
         val fixture = Fixture()
-        var started = false
-        compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", false, {}, {}, onStartRecording = { started = true }) } }
+        compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", false, {}, {}) } }
         awaitText("Private planning meeting")
         compose.onNodeWithContentDescription(label(R.string.records_search)).performClick()
         compose.onNodeWithText(label(R.string.records_search)).performTextInput("Design")
@@ -198,8 +201,9 @@ class RecordScreensTest {
         compose.waitUntil(5_000) { fixture.sourceFilter == "upload" }
         compose.onNodeWithText(label(R.string.records_reset_filters)).performClick()
         compose.waitUntil(5_000) { fixture.sourceFilter == null }
-        compose.onNodeWithText(label(R.string.records_start_recording)).performClick()
-        assertTrue(started)
+        // 这一页不再挂「录音/导入」常驻底栏:两个动作归属 AI 录音页,列表页只查只看。
+        compose.onNodeWithText(label(R.string.records_start_recording)).assertDoesNotExist()
+        compose.onNodeWithText(label(R.string.records_upload)).assertDoesNotExist()
     }
 
     @Test fun minutesLibraryUsesOwnershipTabsAndOpensSummaryReader() {

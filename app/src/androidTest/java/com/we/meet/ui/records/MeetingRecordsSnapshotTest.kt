@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
 import com.we.meet.R
 import com.we.meet.data.api.MeetingRecordApi
@@ -56,15 +57,15 @@ class MeetingRecordsSnapshotTest {
 
     private fun meeting(id: String, title: String, at: String, summary: Boolean = true, ongoing: Boolean = false) =
         RecordDto(id, "meeting", title, at, 1, RecordCapabilitiesDto(readSummary = true, readTranscript = true, rename = true),
-            meetingSessionId = session, isOngoing = ongoing, hasSummary = summary, retentionMode = "media")
+            meetingSessionId = session, isOngoing = ongoing, hasSummary = summary, retentionMode = "media", owner = "王敏")
 
     private fun captured(id: String, title: String, at: String) =
         RecordDto(id, "audio_recording", title, at, 1, RecordCapabilitiesDto(readSummary = true, readTranscript = true, rename = true),
-            captureId = uuid(id.hashCode() and 0xffff), hasSummary = true, retentionMode = "media")
+            captureId = uuid(id.hashCode() and 0xffff), hasSummary = true, retentionMode = "media", owner = "李强")
 
     private fun imported(id: String, title: String, at: String, media: String, status: String) =
         RecordDto(id, "upload", title, at, 1, RecordCapabilitiesDto(readSummary = true, readTranscript = true),
-            upload = RecordUploadDto(media, "$title.$media", 23_000_000, status), retentionMode = "media")
+            upload = RecordUploadDto(media, "$title.$media", 23_000_000, status), retentionMode = "media", owner = "赵磊")
 
     private val catalogue = listOf(
         meeting(uuid(1), "产品双周评审会", "2026-09-18T01:30:00Z"),
@@ -79,7 +80,8 @@ class MeetingRecordsSnapshotTest {
 
     private val summary = RecordSummaryVersionDto(
         id = uuid(80), stage = "final", inputSnapshotId = uuid(81), inputRevision = 1, isCurrent = true,
-        createdAt = "2026-09-18T02:05:00Z", deliveryStatus = "delivered", asrStatus = "finished",
+        createdAt = "2026-09-18T02:05:00Z", deliveryStatus = "complete", asrStatus = "finished",
+        sourceThroughMs = 125_000,
         content = RecordSummaryContentDto(
             overview = "本次评审确认了三个发布阻塞项的处理顺序，并把灰度范围收敛到两个部门。",
             decisions = listOf(RecordSummaryPointDto("本周内完成风控规则灰度，范围限定在两个部门。", emptyList(), ownerText = "王敏", dueText = "9 月 19 日")),
@@ -97,7 +99,10 @@ class MeetingRecordsSnapshotTest {
         private val versions: List<RecordSummaryVersionDto>? = null,
     ) : MeetingRecordApi {
         override suspend fun records(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?, isOngoing: Boolean?) =
-            RecordPageDto(records.filter { source == null || it.sourceType == source }, if (cursor == null && records.isNotEmpty()) "next-page" else null)
+            RecordPageDto(
+                records.filter { (source == null || it.sourceType == source) && (isOngoing == null || it.isOngoing == isOngoing) },
+                if (cursor == null && records.isNotEmpty()) "next-page" else null,
+            )
 
         override suspend fun record(recordId: String) = records.first { it.id == recordId }
 
@@ -156,19 +161,19 @@ class MeetingRecordsSnapshotTest {
     }
 
     @Test fun recordLibrary() {
-        compose.setContent { WeMeetTheme { RecordLibraryScreen(repository(), viewer, false, {}, {}, onOpenNavDrawer = {}, onStartRecording = {}, uploadRepository = uploadRepository(), onSearchMeetingAi = {}) } }
+        compose.setContent { WeMeetTheme { RecordLibraryScreen(repository(), viewer, false, {}, {}, onOpenNavDrawer = {}, onSearchMeetingAi = {}) } }
         shot("20-records-list")
         compose.onNodeWithContentDescription(label(R.string.records_grid_view)).performClick()
         shot("21-records-grid")
     }
 
     @Test fun recordLibraryEmpty() {
-        compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(FakeApi(emptyList()), { viewer }), viewer, false, {}, {}, onOpenNavDrawer = {}, onStartRecording = {}, uploadRepository = uploadRepository(), onSearchMeetingAi = {}) } }
+        compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(FakeApi(emptyList()), { viewer }), viewer, false, {}, {}, onOpenNavDrawer = {}, onSearchMeetingAi = {}) } }
         shot("22-records-empty")
     }
 
     @Test fun minutesLibrary() {
-        compose.setContent { WeMeetTheme { RecordLibraryScreen(repository(), viewer, true, {}, {}, onOpenNavDrawer = {}, onStartRecording = {}, uploadRepository = uploadRepository(), onSearchMeetingAi = {}) } }
+        compose.setContent { WeMeetTheme { RecordLibraryScreen(repository(), viewer, true, {}, {}, onOpenNavDrawer = {}, onSearchMeetingAi = {}) } }
         shot("30-minutes-list")
         compose.onNodeWithContentDescription(label(R.string.records_grid_view)).performClick()
         shot("31-minutes-grid")
@@ -196,5 +201,22 @@ class MeetingRecordsSnapshotTest {
         compose.setContent { WeMeetTheme { RecordDetailScreen(repository(), viewer, uuid(1), {}) } }
         compose.onNodeWithText(label(R.string.records_info)).performClick()
         shot("60-record-info")
+    }
+
+    /** 说话人 tab 只对本地录音/导入件出现(线上会议没有独立说话人端点)。 */
+    @Test fun recordDetailSpeakers() {
+        compose.setContent { WeMeetTheme { RecordDetailScreen(repository(), viewer, uuid(2), {}) } }
+        compose.onNodeWithText(label(R.string.records_speakers)).performClick()
+        shot("61-record-speakers")
+    }
+
+    /** 「生成信息」展开后要交代覆盖范围:阶段 / 已观察到的时间点 / 送达 · 覆盖度 / 识别。 */
+    @Test fun recordDetailSourceInfo() {
+        compose.setContent { WeMeetTheme { RecordDetailScreen(repository(), viewer, uuid(1), {}) } }
+        compose.onNodeWithText(label(R.string.records_minutes)).performClick()
+        compose.onNodeWithText(label(R.string.minutes_source_info)).performScrollTo().performClick()
+        // 展开出来的几行在折叠按钮下方,滚到它们再拍。
+        compose.onNodeWithText(label(R.string.records_coverage_unverified), substring = true).performScrollTo()
+        shot("42-record-source-info")
     }
 }

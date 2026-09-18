@@ -32,8 +32,8 @@ import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.repository.MeetingRecordRepository
 import com.we.meet.data.repository.RecordScope
 import com.we.meet.data.repository.RecordSource
-import com.we.meet.data.repository.RecordingUploadRepository
 import com.we.meet.ui.components.*
+import com.we.meet.ui.home.MeetingListSectionTitle
 import com.we.meet.ui.theme.Dimens
 
 @Composable
@@ -44,8 +44,6 @@ fun RecordLibraryScreen(
     onRecord: (String) -> Unit,
     onBack: () -> Unit,
     onOpenNavDrawer: (() -> Unit)? = null,
-    onStartRecording: (() -> Unit)? = null,
-    uploadRepository: RecordingUploadRepository? = null,
     onSummaryRecord: (String) -> Unit = onRecord,
     onSearchMeetingAi: (() -> Unit)? = null,
     initialSource: RecordSource? = null,
@@ -65,8 +63,17 @@ fun RecordLibraryScreen(
     val keyboard = LocalSoftwareKeyboardController.current
     val search = { query = input.trim(); refresh++; keyboard?.hide(); Unit }
     val result = visibleRead(viewer, scope, source, query, cursor, summariesOnly, refresh) {
-        repository.records(viewer, scope, source, summariesOnly, query.ifBlank { null }, cursor)
+        // 会议实录只取已结束的:正在录的那条走下面单独一段,否则会同时出现在两处。
+        // 纪要库不带这个条件(服务端本来就是 has_summary=true 的那批)。
+        repository.records(viewer, scope, source, summariesOnly, query.ifBlank { null }, cursor,
+            isOngoing = if (summariesOnly) null else false)
     }
+    // 「进行中」单独一段:Web 端同样是两段(进行中 / 历史记录),正在进行的那条最该排在最前。
+    // 只取第一页 —— 服务端单页上限 30,同时在录的记录不该有几十条,不值得再挂一套游标。
+    val ongoing = if (summariesOnly) null else visibleRead(viewer, scope, source, query, refresh) {
+        repository.records(viewer, scope, source, summariesOnly = false, query.ifBlank { null }, cursor = null, isOngoing = true)
+    }
+    val ongoingRows = ongoing?.getOrNull()?.results.orEmpty()
     LaunchedEffect(searchVisible) { if (searchVisible) focus.requestFocus() }
     Scaffold(
         topBar = {
@@ -94,21 +101,8 @@ fun RecordLibraryScreen(
                     }
                 })
         },
-        bottomBar = {
-            if (!summariesOnly && (uploadRepository != null || onStartRecording != null)) {
-                Surface(shadowElevation = Dimens.ElevationOverlay) {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM),
-                        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM), verticalAlignment = Alignment.CenterVertically) {
-                        if (uploadRepository != null) RecordingUploadAction(uploadRepository, viewer, onRecord, Modifier.weight(1f))
-                        if (onStartRecording != null) Button(onClick = onStartRecording, modifier = Modifier.weight(1f).heightIn(min = Dimens.MinTouchTarget), shape = CircleShape) {
-                            Icon(Icons.Outlined.Mic, null, Modifier.size(Dimens.ComponentIconMedium))
-                            Spacer(Modifier.width(Dimens.SpaceS))
-                            Text(stringResource(R.string.records_start_recording))
-                        }
-                    }
-                }
-            }
-        },
+        // 这一页只查、只看:录音与导入两个动作归属「AI 录音」页(抽屉里就在上一格),
+        // Web 端同样是 record 页放动作、notes/minutes 两页不放 —— 列表页不再挂常驻底栏。
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -160,7 +154,8 @@ fun RecordLibraryScreen(
             when {
                 result == null -> WeMeetInlineLoading()
                 result.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
-                result.getOrThrow().results.isEmpty() -> WeMeetEmptyState(stringResource(if (summariesOnly) R.string.minutes_empty else R.string.records_empty),
+                // 只剩「进行中」那几条时不算空 —— 空态会把它们一起盖掉。
+                result.getOrThrow().results.isEmpty() && ongoingRows.isEmpty() -> WeMeetEmptyState(stringResource(if (summariesOnly) R.string.minutes_empty else R.string.records_empty),
                     description = stringResource(if (summariesOnly) R.string.minutes_empty_hint else R.string.records_empty_hint),
                     action = { TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) } })
                 else -> {
@@ -171,6 +166,19 @@ fun RecordLibraryScreen(
                         // 列表模式的行自带内边距和内缩分隔线,不能再叠一层行距;网格模式才需要。
                         verticalArrangement = if (grid) Arrangement.spacedBy(Dimens.SpaceM) else Arrangement.Top,
                         horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                        // 进行中在前:正在收音的那条不该被几十条历史压下去。
+                        if (ongoingRows.isNotEmpty()) {
+                            item(span = { GridItemSpan(maxLineSpan) }, key = "section-ongoing") {
+                                MeetingListSectionTitle(stringResource(R.string.records_ongoing))
+                            }
+                            items(ongoingRows, key = { "ongoing-${it.id}" }) { record ->
+                                val open = { if (summariesOnly) onSummaryRecord(record.id) else onRecord(record.id) }
+                                if (grid) RecordLibraryCard(record, summariesOnly, open) else RecordLibraryRow(record, summariesOnly, open)
+                            }
+                        }
+                        if (!summariesOnly) item(span = { GridItemSpan(maxLineSpan) }, key = "section-archive") {
+                            MeetingListSectionTitle(stringResource(R.string.records_archive))
+                        }
                         items(page.results, key = { it.id }) { record ->
                             val open = { if (summariesOnly) onSummaryRecord(record.id) else onRecord(record.id) }
                             if (grid) RecordLibraryCard(record, summariesOnly, open) else RecordLibraryRow(record, summariesOnly, open)
@@ -276,6 +284,8 @@ internal fun recordMetaLine(record: RecordDto, summariesOnly: Boolean): String =
     if (summariesOnly) stringResource(R.string.minutes_recorded_at, recordTime(record.originAt)) else recordTime(record.originAt),
     stringResource(recordSourceLabel(record)),
     record.upload?.let { stringResource(uploadStatusLabel(it.status)) },
+    // 所有者:Web 的表格有这一列,窄屏(手机)并进副行 —— 手机端只看得到这一种形态。
+    record.owner?.takeIf { it.isNotBlank() } ?: stringResource(R.string.records_owner_unknown),
 ).joinToString(" · ")
 
 /** 来源图标在列表和网格里必须一致 —— 网格丢掉图标就只剩文字能区分会议/录音/导入。 */

@@ -1587,8 +1587,6 @@ fun AppNav() {
             RecordLibraryScreen(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(),
                 onSearchMeetingAi = { navController.navigate(Routes.imSearch(SearchCategory.AI, meetingAi = true)) },
                 summariesOnly = entry.arguments?.getBoolean("summaries") == true,
-                onStartRecording = if (com.we.meet.BuildConfig.WE_MEET_CAPTURE_NATIVE) ({ navController.navigate(Routes.CAPTURE) }) else null,
-                uploadRepository = app.recordingUploadRepository,
                 onSummaryRecord = { id -> navController.navigate(Routes.recordDetail(id, summaryView = true)) },
                 onRecord = { id -> navController.navigate(Routes.recordDetail(id)) }, onBack = rememberOnceOnly(safePop))
         }

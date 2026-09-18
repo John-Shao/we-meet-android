@@ -451,8 +451,6 @@ fun MainTabScreen(
                         summariesOnly = meetingSection == MeetingSection.MINUTES,
                         initialSource = if (meetingSection == MeetingSection.RECORDS) com.we.meet.data.repository.RecordSource.entries.find { it.name == recordsSource } else null,
                         onRecord = onOpenRecord, onSummaryRecord = onOpenSummaryRecord, onBack = {}, onOpenNavDrawer = openMeetingNavigation,
-                        onStartRecording = if (BuildConfig.WE_MEET_CAPTURE_NATIVE) onOpenCapture else null,
-                        uploadRepository = app.recordingUploadRepository,
                         onSearchMeetingAi = onSearchMeetingAi,
                     )
                 }
