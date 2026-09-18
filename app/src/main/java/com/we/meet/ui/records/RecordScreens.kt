@@ -255,9 +255,15 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
 internal fun SummaryCard(version: RecordSummaryVersionDto, originals: Boolean, onSource: (RecordReferenceDto) -> Unit) {
     var sourceInfo by remember(version.id) { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)) {
-        Text(stringResource(R.string.minutes_generated_at, recordTime(version.createdAt)),
+        // 版本头一行与 Web 的 RecordSummaryPanel 同构:`阶段 · 生成于 … · 历史版本`。
+        // 原先只写「生成于 …」,阶段被藏在下面的「生成信息」折叠区 —— 折叠着就看不出这份
+        // 是实时稿还是终稿,而「速记稿后续可能变」正是最该先看到的信息。
+        Text(listOfNotNull(
+            stringResource(versionStageLabel(version.stage)),
+            stringResource(R.string.minutes_generated_at, recordTime(version.createdAt)),
+            stringResource(R.string.records_historical).takeIf { !version.isCurrent },
+        ).joinToString(" · "),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        if (!version.isCurrent) Text(stringResource(R.string.records_historical), style = MaterialTheme.typography.labelMedium)
         if (version.stage != "final") Text(stringResource(R.string.records_provisional), style = MaterialTheme.typography.bodySmall)
         if (version.asrStatus == "incomplete") Text(stringResource(R.string.records_incomplete), style = MaterialTheme.typography.bodySmall)
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = MaterialTheme.shapes.large) {
@@ -294,12 +300,8 @@ internal fun SummaryCard(version: RecordSummaryVersionDto, originals: Boolean, o
             Icon(if (sourceInfo) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null)
         }
         if (sourceInfo) {
-            Text(stringResource(when (version.stage) {
-                "realtime" -> R.string.records_live
-                "quick" -> R.string.records_quick
-                "final" -> R.string.records_final
-                else -> R.string.records_minutes
-            }), style = MaterialTheme.typography.bodySmall)
+            // 阶段不在这里重复:它已经在版本头那一行(与 Web 的 details 里只放
+            // 覆盖信息、不放阶段是同一条规则)。
             // 与 Web 的「生成信息」逐条对齐(RecordSummaryPanel 的 Version):
             // 已观察到的时间点 → 文字送达 · 覆盖度 → 识别状态。少一条就等于对这份
             // 纪要的覆盖范围没有交代 —— 用户没法判断结论是不是只覆盖了半场。
@@ -319,6 +321,14 @@ internal fun SummaryCard(version: RecordSummaryVersionDto, originals: Boolean, o
             }), style = MaterialTheme.typography.bodySmall)
         }
     }
+}
+
+/** 纪要版本阶段:realtime / quick / final。 */
+private fun versionStageLabel(stage: String): Int = when (stage) {
+    "realtime" -> R.string.records_live
+    "quick" -> R.string.records_quick
+    "final" -> R.string.records_final
+    else -> R.string.records_minutes
 }
 
 /** 文字送达状态(delivery_status):Web 的 recordAi.delivery.* 四档。 */

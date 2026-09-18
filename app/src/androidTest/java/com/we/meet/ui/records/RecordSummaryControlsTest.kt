@@ -173,7 +173,8 @@ class RecordSummaryControlsTest {
                 MeetingRecordRepository(records) { viewer }, repository, { viewer }, null)
         } } }
         compose.waitUntil(8000) { compose.onAllNodesWithText("Quick release decision").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText(label(R.string.records_quick)).performScrollTo().assertIsDisplayed()
+        // 阶段现在与「生成于 …」同处版本头那一行(与 Web 的版本头一致),所以按子串找。
+        compose.onNodeWithText(label(R.string.records_quick), substring = true).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.records_source_at, "0:01")).performScrollTo().performClick()
         compose.waitUntil(8000) { compose.onAllNodesWithText("Exact quick draft evidence").fetchSemanticsNodes().isNotEmpty() }
         assertEquals(records.snapshot, records.readSnapshot)
