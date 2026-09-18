@@ -9,11 +9,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.UploadFile
+import androidx.compose.material.icons.outlined.SaveAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.we.meet.ui.home.ActionCard
@@ -29,13 +30,69 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 import retrofit2.HttpException
 
+/**
+ * 「导入」动作的图标,与 Web 端同款:**向下**的箭头收进托盘
+ * (Web `RecordingUpload.tsx` 用 Remix `RiDownload2Line`,字形等同 Material `save_alt`)。
+ * Web 端明确否掉了向上的 upload 图标 —— 这一页的动作是「把外部的音视频收进来」,
+ * 向上的箭头看着像要把东西发出去。
+ *
+ * 注意别和记录列表里「上传件」的来源徽标搞混:那个仍是向上的 `Icons.Outlined.UploadFile`,
+ * 与 Web 端列表里的 `RiUpload2Line` 对应 —— 一个是动作,一个是来源类型。
+ */
+private val ImportIcon: ImageVector = Icons.Outlined.SaveAlt
+
+/**
+ * 「导入」入口的两种形态:AI 录音页的功能磁贴,以及记录/纪要页底栏那个描边按钮。
+ * 能力表还没回来时也用它画灰态占位,尺寸与正常态一致,列表不会先塌一半再弹回来。
+ */
+@Composable
+private fun ImportEntry(enabled: Boolean, onChoose: () -> Unit, modifier: Modifier, tile: Boolean) {
+    if (tile) {
+        ActionCard(ImportIcon, stringResource(R.string.records_upload),
+            MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer,
+            onChoose, modifier, enabled = enabled)
+    } else {
+        OutlinedButton(onClick = onChoose, enabled = enabled, modifier = modifier.heightIn(min = Dimens.MinTouchTarget), shape = CircleShape) {
+            Icon(ImportIcon, null, Modifier.size(Dimens.ComponentIconMedium)); Spacer(Modifier.width(Dimens.SpaceS))
+            Text(stringResource(R.string.records_upload))
+        }
+    }
+}
+
 @Composable
 internal fun RecordingUploadAction(repository: RecordingUploadRepository, viewer: String, onRecord: (String) -> Unit, modifier: Modifier = Modifier, tile: Boolean = false) {
-    // Capabilities contain no record content. Keep them while the system document picker pauses us.
-    val capabilities by produceState<Result<RecordingUploadCapabilities>?>(null, repository, viewer) {
-        value = repository.capabilities(viewer)
+    // 入口先按上一次已知的能力表立刻画出来,再拉一次权威值纠正。能力表只说明允许的
+    // 后缀与大小上限(不含任何记录内容),但「导入」入口画不画全靠它 —— 若每次都等
+    // 一轮网络,每次进入「AI 录音」都会看到右侧空半格,入口迟到才冒出来。
+    var config by remember(repository, viewer) { mutableStateOf(repository.lastCapabilities(viewer)) }
+    var settled by remember(repository, viewer) { mutableStateOf(false) }
+    LaunchedEffect(repository, viewer) {
+        config = repository.capabilities(viewer).getOrNull()
+        settled = true
     }
-    val config = capabilities?.getOrNull()?.takeIf { it.available } ?: return
+    val limits = config?.takeIf { it.available }
+    if (limits == null) {
+        // 首次进入、能力表还没回来:按同尺寸先摆一个不可点的入口,整行不会先塌一半;
+        // 确认不可用或接口失败后就不再摆样子。
+        if (!settled) ImportEntry(enabled = false, onChoose = {}, modifier = modifier, tile = tile)
+        return
+    }
+    RecordingImportEntry(repository, viewer, onRecord, modifier, tile, limits)
+}
+
+/**
+ * 能力表到手之后的正常流程。非空的能力表是前置条件:后缀白名单、大小上限,以及
+ * 「系统文件选择器只看这些 MIME」都得读它。
+ */
+@Composable
+private fun RecordingImportEntry(
+    repository: RecordingUploadRepository,
+    viewer: String,
+    onRecord: (String) -> Unit,
+    modifier: Modifier,
+    tile: Boolean,
+    config: RecordingUploadCapabilities,
+) {
     var open by rememberSaveable(viewer) { mutableStateOf(false) }
     var uri by rememberSaveable(viewer) { mutableStateOf<String?>(null) }
     var name by rememberSaveable(viewer) { mutableStateOf("") }
@@ -76,13 +133,7 @@ internal fun RecordingUploadAction(repository: RecordingUploadRepository, viewer
     val video = name.substringAfterLast('.', "").lowercase() in setOf("avi", "flv", "mkv", "mov", "mp4", "mpeg", "webm", "wmv")
     val mimeTypes = remember(config.extensions) { recordingImportMimeTypes(config.extensions) }
     val choose = { picker.launch(mimeTypes) }
-    if (tile) ActionCard(Icons.Outlined.UploadFile, stringResource(R.string.records_upload),
-        MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer,
-        choose, modifier, enabled = !busy)
-    else OutlinedButton(onClick = choose, enabled = !busy, modifier = modifier.heightIn(min = Dimens.MinTouchTarget), shape = CircleShape) {
-        Icon(Icons.Outlined.UploadFile, null, Modifier.size(Dimens.ComponentIconMedium)); Spacer(Modifier.width(Dimens.SpaceS))
-        Text(stringResource(R.string.records_upload))
-    }
+    ImportEntry(enabled = !busy, onChoose = choose, modifier = modifier, tile = tile)
     if (open) AlertDialog(onDismissRequest = { if (!busy) open = false },
         title = { Text(stringResource(R.string.record_upload_title)) },
         text = {

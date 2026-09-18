@@ -16,8 +16,24 @@ import java.util.UUID
 
 /** Streams the selected document with a byte limit; never caches private media or results. */
 class RecordingUploadRepository(private val api: RecordingUploadApi, private val currentViewer: () -> String?) {
+
+    /**
+     * 上一次拿到的上传能力表,按 viewer 分开存。能力表只说明「允许哪些后缀、多大」,
+     * 不含任何记录内容,所以进程内记住它是安全的;而「AI 录音」/「会议实录」两个页面
+     * 每次进入都要靠它决定「导入」入口画不画,不缓存就等于每次进页面都先空一格等网络。
+     */
+    private val capabilitiesByViewer = java.util.concurrent.ConcurrentHashMap<String, RecordingUploadCapabilities>()
+
+    /** 上一次已知的能力表;没有或已换账号就是 null。 */
+    fun lastCapabilities(viewer: String): RecordingUploadCapabilities? =
+        if (viewer.isNotBlank() && currentViewer() == viewer) capabilitiesByViewer[viewer] else null
+
     suspend fun capabilities(viewer: String) = scoped(viewer) {
-        api.capabilities().also { require(!it.available || (it.maxBytes > 0 && it.extensions.isNotEmpty())) }
+        api.capabilities().also {
+            require(!it.available || (it.maxBytes > 0 && it.extensions.isNotEmpty()))
+            require(currentViewer() == viewer)
+            capabilitiesByViewer[viewer] = it
+        }
     }
 
     suspend fun upload(
