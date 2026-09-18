@@ -38,4 +38,22 @@ class RecordLinksTest {
         assertNull(RecordLinks.parse("$base$path", "$base/prefix"))
         assertNull(RecordLinks.parse("$base$path?summary=" + "a".repeat(5000), base))
     }
+
+    /** 造出来的链接必须能被自己的解析器读回来(两端共用一段路径口径才不会各写各的)。 */
+    @Test fun sharedLinkRoundTripsThroughTheParser() {
+        assertEquals("$base$path", RecordLinks.share(record, base))
+        assertEquals(RecordLink(record), RecordLinks.parse(RecordLinks.share(record, base), base))
+        assertEquals(RecordLink(record, summary), RecordLinks.parse(RecordLinks.share(record, base, summary), base))
+        // 末尾斜杠、大写、带子路径的 base 都要收敛到同一形状。
+        assertEquals("$base$path", RecordLinks.share(record, "$base/"))
+        assertEquals("$base/prefix$path", RecordLinks.share(record, "$base/prefix/"))
+        assertEquals(RecordLink(record), RecordLinks.parse(RecordLinks.share(record.uppercase(), base), base))
+    }
+
+    @Test fun shareRejectsValuesTheParserWouldNotAccept() {
+        listOf("", "1-1-1-1-1", "$record/extra").forEach {
+            assertThrows(IllegalArgumentException::class.java) { RecordLinks.share(it, base) }
+        }
+        assertThrows(IllegalArgumentException::class.java) { RecordLinks.share(record, base, "bad") }
+    }
 }

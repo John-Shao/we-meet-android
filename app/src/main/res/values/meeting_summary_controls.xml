@@ -33,6 +33,9 @@
     <string name="summary_automation_off">Not enabled</string>
     <string name="summary_automation_waiting">Waiting for the next summary</string>
     <string name="summary_automation_generating">Automatically generating minutes</string>
+    <string name="summary_controls_blocked_budget">The source exceeds the current processing budget, or one utterance is too long. Source text is retained; adjust the material before generating.</string>
+    <string name="summary_controls_waiting_source">Minutes can be generated after the meeting ends and a transcript is available.</string>
+    <string name="summary_controls_rate_limited">Too many requests. Wait before resending the same request.</string>
     <string name="summary_automation_completed">Full minutes ready</string>
     <string name="summary_automation_attention">Automatic generation needs attention</string>
 </resources>

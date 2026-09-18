@@ -134,7 +134,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         tabs.forEach { (value, label) -> Tab(selected = value == selectedTab, onClick = { detailTab = value }, text = { Text(stringResource(label)) }) }
                     }
                     if (selectedTab == "info") {
-                        RecordInfo(record, Modifier.weight(1f))
+                        RecordInfo(record, app?.captureRepository, viewer, Modifier.weight(1f))
                     } else if (selectedTab == "speakers") {
                         RecordSpeakers(repository, viewer, record, Modifier.weight(1f))
                     } else if (showTranslations) {
@@ -300,14 +300,33 @@ internal fun SummaryCard(version: RecordSummaryVersionDto, originals: Boolean, o
                 "final" -> R.string.records_final
                 else -> R.string.records_minutes
             }), style = MaterialTheme.typography.bodySmall)
-            Text(stringResource(when (version.asrStatus) {
+            // 与 Web 的「生成信息」逐条对齐(RecordSummaryPanel 的 Version):
+            // 已观察到的时间点 → 文字送达 · 覆盖度 → 识别状态。少一条就等于对这份
+            // 纪要的覆盖范围没有交代 —— 用户没法判断结论是不是只覆盖了半场。
+            version.sourceThroughMs?.let {
+                Text(stringResource(R.string.records_observed_through, sourceTime(it)), style = MaterialTheme.typography.bodySmall)
+            }
+            Text(
+                "${stringResource(deliveryLabel(version.deliveryStatus))} · ${stringResource(R.string.records_coverage_unverified)}",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            // unverified / incomplete 不在这里出:incomplete 已在上方单独提示,而
+            // unverified 表示服务端就没给识别状态,再报一句等于什么都没说(与 Web 同一条规则)。
+            if (version.asrStatus !in setOf("unverified", "incomplete")) Text(stringResource(when (version.asrStatus) {
                 "in_progress" -> R.string.records_recognizing
                 "finished" -> R.string.records_finished
-                "incomplete" -> R.string.records_incomplete
-                else -> R.string.records_coverage_unknown
+                else -> R.string.records_audio_not_observed
             }), style = MaterialTheme.typography.bodySmall)
         }
     }
+}
+
+/** 文字送达状态(delivery_status):Web 的 recordAi.delivery.* 四档。 */
+private fun deliveryLabel(status: String): Int = when (status) {
+    "open" -> R.string.records_delivery_open
+    "complete" -> R.string.records_delivery_complete
+    "incomplete" -> R.string.records_delivery_incomplete
+    else -> R.string.records_delivery_unverified
 }
 
 internal fun scopeLabel(scope: RecordScope): Int = when (scope) {

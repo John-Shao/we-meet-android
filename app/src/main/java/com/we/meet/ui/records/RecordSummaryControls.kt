@@ -23,6 +23,7 @@ import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
 import kotlinx.coroutines.*
+import retrofit2.HttpException
 
 /** Only generation controls live here; permissions, current readiness and durable intent remain separate. */
 @Composable
@@ -37,7 +38,8 @@ internal fun RecordSummaryControls(viewer: String, record: RecordDto, repository
     var pendingSummary by remember(viewer, record.id) { mutableStateOf(false) }
     var pendingAutomation by remember(viewer, record.id) { mutableStateOf(false) }
     var storageError by remember(viewer, record.id) { mutableStateOf(false) }
-    var operationError by remember(viewer, record.id) { mutableStateOf(false) }
+    // null = 没出错;否则记下要显示哪条失败文案 —— 429 和「结果未知」是两回事。
+    var operationError by remember(viewer, record.id) { mutableStateOf<Int?>(null) }
     var busy by remember(viewer, record.id) { mutableStateOf(false) }
     var action by remember(viewer, record.id) { mutableStateOf<Job?>(null) }
     suspend fun loadPending(controller: MeetingSummaryCoordinator) {
@@ -83,14 +85,17 @@ internal fun RecordSummaryControls(viewer: String, record: RecordDto, repository
             if (auto == null || !auto.canControl || (!pendingAutomation && !auto.available && !auto.enabled)) return
         } else if (state == null || (!pendingSummary && (active || if (retryJob) job?.retryable != true else stage !in ready))) return
         busy = true
-        operationError = false
+        operationError = null
         action = scope.launch {
             try {
                 if (automationChange) controller.control(record.id, SummaryAutomationRequestDto(!requireNotNull(auto).enabled, auto.revision))
                 else controller.submit(record.id, SummaryRequestDto(if (retryJob) "retry" else if (job == null) "generate" else "regenerate",
                     stage, requireNotNull(state).revision, job?.id, job?.attempt))
             } catch (canceled: CancellationException) { throw canceled }
-            catch (_: Exception) { operationError = true }
+            // 被限流(429)时重发同一个请求是没用的,和「结果未知、请刷新后重试」分开说,
+            // 否则用户会照着那句去重试,而正确的动作是等(Web 的 recordAi.rateLimited 同理)。
+            catch (error: HttpException) { operationError = if (error.code() == 429) R.string.summary_controls_rate_limited else R.string.summary_controls_operation_error }
+            catch (_: Exception) { operationError = R.string.summary_controls_operation_error }
             finally {
                 if (coordinator === controller && lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
                     try { loadPending(controller) }
@@ -121,7 +126,7 @@ internal fun RecordSummaryControls(viewer: String, record: RecordDto, repository
                 } else {
                     ready.forEach { stage -> Button(onClick = { operate(false, stage) }, enabled = canClick && !active) { Text(stringResource(summaryStageAction(stage))) } }
                     if (job?.retryable == true && !active) TextButton(onClick = { operate(false, job.stage, true) }, enabled = canClick) { Text(stringResource(R.string.summary_controls_retry)) }
-                    if (!active && ready.isEmpty()) Text(stringResource(if (state.blockedReason != null) R.string.summary_controls_blocked else R.string.summary_controls_waiting))
+                    if (!active && ready.isEmpty()) Text(stringResource(waitingLabel(state)))
                     state.nextUpdateAt?.let { Text(stringResource(R.string.summary_controls_next, recordTime(it)), style = MaterialTheme.typography.bodySmall) }
                 }
             }
@@ -136,9 +141,21 @@ internal fun RecordSummaryControls(viewer: String, record: RecordDto, repository
                 }
             }
             if (busy) WeMeetInlineLoading()
-            if (operationError) Text(stringResource(R.string.summary_controls_operation_error), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+            operationError?.let { Text(stringResource(it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
         }
     }
+}
+
+/**
+ * 暂时生成不了时到底卡在哪。与 Web 同一套判定:
+ * `source_budget_exceeded` 要用户去改材料,其余未知原因退回笼统文案(不装作知道);
+ * 没有 blocked_reason 时才是「等文字」——分阶段生成等的是「更稳定的文字」,
+ * 非分阶段(旧口径)等的是「会议结束且原文可用」。
+ */
+private fun waitingLabel(state: SummaryProgressDto): Int = when (state.blockedReason) {
+    null -> if (state.stagedEnabled) R.string.summary_controls_waiting else R.string.summary_controls_waiting_source
+    "source_budget_exceeded" -> R.string.summary_controls_blocked_budget
+    else -> R.string.summary_controls_blocked
 }
 
 /** Capture preview uses canonical immutable versions and exact citations, including quick drafts. */

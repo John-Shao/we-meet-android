@@ -38,6 +38,8 @@ data class RecordDto(
     @Json(name = "has_summary") val hasSummary: Boolean = false,
     @Json(name = "retention_mode") val retentionMode: String = "unknown",
     val upload: RecordUploadDto? = null,
+    /** 所有者显示名(姓名 → 短名 → 邮箱)。列表副行要显示它,与 Web 的表格/窄屏副行同一口径。 */
+    val owner: String? = null,
 )
 
 data class RecordReferenceDto(

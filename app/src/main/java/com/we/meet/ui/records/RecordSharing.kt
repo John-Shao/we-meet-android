@@ -1,5 +1,8 @@
 package com.we.meet.ui.records
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,6 +16,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import com.we.meet.BuildConfig
 import com.we.meet.R
 import com.we.meet.data.api.dto.*
 import com.we.meet.data.capture.*
@@ -34,6 +38,7 @@ internal fun RecordSharing(viewer: String, record: RecordDto, repository: Meetin
     var pending by remember(viewer, record.id) { mutableStateOf<MeetingIntent?>(null) }
     var storageError by remember(viewer, record.id) { mutableStateOf(false) }
     var busy by remember(viewer, record.id) { mutableStateOf(false) }
+    var copied by remember(viewer, record.id) { mutableStateOf(false) }
     var error by remember(viewer, record.id) { mutableStateOf(false) }
     var accepted by remember(viewer, record.id) { mutableStateOf(false) }
     var action by remember(viewer, record.id) { mutableStateOf<Job?>(null) }
@@ -111,6 +116,16 @@ internal fun RecordSharing(viewer: String, record: RecordDto, repository: Meetin
                         if (pages.size > 1) TextButton(onClick = { pages = pages.dropLast(1) }, enabled = !busy) { Text(stringResource(R.string.records_previous)) }
                         state.nextCursor?.let { next -> TextButton(onClick = { pages = pages + next }, enabled = !busy) { Text(stringResource(R.string.records_next)) } }
                     }
+                    // 与 Web 的 summarySharing.copyLink 同一个位置(授权列表之后)与同一个链接形状:
+                    // 入站深链 App 早就认了(RecordLinks.parse),缺的只是把链接发出去的入口。
+                    TextButton(onClick = {
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                        clipboard?.setPrimaryClip(ClipData.newPlainText(
+                            "we-meet-record", RecordLinks.share(record.id, BuildConfig.WE_MEET_BASE_URL)))
+                        // Android 的 setPrimaryClip 没有失败信号(Web 的异步剪贴板才有),所以只报成功。
+                        copied = true
+                    }, enabled = enabled) { Text(stringResource(R.string.record_share_copy_link)) }
+                    if (copied) Text(stringResource(R.string.record_share_copied), style = MaterialTheme.typography.bodySmall)
                     if (error) Text(stringResource(R.string.record_share_error), color = MaterialTheme.colorScheme.error)
                     if (busy) WeMeetInlineLoading()
                 }

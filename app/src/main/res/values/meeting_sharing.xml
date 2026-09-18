@@ -26,4 +26,6 @@
     <string name="record_share_clear">Clear selection</string>
     <string name="record_share_no_candidates">No eligible people on this page.</string>
     <string name="record_share_review_selection">Preview selected people</string>
+    <string name="record_share_copy_link">Copy record link</string>
+    <string name="record_share_copied">Link copied. Recipients still need read access.</string>
 </resources>

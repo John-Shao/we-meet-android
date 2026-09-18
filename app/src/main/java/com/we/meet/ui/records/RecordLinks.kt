@@ -8,6 +8,19 @@ data class RecordLink(val recordId: String, val summaryId: String? = null)
 
 /** Links are selectors, never permission grants or API destinations. */
 object RecordLinks {
+    /**
+     * 造一条可分享的记录链接 —— 与 [parse] 共用同一段路径口径(解析器只认
+     * `{base}/meeting/records/{uuid}`,这里也只产出这一段)。Web 端「复制记录链接」
+     * 复制的就是同一个形状(`{origin}/meeting/records/{id}`),这样同一串链接在
+     * Web、App、系统浏览器里都能落到同一条记录。
+     */
+    fun share(recordId: String, baseUrl: String, summaryId: String? = null): String {
+        requireUuid(recordId)
+        summaryId?.let(::requireUuid)
+        val path = baseUrl.trimEnd('/') + "/meeting/records/" + recordId.lowercase()
+        return if (summaryId == null) path else "$path?summary=${summaryId.lowercase()}"
+    }
+
     fun parse(value: String, baseUrl: String): RecordLink? = runCatching {
         require(value.length <= 4096)
         val uri = URI(value)

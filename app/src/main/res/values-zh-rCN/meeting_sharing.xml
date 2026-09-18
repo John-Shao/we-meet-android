@@ -26,4 +26,6 @@
     <string name="record_share_clear">清空选择</string>
     <string name="record_share_no_candidates">本页暂无可选人员</string>
     <string name="record_share_review_selection">预览所选人员权限</string>
+    <string name="record_share_copy_link">复制记录链接</string>
+    <string name="record_share_copied">链接已复制；接收者仍需具备读取权限。</string>
 </resources>

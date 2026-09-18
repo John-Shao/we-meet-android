@@ -26,11 +26,15 @@ import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 import okhttp3.RequestBody
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import retrofit2.HttpException
+import retrofit2.Response
 
 @RunWith(AndroidJUnit4::class)
 class RecordSummaryControlsTest {
@@ -136,6 +140,32 @@ class RecordSummaryControlsTest {
         await(R.string.summary_controls_read_error)
         compose.onNodeWithText(label(R.string.summary_controls_retry)).assertDoesNotExist()
     }
+
+    /** 暂时生成不了时要说清卡在哪:分阶段等文字 / 等会议结束 / 原文超上限,三种说法不一样。 */
+    @Test fun blockedReasonPicksTheActionableWording() {
+        api.progress = api.progress.copy(readyStages = emptyList())
+        show()
+        await(R.string.summary_controls_waiting)
+        api.progress = api.progress.copy(stagedEnabled = false)
+        compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        await(R.string.summary_controls_waiting_source)
+        api.progress = api.progress.copy(blockedReason = "source_budget_exceeded")
+        compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        await(R.string.summary_controls_blocked_budget)
+        compose.onNodeWithText(label(R.string.summary_controls_waiting_source)).assertDoesNotExist()
+    }
+
+    /** 429 不是「结果未知,请重试」:重发同一个请求只会再被限流,要叫人等。 */
+    @Test fun rateLimitedRequestAsksToWaitInsteadOfRetrying() {
+        api.rateLimit = true
+        show()
+        click(R.string.summary_controls_realtime)
+        await(R.string.summary_controls_rate_limited)
+        compose.onNodeWithText(label(R.string.summary_controls_operation_error)).assertDoesNotExist()
+    }
+
     @Test fun capturePreviewShowsQuickVersionAndExactSourceThenClearsAfterRevocation() {
         val records = RecordFixture()
         compose.setContent { WeMeetTheme { Column(Modifier.verticalScroll(rememberScrollState())) {
@@ -158,6 +188,7 @@ class RecordSummaryControlsTest {
         var loseSummary = false
         var loseAutomation = false
         var failRead = false
+        var rateLimit = false
         val job = SummaryJobDto(UUID.randomUUID().toString(), "queued", 1, 1, "realtime", 3, updatedAt = "2026-09-13T00:00:00Z")
         var progress = SummaryProgressDto(3, null, stagedEnabled = true, readyStages = listOf("realtime"))
         var auto = SummaryAutomationDto(0, false, "off", available = true, canControl = true)
@@ -172,6 +203,7 @@ class RecordSummaryControlsTest {
             bodies += json
             val stage = if (json.contains("\"stage\":\"quick\"")) "quick" else "realtime"
             progress = progress.copy(job = job.copy(stage = stage), readyStages = emptyList())
+            if (rateLimit) throw HttpException(Response.error<Any>(429, "".toResponseBody("application/json".toMediaType())))
             if (loseSummary) { loseSummary = false; throw IOException("Synthetic response lost") }
             return SummaryAcceptedDto(UUID.randomUUID().toString(), false, "pending", progress.job!!)
         }
