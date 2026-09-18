@@ -3,6 +3,8 @@
     <string name="video_active">In progress</string>
     <string name="video_ended">Ended</string>
     <string name="video_more">More</string>
+    <string name="video_show_all">Show all (%1$d)</string>
+    <string name="video_collapse">Collapse</string>
     <string name="video_material_loading">Loading meeting material…</string>
     <string name="video_material_unavailable">No accessible material yet</string>
     <string name="video_record_hint">Open this session’s recordings and transcript</string>

@@ -3,6 +3,8 @@
     <string name="video_active">进行中</string>
     <string name="video_ended">已结束</string>
     <string name="video_more">更多</string>
+    <string name="video_show_all">查看全部（%1$d）</string>
+    <string name="video_collapse">收起</string>
     <string name="video_material_loading">正在加载会议资料…</string>
     <string name="video_material_unavailable">暂无可访问的资料</string>
     <string name="video_record_hint">查看本场会议的录音、录像和文字记录</string>
