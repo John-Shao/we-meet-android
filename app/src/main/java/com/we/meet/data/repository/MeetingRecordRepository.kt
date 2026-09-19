@@ -1,6 +1,8 @@
 package com.we.meet.data.repository
 
 import com.we.meet.data.api.MeetingRecordApi
+import com.we.meet.data.api.dto.RecordCorrectionDto
+import com.we.meet.data.api.dto.RecordCorrectionRequest
 import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.api.dto.RecordMediaDto
 import com.we.meet.data.api.dto.RecordPageDto
@@ -14,6 +16,9 @@ import java.util.UUID
 
 /** What the server can render; anything else is a bug here, not a server error. */
 private val SUPPORTED_EXPORT_FORMATS = setOf("txt", "srt", "vtt")
+
+/** Matches the server's bound on one correction, checked here before sending. */
+private const val MAX_CORRECTION_LENGTH = 20_000
 
 enum class RecordScope(val wire: String) { RECENT("recent"), OWNED("owned"), PARTICIPATED("participated"), SHARED("shared") }
 enum class RecordSource(val wire: String) { MEETING("meeting"), AUDIO("audio_recording"), UPLOAD("upload"), RECORDINGS("recordings") }
@@ -34,6 +39,9 @@ data class RecordOriginalRow(
      * those rows have no window end and stay active until the next row starts.
      */
     val endMs: Long? = null,
+    /** The recogniser's own words, so a correction never looks original. */
+    val originalText: String? = null,
+    val isCorrected: Boolean = false,
 )
 
 /** No disk cache or cross-account memory; every response is checked against its reader. */
@@ -107,7 +115,12 @@ class MeetingRecordRepository(
                     require(it.revision > 0 && it.startMs >= 0 && (it.endMs == null || it.endMs >= it.startMs))
                     require(record.captureId == null || it.captureSessionId == record.captureId)
                     require(speakerId == null || speakerId == it.speakerId)
-                    RecordOriginalRow(it.id, it.speakerLabel, it.text, it.language, startMs = it.startMs, endMs = it.endMs)
+                    RecordOriginalRow(
+                        it.id, it.speakerLabel, it.text, it.language,
+                        startMs = it.startMs, endMs = it.endMs,
+                        originalText = it.originalText ?: it.text,
+                        isCorrected = it.isCorrected,
+                    )
                 }, rows.nextCursor)
             }
             else -> error("Unsupported original source")
@@ -175,6 +188,48 @@ class MeetingRecordRepository(
         api.transcriptExport(
             "api/v1.0/meeting-records/$recordId/transcript-export/?as=$format"
         )
+    }
+
+    /**
+     * Correct one transcript segment, or drop its corrections.
+     *
+     * The write appends a revision and never rewrites the original, so a reader
+     * can always see what the recogniser produced. `expectedRevision` guards a
+     * concurrent edit; the server answers 409 instead of letting the later saver
+     * silently overwrite the earlier one.
+     *
+     * Only capture-backed segments: an online transcript has no revision model
+     * and the server refuses it, so this checks the source first rather than
+     * sending a request that can only fail.
+     */
+    suspend fun correctOriginal(
+        viewer: String,
+        recordId: String,
+        revision: Int,
+        segmentId: String,
+        text: String? = null,
+        expectedRevision: Int? = null,
+    ): Result<RecordCorrectionDto> = scoped(viewer) {
+        requireUuid(recordId)
+        requireUuid(segmentId)
+        require(revision > 0)
+        val record = originalRecord(recordId, revision)
+        require(record.sourceType in listOf("audio_recording", "upload")) {
+            "Only capture-backed transcripts can be corrected"
+        }
+        val body = text?.let {
+            require(it.isNotBlank() && it.length <= MAX_CORRECTION_LENGTH)
+            RecordCorrectionRequest(it.trim(), expectedRevision)
+        }
+        val corrected = if (body == null) {
+            api.revertOriginal(recordId, segmentId)
+        } else {
+            api.correctOriginal(recordId, segmentId, body)
+        }
+        require(corrected.id == segmentId)
+        // Re-read so a correction is never reported from a stale revision.
+        originalRecord(recordId, revision)
+        corrected
     }
 
     private suspend fun originalRecord(recordId: String, revision: Int): RecordDto {

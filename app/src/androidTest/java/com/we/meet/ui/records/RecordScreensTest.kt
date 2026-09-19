@@ -66,6 +66,8 @@ class RecordScreensTest {
         private fun checkAccess() { check(!revoked) { "Fixture access revoked" } }
         override suspend fun media(recordId: String): RecordMediaDto = error("Media not configured")
         override suspend fun transcriptExport(url: String) = error("Export not configured")
+        override suspend fun correctOriginal(recordId: String, segmentId: String, body: com.we.meet.data.api.dto.RecordCorrectionRequest) = error("Correction not configured")
+        override suspend fun revertOriginal(recordId: String, segmentId: String) = error("Correction not configured")
         override suspend fun rename(recordId: String, body: RecordTitleRequestDto): RecordDto {
             checkAccess()
             check(renameAllowed && !failRename && body.expectedTitle == recordTitle)

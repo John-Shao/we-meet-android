@@ -46,6 +46,15 @@ class MeetingRecordExportTest {
                 "body".toResponseBody("text/plain".toMediaType())
             }
 
+            override suspend fun correctOriginal(
+                record: String,
+                segment: String,
+                body: com.we.meet.data.api.dto.RecordCorrectionRequest,
+            ) = error("unused")
+
+            override suspend fun revertOriginal(record: String, segment: String) =
+                error("unused")
+
             override suspend fun summaries(
                 record: String, cursor: String?, versionId: String?,
             ): RecordPageDto<RecordSummaryVersionDto> = error("unused")

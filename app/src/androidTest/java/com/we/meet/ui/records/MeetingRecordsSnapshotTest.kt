@@ -110,6 +110,8 @@ class MeetingRecordsSnapshotTest {
         override suspend fun rename(recordId: String, body: RecordTitleRequestDto) = records.first { it.id == recordId }
     override suspend fun media(recordId: String) = error("Media not configured")
         override suspend fun transcriptExport(url: String) = error("Export not configured")
+    override suspend fun correctOriginal(recordId: String, segmentId: String, body: com.we.meet.data.api.dto.RecordCorrectionRequest) = error("Correction not configured")
+    override suspend fun revertOriginal(recordId: String, segmentId: String) = error("Correction not configured")
 
         override suspend fun summaries(recordId: String, cursor: String?, versionId: String?): RecordPageDto<RecordSummaryVersionDto> =
             RecordPageDto(versions ?: listOf(summary), null)

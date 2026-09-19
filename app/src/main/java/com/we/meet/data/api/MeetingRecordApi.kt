@@ -1,5 +1,7 @@
 package com.we.meet.data.api
 
+import com.we.meet.data.api.dto.RecordCorrectionDto
+import com.we.meet.data.api.dto.RecordCorrectionRequest
 import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.api.dto.RecordMediaDto
 import com.we.meet.data.api.dto.RecordPageDto
@@ -14,6 +16,7 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.PATCH
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.Streaming
 import retrofit2.http.Url
 import com.we.meet.data.api.dto.RecordTitleRequestDto
@@ -54,6 +57,26 @@ interface MeetingRecordApi {
     @Streaming
     @GET
     suspend fun transcriptExport(@Url url: String): ResponseBody
+
+    /**
+     * Correct one transcript segment. The write appends a revision and never
+     * rewrites the original, so a reader can always see what ASR produced.
+     */
+    @Headers("Cache-Control: no-store")
+    @PATCH("api/v1.0/meeting-records/{record}/original-segments/{segment}/")
+    suspend fun correctOriginal(
+        @Path("record") recordId: String,
+        @Path("segment") segmentId: String,
+        @Body body: RecordCorrectionRequest,
+    ): RecordCorrectionDto
+
+    /** Drop every correction for one segment, restoring the recogniser's text. */
+    @Headers("Cache-Control: no-store")
+    @DELETE("api/v1.0/meeting-records/{record}/original-segments/{segment}/")
+    suspend fun revertOriginal(
+        @Path("record") recordId: String,
+        @Path("segment") segmentId: String,
+    ): RecordCorrectionDto
 
     @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/{record}/summary-versions/")

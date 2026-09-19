@@ -229,6 +229,8 @@ class RecordSummaryControlsTest {
         override suspend fun rename(recordId: String, body: RecordTitleRequestDto): RecordDto = error("Rename not configured")
     override suspend fun media(recordId: String): RecordMediaDto = error("Media not configured")
         override suspend fun transcriptExport(url: String) = error("Export not configured")
+        override suspend fun correctOriginal(recordId: String, segmentId: String, body: com.we.meet.data.api.dto.RecordCorrectionRequest) = error("Correction not configured")
+        override suspend fun revertOriginal(recordId: String, segmentId: String) = error("Correction not configured")
         override suspend fun record(recordId: String): RecordDto { check(!revoked); return record.copy(capabilities = RecordCapabilitiesDto(true, true, false)) }
         override suspend fun summaries(recordId: String, cursor: String?, versionId: String?) = RecordPageDto(listOf(RecordSummaryVersionDto(UUID.randomUUID().toString(), "quick", snapshot, 3, true,
             record.originAt, "open", asrStatus = "in_progress", content = RecordSummaryContentDto("Quick release decision", listOf(RecordSummaryPointDto("Check the recording", listOf(RecordReferenceDto(segment, 1, 1000, 2000)))), emptyList(), emptyList(), emptyList()))))

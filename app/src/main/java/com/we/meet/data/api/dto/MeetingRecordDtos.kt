@@ -128,8 +128,32 @@ data class RecordOriginalSegmentDto(
     @Json(name = "speaker_label") val speakerLabel: String = "",
     @Json(name = "start_ms") val startMs: Long,
     @Json(name = "end_ms") val endMs: Long? = null,
+    /** The reader's text: the newest correction, else what the recogniser said. */
     val text: String,
+    /** The recogniser's own words, absent on older servers. */
+    @Json(name = "original_text") val originalText: String? = null,
+    @Json(name = "is_corrected") val isCorrected: Boolean = false,
     val language: String = "",
+)
+
+/** The result of correcting one segment, or of dropping its corrections. */
+data class RecordCorrectionDto(
+    val id: String,
+    val text: String,
+    @Json(name = "original_text") val originalText: String = "",
+    @Json(name = "is_corrected") val isCorrected: Boolean = false,
+    /** Null when the submission matched what the segment already said. */
+    val revision: Int? = null,
+)
+
+/**
+ * A correction, with an optional staleness guard. `expectedRevision` is the
+ * revision number the editor last saw for this segment, 0 for never corrected;
+ * supplying it turns a concurrent edit into a conflict rather than an overwrite.
+ */
+data class RecordCorrectionRequest(
+    val text: String,
+    @Json(name = "expected_revision") val expectedRevision: Int? = null,
 )
 
 data class RecordSpeakerDto(

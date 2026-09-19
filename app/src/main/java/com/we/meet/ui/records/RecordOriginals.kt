@@ -226,7 +226,20 @@ internal fun RecordOriginals(
                                         TextButton(onClick = { onSource(original.startMs) }) { Text(stringResource(R.string.capture_playback_source, sourceTime(original.startMs))) }
                                     } else Text(original.startedAt?.let(::recordTime) ?: original.startMs?.let(::sourceTime).orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                Text(original.text, style = MaterialTheme.typography.bodyLarge)
+                                CorrectableOriginalText(
+                                    repository = repository,
+                                    viewer = viewer,
+                                    recordId = record.id,
+                                    revision = record.revision,
+                                    segmentId = original.id,
+                                    text = original.text,
+                                    originalText = original.originalText,
+                                    isCorrected = original.isCorrected,
+                                    // An online transcript has no revision model,
+                                    // so that source gets no edit control at all.
+                                    correctable = record.sourceType in listOf("audio_recording", "upload"),
+                                    onCorrected = onRefresh,
+                                )
                             }
                     }
                 }
