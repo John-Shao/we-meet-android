@@ -47,6 +47,8 @@ data class RecordOriginalRow(
     /** The recogniser's own words, so a correction never looks original. */
     val originalText: String? = null,
     val isCorrected: Boolean = false,
+    val correctionRevision: Int? = null,
+    val canCorrect: Boolean = false,
 )
 
 /** No disk cache or cross-account memory; every response is checked against its reader. */
@@ -125,6 +127,8 @@ class MeetingRecordRepository(
                         startMs = it.startMs, endMs = it.endMs,
                         originalText = it.originalText ?: it.text,
                         isCorrected = it.isCorrected,
+                        correctionRevision = it.correctionRevision,
+                        canCorrect = it.canCorrect,
                     )
                 }, rows.nextCursor)
             }
@@ -218,6 +222,7 @@ class MeetingRecordRepository(
         requireUuid(recordId)
         requireUuid(segmentId)
         require(revision > 0)
+        require(expectedRevision != null && expectedRevision >= 0)
         val record = originalRecord(recordId, revision)
         require(record.sourceType in listOf("audio_recording", "upload")) {
             "Only capture-backed transcripts can be corrected"
@@ -227,13 +232,15 @@ class MeetingRecordRepository(
             RecordCorrectionRequest(it.trim(), expectedRevision)
         }
         val corrected = if (body == null) {
-            api.revertOriginal(recordId, segmentId)
+            api.revertOriginal(recordId, segmentId, expectedRevision)
         } else {
             api.correctOriginal(recordId, segmentId, body)
         }
         require(corrected.id == segmentId)
-        // Re-read so a correction is never reported from a stale revision.
-        originalRecord(recordId, revision)
+        // The write advances the record. Reauthorize against that new version,
+        // rather than rejecting our own successful edit as a stale read.
+        val current = readableOriginalRecord(recordId)
+        require(current.revision >= (corrected.recordRevision ?: revision))
         corrected
     }
 
@@ -291,10 +298,15 @@ class MeetingRecordRepository(
     }
 
     private suspend fun originalRecord(recordId: String, revision: Int): RecordDto {
+        val record = readableOriginalRecord(recordId)
+        if (record.revision != revision) throw RecordSourceChangedException()
+        return record
+    }
+
+    private suspend fun readableOriginalRecord(recordId: String): RecordDto {
         val record = api.record(recordId)
         require(record.id == recordId && record.capabilities.readTranscript)
         validateRecord(record)
-        if (record.revision != revision) throw RecordSourceChangedException()
         return record
     }
 

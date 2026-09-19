@@ -52,7 +52,7 @@ class MeetingRecordExportTest {
                 body: com.we.meet.data.api.dto.RecordCorrectionRequest,
             ) = error("unused")
 
-            override suspend fun revertOriginal(record: String, segment: String) =
+            override suspend fun revertOriginal(record: String, segment: String, expectedRevision: Int) =
                 error("unused")
 
             override suspend fun summaries(

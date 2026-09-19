@@ -52,6 +52,37 @@ class MeetingRecordRepositoryTest {
         return MeetingRecordRepository(api) { viewer }
     }
 
+    @Test fun correctionHttpCarriesTheGuardAndAcceptsTheAdvancedRecordVersion() = runBlocking {
+        var revision = 3
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            val request = chain.request()
+            requests += request
+            val body = if (request.method == "GET") {
+                record().replace("\"revision\":3", "\"revision\":$revision")
+            } else {
+                assertEquals("/api/v1.0/meeting-records/$recordId/original-segments/$sourceId/", request.url.encodedPath)
+                when (request.method) {
+                    "PATCH" -> {
+                        val json = okio.Buffer().also { requireNotNull(request.body).writeTo(it) }.readUtf8()
+                        assertEquals("""{"text":"Fixed","expected_revision":0}""", json)
+                    }
+                    "DELETE" -> assertEquals("1", request.url.queryParameter("expected_revision"))
+                    else -> error("Unexpected method")
+                }
+                revision++
+                """{"id":"$sourceId","text":"Fixed","correction_revision":${revision - 3},"record_revision":$revision}"""
+            }
+            Response.Builder().request(request).protocol(Protocol.HTTP_1_1).code(200)
+                .message("Fixture").body(body.toResponseBody()).build()
+        }.build()
+        val api = Retrofit.Builder().baseUrl("https://meeting.example/").client(client)
+            .addConverterFactory(MoshiConverterFactory.create(moshi)).build().create(MeetingRecordApi::class.java)
+        val repo = MeetingRecordRepository(api) { viewer }
+        assertEquals(4, repo.correctOriginal("reader", recordId, 3, sourceId, "Fixed", 0).getOrThrow().recordRevision)
+        assertEquals(5, repo.correctOriginal("reader", recordId, 4, sourceId, expectedRevision = 1).getOrThrow().recordRevision)
+        assertEquals(listOf("GET", "PATCH", "GET", "GET", "DELETE", "GET"), requests.map { it.method })
+    }
+
     @Test fun canonicalPagesKeepFiltersAndOpaqueCursorOnFixedOrigin() = runBlocking {
         val cursor = "https://other.invalid/path?x=1&y=2"
         val repo = repository { request ->

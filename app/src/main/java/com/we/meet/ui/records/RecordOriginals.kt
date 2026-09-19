@@ -244,7 +244,8 @@ internal fun RecordOriginals(
                                     isCorrected = original.isCorrected,
                                     // An online transcript has no revision model,
                                     // so that source gets no edit control at all.
-                                    correctable = record.sourceType in listOf("audio_recording", "upload"),
+                                    correctable = original.canCorrect && original.correctionRevision != null,
+                                    correctionRevision = original.correctionRevision ?: 0,
                                     onCorrected = onRefresh,
                                 )
                             }

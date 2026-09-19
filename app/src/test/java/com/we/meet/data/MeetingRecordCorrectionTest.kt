@@ -34,6 +34,10 @@ class MeetingRecordCorrectionTest {
 
     private var correction: Pair<String, RecordCorrectionRequest>? = null
     private var reverted: String? = null
+    private var revertedRevision: Int? = null
+    private var storedRevision = 3
+    private var readable = true
+    private var revokeAfterWrite = false
 
     private fun repository(source: String = "audio_recording"): MeetingRecordRepository {
         val api = object : MeetingRecordApi {
@@ -47,8 +51,8 @@ class MeetingRecordCorrectionTest {
                 sourceType = source,
                 title = "Record",
                 originAt = "2026-09-13T00:00:00Z",
-                revision = 3,
-                capabilities = RecordCapabilitiesDto(readTranscript = true),
+                revision = storedRevision,
+                capabilities = RecordCapabilitiesDto(readTranscript = readable),
             )
 
             override suspend fun rename(record: String, body: RecordTitleRequestDto) =
@@ -64,12 +68,16 @@ class MeetingRecordCorrectionTest {
                 body: RecordCorrectionRequest,
             ): RecordCorrectionDto {
                 correction = segment to body
-                return RecordCorrectionDto(segment, body.text, "Hello word.", true, 1)
+                storedRevision += 1
+                if (revokeAfterWrite) readable = false
+                return RecordCorrectionDto(segment, body.text, "Hello word.", true, 1, 1, storedRevision)
             }
 
-            override suspend fun revertOriginal(record: String, segment: String): RecordCorrectionDto {
+            override suspend fun revertOriginal(record: String, segment: String, expectedRevision: Int): RecordCorrectionDto {
                 reverted = segment
-                return RecordCorrectionDto(segment, "Hello word.", "Hello word.", false, null)
+                revertedRevision = expectedRevision
+                storedRevision += 1
+                return RecordCorrectionDto(segment, "Hello word.", "Hello word.", false, 2, 2, storedRevision)
             }
 
             override suspend fun summaries(
@@ -124,17 +132,19 @@ class MeetingRecordCorrectionTest {
         assertEquals(0, body.expectedRevision)
     }
 
-    @Test fun omitsTheGuardWhenTheCallerHasNoRevisionToAssert() = runBlocking {
-        repository().correctOriginal("reader", recordId, 3, segmentId, text = "fixed")
-        assertNull(correction!!.second.expectedRevision)
+    @Test fun refusesAnUnguardedWrite() = runBlocking {
+        val result = repository().correctOriginal("reader", recordId, 3, segmentId, text = "fixed")
+        assertTrue(result.isFailure)
+        assertNull(correction)
     }
 
-    @Test fun revertingAsksTheServerToDropCorrections() = runBlocking {
-        // No text means "revert": dropping corrections restores the recogniser's
-        // words rather than appending a blank one.
-        val result = repository().correctOriginal("reader", recordId, 3, segmentId)
+    @Test fun revertingSendsTheGuardAndAcceptsTheNewRecordRevision() = runBlocking {
+        // No text appends a restoration of the recogniser's words.
+        val result = repository().correctOriginal("reader", recordId, 3, segmentId, expectedRevision = 1)
         assertTrue(result.isSuccess)
         assertEquals(segmentId, reverted)
+        assertEquals(1, revertedRevision)
+        assertEquals(4, result.getOrThrow().recordRevision)
         assertNull(correction)
     }
 
@@ -142,7 +152,7 @@ class MeetingRecordCorrectionTest {
         // A meeting transcript has no revision model; the server refuses it, so
         // the request is not sent at all.
         val result = repository(source = "meeting").correctOriginal(
-            "reader", recordId, 3, segmentId, text = "nope",
+            "reader", recordId, 3, segmentId, text = "nope", expectedRevision = 0,
         )
         assertTrue(result.isFailure)
         assertNull(correction)
@@ -150,15 +160,22 @@ class MeetingRecordCorrectionTest {
 
     @Test fun refusesBlankOrOversizedTextLocally() = runBlocking {
         for (bad in listOf("", "   ", "x".repeat(20_001))) {
-            val result = repository().correctOriginal("reader", recordId, 3, segmentId, text = bad)
+            val result = repository().correctOriginal("reader", recordId, 3, segmentId, text = bad, expectedRevision = 0)
             assertTrue(bad, result.isFailure)
         }
         assertNull(correction)
     }
 
     @Test fun refusesAMalformedSegmentId() = runBlocking {
-        val result = repository().correctOriginal("reader", recordId, 3, "not-a-uuid", text = "x")
+        val result = repository().correctOriginal("reader", recordId, 3, "not-a-uuid", text = "x", expectedRevision = 0)
         assertTrue(result.isFailure)
         assertNull(correction)
     }
+    @Test fun aSuccessfulWriteStillChecksReadPermission() = runBlocking {
+        revokeAfterWrite = true
+        val result = repository().correctOriginal("reader", recordId, 3, segmentId, text = "fixed", expectedRevision = 0)
+        assertTrue(result.isFailure)
+        assertEquals(4, storedRevision)
+    }
+
 }

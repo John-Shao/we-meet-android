@@ -23,6 +23,7 @@
     <string name="records_correction_hide_original">Hide original</string>
     <string name="records_correction_restore">Restore original</string>
     <string name="records_correction_failed">The correction was not saved. Try again.</string>
+    <string name="records_correction_conflict">The transcript changed. Your draft is kept. Copy it, cancel and refresh the transcript before editing again.</string>
     <string name="records_search_originals">Search full transcript</string>
     <string name="records_speakers">Speakers</string>
     <string name="records_speaker_filtered">Speaker filter active</string>

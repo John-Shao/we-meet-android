@@ -68,7 +68,7 @@ class MeetingRecordAttributionTest {
                 record: String, segment: String, body: RecordCorrectionRequest,
             ): RecordCorrectionDto = error("unused")
 
-            override suspend fun revertOriginal(record: String, segment: String) =
+            override suspend fun revertOriginal(record: String, segment: String, expectedRevision: Int) =
                 error("unused")
 
             override suspend fun summaries(

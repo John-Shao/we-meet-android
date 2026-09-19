@@ -72,12 +72,13 @@ interface MeetingRecordApi {
         @Body body: RecordCorrectionRequest,
     ): RecordCorrectionDto
 
-    /** Drop every correction for one segment, restoring the recogniser's text. */
+    /** Append the recogniser's text, guarded against concurrent corrections. */
     @Headers("Cache-Control: no-store")
     @DELETE("api/v1.0/meeting-records/{record}/original-segments/{segment}/")
     suspend fun revertOriginal(
         @Path("record") recordId: String,
         @Path("segment") segmentId: String,
+        @Query("expected_revision") expectedRevision: Int,
     ): RecordCorrectionDto
 
     @Headers("Cache-Control: no-store")

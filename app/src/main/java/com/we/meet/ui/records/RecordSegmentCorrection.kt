@@ -22,10 +22,12 @@ import androidx.compose.ui.res.stringResource
 
 import com.we.meet.R
 import com.we.meet.data.repository.MeetingRecordRepository
+import com.we.meet.data.repository.RecordSourceChangedException
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
 
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 /** Matches the server's bound, checked here so an over-long paste fails locally. */
 private const val MAX_CORRECTION_LENGTH = 20_000
@@ -50,20 +52,24 @@ internal fun CorrectableOriginalText(
     originalText: String?,
     isCorrected: Boolean,
     correctable: Boolean,
+    correctionRevision: Int,
     onCorrected: () -> Unit,
 ) {
-    key(segmentId, text) {
+    key(segmentId) {
         var editing by remember { mutableStateOf(false) }
         var draft by remember { mutableStateOf(text) }
         var showingOriginal by remember { mutableStateOf(false) }
         var busy by remember { mutableStateOf(false) }
         var failed by remember { mutableStateOf(false) }
+        var conflict by remember { mutableStateOf(false) }
+        var editRevision by remember { mutableStateOf(correctionRevision) }
         val scope = rememberCoroutineScope()
 
         fun submit(next: String?) {
             if (busy) return
             busy = true
             failed = false
+            conflict = false
             scope.launch {
                 val result = repository.correctOriginal(
                     viewer = viewer,
@@ -71,6 +77,7 @@ internal fun CorrectableOriginalText(
                     revision = revision,
                     segmentId = segmentId,
                     text = next,
+                    expectedRevision = if (next == null) correctionRevision else editRevision,
                 )
                 busy = false
                 if (result.isSuccess) {
@@ -81,12 +88,14 @@ internal fun CorrectableOriginalText(
                     onCorrected()
                 } else {
                     failed = true
+                    val error = result.exceptionOrNull()
+                    conflict = error is RecordSourceChangedException || (error is HttpException && error.code() == 409)
                 }
             }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-            if (correctable && !editing) {
+            if (!editing && (correctable || isCorrected)) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
                     verticalAlignment = Alignment.CenterVertically,
@@ -108,10 +117,18 @@ internal fun CorrectableOriginalText(
                             }
                         }
                     }
-                    TextButton(enabled = !busy, onClick = { draft = text; failed = false; editing = true }) {
-                        Text(stringResource(R.string.records_correction_edit))
+                    if (correctable) {
+                        TextButton(enabled = !busy, onClick = {
+                            draft = text
+                            editRevision = correctionRevision
+                            failed = false
+                            conflict = false
+                            editing = true
+                        }) {
+                            Text(stringResource(R.string.records_correction_edit))
+                        }
                     }
-                    if (isCorrected) {
+                    if (correctable && isCorrected) {
                         TextButton(enabled = !busy, onClick = { submit(null) }) {
                             Text(stringResource(R.string.records_correction_restore))
                         }
@@ -153,7 +170,7 @@ internal fun CorrectableOriginalText(
             if (busy) WeMeetInlineLoading()
             if (failed) {
                 Text(
-                    stringResource(R.string.records_correction_failed),
+                    stringResource(if (conflict) R.string.records_correction_conflict else R.string.records_correction_failed),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = Dimens.SpaceXs),
