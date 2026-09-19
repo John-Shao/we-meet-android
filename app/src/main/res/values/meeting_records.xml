@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="records_chapters_empty">This summary version has no chapters. You can read the overview or, if permitted, the transcript.</string>
+    <string name="records_chapters_no_version">Chapters will appear here once a summary is available.</string>
+    <string name="records_chapters_ai_version">Chapters from this AI summary version. Source links open its original transcript snapshot.</string>
     <string name="history_recordings_loading">Loading recordings…</string>
     <string name="history_recordings_more">Load more recordings</string>
     <string name="records_linked_version">Viewing the version selected by this link</string>

@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="records_chapters_empty">本版纪要未生成章节，可查看总结或有权访问的文字记录。</string>
+    <string name="records_chapters_no_version">生成纪要后，可在这里查看章节。</string>
+    <string name="records_chapters_ai_version">章节来自本版 AI 纪要，原文链接对应生成时的文字快照。</string>
     <string name="history_recordings_loading">正在加载录音…</string>
     <string name="history_recordings_more">加载更多录音</string>
     <string name="records_linked_version">正在查看链接指定的纪要版本</string>

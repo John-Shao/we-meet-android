@@ -59,6 +59,8 @@ class RecordScreensTest {
         val originalQueries = mutableListOf<Pair<String?, String?>>()
         val summarySelectors = mutableListOf<String?>()
         var missingVersion = false
+        var chapters = false
+        var noVersions = false
         val queries = mutableListOf<Pair<String, String?>>()
         var searchQuery: String? = null
         var sourceFilter: String? = null
@@ -96,11 +98,14 @@ class RecordScreensTest {
         override suspend fun summaries(recordId: String, cursor: String?, versionId: String?): RecordPageDto<RecordSummaryVersionDto> {
             checkAccess()
             summarySelectors += versionId
+            if (noVersions) return RecordPageDto(emptyList())
             if (missingVersion && versionId != null) return RecordPageDto(emptyList())
             return RecordPageDto(listOf(RecordSummaryVersionDto(this@RecordScreensTest.versionId, stage, snapshotId, 3, true,
                 "2026-09-13T01:00:00Z", "open", asrStatus = asr,
                 content = RecordSummaryContentDto("Confirm release scope", listOf(RecordSummaryPointDto("Review capture recovery",
-                    listOf(RecordReferenceDto(segmentId, 2, 1000, 3000)))), emptyList(), emptyList(), emptyList()))))
+                    listOf(RecordReferenceDto(segmentId, 2, 1000, 3000)))),
+                    if (chapters) listOf(RecordSummaryPointDto("Chapter one", listOf(RecordReferenceDto(segmentId, 2, 1000, 3000)))) else emptyList(),
+                    emptyList(), emptyList()))))
         }
         override suspend fun snapshot(recordId: String, snapshotId: String): RecordSnapshotDto {
             checkAccess()
@@ -133,6 +138,38 @@ class RecordScreensTest {
     }
     private fun awaitText(text: String) {
         compose.waitUntil(5_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    @Test fun chapterTabOpensItsImmutableEvidence() {
+        val fixture = Fixture().apply { chapters = true }
+        detail(fixture)
+        compose.onNodeWithText(label(R.string.records_chapters)).performClick()
+        awaitText("Chapter one")
+        compose.onNodeWithText("Confirm release scope").assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.records_source_at, "0:01")).performScrollTo().performClick()
+        awaitText("Exact recorded evidence")
+        assertEquals(1, fixture.snapshotReads)
+    }
+
+    @Test fun summaryOnlyChaptersDoNotReadOriginals() {
+        val fixture = Fixture().apply { chapters = true; originals = false }
+        detail(fixture)
+        compose.onNodeWithText(label(R.string.records_chapters)).performClick()
+        awaitText("Chapter one")
+        compose.onNodeWithText(context.getString(R.string.records_source_at, "0:01")).assertDoesNotExist()
+        assertEquals(0, fixture.snapshotReads)
+    }
+
+    @Test fun chapterEmptyStateDoesNotInventAShortRecordingReason() {
+        val fixture = Fixture()
+        detail(fixture)
+        compose.onNodeWithText(label(R.string.records_chapters)).performClick()
+        awaitText(label(R.string.records_chapters_empty))
+        compose.onNodeWithText(label(R.string.records_chapters_empty)).assertIsDisplayed()
+        fixture.noVersions = true
+        compose.onNodeWithText(label(R.string.records_refresh)).performClick()
+        awaitText(label(R.string.records_chapters_no_version))
+        compose.onNodeWithText(label(R.string.records_chapters_empty)).assertDoesNotExist()
     }
 
     @Test fun ownerCanRenameAndBlankNameCannotBeSaved() {

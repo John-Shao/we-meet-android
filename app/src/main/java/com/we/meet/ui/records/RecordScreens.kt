@@ -139,6 +139,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                     val tabs = buildList {
                         if (record.capabilities.readTranscript) add("text" to R.string.records_originals)
                         if (record.capabilities.readSummary) add("summary" to R.string.records_minutes)
+                        if (record.capabilities.readSummary) add("chapters" to R.string.records_chapters)
                         if (record.capabilities.readTranscript && record.sourceType in listOf("audio_recording", "upload")) add("speakers" to R.string.records_speakers)
                         add("info" to R.string.records_info)
                         if (canReadTranslations) add("translations" to R.string.archives_title)
@@ -146,6 +147,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                     val selectedTab = detailTab.takeIf { tab -> tabs.any { it.first == tab } } ?: tabs.first().first
                     val showTranslations = selectedTab == "translations"
                     val showOriginals = selectedTab == "text"
+                    val chaptersOnly = selectedTab == "chapters"
                     if (record.sourceType == "upload" && app != null) RecordingUploadStatus(app.recordingUploadRepository, viewer, recordId)
                     ScrollableTabRow(selectedTabIndex = tabs.indexOfFirst { it.first == selectedTab }, edgePadding = Dimens.SpaceS, containerColor = MaterialTheme.colorScheme.surface) {
                         tabs.forEach { (value, label) -> Tab(selected = value == selectedTab, onClick = { detailTab = value }, text = { Text(stringResource(label)) }) }
@@ -188,12 +190,12 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                 val older = versions.filter { it.id != primary?.id }
                                 LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                                     if (primary != null) item(key = primary.id) {
-                                        SummaryCard(primary, record.capabilities.readTranscript) { ref -> citation = primary.inputSnapshotId to ref }
+                                        SummaryCard(primary, record.capabilities.readTranscript, chaptersOnly) { ref -> citation = primary.inputSnapshotId to ref }
                                     }
                                     if (versions.isEmpty()) item {
                                         WeMeetEmptyState(
                                             stringResource(if (selectedVersion == null) R.string.records_no_versions else R.string.records_linked_version_unavailable),
-                                            description = if (selectedVersion == null) stringResource(R.string.records_no_versions_hint) else null,
+                                            description = if (selectedVersion == null) stringResource(if (chaptersOnly) R.string.records_chapters_no_version else R.string.records_no_versions_hint) else null,
                                             action = { TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) } },
                                         )
                                     }
@@ -205,7 +207,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                     }
                                     if (history) {
                                         items(older, key = { it.id }) { version ->
-                                            SummaryCard(version, record.capabilities.readTranscript) { ref -> citation = version.inputSnapshotId to ref }
+                                            SummaryCard(version, record.capabilities.readTranscript, chaptersOnly) { ref -> citation = version.inputSnapshotId to ref }
                                         }
                                         item {
                                             Row(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -216,13 +218,13 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                     }
                                 }
                                 if (app != null) Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    if (record.capabilities.readTranscript) TextButton(onClick = { tool = "ask" }) { Text(stringResource(R.string.minutes_ask)) }
-                                    TextButton(onClick = { tool = "manage" }) { Text(stringResource(R.string.minutes_manage)) }
+                                    if (!chaptersOnly && record.capabilities.readTranscript) TextButton(onClick = { tool = "ask" }) { Text(stringResource(R.string.minutes_ask)) }
+                                    if (!chaptersOnly) TextButton(onClick = { tool = "manage" }) { Text(stringResource(R.string.minutes_manage)) }
                                     // 还没有纪要时空态自己就带一个「刷新」,底栏再放一个就是同一屏两个同名动作;
                                     // 有内容时页面每 15 秒也会自动重读,这里只留一份手动刷新。
                                     if (versions.isNotEmpty()) TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
                                 }
-                                if (app != null && tool != null) ModalBottomSheet(onDismissRequest = { tool = null }) {
+                                if (!chaptersOnly && app != null && tool != null) ModalBottomSheet(onDismissRequest = { tool = null }) {
                                     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                                         Text(stringResource(if (tool == "ask") R.string.minutes_ask else R.string.minutes_manage), style = MaterialTheme.typography.titleLarge)
                                         if (tool == "ask" && record.capabilities.readTranscript) {
@@ -274,7 +276,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
 }
 
 @Composable
-internal fun SummaryCard(version: RecordSummaryVersionDto, originals: Boolean, onSource: (RecordReferenceDto) -> Unit) {
+internal fun SummaryCard(version: RecordSummaryVersionDto, originals: Boolean, chaptersOnly: Boolean = false, onSource: (RecordReferenceDto) -> Unit) {
     var sourceInfo by remember(version.id) { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)) {
         // 版本头一行与 Web 的 RecordSummaryPanel 同构:`阶段 · 生成于 … · 历史版本`。
@@ -288,14 +290,18 @@ internal fun SummaryCard(version: RecordSummaryVersionDto, originals: Boolean, o
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (version.stage != "final") Text(stringResource(R.string.records_provisional), style = MaterialTheme.typography.bodySmall)
         if (version.asrStatus == "incomplete") Text(stringResource(R.string.records_incomplete), style = MaterialTheme.typography.bodySmall)
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = MaterialTheme.shapes.large) {
+        if (!chaptersOnly) Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = MaterialTheme.shapes.large) {
             Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                 Text(stringResource(R.string.minutes_overview), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Text(version.content.overview, style = MaterialTheme.typography.bodyLarge)
             }
         }
-        listOf(R.string.records_decisions to version.content.decisions, R.string.records_actions to version.content.actionItems,
-            R.string.records_chapters to version.content.chapters, R.string.records_questions to version.content.openQuestions).forEach { (label, points) ->
+        if (chaptersOnly) Text(stringResource(R.string.records_chapters_ai_version), style = MaterialTheme.typography.bodySmall)
+        if (version.content.chapters.isEmpty()) Text(stringResource(R.string.records_chapters_empty), style = MaterialTheme.typography.bodySmall)
+        val sections = if (chaptersOnly) listOf(R.string.records_chapters to version.content.chapters) else
+            listOf(R.string.records_decisions to version.content.decisions, R.string.records_actions to version.content.actionItems,
+                R.string.records_chapters to version.content.chapters, R.string.records_questions to version.content.openQuestions)
+        sections.forEach { (label, points) ->
             if (points.isNotEmpty()) {
                 var expanded by remember(version.id, label) { mutableStateOf(true) }
                 Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
