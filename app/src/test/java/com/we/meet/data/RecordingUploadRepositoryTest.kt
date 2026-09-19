@@ -21,6 +21,11 @@ class RecordingUploadRepositoryTest {
         override suspend fun capabilities() = config
         override suspend fun state(recordId: String) = queued
         override suspend fun retry(recordId: String, body: RecordingUploadRetry): RecordingUploadState { retryAttempt = body.attempt; return queued }
+        override suspend fun multipartBegin(body: RecordingUploadBegin) = error("Chunked upload not configured")
+        override suspend fun multipartResume(sessionId: String) = error("Chunked upload not configured")
+        override suspend fun multipartSign(sessionId: String, body: RecordingUploadSign) = error("Chunked upload not configured")
+        override suspend fun multipartComplete(sessionId: String, body: RecordingUploadFinish) = error("Chunked upload not configured")
+        override suspend fun multipartAbort(sessionId: String) = error("Chunked upload not configured")
         override suspend fun presign(body: RecordingUploadPresign): RecordingUploadTicket = error("Direct upload not configured")
         override suspend fun complete(body: RecordingUploadComplete): RecordingUploadState = error("Direct upload not configured")
         override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody): RecordingUploadState {
@@ -32,7 +37,7 @@ class RecordingUploadRepositoryTest {
             return queued
         }
     }
-    private val repository get() = RecordingUploadRepository(api) { viewer }
+    private val repository get() = RecordingUploadRepository(api, currentViewer = { viewer })
 
     @Test fun streamsSelectedFileAndPreservesIdempotencyKey() = runBlocking {
         assertEquals(queued, repository.upload("owner", id, "meeting.wav", 5, config, "Project", "Qwen") { "audio".byteInputStream() }.getOrThrow())

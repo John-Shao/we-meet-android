@@ -52,6 +52,11 @@ class RecordingImportPickerTest {
                 override suspend fun capabilities() = RecordingUploadCapabilities(true, 1024, listOf("mp4"))
                 override suspend fun state(recordId: String): RecordingUploadState = error("Not requested")
                 override suspend fun retry(recordId: String, body: RecordingUploadRetry): RecordingUploadState = error("Not requested")
+                override suspend fun multipartBegin(body: RecordingUploadBegin) = error("Chunked upload not configured")
+                override suspend fun multipartResume(sessionId: String) = error("Chunked upload not configured")
+                override suspend fun multipartSign(sessionId: String, body: RecordingUploadSign) = error("Chunked upload not configured")
+                override suspend fun multipartComplete(sessionId: String, body: RecordingUploadFinish) = error("Chunked upload not configured")
+                override suspend fun multipartAbort(sessionId: String) = error("Chunked upload not configured")
                 override suspend fun presign(body: RecordingUploadPresign): RecordingUploadTicket = error("Direct upload not configured")
                 override suspend fun complete(body: RecordingUploadComplete): RecordingUploadState = error("Direct upload not configured")
                 override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody): RecordingUploadState {
@@ -61,7 +66,7 @@ class RecordingImportPickerTest {
                     return RecordingUploadState(id, "queued", 1)
                 }
             }
-            val repository = RecordingUploadRepository(api) { "owner" }
+            val repository = RecordingUploadRepository(api, currentViewer = { "owner" })
             compose.setContent { CompositionLocalProvider(LocalActivityResultRegistryOwner provides owner) {
                 WeMeetTheme { RecordingUploadAction(repository, "owner", { navigated = it }, tile = true) }
             } }
@@ -100,6 +105,11 @@ class RecordingImportPickerTest {
             override suspend fun capabilities() = RecordingUploadCapabilities(true, 1024, listOf("wav", "mp4", "mov"))
             override suspend fun state(recordId: String): RecordingUploadState = error("Not requested")
             override suspend fun retry(recordId: String, body: RecordingUploadRetry): RecordingUploadState = error("Not requested")
+                override suspend fun multipartBegin(body: RecordingUploadBegin) = error("Chunked upload not configured")
+                override suspend fun multipartResume(sessionId: String) = error("Chunked upload not configured")
+                override suspend fun multipartSign(sessionId: String, body: RecordingUploadSign) = error("Chunked upload not configured")
+                override suspend fun multipartComplete(sessionId: String, body: RecordingUploadFinish) = error("Chunked upload not configured")
+                override suspend fun multipartAbort(sessionId: String) = error("Chunked upload not configured")
             override suspend fun presign(body: RecordingUploadPresign): RecordingUploadTicket = error("Direct upload not configured")
             override suspend fun complete(body: RecordingUploadComplete): RecordingUploadState = error("Direct upload not configured")
             override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody): RecordingUploadState {
@@ -107,7 +117,7 @@ class RecordingImportPickerTest {
                 error("Cancel must not upload")
             }
         }
-        val repository = RecordingUploadRepository(api) { "owner" }
+        val repository = RecordingUploadRepository(api, currentViewer = { "owner" })
         compose.setContent { CompositionLocalProvider(LocalActivityResultRegistryOwner provides owner) {
             WeMeetTheme { RecordingUploadAction(repository, "owner", { fail("Cancel must not navigate") }, tile = true) }
         } }

@@ -43,6 +43,33 @@ import retrofit2.HttpException
 private val ImportIcon: ImageVector = Icons.Outlined.SaveAlt
 
 /**
+ * Above this, a single PUT means one break loses the whole transfer, so the
+ * import switches to resumable parts. Mirrors the Web reader's threshold.
+ */
+private const val CHUNK_THRESHOLD = 100L * 1024 * 1024
+
+/**
+ * Advance a stream to a byte offset.
+ *
+ * `ContentResolver` streams do not reliably support `skip` for arbitrary
+ * offsets — a document provider may return 0 without being at the end — so each
+ * skip is verified and a shorter one is finished by reading.
+ */
+private fun skipFully(stream: java.io.InputStream, offset: Long) {
+    var remaining = offset
+    while (remaining > 0) {
+        val skipped = stream.skip(remaining)
+        if (skipped > 0) {
+            remaining -= skipped
+            continue
+        }
+        // A provider that cannot skip still has to be read past.
+        if (stream.read() < 0) throw java.io.IOException("File ended before the part offset")
+        remaining -= 1
+    }
+}
+
+/**
  * 「导入」入口的两种形态:AI 录音页的功能磁贴,以及记录/纪要页底栏那个描边按钮。
  * 能力表还没回来时也用它画灰态占位,尺寸与正常态一致,列表不会先塌一半再弹回来。
  */
@@ -108,6 +135,13 @@ private fun RecordingImportEntry(
     // A signed PUT for one exact object. Kept across retries so a failure after
     // the transfer re-declares those bytes instead of uploading them again.
     var ticket by remember(viewer) { mutableStateOf<RecordingUploadTicket?>(null) }
+    // Resumable state: the server's session for this intent, how far it has got,
+    // and whether the reader asked to stop.
+    var sessionId by rememberSaveable(viewer) { mutableStateOf<String?>(null) }
+    var uploadedBytes by remember(viewer) { mutableStateOf(0L) }
+    var uploadedTotal by remember(viewer) { mutableStateOf(0L) }
+    var cancelRequested by remember(viewer) { mutableStateOf(false) }
+    var cancelled by remember(viewer) { mutableStateOf(false) }
     var busy by remember(viewer) { mutableStateOf(false) }
     var error by remember(viewer) { mutableStateOf(false) }
     val resolver = LocalContext.current.contentResolver
@@ -161,7 +195,31 @@ private fun RecordingImportEntry(
                         label = { Text(stringResource(R.string.record_upload_hotwords)) }, modifier = Modifier.fillMaxWidth())
                 }
                 Text(stringResource(R.string.record_upload_consent), style = MaterialTheme.typography.bodySmall)
-                if (busy) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text(stringResource(R.string.record_upload_wait)) }
+                if (busy) {
+                    if (uploadedTotal > 0) {
+                        Text(
+                            stringResource(
+                                R.string.record_upload_progress,
+                                ((uploadedBytes * 100) / uploadedTotal).toInt(),
+                            )
+                        )
+                        LinearProgressIndicator(
+                            progress = { uploadedBytes.toFloat() / uploadedTotal },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    } else {
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                    }
+                    Text(stringResource(R.string.record_upload_wait))
+                }
+                if (busy) {
+                    TextButton(onClick = { cancelRequested = true }) {
+                        Text(stringResource(R.string.record_upload_cancel))
+                    }
+                }
+                if (cancelled && !busy) {
+                    Text(stringResource(R.string.record_upload_cancelled))
+                }
                 if (uncertain && !busy) Text(stringResource(R.string.record_upload_unconfirmed), color = MaterialTheme.colorScheme.error)
                 else if (error) Text(stringResource(R.string.record_upload_error), color = MaterialTheme.colorScheme.error)
             }
@@ -171,6 +229,8 @@ private fun RecordingImportEntry(
                 val document = Uri.parse(uri ?: return@TextButton)
                 if (busy) return@TextButton
                 busy = true; error = false; submitted = true
+                cancelRequested = false; cancelled = false
+                uploadedBytes = 0; uploadedTotal = 0
                 jobs.launch {
                     try {
                         val bytes = {
@@ -179,7 +239,39 @@ private fun RecordingImportEntry(
                         // A file too large for multipart can only travel by the
                         // presigned path, and that path needs its byte count.
                         val direct = repository.needsDirectUpload(size, config)
-                        val result = if (direct) {
+                        // Past the threshold one PUT means a break loses the whole
+                        // transfer, so large files go up in resumable parts.
+                        val chunked = direct && (size ?: 0) > CHUNK_THRESHOLD
+                        val result = if (chunked) {
+                            repository.uploadChunked(
+                                com.we.meet.data.repository.ChunkedUploadRequest(
+                                    viewer = viewer,
+                                    key = key,
+                                    name = name,
+                                    size = size!!,
+                                    config = config,
+                                    context = context,
+                                    hotwords = hotwords,
+                                    contentType = contentTypeFor(name, resolver.getType(document)),
+                                    // A remembered session is a hint; the server
+                                    // still decides which parts already exist.
+                                    resumeFrom = sessionId,
+                                    openAt = { offset, length ->
+                                        requireNotNull(
+                                            resolver.openInputStream(document)
+                                        ).also { skipFully(it, offset) }
+                                    },
+                                    onProgress = { sent, total ->
+                                        uploadedBytes = sent
+                                        uploadedTotal = total
+                                    },
+                                    cancelled = { cancelRequested },
+                                )
+                            ).also { outcome ->
+                                if (outcome.isSuccess) sessionId = null
+                            }
+
+                        } else if (direct) {
                             repository.uploadDirect(
                                 viewer, key, name, size!!, config, context, hotwords, bytes,
                                 ticket, contentTypeFor(name, resolver.getType(document)),

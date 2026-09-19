@@ -1,11 +1,18 @@
 package com.we.meet.data.repository
 
+import com.we.meet.data.api.RecordingPartStorage
 import com.we.meet.data.api.RecordingStorage
 import com.we.meet.data.api.RecordingUploadApi
+import com.we.meet.data.api.RecordingUploadBegin
 import com.we.meet.data.api.RecordingUploadCapabilities
 import com.we.meet.data.api.RecordingUploadComplete
+import com.we.meet.data.api.RecordingUploadFinish
+import com.we.meet.data.api.RecordingUploadHeldPart
+import com.we.meet.data.api.RecordingUploadPartTag
+import com.we.meet.data.api.RecordingUploadPlan
 import com.we.meet.data.api.RecordingUploadPresign
 import com.we.meet.data.api.RecordingUploadRetry
+import com.we.meet.data.api.RecordingUploadSign
 import com.we.meet.data.api.RecordingUploadState
 import com.we.meet.data.api.RecordingUploadTicket
 import kotlinx.coroutines.CancellationException
@@ -18,6 +25,44 @@ import java.io.InputStream
 import java.io.IOException
 import java.util.UUID
 
+/**
+ * A deliberate stop, distinct from a failure.
+ *
+ * Deliberately *not* `CancellationException`: that type is the coroutine
+ * machinery's own signal and has to propagate untouched, so reusing it here would
+ * make "the reader pressed cancel" indistinguishable from "the scope is going
+ * away" and the failure would escape as a thrown exception instead of a result.
+ */
+class RecordingUploadCancelled : RuntimeException("Upload cancelled")
+
+/** Part URLs asked for in one request, so a large file costs few requests. */
+private const val SIGN_BATCH = 24
+
+/**
+ * One chunked import's declaration and byte source.
+ *
+ * Bundled rather than passed as a long argument list, and because these fields
+ * only mean anything together: the declaration is what the server signs, and the
+ * offsets are only valid against that same size.
+ */
+data class ChunkedUploadRequest(
+    val viewer: String,
+    val key: String,
+    val name: String,
+    val size: Long,
+    val config: RecordingUploadCapabilities,
+    val context: String,
+    val hotwords: String,
+    val contentType: String,
+    /** A session id the caller remembered; a hint, not a source of truth. */
+    val resumeFrom: String? = null,
+    /** Opens the byte range for one part, in file order. */
+    val openAt: (offset: Long, length: Long) -> InputStream,
+    /** Bytes genuinely stored, so a resume starts from what already landed. */
+    val onProgress: (sent: Long, total: Long) -> Unit,
+    val cancelled: () -> Boolean,
+)
+
 /** Streams the selected document with a byte limit; never caches private media or results. */
 class RecordingUploadRepository(
     private val api: RecordingUploadApi,
@@ -27,10 +72,13 @@ class RecordingUploadRepository(
      * unavailable and imports stay on multipart, so existing callers and tests
      * keep working without pretending to have a bucket.
      */
-    private val storage: RecordingStorage?,
+    private val storage: RecordingStorage? = null,
+    /**
+     * Part PUTs, needed only by the chunked path. Null keeps chunking
+     * unavailable, so a caller wired for the whole-file path still works.
+     */
+    private val partStorage: RecordingPartStorage? = null,
 ) {
-    /** Multipart only, for callers with no storage client. */
-    constructor(api: RecordingUploadApi, currentViewer: () -> String?) : this(api, currentViewer, null)
 
 
 
@@ -147,6 +195,96 @@ class RecordingUploadRepository(
         uuid(recordId)
         require(attempt > 0)
         api.retry(recordId, RecordingUploadRetry(attempt)).also { validate(it); require(it.recordId == recordId) }
+    }
+
+    /**
+     * Import by resumable chunked upload: open, send parts, then adopt.
+     *
+     * [resumeFrom] is a session id the caller remembered. It is a hint, not a
+     * source of truth: if the server no longer has it, `begin` reopens the same
+     * intent, and either way the list of finished parts comes from storage.
+     *
+     * [onProgress] reports bytes genuinely stored, so a resumed upload starts
+     * from what already landed rather than from zero.
+     */
+    suspend fun uploadChunked(request: ChunkedUploadRequest): Result<RecordingUploadState> =
+        scoped(request.viewer) {
+        val viewer = request.viewer
+        val key = request.key
+        val name = request.name
+        val size = request.size
+        val config = request.config
+        val context = request.context
+        val hotwords = request.hotwords
+        val contentType = request.contentType
+        val openAt = request.openAt
+        val onProgress = request.onProgress
+        val cancelled = request.cancelled
+        uuid(key)
+        val parts = partStorage ?: error("Chunked upload is not configured")
+        require(config.directUploadAvailable && config.directMaxBytes > 0)
+        require(size in 1..config.directMaxBytes)
+        require(name.substringAfterLast('.', "").lowercase() in config.extensions)
+        require(contentType.isNotBlank() && contentType.length <= 128)
+        require(context.length <= 400 && hotwords.length <= 4000)
+
+        val plan = request.resumeFrom
+            ?.let { runCatching { api.multipartResume(it) }.getOrNull() }
+            ?: api.multipartBegin(
+                RecordingUploadBegin(key, name, size, contentType, context, hotwords)
+            )
+        val sessionId = plan.sessionId
+        requirePlan(plan, size)
+
+        val held = plan.uploaded.associateBy { it.partNumber }.toMutableMap()
+        var carried = plan.uploadedBytes
+        onProgress(carried, size)
+
+        val missing = (1..plan.partCount).filter { it !in held }
+        // Signing is batched: one request per part would not fit the endpoint's
+        // request budget on a six-gigabyte file.
+        for (batch in missing.chunked(SIGN_BATCH)) {
+            if (cancelled()) throw RecordingUploadCancelled()
+            val signed = api.multipartSign(sessionId, RecordingUploadSign(batch))
+            for (part in signed.parts) {
+                if (cancelled()) throw RecordingUploadCancelled()
+                require(part.partNumber in batch && part.url.startsWith("https://"))
+                val offset = (part.partNumber - 1).toLong() * plan.partSize
+                val length = minOf(plan.partSize, size - offset)
+                val etag = parts.putPart(
+                    url = part.url,
+                    size = length,
+                    open = { openAt(offset, length) },
+                    onProgress = { sent -> onProgress(carried + sent, size) },
+                    cancel = cancelled,
+                ) ?: throw IOException("Part ${part.partNumber} was not stored")
+                held[part.partNumber] = RecordingUploadHeldPart(part.partNumber, etag, length)
+                carried += length
+                onProgress(carried, size)
+            }
+        }
+        if (cancelled()) throw RecordingUploadCancelled()
+        require(held.size == plan.partCount)
+        api.multipartComplete(
+            sessionId,
+            RecordingUploadFinish(
+                held.values.sortedBy { it.partNumber }
+                    .map { RecordingUploadPartTag(it.partNumber, it.etag) }
+            ),
+        ).also(::validate)
+    }
+
+    private fun requirePlan(plan: RecordingUploadPlan, size: Long) {
+        uuid(plan.sessionId)
+        require(plan.size == size && plan.partSize > 0)
+        require(plan.partCount == ((size + plan.partSize - 1) / plan.partSize).toInt())
+        plan.uploaded.forEach { require(it.partNumber in 1..plan.partCount && it.etag.isNotBlank()) }
+    }
+
+    /** Tell the server to drop an upload in progress; incomplete parts are billed. */
+    suspend fun abortChunked(viewer: String, sessionId: String): Result<Unit> = scoped(viewer) {
+        uuid(sessionId)
+        api.multipartAbort(sessionId)
     }
 
     private fun validate(state: RecordingUploadState) {

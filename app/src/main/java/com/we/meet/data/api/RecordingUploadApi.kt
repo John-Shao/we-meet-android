@@ -82,4 +82,78 @@ interface RecordingUploadApi {
 
     @POST("api/v1.0/recording-uploads/{record}/")
     suspend fun retry(@Path("record") recordId: String, @Body body: RecordingUploadRetry): RecordingUploadState
+
+    // --- Resumable chunked upload ------------------------------------------
+    // Object storage's multipart API is the only way a broken transfer can
+    // resume. The server holds the upload id and asks storage which parts
+    // landed, because a client that trusted its own notes would skip a part
+    // that never arrived.
+
+    /** Open an upload, or be handed the plan for one already open. */
+    @Headers("Cache-Control: no-store")
+    @POST("api/v1.0/recording-uploads/multipart/begin/")
+    suspend fun multipartBegin(@Body body: RecordingUploadBegin): RecordingUploadPlan
+
+    /** What storage already holds, so finished parts need not be re-sent. */
+    @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/recording-uploads/multipart/{session}/")
+    suspend fun multipartResume(@Path("session") sessionId: String): RecordingUploadPlan
+
+    /** Sign a batch of part PUTs; the PUTs themselves never reach this app. */
+    @Headers("Cache-Control: no-store")
+    @POST("api/v1.0/recording-uploads/multipart/{session}/parts/")
+    suspend fun multipartSign(@Path("session") sessionId: String, @Body body: RecordingUploadSign): RecordingUploadPlan
+
+    /** Reassemble and adopt. */
+    @Headers("Cache-Control: no-store")
+    @POST("api/v1.0/recording-uploads/multipart/{session}/")
+    suspend fun multipartComplete(@Path("session") sessionId: String, @Body body: RecordingUploadFinish): RecordingUploadState
+
+    /** Abort. Storage bills the parts of an upload left incomplete. */
+    @Headers("Cache-Control: no-store")
+    @DELETE("api/v1.0/recording-uploads/multipart/{session}/")
+    suspend fun multipartAbort(@Path("session") sessionId: String)
 }
+
+/** The declaration signed into the upload, before any byte moves. */
+data class RecordingUploadBegin(
+    val key: String,
+    val name: String,
+    val size: Long,
+    @Json(name = "content_type") val contentType: String,
+    val context: String,
+    val hotwords: String,
+)
+
+/** One signed part PUT. */
+data class RecordingUploadPartPlan(
+    @Json(name = "part_number") val partNumber: Int,
+    val url: String,
+    @Json(name = "expected_bytes") val expectedBytes: Long,
+)
+
+data class RecordingUploadHeldPart(
+    @Json(name = "part_number") val partNumber: Int,
+    val etag: String,
+    val size: Long,
+)
+
+/** The plan, or the state of a resumed upload. */
+data class RecordingUploadPlan(
+    @Json(name = "session_id") val sessionId: String,
+    val size: Long,
+    @Json(name = "part_size") val partSize: Long,
+    @Json(name = "part_count") val partCount: Int,
+    val uploaded: List<RecordingUploadHeldPart> = emptyList(),
+    @Json(name = "uploaded_bytes") val uploadedBytes: Long = 0,
+    val parts: List<RecordingUploadPartPlan> = emptyList(),
+)
+
+data class RecordingUploadSign(val parts: List<Int>)
+
+data class RecordingUploadPartTag(
+    @Json(name = "part_number") val partNumber: Int,
+    val etag: String,
+)
+
+data class RecordingUploadFinish(val parts: List<RecordingUploadPartTag>)

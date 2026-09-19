@@ -43,6 +43,11 @@ class RecordingUploadDirectTest {
             multipart++
             return queued
         }
+        override suspend fun multipartBegin(body: RecordingUploadBegin) = error("Chunked upload not configured")
+        override suspend fun multipartResume(sessionId: String) = error("Chunked upload not configured")
+        override suspend fun multipartSign(sessionId: String, body: RecordingUploadSign) = error("Chunked upload not configured")
+        override suspend fun multipartComplete(sessionId: String, body: RecordingUploadFinish) = error("Chunked upload not configured")
+        override suspend fun multipartAbort(sessionId: String) = error("Chunked upload not configured")
         override suspend fun presign(body: RecordingUploadPresign): RecordingUploadTicket {
             presigns++
             lastPresign = body

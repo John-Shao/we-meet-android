@@ -17,6 +17,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.we.meet.R
 import com.we.meet.data.api.MeetingRecordApi
 import com.we.meet.data.api.RecordingUploadApi
+import com.we.meet.data.api.RecordingUploadBegin
+import com.we.meet.data.api.RecordingUploadFinish
+import com.we.meet.data.api.RecordingUploadSign
 import com.we.meet.data.api.RecordingUploadCapabilities
 import com.we.meet.data.api.RecordingUploadComplete
 import com.we.meet.data.api.RecordingUploadPresign
@@ -152,11 +155,16 @@ class MeetingRecordsSnapshotTest {
             RecordingUploadState(uuid(1), "queued", 1)
         override suspend fun state(recordId: String) = RecordingUploadState(recordId, "succeeded", 1)
         override suspend fun retry(recordId: String, body: RecordingUploadRetry) = RecordingUploadState(recordId, "queued", 2)
+        override suspend fun multipartBegin(body: RecordingUploadBegin) = error("Chunked upload not configured")
+        override suspend fun multipartResume(sessionId: String) = error("Chunked upload not configured")
+        override suspend fun multipartSign(sessionId: String, body: RecordingUploadSign) = error("Chunked upload not configured")
+        override suspend fun multipartComplete(sessionId: String, body: RecordingUploadFinish) = error("Chunked upload not configured")
+        override suspend fun multipartAbort(sessionId: String) = error("Chunked upload not configured")
         override suspend fun presign(body: RecordingUploadPresign): RecordingUploadTicket = error("Direct upload not configured")
         override suspend fun complete(body: RecordingUploadComplete): RecordingUploadState = error("Direct upload not configured")
     }
 
-    private fun uploadRepository() = RecordingUploadRepository(FakeUploadApi(), { viewer })
+    private fun uploadRepository() = RecordingUploadRepository(FakeUploadApi(), currentViewer = { viewer })
 
     private fun shot(name: String) {
         compose.waitForIdle()

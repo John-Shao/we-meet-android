@@ -26,6 +26,10 @@
     <string name="record_upload_context">Meeting context (up to 400 characters)</string>
     <string name="record_upload_hotwords">Keywords (one per line, up to 40 characters each)</string>
     <string name="record_upload_consent">Make sure you have permission to import and transcribe this recording.</string>
+    <!-- A GB-scale import takes minutes, so it reports real progress and can be stopped. -->
+    <string name="record_upload_progress">%1$d%% uploaded</string>
+    <string name="record_upload_cancel">Cancel upload</string>
+    <string name="record_upload_cancelled">Upload cancelled. Parts already sent are kept, so starting again resumes from there.</string>
     <string name="record_upload_wait">Importing… Keep this screen open until the import finishes.</string>
     <string name="record_upload_error">Import failed. Check the file format, size and connection, then retry.</string>
     <string name="record_upload_unconfirmed">Import could not be confirmed; the file may already have been received. Retry here with the same file and settings, or close and check recording history.</string>

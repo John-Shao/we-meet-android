@@ -197,6 +197,9 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
             // The presigned path is only reachable with a storage client; without
             // one the repository keeps imports on multipart.
             storage = com.we.meet.data.api.HttpRecordingStorage(),
+            // Part PUTs additionally need to report progress and return the ETag
+            // that completion requires.
+            partStorage = com.we.meet.data.api.OkHttpPartStorage(),
         )
         translationArchiveRepository = com.we.meet.data.repository.TranslationArchiveRepository(apiClient.translationArchiveApi) { captureAccount }
         captureRepository = com.we.meet.data.repository.CaptureRepository(apiClient.captureApi) { tokenStore.userId }

@@ -23,7 +23,7 @@ class RecordingUploadHttpTest {
         val api = Retrofit.Builder().baseUrl("http://127.0.0.1:$port/").client(client)
             .addConverterFactory(MoshiConverterFactory.create(Moshi.Builder().add(KotlinJsonAdapterFactory()).build()))
             .build().create(RecordingUploadApi::class.java)
-        return RecordingUploadRepository(api) { "owner" }
+        return RecordingUploadRepository(api, currentViewer = { "owner" })
     }
 
     @Test fun acceptedUploadWithSlowStorageOutlivesTheGeneralApiTimeout() = runBlocking {

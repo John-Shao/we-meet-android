@@ -26,6 +26,27 @@ fun interface RecordingStorage {
 }
 
 /**
+ * A part PUT, which additionally has to report progress and return its ETag.
+ *
+ * Separate from [RecordingStorage] because a whole-file PUT needs neither: its
+ * result is only success or failure, while a part's ETag is required to finish
+ * the upload at all.
+ */
+fun interface RecordingPartStorage {
+    /**
+     * @param onProgress bytes sent so far, for a caller that wants to show it.
+     * @return the part's ETag, or null when storage refused or did not expose it.
+     */
+    fun putPart(
+        url: String,
+        size: Long,
+        open: () -> InputStream,
+        onProgress: (Long) -> Unit,
+        cancel: () -> Boolean,
+    ): String?
+}
+
+/**
  * A client with no `AuthInterceptor`, no `SessionExpiredInterceptor` and no
  * authenticator.
  *
@@ -71,5 +92,52 @@ internal class HttpRecordingStorage(private val client: OkHttpClient = recording
             headers.forEach { (name, value) -> header(name, value) }
         }.build()
         return client.newCall(request).execute().use { it.isSuccessful }
+    }
+}
+
+/**
+ * Streams one part, reporting progress and reading back the ETag.
+ *
+ * The ETag is the point: `CompleteMultipartUpload` needs every part's ETag, and
+ * only this response carries it. A bucket that does not return the header makes
+ * a chunked upload impossible, which is why a missing one is a failure here
+ * rather than something to paper over.
+ */
+internal class OkHttpPartStorage(
+    private val client: OkHttpClient = recordingStorageHttp(),
+) : RecordingPartStorage {
+    override fun putPart(
+        url: String,
+        size: Long,
+        open: () -> InputStream,
+        onProgress: (Long) -> Unit,
+        cancel: () -> Boolean,
+    ): String? {
+        val body = object : RequestBody() {
+            override fun contentType() = "application/octet-stream".toMediaType()
+            override fun contentLength() = size
+            override fun writeTo(sink: BufferedSink) {
+                var total = 0L
+                open().use { stream ->
+                    val buffer = ByteArray(64 * 1024)
+                    while (true) {
+                        if (cancel()) throw IOException("Upload cancelled")
+                        val count = stream.read(buffer)
+                        if (count < 0) break
+                        total += count
+                        sink.write(buffer, 0, count)
+                        onProgress(total)
+                    }
+                }
+                if (total != size) throw IOException("Part changed while uploading")
+            }
+        }
+        val request = Request.Builder().url(url).put(body).build()
+        return client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return null
+            // OkHttp exposes every response header, so no bucket CORS exposure
+            // rule is needed on this client — unlike a browser.
+            response.header("ETag")?.trim('"')
+        }
     }
 }
