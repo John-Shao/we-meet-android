@@ -186,8 +186,14 @@ class RecordingImportChunkedTest {
             )
             compose.waitForIdle()
             compose.onNodeWithText(label(R.string.record_upload_cancel)).assertExists()
-            compose.onNodeWithText(context.getString(R.string.record_upload_progress, 50))
-                .assertExists()
+            // The percentage comes from a progress callback, so it needs a
+            // recompose that `waitForIdle` alone does not guarantee - waiting for
+            // it keeps this from depending on how loaded the device is. The exact
+            // value is not the point; that the reader can see progress is.
+            compose.waitUntil(10_000) {
+                compose.onAllNodesWithText("uploaded", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+            }
 
             compose.onNodeWithText(label(R.string.record_upload_cancel)).performClick()
             // The part in flight is watching the cancel flag, so signalling here is

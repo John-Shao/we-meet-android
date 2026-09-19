@@ -54,6 +54,48 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 Requirements: JDK 17, Android Studio Koala+.
 
+## Tests
+
+JVM unit tests are plain and always safe:
+
+```bash
+./gradlew :app:testDebugUnitTest
+```
+
+Instrumented tests need an emulator, **and the right test runner**. This is the
+part that catches people: `app/build.gradle.kts` reads
+`testInstrumentationRunner` from a Gradle property, so by default the app runs
+under the production `WeMeetApp`. Every test that reaches for a fixture
+application then dies with
+`ClassCastException: com.we.meet.WeMeetApp cannot be cast to ...FixtureApplication`,
+which looks like a broken test but is a wrong-runner symptom.
+
+There are **two mutually exclusive runners**, each installing a different
+`Application`, so no single run can satisfy the whole suite. Run it in two passes:
+
+```bash
+# 1. Everything that expects a fixture Application (capture, screen integration),
+#    and nothing that needs the recordings fixture.
+./gradlew :app:connectedDebugAndroidTest \
+  -PWE_MEET_TEST_RUNNER=com.we.meet.ui.records.IsolatedCaptureRunner \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.we.meet.ui.records.CaptureForegroundServiceTest
+
+# 2. Everything else, under the default runner (or equivalently
+#    -PWE_MEET_TEST_RUNNER=com.we.meet.ui.records.IsolatedRecordsRunner, which
+#    installs a bare Application instead of the production one).
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.we.meet.ui.records.RecordingImportPickerTest
+```
+
+To run one class, pass `-Pandroid.testInstrumentationRunnerArguments.class=<fqcn>`;
+for a whole package use `...arguments.package=<package>`.
+
+Known-broken on the local `Pixel_8` (API 36) emulator, independent of any change:
+`ui.tasks.TaskFilterBarTest.compactFilterSummaryStaysOnOneLineAtPhoneWidth`. It
+asserts `lineCount == 1 && !hasVisualOverflow` on a text layout, which depends on
+the emulator's font metrics and density; it fails in isolation as well, so it is
+not a suite-order or interference problem.
+
 ## Configuration
 
 Base URL and LiveKit override are in `gradle.properties`:
