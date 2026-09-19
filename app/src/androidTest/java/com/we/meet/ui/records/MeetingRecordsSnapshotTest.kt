@@ -126,6 +126,18 @@ class MeetingRecordsSnapshotTest {
 
         override suspend fun speakers(recordId: String, cursor: String?) = RecordPageDto(emptyList<RecordSpeakerDto>(), null)
 
+        override suspend fun attributeSpeaker(
+            recordId: String,
+            speakerId: String,
+            body: com.we.meet.data.api.dto.RecordAttributionRequest,
+        ): RecordSpeakerDto = error("Speaker attribution not configured")
+
+        override suspend fun attributionCandidates(
+            recordId: String,
+            query: String?,
+        ): com.we.meet.data.api.dto.RecordAttributionCandidatePageDto =
+            com.we.meet.data.api.dto.RecordAttributionCandidatePageDto()
+
         override suspend fun resolve(roomId: String, sessionId: String?) = records.first()
     }
 

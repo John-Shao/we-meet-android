@@ -1,5 +1,7 @@
 package com.we.meet.data.api
 
+import com.we.meet.data.api.dto.RecordAttributionCandidatePageDto
+import com.we.meet.data.api.dto.RecordAttributionRequest
 import com.we.meet.data.api.dto.RecordCorrectionDto
 import com.we.meet.data.api.dto.RecordCorrectionRequest
 import com.we.meet.data.api.dto.RecordDto
@@ -118,6 +120,28 @@ interface MeetingRecordApi {
         @Path("record") recordId: String,
         @Query("cursor") cursor: String?,
     ): RecordPageDto<RecordSpeakerDto>
+
+    /**
+     * Bind one diarised speaker track to a member, or clear the binding.
+     *
+     * A null `user_id` clears it: attributing the wrong colleague has to be
+     * undoable, and the recogniser's own label is still underneath.
+     */
+    @Headers("Cache-Control: no-store")
+    @PATCH("api/v1.0/meeting-records/{record}/speakers/{speaker}/")
+    suspend fun attributeSpeaker(
+        @Path("record") recordId: String,
+        @Path("speaker") speakerId: String,
+        @Body body: RecordAttributionRequest,
+    ): RecordSpeakerDto
+
+    /** People this reader may bind a track to, drawn from the record's directory. */
+    @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/meeting-records/{record}/attribution-candidates/")
+    suspend fun attributionCandidates(
+        @Path("record") recordId: String,
+        @Query("q") query: String?,
+    ): RecordAttributionCandidatePageDto
 
     @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/resolve/")

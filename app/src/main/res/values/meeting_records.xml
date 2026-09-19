@@ -30,6 +30,14 @@
     <string name="records_clear_filters">Clear filters</string>
     <string name="records_no_speakers">No published speakers yet.</string>
     <string name="records_speakers_hint">Only existing transcription labels are shown. Unidentified voices are not assigned to members.</string>
+    <!-- Saying which real person a diarised track is. The recogniser's label
+         is kept underneath; attribution only changes the name readers see. -->
+    <string name="records_attribution_change">Who is this?</string>
+    <string name="records_attribution_search">Search people</string>
+    <string name="records_attribution_find">Find</string>
+    <string name="records_attribution_clear">Clear attribution</string>
+    <string name="records_attribution_nobody">Nobody to choose from.</string>
+    <string name="records_attribution_failed">The attribution was not saved. Try again.</string>
     <string name="records_unknown_speaker">Unknown speaker</string>
     <string name="records_no_originals">No matching transcript</string>
     <string name="records_no_originals_hint">Try another search or refresh after transcription finishes.</string>

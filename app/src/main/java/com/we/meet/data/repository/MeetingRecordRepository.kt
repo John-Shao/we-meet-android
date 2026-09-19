@@ -1,6 +1,8 @@
 package com.we.meet.data.repository
 
 import com.we.meet.data.api.MeetingRecordApi
+import com.we.meet.data.api.dto.RecordAttributionCandidateDto
+import com.we.meet.data.api.dto.RecordAttributionRequest
 import com.we.meet.data.api.dto.RecordCorrectionDto
 import com.we.meet.data.api.dto.RecordCorrectionRequest
 import com.we.meet.data.api.dto.RecordDto
@@ -19,6 +21,9 @@ private val SUPPORTED_EXPORT_FORMATS = setOf("txt", "srt", "vtt")
 
 /** Matches the server's bound on one correction, checked here before sending. */
 private const val MAX_CORRECTION_LENGTH = 20_000
+
+/** The attribution picker's own cap, mirroring the server's list bound. */
+private const val MAX_CANDIDATES = 50
 
 enum class RecordScope(val wire: String) { RECENT("recent"), OWNED("owned"), PARTICIPATED("participated"), SHARED("shared") }
 enum class RecordSource(val wire: String) { MEETING("meeting"), AUDIO("audio_recording"), UPLOAD("upload"), RECORDINGS("recordings") }
@@ -230,6 +235,59 @@ class MeetingRecordRepository(
         // Re-read so a correction is never reported from a stale revision.
         originalRecord(recordId, revision)
         corrected
+    }
+
+    /**
+     * Bind one diarised speaker track to a person, or clear the binding.
+     *
+     * Attribution never rewrites the recogniser's label — the server keeps it
+     * and resolves one name for readers — so the speakers list is re-read
+     * rather than patched locally. Only capture-backed records have tracks to
+     * bind, and an online identity already is a person, so this checks the
+     * source first instead of sending a request that can only fail.
+     */
+    suspend fun attributeSpeaker(
+        viewer: String,
+        recordId: String,
+        revision: Int,
+        speakerId: String,
+        userId: String?,
+    ): Result<RecordSpeakerDto> = scoped(viewer) {
+        requireUuid(recordId)
+        requireUuid(speakerId)
+        userId?.let(::requireUuid)
+        require(revision > 0)
+        require(originalRecord(recordId, revision).sourceType in listOf("audio_recording", "upload"))
+        val bound = api.attributeSpeaker(recordId, speakerId, RecordAttributionRequest(userId))
+        require(bound.id == speakerId)
+        require(bound.attributedUserId == userId)
+        // Re-read so an attribution is never reported from a stale revision.
+        originalRecord(recordId, revision)
+        bound
+    }
+
+    /**
+     * People this reader may bind a track to.
+     *
+     * Read when the picker opens rather than with the speaker list: most
+     * readers never attribute anyone, and the server draws the list from the
+     * same directory the write accepts, so a picker cannot offer a name the
+     * write would then refuse.
+     */
+    suspend fun attributionCandidates(
+        viewer: String,
+        recordId: String,
+        query: String? = null,
+    ): Result<List<RecordAttributionCandidateDto>> = scoped(viewer) {
+        requireUuid(recordId)
+        require(query == null || query.length <= 80)
+        val page = api.attributionCandidates(recordId, query)
+        require(page.results.size <= MAX_CANDIDATES)
+        page.results.forEach {
+            requireUuid(it.id)
+            require(it.name.length <= 200)
+        }
+        page.results
     }
 
     private suspend fun originalRecord(recordId: String, revision: Int): RecordDto {

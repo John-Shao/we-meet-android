@@ -86,7 +86,18 @@ internal fun RecordSpeakers(repository: MeetingRecordRepository, viewer: String,
             result.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_source_unavailable))
             else -> LazyColumn(contentPadding = PaddingValues(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                 if (result.getOrThrow().results.isEmpty()) item { Text(stringResource(R.string.records_no_speakers)) }
-                items(result.getOrThrow().results, key = { it.id }) { speaker -> Text(speaker.label.ifBlank { stringResource(R.string.records_unknown_speaker) }, style = MaterialTheme.typography.titleMedium) }
+                items(result.getOrThrow().results, key = { it.id }) { speaker ->
+                    // 一个说话人就是一条识别器的猜测,知道现场的人可以指出他到底是谁。
+                    // 服务端保留原标签,只把读者看到的名字换掉。
+                    AttributableSpeakerRow(
+                        repository = repository,
+                        viewer = viewer,
+                        recordId = record.id,
+                        revision = record.revision,
+                        speaker = speaker,
+                        onAttributed = { refresh++ },
+                    )
+                }
                 item { Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                     if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
                     result.getOrThrow().nextCursor?.let { next -> TextButton(onClick = { cursors = cursors + next }) { Text(stringResource(R.string.records_next)) } }

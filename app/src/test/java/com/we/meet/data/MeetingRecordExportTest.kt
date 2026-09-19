@@ -74,6 +74,17 @@ class MeetingRecordExportTest {
                 record: String, cursor: String?,
             ): RecordPageDto<RecordSpeakerDto> = error("unused")
 
+            override suspend fun attributeSpeaker(
+                recordId: String,
+                speakerId: String,
+                body: com.we.meet.data.api.dto.RecordAttributionRequest,
+            ): RecordSpeakerDto = error("unused")
+
+            override suspend fun attributionCandidates(
+                recordId: String,
+                query: String?,
+            ): com.we.meet.data.api.dto.RecordAttributionCandidatePageDto = error("unused")
+
             override suspend fun resolve(roomId: String, sessionId: String?): RecordDto =
                 error("unused")
         }

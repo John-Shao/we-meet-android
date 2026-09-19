@@ -160,4 +160,32 @@ data class RecordSpeakerDto(
     val id: String,
     val label: String,
     @Json(name = "identity_type") val identityType: String,
+    /** What a reader should see: the person bound to this track, else the label. */
+    @Json(name = "display_name") val displayName: String? = null,
+    /** The bound person, or null while the track is still only "Speaker 1". */
+    @Json(name = "attributed_user_id") val attributedUserId: String? = null,
+    /**
+     * Whether this reader may change the binding. Only an editor may, so the
+     * control is absent rather than disabled when this is false.
+     */
+    @Json(name = "can_attribute") val canAttribute: Boolean = false,
+)
+
+/** One person a reader may bind a speaker track to. */
+data class RecordAttributionCandidateDto(
+    val id: String,
+    val name: String,
+)
+
+/** Binds a speaker track to a member; a null `userId` clears the binding. */
+data class RecordAttributionRequest(
+    @Json(name = "user_id") val userId: String?,
+)
+
+/**
+ * The attribution directory has no cursor: the server sends at most one
+ * screenful and the picker searches rather than pages.
+ */
+data class RecordAttributionCandidatePageDto(
+    val results: List<RecordAttributionCandidateDto> = emptyList(),
 )

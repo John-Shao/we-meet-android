@@ -28,6 +28,13 @@
     <string name="records_clear_filters">清除筛选</string>
     <string name="records_no_speakers">暂无已发布的发言人。</string>
     <string name="records_speakers_hint">仅展示转写中已有的发言人标签；未识别的声音不会自动关联到成员。</string>
+    <!-- 标注说话人实际是谁。识别器的标签仍保留在下层，标注只改变读者看到的名字。 -->
+    <string name="records_attribution_change">这是谁？</string>
+    <string name="records_attribution_search">搜索成员</string>
+    <string name="records_attribution_find">查找</string>
+    <string name="records_attribution_clear">清除标记</string>
+    <string name="records_attribution_nobody">没有可选择的成员。</string>
+    <string name="records_attribution_failed">标记未保存，请重试。</string>
     <string name="records_unknown_speaker">未知发言人</string>
     <string name="records_no_originals">没有匹配的文字记录</string>
     <string name="records_no_originals_hint">请调整搜索条件，或在转写完成后刷新。</string>

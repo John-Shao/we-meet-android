@@ -239,6 +239,8 @@ class RecordSummaryControlsTest {
         override suspend fun transcripts(recordId: String, revision: Int, query: String?, cursor: String?): RecordPageDto<RecordOnlineTranscriptDto> = error("Unexpected transcripts")
         override suspend fun originals(recordId: String, revision: Int, query: String?, speakerId: String?, cursor: String?): RecordPageDto<RecordOriginalSegmentDto> = error("Unexpected originals")
         override suspend fun speakers(recordId: String, cursor: String?): RecordPageDto<RecordSpeakerDto> = error("Unexpected speakers")
+        override suspend fun attributeSpeaker(recordId: String, speakerId: String, body: com.we.meet.data.api.dto.RecordAttributionRequest): RecordSpeakerDto = error("Unexpected attribution")
+        override suspend fun attributionCandidates(recordId: String, query: String?): com.we.meet.data.api.dto.RecordAttributionCandidatePageDto = error("Unexpected candidates")
         override suspend fun resolve(roomId: String, sessionId: String?): RecordDto = error("Unexpected resolve")
     }
 }

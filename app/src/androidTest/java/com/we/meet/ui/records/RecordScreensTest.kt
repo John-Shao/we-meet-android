@@ -116,6 +116,19 @@ class RecordScreensTest {
         }
         override suspend fun speakers(recordId: String, cursor: String?): RecordPageDto<RecordSpeakerDto> =
             RecordPageDto(listOf(RecordSpeakerDto(versionId, "Speaker 1", "diarized")))
+
+        override suspend fun attributeSpeaker(
+            recordId: String,
+            speakerId: String,
+            body: com.we.meet.data.api.dto.RecordAttributionRequest,
+        ): RecordSpeakerDto = error("Speaker attribution not configured")
+
+        override suspend fun attributionCandidates(
+            recordId: String,
+            query: String?,
+        ): com.we.meet.data.api.dto.RecordAttributionCandidatePageDto =
+            com.we.meet.data.api.dto.RecordAttributionCandidatePageDto()
+
         override suspend fun resolve(roomId: String, sessionId: String?): RecordDto = error("No room fallback")
     }
     private fun awaitText(text: String) {
