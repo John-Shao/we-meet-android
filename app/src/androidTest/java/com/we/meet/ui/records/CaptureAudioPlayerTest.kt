@@ -35,6 +35,8 @@ class CaptureAudioPlayerTest {
     private val sinks = CopyOnWriteArrayList<Sink>()
     private val downloads = CopyOnWriteArrayList<Int>()
     private val seek = mutableStateOf<CaptureAudioSeek?>(null)
+    /** Every source-clock position the player reported, in order. */
+    private val reported = CopyOnWriteArrayList<Long>()
     @Volatile private var allowed = true
     @Volatile private var fail = false
     @Volatile private var reads = 0
@@ -45,7 +47,7 @@ class CaptureAudioPlayerTest {
             CaptureAudioPlayer("fixture", record, { reads++; check(!fail); playlist }, { guard ->
                 CapturePlaybackEngine({ _, index -> downloads += index; CaptureWave.encode(ShortArray(16000)) }, {},
                     { Sink().also { sinks += it } }, guard)
-            }, { allowed }, seek.value, { seek.value = null })
+            }, { allowed }, seek.value, { seek.value = null }, { reported += it })
         } } }
         await(R.string.capture_playback_play)
     }
@@ -128,6 +130,25 @@ class CaptureAudioPlayerTest {
         await(R.string.capture_playback_error)
         assertEquals(1, sinks.size)
     }
+    @Test fun playerReportsTheSourceClockSoATranscriptCanFollow() {
+        // The transcript derives its active row from these numbers, so the player
+        // must report in the recording's own clock — not the current chunk's.
+        show()
+        compose.runOnIdle { seek.value = CaptureAudioSeek(2000) }
+        compose.waitUntil(8000) { reported.contains(2000L) }
+        assertTrue(reported.contains(2000L))
+    }
+
+    @Test fun draggingTheTimelineAlsoReportsTheNewPosition() {
+        show()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_position)).performSemanticsAction(
+            androidx.compose.ui.semantics.SemanticsActions.SetProgress
+        ) { it(1000f) }
+        compose.runOnIdle { }
+        assertTrue(reported.isNotEmpty())
+        assertTrue(reported.last() >= 1000L)
+    }
+
     private class Sink : CapturePlaybackOutput {
         @Volatile var closed = false
         @Volatile var started = false

@@ -95,6 +95,12 @@ internal fun <T> visibleRead(vararg keys: Any?, intervalMs: Long = 15_000, stopW
 fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String, onBack: () -> Unit, summaryVersionId: String? = null, onTask: ((String) -> Unit)? = null, onDocument: ((String) -> Unit)? = null, initialSummary: Boolean = false, initialReview: Boolean = false) {
     val app = LocalContext.current.applicationContext as? WeMeetApp
     var audioSeek by remember(viewer, recordId) { mutableStateOf<CaptureAudioSeek?>(null) }
+    /**
+     * Playback position, lifted here because the player and the transcript are
+     * separate regions: the player owns the clock, the transcript owns the text,
+     * and this is the one place that connects them. Null until a player reports.
+     */
+    var playbackPositionMs by remember(viewer, recordId) { mutableStateOf<Long?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
     var selectedVersion by remember(viewer, recordId, summaryVersionId) { mutableStateOf(summaryVersionId) }
     var cursors by remember(viewer, recordId, selectedVersion) { mutableStateOf(listOf<String?>(null)) }
@@ -147,7 +153,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             if (app != null && record.sourceType == "audio_recording") RecordCaptureTools(
                                 viewer, record, app.captureRepository, app.captureTranscriptionRepository,
                                 { app.captureAccount }, onRefresh = { refresh++ })
-                            RecordOriginals(repository, viewer, record, onRefresh = { refresh++ }, onSource = if (canPlay) ({ audioSeek = CaptureAudioSeek(it) }) else null)
+                            RecordOriginals(repository, viewer, record, onRefresh = { refresh++ }, onSource = if (canPlay) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay })
                         }
                     } else if (!record.capabilities.readSummary) {
                         WeMeetEmptyState(stringResource(R.string.records_no_summary_access))
@@ -231,7 +237,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                     }
                 }
             }
-            if (canPlay) NativeCaptureAudioPlayer(viewer, recordId, requireNotNull(app).capturePlaybackRepository, { app.captureAccount }, audioSeek) { audioSeek = null }
+            if (canPlay) NativeCaptureAudioPlayer(viewer, recordId, requireNotNull(app).capturePlaybackRepository, { app.captureAccount }, audioSeek, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it })
             if (detail?.isSuccess == true && record?.capabilities?.readTranscript == true) citation?.let { (snapshot, reference) ->
                 val original = visibleRead(viewer, recordId, snapshot, reference, refresh) { repository.citation(viewer, recordId, snapshot, reference) }
                 AlertDialog(onDismissRequest = { citation = null }, title = { Text(stringResource(R.string.records_source)) },

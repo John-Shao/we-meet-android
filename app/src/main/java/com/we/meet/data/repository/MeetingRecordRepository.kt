@@ -23,6 +23,12 @@ data class RecordOriginalRow(
     val language: String,
     val startedAt: String? = null,
     val startMs: Long? = null,
+    /**
+     * End of this row's source window, when the source reports one. Capture and
+     * upload originals always do; online transcripts carry `started_at` only, so
+     * those rows have no window end and stay active until the next row starts.
+     */
+    val endMs: Long? = null,
 )
 
 /** No disk cache or cross-account memory; every response is checked against its reader. */
@@ -96,7 +102,7 @@ class MeetingRecordRepository(
                     require(it.revision > 0 && it.startMs >= 0 && (it.endMs == null || it.endMs >= it.startMs))
                     require(record.captureId == null || it.captureSessionId == record.captureId)
                     require(speakerId == null || speakerId == it.speakerId)
-                    RecordOriginalRow(it.id, it.speakerLabel, it.text, it.language, startMs = it.startMs)
+                    RecordOriginalRow(it.id, it.speakerLabel, it.text, it.language, startMs = it.startMs, endMs = it.endMs)
                 }, rows.nextCursor)
             }
             else -> error("Unsupported original source")

@@ -41,22 +41,28 @@ import kotlinx.coroutines.*
 internal data class CaptureAudioSeek(val milliseconds: Long, val token: String = UUID.randomUUID().toString())
 
 @Composable
-internal fun NativeCaptureAudioPlayer(viewer: String, recordId: String, repository: CapturePlaybackRepository, currentViewer: () -> String?, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}) {
+internal fun NativeCaptureAudioPlayer(viewer: String, recordId: String, repository: CapturePlaybackRepository, currentViewer: () -> String?, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}, onPosition: (Long) -> Unit = {}) {
     val context = LocalContext.current.applicationContext
     CaptureAudioPlayer(viewer, recordId, { repository.playlist(viewer, recordId).getOrThrow() }, { allowed ->
         CapturePlaybackEngine({ playlist, index -> repository.audio(viewer, playlist, index).getOrThrow() },
             { repository.checkAccess(viewer, it).getOrThrow() }, { AndroidCapturePlaybackOutput(context, it) }, allowed)
-    }, { currentViewer() == viewer && !CaptureForegroundService.microphoneActive && !ConferenceForegroundService.isRunning }, seek, onSeekConsumed)
+    }, { currentViewer() == viewer && !CaptureForegroundService.microphoneActive && !ConferenceForegroundService.isRunning }, seek, onSeekConsumed, onPosition)
 }
 
-/** Foreground-only player; fixtures inject verified audio and a silent output without real APIs. */
+/**
+ * Foreground-only player; fixtures inject verified audio and a silent output without real APIs.
+ *
+ * [onPosition] reports the source-clock position so a transcript can follow playback;
+ * it fires on seeks and on every progress tick while playing.
+ */
 @Composable
 internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend () -> CapturePlaylist, createEngine: (allowed: () -> Boolean) -> CapturePlaybackEngine,
-    authorized: () -> Boolean, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}) {
+    authorized: () -> Boolean, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}, onPosition: (Long) -> Unit = {}) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
     val currentAllowed by rememberUpdatedState(authorized)
     val consumeSeek by rememberUpdatedState(onSeekConsumed)
+    val reportPosition by rememberUpdatedState(onPosition)
     var playlist by remember(viewer, recordId) { mutableStateOf<CapturePlaylist?>(null) }
     var state by remember(viewer, recordId) { mutableStateOf("loading") }
     var position by remember(viewer, recordId) { mutableLongStateOf(0) }
@@ -66,6 +72,16 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
     var work by remember(viewer, recordId) { mutableStateOf<Job?>(null) }
     var ratesVisible by remember(viewer, recordId) { mutableStateOf(false) }
     val allowed = { lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) && currentAllowed() }
+
+    /**
+     * Single writer for the source clock, so a follower cannot miss a change.
+     * Every position update goes through here — including the slider drag and the
+     * engine's progress callback — instead of assigning the state directly.
+     */
+    fun setPosition(milliseconds: Long) {
+        position = milliseconds
+        reportPosition(milliseconds)
+    }
     fun stop() {
         work?.cancel()
         work = null
@@ -81,7 +97,7 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
                 val result = load()
                 check(allowed() && result.recordId == recordId)
                 playlist = result
-                position = position.coerceIn(0, result.endMs)
+                setPosition(position.coerceIn(0, result.endMs))
                 state = "ready"
                 awaitCancellation()
             } catch (canceled: CancellationException) { throw canceled }
@@ -93,7 +109,7 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
                 stop()
                 if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
                     playlist = null
-                    position = 0
+                    setPosition(0)
                     ratesVisible = false
                     consumeSeek()
                 }
@@ -105,7 +121,7 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
         val data = playlist ?: return
         if (!allowed() || state == "error") return
         stop()
-        position = milliseconds.coerceIn(0, data.endMs)
+        setPosition(milliseconds.coerceIn(0, data.endMs))
         if (data.locate(position) == null) { state = "gap"; return }
         state = "buffering"
         val current = createEngine(allowed)
@@ -116,9 +132,9 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
                 val end = current.play(data, position, rate, onBuffering = {
                     if (engine === current && allowed()) state = "buffering"
                 }) {
-                    if (engine === current && allowed()) { position = it; state = "playing" }
+                    if (engine === current && allowed()) { setPosition(it); state = "playing" }
                 }
-                if (engine === current && allowed()) { position = end.positionMs; state = if (end.gap) "gap" else "ready" }
+                if (engine === current && allowed()) { setPosition(end.positionMs); state = if (end.gap) "gap" else "ready" }
             } catch (canceled: CancellationException) { throw canceled }
             catch (error: Exception) {
                 Log.w("CapturePlayback", "Playback stopped: reason=${playbackFailureReason(error)}")
@@ -148,7 +164,7 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
                 if (data.chunks.isEmpty()) Text(stringResource(R.string.capture_playback_empty))
                 else {
                     Text("${sourceTime(position)} / ${sourceTime(data.endMs)}", style = MaterialTheme.typography.labelMedium)
-                    Slider(position.coerceAtMost(maxOf(1, data.endMs - 1)).toFloat(), onValueChange = { stop(); position = it.toLong(); state = "ready"; consumeSeek() },
+                    Slider(position.coerceAtMost(maxOf(1, data.endMs - 1)).toFloat(), onValueChange = { stop(); setPosition(it.toLong()); state = "ready"; consumeSeek() },
                         valueRange = 0f..maxOf(1, data.endMs - 1).toFloat(), modifier = Modifier.semantics { contentDescription = positionLabel })
                     if (state == "gap") Text(stringResource(R.string.capture_playback_gap), style = MaterialTheme.typography.bodySmall)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {

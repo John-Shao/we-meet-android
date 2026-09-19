@@ -18,6 +18,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
@@ -28,6 +29,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +37,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
 import com.we.meet.R
 import com.we.meet.data.api.dto.RecordDto
@@ -54,6 +58,7 @@ internal fun RecordOriginals(
     record: RecordDto,
     onRefresh: () -> Unit,
     onSource: ((Long) -> Unit)? = null,
+    positionMs: Long? = null,
 ) {
     var input by remember(viewer, record.id) { mutableStateOf("") }
     var query by remember(viewer, record.id) { mutableStateOf("") }
@@ -62,8 +67,40 @@ internal fun RecordOriginals(
     var selectSpeaker by remember(viewer, record.id, record.revision) { mutableStateOf(false) }
     var cursors by remember(viewer, record.id, record.revision, query, speakerId) { mutableStateOf(listOf<String?>(null)) }
     val keyboard = LocalSoftwareKeyboardController.current
+    val listState = rememberLazyListState()
     val page = visibleRead(viewer, record.id, record.revision, query, speakerId, cursors.last()) {
         repository.originals(viewer, record.id, record.revision, query.ifBlank { null }, speakerId, cursors.last())
+    }
+    /**
+     * The unfiltered first page, read only to map a playback position onto a row.
+     * Deriving the active window from the *filtered* rows would move the clock
+     * whenever a reader filtered by speaker or searched, so highlight and audio
+     * would disagree about where "now" is.
+     *
+     * Keyed on whether playback is running, never on the position itself:
+     * `visibleRead` owns a polling loop, so keying it on a value that changes
+     * several times a second would tear that loop down and re-fetch on every tick.
+     */
+    val followingPlayback = positionMs != null
+    val timeline = visibleRead(viewer, record.id, record.revision, followingPlayback) {
+        if (followingPlayback) {
+            repository.originals(viewer, record.id, record.revision, null, null, null)
+                .map { page -> page.results.map { row -> TimedRow(row.id, row.startMs ?: 0L, row.endMs) } }
+        } else Result.success(emptyList())
+    }
+    val timelineRows = timeline?.getOrNull().orEmpty()
+    // Derived from the unfiltered timeline, then matched against the visible rows.
+    val activeId = positionMs?.let { activeRowId(timelineRows, it) }
+    val activeDescription = stringResource(R.string.records_now_playing)
+    val rows = page?.getOrNull()?.results.orEmpty()
+    val activeIndex = rows.indexOfFirst { it.id == activeId }
+    /**
+     * Follow playback unless the reader is holding the list. `isScrollInProgress`
+     * is true during a fling or drag, which is exactly the gesture that should win.
+     */
+    LaunchedEffect(activeIndex, activeId, listState.isScrollInProgress) {
+        if (activeIndex < 0 || listState.isScrollInProgress) return@LaunchedEffect
+        listState.animateScrollToItem(activeIndex)
     }
     val search = { query = input.trim(); cursors = listOf(null); keyboard?.hide(); Unit }
     Column(Modifier.fillMaxSize()) {
@@ -103,9 +140,22 @@ internal fun RecordOriginals(
                     description = stringResource(R.string.records_no_originals_hint),
                     action = { TextButton(onClick = onRefresh) { Text(stringResource(R.string.records_refresh)) } },
                 )
-                else -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                else -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                     items(page.getOrThrow().results, key = { it.id }) { original ->
-                            Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                            val isActive = activeId != null && original.id == activeId
+                            Column(
+                                Modifier.fillMaxWidth()
+                                    .background(
+                                        if (isActive) MaterialTheme.colorScheme.primaryContainer
+                                        else MaterialTheme.colorScheme.surface,
+                                    )
+                                    // The accessible signal is a state description, not just colour.
+                                    .semantics {
+                                        if (isActive) stateDescription = activeDescription
+                                    }
+                                    .padding(Dimens.ScreenPadding),
+                                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
+                            ) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                                     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
                                         Icon(Icons.Outlined.Person, null, Modifier.padding(Dimens.SpaceS).size(Dimens.IconSmall), tint = MaterialTheme.colorScheme.primary)

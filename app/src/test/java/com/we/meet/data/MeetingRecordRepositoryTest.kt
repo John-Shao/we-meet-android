@@ -139,6 +139,23 @@ class MeetingRecordRepositoryTest {
         assertEquals(3, requests.size)
     }
 
+    @Test fun originalWindowEndIsCarriedSoPlaybackCanDetectGaps() = runBlocking {
+        // The active-row rule needs both edges: without end_ms a reader cannot tell
+        // "this row is done" from "this recording has a hole here".
+        val repo = repository { request ->
+            if (!request.url.encodedPath.endsWith("/original-segments/")) 200 to record()
+            else 200 to """{"results":[
+                {"id":"$recordId","revision":1,"capture_session_id":"$snapshotId","speaker_id":"$sourceId",
+                 "speaker_label":"Speaker 1","start_ms":0,"end_ms":1000,"text":"First"},
+                {"id":"$snapshotId","revision":1,"capture_session_id":"$recordId","speaker_id":"$sourceId",
+                 "speaker_label":"Speaker 1","start_ms":3000,"end_ms":4000,"text":"After the gap"}]}"""
+        }
+        val rows = repo.originals("reader", recordId, 3).getOrThrow().results
+        assertEquals(1000L, rows[0].endMs)
+        assertEquals(3000L, rows[1].startMs)
+        assertEquals(4000L, rows[1].endMs)
+    }
+
     @Test fun originalReadRejectsRevisionChangeAfterBodyBeforeDisplay() = runBlocking {
         var detailReads = 0
         val repo = repository { request ->
