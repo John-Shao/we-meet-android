@@ -8,6 +8,7 @@ import android.widget.Toast
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -90,6 +91,8 @@ internal fun RecordOriginals(
     var speakerId by remember(viewer, record.id, record.revision) { mutableStateOf<String?>(null) }
     var selectSpeaker by remember(viewer, record.id, record.revision) { mutableStateOf(false) }
     var cursors by remember(viewer, record.id, record.revision, query, speakerId) { mutableStateOf(listOf<String?>(null)) }
+    var anchorMs by remember(viewer, record.id, record.revision) { mutableStateOf(0L) }
+    var following by remember(viewer, record.id) { mutableStateOf(true) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var exportVisible by remember(viewer, record.id) { mutableStateOf(false) }
@@ -128,45 +131,28 @@ internal fun RecordOriginals(
     }
     val keyboard = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
-    val page = visibleRead(viewer, record.id, record.revision, query, speakerId, cursors.last()) {
-        repository.originals(viewer, record.id, record.revision, query.ifBlank { null }, speakerId, cursors.last())
+    val filtered = query.isNotBlank() || speakerId != null
+    val atMs = if (record.sourceType == "meeting") null else if (filtered) 0L else anchorMs
+    val page = visibleRead(viewer, record.id, record.revision, query, speakerId, cursors.last(), atMs) {
+        repository.originals(viewer, record.id, record.revision, query.ifBlank { null }, speakerId, cursors.last(), atMs)
     }
-    /**
-     * The unfiltered first page, read only to map a playback position onto a row.
-     * Deriving the active window from the *filtered* rows would move the clock
-     * whenever a reader filtered by speaker or searched, so highlight and audio
-     * would disagree about where "now" is.
-     *
-     * Keyed on whether playback is running, never on the position itself:
-     * `visibleRead` owns a polling loop, so keying it on a value that changes
-     * several times a second would tear that loop down and re-fetch on every tick.
-     */
-    val followingPlayback = positionMs != null
-    val timeline = visibleRead(viewer, record.id, record.revision, followingPlayback) {
-        if (followingPlayback) {
-            repository.originals(viewer, record.id, record.revision, null, null, null)
-                .map { page -> page.results.map { row -> TimedRow(row.id, row.startMs ?: 0L, row.endMs) } }
-        } else Result.success(emptyList())
-    }
-    val timelineRows = timeline?.getOrNull().orEmpty()
-    // Derived from the unfiltered timeline. The highlight and the scroll target
-    // differ on purpose: playback in a gap should highlight nothing (naming a
-    // neighbour would mark text that is not being spoken) but must still advance
-    // the view, or the transcript stalls until the next utterance starts.
+    val rows = page?.getOrNull()?.results.orEmpty()
+    val timelineRows = rows.mapNotNull { row -> row.startMs?.let { TimedRow(row.id, it, row.endMs) } }
     val activeId = positionMs?.let { activeRowId(timelineRows, it) }
     val followId = activeId ?: positionMs?.let { nearestStartedRowId(timelineRows, it) }
     val activeDescription = stringResource(R.string.records_now_playing)
-    val rows = page?.getOrNull()?.results.orEmpty()
-    val activeIndex = rows.indexOfFirst { it.id == activeId }
-    // The gap target is matched against the *visible* page: a reader who filtered
-    // by speaker or searched may be looking at a list that does not contain it.
     val followIndex = rows.indexOfFirst { it.id == followId }
-    /**
-     * Follow playback unless the reader is holding the list. `isScrollInProgress`
-     * is true during a fling or drag, which is exactly the gesture that should win.
-     */
-    LaunchedEffect(followIndex, followId, listState.isScrollInProgress) {
-        if (followIndex < 0 || listState.isScrollInProgress) return@LaunchedEffect
+    val dragging by listState.interactionSource.collectIsDraggedAsState()
+    LaunchedEffect(dragging) { if (dragging) following = false }
+    LaunchedEffect(positionMs, timelineRows, following, filtered, dragging) {
+        if (!following || filtered || dragging || positionMs == null) return@LaunchedEffect
+        transcriptWindowTarget(timelineRows, positionMs, anchorMs, page?.getOrNull()?.nextCursor != null)?.let {
+            anchorMs = it
+            cursors = listOf(null)
+        }
+    }
+    LaunchedEffect(followIndex, followId, following, filtered) {
+        if (!following || filtered || followIndex < 0 || listState.isScrollInProgress) return@LaunchedEffect
         listState.animateScrollToItem(followIndex)
     }
     val search = { query = input.trim(); cursors = listOf(null); keyboard?.hide(); Unit }
@@ -199,6 +185,10 @@ internal fun RecordOriginals(
                 TextButton(onClick = { exportVisible = true }) { Text(stringResource(R.string.records_export_transcript)) }
             }
         }
+        if (positionMs != null) TextButton(onClick = {
+            input = ""; query = ""; speakerId = null
+            anchorMs = positionMs; cursors = listOf(null); following = true
+        }) { Text(stringResource(R.string.records_back_to_playback)) }
         Column(Modifier.weight(1f).fillMaxWidth()) {
             when {
                 page == null -> WeMeetInlineLoading()
@@ -247,6 +237,7 @@ internal fun RecordOriginals(
                                     correctable = original.canCorrect && original.correctionRevision != null,
                                     correctionRevision = original.correctionRevision ?: 0,
                                     onCorrected = onRefresh,
+                                    onEditing = { following = false },
                                 )
                             }
                     }
@@ -257,8 +248,8 @@ internal fun RecordOriginals(
         // 单页时这一行只剩下一个孤立的「刷新」挂在底部,不如不显示;失败/空态各自带重试。
         if (current != null && (cursors.size > 1 || current.nextCursor != null)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.SpaceBetween) {
-                if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
-                current.nextCursor?.let { next -> TextButton(onClick = { cursors = cursors + next }) { Text(stringResource(R.string.records_next)) } }
+                if (cursors.size > 1) TextButton(onClick = { following = false; cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
+                current.nextCursor?.let { next -> TextButton(onClick = { following = false; cursors = cursors + next }) { Text(stringResource(R.string.records_next)) } }
                 TextButton(onClick = onRefresh) { Text(stringResource(R.string.records_refresh)) }
             }
         }

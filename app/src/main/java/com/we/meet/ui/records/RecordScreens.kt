@@ -164,7 +164,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             if (app != null && record.sourceType == "audio_recording") RecordCaptureTools(
                                 viewer, record, app.captureRepository, app.captureTranscriptionRepository,
                                 { app.captureAccount }, onRefresh = { refresh++ })
-                            RecordOriginals(repository, viewer, record, onRefresh = { refresh++ }, onSource = if (canPlay) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay })
+                            RecordOriginals(repository, viewer, record, onRefresh = { refresh++ }, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay || canPlayImport })
                         }
                     } else if (!record.capabilities.readSummary) {
                         WeMeetEmptyState(stringResource(R.string.records_no_summary_access))

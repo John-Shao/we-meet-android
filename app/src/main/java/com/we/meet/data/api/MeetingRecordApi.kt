@@ -111,8 +111,9 @@ interface MeetingRecordApi {
         @Path("record") recordId: String,
         @Query("expected_revision") revision: Int,
         @Query("q") query: String?,
-        @Query("speaker_id") speakerId: String?,
+        @Query("speaker") speakerId: String?,
         @Query("cursor") cursor: String?,
+        @Query("at_ms") atMs: Long? = null,
     ): RecordPageDto<RecordOriginalSegmentDto>
 
     @Headers("Cache-Control: no-store")

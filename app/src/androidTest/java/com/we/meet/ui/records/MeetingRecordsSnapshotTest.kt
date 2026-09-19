@@ -117,7 +117,7 @@ class MeetingRecordsSnapshotTest {
     override suspend fun media(recordId: String) = error("Media not configured")
         override suspend fun transcriptExport(url: String) = error("Export not configured")
     override suspend fun correctOriginal(recordId: String, segmentId: String, body: com.we.meet.data.api.dto.RecordCorrectionRequest) = error("Correction not configured")
-    override suspend fun revertOriginal(recordId: String, segmentId: String) = error("Correction not configured")
+    override suspend fun revertOriginal(recordId: String, segmentId: String, expectedRevision: Int) = error("Correction not configured")
 
         override suspend fun summaries(recordId: String, cursor: String?, versionId: String?): RecordPageDto<RecordSummaryVersionDto> =
             RecordPageDto(versions ?: listOf(summary), null)
@@ -127,7 +127,7 @@ class MeetingRecordsSnapshotTest {
         override suspend fun transcripts(recordId: String, revision: Int, query: String?, cursor: String?) =
             RecordPageDto(listOf(RecordOnlineTranscriptDto(uuid(900), session, "王敏", "我们先过一遍上周遗留的两个风险项。", "zh", "2026-09-18T01:31:00Z")), null)
 
-        override suspend fun originals(recordId: String, revision: Int, query: String?, speakerId: String?, cursor: String?) =
+        override suspend fun originals(recordId: String, revision: Int, query: String?, speakerId: String?, cursor: String?, atMs: Long?) =
             RecordPageDto(emptyList<RecordOriginalSegmentDto>(), null)
 
         override suspend fun speakers(recordId: String, cursor: String?) = RecordPageDto(emptyList<RecordSpeakerDto>(), null)

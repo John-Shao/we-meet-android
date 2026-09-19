@@ -11,6 +11,13 @@ package com.we.meet.ui.records
 /** A row that carries its own source window, in the recording's clock. */
 internal data class TimedRow(val id: String, val startMs: Long, val endMs: Long?)
 
+internal fun transcriptWindowTarget(rows: List<TimedRow>, positionMs: Long, anchorMs: Long, hasNext: Boolean): Long? {
+    if (rows.isEmpty() || positionMs < 0 || positionMs == anchorMs) return null
+    if (anchorMs > 0 && positionMs < rows.first().startMs) return positionMs
+    if (hasNext && positionMs >= rows.last().startMs) return positionMs
+    return null
+}
+
 /**
  * The row whose window contains [positionMs].
  *

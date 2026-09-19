@@ -9,6 +9,16 @@ import org.junit.Test
  * semantics a reader sees on both platforms rather than just "something lights up".
  */
 class TranscriptSyncTest {
+    @Test
+    fun `requests a new window only after leaving the loaded page`() {
+        assertNull(transcriptWindowTarget(rows, 1500, 0, true))
+        assertEquals(9000L, transcriptWindowTarget(rows, 9000, 0, true))
+        assertNull(transcriptWindowTarget(rows, 9000, 9000, true))
+        assertNull(transcriptWindowTarget(rows, 9000, 0, false))
+        assertEquals(500L, transcriptWindowTarget(listOf(TimedRow("later", 8000, 10000)), 500, 9000, false))
+        assertNull(transcriptWindowTarget(listOf(TimedRow("late start", 8000, 10000)), 0, 0, false))
+    }
+
 
     /** Contiguous rows, as a normal recording produces. */
     private val rows = listOf(

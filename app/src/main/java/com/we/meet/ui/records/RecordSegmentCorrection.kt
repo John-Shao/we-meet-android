@@ -54,6 +54,7 @@ internal fun CorrectableOriginalText(
     correctable: Boolean,
     correctionRevision: Int,
     onCorrected: () -> Unit,
+    onEditing: () -> Unit = {},
 ) {
     key(segmentId) {
         var editing by remember { mutableStateOf(false) }
@@ -123,6 +124,7 @@ internal fun CorrectableOriginalText(
                             editRevision = correctionRevision
                             failed = false
                             conflict = false
+                            onEditing()
                             editing = true
                         }) {
                             Text(stringResource(R.string.records_correction_edit))

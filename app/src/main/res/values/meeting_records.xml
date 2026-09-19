@@ -97,4 +97,5 @@
     <string name="records_chapters">Topics</string>
     <string name="records_actions">Suggested actions</string>
     <string name="records_questions">Open questions</string>
+    <string name="records_back_to_playback">Back to playback</string>
 </resources>

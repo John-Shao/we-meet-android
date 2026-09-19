@@ -158,13 +158,14 @@ class MeetingRecordRepositoryTest {
             else {
                 assertEquals("3", request.url.queryParameter("expected_revision"))
                 assertEquals("Budget 中文 & 100%", request.url.queryParameter("q"))
-                assertEquals(sourceId, request.url.queryParameter("speaker_id"))
+                assertEquals(sourceId, request.url.queryParameter("speaker"))
+                assertEquals("5500", request.url.queryParameter("at_ms"))
                 assertEquals("opaque & page", request.url.queryParameter("cursor"))
                 200 to """{"results":[{"id":"$recordId","revision":1,"capture_session_id":"$snapshotId",
                     "speaker_id":"$sourceId","speaker_label":"Speaker 1","start_ms":5000,"end_ms":6000,"text":"Original"}]}"""
             }
         }
-        val row = repo.originals("reader", recordId, 3, "Budget 中文 & 100%", sourceId, "opaque & page").getOrThrow().results.single()
+        val row = repo.originals("reader", recordId, 3, "Budget 中文 & 100%", sourceId, "opaque & page", atMs = 5500).getOrThrow().results.single()
         assertEquals(5000L, row.startMs)
         assertNull(row.startedAt)
         assertEquals(3, requests.size)

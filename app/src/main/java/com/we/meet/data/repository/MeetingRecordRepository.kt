@@ -95,9 +95,11 @@ class MeetingRecordRepository(
         query: String? = null,
         speakerId: String? = null,
         cursor: String? = null,
+        atMs: Long? = null,
     ): Result<RecordPageDto<RecordOriginalRow>> = scoped(viewer) {
         requireUuid(recordId)
         require(revision > 0 && (query == null || query.length <= 200))
+        require(atMs == null || atMs >= 0)
         speakerId?.let(::requireUuid)
         validateCursor(cursor)
         val record = originalRecord(recordId, revision)
@@ -113,7 +115,7 @@ class MeetingRecordRepository(
                 }, rows.nextCursor)
             }
             "audio_recording", "upload" -> {
-                val rows = api.originals(recordId, revision, query, speakerId, cursor)
+                val rows = api.originals(recordId, revision, query, speakerId, cursor, atMs)
                 validatePage(rows)
                 RecordPageDto(rows.results.map {
                     requireUuid(it.id)

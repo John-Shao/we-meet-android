@@ -94,4 +94,5 @@
     <string name="records_chapters">章节纪要</string>
     <string name="records_actions">行动建议</string>
     <string name="records_questions">待确认问题</string>
+    <string name="records_back_to_playback">回到播放位置</string>
 </resources>

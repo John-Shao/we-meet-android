@@ -92,7 +92,7 @@ class MeetingRecordCorrectionTest {
             ): RecordPageDto<RecordOnlineTranscriptDto> = error("unused")
 
             override suspend fun originals(
-                record: String, revision: Int, query: String?, speakerId: String?, cursor: String?,
+                record: String, revision: Int, query: String?, speakerId: String?, cursor: String?, atMs: Long?,
             ): RecordPageDto<RecordOriginalSegmentDto> = error("unused")
 
             override suspend fun speakers(

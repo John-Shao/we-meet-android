@@ -67,7 +67,7 @@ class RecordScreensTest {
         override suspend fun media(recordId: String): RecordMediaDto = error("Media not configured")
         override suspend fun transcriptExport(url: String) = error("Export not configured")
         override suspend fun correctOriginal(recordId: String, segmentId: String, body: com.we.meet.data.api.dto.RecordCorrectionRequest) = error("Correction not configured")
-        override suspend fun revertOriginal(recordId: String, segmentId: String) = error("Correction not configured")
+        override suspend fun revertOriginal(recordId: String, segmentId: String, expectedRevision: Int) = error("Correction not configured")
         override suspend fun rename(recordId: String, body: RecordTitleRequestDto): RecordDto {
             checkAccess()
             check(renameAllowed && !failRename && body.expectedTitle == recordTitle)
@@ -108,7 +108,7 @@ class RecordScreensTest {
             return RecordSnapshotDto(snapshotId, 3, listOf(RecordSnapshotSegmentDto(segmentId, 2, 1000, 3000, "Exact recorded evidence")))
         }
         override suspend fun transcripts(recordId: String, revision: Int, query: String?, cursor: String?): RecordPageDto<RecordOnlineTranscriptDto> = error("Wrong source endpoint")
-        override suspend fun originals(recordId: String, revision: Int, query: String?, speakerId: String?, cursor: String?): RecordPageDto<RecordOriginalSegmentDto> {
+        override suspend fun originals(recordId: String, revision: Int, query: String?, speakerId: String?, cursor: String?, atMs: Long?): RecordPageDto<RecordOriginalSegmentDto> {
             checkAccess()
             originalQueries += query to speakerId
             return RecordPageDto(listOf(RecordOriginalSegmentDto(segmentId, 1, snapshotId, versionId, "Speaker 1", 1000, 3000,

@@ -230,14 +230,14 @@ class RecordSummaryControlsTest {
     override suspend fun media(recordId: String): RecordMediaDto = error("Media not configured")
         override suspend fun transcriptExport(url: String) = error("Export not configured")
         override suspend fun correctOriginal(recordId: String, segmentId: String, body: com.we.meet.data.api.dto.RecordCorrectionRequest) = error("Correction not configured")
-        override suspend fun revertOriginal(recordId: String, segmentId: String) = error("Correction not configured")
+        override suspend fun revertOriginal(recordId: String, segmentId: String, expectedRevision: Int) = error("Correction not configured")
         override suspend fun record(recordId: String): RecordDto { check(!revoked); return record.copy(capabilities = RecordCapabilitiesDto(true, true, false)) }
         override suspend fun summaries(recordId: String, cursor: String?, versionId: String?) = RecordPageDto(listOf(RecordSummaryVersionDto(UUID.randomUUID().toString(), "quick", snapshot, 3, true,
             record.originAt, "open", asrStatus = "in_progress", content = RecordSummaryContentDto("Quick release decision", listOf(RecordSummaryPointDto("Check the recording", listOf(RecordReferenceDto(segment, 1, 1000, 2000)))), emptyList(), emptyList(), emptyList()))))
         override suspend fun snapshot(recordId: String, snapshotId: String): RecordSnapshotDto { readSnapshot = snapshotId; return RecordSnapshotDto(snapshot, 3, listOf(RecordSnapshotSegmentDto(segment, 1, 1000, 2000, "Exact quick draft evidence"))) }
         override suspend fun records(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?, isOngoing: Boolean?): RecordPageDto<RecordDto> = error("Unexpected list")
         override suspend fun transcripts(recordId: String, revision: Int, query: String?, cursor: String?): RecordPageDto<RecordOnlineTranscriptDto> = error("Unexpected transcripts")
-        override suspend fun originals(recordId: String, revision: Int, query: String?, speakerId: String?, cursor: String?): RecordPageDto<RecordOriginalSegmentDto> = error("Unexpected originals")
+        override suspend fun originals(recordId: String, revision: Int, query: String?, speakerId: String?, cursor: String?, atMs: Long?): RecordPageDto<RecordOriginalSegmentDto> = error("Unexpected originals")
         override suspend fun speakers(recordId: String, cursor: String?): RecordPageDto<RecordSpeakerDto> = error("Unexpected speakers")
         override suspend fun attributeSpeaker(recordId: String, speakerId: String, body: com.we.meet.data.api.dto.RecordAttributionRequest): RecordSpeakerDto = error("Unexpected attribution")
         override suspend fun attributionCandidates(recordId: String, query: String?): com.we.meet.data.api.dto.RecordAttributionCandidatePageDto = error("Unexpected candidates")
