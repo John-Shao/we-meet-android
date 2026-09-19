@@ -11,6 +11,7 @@ import android.media.MediaPlayer
 import android.media.PlaybackParams
 import android.os.Handler
 import android.os.Looper
+import android.view.Surface
 
 import androidx.core.content.ContextCompat
 
@@ -21,6 +22,10 @@ import androidx.core.content.ContextCompat
  * without opening a real stream, exactly as the capture player does.
  */
 interface WholeFilePlayback {
+    fun isPreparing(): Boolean = false
+    fun failure(): Throwable? = null
+    fun videoAspectRatio(): Float = 16f / 9f
+    fun setSurface(surface: Surface?) {}
     fun durationMs(): Long
     fun isPlaying(): Boolean
     fun positionMs(): Long
@@ -58,6 +63,24 @@ class UploadMediaEngine(
     private var closed = false
     private var focused = false
     private var registered = false
+    private var surface: Surface? = null
+    private var preparing = false
+    private var prepared = false
+    private var error: Throwable? = null
+    private var pendingMs = 0L
+    private var pendingRate = 1f
+    private var seeking = false
+    private var playWhenReady = false
+
+    @Synchronized override fun isPreparing() = preparing
+    @Synchronized override fun failure() = error
+    @Synchronized override fun videoAspectRatio(): Float =
+        player?.takeIf { prepared && it.videoWidth > 0 && it.videoHeight > 0 }
+            ?.let { it.videoWidth.toFloat() / it.videoHeight } ?: (16f / 9f)
+    @Synchronized override fun setSurface(surface: Surface?) {
+        this.surface = surface
+        if (!closed) player?.setSurface(surface)
+    }
     private val focus = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
         .setAudioAttributes(attributes)
         .setWillPauseWhenDucked(false)
@@ -95,38 +118,52 @@ class UploadMediaEngine(
     override fun isPlaying(): Boolean = runCatching { requireNotNull(player).isPlaying }.getOrDefault(false)
 
     @Synchronized
-    override fun positionMs(): Long = runCatching { requireNotNull(player).currentPosition.toLong() }
-        .getOrDefault(0L)
+    override fun positionMs(): Long = runCatching { if (prepared && !seeking) requireNotNull(player).currentPosition.toLong() else pendingMs }
+        .getOrDefault(pendingMs)
         .coerceAtLeast(0L)
 
     /** Start or resume from [fromMs]; safe to call when already playing. */
     @Synchronized
     override fun play(fromMs: Long, rate: Float) {
-        if (closed) return
-        val current = player ?: prepare()
-        runCatching {
-            current.playbackParams = PlaybackParams().setSpeed(rate).setPitch(1f)
-            current.seekTo(fromMs.coerceAtLeast(0L).toInt())
-            current.start()
-        }.onFailure { close() }
+        check(!closed) { "player is closed" }
+        pendingMs = fromMs.coerceAtLeast(0L)
+        pendingRate = rate
+        playWhenReady = true
+        if (prepared) startPrepared() else if (!preparing) prepare()
+    }
+
+    private fun startPrepared() {
+        val current = checkNotNull(player)
+        current.playbackParams = PlaybackParams().setSpeed(pendingRate).setPitch(1f)
+        seeking = true
+        current.seekTo(pendingMs, MediaPlayer.SEEK_CLOSEST)
+        current.start()
     }
 
     @Synchronized
     override fun pause() {
         if (closed) return
-        runCatching { player?.pause() }
+        playWhenReady = false
+        if (prepared) runCatching { player?.pause() }
     }
 
     @Synchronized
     override fun seekTo(milliseconds: Long) {
         if (closed) return
-        runCatching { player?.seekTo(milliseconds.coerceAtLeast(0L).toInt()) }
+        pendingMs = milliseconds.coerceAtLeast(0L)
+        if (prepared) {
+            seeking = true
+            player?.seekTo(pendingMs, MediaPlayer.SEEK_CLOSEST)
+        }
     }
 
     @Synchronized
     override fun close() {
         if (closed) return
         closed = true
+        preparing = false
+        prepared = false
+        playWhenReady = false
         player?.let { value ->
             runCatching { if (value.isPlaying) value.pause() }
             runCatching { value.reset() }
@@ -145,7 +182,7 @@ class UploadMediaEngine(
 
     /** Preparing opens the network; a failure here surfaces as an error state. */
     @Synchronized
-    private fun prepare(): MediaPlayer {
+    private fun prepare() {
         if (!registered) {
             ContextCompat.registerReceiver(
                 context,
@@ -164,11 +201,27 @@ class UploadMediaEngine(
         }
         val value = MediaPlayer().apply {
             setAudioAttributes(attributes)
-            setDataSource(url)
         }
         player = value
-        value.prepare()
-        check(!closed)
-        return value
+        value.setSurface(surface)
+        value.setOnSeekCompleteListener { seeking = false }
+        value.setOnErrorListener { _, what, extra ->
+            error = IllegalStateException("media playback failed: $what/$extra")
+            close()
+            true
+        }
+        value.setOnPreparedListener {
+            if (!closed) {
+                preparing = false
+                prepared = true
+                if (playWhenReady) runCatching { startPrepared() }.onFailure {
+                    error = it
+                    close()
+                }
+            }
+        }
+        value.setDataSource(url)
+        preparing = true
+        value.prepareAsync()
     }
 }

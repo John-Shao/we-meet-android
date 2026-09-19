@@ -42,6 +42,8 @@ class UploadMediaPlayerTest {
         size = 4096,
         contentType = "audio/mp4",
     )
+    private val currentMedia = mutableStateOf(media)
+    private val openedUrls = CopyOnWriteArrayList<String>()
     private val reported = CopyOnWriteArrayList<Long>()
     private val seek = mutableStateOf<CaptureAudioSeek?>(null)
     private var engine: FakeEngine? = null
@@ -54,12 +56,13 @@ class UploadMediaPlayerTest {
             WeMeetTheme {
                 Surface {
                     UploadMediaPlayer(
-                        media = media,
+                        media = currentMedia.value,
                         positionMs = null,
                         seek = seek.value,
                         onSeekConsumed = { seek.value = null },
                         onPosition = { reported += it },
-                        createEngine = { _, onInterrupted ->
+                        createEngine = { url, onInterrupted ->
+                            openedUrls += url
                             FakeEngine(onInterrupted).also { engine = it }
                         },
                     )
@@ -124,8 +127,79 @@ class UploadMediaPlayerTest {
         compose.onNodeWithText(label(R.string.capture_playback_error)).assertIsDisplayed()
     }
 
+    @Test fun refreshedLeaseDoesNotRestartPlaybackAndNextSeekUsesLatestUrl() {
+        show()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
+        compose.runOnIdle { engine?.clock = 42_000L }
+        compose.waitUntil(8_000) { reported.contains(42_000L) }
+        val originalEngine = engine
+        compose.runOnIdle { currentMedia.value = media.copy(url = "https://private.example/renewed") }
+        compose.waitForIdle()
+        assertTrue(engine === originalEngine)
+        assertEquals(1, openedUrls.size)
+        assertEquals(true, engine?.playing)
+        compose.runOnIdle { seek.value = CaptureAudioSeek(60_000) }
+        compose.waitUntil(8_000) { engine?.lastPlayFrom == 60_000L }
+        assertEquals("https://private.example/renewed", openedUrls.last())
+        assertEquals(false, originalEngine?.playing)
+    }
+
+    @Test fun refreshedLeasePreservesAPausedPosition() {
+        show()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
+        compose.runOnIdle { engine?.clock = 42_000L }
+        compose.waitUntil(8_000) { reported.contains(42_000L) }
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_pause)).performClick()
+        compose.runOnIdle { currentMedia.value = media.copy(url = "https://private.example/renewed") }
+        compose.waitForIdle()
+        assertEquals(1, openedUrls.size)
+        assertEquals(false, engine?.playing)
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
+        compose.waitUntil(8_000) { openedUrls.size == 2 }
+        assertEquals(42_000L, engine?.lastPlayFrom)
+    }
+
+    @Test fun videoUsesARealSurfaceWithoutChangingThePlaybackContract() {
+        currentMedia.value = media.copy(mediaType = "video", contentType = "video/mp4")
+        show()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
+        compose.waitUntil(8_000) { engine?.outputSurface?.isValid == true }
+        assertTrue(engine?.playing == true)
+    }
+
+    @Test fun realEnginePreparesAsynchronouslyAndReportsItsClock() {
+        show()
+        val file = java.io.File.createTempFile("playback-", ".wav", context.cacheDir)
+        val pcmBytes = 16000 * 2 * 5
+        val buffer = java.nio.ByteBuffer.allocate(44 + pcmBytes).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        buffer.put("RIFF".toByteArray()); buffer.putInt(36 + pcmBytes); buffer.put("WAVEfmt ".toByteArray())
+        buffer.putInt(16); buffer.putShort(1); buffer.putShort(1); buffer.putInt(16000)
+        buffer.putInt(32000); buffer.putShort(2); buffer.putShort(16)
+        buffer.put("data".toByteArray()); buffer.putInt(pcmBytes)
+        file.writeBytes(buffer.array())
+        var real: com.we.meet.data.capture.UploadMediaEngine? = null
+        try {
+            compose.runOnIdle {
+                real = com.we.meet.data.capture.UploadMediaEngine(context, file.absolutePath) {}
+                real!!.play(1000, 1.5f)
+                assertTrue("prepare must return before the callback", real!!.isPreparing())
+            }
+            compose.waitUntil(8_000) { real?.isPlaying() == true || real?.failure() != null }
+            assertEquals(null, real?.failure())
+            assertTrue(real!!.durationMs() >= 5000)
+            compose.waitUntil(8_000) { real!!.positionMs() >= 1000 }
+            compose.runOnIdle { real!!.pause() }
+            assertEquals(false, real?.isPlaying())
+        } finally {
+            compose.runOnIdle { real?.close() }
+            file.delete()
+        }
+    }
+
     /** A whole-file engine with no stream behind it. */
     private class FakeEngine(private val onInterrupted: () -> Unit) : WholeFilePlayback {
+        @Volatile var outputSurface: android.view.Surface? = null
+        override fun setSurface(surface: android.view.Surface?) { outputSurface = surface }
         @Volatile var playing = false
         @Volatile var clock = 0L
         @Volatile var lastPlayFrom: Long? = null

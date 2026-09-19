@@ -1,5 +1,13 @@
 package com.we.meet.ui.records
 
+import android.view.Surface
+import android.view.SurfaceHolder
+import android.view.SurfaceView
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -73,17 +82,23 @@ internal fun UploadMediaPlayer(
      * real engine, built against this composable's own application context.
      */
     createEngine: ((url: String, onInterrupted: () -> Unit) -> WholeFilePlayback)? = null,
+    sourceId: String = media.name,
 ) {
     val context = LocalContext.current.applicationContext
     val latestPosition by rememberUpdatedState(onPosition)
     val latestConsume by rememberUpdatedState(onSeekConsumed)
-    var engine by remember(media.url) { mutableStateOf<WholeFilePlayback?>(null) }
-    var state by remember(media.url) { mutableStateOf("ready") }
-    var position by remember(media.url) { mutableLongStateOf(0L) }
-    var duration by remember(media.url) { mutableLongStateOf(0L) }
-    var rate by remember(media.url) { mutableFloatStateOf(1f) }
-    var ratesVisible by remember(media.url) { mutableStateOf(false) }
-    var tick by remember(media.url) { mutableIntStateOf(0) }
+    var engine by remember(sourceId) { mutableStateOf<WholeFilePlayback?>(null) }
+    var state by remember(sourceId) { mutableStateOf("ready") }
+    var position by remember(sourceId) { mutableLongStateOf(positionMs ?: 0L) }
+    var duration by remember(sourceId) { mutableLongStateOf(0L) }
+    var rate by remember(sourceId) { mutableFloatStateOf(1f) }
+    var ratesVisible by remember(sourceId) { mutableStateOf(false) }
+    var tick by remember(sourceId) { mutableIntStateOf(0) }
+
+    var openedUrl by remember(sourceId) { mutableStateOf<String?>(null) }
+    var surface by remember(sourceId) { mutableStateOf<Surface?>(null) }
+    var aspect by remember(sourceId) { mutableFloatStateOf(16f / 9f) }
+    val latestMedia by rememberUpdatedState(media)
 
     fun stop() {
         engine?.close()
@@ -91,22 +106,28 @@ internal fun UploadMediaPlayer(
         state = "ready"
     }
 
-    DisposableEffect(media.url) {
+    DisposableEffect(sourceId) {
         onDispose { engine?.close() }
     }
 
     // Prepared lazily: opening the screen must not fetch a GB-scale file.
     fun start(from: Long) {
-        if (state == "error") return
+        // A refreshed lease does not interrupt an existing stream. The next
+        // explicit play/seek uses the latest URL while preserving source time.
+        if (engine != null && openedUrl != latestMedia.url) stop()
         val current = engine ?: runCatching {
-            createEngine?.invoke(media.url) { stop() }
-                ?: UploadMediaEngine(context, media.url) { stop() }
+            openedUrl = latestMedia.url
+            createEngine?.invoke(latestMedia.url) { stop() }
+                ?: UploadMediaEngine(context, latestMedia.url) { stop() }
         }
             .onFailure { state = "error" }
             .getOrNull() ?: return
         engine = current
-        runCatching { current.play(from, rate) }
-            .onSuccess { state = "playing"; duration = current.durationMs() }
+        runCatching { current.setSurface(surface); current.play(from, rate) }
+            .onSuccess {
+                state = if (current.isPreparing()) "loading" else "playing"
+                duration = current.durationMs()
+            }
             .onFailure { stop(); state = "error" }
         tick++
     }
@@ -118,10 +139,18 @@ internal fun UploadMediaPlayer(
 
     // One poller for the whole playing lifetime rather than a loop per tick.
     LaunchedEffect(tick, state) {
-        while (state == "playing") {
+        while (state == "playing" || state == "loading") {
             val current = engine ?: break
+            if (current.failure() != null) {
+                if (openedUrl != latestMedia.url) start(position)
+                else { stop(); state = "error" }
+                break
+            }
+            if (current.isPreparing()) { delay(POSITION_POLL_MS); continue }
             report(current.positionMs())
-            if (duration == 0L) duration = current.durationMs()
+            duration = current.durationMs()
+            aspect = current.videoAspectRatio()
+            if (state == "loading") state = "playing"
             if (!current.isPlaying()) {
                 state = "ready"
                 break
@@ -130,7 +159,7 @@ internal fun UploadMediaPlayer(
         }
     }
 
-    LaunchedEffect(seek?.token, engine, state == "error") {
+    LaunchedEffect(seek?.token) {
         val request = seek ?: return@LaunchedEffect
         if (state == "error") {
             latestConsume()
@@ -142,16 +171,27 @@ internal fun UploadMediaPlayer(
         latestConsume()
     }
 
+    val videoMaxHeight = (LocalConfiguration.current.screenHeightDp * 0.3f).dp
     val positionLabel = stringResource(R.string.capture_playback_position)
     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.padding(Dimens.SpaceM), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+            if (media.mediaType == "video") key(sourceId) { AndroidView(
+                modifier = Modifier.fillMaxWidth().heightIn(max = videoMaxHeight).aspectRatio(aspect),
+                factory = { viewContext -> SurfaceView(viewContext).apply {
+                    holder.addCallback(object : SurfaceHolder.Callback {
+                        override fun surfaceCreated(holder: SurfaceHolder) { surface = holder.surface; engine?.setSurface(surface) }
+                        override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) { engine?.setSurface(holder.surface) }
+                        override fun surfaceDestroyed(holder: SurfaceHolder) { engine?.setSurface(null); surface = null }
+                    })
+                } },
+            ) }
             if (state == "error") {
                 WeMeetInlineErrorState(
-                    onRetry = { state = "ready" },
+                    onRetry = { stop(); start(position) },
                     message = stringResource(R.string.capture_playback_error),
                 )
             } else {
-                if (duration == 0L && state != "playing") WeMeetInlineLoading()
+                if (state == "loading") WeMeetInlineLoading()
                 Text("${sourceTime(position)} / ${sourceTime(duration)}", style = MaterialTheme.typography.labelMedium)
                 Slider(
                     position.coerceAtMost(maxOf(1L, duration - 1)).toFloat(),
@@ -159,6 +199,7 @@ internal fun UploadMediaPlayer(
                         stop()
                         report(value.toLong())
                     },
+                    enabled = duration > 0,
                     valueRange = 0f..maxOf(1f, (duration - 1).toFloat()),
                     modifier = Modifier.semantics { contentDescription = positionLabel },
                 )
@@ -169,11 +210,11 @@ internal fun UploadMediaPlayer(
                     }
                     FilledTonalIconButton(
                         modifier = Modifier.size(Dimens.ButtonHeight),
-                        onClick = { if (state == "playing") { engine?.pause(); state = "ready" } else start(position) },
+                        onClick = { if (state == "playing" || state == "loading") { engine?.pause(); state = "ready" } else start(position) },
                     ) {
                         Icon(
-                            if (state == "playing") Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
-                            stringResource(if (state == "playing") R.string.capture_playback_pause else R.string.capture_playback_play),
+                            if (state == "playing" || state == "loading") Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+                            stringResource(if (state == "playing" || state == "loading") R.string.capture_playback_pause else R.string.capture_playback_play),
                             Modifier.size(Dimens.IconXl),
                         )
                     }
@@ -191,7 +232,7 @@ internal fun UploadMediaPlayer(
             text = {
                 Column {
                     listOf(0.75f, 1f, 1.25f, 1.5f, 2f).forEach { speed ->
-                        TextButton(onClick = { rate = speed; ratesVisible = false }) {
+                        TextButton(onClick = { rate = speed; ratesVisible = false; if (state == "playing") start(position) }) {
                             Text(stringResource(R.string.capture_playback_rate, speed))
                         }
                     }

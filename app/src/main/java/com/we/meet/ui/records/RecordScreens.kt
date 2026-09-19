@@ -252,7 +252,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
             // The import's signed read is fetched lazily; until it arrives there is
             // no player, and a refused read leaves the transcript readable alone.
             if (canPlayImport) media?.getOrNull()?.let { read ->
-                UploadMediaPlayer(read, playbackPositionMs, audioSeek, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it })
+                UploadMediaPlayer(read, playbackPositionMs, audioSeek, sourceId = recordId, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it })
             }
             if (detail?.isSuccess == true && record?.capabilities?.readTranscript == true) citation?.let { (snapshot, reference) ->
                 val original = visibleRead(viewer, recordId, snapshot, reference, refresh) { repository.citation(viewer, recordId, snapshot, reference) }
@@ -264,7 +264,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             else -> LazyColumn { item { Text(original.getOrThrow().text) } }
                         }
                     }, dismissButton = {
-                        if (canPlay && original?.isSuccess == true) TextButton(onClick = { audioSeek = CaptureAudioSeek(reference.startMs); citation = null }) {
+                        if ((canPlay || canPlayImport) && original?.isSuccess == true) TextButton(onClick = { audioSeek = CaptureAudioSeek(reference.startMs); citation = null }) {
                             Text(stringResource(R.string.capture_playback_source, sourceTime(reference.startMs)))
                         }
                     }, confirmButton = { TextButton(onClick = { citation = null }) { Text(stringResource(R.string.records_close)) } })
