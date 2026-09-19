@@ -67,6 +67,20 @@ class RecordSharingTest {
         click(R.string.record_share_confirm); await(R.string.record_share_explicit_yes)
         assertEquals(SummaryShareRequestDto(listOf(api.person), "grant", api.hash), api.applies.single().second)
     }
+    @Test fun transcriptGrantRequiresChoosingScopeAndKeepsSummaryUnchanged() {
+        api.scopedSharing = true
+        show()
+        click(R.string.records_originals, true)
+        choose(); select(); click(R.string.record_share_review_selection)
+        await(R.string.record_share_transcript_after_yes)
+        assertEquals("transcript", api.previews.single().accessScope)
+        assertTrue(api.applies.isEmpty())
+        click(R.string.record_share_confirm)
+        await(R.string.record_share_accepted)
+        assertEquals("transcript", api.applies.single().second.accessScope)
+        assertTrue(api.transcriptShared)
+        assertFalse(api.shared)
+    }
     @Test fun candidatePaginationPreservesSelectionButChangingScopeClearsIt() {
         show(); choose(); select()
         click(R.string.records_next, true)
@@ -129,26 +143,36 @@ class RecordSharingTest {
         @Volatile var shared = false
         @Volatile var inherited = false
         @Volatile var broader = false
+        @Volatile var scopedSharing = false
+        @Volatile var transcriptShared = false
         val applies = CopyOnWriteArrayList<Pair<String, SummaryShareRequestDto>>()
         val previews = CopyOnWriteArrayList<SummaryShareSelectionDto>()
         val searches = CopyOnWriteArrayList<Triple<String, String, String?>>()
         private val receipts = mutableMapOf<String, SummaryShareReceiptDto>()
         override suspend fun access(record: String, cursor: String?): SummaryShareAccessPageDto = SummaryShareAccessPageDto(available && manager, manager,
-            if (manager && shared) listOf(SummaryShareAccessDto(person, "Person one", true, true, inherited)) else emptyList())
+            if (manager && (shared || transcriptShared)) listOf(SummaryShareAccessDto(person, "Person one", true, shared, inherited || transcriptShared)) else emptyList(),
+            supportedScopes = if (scopedSharing) listOf("summary", "transcript") else emptyList())
         override suspend fun candidates(record: String, scope: String, query: String, cursor: String?): RecordPageDto<SummarySharePersonDto> {
             searches += Triple(scope, query, cursor)
             return if (cursor == null) RecordPageDto(listOf(SummarySharePersonDto(person, "Person one")), "second") else RecordPageDto(listOf(SummarySharePersonDto(second, "Person two")), null)
         }
-        private fun result(record: String, body: SummaryShareSelectionDto) = SummarySharePreviewDto(record, "Fixture", null, body.operation, "all_record_summary_versions",
+        private fun result(record: String, body: SummaryShareSelectionDto): SummarySharePreviewDto {
+            val summary = SummarySharePreviewDto(record, "Fixture", null, body.operation, "all_record_summary_versions",
             body.userIds.map { SummaryShareRecipientDto(it, if (it == person) "Person one" else "Person two", true, shared, inherited, shared || inherited, inherited, inherited,
                 body.operation == "grant", body.operation == "grant" || inherited, grant.takeIf { shared }, "2026-09-13T00:00:00Z".takeIf { shared }) }, false, broader, false, false, hash)
+            return if (body.accessScope == "transcript") summary.copy(scope = "record_transcript", grantsOriginals = body.operation == "grant",
+                recipients = summary.recipients.map { it.copy(afterExplicitSummary = shared, afterEffectiveSummary = shared || inherited,
+                    explicitTranscript = transcriptShared, effectiveTranscript = transcriptShared || inherited,
+                    inheritedTranscript = inherited, afterExplicitTranscript = body.operation == "grant", afterEffectiveTranscript = body.operation == "grant" || inherited,
+                    grantId = grant.takeIf { shared || transcriptShared }, grantUpdatedAt = "2026-09-13T00:00:00Z".takeIf { shared || transcriptShared }) }) else summary
+        }
         override suspend fun preview(record: String, body: SummaryShareSelectionDto): SummarySharePreviewDto { previews += body; return result(record, body) }
         override suspend fun apply(record: String, key: String, body: SummaryShareRequestDto): SummaryShareReceiptDto {
             applies += key to body
             val existing = receipts.containsKey(key)
             val receipt = receipts.getOrPut(key) {
-                val preview = result(record, SummaryShareSelectionDto(body.userIds, body.operation))
-                shared = body.operation == "grant"
+                val preview = result(record, SummaryShareSelectionDto(body.userIds, body.operation, body.accessScope))
+                if (body.accessScope == "transcript") transcriptShared = body.operation == "grant" else shared = body.operation == "grant"
                 SummaryShareReceiptDto(UUID.randomUUID().toString(), false, preview)
             }
             if (status != 200) throw HttpException(Response.error<Any>(status, "{}".toResponseBody()))

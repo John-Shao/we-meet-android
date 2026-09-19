@@ -1,5 +1,5 @@
 <resources>
-    <string name="record_share_title">Minutes access</string>
+    <string name="record_share_title">Sharing permissions</string>
     <string name="record_share_read_error">Could not read sharing permissions or preview.</string>
     <string name="record_share_scope">Sharing covers all minutes versions in this record, including future versions. It does not grant access to originals, media or separate documents, and sends no messages.</string>
     <string name="record_share_unavailable">Sharing changes are unavailable.</string>

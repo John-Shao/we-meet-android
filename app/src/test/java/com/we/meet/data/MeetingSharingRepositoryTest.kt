@@ -52,6 +52,25 @@ class MeetingSharingRepositoryTest {
         assertEquals(preview, repo.preview("owner", record, selection).getOrThrow()); assertEquals(1, requests.size)
         assertEquals(preview, repo.apply("owner", record, key, input).getOrThrow().appliedPreview)
     }
+    @Test fun explicitTranscriptScopeRequiresMatchingPreviewAndDoesNotExpandSummaryOrMedia() = runBlocking {
+        val choice = selection.copy(accessScope = "transcript")
+        val transcript = preview.copy(scope = "record_transcript", grantsOriginals = true,
+            recipients = listOf(recipient.copy(afterExplicitSummary = false, afterEffectiveSummary = false,
+                inheritedTranscript = false, afterExplicitTranscript = true, afterEffectiveTranscript = true)))
+        assertTrue(repository { 200 to json(transcript) }.preview("owner", record, choice).isSuccess)
+        assertTrue(repository { 200 to json(transcript) }.preview("owner", record, selection).isFailure)
+        assertTrue(repository { 200 to json(transcript.copy(grantsMedia = true)) }.preview("owner", record, choice).isFailure)
+        assertTrue(repository { 200 to json(transcript.copy(recipients = listOf(transcript.recipients.single().copy(afterExplicitSummary = true)))) }.preview("owner", record, choice).isFailure)
+        val request = input.copy(accessScope = "transcript")
+        val saved = MeetingSharingRepository.requestAdapter.toJson(request)
+        assertEquals(request, MeetingSharingRepository.requestAdapter.fromJson(saved))
+        assertTrue(repository { 200 to json(SummaryShareReceiptDto(key, true, transcript)) }.apply("owner", record, key, request).isSuccess)
+    }
+    @Test fun legacySummaryRequestOmitsScopeForOlderServersAndPendingReceipts() {
+        val body = MeetingSharingRepository.requestAdapter.toJson(input)
+        assertFalse(body.contains("access_scope"))
+        assertNull(MeetingSharingRepository.requestAdapter.fromJson(body)!!.accessScope)
+    }
     @Test fun broaderScopesAndEffectsOrWrongRecipientsCannotBeConfirmed() = runBlocking {
         for (bad in listOf(preview.copy(recordId = key), preview.copy(scope = "latest"), preview.copy(grantsOriginals = true), preview.copy(grantsMedia = true),
             preview.copy(changesDocumentPermissions = true), preview.copy(sendsMessages = true), preview.copy(recipients = listOf(recipient.copy(id = key))))) {

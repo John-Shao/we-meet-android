@@ -8,16 +8,22 @@ data class SummaryShareAccessDto(val id: String, val name: String, val active: B
     override fun toString() = "SummaryShareAccessDto(<private>)"
 }
 data class SummaryShareAccessPageDto(val available: Boolean = false, @Json(name = "can_manage") val canManage: Boolean = false,
-    val results: List<SummaryShareAccessDto> = emptyList(), @Json(name = "next_cursor") val nextCursor: String? = null)
-data class SummaryShareSelectionDto(@Json(name = "user_ids") val userIds: List<String>, val operation: String)
+    val results: List<SummaryShareAccessDto> = emptyList(), @Json(name = "next_cursor") val nextCursor: String? = null,
+    @Json(name = "supported_scopes") val supportedScopes: List<String> = emptyList())
+data class SummaryShareSelectionDto(@Json(name = "user_ids") val userIds: List<String>, val operation: String,
+    @Json(name = "access_scope") val accessScope: String? = null)
 data class SummaryShareRequestDto(@Json(name = "user_ids") val userIds: List<String>, val operation: String,
-    @Json(name = "expected_hash") val expectedHash: String)
+    @Json(name = "expected_hash") val expectedHash: String,
+    @Json(name = "access_scope") val accessScope: String? = null)
 data class SummaryShareRecipientDto(val id: String, val name: String, val active: Boolean,
     @Json(name = "explicit_summary") val explicitSummary: Boolean, @Json(name = "explicit_transcript") val explicitTranscript: Boolean,
     @Json(name = "effective_summary") val effectiveSummary: Boolean, @Json(name = "effective_transcript") val effectiveTranscript: Boolean,
     @Json(name = "inherited_summary") val inheritedSummary: Boolean, @Json(name = "after_explicit_summary") val afterExplicitSummary: Boolean,
     @Json(name = "after_effective_summary") val afterEffectiveSummary: Boolean,
-    @Json(name = "grant_id") val grantId: String?, @Json(name = "grant_updated_at") val grantUpdatedAt: String?) {
+    @Json(name = "grant_id") val grantId: String?, @Json(name = "grant_updated_at") val grantUpdatedAt: String?,
+    @Json(name = "inherited_transcript") val inheritedTranscript: Boolean? = null,
+    @Json(name = "after_explicit_transcript") val afterExplicitTranscript: Boolean? = null,
+    @Json(name = "after_effective_transcript") val afterEffectiveTranscript: Boolean? = null) {
     override fun toString() = "SummaryShareRecipientDto(<private>)"
 }
 data class SummarySharePreviewDto(@Json(name = "record_id") val recordId: String, val title: String,

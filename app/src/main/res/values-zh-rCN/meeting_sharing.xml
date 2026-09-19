@@ -1,5 +1,5 @@
 <resources>
-    <string name="record_share_title">纪要访问权限</string>
+    <string name="record_share_title">分享权限</string>
     <string name="record_share_read_error">无法读取分享权限或预览</string>
     <string name="record_share_scope">分享范围为此记录的全部纪要版本，包含后续新版本。不授予原文、媒体或独立文档权限，不发送消息。</string>
     <string name="record_share_unavailable">分享权限修改暂不可用</string>

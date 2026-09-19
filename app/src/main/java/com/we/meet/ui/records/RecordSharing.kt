@@ -44,6 +44,8 @@ internal fun RecordSharing(viewer: String, record: RecordDto, repository: Meetin
     var action by remember(viewer, record.id) { mutableStateOf<Job?>(null) }
     var pages by remember(viewer, record.id) { mutableStateOf(listOf<String?>(null)) }
     var choose by remember(viewer, record.id) { mutableStateOf(false) }
+    var accessScope by remember(viewer, record.id) { mutableStateOf<String?>(null) }
+    val transcript = accessScope == "transcript"
     var selection by remember(viewer, record.id) { mutableStateOf<SummaryShareSelectionDto?>(null) }
     val access = visibleRead(viewer, record.id, pages.last(), refresh) { repository.access(viewer, record.id, pages.last()) }
     val state = access?.getOrNull()
@@ -68,7 +70,7 @@ internal fun RecordSharing(viewer: String, record: RecordDto, repository: Meetin
         val controller = coordinator ?: return
         if (busy || storageError || state?.canManage != true || currentViewer() != viewer || !lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
         val request = if (reconcile) runCatching { MeetingSharingRepository.requestAdapter.fromJson(requireNotNull(pending).body) }.getOrNull()
-        else preview?.getOrNull()?.takeIf { state.available }?.let { SummaryShareRequestDto(it.recipients.map { person -> person.id }, it.operation, it.previewHash) }
+        else preview?.getOrNull()?.takeIf { state.available }?.let { SummaryShareRequestDto(it.recipients.map { person -> person.id }, it.operation, it.previewHash, selection?.accessScope) }
         if (request == null) { error = true; return }
         busy = true; error = false; accepted = false
         action = scope.launch {
@@ -94,7 +96,12 @@ internal fun RecordSharing(viewer: String, record: RecordDto, repository: Meetin
                 access == null -> WeMeetInlineLoading()
                 access.isFailure -> WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.record_share_read_error))
                 state != null -> {
-                    Text(stringResource(R.string.record_share_scope), style = MaterialTheme.typography.bodySmall)
+                    if (pending == null && state.supportedScopes.contains("transcript")) Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                        FilterChip(selected = !transcript, enabled = enabled && selection == null, onClick = { accessScope = null }, label = { Text(stringResource(R.string.records_minutes)) })
+                        FilterChip(selected = transcript, enabled = enabled && selection == null, onClick = { accessScope = "transcript" }, label = { Text(stringResource(R.string.records_originals)) })
+                    }
+                    val pendingScope = pending?.let { runCatching { MeetingSharingRepository.requestAdapter.fromJson(it.body)?.accessScope }.getOrNull() }
+                    Text(stringResource(if (pendingScope == "transcript" || pending == null && transcript) R.string.record_share_transcript_scope else R.string.record_share_scope), style = MaterialTheme.typography.bodySmall)
                     if (!state.available) Text(stringResource(R.string.record_share_unavailable))
                     if (storageError) WeMeetInlineErrorState(onRetry = { storageRetry++ }, message = stringResource(R.string.summary_controls_storage_error))
                     if (pending != null) {
@@ -106,9 +113,9 @@ internal fun RecordSharing(viewer: String, record: RecordDto, repository: Meetin
                     state.results.forEach { person ->
                         HorizontalDivider()
                         Text(person.name.ifBlank { person.id })
-                        Text(stringResource(if (person.readSummary) R.string.record_share_explicit_yes else R.string.record_share_explicit_no), style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(if (transcript) { if (person.readTranscript) R.string.record_share_transcript_yes else R.string.record_share_transcript_no } else { if (person.readSummary) R.string.record_share_explicit_yes else R.string.record_share_explicit_no }), style = MaterialTheme.typography.bodySmall)
                         if (!person.active) Text(stringResource(R.string.record_share_inactive))
-                        if (state.available && person.readSummary && pending == null) TextButton(onClick = { selection = SummaryShareSelectionDto(listOf(person.id), "revoke"); error = false; accepted = false }, enabled = enabled) {
+                        if (state.available && (if (transcript) person.readTranscript else person.readSummary) && pending == null) TextButton(onClick = { selection = SummaryShareSelectionDto(listOf(person.id), "revoke", accessScope); error = false; accepted = false }, enabled = enabled) {
                             Text(stringResource(R.string.record_share_revoke))
                         }
                     }
@@ -133,12 +140,12 @@ internal fun RecordSharing(viewer: String, record: RecordDto, repository: Meetin
         }
     }
     if (choose && state?.available == true && state.canManage && coordinator != null && pending == null) ShareCandidates(viewer, record.id,
-        record.sourceType == "meeting", repository, onSelection = { selection = it; choose = false }, onClose = { choose = false })
+        record.sourceType == "meeting", repository, onSelection = { selection = it.copy(accessScope = accessScope); choose = false }, onClose = { choose = false })
     if (selection != null && state?.canManage == true && coordinator != null && pending == null) {
         val value = preview?.getOrNull()
         AlertDialog(onDismissRequest = { if (!busy) selection = null }, title = { Text(stringResource(R.string.record_share_preview)) }, text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                Text(stringResource(R.string.record_share_scope))
+                Text(stringResource(if (selection?.accessScope == "transcript") R.string.record_share_transcript_scope else R.string.record_share_scope))
                 when {
                     preview == null -> WeMeetInlineLoading()
                     preview.isFailure -> WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.record_share_read_error))
@@ -146,9 +153,14 @@ internal fun RecordSharing(viewer: String, record: RecordDto, repository: Meetin
                         Text(value.title, style = MaterialTheme.typography.titleSmall)
                         value.recipients.forEach { person ->
                             Text(person.name.ifBlank { person.id }, style = MaterialTheme.typography.labelLarge)
-                            Text(stringResource(if (person.afterEffectiveSummary) R.string.record_share_after_yes else R.string.record_share_after_no))
-                            if (value.operation == "revoke" && person.inheritedSummary) Text(stringResource(R.string.record_share_inherited))
-                            if (person.effectiveTranscript) Text(stringResource(R.string.record_share_original_unchanged))
+                            if (selection?.accessScope == "transcript") {
+                                Text(stringResource(if (person.afterEffectiveTranscript == true) R.string.record_share_transcript_after_yes else R.string.record_share_transcript_after_no))
+                                if (value.operation == "revoke" && person.inheritedTranscript == true) Text(stringResource(R.string.record_share_transcript_inherited))
+                            } else {
+                                Text(stringResource(if (person.afterEffectiveSummary) R.string.record_share_after_yes else R.string.record_share_after_no))
+                                if (value.operation == "revoke" && person.inheritedSummary) Text(stringResource(R.string.record_share_inherited))
+                                if (person.effectiveTranscript) Text(stringResource(R.string.record_share_original_unchanged))
+                            }
                         }
                         if (error) Text(stringResource(R.string.record_share_error), color = MaterialTheme.colorScheme.error)
                     }

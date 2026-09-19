@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="record_share_transcript_scope">Access to current and future transcripts and historical source references. Summary, media and document permissions stay unchanged. No messages are sent.</string>
+    <string name="record_share_transcript_yes">Explicit transcript access</string>
+    <string name="record_share_transcript_no">No explicit transcript access</string>
+    <string name="record_share_transcript_after_yes">Will be able to read the transcript.</string>
+    <string name="record_share_transcript_after_no">Will lose transcript access.</string>
+    <string name="record_share_transcript_inherited">Transcript access inherited from the meeting or ownership remains.</string>
     <string name="records_activity_basis">Estimated from valid transcribed intervals, not recording length. Overlaps by the same speaker are merged; simultaneous speakers count separately. Unassigned speech is included in the denominator.</string>
     <string name="records_activity_unavailable">Speaker timing is unavailable.</string>
     <string name="records_activity_value">%1$s · %2$.1f%% of recognized speaker time</string>

@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="record_share_transcript_scope">授权范围：当前及以后产生的文字记录与历史原文引用。纪要、媒体和独立文档权限保持原状，不会发送消息。</string>
+    <string name="record_share_transcript_yes">已明确授权文字记录</string>
+    <string name="record_share_transcript_no">未明确授权文字记录</string>
+    <string name="record_share_transcript_after_yes">操作后可阅读文字记录。</string>
+    <string name="record_share_transcript_after_no">操作后将失去文字记录权限。</string>
+    <string name="record_share_transcript_inherited">来自会议角色或所有者身份的文字记录权限仍然有效。</string>
     <string name="records_activity_basis">按有效转写片段估算，不代表录音总时长。同一发言人的重叠片段合并，多人同时发言分别计时；分母包含未归属发言。</string>
     <string name="records_activity_unavailable">暂无可用的发言时长统计。</string>
     <string name="records_activity_value">%1$s · 占已识别发言时长 %2$.1f%%</string>
