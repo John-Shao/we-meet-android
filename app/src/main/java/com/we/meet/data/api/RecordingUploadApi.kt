@@ -140,13 +140,15 @@ data class RecordingUploadHeldPart(
 
 /** The plan, or the state of a resumed upload. */
 data class RecordingUploadPlan(
-    @Json(name = "session_id") val sessionId: String,
-    val size: Long,
-    @Json(name = "part_size") val partSize: Long,
-    @Json(name = "part_count") val partCount: Int,
+    @Json(name = "session_id") val sessionId: String = "",
+    val size: Long = 0,
+    @Json(name = "part_size") val partSize: Long = 0,
+    @Json(name = "part_count") val partCount: Int = 0,
     val uploaded: List<RecordingUploadHeldPart> = emptyList(),
     @Json(name = "uploaded_bytes") val uploadedBytes: Long = 0,
     val parts: List<RecordingUploadPartPlan> = emptyList(),
+    @Json(name = "completion_pending") val completionPending: Boolean = false,
+    val job: RecordingUploadState? = null,
 )
 
 data class RecordingUploadSign(val parts: List<Int>)

@@ -233,8 +233,16 @@ class RecordingUploadRepository(
             ?: api.multipartBegin(
                 RecordingUploadBegin(key, name, size, contentType, context, hotwords)
             )
+        plan.job?.let { return@scoped it.also(::validate) }
         val sessionId = plan.sessionId
         requirePlan(plan, size)
+        if (plan.completionPending) {
+            if (cancelled()) throw RecordingUploadCancelled()
+            return@scoped api.multipartComplete(sessionId, RecordingUploadFinish(emptyList())).also {
+                validate(it)
+                onProgress(size, size)
+            }
+        }
 
         val held = plan.uploaded.associateBy { it.partNumber }.toMutableMap()
         var carried = plan.uploadedBytes

@@ -40,6 +40,8 @@ class RecordingUploadChunkedTest {
     /** Which parts storage refuses, to model a transfer that broke. */
     private var refuseParts: Set<Int> = emptySet()
     private var resumeShouldFail = false
+    private var assembled = false
+    private var completedJob: RecordingUploadState? = null
 
     private val api = object : RecordingUploadApi {
         override suspend fun capabilities() = config
@@ -87,6 +89,8 @@ class RecordingUploadChunkedTest {
         partCount = 3,
         uploaded = held.values.toList(),
         uploadedBytes = held.values.sumOf { it.size },
+        completionPending = assembled,
+        job = completedJob,
     )
 
     private var partPuts = mutableListOf<Long>()
@@ -125,6 +129,28 @@ class RecordingUploadChunkedTest {
         onProgress = onProgress,
         cancelled = cancelled,
     )
+
+    @Test fun resumesAnAssembledObjectWithoutOpeningTheFileOrSigningParts() = runBlocking {
+        assembled = true
+        val result = repository.uploadChunked(request(resumeFrom = session).copy(openAt = { _, _ -> error("No file read expected") }))
+        assertTrue(result.isSuccess)
+        assertTrue(partPuts.isEmpty())
+        assertTrue(signedBatches.isEmpty())
+        assertEquals(emptyList<RecordingUploadPartTag>(), completed)
+    }
+
+    @Test fun decodesTheCompletedIntentResponseWithoutRequiringAPlan() {
+        val moshi = com.squareup.moshi.Moshi.Builder().add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory()).build()
+        val result = moshi.adapter(RecordingUploadPlan::class.java).fromJson("""{"job":{"record_id":"$id","status":"queued","attempt":1}}""")!!
+        assertEquals(queued, result.job)
+    }
+
+    @Test fun acceptsACompletedIntentWithoutTransferringAgain() = runBlocking {
+        completedJob = queued
+        assertEquals(queued, repository.uploadChunked(request()).getOrThrow())
+        assertTrue(partPuts.isEmpty())
+        assertNull(completed)
+    }
 
     @Test fun uploadsEveryPartAndAdoptsInOrder() = runBlocking {
         val result = repository.uploadChunked(request())
