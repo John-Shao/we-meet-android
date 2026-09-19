@@ -163,6 +163,17 @@ class RecordScreensTest {
         assertEquals(1, fixture.snapshotReads)
     }
 
+    @Test fun speakerActivityExplainsPartialRecognizedTime() {
+        compose.setContent { WeMeetTheme { SpeakerActivity(RecordSpeakerActivityDto("recognized_speaker_time", "partial", 65000, 42.5)) } }
+        compose.onNodeWithText(context.getString(R.string.records_activity_value, "1:05", 42.5)).assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.records_activity_partial)).assertIsDisplayed()
+    }
+
+    @Test fun speakerActivityDoesNotInventMissingStatistics() {
+        compose.setContent { WeMeetTheme { SpeakerActivity(null) } }
+        compose.onNodeWithText(label(R.string.records_activity_unavailable)).assertIsDisplayed()
+    }
+
     @Test fun correctionDraftSurvivesARecordRevisionReload() {
         val fixture = Fixture().apply { canCorrect = true }
         val repository = MeetingRecordRepository(fixture) { "reader" }

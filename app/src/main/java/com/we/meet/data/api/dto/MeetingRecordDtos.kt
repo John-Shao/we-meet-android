@@ -161,6 +161,13 @@ data class RecordCorrectionRequest(
     @Json(name = "expected_revision") val expectedRevision: Int,
 )
 
+data class RecordSpeakerActivityDto(
+    val basis: String,
+    val status: String,
+    @Json(name = "duration_ms") val durationMs: Long? = null,
+    @Json(name = "share_percent") val sharePercent: Double? = null,
+)
+
 data class RecordSpeakerDto(
     val id: String,
     val label: String,
@@ -174,6 +181,7 @@ data class RecordSpeakerDto(
      * control is absent rather than disabled when this is false.
      */
     @Json(name = "can_attribute") val canAttribute: Boolean = false,
+    val activity: RecordSpeakerActivityDto? = null,
 )
 
 /** One person a reader may bind a speaker track to. */

@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.we.meet.R
 import com.we.meet.data.api.dto.RecordDto
+import com.we.meet.data.api.dto.RecordSpeakerActivityDto
 import com.we.meet.data.repository.CaptureRepository
 import com.we.meet.data.repository.MeetingRecordRepository
 import com.we.meet.ui.components.*
@@ -81,6 +82,7 @@ internal fun RecordSpeakers(repository: MeetingRecordRepository, viewer: String,
         Text(stringResource(R.string.records_speakers_hint),
             Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.records_activity_basis), Modifier.padding(horizontal = Dimens.ScreenPadding), style = MaterialTheme.typography.bodySmall)
         when {
             result == null -> WeMeetInlineLoading()
             result.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_source_unavailable))
@@ -97,6 +99,7 @@ internal fun RecordSpeakers(repository: MeetingRecordRepository, viewer: String,
                         speaker = speaker,
                         onAttributed = { refresh++ },
                     )
+                    SpeakerActivity(speaker.activity)
                 }
                 item { Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                     if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
@@ -104,5 +107,20 @@ internal fun RecordSpeakers(repository: MeetingRecordRepository, viewer: String,
                 } }
             }
         }
+    }
+}
+
+@Composable
+internal fun SpeakerActivity(activity: RecordSpeakerActivityDto?) {
+    val duration = activity?.durationMs
+    val share = activity?.sharePercent
+    if (activity?.basis != "recognized_speaker_time" || activity.status !in listOf("available", "partial") || duration == null || duration < 0 || share == null || !share.isFinite() || share !in 0.0..100.0) {
+        Text(stringResource(R.string.records_activity_unavailable), style = MaterialTheme.typography.bodySmall)
+        return
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+        Text(stringResource(R.string.records_activity_value, sourceTime(duration), share), style = MaterialTheme.typography.bodySmall)
+        LinearProgressIndicator(progress = { (share / 100).toFloat() }, modifier = Modifier.fillMaxWidth())
+        if (activity.status == "partial") Text(stringResource(R.string.records_activity_partial), style = MaterialTheme.typography.bodySmall)
     }
 }

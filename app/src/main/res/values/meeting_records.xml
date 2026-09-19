@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="records_activity_basis">Estimated from valid transcribed intervals, not recording length. Overlaps by the same speaker are merged; simultaneous speakers count separately. Unassigned speech is included in the denominator.</string>
+    <string name="records_activity_unavailable">Speaker timing is unavailable.</string>
+    <string name="records_activity_value">%1$s · %2$.1f%% of recognized speaker time</string>
+    <string name="records_activity_partial">Some intervals have no usable end time and are excluded.</string>
     <string name="records_chapters_empty">This summary version has no chapters. You can read the overview or, if permitted, the transcript.</string>
     <string name="records_chapters_no_version">Chapters will appear here once a summary is available.</string>
     <string name="records_chapters_ai_version">Chapters from this AI summary version. Source links open its original transcript snapshot.</string>
