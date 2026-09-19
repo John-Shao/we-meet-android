@@ -25,8 +25,10 @@ import com.we.meet.ui.home.MeetingListSectionTitle
 import com.we.meet.ui.theme.Dimens
 
 /**
- * 历史录音最多显示的条数。两处裁剪（入站映射与渲染）必须同源；Web 端
- * `RecordingOverview` 的 `HISTORY_LIMIT` 是同一个数。
+ * 本页展示最近 20 条，**会议实录才是录音/上传记录的权威列表**（全部记录走
+ * [onMore]）。这里的长列表曾与实录页重复展示同一批记录，因此标题用「最近录音」
+ * 而不是「历史录音」——不承诺全量。两处裁剪（入站映射与渲染）必须同源；
+ * Web 端 `RecordingOverview` 的 `HISTORY_LIMIT` 是同一个数。
  */
 private const val RECORDING_HISTORY_LIMIT = 20
 

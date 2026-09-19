@@ -1,5 +1,5 @@
 <resources>
-    <string name="recording_history">历史录音</string>
+    <string name="recording_history">最近录音</string>
     <string name="recording_history_empty">暂无录音，可开始录音或导入音视频</string>
     <string name="record_import_audio">导入音频</string>
     <string name="record_import_video">导入视频</string>

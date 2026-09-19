@@ -209,9 +209,6 @@
     <string name="meeting_detail_info_ongoing">Ongoing</string>
     <string name="meeting_detail_info_empty">—</string>
     <string name="meeting_detail_info_timeline">Your timeline</string>
-    <string name="meeting_detail_summary_empty">No summary has been generated yet.</string>
-    <string name="meeting_detail_summary_regenerate">Regenerate</string>
-    <string name="meeting_detail_summary_regenerating">Regenerating…</string>
     <string name="meeting_detail_action_items_empty">No action items.</string>
     <string name="meeting_detail_action_items_owner">Owner</string>
     <string name="meeting_detail_action_items_due">Due</string>
@@ -799,7 +796,6 @@
     <!-- 纪要闭环 M3 智能章节 -->
     <string name="meeting_detail_tab_chapters">Chapters</string>
     <string name="meeting_detail_chapters_empty">No chapters yet — generated with the summary.</string>
-    <string name="meeting_detail_summary_edited">Edited</string>
     <string name="docs_viewer_title">Document</string>
     <string name="docs_editor_title">Edit</string>
     <string name="docs_editor_title_hint">Document title</string>

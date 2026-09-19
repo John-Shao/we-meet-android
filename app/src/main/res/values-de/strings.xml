@@ -200,9 +200,6 @@
     <string name="meeting_detail_info_ongoing">Läuft</string>
     <string name="meeting_detail_info_empty">—</string>
     <string name="meeting_detail_info_timeline">Dein Verlauf</string>
-    <string name="meeting_detail_summary_empty">Es wurde noch keine Zusammenfassung erstellt.</string>
-    <string name="meeting_detail_summary_regenerate">Neu generieren</string>
-    <string name="meeting_detail_summary_regenerating">Wird generiert…</string>
     <string name="meeting_detail_action_items_empty">Keine Aufgaben.</string>
     <string name="meeting_detail_action_items_owner">Verantwortlich</string>
     <string name="meeting_detail_action_items_due">Fällig</string>
@@ -730,7 +727,6 @@
     <!-- 纪要闭环 M3 智能章节 -->
     <string name="meeting_detail_tab_chapters">Kapitel</string>
     <string name="meeting_detail_chapters_empty">Noch keine Kapitel — sie entstehen mit der Zusammenfassung.</string>
-    <string name="meeting_detail_summary_edited">Bearbeitet</string>
     <string name="docs_viewer_title">Dokument</string>
     <string name="docs_editor_title">Bearbeiten</string>
     <string name="docs_editor_title_hint">Dokumenttitel</string>

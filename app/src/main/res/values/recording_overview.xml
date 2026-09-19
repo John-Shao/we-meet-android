@@ -1,5 +1,5 @@
 <resources>
-    <string name="recording_history">Recording history</string>
+    <string name="recording_history">Recent recordings</string>
     <string name="recording_history_empty">No recordings yet. Record or import audio and video.</string>
     <string name="record_import_audio">Imported audio</string>
     <string name="record_import_video">Imported video</string>

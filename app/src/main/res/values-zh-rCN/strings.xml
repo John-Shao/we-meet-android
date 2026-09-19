@@ -208,9 +208,6 @@
     <string name="meeting_detail_info_ongoing">进行中</string>
     <string name="meeting_detail_info_empty">—</string>
     <string name="meeting_detail_info_timeline">您的参与记录</string>
-    <string name="meeting_detail_summary_empty">尚未生成会议纪要。</string>
-    <string name="meeting_detail_summary_regenerate">重新生成</string>
-    <string name="meeting_detail_summary_regenerating">生成中…</string>
     <string name="meeting_detail_action_items_empty">暂无行动项。</string>
     <string name="meeting_detail_action_items_owner">负责人</string>
     <string name="meeting_detail_action_items_due">截止时间</string>
@@ -787,7 +784,6 @@
     <!-- 纪要闭环 M3 智能章节 -->
     <string name="meeting_detail_tab_chapters">智能章节</string>
     <string name="meeting_detail_chapters_empty">暂无章节——章节随纪要一起生成。</string>
-    <string name="meeting_detail_summary_edited">已编辑</string>
     <string name="docs_viewer_title">文档</string>
     <string name="docs_editor_title">编辑</string>
     <string name="docs_editor_title_hint">文档标题</string>

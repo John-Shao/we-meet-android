@@ -201,9 +201,6 @@
     <string name="meeting_detail_info_ongoing">En cours</string>
     <string name="meeting_detail_info_empty">—</string>
     <string name="meeting_detail_info_timeline">Votre historique</string>
-    <string name="meeting_detail_summary_empty">Aucun résumé n\'a encore été généré.</string>
-    <string name="meeting_detail_summary_regenerate">Régénérer</string>
-    <string name="meeting_detail_summary_regenerating">Régénération…</string>
     <string name="meeting_detail_action_items_empty">Aucune action.</string>
     <string name="meeting_detail_action_items_owner">Responsable</string>
     <string name="meeting_detail_action_items_due">Échéance</string>
@@ -740,7 +737,6 @@
     <!-- 纪要闭环 M3 智能章节 -->
     <string name="meeting_detail_tab_chapters">Chapitres</string>
     <string name="meeting_detail_chapters_empty">Pas encore de chapitres — générés avec le compte rendu.</string>
-    <string name="meeting_detail_summary_edited">Modifié</string>
     <string name="docs_viewer_title">Document</string>
     <string name="docs_editor_title">Modifier</string>
     <string name="docs_editor_title_hint">Titre du document</string>
