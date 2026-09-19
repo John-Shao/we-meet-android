@@ -165,14 +165,15 @@ class MeetingRecordRepository(
      * The record is re-read first, so a reader who lost access between opening the
      * screen and pressing play gets nothing signed.
      */
-    suspend fun media(viewer: String, recordId: String, revision: Int): Result<RecordMediaDto> = scoped(viewer) {
+    suspend fun media(viewer: String, recordId: String, revision: Int, download: Boolean = false): Result<RecordMediaDto> = scoped(viewer) {
         requireUuid(recordId)
         require(revision > 0)
         val record = originalRecord(recordId, revision)
-        require(record.sourceType == "upload" && record.capabilities.playMedia)
-        val media = api.media(recordId)
+        require(record.sourceType == "upload" && (if (download) record.capabilities.downloadMedia else record.capabilities.playMedia))
+        val media = api.media(recordId, true.takeIf { download })
         require(media.url.startsWith("https://") && media.expiresIn > 0 && media.size >= 0)
-        require(originalRecord(recordId, revision).capabilities.playMedia)
+        val current = originalRecord(recordId, revision).capabilities
+        require(if (download) current.downloadMedia else current.playMedia)
         media
     }
 

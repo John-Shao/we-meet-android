@@ -52,6 +52,7 @@ class RecordScreensTest {
         var renameAllowed = false
         var failRename = false
         var recordTitle = "Private planning meeting"
+        var sourceType = "audio_recording"
         val renames = mutableListOf<RecordTitleRequestDto>()
         var revoked = false
         var originals = true
@@ -73,7 +74,7 @@ class RecordScreensTest {
         var sourceFilter: String? = null
         val summaryFilters = mutableListOf<Boolean?>()
         private fun checkAccess() { check(!revoked) { "Fixture access revoked" } }
-        override suspend fun media(recordId: String): RecordMediaDto = error("Media not configured")
+        override suspend fun media(recordId: String, download: Boolean?): RecordMediaDto = error("Media not configured")
         override suspend fun transcriptExport(url: String) = error("Export not configured")
         override suspend fun correctOriginal(recordId: String, segmentId: String, body: RecordCorrectionRequest): RecordCorrectionDto {
             checkAccess()
@@ -92,7 +93,7 @@ class RecordScreensTest {
         }
         override suspend fun record(recordId: String): RecordDto {
             checkAccess()
-            return RecordDto(recordId, "audio_recording", recordTitle, "2026-09-13T00:00:00Z", revision,
+            return RecordDto(recordId, sourceType, recordTitle, "2026-09-13T00:00:00Z", revision,
                 RecordCapabilitiesDto(readSummary = true, readTranscript = originals, rename = renameAllowed), isOngoing = !renameAllowed)
         }
         override suspend fun records(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?, isOngoing: Boolean?): RecordPageDto<RecordDto> {
@@ -250,6 +251,18 @@ class RecordScreensTest {
         compose.onNodeWithText(label(R.string.record_rename_save)).performClick()
         awaitText("Design review")
         assertEquals("Design review", fixture.recordTitle)
+        assertEquals("Private planning meeting", fixture.renames.single().expectedTitle)
+    }
+
+    @Test fun uploadedRecordUsesTheGuardedRenameAction() {
+        val fixture = Fixture().apply { renameAllowed = true; sourceType = "upload" }
+        val repository = MeetingRecordRepository(fixture) { "owner" }
+        compose.setContent { WeMeetTheme { RecordDetailScreen(repository, "owner", recordId, {}) } }
+        awaitText(label(R.string.record_rename))
+        compose.onNodeWithText(label(R.string.record_rename)).performClick()
+        compose.onNodeWithText(label(R.string.record_name)).performTextReplacement("Uploaded interview")
+        compose.onNodeWithText(label(R.string.record_rename_save)).performClick()
+        awaitText("Uploaded interview")
         assertEquals("Private planning meeting", fixture.renames.single().expectedTitle)
     }
 

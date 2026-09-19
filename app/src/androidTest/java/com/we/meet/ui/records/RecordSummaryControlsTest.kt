@@ -227,7 +227,7 @@ class RecordSummaryControlsTest {
         val segment = UUID.randomUUID().toString()
         var readSnapshot: String? = null
         override suspend fun rename(recordId: String, body: RecordTitleRequestDto): RecordDto = error("Rename not configured")
-    override suspend fun media(recordId: String): RecordMediaDto = error("Media not configured")
+    override suspend fun media(recordId: String, download: Boolean?): RecordMediaDto = error("Media not configured")
         override suspend fun transcriptExport(url: String) = error("Export not configured")
         override suspend fun correctOriginal(recordId: String, segmentId: String, body: com.we.meet.data.api.dto.RecordCorrectionRequest) = error("Correction not configured")
         override suspend fun revertOriginal(recordId: String, segmentId: String, expectedRevision: Int) = error("Correction not configured")

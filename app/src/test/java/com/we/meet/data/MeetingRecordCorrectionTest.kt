@@ -58,7 +58,7 @@ class MeetingRecordCorrectionTest {
             override suspend fun rename(record: String, body: RecordTitleRequestDto) =
                 error("unused")
 
-            override suspend fun media(record: String): RecordMediaDto = error("unused")
+            override suspend fun media(record: String, download: Boolean?): RecordMediaDto = error("unused")
 
             override suspend fun transcriptExport(url: String): ResponseBody = error("unused")
 

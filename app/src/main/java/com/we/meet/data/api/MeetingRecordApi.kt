@@ -47,7 +47,7 @@ interface MeetingRecordApi {
 
     /** Sign a whole-file read for an imported recording. */
     @GET("api/v1.0/meeting-records/{record}/media/")
-    suspend fun media(@Path("record") recordId: String): RecordMediaDto
+    suspend fun media(@Path("record") recordId: String, @Query("download") download: Boolean? = null): RecordMediaDto
 
     /**
      * Download the transcript as a file.

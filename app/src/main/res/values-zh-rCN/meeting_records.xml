@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="record_media_download">下载原文件</string>
+    <string name="record_media_download_preparing">正在准备下载…</string>
+    <string name="record_media_download_failed">未能开始下载，请重试。</string>
+    <string name="record_media_download_handoff">已交给浏览器下载，可在浏览器下载列表查看进度。</string>
     <string name="record_share_transcript_scope">授权范围：当前及以后产生的文字记录与历史原文引用。纪要、媒体和独立文档权限保持原状，不会发送消息。</string>
     <string name="record_share_transcript_yes">已明确授权文字记录</string>
     <string name="record_share_transcript_no">未明确授权文字记录</string>

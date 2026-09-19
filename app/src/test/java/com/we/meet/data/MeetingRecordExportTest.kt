@@ -39,7 +39,7 @@ class MeetingRecordExportTest {
                 body: com.we.meet.data.api.dto.RecordTitleRequestDto,
             ): RecordDto = error("unused")
 
-            override suspend fun media(record: String): RecordMediaDto = error("unused")
+            override suspend fun media(record: String, download: Boolean?): RecordMediaDto = error("unused")
 
             override suspend fun transcriptExport(url: String) = run {
                 requested = url

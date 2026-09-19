@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="record_media_download">Download original file</string>
+    <string name="record_media_download_preparing">Preparing download…</string>
+    <string name="record_media_download_failed">Unable to start the download. Try again.</string>
+    <string name="record_media_download_handoff">Download handed to your browser. Check its downloads for progress.</string>
     <string name="record_share_transcript_scope">Access to current and future transcripts and historical source references. Summary, media and document permissions stay unchanged. No messages are sent.</string>
     <string name="record_share_transcript_yes">Explicit transcript access</string>
     <string name="record_share_transcript_no">No explicit transcript access</string>

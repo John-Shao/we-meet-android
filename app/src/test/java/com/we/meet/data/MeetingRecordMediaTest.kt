@@ -24,7 +24,7 @@ import org.junit.Test
 class MeetingRecordMediaTest {
     private val recordId = "11111111-1111-4111-8111-111111111111"
 
-    private fun record(source: String, revision: Int = 3, readTranscript: Boolean = true, playMedia: Boolean = true) =
+    private fun record(source: String, revision: Int = 3, readTranscript: Boolean = true, playMedia: Boolean = true, downloadMedia: Boolean = false) =
         RecordDto(
             id = recordId,
             sourceType = source,
@@ -34,6 +34,7 @@ class MeetingRecordMediaTest {
             capabilities = com.we.meet.data.api.dto.RecordCapabilitiesDto(
                 readTranscript = readTranscript,
                 playMedia = playMedia,
+                downloadMedia = downloadMedia,
             ),
         )
 
@@ -51,6 +52,7 @@ class MeetingRecordMediaTest {
             RecordMediaDto("https://private.example/x.m4a?sig=1", 3600, "audio", "x.m4a", 4096, "audio/mp4")
         },
         onMediaRead: () -> Unit = {},
+        onDownloadRead: (Boolean?) -> Unit = {},
     ): MeetingRecordRepository {
         val api = object : MeetingRecordApi {
             override suspend fun records(
@@ -63,8 +65,9 @@ class MeetingRecordMediaTest {
             override suspend fun rename(record: String, body: com.we.meet.data.api.dto.RecordTitleRequestDto): RecordDto =
                 error("unused")
 
-            override suspend fun media(record: String): RecordMediaDto {
+            override suspend fun media(record: String, download: Boolean?): RecordMediaDto {
                 onMediaRead()
+                onDownloadRead(download)
                 return media()
             }
 
@@ -109,6 +112,23 @@ class MeetingRecordMediaTest {
         assertEquals("https://private.example/x.m4a?sig=1", media.url)
         assertEquals(3600, media.expiresIn)
         assertEquals(4096L, media.size)
+    }
+    @Test fun downloadRequiresItsOwnCapabilityRatherThanPlaybackAlone() = runBlocking {
+        var requested = false
+        val repo = repository(detail = { record("upload") }, onMediaRead = { requested = true })
+        assertTrue(repo.media("reader", recordId, 3, download = true).isFailure)
+        assertTrue(!requested)
+    }
+    @Test fun downloadExplicitlyRequestsAttachmentSigning() = runBlocking {
+        var download: Boolean? = null
+        val repo = repository(detail = { record("upload", downloadMedia = true) }, onDownloadRead = { download = it })
+        assertTrue(repo.media("reader", recordId, 3, download = true).isSuccess)
+        assertEquals(true, download)
+    }
+    @Test fun downloadIsDiscardedIfPermissionChangesAfterSigning() = runBlocking {
+        var allowed = true
+        val repo = repository(detail = { record("upload", downloadMedia = allowed) }, onMediaRead = { allowed = false })
+        assertTrue(repo.media("reader", recordId, 3, download = true).isFailure)
     }
 
     @Test fun refusesASourceThatIsNotAnImport() = runBlocking {

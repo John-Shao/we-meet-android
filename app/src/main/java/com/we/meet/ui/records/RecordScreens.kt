@@ -153,7 +153,10 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         tabs.forEach { (value, label) -> Tab(selected = value == selectedTab, onClick = { detailTab = value }, text = { Text(stringResource(label)) }) }
                     }
                     if (selectedTab == "info") {
-                        RecordInfo(record, app?.captureRepository, viewer, Modifier.weight(1f))
+                        Column(Modifier.weight(1f)) {
+                            RecordMediaDownload(repository, viewer, record)
+                            RecordInfo(record, app?.captureRepository, viewer, Modifier.weight(1f))
+                        }
                     } else if (selectedTab == "speakers") {
                         RecordSpeakers(repository, viewer, record, Modifier.weight(1f))
                     } else if (showTranslations) {

@@ -36,7 +36,7 @@ internal fun CaptureSavedRecordTitle(repository: MeetingRecordRepository, viewer
 
 @Composable
 internal fun RecordRenameAction(repository: MeetingRecordRepository, viewer: String, record: RecordDto, onRenamed: () -> Unit) {
-    if (!record.capabilities.rename || record.sourceType != "audio_recording" || record.isOngoing) return
+    if (!record.capabilities.rename || record.sourceType !in listOf("audio_recording", "upload") || record.isOngoing) return
     key(viewer, record.id) {
         var open by remember { mutableStateOf(false) }
         var draft by remember { mutableStateOf(record.title) }
