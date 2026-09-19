@@ -27,10 +27,31 @@ import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
 
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
 import retrofit2.HttpException
 
 /** Matches the server's bound, checked here so an over-long paste fails locally. */
 private const val MAX_CORRECTION_LENGTH = 20_000
+
+/** Owned by the record reader, so replacing a page does not discard edits. */
+internal class OriginalCorrectionState(text: String, revision: Int) {
+    val editing = mutableStateOf(false)
+    val draft = mutableStateOf(text)
+    val busy = mutableStateOf(false)
+    val failed = mutableStateOf(false)
+    val conflict = mutableStateOf(false)
+    val editRevision = mutableStateOf(revision)
+    var active = true
+}
+
+internal class OriginalCorrectionDrafts {
+    private val states = mutableMapOf<String, OriginalCorrectionState>()
+    fun get(segmentId: String, text: String, revision: Int) = states.getOrPut(segmentId) { OriginalCorrectionState(text, revision) }
+    fun clear() {
+        states.values.forEach { it.active = false; it.draft.value = ""; it.editing.value = false }
+        states.clear()
+    }
+}
 
 /**
  * The text a reader sees for one segment, plus the controls to correct it.
@@ -55,19 +76,23 @@ internal fun CorrectableOriginalText(
     correctionRevision: Int,
     onCorrected: () -> Unit,
     onEditing: () -> Unit = {},
+    draftState: OriginalCorrectionState? = null,
+    writeScope: CoroutineScope? = null,
 ) {
     key(segmentId) {
-        var editing by remember { mutableStateOf(false) }
-        var draft by remember { mutableStateOf(text) }
+        val state = draftState ?: remember { OriginalCorrectionState(text, correctionRevision) }
+        var editing by state.editing
+        var draft by state.draft
         var showingOriginal by remember { mutableStateOf(false) }
-        var busy by remember { mutableStateOf(false) }
-        var failed by remember { mutableStateOf(false) }
-        var conflict by remember { mutableStateOf(false) }
-        var editRevision by remember { mutableStateOf(correctionRevision) }
-        val scope = rememberCoroutineScope()
+        var busy by state.busy
+        var failed by state.failed
+        var conflict by state.conflict
+        var editRevision by state.editRevision
+        val localScope = rememberCoroutineScope()
+        val scope = writeScope ?: localScope
 
         fun submit(next: String?) {
-            if (busy) return
+            if (busy || !correctable || !state.active) return
             busy = true
             failed = false
             conflict = false
@@ -80,9 +105,11 @@ internal fun CorrectableOriginalText(
                     text = next,
                     expectedRevision = if (next == null) correctionRevision else editRevision,
                 )
+                if (!state.active) return@launch
                 busy = false
                 if (result.isSuccess) {
                     editing = false
+                    draft = ""
                     showingOriginal = false
                     // The projected text comes from the server, so re-read rather
                     // than patching this row locally.
@@ -148,7 +175,7 @@ internal fun CorrectableOriginalText(
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                     TextButton(
-                        enabled = !busy && draft.isNotBlank() && draft.trim() != text,
+                        enabled = correctable && !busy && draft.isNotBlank() && draft.trim() != text,
                         onClick = { submit(draft.trim()) },
                     ) {
                         Text(
@@ -158,7 +185,7 @@ internal fun CorrectableOriginalText(
                             )
                         )
                     }
-                    TextButton(enabled = !busy, onClick = { editing = false }) {
+                    TextButton(enabled = !busy, onClick = { editing = false; draft = "" }) {
                         Text(stringResource(R.string.records_correction_cancel))
                     }
                 }

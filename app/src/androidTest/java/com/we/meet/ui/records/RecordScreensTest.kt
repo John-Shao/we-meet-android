@@ -2,6 +2,7 @@ package com.we.meet.ui.records
 
 import android.graphics.Bitmap
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
@@ -25,6 +26,8 @@ import com.we.meet.R
 import com.we.meet.data.api.MeetingRecordApi
 import com.we.meet.data.api.dto.*
 import com.we.meet.data.repository.MeetingRecordRepository
+import com.we.meet.data.repository.RecordSourceChangedException
+import kotlinx.coroutines.CompletableDeferred
 import com.we.meet.ui.theme.WeMeetTheme
 import java.io.File
 import org.junit.Assert.*
@@ -56,6 +59,10 @@ class RecordScreensTest {
         var asr = "in_progress"
         var snapshotReads = 0
         var revision = 3
+        var correctionVersion = 2
+        var canCorrect = false
+        var correctionGate: CompletableDeferred<Unit>? = null
+        val corrections = mutableListOf<RecordCorrectionRequest>()
         val originalQueries = mutableListOf<Pair<String?, String?>>()
         val summarySelectors = mutableListOf<String?>()
         var missingVersion = false
@@ -68,7 +75,12 @@ class RecordScreensTest {
         private fun checkAccess() { check(!revoked) { "Fixture access revoked" } }
         override suspend fun media(recordId: String): RecordMediaDto = error("Media not configured")
         override suspend fun transcriptExport(url: String) = error("Export not configured")
-        override suspend fun correctOriginal(recordId: String, segmentId: String, body: com.we.meet.data.api.dto.RecordCorrectionRequest) = error("Correction not configured")
+        override suspend fun correctOriginal(recordId: String, segmentId: String, body: RecordCorrectionRequest): RecordCorrectionDto {
+            checkAccess()
+            corrections += body
+            correctionGate?.await()
+            throw RecordSourceChangedException()
+        }
         override suspend fun revertOriginal(recordId: String, segmentId: String, expectedRevision: Int) = error("Correction not configured")
         override suspend fun rename(recordId: String, body: RecordTitleRequestDto): RecordDto {
             checkAccess()
@@ -117,7 +129,7 @@ class RecordScreensTest {
             checkAccess()
             originalQueries += query to speakerId
             return RecordPageDto(listOf(RecordOriginalSegmentDto(segmentId, 1, snapshotId, versionId, "Speaker 1", 1000, 3000,
-                if (query == null) "Full original text" else "Search matched original")))
+                if (query == null) "Full original text" else "Search matched original", correctionRevision = correctionVersion, canCorrect = canCorrect)))
         }
         override suspend fun speakers(recordId: String, cursor: String?): RecordPageDto<RecordSpeakerDto> =
             RecordPageDto(listOf(RecordSpeakerDto(versionId, "Speaker 1", "diarized")))
@@ -149,6 +161,44 @@ class RecordScreensTest {
         compose.onNodeWithText(context.getString(R.string.records_source_at, "0:01")).performScrollTo().performClick()
         awaitText("Exact recorded evidence")
         assertEquals(1, fixture.snapshotReads)
+    }
+
+    @Test fun correctionDraftSurvivesARecordRevisionReload() {
+        val fixture = Fixture().apply { canCorrect = true }
+        val repository = MeetingRecordRepository(fixture) { "reader" }
+        val record = mutableStateOf(RecordDto(recordId, "audio_recording", "Draft scope", "2026-09-13T00:00:00Z", 3,
+            RecordCapabilitiesDto(readTranscript = true)))
+        compose.setContent { WeMeetTheme { RecordOriginals(repository, "reader", record.value, {}) } }
+        awaitText(label(R.string.records_correction_edit))
+        compose.onNodeWithText(label(R.string.records_correction_edit)).performClick()
+        compose.onNodeWithText("Full original text").performTextReplacement("My unsaved draft")
+        compose.runOnIdle { fixture.revision = 4; fixture.correctionVersion = 3; record.value = record.value.copy(revision = 4) }
+        awaitText("My unsaved draft")
+        compose.onNodeWithText(label(R.string.records_correction_save)).performClick()
+        awaitText(label(R.string.records_correction_conflict))
+        compose.onNodeWithText("My unsaved draft").assertIsDisplayed()
+        assertEquals(2, fixture.corrections.single().expectedRevision)
+    }
+
+    @Test fun pendingCorrectionSurvivesPageDisposalAndCannotBeSentTwice() {
+        val gate = CompletableDeferred<Unit>()
+        val fixture = Fixture().apply { canCorrect = true; correctionGate = gate }
+        val repository = MeetingRecordRepository(fixture) { "reader" }
+        val record = mutableStateOf(RecordDto(recordId, "audio_recording", "Draft scope", "2026-09-13T00:00:00Z", 3,
+            RecordCapabilitiesDto(readTranscript = true)))
+        compose.setContent { WeMeetTheme { RecordOriginals(repository, "reader", record.value, {}) } }
+        awaitText(label(R.string.records_correction_edit))
+        compose.onNodeWithText(label(R.string.records_correction_edit)).performClick()
+        compose.onNodeWithText("Full original text").performTextReplacement("Pending draft")
+        compose.onNodeWithText(label(R.string.records_correction_save)).performClick()
+        compose.waitUntil(5_000) { fixture.corrections.size == 1 }
+        compose.runOnIdle { fixture.revision = 4; record.value = record.value.copy(revision = 4) }
+        awaitText("Pending draft")
+        compose.onNodeWithText(label(R.string.records_correction_saving)).assertIsNotEnabled()
+        gate.complete(Unit)
+        awaitText(label(R.string.records_correction_conflict))
+        compose.onNodeWithText("Pending draft").assertIsDisplayed()
+        assertEquals(1, fixture.corrections.size)
     }
 
     @Test fun summaryOnlyChaptersDoNotReadOriginals() {

@@ -36,6 +36,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -95,6 +96,8 @@ internal fun RecordOriginals(
     var following by remember(viewer, record.id) { mutableStateOf(true) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val correctionDrafts = remember(viewer, record.id) { OriginalCorrectionDrafts() }
+    DisposableEffect(correctionDrafts) { onDispose { correctionDrafts.clear() } }
     var exportVisible by remember(viewer, record.id) { mutableStateOf(false) }
     var exportBusy by remember(viewer, record.id) { mutableStateOf(false) }
     var exportFormat by remember(viewer, record.id) { mutableStateOf<String?>(null) }
@@ -137,6 +140,10 @@ internal fun RecordOriginals(
         repository.originals(viewer, record.id, record.revision, query.ifBlank { null }, speakerId, cursors.last(), atMs)
     }
     val rows = page?.getOrNull()?.results.orEmpty()
+    val readError = page?.exceptionOrNull()
+    LaunchedEffect(readError) {
+        if (readError is IllegalArgumentException || readError is HttpException && readError.code() in listOf(401, 403, 404)) correctionDrafts.clear()
+    }
     val timelineRows = rows.mapNotNull { row -> row.startMs?.let { TimedRow(row.id, it, row.endMs) } }
     val activeId = positionMs?.let { activeRowId(timelineRows, it) }
     val followId = activeId ?: positionMs?.let { nearestStartedRowId(timelineRows, it) }
@@ -238,6 +245,8 @@ internal fun RecordOriginals(
                                     correctionRevision = original.correctionRevision ?: 0,
                                     onCorrected = onRefresh,
                                     onEditing = { following = false },
+                                    draftState = correctionDrafts.get(original.id, original.text, original.correctionRevision ?: 0),
+                                    writeScope = scope,
                                 )
                             }
                     }
