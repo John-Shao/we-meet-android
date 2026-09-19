@@ -1,9 +1,13 @@
 package com.we.meet.data.repository
 
+import com.we.meet.data.api.RecordingStorage
 import com.we.meet.data.api.RecordingUploadApi
 import com.we.meet.data.api.RecordingUploadCapabilities
+import com.we.meet.data.api.RecordingUploadComplete
+import com.we.meet.data.api.RecordingUploadPresign
 import com.we.meet.data.api.RecordingUploadRetry
 import com.we.meet.data.api.RecordingUploadState
+import com.we.meet.data.api.RecordingUploadTicket
 import kotlinx.coroutines.CancellationException
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
@@ -15,7 +19,20 @@ import java.io.IOException
 import java.util.UUID
 
 /** Streams the selected document with a byte limit; never caches private media or results. */
-class RecordingUploadRepository(private val api: RecordingUploadApi, private val currentViewer: () -> String?) {
+class RecordingUploadRepository(
+    private val api: RecordingUploadApi,
+    private val currentViewer: () -> String?,
+    /**
+     * Null until a storage client is wired in. Null means the presigned path is
+     * unavailable and imports stay on multipart, so existing callers and tests
+     * keep working without pretending to have a bucket.
+     */
+    private val storage: RecordingStorage?,
+) {
+    /** Multipart only, for callers with no storage client. */
+    constructor(api: RecordingUploadApi, currentViewer: () -> String?) : this(api, currentViewer, null)
+
+
 
     /**
      * 上一次拿到的上传能力表,按 viewer 分开存。能力表只说明「允许哪些后缀、多大」,
@@ -68,6 +85,57 @@ class RecordingUploadRepository(private val api: RecordingUploadApi, private val
         val text = "text/plain".toMediaType()
         api.upload(key.toRequestBody(text), MultipartBody.Part.createFormData("audio", name, body),
             context.toRequestBody(text), hotwords.toRequestBody(text)).also(::validate)
+    }
+
+    /** True when a file this large can only travel by the presigned path. */
+    fun needsDirectUpload(size: Long?, config: RecordingUploadCapabilities): Boolean =
+        size != null && directUploadEnabled(config) && size > config.maxBytes
+
+    private fun directUploadEnabled(config: RecordingUploadCapabilities): Boolean =
+        storage != null && config.directUploadAvailable && config.directMaxBytes > 0
+
+    /**
+     * The ceiling the picker validates against: the larger of the two, but only
+     * when the presigned path is actually reachable.
+     */
+    fun maxBytes(config: RecordingUploadCapabilities): Long =
+        if (directUploadEnabled(config)) maxOf(config.maxBytes, config.directMaxBytes) else config.maxBytes
+
+    /**
+     * Import by presigned direct upload: sign, PUT to storage, then adopt.
+     *
+     * The two steps are not atomic, so a failure after the PUT is recovered by
+     * re-sending completion with the same declaration — hence [ticket]. Minting a
+     * new ticket instead would strand the first object in the bucket and re-upload
+     * bytes that already landed.
+     *
+     * The PUT goes to the storage host through a client that carries no app
+     * credentials; the signed URL is its own authorization (see `RecordingStorage`).
+     */
+    suspend fun uploadDirect(
+        viewer: String, key: String, name: String, size: Long, config: RecordingUploadCapabilities,
+        context: String, hotwords: String, open: () -> InputStream,
+        ticket: RecordingUploadTicket?, contentType: String,
+    ): Result<RecordingUploadState> = scoped(viewer) {
+        uuid(key)
+        require(directUploadEnabled(config))
+        require(size in 1..config.directMaxBytes)
+        require(name.substringAfterLast('.', "").lowercase() in config.extensions)
+        require(context.length <= 400 && hotwords.length <= 4000)
+        require(contentType.isNotBlank() && contentType.length <= 128)
+        val signed = ticket ?: api.presign(
+            RecordingUploadPresign(key, name, size, contentType, context, hotwords)
+        ).also {
+            require(it.storageName.isNotBlank() && it.uploadUrl.startsWith("https://"))
+            require(it.headers["Content-Type"] == contentType)
+        }
+        if (!requireNotNull(storage).put(signed.uploadUrl, signed.headers, size, open)) {
+            throw IOException("Object storage refused the upload")
+        }
+        require(currentViewer() == viewer)
+        api.complete(
+            RecordingUploadComplete(key, name, size, contentType, signed.storageName, context, hotwords)
+        ).also(::validate)
     }
 
     suspend fun state(viewer: String, recordId: String) = scoped(viewer) {

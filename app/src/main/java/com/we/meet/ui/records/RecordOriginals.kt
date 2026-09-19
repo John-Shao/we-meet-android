@@ -149,18 +149,25 @@ internal fun RecordOriginals(
         } else Result.success(emptyList())
     }
     val timelineRows = timeline?.getOrNull().orEmpty()
-    // Derived from the unfiltered timeline, then matched against the visible rows.
+    // Derived from the unfiltered timeline. The highlight and the scroll target
+    // differ on purpose: playback in a gap should highlight nothing (naming a
+    // neighbour would mark text that is not being spoken) but must still advance
+    // the view, or the transcript stalls until the next utterance starts.
     val activeId = positionMs?.let { activeRowId(timelineRows, it) }
+    val followId = activeId ?: positionMs?.let { nearestStartedRowId(timelineRows, it) }
     val activeDescription = stringResource(R.string.records_now_playing)
     val rows = page?.getOrNull()?.results.orEmpty()
     val activeIndex = rows.indexOfFirst { it.id == activeId }
+    // The gap target is matched against the *visible* page: a reader who filtered
+    // by speaker or searched may be looking at a list that does not contain it.
+    val followIndex = rows.indexOfFirst { it.id == followId }
     /**
      * Follow playback unless the reader is holding the list. `isScrollInProgress`
      * is true during a fling or drag, which is exactly the gesture that should win.
      */
-    LaunchedEffect(activeIndex, activeId, listState.isScrollInProgress) {
-        if (activeIndex < 0 || listState.isScrollInProgress) return@LaunchedEffect
-        listState.animateScrollToItem(activeIndex)
+    LaunchedEffect(followIndex, followId, listState.isScrollInProgress) {
+        if (followIndex < 0 || listState.isScrollInProgress) return@LaunchedEffect
+        listState.animateScrollToItem(followIndex)
     }
     val search = { query = input.trim(); cursors = listOf(null); keyboard?.hide(); Unit }
     Column(Modifier.fillMaxSize()) {

@@ -52,6 +52,8 @@ class RecordingImportPickerTest {
                 override suspend fun capabilities() = RecordingUploadCapabilities(true, 1024, listOf("mp4"))
                 override suspend fun state(recordId: String): RecordingUploadState = error("Not requested")
                 override suspend fun retry(recordId: String, body: RecordingUploadRetry): RecordingUploadState = error("Not requested")
+                override suspend fun presign(body: RecordingUploadPresign): RecordingUploadTicket = error("Direct upload not configured")
+                override suspend fun complete(body: RecordingUploadComplete): RecordingUploadState = error("Direct upload not configured")
                 override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody): RecordingUploadState {
                     keys += Buffer().also { key.writeTo(it) }.readUtf8()
                     assertEquals("video", Buffer().also { audio.body.writeTo(it) }.readUtf8())
@@ -98,6 +100,8 @@ class RecordingImportPickerTest {
             override suspend fun capabilities() = RecordingUploadCapabilities(true, 1024, listOf("wav", "mp4", "mov"))
             override suspend fun state(recordId: String): RecordingUploadState = error("Not requested")
             override suspend fun retry(recordId: String, body: RecordingUploadRetry): RecordingUploadState = error("Not requested")
+            override suspend fun presign(body: RecordingUploadPresign): RecordingUploadTicket = error("Direct upload not configured")
+            override suspend fun complete(body: RecordingUploadComplete): RecordingUploadState = error("Direct upload not configured")
             override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody): RecordingUploadState {
                 uploads++
                 error("Cancel must not upload")

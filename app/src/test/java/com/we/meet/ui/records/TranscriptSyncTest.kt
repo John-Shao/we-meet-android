@@ -78,8 +78,27 @@ class TranscriptSyncTest {
     }
 
     @Test
-    fun `still names a row inside a gap so the reader can see where playback is`() {
+    fun `still names a row inside a gap so the view can keep following`() {
+        // This is the scroll target, not the highlight: `activeRowId` is what
+        // marks text as being spoken, and inside a gap it correctly reports
+        // nothing. Using this one for the highlight would blame the previous
+        // utterance for audio that is not part of it.
         assertEquals("a", nearestStartedRowId(gapped, 2000))
+    }
+
+    @Test
+    fun `the highlight and the scroll target disagree only inside a gap`() {
+        // Inside a row they agree, so the view never lags the highlight.
+        for (position in listOf(0L, 500L, 1000L, 1500L)) {
+            val highlight = activeRowId(rows, position)
+            assertEquals(highlight, nearestStartedRowId(rows, position))
+        }
+        // Inside the gap only the highlight goes away.
+        assertNull(activeRowId(gapped, 2000))
+        assertEquals("a", nearestStartedRowId(gapped, 2000))
+        // Once the next row starts they agree again.
+        assertEquals("b", activeRowId(gapped, 3000))
+        assertEquals("b", nearestStartedRowId(gapped, 3000))
     }
 
     @Test

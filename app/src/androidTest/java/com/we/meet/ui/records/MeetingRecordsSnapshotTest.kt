@@ -18,8 +18,11 @@ import com.we.meet.R
 import com.we.meet.data.api.MeetingRecordApi
 import com.we.meet.data.api.RecordingUploadApi
 import com.we.meet.data.api.RecordingUploadCapabilities
+import com.we.meet.data.api.RecordingUploadComplete
+import com.we.meet.data.api.RecordingUploadPresign
 import com.we.meet.data.api.RecordingUploadRetry
 import com.we.meet.data.api.RecordingUploadState
+import com.we.meet.data.api.RecordingUploadTicket
 import com.we.meet.data.api.dto.RecordCapabilitiesDto
 import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.api.dto.RecordMediaDto
@@ -149,6 +152,8 @@ class MeetingRecordsSnapshotTest {
             RecordingUploadState(uuid(1), "queued", 1)
         override suspend fun state(recordId: String) = RecordingUploadState(recordId, "succeeded", 1)
         override suspend fun retry(recordId: String, body: RecordingUploadRetry) = RecordingUploadState(recordId, "queued", 2)
+        override suspend fun presign(body: RecordingUploadPresign): RecordingUploadTicket = error("Direct upload not configured")
+        override suspend fun complete(body: RecordingUploadComplete): RecordingUploadState = error("Direct upload not configured")
     }
 
     private fun uploadRepository() = RecordingUploadRepository(FakeUploadApi(), { viewer })

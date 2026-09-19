@@ -21,6 +21,7 @@ import com.we.meet.ui.home.ActionCard
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.data.api.RecordingUploadCapabilities
+import com.we.meet.data.api.RecordingUploadTicket
 import com.we.meet.data.repository.RecordingUploadRepository
 import com.we.meet.ui.components.WeMeetInlineLoading
 import kotlinx.coroutines.CancellationException
@@ -104,6 +105,9 @@ private fun RecordingImportEntry(
     // An unanswered request may already have committed. Keep its key AND options for retries.
     var submitted by rememberSaveable(viewer) { mutableStateOf(false) }
     var uncertain by rememberSaveable(viewer) { mutableStateOf(false) }
+    // A signed PUT for one exact object. Kept across retries so a failure after
+    // the transfer re-declares those bytes instead of uploading them again.
+    var ticket by remember(viewer) { mutableStateOf<RecordingUploadTicket?>(null) }
     var busy by remember(viewer) { mutableStateOf(false) }
     var error by remember(viewer) { mutableStateOf(false) }
     val resolver = LocalContext.current.contentResolver
@@ -121,6 +125,8 @@ private fun RecordingImportEntry(
                 }
                 if (uri != selected.toString() || name != metadata.first || size != metadata.second) {
                     key = UUID.randomUUID().toString(); submitted = false; uncertain = false
+                    // A ticket belongs to one file's bytes.
+                    ticket = null
                 }
                 name = metadata.first; size = metadata.second; uri = selected.toString()
                 error = false; open = true
@@ -129,7 +135,7 @@ private fun RecordingImportEntry(
         }
     }
     val valid = uri != null && name.substringAfterLast('.', "").lowercase() in config.extensions &&
-        (size == null || size!! in 1..config.maxBytes)
+        (size == null || size!! in 1..repository.maxBytes(config))
     val video = name.substringAfterLast('.', "").lowercase() in setOf("avi", "flv", "mkv", "mov", "mp4", "mpeg", "webm", "wmv")
     val mimeTypes = remember(config.extensions) { recordingImportMimeTypes(config.extensions) }
     val choose = { picker.launch(mimeTypes) }
@@ -138,7 +144,7 @@ private fun RecordingImportEntry(
         title = { Text(stringResource(R.string.record_upload_title)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-                Text(stringResource(R.string.record_upload_hint, config.maxBytes / 1024 / 1024))
+                Text(stringResource(R.string.record_upload_hint, repository.maxBytes(config) / 1024 / 1024))
                 OutlinedButton(onClick = choose, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
                     Text(name.ifBlank { stringResource(R.string.record_upload_choose) })
                 }
@@ -167,13 +173,27 @@ private fun RecordingImportEntry(
                 busy = true; error = false; submitted = true
                 jobs.launch {
                     try {
-                        val result = repository.upload(viewer, key, name, size, config, context, hotwords) {
+                        val bytes = {
                             resolver.openInputStream(document) ?: error("Document unavailable")
                         }
+                        // A file too large for multipart can only travel by the
+                        // presigned path, and that path needs its byte count.
+                        val direct = repository.needsDirectUpload(size, config)
+                        val result = if (direct) {
+                            repository.uploadDirect(
+                                viewer, key, name, size!!, config, context, hotwords, bytes,
+                                ticket, contentTypeFor(name, resolver.getType(document)),
+                            )
+                        } else {
+                            repository.upload(viewer, key, name, size, config, context, hotwords, bytes)
+                        }
                         if (result.isSuccess) {
-                            open = false; uri = null; name = ""; submitted = false; uncertain = false
+                            open = false; ticket = null; uri = null; name = ""; submitted = false; uncertain = false
                             onRecord(result.getOrThrow().recordId)
                         } else {
+                            // A spent ticket cannot be reused; the next attempt asks
+                            // for a fresh signature instead of retrying a dead URL.
+                            if (result.exceptionOrNull() is java.io.IOException) ticket = null
                             val failure = result.exceptionOrNull()
                             // Only a definite rejection permits changing the original options.
                             // A 409 on a retry can still refer to a previously accepted intent.
@@ -235,4 +255,19 @@ internal fun recordingImportMimeTypes(extensions: List<String>): Array<String> {
     )
     return extensions.flatMap { types[it.lowercase()].orEmpty() }.distinct()
         .ifEmpty { listOf("audio/*", "video/*") }.toTypedArray()
+}
+
+/**
+ * The type signed into the presigned PUT.
+ *
+ * The provider's own answer wins when it has one, because that is what the bytes
+ * actually are; the extension mapping is the fallback for providers that report
+ * `application/octet-stream`.
+ */
+internal fun contentTypeFor(name: String, providerType: String?): String {
+    val extension = name.substringAfterLast('.', "").lowercase()
+    val mapped = recordingImportMimeTypes(listOf(extension)).firstOrNull()
+    return providerType?.takeIf { it.isNotBlank() && it != "application/octet-stream" }
+        ?: mapped
+        ?: "application/octet-stream"
 }

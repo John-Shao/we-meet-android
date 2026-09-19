@@ -21,6 +21,8 @@ class RecordingUploadRepositoryTest {
         override suspend fun capabilities() = config
         override suspend fun state(recordId: String) = queued
         override suspend fun retry(recordId: String, body: RecordingUploadRetry): RecordingUploadState { retryAttempt = body.attempt; return queued }
+        override suspend fun presign(body: RecordingUploadPresign): RecordingUploadTicket = error("Direct upload not configured")
+        override suspend fun complete(body: RecordingUploadComplete): RecordingUploadState = error("Direct upload not configured")
         override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody): RecordingUploadState {
             uploads++
             val bytes = Buffer(); audio.body.writeTo(bytes)

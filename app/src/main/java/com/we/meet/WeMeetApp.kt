@@ -191,7 +191,13 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         roomRepository = RoomRepository(apiClient.roomApi)
         meetingDetailRepository = MeetingDetailRepository(apiClient.roomApi)
         meetingRecordRepository = MeetingRecordRepository(apiClient.meetingRecordApi) { tokenStore.userId }
-        recordingUploadRepository = com.we.meet.data.repository.RecordingUploadRepository(apiClient.recordingUploadApi) { tokenStore.userId }
+        recordingUploadRepository = com.we.meet.data.repository.RecordingUploadRepository(
+            apiClient.recordingUploadApi,
+            currentViewer = { tokenStore.userId },
+            // The presigned path is only reachable with a storage client; without
+            // one the repository keeps imports on multipart.
+            storage = com.we.meet.data.api.HttpRecordingStorage(),
+        )
         translationArchiveRepository = com.we.meet.data.repository.TranslationArchiveRepository(apiClient.translationArchiveApi) { captureAccount }
         captureRepository = com.we.meet.data.repository.CaptureRepository(apiClient.captureApi) { tokenStore.userId }
         captureTranscriptionRepository = com.we.meet.data.repository.CaptureTranscriptionRepository(apiClient.captureTranscriptionApi) { captureAccount }
