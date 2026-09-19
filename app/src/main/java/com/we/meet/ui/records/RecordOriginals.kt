@@ -2,6 +2,12 @@
 
 package com.we.meet.ui.records
 
+import android.app.Activity
+import android.content.Intent
+import android.widget.Toast
+
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,13 +39,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
+import kotlinx.coroutines.launch
 import com.we.meet.R
 import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.repository.MeetingRecordRepository
@@ -50,6 +59,21 @@ import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
 import retrofit2.HttpException
+
+/** What the picker needs to name and later open the file. */
+private val EXPORT_MIME_TYPES = mapOf(
+    "txt" to "text/plain",
+    "srt" to "application/x-subrip",
+    "vtt" to "text/vtt",
+)
+
+/**
+ * The picker only uses this as a starting name, and the reader can change it, so
+ * a short record-id prefix is enough — and it avoids putting a user-supplied
+ * title through filesystem sanitising for a value they are about to edit anyway.
+ */
+private fun exportFileName(recordId: String, format: String): String =
+    "transcript-${recordId.take(8)}.$format"
 
 @Composable
 internal fun RecordOriginals(
@@ -66,6 +90,42 @@ internal fun RecordOriginals(
     var speakerId by remember(viewer, record.id, record.revision) { mutableStateOf<String?>(null) }
     var selectSpeaker by remember(viewer, record.id, record.revision) { mutableStateOf(false) }
     var cursors by remember(viewer, record.id, record.revision, query, speakerId) { mutableStateOf(listOf<String?>(null)) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var exportVisible by remember(viewer, record.id) { mutableStateOf(false) }
+    var exportBusy by remember(viewer, record.id) { mutableStateOf(false) }
+    var exportFormat by remember(viewer, record.id) { mutableStateOf<String?>(null) }
+    /**
+     * The reader chooses where the file goes, so the app needs no storage
+     * permission and never guesses a path. The format is remembered until the
+     * picker returns, since that result is what tells us the destination.
+     */
+    val exportPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        val format = exportFormat
+        exportFormat = null
+        val destination = result.data?.data
+        if (result.resultCode != Activity.RESULT_OK || format == null || destination == null) return@rememberLauncherForActivityResult
+        exportBusy = true
+        scope.launch {
+            // Streamed straight to the chosen document; deleting on failure keeps
+            // a truncated transcript from looking like a complete one.
+            val written = runCatching {
+                repository.transcriptExport(viewer, record.id, format).getOrThrow().use { body ->
+                    val output = checkNotNull(context.contentResolver.openOutputStream(destination, "w"))
+                    output.use { stream -> body.byteStream().use { it.copyTo(stream) } }
+                }
+            }
+            if (written.isFailure) runCatching { context.contentResolver.delete(destination, null, null) }
+            exportBusy = false
+            Toast.makeText(
+                context,
+                context.getString(if (written.isFailure) R.string.records_export_failed else R.string.records_export_saved),
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
+    }
     val keyboard = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
     val page = visibleRead(viewer, record.id, record.revision, query, speakerId, cursors.last()) {
@@ -129,6 +189,7 @@ internal fun RecordOriginals(
                 if (query.isNotBlank() || speakerId != null) {
                     TextButton(onClick = { input = ""; query = ""; speakerId = null }) { Text(stringResource(R.string.records_clear_filters)) }
                 }
+                TextButton(onClick = { exportVisible = true }) { Text(stringResource(R.string.records_export_transcript)) }
             }
         }
         Column(Modifier.weight(1f).fillMaxWidth()) {
@@ -186,6 +247,42 @@ internal fun RecordOriginals(
             speakerId = it
             selectSpeaker = false
         }
+    }
+    if (exportBusy) {
+        // A short modal, not a snackbar: saving can outlive the screen.
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(stringResource(R.string.records_export_running)) },
+            text = { WeMeetInlineLoading() },
+            confirmButton = {},
+        )
+    }
+    if (exportVisible) {
+        val formats = listOf("txt" to "TXT", "srt" to "SRT", "vtt" to "VTT")
+        AlertDialog(
+            onDismissRequest = { exportVisible = false },
+            title = { Text(stringResource(R.string.records_export_choose_format)) },
+            text = {
+                Column {
+                    formats.forEach { (id, label) ->
+                        TextButton(onClick = {
+                            exportVisible = false
+                            exportFormat = id
+                            exportPicker.launch(
+                                Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                                    addCategory(Intent.CATEGORY_OPENABLE)
+                                    // A concrete type, not */*: the picker uses it
+                                    // to name and later open the file.
+                                    type = EXPORT_MIME_TYPES.getValue(id)
+                                    putExtra(Intent.EXTRA_TITLE, exportFileName(record.id, id))
+                                },
+                            )
+                        }) { Text(label) }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { exportVisible = false }) { Text(stringResource(R.string.records_close)) } },
+        )
     }
 }
 

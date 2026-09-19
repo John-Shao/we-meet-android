@@ -65,6 +65,7 @@ class RecordScreensTest {
         val summaryFilters = mutableListOf<Boolean?>()
         private fun checkAccess() { check(!revoked) { "Fixture access revoked" } }
         override suspend fun media(recordId: String): RecordMediaDto = error("Media not configured")
+        override suspend fun transcriptExport(url: String) = error("Export not configured")
         override suspend fun rename(recordId: String, body: RecordTitleRequestDto): RecordDto {
             checkAccess()
             check(renameAllowed && !failRename && body.expectedTitle == recordTitle)

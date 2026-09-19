@@ -60,6 +60,8 @@ class MeetingRecordMediaTest {
                 return media()
             }
 
+            override suspend fun transcriptExport(url: String) = error("unused")
+
             override suspend fun summaries(record: String, cursor: String?, versionId: String?): RecordPageDto<RecordSummaryVersionDto> =
                 error("unused")
 

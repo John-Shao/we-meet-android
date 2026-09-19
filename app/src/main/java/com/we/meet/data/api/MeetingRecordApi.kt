@@ -14,7 +14,10 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.PATCH
 import retrofit2.http.Body
+import retrofit2.http.Streaming
+import retrofit2.http.Url
 import com.we.meet.data.api.dto.RecordTitleRequestDto
+import okhttp3.ResponseBody
 
 /** Canonical record IDs, never the latest summary of a reused room. */
 interface MeetingRecordApi {
@@ -40,6 +43,17 @@ interface MeetingRecordApi {
     /** Sign a whole-file read for an imported recording. */
     @GET("api/v1.0/meeting-records/{record}/media/")
     suspend fun media(@Path("record") recordId: String): RecordMediaDto
+
+    /**
+     * Download the transcript as a file.
+     *
+     * `@Url` rather than a path template because the caller builds the URL with
+     * its `as=` selector; the auth interceptor still signs it like any other
+     * request, which is why a plain browser link cannot be used here.
+     */
+    @Streaming
+    @GET
+    suspend fun transcriptExport(@Url url: String): ResponseBody
 
     @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/{record}/summary-versions/")

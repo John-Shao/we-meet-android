@@ -7,6 +7,11 @@
     <string name="records_linked_version_unavailable">该纪要版本不可用</string>
     <string name="records_originals">文字记录</string>
     <string name="records_now_playing">正在播放</string>
+    <string name="records_export_transcript">导出文字记录</string>
+    <string name="records_export_choose_format">选择格式</string>
+    <string name="records_export_running">正在保存文字记录…</string>
+    <string name="records_export_failed">无法保存文字记录，请检查网络后重试。</string>
+    <string name="records_export_saved">文字记录已保存</string>
     <string name="records_search_originals">搜索完整原文</string>
     <string name="records_speakers">发言人</string>
     <string name="records_speaker_filtered">已筛选发言人</string>

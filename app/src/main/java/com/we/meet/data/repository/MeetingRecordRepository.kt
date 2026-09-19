@@ -9,7 +9,11 @@ import com.we.meet.data.api.dto.RecordSnapshotSegmentDto
 import com.we.meet.data.api.dto.RecordSummaryVersionDto
 import com.we.meet.data.api.dto.RecordSpeakerDto
 import kotlinx.coroutines.CancellationException
+import okhttp3.ResponseBody
 import java.util.UUID
+
+/** What the server can render; anything else is a bug here, not a server error. */
+private val SUPPORTED_EXPORT_FORMATS = setOf("txt", "srt", "vtt")
 
 enum class RecordScope(val wire: String) { RECENT("recent"), OWNED("owned"), PARTICIPATED("participated"), SHARED("shared") }
 enum class RecordSource(val wire: String) { MEETING("meeting"), AUDIO("audio_recording"), UPLOAD("upload"), RECORDINGS("recordings") }
@@ -146,6 +150,31 @@ class MeetingRecordRepository(
         require(media.url.startsWith("https://") && media.expiresIn > 0 && media.size >= 0)
         originalRecord(recordId, revision)
         media
+    }
+
+    /**
+     * Open the transcript export as a stream the caller writes where it likes.
+     *
+     * Returning the body rather than a destination keeps this free of Android
+     * storage concerns: the reader picks the location through the system document
+     * picker, so whoever owns that `Uri` does the write and can clean up a
+     * half-written file if the stream fails.
+     *
+     * The endpoint authorises by bearer, so this goes through the authenticated
+     * client rather than a browser link.
+     */
+    suspend fun transcriptExport(
+        viewer: String,
+        recordId: String,
+        format: String,
+    ): Result<ResponseBody> = scoped(viewer) {
+        requireUuid(recordId)
+        require(format in SUPPORTED_EXPORT_FORMATS)
+        // A relative @Url resolves against the client's base, so the selector
+        // travels without this layer needing to know the deployment host.
+        api.transcriptExport(
+            "api/v1.0/meeting-records/$recordId/transcript-export/?as=$format"
+        )
     }
 
     private suspend fun originalRecord(recordId: String, revision: Int): RecordDto {
