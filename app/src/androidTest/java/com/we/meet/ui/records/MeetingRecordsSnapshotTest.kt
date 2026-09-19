@@ -22,6 +22,7 @@ import com.we.meet.data.api.RecordingUploadRetry
 import com.we.meet.data.api.RecordingUploadState
 import com.we.meet.data.api.dto.RecordCapabilitiesDto
 import com.we.meet.data.api.dto.RecordDto
+import com.we.meet.data.api.dto.RecordMediaDto
 import com.we.meet.data.api.dto.RecordOnlineTranscriptDto
 import com.we.meet.data.api.dto.RecordOriginalSegmentDto
 import com.we.meet.data.api.dto.RecordPageDto
@@ -107,6 +108,7 @@ class MeetingRecordsSnapshotTest {
         override suspend fun record(recordId: String) = records.first { it.id == recordId }
 
         override suspend fun rename(recordId: String, body: RecordTitleRequestDto) = records.first { it.id == recordId }
+    override suspend fun media(recordId: String) = error("Media not configured")
 
         override suspend fun summaries(recordId: String, cursor: String?, versionId: String?): RecordPageDto<RecordSummaryVersionDto> =
             RecordPageDto(versions ?: listOf(summary), null)

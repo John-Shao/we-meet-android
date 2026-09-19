@@ -17,6 +17,22 @@ data class RecordCapabilitiesDto(
 
 data class RecordTitleRequestDto(val title: String, @Json(name = "expected_title") val expectedTitle: String)
 
+/**
+ * A short-lived signed read for an imported file.
+ *
+ * Imports are sealed objects, so the whole file is served directly and the
+ * storage service handles Range — which is what lets a citation seek exactly.
+ * `url` expires; re-resolve rather than caching it.
+ */
+data class RecordMediaDto(
+    val url: String,
+    @Json(name = "expires_in") val expiresIn: Int,
+    @Json(name = "media_type") val mediaType: String = "audio",
+    val name: String = "",
+    val size: Long = 0,
+    @Json(name = "content_type") val contentType: String = "",
+)
+
 data class RecordUploadDto(
     @Json(name = "media_type") val mediaType: String = "audio",
     val name: String = "", val size: Long = 0, val status: String = "queued",

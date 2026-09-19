@@ -2,6 +2,7 @@ package com.we.meet.data.repository
 
 import com.we.meet.data.api.MeetingRecordApi
 import com.we.meet.data.api.dto.RecordDto
+import com.we.meet.data.api.dto.RecordMediaDto
 import com.we.meet.data.api.dto.RecordPageDto
 import com.we.meet.data.api.dto.RecordReferenceDto
 import com.we.meet.data.api.dto.RecordSnapshotSegmentDto
@@ -126,6 +127,25 @@ class MeetingRecordRepository(
         page.results.forEach { requireUuid(it.id) }
         originalRecord(recordId, revision)
         page
+    }
+
+    /**
+     * Sign a whole-file read for an imported recording.
+     *
+     * Only imports: a capture's playback is a chunk table reached through its
+     * capture session, and the server refuses this path for every other source.
+     * The record is re-read first, so a reader who lost access between opening the
+     * screen and pressing play gets nothing signed.
+     */
+    suspend fun media(viewer: String, recordId: String, revision: Int): Result<RecordMediaDto> = scoped(viewer) {
+        requireUuid(recordId)
+        require(revision > 0)
+        val record = originalRecord(recordId, revision)
+        require(record.sourceType == "upload")
+        val media = api.media(recordId)
+        require(media.url.startsWith("https://") && media.expiresIn > 0 && media.size >= 0)
+        originalRecord(recordId, revision)
+        media
     }
 
     private suspend fun originalRecord(recordId: String, revision: Int): RecordDto {

@@ -111,6 +111,17 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     val detail = visibleRead(viewer, recordId, refresh) { repository.record(viewer, recordId) }
     val record = detail?.getOrNull()
     val canPlay = app != null && record?.sourceType == "audio_recording" && record.capabilities.readTranscript && record.retentionMode == "media" && !record.isOngoing
+    /**
+     * An import is replayed from its sealed object, not from a capture playlist,
+     * so it needs its own read. Fetched lazily against the record revision: the
+     * signed URL expires, and re-reading on a revision bump keeps a stale link
+     * from outliving the source it points at.
+     */
+    val canPlayImport = record?.sourceType == "upload" && record.capabilities.readTranscript && record.retentionMode == "media" && !record.isOngoing
+    val media = visibleRead(viewer, recordId, record?.revision, canPlayImport) {
+        if (record == null || !canPlayImport) return@visibleRead Result.failure(IllegalStateException("no media"))
+        repository.media(viewer, recordId, record.revision)
+    }
     Scaffold(topBar = { WeMeetTopBar(stringResource(R.string.records_title), onBack = onBack,
         actions = { record?.let { RecordRenameAction(repository, viewer, it) { refresh++ } } }) }, containerColor = MaterialTheme.colorScheme.surface) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -238,6 +249,11 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                 }
             }
             if (canPlay) NativeCaptureAudioPlayer(viewer, recordId, requireNotNull(app).capturePlaybackRepository, { app.captureAccount }, audioSeek, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it })
+            // The import's signed read is fetched lazily; until it arrives there is
+            // no player, and a refused read leaves the transcript readable alone.
+            if (canPlayImport) media?.getOrNull()?.let { read ->
+                UploadMediaPlayer(read, playbackPositionMs, audioSeek, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it })
+            }
             if (detail?.isSuccess == true && record?.capabilities?.readTranscript == true) citation?.let { (snapshot, reference) ->
                 val original = visibleRead(viewer, recordId, snapshot, reference, refresh) { repository.citation(viewer, recordId, snapshot, reference) }
                 AlertDialog(onDismissRequest = { citation = null }, title = { Text(stringResource(R.string.records_source)) },

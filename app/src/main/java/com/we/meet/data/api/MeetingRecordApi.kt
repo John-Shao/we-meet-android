@@ -1,6 +1,7 @@
 package com.we.meet.data.api
 
 import com.we.meet.data.api.dto.RecordDto
+import com.we.meet.data.api.dto.RecordMediaDto
 import com.we.meet.data.api.dto.RecordPageDto
 import com.we.meet.data.api.dto.RecordSnapshotDto
 import com.we.meet.data.api.dto.RecordSummaryVersionDto
@@ -35,6 +36,10 @@ interface MeetingRecordApi {
     @Headers("Cache-Control: no-store")
     @PATCH("api/v1.0/meeting-records/{record}/title/")
     suspend fun rename(@Path("record") recordId: String, @Body body: RecordTitleRequestDto): RecordDto
+
+    /** Sign a whole-file read for an imported recording. */
+    @GET("api/v1.0/meeting-records/{record}/media/")
+    suspend fun media(@Path("record") recordId: String): RecordMediaDto
 
     @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/{record}/summary-versions/")
