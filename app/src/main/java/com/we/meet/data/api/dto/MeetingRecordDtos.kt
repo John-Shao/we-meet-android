@@ -13,6 +13,7 @@ data class RecordCapabilitiesDto(
     @Json(name = "read_transcript") val readTranscript: Boolean = false,
     @Json(name = "generate_summary") val generateSummary: Boolean = false,
     val rename: Boolean = false,
+    @Json(name = "play_media") val playMedia: Boolean = false,
 )
 
 data class RecordTitleRequestDto(val title: String, @Json(name = "expected_title") val expectedTitle: String)

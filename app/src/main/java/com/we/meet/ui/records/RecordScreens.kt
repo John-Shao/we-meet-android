@@ -110,14 +110,14 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     var detailTab by remember(viewer, recordId, summaryVersionId, initialSummary) { mutableStateOf(if (summaryVersionId != null || initialSummary) "summary" else "text") }
     val detail = visibleRead(viewer, recordId, refresh) { repository.record(viewer, recordId) }
     val record = detail?.getOrNull()
-    val canPlay = app != null && record?.sourceType == "audio_recording" && record.capabilities.readTranscript && record.retentionMode == "media" && !record.isOngoing
+    val canPlay = app != null && record?.sourceType == "audio_recording" && record.capabilities.readTranscript && record.capabilities.playMedia
     /**
      * An import is replayed from its sealed object, not from a capture playlist,
      * so it needs its own read. Fetched lazily against the record revision: the
      * signed URL expires, and re-reading on a revision bump keeps a stale link
      * from outliving the source it points at.
      */
-    val canPlayImport = record?.sourceType == "upload" && record.capabilities.readTranscript && record.retentionMode == "media" && !record.isOngoing
+    val canPlayImport = record?.sourceType == "upload" && record.capabilities.readTranscript && record.capabilities.playMedia
     val media = visibleRead(viewer, recordId, record?.revision, canPlayImport) {
         if (record == null || !canPlayImport) return@visibleRead Result.failure(IllegalStateException("no media"))
         repository.media(viewer, recordId, record.revision)

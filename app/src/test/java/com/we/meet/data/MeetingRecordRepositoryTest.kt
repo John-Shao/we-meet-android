@@ -106,6 +106,7 @@ class MeetingRecordRepositoryTest {
         assertFalse(dto.capabilities.readTranscript)
         assertFalse(dto.capabilities.generateSummary)
         assertFalse(dto.capabilities.rename)
+        assertFalse(dto.capabilities.playMedia)
     }
 
     @Test fun renameUsesExactRecordAndExpectedTitle() = runBlocking {
@@ -116,6 +117,13 @@ class MeetingRecordRepositoryTest {
             200 to record().replace("Private source", "Design review")
         }
         assertEquals("Design review", repo.rename("reader", recordId, "  Design review  ", "Private source").getOrThrow().title)
+    }
+
+    @Test fun acceptsAnUploadedRecordAfterRename() = runBlocking {
+        val repo = repository("PATCH") {
+            200 to record().replace("audio_recording", "upload").replace("Private source", "Interview")
+        }
+        assertEquals("upload", repo.rename("reader", recordId, "Interview", "Private source").getOrThrow().sourceType)
     }
 
     @Test fun renameRejectsInvalidNamesWithoutRequest() = runBlocking {

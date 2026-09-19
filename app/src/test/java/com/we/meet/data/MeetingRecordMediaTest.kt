@@ -24,7 +24,7 @@ import org.junit.Test
 class MeetingRecordMediaTest {
     private val recordId = "11111111-1111-4111-8111-111111111111"
 
-    private fun record(source: String, revision: Int = 3, readTranscript: Boolean = true) =
+    private fun record(source: String, revision: Int = 3, readTranscript: Boolean = true, playMedia: Boolean = true) =
         RecordDto(
             id = recordId,
             sourceType = source,
@@ -33,8 +33,16 @@ class MeetingRecordMediaTest {
             revision = revision,
             capabilities = com.we.meet.data.api.dto.RecordCapabilitiesDto(
                 readTranscript = readTranscript,
+                playMedia = playMedia,
             ),
         )
+
+    @org.junit.Test fun mediaRequiresAnExplicitPlaybackCapability() = kotlinx.coroutines.runBlocking {
+        var requested = false
+        val repo = repository(detail = { record("upload", playMedia = false) }, onMediaRead = { requested = true })
+        org.junit.Assert.assertTrue(repo.media("reader", recordId, 3).isFailure)
+        org.junit.Assert.assertFalse(requested)
+    }
 
     /** A fake API: only the two calls this path makes are ever exercised. */
     private fun repository(

@@ -83,7 +83,7 @@ class MeetingRecordRepository(
         val name = title.trim()
         require(name.isNotEmpty() && name.length <= 500 && expectedTitle.length <= 500)
         api.rename(recordId, com.we.meet.data.api.dto.RecordTitleRequestDto(name, expectedTitle)).also {
-            require(it.id == recordId && it.title == name && it.sourceType == "audio_recording")
+            require(it.id == recordId && it.title == name && it.sourceType in listOf("audio_recording", "upload"))
             validateRecord(it)
         }
     }
@@ -169,10 +169,10 @@ class MeetingRecordRepository(
         requireUuid(recordId)
         require(revision > 0)
         val record = originalRecord(recordId, revision)
-        require(record.sourceType == "upload")
+        require(record.sourceType == "upload" && record.capabilities.playMedia)
         val media = api.media(recordId)
         require(media.url.startsWith("https://") && media.expiresIn > 0 && media.size >= 0)
-        originalRecord(recordId, revision)
+        require(originalRecord(recordId, revision).capabilities.playMedia)
         media
     }
 
