@@ -200,10 +200,14 @@ class MeetingRecordRepositoryTest {
     @Test fun uploadedRecordingReadsOriginalsWithoutACaptureId() = runBlocking {
         val repo = repository { request ->
             if (request.url.encodedPath.endsWith("/original-segments/")) 200 to """{"results":[{"id":"$recordId","revision":1,"capture_session_id":"$snapshotId",
-                "speaker_id":"$sourceId","speaker_label":"Speaker 1","start_ms":1000,"text":"Uploaded original"}]}"""
+                "speaker_id":"$sourceId","speaker_label":"Speaker 1","start_ms":1000,"text":"Uploaded original",
+                "can_correct":true,"correction_revision":2}]}"""
             else 200 to record().replace("audio_recording", "upload")
         }
-        assertEquals("Uploaded original", repo.originals("reader", recordId, 3).getOrThrow().results.single().text)
+        val row = repo.originals("reader", recordId, 3).getOrThrow().results.single()
+        assertEquals("Uploaded original", row.text)
+        assertTrue(row.canCorrect)
+        assertEquals(2, row.correctionRevision)
     }
 
     @Test fun summaryOnlySearchCannotReadOriginalsOrSpeakerNames() = runBlocking {

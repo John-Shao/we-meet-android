@@ -46,6 +46,22 @@ class MeetingSummaryRepositoryTest {
         }
         assertTrue(repo.request("owner", record, key, SummaryRequestDto("generate", "quick", 2, null, null)).isSuccess)
     }
+
+    @Test fun aPublishedUploadCanRequestOnlyTheFinalStageReportedByTheServer() = runBlocking {
+        val repo = repo { request ->
+            if (request.method == "GET") {
+                200 to """{"revision":2,"generation_ready":true,"ready_stages":["final"],"job":null}"""
+            } else {
+                val body = Buffer().also { request.body!!.writeTo(it) }.readUtf8()
+                assertTrue(body.contains("\"stage\":\"final\""))
+                assertTrue(body.contains("\"expected_revision\":2"))
+                202 to """{"request_id":"$key","replayed":false,"dispatch_state":"pending","job":${job("final")}}"""
+            }
+        }
+        val progress = repo.progress("owner", record).getOrThrow()
+        assertEquals(listOf("final"), progress.readyStages)
+        assertTrue(repo.request("owner", record, key, SummaryRequestDto("generate", "final", progress.revision, null, null)).isSuccess)
+    }
     @Test fun absentReadinessAndControlFlagsNeverEnableEffects() = runBlocking {
         val state = repo { 200 to """{"revision":2,"job":null}""" }.progress("owner", record).getOrThrow()
         assertFalse(state.generationReady || state.stagedEnabled)
