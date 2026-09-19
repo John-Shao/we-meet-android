@@ -22,6 +22,7 @@ import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.data.api.RecordingUploadCapabilities
 import com.we.meet.data.api.RecordingUploadTicket
+import com.we.meet.data.repository.RecordingUploadCancelled
 import com.we.meet.data.repository.RecordingUploadRepository
 import com.we.meet.ui.components.WeMeetInlineLoading
 import kotlinx.coroutines.CancellationException
@@ -242,7 +243,13 @@ private fun RecordingImportEntry(
                         // Past the threshold one PUT means a break loses the whole
                         // transfer, so large files go up in resumable parts.
                         val chunked = direct && (size ?: 0) > CHUNK_THRESHOLD
-                        val result = if (chunked) {
+                        // Every branch blocks: the storage clients execute requests
+                        // synchronously. On the composition's own dispatcher that
+                        // would freeze the dialog for the length of the transfer,
+                        // which for a multi-gigabyte import is the whole point of
+                        // the progress bar it would never get to draw.
+                        val result = withContext(Dispatchers.IO) {
+                        if (chunked) {
                             repository.uploadChunked(
                                 com.we.meet.data.repository.ChunkedUploadRequest(
                                     viewer = viewer,
@@ -279,9 +286,18 @@ private fun RecordingImportEntry(
                         } else {
                             repository.upload(viewer, key, name, size, config, context, hotwords, bytes)
                         }
+                        }
                         if (result.isSuccess) {
                             open = false; ticket = null; uri = null; name = ""; submitted = false; uncertain = false
                             onRecord(result.getOrThrow().recordId)
+                        } else if (result.exceptionOrNull() is RecordingUploadCancelled) {
+                            // A deliberate stop is its own outcome. Folding it into
+                            // the generic failure would tell the reader the file
+                            // "may already have been received", which is the
+                            // opposite of what they just asked for. The intent is
+                            // kept so starting again resumes the same upload.
+                            cancelled = true
+                            error = false
                         } else {
                             // A spent ticket cannot be reused; the next attempt asks
                             // for a fresh signature instead of retrying a dead URL.

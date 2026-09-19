@@ -257,7 +257,14 @@ class RecordingUploadRepository(
                     open = { openAt(offset, length) },
                     onProgress = { sent -> onProgress(carried + sent, size) },
                     cancel = cancelled,
-                ) ?: throw IOException("Part ${part.partNumber} was not stored")
+                ) ?: run {
+                    // A part that returned nothing because the reader stopped is a
+                    // cancel, not a lost response. Reporting it as the latter would
+                    // tell them the file may already have been received and offer a
+                    // retry of the very thing they just stopped.
+                    if (cancelled()) throw RecordingUploadCancelled()
+                    throw IOException("Part ${part.partNumber} was not stored")
+                }
                 held[part.partNumber] = RecordingUploadHeldPart(part.partNumber, etag, length)
                 carried += length
                 onProgress(carried, size)
