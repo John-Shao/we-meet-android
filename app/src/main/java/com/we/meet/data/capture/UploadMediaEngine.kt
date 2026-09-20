@@ -110,12 +110,14 @@ class UploadMediaEngine(
 
     /** Total length in milliseconds, 0 until the source is prepared. */
     @Synchronized
-    override fun durationMs(): Long = runCatching { requireNotNull(player).duration.toLong() }
+    // Native getters can report an asynchronous error in Preparing; catching
+    // exceptions does not prevent the player from entering its Error state.
+    override fun durationMs(): Long = runCatching { if (prepared) requireNotNull(player).duration.toLong() else 0L }
         .getOrDefault(0L)
         .coerceAtLeast(0L)
 
     @Synchronized
-    override fun isPlaying(): Boolean = runCatching { requireNotNull(player).isPlaying }.getOrDefault(false)
+    override fun isPlaying(): Boolean = prepared && runCatching { requireNotNull(player).isPlaying }.getOrDefault(false)
 
     @Synchronized
     override fun positionMs(): Long = runCatching { if (prepared && !seeking) requireNotNull(player).currentPosition.toLong() else pendingMs }
@@ -165,7 +167,6 @@ class UploadMediaEngine(
         prepared = false
         playWhenReady = false
         player?.let { value ->
-            runCatching { if (value.isPlaying) value.pause() }
             runCatching { value.reset() }
             runCatching { value.release() }
         }

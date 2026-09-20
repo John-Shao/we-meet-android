@@ -183,6 +183,11 @@ class UploadMediaPlayerTest {
                 real = com.we.meet.data.capture.UploadMediaEngine(context, file.absolutePath) {}
                 real!!.play(1000, 1.5f)
                 assertTrue("prepare must return before the callback", real!!.isPreparing())
+                // The real UI reads duration immediately after play(). Native
+                // getDuration in Preparing reports an async -38 error instead
+                // of throwing, so runCatching alone cannot protect playback.
+                assertEquals(0L, real!!.durationMs())
+                assertEquals(false, real!!.isPlaying())
             }
             compose.waitUntil(8_000) { real?.isPlaying() == true || real?.failure() != null }
             assertEquals(null, real?.failure())
