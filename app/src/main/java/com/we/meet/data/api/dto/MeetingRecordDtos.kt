@@ -15,6 +15,7 @@ data class RecordCapabilitiesDto(
     val rename: Boolean = false,
     @Json(name = "play_media") val playMedia: Boolean = false,
     @Json(name = "download_media") val downloadMedia: Boolean = false,
+    @Json(name = "batch_correct") val batchCorrect: Boolean = false,
 )
 
 data class RecordTitleRequestDto(val title: String, @Json(name = "expected_title") val expectedTitle: String)

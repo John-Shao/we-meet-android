@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="batch_correction_title">Find and replace</string>
+    <string name="batch_correction_hint">Replace literal, case-sensitive text across this record’s saved transcript, including other pages. Up to 100 segments per batch. Empty replacement deletes text. Unsaved drafts and existing minutes stay unchanged.</string>
+    <string name="batch_correction_find">Find text</string>
+    <string name="batch_correction_replacement">Replace with</string>
+    <string name="batch_correction_preview">Preview changes</string>
+    <string name="batch_correction_count">%1$d segments · %2$d matches</string>
+    <string name="batch_correction_before">Before</string>
+    <string name="batch_correction_after">After</string>
+    <string name="batch_correction_confirm">Confirm all changes</string>
+    <string name="batch_correction_pending">The result is not confirmed. Retry the same request before making another change.</string>
+    <string name="batch_correction_retry">Retry same request</string>
+    <string name="batch_correction_applied">Changes saved. Review the transcript before generating new minutes.</string>
+    <string name="batch_correction_undone">Replacement undone</string>
+    <string name="batch_correction_conflict">The transcript changed. Nothing was overwritten. Preview again; undo cannot overwrite later corrections.</string>
+    <string name="batch_correction_invalid">Cannot replace: check the text, empty results and the 100-segment / text-size limits.</string>
+    <string name="batch_correction_error">Request failed or its result is unknown. Retry; do not start a duplicate replacement.</string>
+    <string name="batch_correction_storage_error">Recovery storage unavailable. No new changes can be submitted.</string>
+    <string name="batch_correction_history">Recent 10 replacements</string>
+    <string name="batch_correction_deleted">(deleted)</string>
+    <string name="batch_correction_undo">Undo this replacement</string>
+    <string name="batch_correction_undo_hint">Restore every affected segment to its text before this batch? Any later correction to these segments prevents the entire undo.</string>
+    <string name="batch_correction_confirm_undo">Confirm undo</string>
+    <string name="batch_correction_close">Close</string>
+    <string name="batch_correction_cancel_undo">Cancel undo</string>
+</resources>

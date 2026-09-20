@@ -15,6 +15,12 @@ import com.we.meet.data.api.dto.RecordSpeakerDto
 import kotlinx.coroutines.CancellationException
 import okhttp3.ResponseBody
 import java.util.UUID
+import com.we.meet.data.capture.MeetingIntentStore
+import com.we.meet.data.capture.MeetingIntentKind
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** What the server can render; anything else is a bug here, not a server error. */
 private val SUPPORTED_EXPORT_FORMATS = setOf("txt", "srt", "vtt")
@@ -56,6 +62,86 @@ class MeetingRecordRepository(
     private val api: MeetingRecordApi,
     private val currentViewer: () -> String?,
 ) {
+    private var recoveryContext: android.content.Context? = null
+    private val replacementLock = Mutex()
+    private val replacementAdapter = com.squareup.moshi.Moshi.Builder()
+        .add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory()).build()
+        .adapter(com.we.meet.data.api.dto.ReplacementConfirmation::class.java)
+
+    constructor(api: MeetingRecordApi, context: android.content.Context, currentViewer: () -> String?) : this(api, currentViewer) {
+        recoveryContext = context.applicationContext
+    }
+
+    suspend fun pendingReplacement(viewer: String, recordId: String) = scoped(viewer) {
+        requireUuid(recordId)
+        withContext(Dispatchers.IO) {
+            recoveryContext?.let { context ->
+                MeetingIntentStore.open(context, viewer, currentViewer).use { store ->
+                    store.get(MeetingIntentKind.TRANSCRIPT_REPLACEMENT, recordId)?.let { intent ->
+                        requireNotNull(replacementAdapter.fromJson(intent.body)).copy(key = intent.key)
+                    }
+                }
+            }
+        }
+    }
+
+    suspend fun replacements(viewer: String, recordId: String) = scoped(viewer) {
+        requireUuid(recordId)
+        api.replacements(recordId).also { page ->
+            require(page.results.size <= 10 && page.nextCursor == null)
+            page.results.forEach(::validateReplacement)
+        }
+    }
+
+    suspend fun previewReplacement(viewer: String, recordId: String, find: String, replacement: String) = scoped(viewer) {
+        requireUuid(recordId)
+        require(find.isNotBlank() && find.length <= 200 && replacement.length <= 200 && find != replacement)
+        api.previewReplacement(recordId, com.we.meet.data.api.dto.ReplacementSelection(find, replacement)).also { result ->
+            require(result.recordId == recordId && Regex("[a-f0-9]{64}").matches(result.previewHash))
+            require(result.changes.size <= 100 && result.occurrences >= 0)
+            require(result.changes.sumOf { it.before.length + it.after.length } <= 400_000)
+            require(result.changes.map { it.id }.distinct().size == result.changes.size)
+            result.changes.forEach { requireUuid(it.id); require(it.startMs >= 0 && it.after.isNotBlank() && it.after.length <= 20_000) }
+        }
+    }
+
+    suspend fun applyReplacement(viewer: String, recordId: String, body: com.we.meet.data.api.dto.ReplacementConfirmation) = scoped(viewer) {
+        requireUuid(recordId); requireUuid(body.key)
+        require(body.find.isNotBlank() && body.find.length <= 200 && body.replacement.length <= 200 && body.find != body.replacement)
+        require(Regex("[a-f0-9]{64}").matches(body.expectedHash))
+        withContext(Dispatchers.IO) {
+            replacementLock.withLock {
+                val context = recoveryContext
+                if (context == null) api.applyReplacement(recordId, body).also(::validateReplacement)
+                else MeetingIntentStore.open(context, viewer, currentViewer).use { store ->
+                    val kind = MeetingIntentKind.TRANSCRIPT_REPLACEMENT
+                    val intent = store.getOrCreate(kind, recordId, replacementAdapter.toJson(body))
+                    val saved = requireNotNull(replacementAdapter.fromJson(intent.body)).copy(key = intent.key)
+                    try {
+                        api.applyReplacement(recordId, saved).also {
+                            validateReplacement(it)
+                            store.resolve(kind, recordId, intent)
+                        }
+                    } catch (error: retrofit2.HttpException) {
+                        // Access loss cannot establish whether a previous attempt committed.
+                        if (error.code() in setOf(400, 409)) store.resolve(kind, recordId, intent)
+                        throw error
+                    }
+                }
+            }
+        }
+    }
+
+    suspend fun undoReplacement(viewer: String, recordId: String, batchId: String) = scoped(viewer) {
+        requireUuid(recordId); requireUuid(batchId)
+        api.undoReplacement(recordId, batchId).also { require(it.id == batchId && it.undone); validateReplacement(it) }
+    }
+
+    private fun validateReplacement(row: com.we.meet.data.api.dto.ReplacementReceipt) {
+        requireUuid(row.id)
+        require(row.find.isNotBlank() && row.find.length <= 200 && row.replacement.length <= 200 && row.changedSegments in 1..100)
+    }
+
     suspend fun records(
         viewer: String,
         scope: RecordScope = RecordScope.RECENT,

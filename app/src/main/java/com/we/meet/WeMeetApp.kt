@@ -190,7 +190,7 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         )
         roomRepository = RoomRepository(apiClient.roomApi)
         meetingDetailRepository = MeetingDetailRepository(apiClient.roomApi)
-        meetingRecordRepository = MeetingRecordRepository(apiClient.meetingRecordApi) { tokenStore.userId }
+        meetingRecordRepository = MeetingRecordRepository(apiClient.meetingRecordApi, this) { tokenStore.userId }
         recordingUploadRepository = com.we.meet.data.repository.RecordingUploadRepository(
             apiClient.recordingUploadApi,
             currentViewer = { tokenStore.userId },

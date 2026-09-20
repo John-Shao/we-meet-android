@@ -27,6 +27,22 @@ import okhttp3.ResponseBody
 /** Canonical record IDs, never the latest summary of a reused room. */
 interface MeetingRecordApi {
     @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/meeting-records/{record}/transcript-replacements/")
+    suspend fun replacements(@Path("record") recordId: String): RecordPageDto<com.we.meet.data.api.dto.ReplacementReceipt> = error("Replacement API not implemented")
+
+    @Headers("Cache-Control: no-store")
+    @retrofit2.http.POST("api/v1.0/meeting-records/{record}/transcript-replacements/preview/")
+    suspend fun previewReplacement(@Path("record") recordId: String, @Body body: com.we.meet.data.api.dto.ReplacementSelection): com.we.meet.data.api.dto.ReplacementPreview = error("Replacement API not implemented")
+
+    @Headers("Cache-Control: no-store")
+    @retrofit2.http.POST("api/v1.0/meeting-records/{record}/transcript-replacements/")
+    suspend fun applyReplacement(@Path("record") recordId: String, @Body body: com.we.meet.data.api.dto.ReplacementConfirmation): com.we.meet.data.api.dto.ReplacementReceipt = error("Replacement API not implemented")
+
+    @Headers("Cache-Control: no-store")
+    @retrofit2.http.POST("api/v1.0/meeting-records/{record}/transcript-replacements/{batch}/undo/")
+    suspend fun undoReplacement(@Path("record") recordId: String, @Path("batch") batchId: String): com.we.meet.data.api.dto.ReplacementReceipt = error("Replacement API not implemented")
+
+    @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/")
     suspend fun records(
         @Query("scope") scope: String = "recent",

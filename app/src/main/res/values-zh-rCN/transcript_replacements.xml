@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="batch_correction_title">批量查找替换</string>
+    <string name="batch_correction_hint">对整条记录已保存的原文进行区分大小写的字面替换，包含其他分页。每批最多 100 段；替换内容留空表示删除。未保存草稿和已有纪要保持不变。</string>
+    <string name="batch_correction_find">查找内容</string>
+    <string name="batch_correction_replacement">替换为</string>
+    <string name="batch_correction_preview">预览修改</string>
+    <string name="batch_correction_count">%1$d 段 · %2$d 处匹配</string>
+    <string name="batch_correction_before">修改前</string>
+    <string name="batch_correction_after">修改后</string>
+    <string name="batch_correction_confirm">确认全部修改</string>
+    <string name="batch_correction_pending">尚未确认提交结果。请先重试同一请求，再进行其他修改。</string>
+    <string name="batch_correction_retry">重试同一请求</string>
+    <string name="batch_correction_applied">修改已保存。请核对原文后再生成新纪要。</string>
+    <string name="batch_correction_undone">已撤回替换</string>
+    <string name="batch_correction_conflict">原文已变化，本次未覆盖任何内容。请重新预览；撤回也不能覆盖后续校对。</string>
+    <string name="batch_correction_invalid">无法替换：请检查查找内容、替换后空文本，以及每批 100 段和文本长度限制。</string>
+    <string name="batch_correction_error">请求失败或结果尚不确定。请重试，勿重复发起新的替换。</string>
+    <string name="batch_correction_storage_error">恢复存储不可用，暂不能提交新修改。</string>
+    <string name="batch_correction_history">最近 10 次替换</string>
+    <string name="batch_correction_deleted">（删除）</string>
+    <string name="batch_correction_undo">撤回本次替换</string>
+    <string name="batch_correction_undo_hint">将所有受影响段落恢复到本次替换前的文本？如其中任一段已有后续校对，整批撤回都会被拒绝。</string>
+    <string name="batch_correction_confirm_undo">确认撤回</string>
+    <string name="batch_correction_close">关闭</string>
+    <string name="batch_correction_cancel_undo">取消撤回</string>
+</resources>

@@ -135,6 +135,9 @@ internal fun RecordOriginals(
                     TextButton(onClick = { input = ""; query = ""; speakerId = null }) { Text(stringResource(R.string.records_clear_filters)) }
                 }
                 TextButton(onClick = { exportVisible = true }) { Text(stringResource(R.string.records_export_transcript)) }
+                if (record.capabilities.batchCorrect) {
+                    TranscriptReplacementControl(repository, viewer, record.id, onRefresh)
+                }
             }
         }
         if (positionMs != null && (!following || filtered)) TextButton(onClick = {
