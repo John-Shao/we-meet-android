@@ -151,7 +151,7 @@ class MeetingRecordsSnapshotTest {
 
     private inner class FakeUploadApi : RecordingUploadApi {
         override suspend fun capabilities() = RecordingUploadCapabilities(true, 200L * 1024 * 1024, listOf("mp3", "m4a", "wav", "mp4", "mov"))
-        override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody) =
+        override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody, diarization: RequestBody) =
             RecordingUploadState(uuid(1), "queued", 1)
         override suspend fun state(recordId: String) = RecordingUploadState(recordId, "succeeded", 1)
         override suspend fun retry(recordId: String, body: RecordingUploadRetry) = RecordingUploadState(recordId, "queued", 2)

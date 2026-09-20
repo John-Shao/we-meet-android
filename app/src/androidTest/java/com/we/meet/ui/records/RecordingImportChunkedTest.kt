@@ -94,7 +94,7 @@ class RecordingImportChunkedTest {
                 )
                 override suspend fun state(recordId: String) = RecordingUploadState(recordId, "queued", 1)
                 override suspend fun retry(recordId: String, body: RecordingUploadRetry) = error("Not requested")
-                override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody) =
+                override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody, diarization: RequestBody) =
                     error("A file this large must not use the legacy multipart path")
                 override suspend fun presign(body: RecordingUploadPresign) = error("Single PUT not used above the threshold")
                 override suspend fun complete(body: RecordingUploadComplete) = error("Single PUT not used above the threshold")

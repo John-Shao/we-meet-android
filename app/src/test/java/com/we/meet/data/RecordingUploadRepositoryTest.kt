@@ -16,6 +16,7 @@ class RecordingUploadRepositoryTest {
     private val queued get() = RecordingUploadState(id, "queued", 1)
     private var uploads = 0
     private var retryAttempt = 0
+    private var receivedDiarization = ""
     private var afterUpload: () -> Unit = {}
     private val api = object : RecordingUploadApi {
         override suspend fun capabilities() = config
@@ -28,7 +29,8 @@ class RecordingUploadRepositoryTest {
         override suspend fun multipartAbort(sessionId: String) = error("Chunked upload not configured")
         override suspend fun presign(body: RecordingUploadPresign): RecordingUploadTicket = error("Direct upload not configured")
         override suspend fun complete(body: RecordingUploadComplete): RecordingUploadState = error("Direct upload not configured")
-        override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody): RecordingUploadState {
+        override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody, diarization: RequestBody): RecordingUploadState {
+            receivedDiarization = Buffer().also { diarization.writeTo(it) }.readUtf8()
             uploads++
             val bytes = Buffer(); audio.body.writeTo(bytes)
             assertEquals("audio", bytes.readUtf8())
@@ -36,6 +38,12 @@ class RecordingUploadRepositoryTest {
             afterUpload()
             return queued
         }
+    }
+
+    @Test fun passesTheSpeakerOptionInTheMultipartBody() = runBlocking {
+        repository.uploadWithProgress("owner", id, "Audio.wav", 5, config, "", "", { "audio".byteInputStream() },
+            diarization = true, onProgress = { _, _ -> }).getOrThrow()
+        assertEquals("true", receivedDiarization)
     }
     private val repository get() = RecordingUploadRepository(api, currentViewer = { viewer })
 

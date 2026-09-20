@@ -32,6 +32,7 @@ data class RecordingUploadPresign(
     @Json(name = "content_type") val contentType: String,
     val context: String,
     val hotwords: String,
+    val diarization: Boolean = false,
 )
 
 /** One signed PUT, valid for one exact object. */
@@ -53,6 +54,7 @@ data class RecordingUploadComplete(
     @Json(name = "storage_name") val storageName: String,
     val context: String,
     val hotwords: String,
+    val diarization: Boolean = false,
 )
 
 interface RecordingUploadApi {
@@ -67,6 +69,7 @@ interface RecordingUploadApi {
         @Part audio: MultipartBody.Part,
         @Part("context") context: RequestBody,
         @Part("hotwords") hotwords: RequestBody,
+        @Part("diarization") diarization: RequestBody,
     ): RecordingUploadState
 
     /** Step one of the direct flow: sign one PUT for an exact byte count. */
@@ -126,6 +129,7 @@ data class RecordingUploadBegin(
     @Json(name = "content_type") val contentType: String,
     val context: String,
     val hotwords: String,
+    val diarization: Boolean = false,
 )
 
 /** One signed part PUT. */

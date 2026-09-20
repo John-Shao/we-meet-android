@@ -17,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.we.meet.ui.home.ActionCard
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
@@ -133,6 +135,7 @@ private fun RecordingImportEntry(
     var key by rememberSaveable(viewer) { mutableStateOf(UUID.randomUUID().toString()) }
     var context by rememberSaveable(viewer) { mutableStateOf("") }
     var hotwords by rememberSaveable(viewer) { mutableStateOf("") }
+    var diarization by rememberSaveable(viewer) { mutableStateOf(false) }
     var advanced by rememberSaveable(viewer) { mutableStateOf(false) }
     // An unanswered request may already have committed. Keep its key AND options for retries.
     var submitted by rememberSaveable(viewer) { mutableStateOf(false) }
@@ -196,6 +199,13 @@ private fun RecordingImportEntry(
                 if (uri != null && !valid) Text(stringResource(R.string.record_import_invalid), color = MaterialTheme.colorScheme.error)
                 TextButton(onClick = { advanced = !advanced }) { Text(stringResource(R.string.record_upload_advanced)) }
                 if (advanced) {
+                    val speakerLabel = stringResource(R.string.record_upload_diarization)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(speakerLabel, Modifier.weight(1f))
+                        Switch(checked = diarization, onCheckedChange = { diarization = it }, enabled = !busy && !submitted,
+                            modifier = Modifier.semantics { contentDescription = speakerLabel })
+                    }
+                    Text(stringResource(R.string.record_upload_diarization_hint), style = MaterialTheme.typography.bodySmall)
                     OutlinedTextField(context, onValueChange = { context = it.take(400) }, enabled = !busy && !submitted,
                         label = { Text(stringResource(R.string.record_upload_context)) }, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(hotwords, onValueChange = { hotwords = it.take(4000) }, enabled = !busy && !submitted,
@@ -253,11 +263,9 @@ private fun RecordingImportEntry(
                         // Past the threshold one PUT means a break loses the whole
                         // transfer, so large files go up in resumable parts.
                         val chunked = direct && (size ?: 0) > CHUNK_THRESHOLD
-                        // Every branch blocks: the storage clients execute requests
-                        // synchronously. On the composition's own dispatcher that
-                        // would freeze the dialog for the length of the transfer,
-                        // which for a multi-gigabyte import is the whole point of
-                        // the progress bar it would never get to draw.
+                        // Document reads and blocking part PUTs stay off the UI
+                        // dispatcher. A child job lets whole-file requests stop
+                        // without cancelling the dialog's result handling.
                         val task = async(Dispatchers.IO) {
                         if (chunked) {
                             repository.uploadChunked(
@@ -269,6 +277,7 @@ private fun RecordingImportEntry(
                                     config = config,
                                     context = context,
                                     hotwords = hotwords,
+                                    diarization = diarization,
                                     contentType = contentTypeFor(name, resolver.getType(document)),
                                     // A remembered session is a hint; the server
                                     // still decides which parts already exist.
@@ -294,9 +303,10 @@ private fun RecordingImportEntry(
                                 ticket, contentTypeFor(name, resolver.getType(document)),
                                 onProgress = { sent, total -> uploadedBytes = sent; uploadedTotal = total },
                                 onTicket = { ticket = it },
+                                diarization = diarization,
                             )
                         } else {
-                            repository.uploadWithProgress(viewer, key, name, size, config, context, hotwords, bytes) { sent, total ->
+                            repository.uploadWithProgress(viewer, key, name, size, config, context, hotwords, bytes, diarization) { sent, total ->
                                 uploadedBytes = sent; uploadedTotal = total
                             }
                         }

@@ -59,8 +59,9 @@ class RecordingImportPickerTest {
                 override suspend fun multipartAbort(sessionId: String) = error("Chunked upload not configured")
                 override suspend fun presign(body: RecordingUploadPresign): RecordingUploadTicket = error("Direct upload not configured")
                 override suspend fun complete(body: RecordingUploadComplete): RecordingUploadState = error("Direct upload not configured")
-                override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody): RecordingUploadState {
+                override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody, diarization: RequestBody): RecordingUploadState {
                     keys += Buffer().also { key.writeTo(it) }.readUtf8()
+                    assertEquals("true", Buffer().also { diarization.writeTo(it) }.readUtf8())
                     assertEquals("video", Buffer().also { audio.body.writeTo(it) }.readUtf8())
                     if (keys.size == 1) throw SocketTimeoutException("Response lost after acceptance")
                     return RecordingUploadState(id, "queued", 1)
@@ -74,6 +75,9 @@ class RecordingImportPickerTest {
             compose.waitUntil(10_000) { compose.onAllNodesWithText(label(R.string.records_upload)).fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText(label(R.string.records_upload)).performClick()
             compose.waitUntil(10_000) { compose.onAllNodesWithText(label(R.string.record_upload_title)).fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText(label(R.string.record_upload_advanced)).performScrollTo().performClick()
+            compose.onNodeWithContentDescription(label(R.string.record_upload_diarization)).performScrollTo().performClick()
+            compose.onNodeWithText(label(R.string.record_upload_advanced)).performScrollTo().performClick()
             compose.onNodeWithText(label(R.string.record_upload_submit)).performClick()
             compose.onNodeWithText(label(R.string.record_upload_unconfirmed)).assertExists()
             assertNull(navigated)
@@ -81,6 +85,7 @@ class RecordingImportPickerTest {
             compose.waitForIdle()
             compose.onNodeWithText(label(R.string.record_upload_advanced)).performScrollTo().performClick()
             compose.onNodeWithText(label(R.string.record_upload_context)).assertIsNotEnabled()
+            compose.onNodeWithContentDescription(label(R.string.record_upload_diarization)).assertIsNotEnabled().assertIsOn()
             compose.onNodeWithText(label(R.string.record_upload_submit)).performClick()
             compose.waitForIdle()
             assertEquals(2, keys.size)
@@ -112,7 +117,7 @@ class RecordingImportPickerTest {
                 override suspend fun multipartAbort(sessionId: String) = error("Chunked upload not configured")
             override suspend fun presign(body: RecordingUploadPresign): RecordingUploadTicket = error("Direct upload not configured")
             override suspend fun complete(body: RecordingUploadComplete): RecordingUploadState = error("Direct upload not configured")
-            override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody): RecordingUploadState {
+            override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody, diarization: RequestBody): RecordingUploadState {
                 uploads++
                 error("Cancel must not upload")
             }

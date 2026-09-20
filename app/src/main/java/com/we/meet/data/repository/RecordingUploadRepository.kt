@@ -64,6 +64,7 @@ data class ChunkedUploadRequest(
     /** Bytes genuinely stored, so a resume starts from what already landed. */
     val onProgress: (sent: Long, total: Long) -> Unit,
     val cancelled: () -> Boolean,
+    val diarization: Boolean = false,
 )
 
 /** Streams the selected document with a byte limit; never caches private media or results. */
@@ -112,6 +113,7 @@ class RecordingUploadRepository(
     suspend fun uploadWithProgress(
         viewer: String, key: String, name: String, size: Long?, config: RecordingUploadCapabilities,
         context: String, hotwords: String, open: () -> InputStream,
+        diarization: Boolean = false,
         onProgress: (Long, Long) -> Unit,
     ): Result<RecordingUploadState> = scoped(viewer) {
         val transferContext = currentCoroutineContext()
@@ -144,7 +146,7 @@ class RecordingUploadRepository(
         }
         val text = "text/plain".toMediaType()
         api.upload(key.toRequestBody(text), MultipartBody.Part.createFormData("audio", name, body),
-            context.toRequestBody(text), hotwords.toRequestBody(text)).also(::validate)
+            context.toRequestBody(text), hotwords.toRequestBody(text), diarization.toString().toRequestBody(text)).also(::validate)
     }
 
     /** True when a file this large can only travel by the presigned path. */
@@ -178,6 +180,7 @@ class RecordingUploadRepository(
         ticket: RecordingUploadTicket?, contentType: String,
         onProgress: (Long, Long) -> Unit = { _, _ -> },
         onTicket: (RecordingUploadTicket) -> Unit = {},
+        diarization: Boolean = false,
     ): Result<RecordingUploadState> = scoped(viewer) {
         uuid(key)
         require(directUploadEnabled(config))
@@ -186,7 +189,7 @@ class RecordingUploadRepository(
         require(context.length <= 400 && hotwords.length <= 4000)
         require(contentType.isNotBlank() && contentType.length <= 128)
         val signed = ticket ?: api.presign(
-            RecordingUploadPresign(key, name, size, contentType, context, hotwords)
+            RecordingUploadPresign(key, name, size, contentType, context, hotwords, diarization)
         ).also {
             require(it.storageName.isNotBlank() && it.uploadUrl.startsWith("https://"))
             require(it.headers["Content-Type"] == contentType)
@@ -206,7 +209,7 @@ class RecordingUploadRepository(
         onProgress(size, size)
         require(currentViewer() == viewer)
         api.complete(
-            RecordingUploadComplete(key, name, size, contentType, signed.storageName, context, hotwords)
+            RecordingUploadComplete(key, name, size, contentType, signed.storageName, context, hotwords, diarization)
         ).also(::validate)
     }
 
@@ -255,7 +258,7 @@ class RecordingUploadRepository(
         val plan = request.resumeFrom
             ?.let { runCatching { api.multipartResume(it) }.getOrNull() }
             ?: api.multipartBegin(
-                RecordingUploadBegin(key, name, size, contentType, context, hotwords)
+                RecordingUploadBegin(key, name, size, contentType, context, hotwords, request.diarization)
             )
         plan.job?.let { return@scoped it.also(::validate) }
         val sessionId = plan.sessionId

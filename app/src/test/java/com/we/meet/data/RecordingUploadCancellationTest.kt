@@ -56,7 +56,7 @@ class RecordingUploadCancellationTest {
                         RecordingUploadRepository(api, { "owner" }).uploadWithProgress(
                             "owner", "11111111-1111-4111-8111-111111111111", "Audio.wav", 5,
                             RecordingUploadCapabilities(true, 1024, listOf("wav")), "", "", { "audio".byteInputStream() },
-                            { sent, _ -> progress.set(sent) },
+                            onProgress = { sent, _ -> progress.set(sent) },
                         )
                     }
                 }

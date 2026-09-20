@@ -32,6 +32,8 @@
     <string name="record_upload_cancelled">已取消上传。已传完的分片会保留，再次上传会从这里继续。</string>
     <string name="record_upload_wait">正在导入…请保持当前页面打开，等待导入完成。</string>
     <string name="record_upload_confirming">文件已发送，正在确认导入结果…</string>
+    <string name="record_upload_diarization">区分说话人</string>
+    <string name="record_upload_diarization_hint">适合多人录音；自动区分声音，姓名可在转写后手动指定。</string>
     <string name="record_upload_stopped">上传请求已停止，服务端可能已收到文件。请保留当前文件和设置，重试以确认导入结果。</string>
     <string name="record_upload_error">导入失败，请检查文件格式、大小和网络后重试。</string>
     <string name="record_upload_unconfirmed">暂未确认导入结果，文件可能已被接收。可直接重试（保留当前文件和设置），或关闭后到历史录音查看。</string>

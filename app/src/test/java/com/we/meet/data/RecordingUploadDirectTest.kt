@@ -39,7 +39,7 @@ class RecordingUploadDirectTest {
         override suspend fun capabilities() = config
         override suspend fun state(recordId: String) = queued
         override suspend fun retry(recordId: String, body: RecordingUploadRetry) = queued
-        override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody): RecordingUploadState {
+        override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody, diarization: RequestBody): RecordingUploadState {
             multipart++
             return queued
         }
@@ -75,7 +75,7 @@ class RecordingUploadDirectTest {
     @Test fun signsUploadsThenAdoptsWithTheSameDeclaration() = runBlocking {
         val result = repository.uploadDirect(
             "owner", id, "Long.wav", 4096, config, "Project", "Qwen",
-            { "audio".byteInputStream() }, null, contentType,
+            { "audio".byteInputStream() }, null, contentType, diarization = true,
         )
         assertEquals(queued, result.getOrThrow())
         assertEquals(1, puts)
@@ -86,6 +86,8 @@ class RecordingUploadDirectTest {
         assertEquals(4096L, lastComplete!!.size)
         assertEquals(contentType, lastComplete!!.contentType)
         assertEquals("Project", lastComplete!!.context)
+        assertTrue(lastComplete!!.diarization)
+        assertTrue(lastPresign!!.diarization)
         // Multipart is never used for a file that only the direct path can carry.
         assertEquals(0, multipart)
     }

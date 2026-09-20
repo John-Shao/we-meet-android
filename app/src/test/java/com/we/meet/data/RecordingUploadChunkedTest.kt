@@ -34,6 +34,7 @@ class RecordingUploadChunkedTest {
 
     private val held = linkedMapOf<Int, RecordingUploadHeldPart>()
     private var began = 0
+    private var beginDiarization = false
     private var signedBatches = mutableListOf<List<Int>>()
     private var completed: List<RecordingUploadPartTag>? = null
     private var aborted = 0
@@ -47,12 +48,13 @@ class RecordingUploadChunkedTest {
         override suspend fun capabilities() = config
         override suspend fun state(recordId: String) = queued
         override suspend fun retry(recordId: String, body: RecordingUploadRetry) = queued
-        override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody) = queued
+        override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody, diarization: RequestBody) = queued
         override suspend fun presign(body: RecordingUploadPresign): RecordingUploadTicket = error("Not used")
         override suspend fun complete(body: RecordingUploadComplete) = queued
 
         override suspend fun multipartBegin(body: RecordingUploadBegin): RecordingUploadPlan {
             began++
+            beginDiarization = body.diarization
             // A resumed upload always starts from what storage holds, never from
             // what the client believes it sent.
             return plan()
@@ -129,6 +131,11 @@ class RecordingUploadChunkedTest {
         onProgress = onProgress,
         cancelled = cancelled,
     )
+
+    @Test fun carriesSpeakerOptionInTheChunkedDeclaration() = runBlocking {
+        repository.uploadChunked(request().copy(diarization = true)).getOrThrow()
+        assertTrue(beginDiarization)
+    }
 
     @Test fun resumesAnAssembledObjectWithoutOpeningTheFileOrSigningParts() = runBlocking {
         assembled = true
