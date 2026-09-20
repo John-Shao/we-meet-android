@@ -149,7 +149,9 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                     val showTranslations = selectedTab == "translations"
                     val showOriginals = selectedTab == "text"
                     val chaptersOnly = selectedTab == "chapters"
-                    if (record.sourceType == "upload" && app != null) RecordingUploadStatus(app.recordingUploadRepository, viewer, recordId)
+                    if (record.sourceType == "upload" && record.upload?.canControl == true && app != null) {
+                        RecordingUploadStatus(app.recordingUploadRepository, viewer, recordId)
+                    }
                     ScrollableTabRow(selectedTabIndex = tabs.indexOfFirst { it.first == selectedTab }, edgePadding = Dimens.SpaceS, containerColor = MaterialTheme.colorScheme.surface) {
                         tabs.forEach { (value, label) -> Tab(selected = value == selectedTab, onClick = { detailTab = value }, text = { Text(stringResource(label)) }) }
                     }

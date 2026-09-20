@@ -63,6 +63,7 @@ class RecordScreensTest {
         var failRename = false
         var recordTitle = "Private planning meeting"
         var sourceType = "audio_recording"
+        var uploadCanControl = false
         val renames = mutableListOf<RecordTitleRequestDto>()
         var revoked = false
         var originals = true
@@ -109,7 +110,8 @@ class RecordScreensTest {
         override suspend fun record(recordId: String): RecordDto {
             checkAccess()
             return RecordDto(recordId, sourceType, recordTitle, "2026-09-13T00:00:00Z", revision,
-                RecordCapabilitiesDto(readSummary = true, readTranscript = originals, rename = renameAllowed), isOngoing = !renameAllowed)
+                RecordCapabilitiesDto(readSummary = true, readTranscript = originals, rename = renameAllowed), isOngoing = !renameAllowed,
+                upload = if (sourceType == "upload") RecordUploadDto(canControl = uploadCanControl) else null)
         }
         override suspend fun records(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?, isOngoing: Boolean?): RecordPageDto<RecordDto> {
             checkAccess()
@@ -166,6 +168,40 @@ class RecordScreensTest {
     }
     private fun awaitText(text: String) {
         compose.waitUntil(5_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    @Test fun sharedUploadDoesNotRequestOwnerOnlyTranscriptionStatus() = checkUploadStatusAccess(false)
+
+    @Test fun uploadOwnerStillSeesTranscriptionFailureStatus() = checkUploadStatusAccess(true)
+
+    private fun checkUploadStatusAccess(canControl: Boolean) {
+        val app = context.applicationContext as com.we.meet.WeMeetApp
+        val originalRepository = app.recordingUploadRepository
+        val repositoryField = com.we.meet.WeMeetApp::class.java.getDeclaredField("recordingUploadRepository").apply {
+            isAccessible = true
+        }
+        val statusReads = java.util.concurrent.atomic.AtomicInteger()
+        val api = java.lang.reflect.Proxy.newProxyInstance(
+            com.we.meet.data.api.RecordingUploadApi::class.java.classLoader,
+            arrayOf(com.we.meet.data.api.RecordingUploadApi::class.java),
+        ) { _, method, _ ->
+            check(method.name == "state") { "Unexpected upload call: ${method.name}" }
+            statusReads.incrementAndGet()
+            com.we.meet.data.api.RecordingUploadState(recordId, "failed", 1)
+        } as com.we.meet.data.api.RecordingUploadApi
+        try {
+            repositoryField.set(app, com.we.meet.data.repository.RecordingUploadRepository(api, { "reader" }))
+            detail(Fixture().apply { sourceType = "upload"; uploadCanControl = canControl })
+            if (canControl) {
+                awaitText(label(R.string.record_upload_failed))
+                assertTrue(statusReads.get() > 0)
+            } else {
+                awaitText("Private planning meeting")
+                compose.waitForIdle()
+                assertEquals(0, statusReads.get())
+                compose.onNodeWithText(label(R.string.records_unavailable)).assertDoesNotExist()
+            }
+        } finally { repositoryField.set(app, originalRepository) }
     }
 
     @Test fun transcriptExportSurvivesTheSystemPickerBackgroundRoundTrip() {
