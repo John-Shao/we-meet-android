@@ -75,6 +75,7 @@ class ProductionMediaRenewalAcceptanceTest {
         compose.runOnIdle { media.value = media.value.copy(url = freshUrl) }
         compose.onNodeWithText(label(com.we.meet.design.R.string.common_retry)).performClick()
         compose.waitUntil(30_000) { positions.any { it in 4_000..15_000 } }
+        assertTrue("Recovery must start at the retained position, not from zero", positions.first() in 4_000..6_000)
         compose.onNodeWithText(speed(1.5f)).assertIsDisplayed()
         compose.runOnIdle { seek.value = CaptureAudioSeek(40_000) }
         // > 40,000 proves the real decoder advanced, rather than just the seek callback.
