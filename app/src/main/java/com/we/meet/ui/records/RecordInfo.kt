@@ -12,6 +12,7 @@ import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.api.dto.RecordSpeakerActivityDto
 import com.we.meet.data.repository.CaptureRepository
 import com.we.meet.data.repository.MeetingRecordRepository
+import com.we.meet.data.repository.MeetingDeliveryRepository
 import com.we.meet.ui.components.*
 import com.we.meet.ui.theme.Dimens
 
@@ -28,6 +29,8 @@ internal fun RecordInfo(record: RecordDto, captures: CaptureRepository?, viewer:
         modifier.fillMaxWidth().padding(Dimens.ScreenPadding),
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
     ) {
+        InfoRow(R.string.records_info_owner, record.owner?.takeIf { it.isNotBlank() } ?: stringResource(R.string.records_owner_unknown))
+        InfoRow(R.string.records_info_created, record.createdAt?.let(::recordTime) ?: stringResource(R.string.records_owner_unknown))
         InfoRow(R.string.records_source_filter, stringResource(recordSourceLabel(record)))
         InfoRow(R.string.records_start_time, recordTime(record.originAt))
         InfoRow(R.string.records_retention, stringResource(retentionLabel(record.retentionMode)))
@@ -41,6 +44,37 @@ internal fun RecordInfo(record: RecordDto, captures: CaptureRepository?, viewer:
         if (!record.sourceAvailable) {
             Text(stringResource(R.string.records_source_missing),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/** Read the caller's existing receipts, without invoking export creation. */
+@Composable
+internal fun RecordDocuments(viewer: String, record: RecordDto, repository: MeetingDeliveryRepository,
+    onDocument: (String) -> Unit, onSource: (String) -> Unit) {
+    if (!record.capabilities.readSummary) return
+    var refresh by remember(viewer, record.id) { mutableIntStateOf(0) }
+    val read = visibleRead(viewer, record.id, record.revision, refresh) { repository.exports(viewer, record.id) }
+    Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+        Text(stringResource(R.string.record_documents_title), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.record_documents_hint), style = MaterialTheme.typography.bodySmall)
+        when {
+            read == null -> WeMeetInlineLoading()
+            read.isFailure -> WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.record_export_read_error))
+            else -> {
+                val rows = read.getOrThrow().results
+                if (rows.isEmpty()) Text(stringResource(R.string.record_documents_empty))
+                rows.forEach { row ->
+                    HorizontalDivider()
+                    Text(stringResource(if (row.sourceKind == "human") R.string.record_export_human else R.string.record_export_ai))
+                    Text("${recordTime(row.createdAt)} · ${row.language}", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(exportStatus(row.status)))
+                    if (row.status == "ready" && row.canOpen && row.documentId != null) {
+                        TextButton(onClick = { onDocument(row.documentId) }) { Text(stringResource(R.string.record_export_open)) }
+                    }
+                    if (row.sourceKind == "ai") TextButton(onClick = { onSource(row.sourceId) }) { Text(stringResource(R.string.record_documents_source)) }
+                }
+            }
         }
     }
 }

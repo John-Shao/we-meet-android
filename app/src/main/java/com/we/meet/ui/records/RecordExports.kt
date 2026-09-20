@@ -143,7 +143,7 @@ private fun previewParts(text: String): List<String> = buildList {
         add(text.substring(start, end)); start = end
     }
 }
-private fun exportStatus(status: String) = when (status) {
+internal fun exportStatus(status: String) = when (status) {
     "queued" -> R.string.record_export_queued
     "running" -> R.string.record_export_running
     "ready" -> R.string.record_export_ready

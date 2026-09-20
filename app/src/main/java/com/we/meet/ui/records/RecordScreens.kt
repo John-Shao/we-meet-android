@@ -156,9 +156,12 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         tabs.forEach { (value, label) -> Tab(selected = value == selectedTab, onClick = { detailTab = value }, text = { Text(stringResource(label)) }) }
                     }
                     if (selectedTab == "info") {
-                        Column(Modifier.weight(1f)) {
+                        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                             RecordMediaDownload(repository, viewer, record)
-                            RecordInfo(record, app?.captureRepository, viewer, Modifier.weight(1f))
+                            RecordInfo(record, app?.captureRepository, viewer)
+                            if (app != null && onDocument != null) RecordDocuments(viewer, record, app.meetingDeliveryRepository, onDocument) {
+                                selectedVersion = it; detailTab = "summary"; tool = null; history = false; citation = null
+                            }
                         }
                     } else if (selectedTab == "speakers") {
                         RecordSpeakers(repository, viewer, record, Modifier.weight(1f))

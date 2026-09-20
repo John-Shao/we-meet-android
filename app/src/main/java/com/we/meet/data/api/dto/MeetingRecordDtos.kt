@@ -58,6 +58,7 @@ data class RecordDto(
     val upload: RecordUploadDto? = null,
     /** 所有者显示名(姓名 → 短名 → 邮箱)。列表副行要显示它,与 Web 的表格/窄屏副行同一口径。 */
     val owner: String? = null,
+    @Json(name = "created_at") val createdAt: String? = null,
 )
 
 data class RecordReferenceDto(

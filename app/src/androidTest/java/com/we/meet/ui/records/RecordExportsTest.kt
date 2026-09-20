@@ -118,6 +118,41 @@ class RecordExportsTest {
         compose.onNodeWithText(label(R.string.record_export_open)).assertDoesNotExist()
         assertTrue(api.creates.isEmpty())
     }
+    private fun showInfo(readSummary: Boolean = true) {
+        val item = RecordDto(record, "upload", "Imported recording", "2026-09-12T00:00:00Z", 1,
+            capabilities = RecordCapabilitiesDto(readSummary = readSummary), owner = "Recording owner", createdAt = "2026-09-13T00:00:00Z")
+        compose.setContent { WeMeetTheme { Surface { Column(Modifier.verticalScroll(rememberScrollState())) {
+            RecordInfo(item, null, viewer)
+            RecordDocuments(viewer, item, MeetingDeliveryRepository(api) { viewer }, { opened += it }, { opened += it })
+        } } } }
+    }
+    @Test fun informationOpensExistingDocumentAndExactAiSourceWithoutCreating() {
+        api.delivery = "ready"; api.kind = "ai"; api.available = false
+        showInfo()
+        compose.onNodeWithText("Recording owner").assertIsDisplayed()
+        compose.onNodeWithText(recordTime("2026-09-13T00:00:00Z")).assertExists()
+        click(R.string.record_export_open)
+        click(R.string.record_documents_source)
+        assertEquals(listOf(api.document, source.id), opened.toList())
+        assertTrue(api.creates.isEmpty()); assertTrue(api.retries.isEmpty())
+        screenshot("information")
+    }
+    @Test fun informationDoesNotReadExportsWithoutSummaryPermission() {
+        showInfo(readSummary = false)
+        compose.waitForIdle()
+        compose.onNodeWithText(label(R.string.record_documents_title)).assertDoesNotExist()
+        assertEquals(0, api.reads)
+    }
+    @Test fun informationRemovesDocumentLinksWhenAccessIsRevoked() {
+        api.delivery = "ready"
+        showInfo(); await(R.string.record_export_open)
+        compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        api.denied = true
+        compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        await(R.string.record_export_read_error)
+        compose.onNodeWithText(label(R.string.record_export_open)).assertDoesNotExist()
+        assertTrue(api.creates.isEmpty())
+    }
     private inner class Fixture : MeetingDeliveryApi {
         val id = UUID.randomUUID().toString()
         val document = UUID.randomUUID().toString()
@@ -132,12 +167,14 @@ class RecordExportsTest {
         @Volatile var canOpen = true
         @Volatile var errorCode = ""
         @Volatile var previews = 0
+        @Volatile var reads = 0
+        @Volatile var kind = source.kind
         val creates = CopyOnWriteArrayList<Pair<String, SummaryExportRequestDto>>()
         val retries = CopyOnWriteArrayList<Triple<String, String, SummaryExportRetryDto>>()
         private fun access() { if (denied) throw HttpException(Response.error<Any>(403, "{}".toResponseBody())) }
-        private fun row() = SummaryExportDto(id, source.kind, source.id, "zh", requireNotNull(delivery), attempt,
+        private fun row() = SummaryExportDto(id, kind, source.id, "zh", requireNotNull(delivery), attempt,
             document.takeIf { delivery == "ready" }, delivery == "ready" && canOpen, errorCode, "2026-09-13T00:00:00Z")
-        override suspend fun exports(record: String): SummaryExportsDto { access(); return SummaryExportsDto(available, if (delivery == null) emptyList() else listOf(row())) }
+        override suspend fun exports(record: String): SummaryExportsDto { reads++; access(); return SummaryExportsDto(available, if (delivery == null) emptyList() else listOf(row())) }
         override suspend fun preview(record: String, kind: String, source: String, language: String): SummaryExportPreviewDto {
             access(); previews++
             return SummaryExportPreviewDto("Minutes document", "Frozen document content", if (badPreview) "invalid" else hash, kind, source, language)
