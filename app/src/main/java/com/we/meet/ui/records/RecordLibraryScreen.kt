@@ -24,6 +24,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -204,7 +205,14 @@ fun RecordLibraryScreen(
             }
         }
     }
-    if (filtersVisible) ModalBottomSheet(onDismissRequest = { filtersVisible = false }) {
+    if (filtersVisible) ModalBottomSheet(
+        onDismissRequest = { filtersVisible = false },
+        // A validation message changes content height. Keep the form expanded
+        // rather than selecting a new half-height anchor that hides its footer.
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        val filterFocus = LocalFocusManager.current
+        val filterKeyboard = LocalSoftwareKeyboardController.current
         var fromDraft by remember { mutableStateOf(dateFrom) }
         var throughDraft by remember { mutableStateOf(dateThrough) }
         var invalidDates by remember { mutableStateOf(false) }
@@ -225,6 +233,8 @@ fun RecordLibraryScreen(
             if (invalidDates) Text(stringResource(R.string.records_date_error), color = MaterialTheme.colorScheme.error)
             TextButton(onClick = { fromDraft = ""; throughDraft = ""; invalidDates = false }) { Text(stringResource(R.string.records_clear_dates)) }
             Button(onClick = {
+                filterFocus.clearFocus()
+                filterKeyboard?.hide()
                 if (runCatching { recordDateRange(fromDraft, throughDraft) }.isSuccess) {
                     dateFrom = fromDraft; dateThrough = throughDraft; filtersVisible = false
                 } else invalidDates = true

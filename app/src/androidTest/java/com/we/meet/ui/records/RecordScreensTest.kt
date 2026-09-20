@@ -15,6 +15,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -444,6 +445,16 @@ class RecordScreensTest {
         compose.onNodeWithText(label(R.string.records_created_through)).performScrollTo().performTextInput("2026-09-20")
         compose.onNodeWithText(label(R.string.records_filters_done)).performScrollTo().performClick()
         awaitText(label(R.string.records_date_error))
+        compose.onNodeWithText(label(R.string.records_date_error)).assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.records_filters_done)).assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.records_created_through)).assertIsNotFocused()
+        // Capture both windows: the modal sheet and the activity have separate roots.
+        // IME animations run on real time, independently of Compose's test clock.
+        android.os.SystemClock.sleep(500)
+        val bitmap = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+        File(context.externalCacheDir, "records-invalid-date.png").outputStream().use {
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
         assertTrue(fixture.dateQueries.isEmpty())
         compose.onNodeWithText(label(R.string.records_created_from)).performScrollTo().performTextReplacement("2026-09-20")
         compose.onNodeWithText(label(R.string.records_filters_done)).performScrollTo().performClick()
