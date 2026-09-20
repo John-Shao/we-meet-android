@@ -18,6 +18,16 @@ class SpeakerTimelineTest {
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private val timeline = RecordSpeakerTimelineDto("recognized_extent", "partial", extentMs = 7000,
         intervals = listOf(RecordSpeechIntervalDto(0, 1000), RecordSpeechIntervalDto(4000, 6000)))
+    @Test fun fullMediaRulerPreservesTrailingSilence() {
+        compose.setContent { WeMeetTheme { SpeakerTimeline(timeline, mediaDuration = 10000) } }
+        compose.onNodeWithText(context.getString(R.string.records_media_ruler, "0:10")).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.speaker_timeline_intervals, 2)).performClick()
+        compose.onNodeWithText("0:04 – 0:06").assertIsDisplayed()
+    }
+    @Test fun shorterMediaMetadataDoesNotClipRecognizedSpeech() {
+        compose.setContent { WeMeetTheme { SpeakerTimeline(timeline, mediaDuration = 5000) } }
+        compose.onNodeWithText(context.getString(R.string.speaker_timeline_basis, "0:07")).assertIsDisplayed()
+    }
     @Test fun seeksExactSpeechStartUsingAccessibleTarget() {
         var sought: Long? = null
         compose.setContent { WeMeetTheme { SpeakerTimeline(timeline) { sought = it } } }

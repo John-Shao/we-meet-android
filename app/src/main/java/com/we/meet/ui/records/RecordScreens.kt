@@ -118,6 +118,8 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
      * signed URL expires, and re-reading on a revision bump keeps a stale link
      * from outliving the source it points at.
      */
+    var playerDuration by remember(viewer, recordId) { mutableStateOf<Long?>(null) }
+    val fullDuration = record?.let { mediaDuration(it, playerDuration) }
     val canPlayImport = record?.sourceType == "upload" && record.capabilities.readTranscript && record.capabilities.playMedia
     val media = visibleRead(viewer, recordId, record?.revision, canPlayImport) {
         if (record == null || !canPlayImport) return@visibleRead Result.failure(IllegalStateException("no media"))
@@ -158,14 +160,14 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                     if (selectedTab == "info") {
                         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                             RecordMediaDownload(repository, viewer, record)
-                            RecordInfo(record, app?.captureRepository, viewer)
+                            RecordInfo(record, app?.captureRepository, viewer, fullDuration = fullDuration)
                             if (app != null && onDocument != null) RecordDocuments(viewer, record, app.meetingDeliveryRepository, onDocument) {
                                 selectedVersion = it; detailTab = "summary"; tool = null; history = false; citation = null
                             }
                         }
                     } else if (selectedTab == "speakers") {
                         RecordSpeakers(repository, viewer, record, Modifier.weight(1f),
-                            onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null)
+                            fullDuration = fullDuration, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null)
                     } else if (showTranslations) {
                         Column(Modifier.weight(1f).fillMaxWidth()) {
                             if (record.sourceType == "audio_recording") CaptureTranslationArchives(viewer, requireNotNull(record.captureId), recordId, requireNotNull(app).captureTranslationRepository)
@@ -264,7 +266,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
             // The import's signed read is fetched lazily; until it arrives there is
             // no player, and a refused read leaves the transcript readable alone.
             if (canPlayImport) media?.getOrNull()?.let { read ->
-                UploadMediaPlayer(read, playbackPositionMs, audioSeek, sourceId = recordId, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it })
+                UploadMediaPlayer(read, playbackPositionMs, audioSeek, onDuration = { playerDuration = it }, sourceId = recordId, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it })
             }
             if (detail?.isSuccess == true && record?.capabilities?.readTranscript == true) citation?.let { (snapshot, reference) ->
                 val original = visibleRead(viewer, recordId, snapshot, reference, refresh) { repository.citation(viewer, recordId, snapshot, reference) }

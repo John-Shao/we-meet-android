@@ -18,22 +18,23 @@ import com.we.meet.ui.theme.Dimens
 
 /** All speakers use the same recognized extent. Silent gaps keep their width. */
 @Composable
-internal fun SpeakerTimeline(timeline: RecordSpeakerTimelineDto?, onSource: ((Long) -> Unit)? = null) {
+internal fun SpeakerTimeline(timeline: RecordSpeakerTimelineDto?, mediaDuration: Long? = null, onSource: ((Long) -> Unit)? = null) {
     if (timeline == null) return // Old servers do not advertise a timeline.
     if (!timeline.isUsable()) {
         Text(stringResource(R.string.speaker_timeline_unavailable), style = MaterialTheme.typography.bodySmall)
         return
     }
-    val extent = requireNotNull(timeline.extentMs)
+    val recognized = requireNotNull(timeline.extentMs)
+    val extent = mediaDuration?.takeIf { validMediaDuration(it) && it >= recognized } ?: recognized
     var expanded by remember(timeline) { mutableStateOf(false) }
     var page by remember(timeline) { mutableIntStateOf(0) }
     val foreground = MaterialTheme.colorScheme.primary
     val background = MaterialTheme.colorScheme.surfaceVariant
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-        Text(stringResource(R.string.speaker_timeline_basis, sourceTime(extent)), style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(if (extent == mediaDuration) R.string.records_media_ruler else R.string.speaker_timeline_basis, sourceTime(extent)), style = MaterialTheme.typography.bodySmall)
         // Exact proportional geometry; the list below supplies full-size TalkBack targets.
         Canvas(Modifier.fillMaxWidth().height(Dimens.MinTouchTarget).then(
-            if (onSource == null) Modifier else Modifier.pointerInput(timeline, onSource) {
+            if (onSource == null) Modifier else Modifier.pointerInput(timeline, onSource, extent) {
                 detectTapGestures { point ->
                     if (size.width > 0) {
                         val at = point.x.toDouble() / size.width * extent

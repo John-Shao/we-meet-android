@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="records_media_duration">Media duration</string>
+    <string name="records_media_duration_unknown">Unknown; imported files can report duration after playback prepares.</string>
+    <string name="records_saved_audio">Saved audio</string>
+    <string name="records_media_partial">Audio delivery is incomplete or contains gaps; no complete duration is claimed.</string>
+    <string name="records_media_ruler">Media timeline: 0:00 – %1$s</string>
+</resources>

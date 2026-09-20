@@ -43,6 +43,12 @@ data class RecordUploadDto(
     @Json(name = "can_control") val canControl: Boolean = false,
 )
 
+data class RecordMediaTimingDto(
+    @Json(name = "duration_ms") val durationMs: Long? = null,
+    @Json(name = "saved_duration_ms") val savedDurationMs: Long? = null,
+    val basis: String = "unknown",
+)
+
 data class RecordDto(
     val id: String,
     @Json(name = "source_type") val sourceType: String,
@@ -60,6 +66,7 @@ data class RecordDto(
     val upload: RecordUploadDto? = null,
     /** 所有者显示名(姓名 → 短名 → 邮箱)。列表副行要显示它,与 Web 的表格/窄屏副行同一口径。 */
     val owner: String? = null,
+    @Json(name = "media_timing") val mediaTiming: RecordMediaTimingDto? = null,
     @Json(name = "created_at") val createdAt: String? = null,
 )
 

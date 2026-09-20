@@ -45,6 +45,7 @@ class UploadMediaPlayerTest {
     private val currentMedia = mutableStateOf(media)
     private val openedUrls = CopyOnWriteArrayList<String>()
     private val reported = CopyOnWriteArrayList<Long>()
+    private val durations = CopyOnWriteArrayList<Long?>()
     private val seek = mutableStateOf<CaptureAudioSeek?>(null)
     private var engine: FakeEngine? = null
 
@@ -61,6 +62,7 @@ class UploadMediaPlayerTest {
                         seek = seek.value,
                         onSeekConsumed = { seek.value = null },
                         onPosition = { reported += it },
+                        onDuration = { durations += it },
                         createEngine = { url, onInterrupted ->
                             openedUrls += url
                             FakeEngine(onInterrupted).also { engine = it }
@@ -94,6 +96,7 @@ class UploadMediaPlayerTest {
         compose.runOnIdle { engine?.clock = 7_000L }
         compose.waitUntil(8_000) { reported.contains(7_000L) }
         assertTrue(reported.contains(7_000L))
+        assertEquals(engine?.durationMs(), durations.last())
     }
 
     @Test fun pausingStopsWithoutDiscardingThePosition() {

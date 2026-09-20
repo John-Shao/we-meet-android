@@ -81,6 +81,7 @@ internal fun UploadMediaPlayer(
     seek: CaptureAudioSeek? = null,
     onSeekConsumed: () -> Unit = {},
     onPosition: (Long) -> Unit = {},
+    onDuration: (Long?) -> Unit = {},
     /**
      * Fixtures inject a fake so the controls, the position contract and the seek
      * handling can be exercised without opening a real stream. Null means the
@@ -93,6 +94,7 @@ internal fun UploadMediaPlayer(
 ) {
     val context = LocalContext.current.applicationContext
     val latestPosition by rememberUpdatedState(onPosition)
+    val latestDuration by rememberUpdatedState(onDuration)
     val latestConsume by rememberUpdatedState(onSeekConsumed)
     var engine by remember(sourceId) { mutableStateOf<WholeFilePlayback?>(null) }
     var state by remember(sourceId) { mutableStateOf("ready") }
@@ -116,7 +118,8 @@ internal fun UploadMediaPlayer(
     }
 
     DisposableEffect(sourceId) {
-        onDispose { engine?.close() }
+        latestDuration(null)
+        onDispose { engine?.close(); latestDuration(null) }
     }
 
     // Prepared lazily: opening the screen must not fetch a GB-scale file.
@@ -138,6 +141,7 @@ internal fun UploadMediaPlayer(
                 state = if (current.isPreparing()) "loading" else "playing"
                 if (state == "loading") preparationStartedAt = SystemClock.elapsedRealtime()
                 duration = current.durationMs()
+                latestDuration(duration.takeIf(::validMediaDuration))
             }
             .onFailure { stop(); state = "error" }
         tick++
@@ -170,6 +174,7 @@ internal fun UploadMediaPlayer(
             }
             report(current.positionMs())
             duration = current.durationMs()
+            latestDuration(duration.takeIf(::validMediaDuration))
             aspect = current.videoAspectRatio()
             if (state == "loading") {
                 state = "playing"

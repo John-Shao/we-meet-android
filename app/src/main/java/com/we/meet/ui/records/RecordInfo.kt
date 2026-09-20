@@ -17,7 +17,7 @@ import com.we.meet.ui.components.*
 import com.we.meet.ui.theme.Dimens
 
 @Composable
-internal fun RecordInfo(record: RecordDto, captures: CaptureRepository?, viewer: String, modifier: Modifier = Modifier) {
+internal fun RecordInfo(record: RecordDto, captures: CaptureRepository?, viewer: String, modifier: Modifier = Modifier, fullDuration: Long? = mediaDuration(record)) {
     // 与 Web 端 `MeetingRecordWorkspace` 的「录音信息」同一版式:两列键值表 ——
     // 左列定宽、值左对齐成一列。原来是「标签一行、值一行」堆三对,读起来是三段
     // 独立文字,扫不出「哪一行的值是什么」。
@@ -29,6 +29,11 @@ internal fun RecordInfo(record: RecordDto, captures: CaptureRepository?, viewer:
         modifier.fillMaxWidth().padding(Dimens.ScreenPadding),
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
     ) {
+        InfoRow(R.string.records_media_duration, fullDuration?.let(::sourceTime) ?: stringResource(R.string.records_media_duration_unknown))
+        record.mediaTiming?.takeIf { it.basis == "partial_audio" && validMediaDuration(it.savedDurationMs) }?.let {
+            InfoRow(R.string.records_saved_audio, sourceTime(requireNotNull(it.savedDurationMs)))
+            Text(stringResource(R.string.records_media_partial), style = MaterialTheme.typography.bodySmall)
+        }
         InfoRow(R.string.records_info_owner, record.owner?.takeIf { it.isNotBlank() } ?: stringResource(R.string.records_owner_unknown))
         InfoRow(R.string.records_info_created, record.createdAt?.let(::recordTime) ?: stringResource(R.string.records_owner_unknown))
         InfoRow(R.string.records_source_filter, stringResource(recordSourceLabel(record)))
@@ -114,7 +119,7 @@ private fun retentionLabel(mode: String): Int = when (mode) {
 }
 
 @Composable
-internal fun RecordSpeakers(repository: MeetingRecordRepository, viewer: String, record: RecordDto, modifier: Modifier = Modifier, onSource: ((Long) -> Unit)? = null) {
+internal fun RecordSpeakers(repository: MeetingRecordRepository, viewer: String, record: RecordDto, modifier: Modifier = Modifier, onSource: ((Long) -> Unit)? = null, fullDuration: Long? = null) {
     var cursors by remember(viewer, record.id, record.revision) { mutableStateOf(listOf<String?>(null)) }
     var refresh by remember { mutableIntStateOf(0) }
     val result = visibleRead(viewer, record.id, record.revision, cursors.last(), refresh) { repository.speakers(viewer, record.id, record.revision, cursors.last()) }
@@ -141,7 +146,7 @@ internal fun RecordSpeakers(repository: MeetingRecordRepository, viewer: String,
                         speaker = speaker,
                         onAttributed = { refresh++ },
                     )
-                    SpeakerActivity(speaker.activity, onSource)
+                    SpeakerActivity(speaker.activity, onSource, fullDuration)
                 }
                 item { Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                     if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
@@ -153,7 +158,7 @@ internal fun RecordSpeakers(repository: MeetingRecordRepository, viewer: String,
 }
 
 @Composable
-internal fun SpeakerActivity(activity: RecordSpeakerActivityDto?, onSource: ((Long) -> Unit)? = null) {
+internal fun SpeakerActivity(activity: RecordSpeakerActivityDto?, onSource: ((Long) -> Unit)? = null, fullDuration: Long? = null) {
     val duration = activity?.durationMs
     val share = activity?.sharePercent
     if (activity?.basis != "recognized_speaker_time" || activity.status !in listOf("available", "partial") || duration == null || duration < 0 || share == null || !share.isFinite() || share !in 0.0..100.0) {
@@ -164,6 +169,6 @@ internal fun SpeakerActivity(activity: RecordSpeakerActivityDto?, onSource: ((Lo
         Text(stringResource(R.string.records_activity_value, sourceTime(duration), share), style = MaterialTheme.typography.bodySmall)
         LinearProgressIndicator(progress = { (share / 100).toFloat() }, modifier = Modifier.fillMaxWidth())
         if (activity.status == "partial") Text(stringResource(R.string.records_activity_partial), style = MaterialTheme.typography.bodySmall)
-        SpeakerTimeline(activity.timeline, onSource)
+        SpeakerTimeline(activity.timeline, mediaDuration = fullDuration, onSource = onSource)
     }
 }
