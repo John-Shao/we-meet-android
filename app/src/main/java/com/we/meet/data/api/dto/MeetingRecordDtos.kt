@@ -169,7 +169,29 @@ data class RecordSpeakerActivityDto(
     val status: String,
     @Json(name = "duration_ms") val durationMs: Long? = null,
     @Json(name = "share_percent") val sharePercent: Double? = null,
+    val timeline: RecordSpeakerTimelineDto? = null,
 )
+
+data class RecordSpeechIntervalDto(
+    @Json(name = "start_ms") val startMs: Long,
+    @Json(name = "end_ms") val endMs: Long,
+)
+
+data class RecordSpeakerTimelineDto(
+    val basis: String,
+    val status: String,
+    val reason: String? = null,
+    @Json(name = "extent_ms") val extentMs: Long? = null,
+    val intervals: List<RecordSpeechIntervalDto> = emptyList(),
+) {
+    /** Invalid or mixed clocks never become tappable playback offsets. */
+    fun isUsable(): Boolean = basis == "recognized_extent" && status in listOf("available", "partial") &&
+        extentMs != null && extentMs > 0 && intervals.size in 1..1000 &&
+        intervals.withIndex().all { (index, span) ->
+            span.startMs >= 0 && span.endMs > span.startMs && span.endMs <= extentMs &&
+                (index == 0 || span.startMs > intervals[index - 1].endMs)
+        }
+}
 
 data class RecordSpeakerDto(
     val id: String,

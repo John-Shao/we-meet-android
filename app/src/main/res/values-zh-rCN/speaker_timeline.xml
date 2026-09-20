@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speaker_timeline_basis">发言分布 · 0:00–%1$s 为已识别原文范围，并非完整媒体时长。</string>
+    <string name="speaker_timeline_partial">部分片段缺少有效结束时间，未绘入分布图。</string>
+    <string name="speaker_timeline_unavailable">此来源暂无可用的发言分布。</string>
+    <string name="speaker_timeline_read_only">此处无法回听，仍可查看时间范围。</string>
+    <string name="speaker_timeline_intervals">查看 %1$d 个发言区间</string>
+    <string name="speaker_timeline_seek">回听 %1$s–%2$s</string>
+    <string name="speaker_timeline_hide">收起发言区间</string>
+</resources>

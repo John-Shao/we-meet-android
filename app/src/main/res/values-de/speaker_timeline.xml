@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speaker_timeline_basis">Sprechverteilung · 0:00–%1$s des erkannten Textes, nicht die gesamte Mediendauer.</string>
+    <string name="speaker_timeline_partial">Abschnitte ohne gültige Endzeit werden ausgelassen.</string>
+    <string name="speaker_timeline_unavailable">Für diese Quelle ist keine Sprechverteilung verfügbar.</string>
+    <string name="speaker_timeline_read_only">Wiedergabe ist hier nicht verfügbar. Zeitbereiche bleiben sichtbar.</string>
+    <string name="speaker_timeline_intervals">%1$d Sprechintervalle anzeigen</string>
+    <string name="speaker_timeline_seek">%1$s–%2$s abspielen</string>
+    <string name="speaker_timeline_hide">Sprechintervalle ausblenden</string>
+</resources>

@@ -106,7 +106,7 @@ private fun retentionLabel(mode: String): Int = when (mode) {
 }
 
 @Composable
-internal fun RecordSpeakers(repository: MeetingRecordRepository, viewer: String, record: RecordDto, modifier: Modifier = Modifier) {
+internal fun RecordSpeakers(repository: MeetingRecordRepository, viewer: String, record: RecordDto, modifier: Modifier = Modifier, onSource: ((Long) -> Unit)? = null) {
     var cursors by remember(viewer, record.id, record.revision) { mutableStateOf(listOf<String?>(null)) }
     var refresh by remember { mutableIntStateOf(0) }
     val result = visibleRead(viewer, record.id, record.revision, cursors.last(), refresh) { repository.speakers(viewer, record.id, record.revision, cursors.last()) }
@@ -133,7 +133,7 @@ internal fun RecordSpeakers(repository: MeetingRecordRepository, viewer: String,
                         speaker = speaker,
                         onAttributed = { refresh++ },
                     )
-                    SpeakerActivity(speaker.activity)
+                    SpeakerActivity(speaker.activity, onSource)
                 }
                 item { Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                     if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
@@ -145,7 +145,7 @@ internal fun RecordSpeakers(repository: MeetingRecordRepository, viewer: String,
 }
 
 @Composable
-internal fun SpeakerActivity(activity: RecordSpeakerActivityDto?) {
+internal fun SpeakerActivity(activity: RecordSpeakerActivityDto?, onSource: ((Long) -> Unit)? = null) {
     val duration = activity?.durationMs
     val share = activity?.sharePercent
     if (activity?.basis != "recognized_speaker_time" || activity.status !in listOf("available", "partial") || duration == null || duration < 0 || share == null || !share.isFinite() || share !in 0.0..100.0) {
@@ -156,5 +156,6 @@ internal fun SpeakerActivity(activity: RecordSpeakerActivityDto?) {
         Text(stringResource(R.string.records_activity_value, sourceTime(duration), share), style = MaterialTheme.typography.bodySmall)
         LinearProgressIndicator(progress = { (share / 100).toFloat() }, modifier = Modifier.fillMaxWidth())
         if (activity.status == "partial") Text(stringResource(R.string.records_activity_partial), style = MaterialTheme.typography.bodySmall)
+        SpeakerTimeline(activity.timeline, onSource)
     }
 }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speaker_timeline_basis">Répartition · 0:00–%1$s du texte reconnu, pas la durée totale du média.</string>
+    <string name="speaker_timeline_partial">Certains segments sans heure de fin valide sont omis.</string>
+    <string name="speaker_timeline_unavailable">La répartition est indisponible pour cette source.</string>
+    <string name="speaker_timeline_read_only">La lecture est indisponible ici. Les plages restent consultables.</string>
+    <string name="speaker_timeline_intervals">Afficher %1$d plages de parole</string>
+    <string name="speaker_timeline_seek">Écouter %1$s–%2$s</string>
+    <string name="speaker_timeline_hide">Masquer les plages de parole</string>
+</resources>

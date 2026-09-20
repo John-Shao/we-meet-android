@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speaker_timeline_basis">Speech distribution · 0:00–%1$s of recognized text, not full media duration.</string>
+    <string name="speaker_timeline_partial">Some segments have no valid end time and are omitted.</string>
+    <string name="speaker_timeline_unavailable">Speech distribution is unavailable for this source.</string>
+    <string name="speaker_timeline_read_only">Playback is unavailable here. Time ranges remain readable.</string>
+    <string name="speaker_timeline_intervals">Show %1$d speech intervals</string>
+    <string name="speaker_timeline_seek">Play %1$s–%2$s</string>
+    <string name="speaker_timeline_hide">Hide speech intervals</string>
+</resources>

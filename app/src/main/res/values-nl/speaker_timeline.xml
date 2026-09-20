@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speaker_timeline_basis">Spreekverdeling · 0:00–%1$s van herkende tekst, niet de volledige mediaduur.</string>
+    <string name="speaker_timeline_partial">Segmenten zonder geldige eindtijd worden weggelaten.</string>
+    <string name="speaker_timeline_unavailable">Spreekverdeling is niet beschikbaar voor deze bron.</string>
+    <string name="speaker_timeline_read_only">Afspelen is hier niet beschikbaar. Tijdbereiken blijven leesbaar.</string>
+    <string name="speaker_timeline_intervals">%1$d spreekintervallen tonen</string>
+    <string name="speaker_timeline_seek">%1$s–%2$s afspelen</string>
+    <string name="speaker_timeline_hide">Spreekintervallen verbergen</string>
+</resources>

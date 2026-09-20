@@ -164,7 +164,8 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             }
                         }
                     } else if (selectedTab == "speakers") {
-                        RecordSpeakers(repository, viewer, record, Modifier.weight(1f))
+                        RecordSpeakers(repository, viewer, record, Modifier.weight(1f),
+                            onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null)
                     } else if (showTranslations) {
                         Column(Modifier.weight(1f).fillMaxWidth()) {
                             if (record.sourceType == "audio_recording") CaptureTranslationArchives(viewer, requireNotNull(record.captureId), recordId, requireNotNull(app).captureTranslationRepository)
