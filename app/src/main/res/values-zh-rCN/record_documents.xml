@@ -5,5 +5,5 @@
     <string name="record_documents_hint">本条记录中由你导出的文档，按时间倒序展示，可翻页查看历史副本。每份文档拥有独立访问权限。</string>
     <string name="record_documents_empty">你尚未导出纪要文档。</string>
     <string name="record_documents_create_hint">可从纪要版本中创建文档。</string>
-    <string name="record_documents_source">查看来源 AI 纪要版本</string>
+    <string name="record_documents_source">查看来源纪要版本</string>
 </resources>
