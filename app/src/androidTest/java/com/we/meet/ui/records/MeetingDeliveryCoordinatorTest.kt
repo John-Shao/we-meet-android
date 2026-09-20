@@ -92,7 +92,7 @@ class MeetingDeliveryCoordinatorTest {
         override suspend fun retryNotice(record: String, notice: String, key: String, body: SummaryNoticeRetryDto): SummaryNoticeReceiptDto {
             call(notice, key, body); return SummaryNoticeReceiptDto(SummaryNoticeDto(notice, input.sourceId, "queued", 2, "", row().createdAt), true)
         }
-        override suspend fun exports(record: String): SummaryExportsDto = error("No automatic reads")
+        override suspend fun exports(record: String, cursor: String?): SummaryExportsDto = error("No automatic reads")
         override suspend fun preview(record: String, kind: String, source: String, language: String): SummaryExportPreviewDto = error("No automatic reads")
         override suspend fun retryPreview(record: String, export: String): SummaryExportRetryPreviewDto = error("No automatic reads")
         override suspend fun notices(record: String): SummaryNoticesDto = error("No automatic reads")

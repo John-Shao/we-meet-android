@@ -54,7 +54,8 @@ internal fun RecordDocuments(viewer: String, record: RecordDto, repository: Meet
     onDocument: (String) -> Unit, onSource: (String) -> Unit) {
     if (!record.capabilities.readSummary) return
     var refresh by remember(viewer, record.id) { mutableIntStateOf(0) }
-    val read = visibleRead(viewer, record.id, record.revision, refresh) { repository.exports(viewer, record.id) }
+    var cursors by remember(viewer, record.id) { mutableStateOf(listOf<String?>(null)) }
+    val read = visibleRead(viewer, record.id, record.revision, refresh, cursors.last()) { repository.exports(viewer, record.id, cursors.last()) }
     Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
         Text(stringResource(R.string.record_documents_title), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(R.string.record_documents_hint), style = MaterialTheme.typography.bodySmall)
@@ -74,8 +75,12 @@ internal fun RecordDocuments(viewer: String, record: RecordDto, repository: Meet
                     }
                     if (row.sourceKind == "ai") TextButton(onClick = { onSource(row.sourceId) }) { Text(stringResource(R.string.record_documents_source)) }
                 }
+                read.getOrThrow().nextCursor?.let { next ->
+                    TextButton(onClick = { cursors = cursors + next }) { Text(stringResource(R.string.records_next)) }
+                }
             }
         }
+        if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
     }
 }
 

@@ -16,6 +16,21 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
 class MeetingDeliveryRepositoryTest {
+    @Test fun exportHistoryPassesEncodedCursorAndRetainsCompatibility() = runBlocking {
+        val repo = repository {
+            assertEquals("signed+cursor", it.url.queryParameter("cursor"))
+            200 to json(SummaryExportsDto(true, listOf(row), "next-cursor"))
+        }
+        assertEquals("next-cursor", repo.exports("owner", record, "signed+cursor").getOrThrow().nextCursor)
+        assertNull(repository { 200 to """{"results":[],"available":false}""" }.exports("owner", record).getOrThrow().nextCursor)
+    }
+    @Test fun exportHistoryRejectsInvalidAndRepeatedCursors() = runBlocking {
+        val repo = repository { 200 to json(SummaryExportsDto(true, listOf(row), "repeated")) }
+        assertTrue(repo.exports("owner", record, "").isFailure)
+        assertTrue(repo.exports("owner", record, "a".repeat(2049)).isFailure)
+        assertTrue(requests.isEmpty())
+        assertTrue(repo.exports("owner", record, "repeated").isFailure)
+    }
     private val record = UUID.randomUUID().toString()
     private val source = UUID.randomUUID().toString()
     private val id = UUID.randomUUID().toString()

@@ -6,7 +6,7 @@ import retrofit2.http.*
 interface MeetingDeliveryApi {
     @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/{record}/document-exports/")
-    suspend fun exports(@Path("record") record: String): SummaryExportsDto
+    suspend fun exports(@Path("record") record: String, @Query("cursor") cursor: String? = null): SummaryExportsDto
     @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/{record}/document-exports/preview/")
     suspend fun preview(@Path("record") record: String, @Query("source_kind") kind: String,

@@ -10,8 +10,13 @@ import kotlinx.coroutines.CancellationException
 
 /** Private receipts and frozen previews; GET never creates documents, messages or grants. */
 class MeetingDeliveryRepository(private val api: MeetingDeliveryApi, private val currentViewer: () -> String?) {
-    suspend fun exports(viewer: String, record: String) = scoped(viewer, record) {
-        api.exports(record).also { unique(it.results.map { row -> row.id }, 10); it.results.forEach(::export) }
+    suspend fun exports(viewer: String, record: String, cursor: String? = null) = scoped(viewer, record) {
+        validateCursor(cursor)
+        api.exports(record, cursor).also {
+            unique(it.results.map { row -> row.id }, 10); it.results.forEach(::export)
+            validateCursor(it.nextCursor)
+            require(it.nextCursor == null || it.nextCursor != cursor)
+        }
     }
     suspend fun preview(viewer: String, record: String, selection: SummaryExportSelectionDto) = scoped(viewer, record) {
         validate(selection)
@@ -61,6 +66,7 @@ class MeetingDeliveryRepository(private val api: MeetingDeliveryApi, private val
         val exportRetryAdapter = moshi.adapter(SummaryExportRetryIntentDto::class.java)
         val noticeRetryAdapter = moshi.adapter(SummaryNoticeRetryIntentDto::class.java)
         private fun uuid(value: String) { require(UUID.fromString(value).toString() == value) }
+        private fun validateCursor(value: String?) { require(value == null || (value.length in 1..2048 && value.none { it.isISOControl() })) }
         private fun hash(value: String) { require(value.matches(Regex("[a-f0-9]{64}"))) }
         private fun unique(ids: List<String>, max: Int) { require(ids.size <= max && ids.distinct().size == ids.size) }
         fun selection(value: SummaryExportRequestDto) = SummaryExportSelectionDto(value.sourceKind, value.sourceId, value.language)

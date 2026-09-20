@@ -143,6 +143,18 @@ class RecordExportsTest {
         compose.onNodeWithText(label(R.string.record_documents_title)).assertDoesNotExist()
         assertEquals(0, api.reads)
     }
+    @Test fun informationBrowsesOlderReceiptsAndReturnsWithoutWrites() {
+        api.delivery = "ready"; api.paginated = true
+        showInfo()
+        click(R.string.records_next)
+        await(R.string.records_previous)
+        assertTrue(api.cursors.contains("history-token"))
+        compose.onNodeWithText(label(R.string.records_next)).assertDoesNotExist()
+        click(R.string.records_previous)
+        await(R.string.records_next)
+        assertEquals("first", api.cursors.last())
+        assertTrue(api.creates.isEmpty()); assertTrue(api.retries.isEmpty())
+    }
     @Test fun informationRemovesDocumentLinksWhenAccessIsRevoked() {
         api.delivery = "ready"
         showInfo(); await(R.string.record_export_open)
@@ -174,7 +186,13 @@ class RecordExportsTest {
         private fun access() { if (denied) throw HttpException(Response.error<Any>(403, "{}".toResponseBody())) }
         private fun row() = SummaryExportDto(id, kind, source.id, "zh", requireNotNull(delivery), attempt,
             document.takeIf { delivery == "ready" }, delivery == "ready" && canOpen, errorCode, "2026-09-13T00:00:00Z")
-        override suspend fun exports(record: String): SummaryExportsDto { reads++; access(); return SummaryExportsDto(available, if (delivery == null) emptyList() else listOf(row())) }
+        var paginated = false
+        val cursors = CopyOnWriteArrayList<String>()
+        override suspend fun exports(record: String, cursor: String?): SummaryExportsDto {
+            reads++; access(); cursors += cursor ?: "first"
+            val rows = if (delivery == null) emptyList() else listOf(if (cursor == null) row() else row().copy(language = "en"))
+            return SummaryExportsDto(available, rows, if (paginated && cursor == null) "history-token" else null)
+        }
         override suspend fun preview(record: String, kind: String, source: String, language: String): SummaryExportPreviewDto {
             access(); previews++
             return SummaryExportPreviewDto("Minutes document", "Frozen document content", if (badPreview) "invalid" else hash, kind, source, language)

@@ -13,7 +13,7 @@ data class SummaryExportDto(val id: String, @Json(name = "source_kind") val sour
     @Json(name = "source_id") val sourceId: String, val language: String, val status: String, val attempt: Int,
     @Json(name = "document_id") val documentId: String?, @Json(name = "can_open") val canOpen: Boolean,
     @Json(name = "error_code") val errorCode: String, @Json(name = "created_at") val createdAt: String)
-data class SummaryExportsDto(val available: Boolean = false, val results: List<SummaryExportDto> = emptyList())
+data class SummaryExportsDto(val available: Boolean = false, val results: List<SummaryExportDto> = emptyList(), @Json(name = "next_cursor") val nextCursor: String? = null)
 data class SummaryExportReceiptDto(val export: SummaryExportDto, val replayed: Boolean)
 data class SummaryExportRetryPreviewDto(val export: SummaryExportDto, val title: String, val markdown: String,
     @Json(name = "payload_hash") val payloadHash: String) {

@@ -121,7 +121,7 @@ class RecordNotificationsTest {
             attempt = 2; delivery = "delivered"
             return SummaryNoticeReceiptDto(row(), sent.size > 1)
         }
-        override suspend fun exports(record: String): SummaryExportsDto = error("No document reads")
+        override suspend fun exports(record: String, cursor: String?): SummaryExportsDto = error("No document reads")
         override suspend fun preview(record: String, kind: String, source: String, language: String): SummaryExportPreviewDto = error("No document reads")
         override suspend fun retryPreview(record: String, export: String): SummaryExportRetryPreviewDto = error("No document reads")
         override suspend fun create(record: String, key: String, body: SummaryExportRequestDto): SummaryExportReceiptDto = error("No writes")

@@ -2,7 +2,7 @@
     <string name="records_info_owner">所有者</string>
     <string name="records_info_created">创建时间</string>
     <string name="record_documents_title">我的纪要文档</string>
-    <string name="record_documents_hint">显示你从本记录发起的最近 10 次导出。文档是独立副本，使用独立的访问权限。</string>
+    <string name="record_documents_hint">本条记录中由你导出的文档，按时间倒序展示，可翻页查看历史副本。每份文档拥有独立访问权限。</string>
     <string name="record_documents_empty">你尚未导出纪要文档，可在纪要版本中创建。</string>
     <string name="record_documents_source">查看来源 AI 纪要版本</string>
 </resources>
