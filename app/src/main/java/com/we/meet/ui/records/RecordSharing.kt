@@ -21,6 +21,7 @@ import com.we.meet.R
 import com.we.meet.data.api.dto.*
 import com.we.meet.data.capture.*
 import com.we.meet.data.repository.MeetingSharingRepository
+import com.we.meet.ui.components.WeMeetInlineEmptyState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
@@ -109,7 +110,7 @@ internal fun RecordSharing(viewer: String, record: RecordDto, repository: Meetin
                         Button(onClick = { apply(true) }, enabled = enabled) { Text(stringResource(R.string.summary_controls_reconcile)) }
                     } else if (state.available) TextButton(onClick = { choose = true; error = false; accepted = false }, enabled = enabled) { Text(stringResource(R.string.record_share_choose)) }
                     if (accepted) Text(stringResource(R.string.record_share_accepted))
-                    if (state.results.isEmpty()) Text(stringResource(R.string.record_share_empty))
+                    if (state.results.isEmpty()) WeMeetInlineEmptyState(stringResource(R.string.record_share_empty))
                     state.results.forEach { person ->
                         HorizontalDivider()
                         Text(person.name.ifBlank { person.id })
@@ -202,7 +203,7 @@ private fun ShareCandidates(viewer: String, recordId: String, online: Boolean, r
                 read.isFailure -> WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.record_share_read_error))
                 else -> {
                     val page = read.getOrThrow()
-                    if (page.results.isEmpty()) Text(stringResource(R.string.record_share_no_candidates))
+                    if (page.results.isEmpty()) WeMeetInlineEmptyState(stringResource(R.string.record_share_no_candidates))
                     page.results.forEach { person -> Row(Modifier.fillMaxWidth().toggleable(value = selected.containsKey(person.id), role = Role.Checkbox,
                         enabled = selected.size < 50 || selected.containsKey(person.id), onValueChange = { checked ->
                             selected = if (checked) selected + (person.id to person.name.ifBlank { person.id }) else selected - person.id

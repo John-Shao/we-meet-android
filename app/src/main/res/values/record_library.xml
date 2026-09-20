@@ -43,6 +43,7 @@
     <string name="record_upload_failed">Transcription failed</string>
     <string name="record_upload_retry">Retry transcription</string>
     <string name="records_sort">Sort by creation time</string>
+    <string name="records_more">More actions</string>
     <string name="records_newest">Newest created first</string>
     <string name="records_oldest">Oldest created first</string>
 </resources>

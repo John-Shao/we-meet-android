@@ -32,6 +32,7 @@ import com.we.meet.data.repository.CapturePlaybackRepository
 import com.we.meet.data.repository.CapturePlaylist
 import com.we.meet.service.CaptureForegroundService
 import com.we.meet.service.ConferenceForegroundService
+import com.we.meet.ui.components.WeMeetInlineEmptyState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
@@ -161,7 +162,7 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
             if (state == "error") WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.capture_playback_error))
             if (data != null) {
                 if (data.manifest.outcome == "incomplete") Text(stringResource(R.string.capture_playback_incomplete), style = MaterialTheme.typography.bodySmall)
-                if (data.chunks.isEmpty()) Text(stringResource(R.string.capture_playback_empty))
+                if (data.chunks.isEmpty()) WeMeetInlineEmptyState(stringResource(R.string.capture_playback_empty))
                 else {
                     Text("${sourceTime(position)} / ${sourceTime(data.endMs)}", style = MaterialTheme.typography.labelMedium)
                     Slider(position.coerceAtMost(maxOf(1, data.endMs - 1)).toFloat(), onValueChange = { stop(); setPosition(it.toLong()); state = "ready"; consumeSeek() },

@@ -83,7 +83,7 @@ private fun Context.captureActivity(): ComponentActivity? = when (this) {
 private data class CaptureLaunch(val title: String, val retentionMode: String)
 
 @Composable
-fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit, onOpenNavDrawer: (() -> Unit)? = null, onSummaryRecord: ((String) -> Unit)? = null) {
+fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit, onSummaryRecord: ((String) -> Unit)? = null) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var retry by remember(viewer) { mutableIntStateOf(0) }
@@ -132,7 +132,6 @@ fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit
         else { requestedTitle = request; microphone.launch(Manifest.permission.RECORD_AUDIO) }
     }
     CaptureContent(state, permissionError, onBack, onStart = { requestStart(it, "media") },
-        onOpenNavDrawer = onOpenNavDrawer,
         onStartText = if (admission?.getOrNull() == true) ({ requestStart(it, "text") }) else null,
         onFinishIncomplete = { service?.finish(allowMissing = true) },
         onPause = { service?.pause() }, onFinish = { service?.finish() },
@@ -190,7 +189,6 @@ internal fun CaptureContent(
     onFinishIncomplete: (() -> Unit)? = null,
     tools: @Composable () -> Unit = {},
     extra: @Composable () -> Unit = {},
-    onOpenNavDrawer: (() -> Unit)? = null,
     onSummaryRecord: ((String) -> Unit)? = null,
 ) {
     val titlePrefix = stringResource(R.string.capture_default_title_prefix)
@@ -219,12 +217,15 @@ internal fun CaptureContent(
         local != null -> R.string.capture_status_paused
         else -> R.string.capture_status_ready
     }
+    // 二级页的页面层级规范(docs/page-backgrounds.md §1):白色固定头 + 浅灰滚动区。
+    // 这一页由 `Routes.CAPTURE` 全屏路由进入(不经 `MainTabScreen`,底部模块导航栏
+    // 自然不显示),所以它**就是**二级页 —— 顶栏是「返回 + 标题」,容器铺 `background`,
+    // 底部的录制 Dock 自己是一块 `surface` 白面。
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             WeMeetTopBar(title = stringResource(R.string.capture_notification_title),
-                onBack = if (onOpenNavDrawer == null) onBack else null,
-                onMenu = onOpenNavDrawer, menuDescription = stringResource(R.string.meeting_navigation),
+                onBack = onBack,
                 actions = {
                     if (state.ready) {
                         tools()

@@ -23,6 +23,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -54,6 +55,7 @@ import com.we.meet.data.api.dto.RecordSummaryVersionDto
 import com.we.meet.data.repository.MeetingRecordRepository
 import com.we.meet.data.repository.RecordScope
 import com.we.meet.data.repository.RecordSource
+import com.we.meet.ui.components.WeMeetInlineEmptyState
 import com.we.meet.ui.components.WeMeetEmptyState
 import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetInlineErrorState
@@ -126,18 +128,27 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
         if (record == null || !canPlayImport) return@visibleRead Result.failure(IllegalStateException("no media"))
         repository.media(viewer, recordId, record.revision)
     }
+    // 二级页的页面层级规范(docs/page-backgrounds.md §1):白色固定头 + 浅灰滚动区。
+    // 容器从 `surface` 改成 `background`;标题 / 元信息 / Tab 行那一块自己铺白,
+    // 于是「白顶栏 + 白头下固定区 + 浅灰正文」三段成立 —— 此前整页 `surface`,
+    // 顶栏、标题、Tab 与正文全是同一个白,浅色下看不出分界、深色下彻底糊成一片。
     Scaffold(topBar = { WeMeetTopBar(stringResource(R.string.records_title), onBack = onBack,
-        actions = { record?.let { RecordRenameAction(repository, viewer, it) { refresh++ } } }) }, containerColor = MaterialTheme.colorScheme.surface) { padding ->
+        actions = { record?.let { RecordRenameAction(repository, viewer, it) { refresh++ } } }) },
+        containerColor = MaterialTheme.colorScheme.background) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             when {
                 detail == null -> WeMeetInlineLoading()
                 detail.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
                 record == null -> WeMeetEmptyState(stringResource(R.string.records_unavailable))
                 else -> {
-                    Column(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                        Text(record.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        Text("${recordTime(record.originAt)} · ${stringResource(recordSourceLabel(record))}",
-                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    // 固定头(白):标题 + 元信息。Tab 行自己也是一块白面(见下),
+                    // 两者之间没有缝,合起来就是那条白色固定头;滚动区留在它下面,铺浅灰。
+                    Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
+                        Column(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                            Text(record.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text("${recordTime(record.originAt)} · ${stringResource(recordSourceLabel(record))}",
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                     val canReadTranslations = record.capabilities.readTranscript && app != null && (record.sourceType == "meeting" || record.sourceType == "audio_recording" && record.captureId != null)
                     val tabs = buildList {
@@ -158,6 +169,11 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                     ScrollableTabRow(selectedTabIndex = tabs.indexOfFirst { it.first == selectedTab }, edgePadding = Dimens.SpaceS, containerColor = MaterialTheme.colorScheme.surface) {
                         tabs.forEach { (value, label) -> Tab(selected = value == selectedTab, onClick = { detailTab = value }, text = { Text(stringResource(label)) }) }
                     }
+                    // 白色固定头与浅灰正文的分界(与「通讯录」二级名单页同款)。
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        thickness = Dimens.DividerThin,
+                    )
                     if (selectedTab == "info") {
                         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                             RecordTrashControl(viewer, record, repository, onRemoved)
@@ -318,7 +334,7 @@ internal fun SummaryCard(version: RecordSummaryVersionDto, originals: Boolean, c
             }
         }
         if (chaptersOnly) Text(stringResource(R.string.records_chapters_ai_version), style = MaterialTheme.typography.bodySmall)
-        if (version.content.chapters.isEmpty()) Text(stringResource(R.string.records_chapters_empty), style = MaterialTheme.typography.bodySmall)
+        if (version.content.chapters.isEmpty()) WeMeetInlineEmptyState(stringResource(R.string.records_chapters_empty))
         val sections = if (chaptersOnly) listOf(R.string.records_chapters to version.content.chapters) else
             listOf(R.string.records_decisions to version.content.decisions, R.string.records_actions to version.content.actionItems,
                 R.string.records_chapters to version.content.chapters, R.string.records_questions to version.content.openQuestions)

@@ -129,6 +129,19 @@ object Dimens {
 
     /** 列表行左侧的方形缩略图(历史会议、文件等)。 */
     val ListThumbnail = 56.dp
+
+    /**
+     * 播放器里视频画面的高度上限,取屏幕高度的比例。
+     *
+     * 用比例而不是固定 dp:屏幕高度从手机竖屏到横屏/折叠屏差得很远,固定值要么
+     * 在小屏上把整屏顶掉、要么在大屏上缩成一条。调用点负责乘
+     * `LocalConfiguration.current.screenHeightDp` 再转成 `Dp`。
+     *
+     * 收进这里是因为业务代码不许出现未过 token 的魔数(设计规范 §1.3);而
+     * `(… * 0.3f).dp` 这种拼法正好落在护栏 `RAW_DIMEN` 正则的盲区里
+     * (`.` 前面不是数字),所以它此前一直没被报出来。
+     */
+    const val MediaPreviewMaxHeightRatio = 0.3f
     /** 首页那种大号功能入口方块。 */
     val ActionTile = 72.dp
     /** Minimum readable card width in the adaptive meeting-record library grid. */

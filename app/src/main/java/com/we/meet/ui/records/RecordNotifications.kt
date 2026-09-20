@@ -9,6 +9,7 @@ import com.we.meet.R
 import com.we.meet.data.api.dto.*
 import com.we.meet.data.capture.MeetingIntentKind
 import com.we.meet.data.repository.MeetingDeliveryRepository
+import com.we.meet.ui.components.WeMeetInlineEmptyState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
@@ -43,7 +44,7 @@ internal fun RecordNotifications(viewer: String, record: RecordDto, repository: 
                             controller.retryNotice(record.id, requireNotNull(MeetingDeliveryRepository.noticeRetryAdapter.fromJson(pending.body)))
                         } }, enabled = actions.enabled) { Text(stringResource(R.string.summary_controls_reconcile)) }
                     }
-                    if (state.results.isEmpty()) Text(stringResource(R.string.record_notice_empty))
+                    if (state.results.isEmpty()) WeMeetInlineEmptyState(stringResource(R.string.record_notice_empty))
                     state.results.forEach { notice ->
                         HorizontalDivider()
                         Text(recordTime(notice.createdAt), style = MaterialTheme.typography.bodySmall)

@@ -13,9 +13,12 @@ import com.we.meet.R
 import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.api.dto.RecordLifecycleDto
 import com.we.meet.data.repository.MeetingRecordRepository
+import com.we.meet.ui.components.DangerButton
+import com.we.meet.ui.components.WeMeetInlineEmptyState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 
@@ -24,7 +27,13 @@ internal fun RecordTrashControl(viewer: String, record: RecordDto, repository: M
     if (!record.capabilities.trash || record.lifecycleRevision == null) return
     key(viewer, record.id) {
         var selected by remember { mutableStateOf<RecordLifecycleDto?>(null) }
-        TextButton(onClick = { selected = RecordLifecycleDto(record.id, record.title, record.sourceType, null, record.lifecycleRevision) }) { Text(stringResource(R.string.record_trash_remove)) }
+        // 破坏性动作走共享的 `DangerButton`(设计规范 §7「破坏性操作用 DangerButton
+        // 且有二次确认」)。此前是一颗中性色 `TextButton`,和相邻的「上一页」长得
+        // 一模一样 —— 误点的代价是记录被移出正常库。
+        DangerButton(
+            text = stringResource(R.string.record_trash_remove),
+            onClick = { selected = RecordLifecycleDto(record.id, record.title, record.sourceType, null, record.lifecycleRevision) },
+        )
         selected?.let { item -> RecordLifecycleConfirmation(viewer, item, repository, "trashed", { selected = null }) { selected = null; onRemoved() } }
     }
 }
@@ -42,7 +51,13 @@ internal fun RecordLifecycleConfirmation(viewer: String, item: RecordLifecycleDt
             if (busy) WeMeetInlineLoading()
         }
     }, confirmButton = {
-        TextButton(enabled = !busy && error != R.string.record_trash_conflict, onClick = {
+        TextButton(enabled = !busy && error != R.string.record_trash_conflict, 
+            // 「移入回收站」用危险色;「恢复」不是破坏性动作,保持中性 —— 同一个弹窗
+            // 承载两个方向的相反动作,颜色不能一视同仁。
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = if (target == "trashed") WeMeetTheme.extras.status.danger else LocalContentColor.current,
+            ),
+            onClick = {
             if (!busy) {
                 busy = true; error = null
                 scope.launch {
@@ -73,13 +88,18 @@ internal fun RecordTrashSheet(viewer: String, repository: MeetingRecordRepositor
                 page.isFailure -> WeMeetInlineErrorState(onRetry = { selected = null; refresh++ }, message = stringResource(R.string.record_trash_unavailable))
                 else -> {
                     val result = page.getOrThrow()
-                    if (result.results.isEmpty()) Text(stringResource(R.string.record_trash_empty))
+                    if (result.results.isEmpty()) WeMeetInlineEmptyState(stringResource(R.string.record_trash_empty))
                     LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                         items(result.results, key = { it.id }) { row ->
                             Text(row.title, style = MaterialTheme.typography.titleMedium)
                             row.deletedAt?.let { Text(recordTime(it), style = MaterialTheme.typography.bodySmall) }
                             if (row.purge == null) TextButton(onClick = { selected = row }) { Text(stringResource(R.string.record_trash_restore)) }
-                            if (row.purge != null || result.purgeAvailable) TextButton(onClick = { purging = row }) { Text(stringResource(if (row.purge != null) R.string.record_purge_status else R.string.record_purge_remove)) }
+                            // 永久删除与「恢复」上下相邻:必须是危险色,否则两颗同色同重,
+                            // 用户分不出哪一颗是不可逆的。
+                            if (row.purge != null || result.purgeAvailable) TextButton(
+                                onClick = { purging = row },
+                                colors = ButtonDefaults.textButtonColors(contentColor = WeMeetTheme.extras.status.danger),
+                            ) { Text(stringResource(if (row.purge != null) R.string.record_purge_status else R.string.record_purge_remove)) }
                         }
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

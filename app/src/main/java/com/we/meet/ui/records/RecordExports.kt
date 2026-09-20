@@ -14,6 +14,7 @@ import com.we.meet.data.api.dto.*
 import com.we.meet.data.capture.MeetingIntentKind
 import com.we.meet.data.repository.MeetingDeliveryRepository
 import com.we.meet.data.repository.MeetingReviewRepository
+import com.we.meet.ui.components.WeMeetInlineEmptyState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
@@ -77,7 +78,7 @@ internal fun RecordExportWorkspace(viewer: String, recordId: String, sources: Li
                         } }, enabled = actions.enabled) { Text(stringResource(if (kind == MeetingIntentKind.DOCUMENT_EXPORT) R.string.record_export_reconcile_create else R.string.record_export_reconcile_retry)) }
                     }
                     if (accepted) Text(stringResource(R.string.record_export_accepted))
-                    if (state.results.isEmpty()) Text(stringResource(R.string.record_export_empty))
+                    if (state.results.isEmpty()) WeMeetInlineEmptyState(stringResource(R.string.record_export_empty))
                     state.results.forEach { row ->
                         HorizontalDivider()
                         Text(sources.find { it.id == row.sourceId && it.kind == row.sourceKind }?.label ?: stringResource(if (row.sourceKind == "human") R.string.record_export_human else R.string.record_export_ai))

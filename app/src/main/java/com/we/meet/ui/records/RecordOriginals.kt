@@ -48,6 +48,7 @@ import com.we.meet.R
 import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.repository.MeetingRecordRepository
 import com.we.meet.data.repository.RecordSourceChangedException
+import com.we.meet.ui.components.WeMeetInlineEmptyState
 import com.we.meet.ui.components.WeMeetEmptyState
 import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetInlineErrorState
@@ -113,14 +114,19 @@ internal fun RecordOriginals(
             if (searchVisible) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                 OutlinedTextField(
                     value = input,
-                    onValueChange = { input = it.take(200) },
+                    onValueChange = { value ->
+                        input = value.take(200)
+                        // 清空即撤销:与 Web 端逐字稿搜索同一口径(收口记录 §3.13),
+                        // 也省掉一颗只为「再问一次」而存在的按钮。
+                        if (input.isEmpty() && query.isNotEmpty()) { query = ""; cursors = listOf(null) }
+                    },
                     label = { Text(stringResource(R.string.records_search_originals)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    // 提交只剩键盘上的「搜索」—— 参考稿与 Web 端都没有独立的搜索按钮。
                     keyboardActions = KeyboardActions(onSearch = { search() }),
                 )
-                TextButton(onClick = search) { Text(stringResource(R.string.records_search_action)) }
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                 TextButton(onClick = { searchVisible = !searchVisible; if (!searchVisible) { input = ""; query = ""; keyboard?.hide() } }) {
@@ -195,6 +201,8 @@ internal fun RecordOriginals(
                                     onEditing = { following = false },
                                     draftState = correctionDrafts.get(original.id, original.text, original.correctionRevision ?: 0),
                                     writeScope = scope,
+                                    // 命中处落在正文里(服务端只把不匹配的行过滤掉)。
+                                    highlight = query,
                                 )
                             }
                     }
@@ -260,7 +268,7 @@ private fun SpeakerPicker(
                     page == null -> WeMeetInlineLoading()
                     page.isFailure -> WeMeetInlineErrorState(onRetry = onRefresh, message = stringResource(originalError(page.exceptionOrNull())))
                     else -> {
-                        if (page.getOrThrow().results.isEmpty()) Text(stringResource(R.string.records_no_speakers))
+                        if (page.getOrThrow().results.isEmpty()) WeMeetInlineEmptyState(stringResource(R.string.records_no_speakers))
                         LazyColumn(Modifier.weight(1f, fill = false)) {
                             items(page.getOrThrow().results, key = { it.id }) { speaker ->
                                 TextButton(onClick = { onSelect(speaker.id) }) {

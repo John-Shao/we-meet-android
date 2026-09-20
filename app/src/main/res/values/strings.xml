@@ -1093,5 +1093,5 @@
     <string name="room_ai_prompt_summary">Summarize the discussion so far</string>
     <string name="room_ai_prompt_decisions">What decisions have been made?</string>
     <string name="room_ai_prompt_actions">List action items and owners</string>
-    <string name="meeting_ai_search">Search meeting AI</string>
+    <string name="meeting_ai_search">Search meetings with AI</string>
 </resources>

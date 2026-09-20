@@ -14,6 +14,7 @@ import com.we.meet.data.api.dto.RecordLifecycleDto
 import com.we.meet.data.repository.MeetingRecordRepository
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.ui.theme.WeMeetTheme
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 
@@ -49,7 +50,11 @@ internal fun RecordPurgeConfirmation(viewer: String, item: RecordLifecycleDto, r
             }
         }
     }, confirmButton = {
-        if (!denied && (!accepted || receipt?.canRetry == true)) TextButton(enabled = !busy && error != R.string.record_trash_conflict && (accepted || acknowledged), onClick = {
+        // 永久删除是不可逆的 —— 确认键必须是危险色(设计规范 §7)。
+        if (!denied && (!accepted || receipt?.canRetry == true)) TextButton(
+            enabled = !busy && error != R.string.record_trash_conflict && (accepted || acknowledged),
+            colors = ButtonDefaults.textButtonColors(contentColor = WeMeetTheme.extras.status.danger),
+            onClick = {
             if (!busy) {
                 busy = true; error = null
                 scope.launch {

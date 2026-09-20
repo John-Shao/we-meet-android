@@ -23,6 +23,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
@@ -176,6 +177,11 @@ class RecordScreensTest {
 
         override suspend fun resolve(roomId: String, sessionId: String?): RecordDto = error("No room fallback")
     }
+/** 「排序 / 筛选 / 回收站」收在顶栏的溢出菜单里(顶栏只留三格,设计规范 §3)。 */
+    private fun openMore() {
+        compose.onNodeWithContentDescription(label(R.string.records_more)).performClick()
+    }
+
     private fun awaitText(text: String) {
         compose.waitUntil(5_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
     }
@@ -424,7 +430,8 @@ class RecordScreensTest {
         compose.waitUntil(5_000) { fixture.searchQuery == "Design" }
         compose.onNodeWithContentDescription(label(R.string.records_clear_search)).performClick()
         compose.waitUntil(5_000) { fixture.searchQuery == null }
-        compose.onNodeWithContentDescription(label(R.string.records_filters)).performClick()
+        openMore()
+        compose.onNodeWithText(label(R.string.records_filters)).performClick()
         compose.onNodeWithText(label(R.string.records_uploaded)).performScrollTo().performClick()
         compose.onNodeWithText(label(R.string.records_filters_done)).performClick()
         compose.waitUntil(5_000) { fixture.sourceFilter == "upload" }
@@ -441,7 +448,8 @@ class RecordScreensTest {
         awaitText("Private planning meeting")
         compose.onNodeWithText(label(R.string.records_next)).performScrollTo().performClick()
         awaitText(label(R.string.records_empty))
-        compose.onNodeWithContentDescription(label(R.string.records_filters)).performClick()
+        openMore()
+        compose.onNodeWithText(label(R.string.records_filters)).performClick()
         compose.onNodeWithText(label(R.string.records_uploaded)).performScrollTo().performClick()
         compose.onNodeWithText(label(R.string.records_created_from)).performScrollTo().performTextInput("2026-09-21")
         compose.onNodeWithText(label(R.string.records_created_through)).performScrollTo().performTextInput("2026-09-20")
@@ -472,7 +480,8 @@ class RecordScreensTest {
         val fixture = Fixture()
         compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", false, {}, {}) } }
         awaitText("Private planning meeting")
-        compose.onNodeWithContentDescription(label(R.string.records_filters)).performClick()
+        openMore()
+        compose.onNodeWithText(label(R.string.records_filters)).performClick()
         compose.onNodeWithText(label(R.string.records_uploaded)).performScrollTo().performClick()
         compose.onNodeWithText(label(R.string.records_created_from)).performScrollTo().performTextInput("2026-09-20")
         compose.onNodeWithText(label(R.string.records_filters_done)).performScrollTo().performClick()
@@ -481,7 +490,7 @@ class RecordScreensTest {
         awaitText(label(R.string.records_empty))
         fixture.orderQueries.clear()
         fixture.dateQueries.clear()
-        compose.onNodeWithContentDescription(label(R.string.records_sort)).performClick()
+        openMore()
         compose.onNodeWithText(label(R.string.records_oldest)).performClick()
         awaitText("Private planning meeting")
         compose.waitUntil(5000) { fixture.orderQueries.size >= 2 }
@@ -491,7 +500,7 @@ class RecordScreensTest {
         compose.onNodeWithText(label(R.string.records_next)).performScrollTo().performClick()
         awaitText(label(R.string.records_empty))
         assertTrue(fixture.orderQueries.any { it[0] == "created_at" && it[1] == "next-page" })
-        compose.onNodeWithContentDescription(label(R.string.records_sort)).performClick()
+        openMore()
         compose.onNodeWithText(label(R.string.records_newest)).performClick()
         awaitText("Private planning meeting")
         assertTrue(fixture.orderQueries.any { it[0] == "-created_at" && it[1] == null })
@@ -504,7 +513,7 @@ class RecordScreensTest {
         compose.onNodeWithText(label(R.string.records_next)).performScrollTo().performClick()
         awaitText(label(R.string.minutes_empty))
         fixture.orderQueries.clear()
-        compose.onNodeWithContentDescription(label(R.string.records_sort)).performClick()
+        openMore()
         compose.onNodeWithText(label(R.string.records_oldest)).performClick()
         awaitText("Private planning meeting")
         assertEquals(listOf("created_at", null, null, null, null, "true"), fixture.orderQueries.single())
@@ -516,7 +525,8 @@ class RecordScreensTest {
         val fixture = Fixture().apply { supportsDates = false }
         compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", false, {}, {}) } }
         awaitText("Private planning meeting")
-        compose.onNodeWithContentDescription(label(R.string.records_filters)).performClick()
+        openMore()
+        compose.onNodeWithText(label(R.string.records_filters)).performClick()
         compose.onNodeWithText(label(R.string.records_created_from)).performScrollTo().performTextInput("2026-09-20")
         compose.onNodeWithText(label(R.string.records_filters_done)).performScrollTo().performClick()
         awaitText(label(R.string.records_unavailable))
@@ -604,7 +614,9 @@ class RecordScreensTest {
         awaitText("Full original text")
         compose.onNodeWithText(label(R.string.records_search_originals)).performClick()
         compose.onNodeWithText(label(R.string.records_search_originals)).performTextInput("release 中文")
-        compose.onNodeWithText(label(R.string.records_search_action)).performClick()
+        // 提交只剩键盘上的搜索键（参考稿与 Web 端都没有独立的搜索按钮），
+        // 所以走 IME action，而不是点一颗已经删掉的按钮。
+        compose.onNodeWithText(label(R.string.records_search_originals)).performImeAction()
         awaitText("Search matched original")
         compose.onNodeWithText(label(R.string.records_filter_speaker)).performClick()
         awaitText(label(R.string.records_all_speakers))

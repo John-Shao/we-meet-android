@@ -43,6 +43,7 @@
     <string name="record_upload_failed">转写失败</string>
     <string name="record_upload_retry">重试转写</string>
     <string name="records_sort">按创建时间排序</string>
+    <string name="records_more">更多操作</string>
     <string name="records_newest">创建时间从新到旧</string>
     <string name="records_oldest">创建时间从旧到新</string>
 </resources>

@@ -54,16 +54,20 @@ class MeetingNavigationTest {
     }
 
     @Test fun recordingMenuDoesNotStartAudioAndKeepsExplicitStart() {
-        var opened = false
+        var backs = 0
         var starts = 0
+        // 录制页是**二级页**(由 `Routes.CAPTURE` 全屏路由进入,不经 MainTabScreen):
+        // 顶栏是「返回 + 标题」,不是「汉堡菜单」。此前它挂着一个从不被调用的
+        // `onOpenNavDrawer`,于是同时保留了一级页与二级页两套写法 —— 那个参数已删。
         compose.setContent { WeMeetTheme {
             CaptureContent(CaptureServiceState("fixture", ready = true), false,
-                onBack = { fail("Module root must not use a back action") },
-                onStart = { starts++ }, onPause = {}, onFinish = {}, onRetry = {}, onRecord = null,
-                onOpenNavDrawer = { opened = true })
+                onBack = { backs++ },
+                onStart = { starts++ }, onPause = {}, onFinish = {}, onRetry = {}, onRecord = null)
         } }
-        compose.onNodeWithContentDescription(context.getString(R.string.meeting_navigation)).performClick()
-        assertTrue(opened)
+        compose.onNodeWithContentDescription(context.getString(R.string.meeting_navigation)).assertDoesNotExist()
+        // 返回箭头那句无障碍名住在 core-design 模块,不在 app 的资源里。
+        compose.onNodeWithContentDescription(context.getString(com.we.meet.design.R.string.cd_back)).performClick()
+        assertEquals(1, backs)
         assertEquals(0, starts)
         compose.onNodeWithText(context.getString(R.string.capture_start)).performClick()
         assertEquals(1, starts)

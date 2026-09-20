@@ -1056,9 +1056,9 @@
     <string name="docs_chat_share_send">发送</string>
     <string name="docs_chat_share_back">返回</string>
     <string name="minutes_all">全部智能纪要</string>
-    <string name="minutes_owned">归我所有</string>
+    <string name="minutes_owned">我的内容</string>
     <string name="minutes_participated">我参与的</string>
-    <string name="minutes_shared">与我共享</string>
+    <string name="minutes_shared">共享内容</string>
     <string name="minutes_recorded_at">会议时间：%1$s</string>
     <string name="minutes_generated_at">生成于 %1$s</string>
     <string name="minutes_empty">暂无智能纪要</string>
@@ -1072,5 +1072,5 @@
     <string name="room_ai_prompt_summary">总结目前的讨论</string>
     <string name="room_ai_prompt_decisions">目前达成了哪些结论？</string>
     <string name="room_ai_prompt_actions">列出待办事项和负责人</string>
-    <string name="meeting_ai_search">AI 搜索</string>
+    <string name="meeting_ai_search">搜索会议 AI</string>
 </resources>

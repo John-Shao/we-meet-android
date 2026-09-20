@@ -15,7 +15,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ViewList
-import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -96,24 +95,10 @@ fun RecordLibraryScreen(
                 // 固定头部用浅灰与状态栏、兄弟分区(视频会议/AI 录音)对齐。
                 containerColor = MaterialTheme.colorScheme.background,
                 actions = {
-                    if (result?.getOrNull()?.trashAvailable == true) IconButton(onClick = { trashVisible = true }) {
-                        Icon(Icons.Outlined.DeleteOutline, stringResource(R.string.record_trash_title))
-                    }
-
-                    Box {
-                        IconButton(onClick = { orderMenu = true }) {
-                            Icon(Icons.AutoMirrored.Outlined.Sort, stringResource(R.string.records_sort))
-                        }
-                        DropdownMenu(expanded = orderMenu, onDismissRequest = { orderMenu = false }) {
-                            RecordOrdering.entries.forEach { value ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(if (value == RecordOrdering.NEWEST) R.string.records_newest else R.string.records_oldest)) },
-                                    leadingIcon = { if (ordering == value) Icon(Icons.Outlined.Check, null) },
-                                    onClick = { ordering = value; orderMenu = false },
-                                )
-                            }
-                        }
-                    }
+                    // 设计规范 §3「右侧 actions 超过 3 个收进溢出菜单」。这一页此前
+                    // 最多挂 5 颗 24dp 图标(回收站 / 排序 / AI 搜索 / 搜索 / 筛选),
+                    // 其中「排序」和「AI 搜索」在视觉上都是几何图形,靠内容描述才分得清。
+                    // 现在只留三格:搜索会议 AI、搜索、更多;排序 / 筛选 / 回收站进菜单。
                     onSearchMeetingAi?.let { search ->
                         IconButton(onClick = search) {
                             Icon(Icons.Outlined.AutoAwesome, stringResource(R.string.meeting_ai_search))
@@ -123,11 +108,31 @@ fun RecordLibraryScreen(
                         Icon(if (searchVisible) Icons.Outlined.Close else Icons.Outlined.Search,
                             stringResource(if (searchVisible) R.string.records_clear_search else R.string.records_search))
                     }
-                    // 纪要子区正文里已有带当前值的「全部智能纪要」筛选入口，
-                    // 顶栏再放一个同样的图标只是重复入口。
-                    if (!summariesOnly) IconButton(onClick = { filtersVisible = true }) {
-                        Icon(Icons.Outlined.Tune, stringResource(R.string.records_filters),
-                            tint = if (source != null || scope == RecordScope.PARTICIPATED || hasDates) MaterialTheme.colorScheme.primary else LocalContentColor.current)
+                    Box {
+                        IconButton(onClick = { orderMenu = true }) {
+                            Icon(Icons.Outlined.MoreVert, stringResource(R.string.records_more))
+                        }
+                        DropdownMenu(expanded = orderMenu, onDismissRequest = { orderMenu = false }) {
+                            RecordOrdering.entries.forEach { value ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(if (value == RecordOrdering.NEWEST) R.string.records_newest else R.string.records_oldest)) },
+                                    leadingIcon = { if (ordering == value) Icon(Icons.Outlined.Check, null) else null },
+                                    onClick = { ordering = value; orderMenu = false },
+                                )
+                            }
+                            // 纪要子区正文里已有带当前值的「全部智能纪要」筛选入口,
+                            // 菜单里不再重复一项。
+                            if (!summariesOnly) DropdownMenuItem(
+                                text = { Text(stringResource(R.string.records_filters)) },
+                                leadingIcon = { Icon(Icons.Outlined.Tune, null) },
+                                onClick = { orderMenu = false; filtersVisible = true },
+                            )
+                            if (result?.getOrNull()?.trashAvailable == true) DropdownMenuItem(
+                                text = { Text(stringResource(R.string.record_trash_title)) },
+                                leadingIcon = { Icon(Icons.Outlined.DeleteOutline, null) },
+                                onClick = { orderMenu = false; trashVisible = true },
+                            )
+                        }
                     }
                 })
         },
@@ -186,9 +191,21 @@ fun RecordLibraryScreen(
                 result == null -> WeMeetInlineLoading()
                 result.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
                 // 只剩「进行中」那几条时不算空 —— 空态会把它们一起盖掉。
-                result.getOrThrow().results.isEmpty() && ongoingRows.isEmpty() -> WeMeetEmptyState(stringResource(if (summariesOnly) R.string.minutes_empty else R.string.records_empty),
+                // 「进行中」读失败时同样不算空:那一段有自己的错误 + 重试(见下)。
+                result.getOrThrow().results.isEmpty() && ongoingRows.isEmpty() && ongoing?.isFailure != true -> WeMeetEmptyState(stringResource(if (summariesOnly) R.string.minutes_empty else R.string.records_empty),
                     description = stringResource(if (summariesOnly) R.string.minutes_empty_hint else R.string.records_empty_hint),
-                    action = { TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) } })
+                    // 空态的 action 要「给下一步」,而不是「再问一次服务器」:
+                    // 有筛选条件时给「清除筛选」(真的能改变结果),否则才退回「刷新」。
+                    action = {
+                        val filtered = source != null || hasDates || (!summariesOnly && scope == RecordScope.PARTICIPATED) ||
+                            (summariesOnly && scope != RecordScope.OWNED)
+                        if (filtered) TextButton(onClick = {
+                            source = null
+                            scope = if (summariesOnly) RecordScope.OWNED else RecordScope.RECENT
+                            dateFrom = ""; dateThrough = ""
+                        }) { Text(stringResource(R.string.records_reset_filters)) }
+                        else TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) }
+                    })
                 else -> {
                     val page = result.getOrThrow()
                     LazyVerticalGrid(columns = if (grid) GridCells.Adaptive(Dimens.RecordGridMinWidth) else GridCells.Fixed(1), state = listState,
@@ -197,6 +214,12 @@ fun RecordLibraryScreen(
                         // 列表模式的行自带内边距和内缩分隔线,不能再叠一层行距;网格模式才需要。
                         verticalArrangement = if (grid) Arrangement.spacedBy(Dimens.SpaceM) else Arrangement.Top,
                         horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                        // 「进行中」那一段自己读失败时必须说出来:它是用户最关心的一条,
+                        // 此前失败会静默变成空数组,而主列表成功时连整屏错误态都不触发 ——
+                        // 用户只会以为「录的东西不见了」。这里给它自己的内联错误 + 重试。
+                        if (ongoing?.isFailure == true) item(span = { GridItemSpan(maxLineSpan) }, key = "ongoing-error") {
+                            WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_ongoing_unavailable))
+                        }
                         // 进行中在前:正在收音的那条不该被几十条历史压下去。
                         if (ongoingRows.isNotEmpty()) {
                             item(span = { GridItemSpan(maxLineSpan) }, key = "section-ongoing") {
@@ -327,8 +350,15 @@ private fun RecordLibraryCard(record: RecordDto, summariesOnly: Boolean, onClick
 private fun RecordLibraryText(record: RecordDto, summariesOnly: Boolean) {
     Text(record.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
     Text(recordMetaLine(record, summariesOnly), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    if (!summariesOnly && (record.isOngoing || record.hasSummary)) Text(
-        stringResource(if (record.isOngoing) R.string.records_ongoing else R.string.records_minutes_ready),
+    // 两个状态签**可以同时出现**:一条既在录又已有纪要的记录,Web 端两颗都显示
+    // (`MeetingLibrary.tsx` 的 ongoing / hasSummary 是两段独立判断),此前这里是
+    // if/else,「已有纪要」被「进行中」吃掉。
+    if (!summariesOnly && record.isOngoing) Text(
+        stringResource(R.string.records_ongoing),
+        color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall,
+    )
+    if (!summariesOnly && record.hasSummary) Text(
+        stringResource(R.string.records_minutes_ready),
         color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall,
     )
 }
@@ -338,9 +368,12 @@ private fun RecordLibraryText(record: RecordDto, summariesOnly: Boolean) {
 internal fun recordMetaLine(record: RecordDto, summariesOnly: Boolean): String = listOfNotNull(
     if (summariesOnly) stringResource(R.string.minutes_recorded_at, recordTime(record.originAt)) else recordTime(record.originAt),
     stringResource(recordSourceLabel(record)),
-    record.upload?.let { stringResource(uploadStatusLabel(it.status)) },
     // 所有者:Web 的表格有这一列,窄屏(手机)并进副行 —— 手机端只看得到这一种形态。
+    // **位置与 Web 窄屏一致**:所有者在上传状态之前(`MeetingLibrary.tsx` 的
+    // `narrowOnly` 段就插在来源与上传状态之间)。此前 Android 把上传状态排在前,
+    // 同一条记录在两端读起来是两种顺序。
     record.owner?.takeIf { it.isNotBlank() } ?: stringResource(R.string.records_owner_unknown),
+    record.upload?.let { stringResource(uploadStatusLabel(it.status)) },
 ).joinToString(" · ")
 
 /** 来源图标在列表和网格里必须一致 —— 网格丢掉图标就只剩文字能区分会议/录音/导入。 */

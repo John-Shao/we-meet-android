@@ -73,6 +73,7 @@
     <string name="records_search">Search titles</string>
     <string name="records_search_action">Search</string>
     <string name="records_ongoing">In progress</string>
+    <string name="records_ongoing_unavailable">The in-progress recording could not be read. Capture continues; retry to see it here.</string>
     <string name="records_archive">History</string>
     <string name="records_owner_unknown">Unknown</string>
     <string name="records_previous">Previous</string>

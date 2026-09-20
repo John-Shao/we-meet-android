@@ -200,7 +200,8 @@ internal fun UploadMediaPlayer(
         latestConsume()
     }
 
-    val videoMaxHeight = (LocalConfiguration.current.screenHeightDp * 0.3f).dp
+    val videoMaxHeight =
+        (LocalConfiguration.current.screenHeightDp * Dimens.MediaPreviewMaxHeightRatio).dp
     val positionLabel = stringResource(R.string.capture_playback_position)
     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.padding(Dimens.SpaceM), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {

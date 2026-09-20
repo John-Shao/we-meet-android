@@ -70,6 +70,7 @@
     <string name="records_search">搜索标题</string>
     <string name="records_search_action">搜索</string>
     <string name="records_ongoing">进行中</string>
+    <string name="records_ongoing_unavailable">暂时读不到正在录制的那一条。录音仍在继续，重试后即可看到。</string>
     <string name="records_archive">历史记录</string>
     <string name="records_owner_unknown">未知</string>
     <string name="records_previous">上一页</string>

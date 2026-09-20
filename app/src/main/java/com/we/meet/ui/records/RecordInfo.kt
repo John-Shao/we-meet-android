@@ -103,13 +103,22 @@ private fun captureStatusLabel(status: String): Int = when (status) {
     else -> R.string.records_capture_stopped
 }
 
-/** 键值行:标签走次要色且定宽,值与正文同色(对齐 Web `dl` 的 `dt`/`dd`)。 */
+/**
+ * 键值块:**标签在上、值在下**。
+ *
+ * 此前是「左列定宽 `Dimens.LabelColumnWidth`(88dp) + 右列值」的两列布局。左列宽度
+ * 写死有两个问题:① 1.5× / 2.0× 字号下「媒体时长」这类标签会折行,右列的值就跟着
+ * 错位(审计 A7 的静态推断);② 这一页的值是**可变长内容**(用户昵称、导出的文档名),
+ * 竖排时它们能自然换行,横排时只能在右列里挤。
+ *
+ * 版式与参考稿的「会议信息」一致:标签一行小字(次要色),值一行正文色。
+ */
 @Composable
 private fun InfoRow(label: Int, value: String) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-        Text(stringResource(label), Modifier.width(Dimens.LabelColumnWidth),
-            style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+        Text(stringResource(label), style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyLarge)
     }
 }
 

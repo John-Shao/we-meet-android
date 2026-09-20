@@ -17,6 +17,7 @@ import com.we.meet.R
 import com.we.meet.data.api.dto.*
 import com.we.meet.data.capture.*
 import com.we.meet.data.repository.MeetingReviewRepository
+import com.we.meet.ui.components.WeMeetInlineEmptyState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
@@ -129,7 +130,7 @@ private fun TaskConfirmationDialog(form: SummaryTaskRequestDto, assignee: Summar
             OutlinedTextField(search, { search = it.take(100) }, label = { Text(stringResource(R.string.summary_tasks_search)) }, enabled = !busy)
             TextButton(onClick = { onSearch(search.trim()) }, enabled = !busy) { Text(stringResource(R.string.records_search_action)) }
             Text(stringResource(R.string.summary_tasks_assignee, assignee?.name ?: stringResource(R.string.summary_tasks_choose)), style = MaterialTheme.typography.labelLarge)
-            if (candidates.isEmpty()) Text(stringResource(R.string.summary_tasks_no_assignees))
+            if (candidates.isEmpty()) WeMeetInlineEmptyState(stringResource(R.string.summary_tasks_no_assignees))
             candidates.forEach { candidate -> TextButton(onClick = { onAssignee(candidate) }, enabled = !busy) { Text(candidate.name) } }
             TextButton(onClick = { chooseDate = true }, enabled = !busy) { Text(stringResource(R.string.summary_tasks_date, form.dueDate ?: stringResource(R.string.summary_tasks_no_date))) }
             if (form.dueDate != null) TextButton(onClick = { onChange(form.copy(dueDate = null)) }, enabled = !busy) { Text(stringResource(R.string.summary_tasks_clear_date)) }

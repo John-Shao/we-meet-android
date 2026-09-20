@@ -78,8 +78,10 @@ internal fun RecordingHomeContent(
                 when {
                     result == null -> WeMeetInlineLoading()
                     result.isFailure -> WeMeetInlineErrorState(onRetry = onRetry, message = stringResource(R.string.records_unavailable))
-                    rows.isEmpty() -> Text(stringResource(R.string.recording_history_empty),
-                        Modifier.padding(Dimens.ScreenPadding), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    // 空态走共享组件(设计规范 §2「新页面必须用这些,不要重新手写」)。
+                    // 它落在滚动区里、且页面顶部就是「录音 / 导入」两个入口块,
+                    // 所以取「区段内空态」这一档,不再重复给 action。
+                    rows.isEmpty() -> WeMeetInlineEmptyState(stringResource(R.string.recording_history_empty))
                     else -> rows.forEach { record -> key(record.id) {
                         MeetingListItem(record.title.ifBlank { stringResource(R.string.home_ai_recording) },
                             // 与「会议实录」页同一条读数:时间 · 来源 · 上传状态,一行读完。

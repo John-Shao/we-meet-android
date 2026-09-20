@@ -18,7 +18,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 
 import com.we.meet.R
 import com.we.meet.data.repository.MeetingRecordRepository
@@ -32,6 +37,40 @@ import retrofit2.HttpException
 
 /** Matches the server's bound, checked here so an over-long paste fails locally. */
 private const val MAX_CORRECTION_LENGTH = 20_000
+
+/**
+ * 把 [query] 在 [text] 里的命中处加上底色。
+ *
+ * 用 `indexOf` 而不是正则:查询词直接来自用户输入,含 `(` / `*` 这类字符时正则要么抛
+ * 异常、要么误匹配。逐字稿的查询本来就是字面量。大小写不敏感,与 Web 端同一口径。
+ *
+ * 底色取 `primaryContainer` / `onPrimaryContainer` 成对 —— 与「正在播放」那一行的底色
+ * 同族,两套主题都成对翻转,不会出现浅底压浅字。
+ */
+private fun highlightMatches(
+    text: String,
+    query: String,
+    background: Color,
+    foreground: Color,
+): AnnotatedString {
+    val needle = query.trim()
+    if (needle.isEmpty()) return AnnotatedString(text)
+    val haystack = text.lowercase()
+    val lowered = needle.lowercase()
+    return buildAnnotatedString {
+        var cursor = 0
+        var index = haystack.indexOf(lowered)
+        while (index >= 0) {
+            if (index > cursor) append(text.substring(cursor, index))
+            withStyle(SpanStyle(background = background, color = foreground)) {
+                append(text.substring(index, index + needle.length))
+            }
+            cursor = index + needle.length
+            index = haystack.indexOf(lowered, cursor)
+        }
+        append(text.substring(cursor))
+    }
+}
 
 /** Owned by the record reader, so replacing a page does not discard edits. */
 internal class OriginalCorrectionState(text: String, revision: Int) {
@@ -78,6 +117,8 @@ internal fun CorrectableOriginalText(
     onEditing: () -> Unit = {},
     draftState: OriginalCorrectionState? = null,
     writeScope: CoroutineScope? = null,
+    /** 当前搜索词:正文里命中的片段会被标出来。空串 = 不做任何标记。 */
+    highlight: String = "",
 ) {
     key(segmentId) {
         val state = draftState ?: remember { OriginalCorrectionState(text, correctionRevision) }
@@ -124,8 +165,14 @@ internal fun CorrectableOriginalText(
 
         Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
             if (!editing) {
+                val shown = if (showingOriginal && originalText != null) originalText else text
                 Text(
-                    if (showingOriginal && originalText != null) originalText else text,
+                    highlightMatches(
+                        shown,
+                        highlight,
+                        MaterialTheme.colorScheme.primaryContainer,
+                        MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
                     style = MaterialTheme.typography.bodyLarge,
                 )
             }

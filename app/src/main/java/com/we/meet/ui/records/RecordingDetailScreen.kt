@@ -26,7 +26,13 @@ fun RecordingDetailScreen(repository: MeetingRecordRepository, viewer: String, r
             record
         }
     }
-    Scaffold(topBar = { WeMeetTopBar(stringResource(R.string.recording_detail), onBack = onBack) }) { padding ->
+    // 二级页的页面层级规范(docs/page-backgrounds.md §1):顶栏白、下方滚动区浅灰。
+    // `WeMeetTopBar` 默认就是 `surface`(白),这里把容器显式写成 `background` ——
+    // 之前靠的是 M3 `Scaffold` 的默认值,谁改一次那个默认就静默丢掉分区。
+    Scaffold(
+        topBar = { WeMeetTopBar(stringResource(R.string.recording_detail), onBack = onBack) },
+        containerColor = MaterialTheme.colorScheme.background,
+    ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
             .padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
             when {

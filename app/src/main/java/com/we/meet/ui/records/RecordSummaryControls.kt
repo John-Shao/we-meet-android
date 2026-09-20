@@ -19,6 +19,7 @@ import com.we.meet.data.capture.MeetingIntentStore
 import com.we.meet.data.capture.MeetingSummaryCoordinator
 import com.we.meet.data.repository.MeetingRecordRepository
 import com.we.meet.data.repository.MeetingSummaryRepository
+import com.we.meet.ui.components.WeMeetInlineEmptyState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
@@ -124,7 +125,15 @@ internal fun RecordSummaryControls(viewer: String, record: RecordDto, repository
                     Text(stringResource(R.string.summary_controls_unknown))
                     Button(onClick = { operate(false) }, enabled = canClick) { Text(stringResource(R.string.summary_controls_reconcile)) }
                 } else {
-                    ready.forEach { stage -> Button(onClick = { operate(false, stage) }, enabled = canClick && !active) { Text(stringResource(summaryStageAction(stage))) } }
+                    // 一屏只能有一个主操作(设计规范 §2.2)。服务端在分阶段生成开启时可以
+                    // 同时下发三档就绪的阶段(realtime / quick / final),`ready.forEach`
+                    // 会把三颗实心主按钮并排画出来 —— 主次当场消失。取优先级最高的那一档
+                    // 做主按钮,其余降为线框次按钮;顺序也按优先级排。
+                    ready.sortedByDescending { stagePriority(it) }.forEachIndexed { index, stage ->
+                        val label = stringResource(summaryStageAction(stage))
+                        if (index == 0) Button(onClick = { operate(false, stage) }, enabled = canClick && !active) { Text(label) }
+                        else OutlinedButton(onClick = { operate(false, stage) }, enabled = canClick && !active) { Text(label) }
+                    }
                     if (job?.retryable == true && !active) TextButton(onClick = { operate(false, job.stage, true) }, enabled = canClick) { Text(stringResource(R.string.summary_controls_retry)) }
                     if (!active && ready.isEmpty()) Text(stringResource(waitingLabel(state)))
                     state.nextUpdateAt?.let { Text(stringResource(R.string.summary_controls_next, recordTime(it)), style = MaterialTheme.typography.bodySmall) }
@@ -158,6 +167,19 @@ private fun waitingLabel(state: SummaryProgressDto): Int = when (state.blockedRe
     else -> R.string.summary_controls_blocked
 }
 
+/**
+ * 生成阶段的优先级:`final` > `quick` > `realtime`。
+ *
+ * 只用来决定「同时有多档就绪时,哪一档是主按钮」——最终纪要是最完整的产物,
+ * 快速稿是次优,实时稿只求快。未知阶段排在最后,不抢主按钮。
+ */
+private fun stagePriority(stage: String): Int = when (stage) {
+    "final" -> 3
+    "quick" -> 2
+    "realtime" -> 1
+    else -> 0
+}
+
 /** Capture preview uses canonical immutable versions and exact citations, including quick drafts. */
 @Composable
 internal fun CaptureSummaryWorkspace(viewer: String, capture: CaptureDto, records: MeetingRecordRepository, summaries: MeetingSummaryRepository, currentViewer: () -> String?, onRecord: (() -> Unit)?, onSource: ((Long) -> Unit)? = null) {
@@ -174,7 +196,7 @@ internal fun CaptureSummaryWorkspace(viewer: String, capture: CaptureDto, record
     val versions = visibleRead(viewer, record.id, refresh) { records.summaries(viewer, record.id) }
     if (versions?.isFailure == true) WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.summary_controls_read_error))
     else versions?.getOrNull()?.let { page ->
-        if (page.results.isEmpty()) Text(stringResource(R.string.records_no_versions), style = MaterialTheme.typography.bodyMedium)
+        if (page.results.isEmpty()) WeMeetInlineEmptyState(stringResource(R.string.records_no_versions))
         page.results.take(3).forEach { version -> key(version.id) { SummaryCard(version, record.capabilities.readTranscript) { citation = version.inputSnapshotId to it } } }
         if (onRecord != null && page.results.isNotEmpty()) TextButton(onClick = onRecord) { Text(stringResource(R.string.summary_controls_all_versions)) }
     }

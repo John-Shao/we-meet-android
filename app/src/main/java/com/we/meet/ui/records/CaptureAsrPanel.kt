@@ -36,6 +36,7 @@ import com.we.meet.data.capture.CaptureRetention
 import com.we.meet.data.capture.MeetingIntent
 import com.we.meet.data.capture.MeetingIntentStore
 import com.we.meet.data.repository.CaptureTranscriptionRepository
+import com.we.meet.ui.components.WeMeetInlineEmptyState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
@@ -172,7 +173,7 @@ private fun CaptureAsrPreview(viewer: String, capture: String, job: CaptureAsrJo
     else if (preview == null) WeMeetInlineLoading()
     else {
         Text(stringResource(R.string.capture_asr_preview_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        if (preview.results.isEmpty()) Text(stringResource(R.string.capture_asr_waiting_text))
+        if (preview.results.isEmpty()) WeMeetInlineEmptyState(stringResource(R.string.capture_asr_waiting_text))
         preview.results.forEach { row ->
             val seconds = row.startMs / 1000
             CaptureTranscriptEntry(String.format(Locale.ROOT, "%02d:%02d", seconds / 60, seconds % 60), row.text)
