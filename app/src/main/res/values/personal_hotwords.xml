@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="personal_hotwords_title">Personal hotwords</string>
+    <string name="personal_hotwords_hint">Private to you and synced across devices. One word per line; up to 100 words, 40 characters each, 4000 total. Save empty text to clear. Saving does not change this or submitted jobs; explicitly merge before uploading.</string>
+    <string name="personal_hotwords_editor">Edit personal vocabulary</string>
+    <string name="personal_hotwords_copy_current">Copy this upload’s words to editor</string>
+    <string name="personal_hotwords_save">Save personal vocabulary</string>
+    <string name="personal_hotwords_apply">Merge into this upload</string>
+    <string name="personal_hotwords_saved">Vocabulary saved. This upload’s options are unchanged.</string>
+    <string name="personal_hotwords_applied">Merged and de-duplicated. You can still edit this upload’s words.</string>
+    <string name="personal_hotwords_conflict">Vocabulary changed on another device. Your draft is kept; discard edits and reload to review.</string>
+    <string name="personal_hotwords_limit">Too many words or characters. Nothing was truncated or merged; reduce the list.</string>
+    <string name="personal_hotwords_error">Request failed. Retry; unsaved edits still need confirmation.</string>
+    <string name="personal_hotwords_reload">Discard edits and reload</string>
+    <string name="personal_hotwords_close">Close vocabulary</string>
+</resources>

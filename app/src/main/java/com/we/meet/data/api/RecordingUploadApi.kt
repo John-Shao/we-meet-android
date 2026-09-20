@@ -13,7 +13,11 @@ data class RecordingUploadCapabilities(
     @Json(name = "direct_upload_available") val directUploadAvailable: Boolean = false,
     /** The direct branch's ceiling; 0 when direct uploads are off. */
     @Json(name = "direct_max_bytes") val directMaxBytes: Long = 0,
+    @Json(name = "personal_hotwords_available") val personalHotwordsAvailable: Boolean = false,
 )
+
+data class PersonalHotwordsDto(val words: List<String>, val revision: Int)
+data class PersonalHotwordsRequest(val text: String, @Json(name = "expected_revision") val expectedRevision: Int)
 
 data class RecordingUploadState(
     @Json(name = "record_id") val recordId: String,
@@ -58,6 +62,13 @@ data class RecordingUploadComplete(
 )
 
 interface RecordingUploadApi {
+    @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/recording-hotwords/")
+    suspend fun personalHotwords(): PersonalHotwordsDto = error("Personal vocabulary not implemented")
+
+    @Headers("Cache-Control: no-store")
+    @PUT("api/v1.0/recording-hotwords/")
+    suspend fun savePersonalHotwords(@Body body: PersonalHotwordsRequest): PersonalHotwordsDto = error("Personal vocabulary not implemented")
     @Headers("Cache-Control: no-store")
     @GET("api/v1.0/recording-uploads/")
     suspend fun capabilities(): RecordingUploadCapabilities

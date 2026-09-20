@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="personal_hotwords_title">个人热词</string>
+    <string name="personal_hotwords_hint">仅本人可见，跨设备同步。每行一词，最多 100 词、每词 40 字、总计 4000 字。留空保存可清空词表。保存不会修改本次或已提交的任务；请明确合并后再上传。</string>
+    <string name="personal_hotwords_editor">编辑个人词表</string>
+    <string name="personal_hotwords_copy_current">复制本次热词到编辑区</string>
+    <string name="personal_hotwords_save">保存个人词表</string>
+    <string name="personal_hotwords_apply">合并到本次上传</string>
+    <string name="personal_hotwords_saved">个人词表已保存，本次上传配置未改变。</string>
+    <string name="personal_hotwords_applied">已合并并去重，可继续编辑本次热词。</string>
+    <string name="personal_hotwords_conflict">词表已在其他设备修改。草稿已保留；请放弃编辑并重新载入后核对。</string>
+    <string name="personal_hotwords_limit">词数或长度超限，未截断或合并。请减少词条。</string>
+    <string name="personal_hotwords_error">未能完成请求，请重试；尚未保存的编辑仍需确认。</string>
+    <string name="personal_hotwords_reload">放弃编辑并重新载入</string>
+    <string name="personal_hotwords_close">关闭词表</string>
+</resources>

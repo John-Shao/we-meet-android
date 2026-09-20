@@ -49,7 +49,8 @@ class RecordingImportPickerTest {
             var navigated: String? = null
             val id = "11111111-1111-4111-8111-111111111111"
             val api = object : RecordingUploadApi {
-                override suspend fun capabilities() = RecordingUploadCapabilities(true, 1024, listOf("mp4"))
+                override suspend fun capabilities() = RecordingUploadCapabilities(true, 1024, listOf("mp4"), personalHotwordsAvailable = true)
+                override suspend fun personalHotwords() = PersonalHotwordsDto(listOf("Qwen"), 1)
                 override suspend fun state(recordId: String): RecordingUploadState = error("Not requested")
                 override suspend fun retry(recordId: String, body: RecordingUploadRetry): RecordingUploadState = error("Not requested")
                 override suspend fun multipartBegin(body: RecordingUploadBegin) = error("Chunked upload not configured")
@@ -61,6 +62,7 @@ class RecordingImportPickerTest {
                 override suspend fun complete(body: RecordingUploadComplete): RecordingUploadState = error("Direct upload not configured")
                 override suspend fun upload(key: RequestBody, audio: MultipartBody.Part, context: RequestBody, hotwords: RequestBody, diarization: RequestBody): RecordingUploadState {
                     keys += Buffer().also { key.writeTo(it) }.readUtf8()
+                    assertEquals("Qwen", Buffer().also { hotwords.writeTo(it) }.readUtf8())
                     assertEquals("true", Buffer().also { diarization.writeTo(it) }.readUtf8())
                     assertEquals("video", Buffer().also { audio.body.writeTo(it) }.readUtf8())
                     if (keys.size == 1) throw SocketTimeoutException("Response lost after acceptance")
@@ -77,6 +79,10 @@ class RecordingImportPickerTest {
             compose.waitUntil(10_000) { compose.onAllNodesWithText(label(R.string.record_upload_title)).fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText(label(R.string.record_upload_advanced)).performScrollTo().performClick()
             compose.onNodeWithContentDescription(label(R.string.record_upload_diarization)).performScrollTo().performClick()
+            compose.onNodeWithText(label(R.string.personal_hotwords_title)).performScrollTo().performClick()
+            compose.waitUntil(5000) { compose.onAllNodesWithText(label(R.string.personal_hotwords_apply)).fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText(label(R.string.personal_hotwords_apply)).performScrollTo().performClick()
+            compose.onNodeWithText(label(R.string.personal_hotwords_close)).performScrollTo().performClick()
             compose.onNodeWithText(label(R.string.record_upload_advanced)).performScrollTo().performClick()
             compose.onNodeWithText(label(R.string.record_upload_submit)).performClick()
             compose.onNodeWithText(label(R.string.record_upload_unconfirmed)).assertExists()
@@ -85,6 +91,7 @@ class RecordingImportPickerTest {
             compose.waitForIdle()
             compose.onNodeWithText(label(R.string.record_upload_advanced)).performScrollTo().performClick()
             compose.onNodeWithText(label(R.string.record_upload_context)).assertIsNotEnabled()
+            compose.onNodeWithText(label(R.string.personal_hotwords_title)).assertIsNotEnabled()
             compose.onNodeWithContentDescription(label(R.string.record_upload_diarization)).assertIsNotEnabled().assertIsOn()
             compose.onNodeWithText(label(R.string.record_upload_submit)).performClick()
             compose.waitForIdle()

@@ -83,6 +83,21 @@ class RecordingUploadRepository(
      */
     private val partStorage: RecordingPartStorage? = null,
 ) {
+    suspend fun personalHotwords(viewer: String) = scoped(viewer) {
+        api.personalHotwords().also(::validatePersonalHotwords)
+    }
+
+    suspend fun savePersonalHotwords(viewer: String, text: String, revision: Int) = scoped(viewer) {
+        require(revision >= 0 && text.codePointCount(0, text.length) <= 4000)
+        mergePersonalHotwords(text, emptyList())
+        api.savePersonalHotwords(com.we.meet.data.api.PersonalHotwordsRequest(text, revision)).also(::validatePersonalHotwords)
+    }
+
+    private fun validatePersonalHotwords(value: com.we.meet.data.api.PersonalHotwordsDto) {
+        require(value.revision >= 0 && value.words.size <= 100)
+        require(value.words.all { it.isNotBlank() && it.trim() == it })
+        require(mergePersonalHotwords("", value.words) == value.words.joinToString("\n"))
+    }
 
 
 
@@ -341,4 +356,13 @@ class RecordingUploadRepository(
         Result.success(result)
     } catch (cancelled: CancellationException) { throw cancelled
     } catch (error: Exception) { Result.failure(error) }
+}
+
+/** Explicit copy into an upload; case-sensitive de-duplication, never truncate overflow. */
+fun mergePersonalHotwords(current: String, saved: List<String>): String {
+    val words = (current.split(Regex("[\\r\\n\\u000b\\u000c\\u001c-\\u001e\\u0085\\u2028\\u2029]")) + saved)
+        .map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+    val text = words.joinToString("\n")
+    require(words.size <= 100 && words.all { it.codePointCount(0, it.length) <= 40 } && text.codePointCount(0, text.length) <= 4000)
+    return text
 }

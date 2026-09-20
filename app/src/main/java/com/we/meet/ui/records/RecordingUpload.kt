@@ -213,6 +213,9 @@ private fun RecordingImportEntry(
                             label = { Text(stringResource(R.string.record_upload_context)) }, modifier = Modifier.fillMaxWidth())
                         OutlinedTextField(hotwords, onValueChange = { hotwords = it.take(4000) }, enabled = !busy && !submitted,
                             label = { Text(stringResource(R.string.record_upload_hotwords)) }, modifier = Modifier.fillMaxWidth())
+                        if (config.personalHotwordsAvailable) PersonalHotwords(repository, viewer, hotwords, busy || submitted) { words ->
+                            if (!busy && !submitted) { hotwords = words; key = UUID.randomUUID().toString() }
+                        }
                     }
                     Text(stringResource(R.string.record_upload_consent), style = MaterialTheme.typography.bodySmall)
                 }
