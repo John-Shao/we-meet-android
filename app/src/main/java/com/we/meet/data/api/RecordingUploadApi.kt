@@ -39,7 +39,10 @@ data class RecordingUploadTicket(
     @Json(name = "upload_url") val uploadUrl: String,
     @Json(name = "storage_name") val storageName: String,
     val headers: Map<String, String> = emptyMap(),
-)
+) {
+    /** Local receipt only; never part of the signing API payload. */
+    @Transient var uploaded: Boolean = false
+}
 
 /** The same declaration plus the storage key the server handed out. */
 data class RecordingUploadComplete(

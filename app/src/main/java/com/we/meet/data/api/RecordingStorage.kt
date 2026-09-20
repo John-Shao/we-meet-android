@@ -8,6 +8,12 @@ import okio.BufferedSink
 import java.io.IOException
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Response
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /**
  * Puts the selected bytes into object storage under a URL the server signed.
@@ -23,6 +29,20 @@ fun interface RecordingStorage {
      *   caller must ask for a fresh ticket, because the signature may be spent.
      */
     fun put(url: String, headers: Map<String, String>, size: Long, open: () -> InputStream): Boolean
+
+    suspend fun putWithProgress(
+        url: String, headers: Map<String, String>, size: Long, open: () -> InputStream,
+        onProgress: (Long) -> Unit,
+    ): Boolean = put(url, headers, size) {
+        ProgressInputStream(open(), onProgress)
+    }
+}
+
+internal class ProgressInputStream(input: InputStream, private val progress: (Long) -> Unit) : java.io.FilterInputStream(input) {
+    private var sent = 0L
+    override fun read(): Int = `in`.read().also { if (it >= 0) { sent++; progress(sent) } }
+    override fun read(bytes: ByteArray, offset: Int, length: Int): Int =
+        `in`.read(bytes, offset, length).also { if (it > 0) { sent += it; progress(sent) } }
 }
 
 /**
@@ -68,6 +88,29 @@ internal fun recordingStorageHttp(): OkHttpClient = OkHttpClient.Builder()
 /** Streams the file without ever holding it in memory. */
 internal class HttpRecordingStorage(private val client: OkHttpClient = recordingStorageHttp()) : RecordingStorage {
     override fun put(url: String, headers: Map<String, String>, size: Long, open: () -> InputStream): Boolean {
+        return client.newCall(request(url, headers, size, open) {}).execute().use { it.isSuccessful }
+    }
+
+    override suspend fun putWithProgress(
+        url: String, headers: Map<String, String>, size: Long, open: () -> InputStream,
+        onProgress: (Long) -> Unit,
+    ): Boolean = suspendCancellableCoroutine { continuation ->
+        val call = client.newCall(request(url, headers, size, open, onProgress))
+        continuation.invokeOnCancellation { call.cancel() }
+        call.enqueue(object : Callback {
+            override fun onFailure(call: Call, error: IOException) {
+                continuation.resumeWithException(error)
+            }
+            override fun onResponse(call: Call, response: Response) {
+                response.use { continuation.resume(it.isSuccessful) }
+            }
+        })
+    }
+
+    private fun request(
+        url: String, headers: Map<String, String>, size: Long, open: () -> InputStream,
+        onProgress: (Long) -> Unit,
+    ): Request {
         val declared = requireNotNull(headers["Content-Type"]) { "A signed PUT needs its content type" }
         val body = object : RequestBody() {
             override fun contentType() = declared.toMediaType()
@@ -83,15 +126,15 @@ internal class HttpRecordingStorage(private val client: OkHttpClient = recording
                         if (count < 0) break
                         total += count
                         sink.write(buffer, 0, count)
+                        onProgress(total)
                     }
                 }
                 if (total != size) throw IOException("File changed while uploading")
             }
         }
-        val request = Request.Builder().url(url).put(body).apply {
+        return Request.Builder().url(url).put(body).apply {
             headers.forEach { (name, value) -> header(name, value) }
         }.build()
-        return client.newCall(request).execute().use { it.isSuccessful }
     }
 }
 

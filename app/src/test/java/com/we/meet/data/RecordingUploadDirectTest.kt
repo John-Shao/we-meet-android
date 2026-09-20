@@ -164,4 +164,28 @@ class RecordingUploadDirectTest {
         assertEquals(8L, multipartOnly.maxBytes(config))
         assertEquals(4096L, repository.maxBytes(config))
     }
+
+    @Test fun retriesOnlyCompletionAfterAResponseIsLost() = runBlocking {
+        var held: RecordingUploadTicket? = null
+        var calls = 0
+        val delayed = object : RecordingUploadApi by api {
+            override suspend fun complete(body: RecordingUploadComplete): RecordingUploadState {
+                calls++
+                if (calls == 1) throw java.io.IOException("Response lost")
+                return queued
+            }
+        }
+        val repository = RecordingUploadRepository(delayed, { viewer }, storage)
+        val first = repository.uploadDirect("owner", id, "Long.wav", 4096, config, "", "",
+            { "audio".byteInputStream() }, null, contentType, onTicket = { held = it })
+        assertTrue(first.isFailure)
+        assertTrue(held!!.uploaded)
+        val progress = mutableListOf<Long>()
+        val retry = repository.uploadDirect("owner", id, "Long.wav", 4096, config, "", "",
+            { error("Already stored") }, held, contentType, onProgress = { sent, _ -> progress.add(sent) })
+        assertEquals(queued, retry.getOrThrow())
+        assertEquals(1, puts)
+        assertEquals(1, presigns)
+        assertEquals(listOf(4096L), progress)
+    }
 }

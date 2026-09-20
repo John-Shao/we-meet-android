@@ -16,6 +16,9 @@ import com.we.meet.data.api.RecordingUploadSign
 import com.we.meet.data.api.RecordingUploadState
 import com.we.meet.data.api.RecordingUploadTicket
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -104,7 +107,14 @@ class RecordingUploadRepository(
     suspend fun upload(
         viewer: String, key: String, name: String, size: Long?, config: RecordingUploadCapabilities,
         context: String, hotwords: String, open: () -> InputStream,
+    ): Result<RecordingUploadState> = uploadWithProgress(viewer, key, name, size, config, context, hotwords, open) { _, _ -> }
+
+    suspend fun uploadWithProgress(
+        viewer: String, key: String, name: String, size: Long?, config: RecordingUploadCapabilities,
+        context: String, hotwords: String, open: () -> InputStream,
+        onProgress: (Long, Long) -> Unit,
     ): Result<RecordingUploadState> = scoped(viewer) {
+        val transferContext = currentCoroutineContext()
         uuid(key)
         require(config.available && config.maxBytes > 0)
         require(size == null || size in 1..config.maxBytes)
@@ -119,12 +129,14 @@ class RecordingUploadRepository(
                 open().use { stream ->
                     val buffer = ByteArray(8192)
                     while (true) {
+                        if (!transferContext.isActive) throw IOException("Upload stopped")
                         if (currentViewer() != viewer) throw IOException("Account changed")
                         val count = stream.read(buffer)
                         if (count < 0) break
                         total += count
                         if (total > config.maxBytes) throw IOException("File exceeds upload limit")
                         sink.write(buffer, 0, count)
+                        onProgress(total, size ?: 0)
                     }
                 }
                 if (total == 0L || (size != null && total != size)) throw IOException("File changed or empty")
@@ -164,6 +176,8 @@ class RecordingUploadRepository(
         viewer: String, key: String, name: String, size: Long, config: RecordingUploadCapabilities,
         context: String, hotwords: String, open: () -> InputStream,
         ticket: RecordingUploadTicket?, contentType: String,
+        onProgress: (Long, Long) -> Unit = { _, _ -> },
+        onTicket: (RecordingUploadTicket) -> Unit = {},
     ): Result<RecordingUploadState> = scoped(viewer) {
         uuid(key)
         require(directUploadEnabled(config))
@@ -177,9 +191,19 @@ class RecordingUploadRepository(
             require(it.storageName.isNotBlank() && it.uploadUrl.startsWith("https://"))
             require(it.headers["Content-Type"] == contentType)
         }
-        if (!requireNotNull(storage).put(signed.uploadUrl, signed.headers, size, open)) {
-            throw IOException("Object storage refused the upload")
+        onTicket(signed)
+        val transferContext = currentCoroutineContext()
+        if (!signed.uploaded) {
+            if (!requireNotNull(storage).putWithProgress(signed.uploadUrl, signed.headers, size, open) { sent ->
+                if (!transferContext.isActive || currentViewer() != viewer) throw IOException("Upload stopped")
+                onProgress(sent, size)
+            }) {
+                throw IOException("Object storage refused the upload")
+            }
+            signed.uploaded = true
         }
+        transferContext.ensureActive()
+        onProgress(size, size)
         require(currentViewer() == viewer)
         api.complete(
             RecordingUploadComplete(key, name, size, contentType, signed.storageName, context, hotwords)

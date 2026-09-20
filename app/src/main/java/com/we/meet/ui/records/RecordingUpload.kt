@@ -27,6 +27,10 @@ import com.we.meet.data.repository.RecordingUploadRepository
 import com.we.meet.ui.components.WeMeetInlineLoading
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -143,6 +147,8 @@ private fun RecordingImportEntry(
     var uploadedTotal by remember(viewer) { mutableStateOf(0L) }
     var cancelRequested by remember(viewer) { mutableStateOf(false) }
     var cancelled by remember(viewer) { mutableStateOf(false) }
+    var stopped by remember(viewer) { mutableStateOf(false) }
+    var transfer by remember(viewer) { mutableStateOf<Job?>(null) }
     var busy by remember(viewer) { mutableStateOf(false) }
     var error by remember(viewer) { mutableStateOf(false) }
     val resolver = LocalContext.current.contentResolver
@@ -164,7 +170,7 @@ private fun RecordingImportEntry(
                     ticket = null
                 }
                 name = metadata.first; size = metadata.second; uri = selected.toString()
-                error = false; open = true
+                error = false; stopped = false; cancelled = false; open = true
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (_: Exception) { uri = null; error = true; open = true }
         }
@@ -212,16 +218,20 @@ private fun RecordingImportEntry(
                         LinearProgressIndicator(Modifier.fillMaxWidth())
                     }
                     Text(stringResource(R.string.record_upload_wait))
+                    if (uploadedTotal > 0 && uploadedBytes >= uploadedTotal) {
+                        Text(stringResource(R.string.record_upload_confirming))
+                    }
                 }
                 if (busy) {
-                    TextButton(onClick = { cancelRequested = true }) {
+                    TextButton(onClick = { cancelRequested = true; transfer?.cancel() }) {
                         Text(stringResource(R.string.record_upload_cancel))
                     }
                 }
                 if (cancelled && !busy) {
                     Text(stringResource(R.string.record_upload_cancelled))
                 }
-                if (uncertain && !busy) Text(stringResource(R.string.record_upload_unconfirmed), color = MaterialTheme.colorScheme.error)
+                if (stopped && !busy) Text(stringResource(R.string.record_upload_stopped))
+                if (uncertain && !busy && !stopped) Text(stringResource(R.string.record_upload_unconfirmed), color = MaterialTheme.colorScheme.error)
                 else if (error) Text(stringResource(R.string.record_upload_error), color = MaterialTheme.colorScheme.error)
             }
         },
@@ -230,7 +240,7 @@ private fun RecordingImportEntry(
                 val document = Uri.parse(uri ?: return@TextButton)
                 if (busy) return@TextButton
                 busy = true; error = false; submitted = true
-                cancelRequested = false; cancelled = false
+                cancelRequested = false; cancelled = false; stopped = false
                 uploadedBytes = 0; uploadedTotal = 0
                 jobs.launch {
                     try {
@@ -248,7 +258,7 @@ private fun RecordingImportEntry(
                         // would freeze the dialog for the length of the transfer,
                         // which for a multi-gigabyte import is the whole point of
                         // the progress bar it would never get to draw.
-                        val result = withContext(Dispatchers.IO) {
+                        val task = async(Dispatchers.IO) {
                         if (chunked) {
                             repository.uploadChunked(
                                 com.we.meet.data.repository.ChunkedUploadRequest(
@@ -282,11 +292,17 @@ private fun RecordingImportEntry(
                             repository.uploadDirect(
                                 viewer, key, name, size!!, config, context, hotwords, bytes,
                                 ticket, contentTypeFor(name, resolver.getType(document)),
+                                onProgress = { sent, total -> uploadedBytes = sent; uploadedTotal = total },
+                                onTicket = { ticket = it },
                             )
                         } else {
-                            repository.upload(viewer, key, name, size, config, context, hotwords, bytes)
+                            repository.uploadWithProgress(viewer, key, name, size, config, context, hotwords, bytes) { sent, total ->
+                                uploadedBytes = sent; uploadedTotal = total
+                            }
                         }
                         }
+                        transfer = if (chunked) null else task
+                        val result = task.await()
                         if (result.isSuccess) {
                             open = false; ticket = null; uri = null; name = ""; submitted = false; uncertain = false
                             onRecord(result.getOrThrow().recordId)
@@ -301,7 +317,7 @@ private fun RecordingImportEntry(
                         } else {
                             // A spent ticket cannot be reused; the next attempt asks
                             // for a fresh signature instead of retrying a dead URL.
-                            if (result.exceptionOrNull() is java.io.IOException) ticket = null
+                            if (result.exceptionOrNull() is java.io.IOException && ticket?.uploaded != true) ticket = null
                             val failure = result.exceptionOrNull()
                             // Only a definite rejection permits changing the original options.
                             // A 409 on a retry can still refer to a previously accepted intent.
@@ -311,7 +327,14 @@ private fun RecordingImportEntry(
                             uncertain = uncertain || !rejected
                             error = true
                         }
-                    } finally { busy = false }
+                    } catch (cancelled: CancellationException) {
+                        // Cancelling a request cannot retract a server-side receipt.
+                        // Leaving the screen still propagates scope cancellation.
+                        currentCoroutineContext().ensureActive()
+                        if (!cancelRequested) throw cancelled
+                        stopped = true; uncertain = true; error = false
+                        if (ticket?.uploaded != true) ticket = null
+                    } finally { transfer = null; busy = false }
                 }
             }) { Text(stringResource(R.string.record_upload_submit)) }
         }, dismissButton = {
