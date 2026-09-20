@@ -92,7 +92,7 @@ internal fun <T> visibleRead(vararg keys: Any?, intervalMs: Long = 15_000, stopW
 }
 
 @Composable
-fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String, onBack: () -> Unit, summaryVersionId: String? = null, onTask: ((String) -> Unit)? = null, onDocument: ((String) -> Unit)? = null, initialSummary: Boolean = false, initialReview: Boolean = false) {
+fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String, onBack: () -> Unit, summaryVersionId: String? = null, onTask: ((String) -> Unit)? = null, onDocument: ((String) -> Unit)? = null, initialSummary: Boolean = false, initialReview: Boolean = false, onRemoved: () -> Unit = onBack) {
     val app = LocalContext.current.applicationContext as? WeMeetApp
     var audioSeek by remember(viewer, recordId) { mutableStateOf<CaptureAudioSeek?>(null) }
     /**
@@ -160,7 +160,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                     }
                     if (selectedTab == "info") {
                         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-                            RecordTrashControl(viewer, record, repository, onBack)
+                            RecordTrashControl(viewer, record, repository, onRemoved)
                             RecordMediaDownload(repository, viewer, record)
                             RecordInfo(record, app?.captureRepository, viewer, fullDuration = fullDuration)
                             if (app != null && onDocument != null) RecordDocuments(viewer, record, app.meetingDeliveryRepository, onDocument, onHumanSource = {

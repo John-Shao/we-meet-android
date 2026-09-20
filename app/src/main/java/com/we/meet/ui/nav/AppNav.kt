@@ -1598,7 +1598,8 @@ fun AppNav() {
             RecordDetailScreen(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(),
                 entry.arguments?.getString("recordId").orEmpty(), onBack = rememberOnceOnly(safePop),
                 summaryVersionId = entry.arguments?.getString("summary"), initialReview = entry.arguments?.getString("tab") == "review", initialSummary = entry.arguments?.getString("tab") in listOf("summary", "review"), onTask = { navController.navigate(Routes.taskDetail(it)) },
-                onDocument = { navController.navigate(Routes.docsDetail(it)) })
+                onDocument = { navController.navigate(Routes.docsDetail(it)) },
+                onRemoved = rememberOnceOnly { navController.openLibraryAfterRecordRemoval() })
         }
         composable(Routes.MEETING_SETTINGS) {
             MeetingSettingsScreen(
