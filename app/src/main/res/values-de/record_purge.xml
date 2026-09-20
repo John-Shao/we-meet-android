@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_purge_remove">Endgültig löschen</string>
+    <string name="record_purge_status">Löschstatus</string>
+    <string name="record_purge_confirm">Endgültiges Löschen bestätigen</string>
+    <string name="record_purge_retry">Löschen erneut versuchen</string>
+    <string name="record_purge_close">Schließen</string>
+    <string name="record_purge_hint">Diese Aufnahme, Medien, das Transkript und der Zusammenfassungsverlauf werden endgültig gelöscht. Nach Annahme ist keine Wiederherstellung möglich. Exportierte Dokumente, Aufgaben und übermittelte Kopien bleiben erhalten.</string>
+    <string name="record_purge_acknowledge">Ich verstehe, dass dies nicht rückgängig gemacht werden kann.</string>
+    <string name="record_purge_pending">Löschung läuft. Diese Aufnahme kann nicht wiederhergestellt werden.</string>
+    <string name="record_purge_failed">Löschung noch nicht abgeschlossen. Sie wird erneut versucht; eine Wiederherstellung ist nicht möglich.</string>
+    <string name="record_purge_complete">Endgültig gelöscht.</string>
+    <string name="record_purge_wait">Die Bereinigung kann nach %1$s beginnen. Sie können dieses Fenster schließen; sie läuft im Hintergrund weiter.</string>
+    <string name="record_purge_uncertain">Ergebnis unbekannt. Aktualisieren Sie den Papierkorb oder wiederholen Sie dieselbe Anfrage. Stellen Sie diese Aufnahme nicht wieder her.</string>
+    <string name="record_purge_retention_hint">Der Papierkorb wird nicht automatisch geleert. Stellen Sie eine Aufnahme wieder her oder löschen Sie sie ausdrücklich endgültig.</string>
+</resources>

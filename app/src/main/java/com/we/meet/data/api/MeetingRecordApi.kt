@@ -13,6 +13,7 @@ import com.we.meet.data.api.dto.RecordOriginalSegmentDto
 import com.we.meet.data.api.dto.RecordOnlineTranscriptDto
 import com.we.meet.data.api.dto.RecordSpeakerDto
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Headers
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -29,6 +30,14 @@ interface MeetingRecordApi {
     @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/trash/")
     suspend fun trash(@Query("cursor") cursor: String?): RecordPageDto<com.we.meet.data.api.dto.RecordLifecycleDto> = error("Trash is unavailable")
+
+    @Headers("Cache-Control: no-store")
+    @POST("api/v1.0/meeting-records/{record}/purge/")
+    suspend fun purge(@Path("record") recordId: String, @Body body: com.we.meet.data.api.dto.RecordPurgeRequest): com.we.meet.data.api.dto.RecordPurgeDto = error("Permanent deletion is unavailable")
+
+    @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/meeting-records/{record}/purge/")
+    suspend fun purgeStatus(@Path("record") recordId: String): com.we.meet.data.api.dto.RecordPurgeDto = error("Permanent deletion is unavailable")
 
     @Headers("Cache-Control: no-store")
     @PATCH("api/v1.0/meeting-records/{record}/lifecycle/")

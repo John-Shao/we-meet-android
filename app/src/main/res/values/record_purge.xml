@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_purge_remove">Permanently delete</string>
+    <string name="record_purge_status">Deletion status</string>
+    <string name="record_purge_confirm">Confirm permanent deletion</string>
+    <string name="record_purge_retry">Retry deletion</string>
+    <string name="record_purge_close">Close</string>
+    <string name="record_purge_hint">Delete this recording, media, transcript and summary history permanently. Once accepted, it cannot be restored. Exported documents, tasks and delivered copies remain.</string>
+    <string name="record_purge_acknowledge">I understand that this cannot be undone.</string>
+    <string name="record_purge_pending">Deletion in progress. This recording cannot be restored.</string>
+    <string name="record_purge_failed">Deletion could not be completed. It will be retried; this recording cannot be restored.</string>
+    <string name="record_purge_complete">Permanently deleted.</string>
+    <string name="record_purge_wait">Cleanup may start after %1$s. You can close this window; it continues in the background.</string>
+    <string name="record_purge_uncertain">The result is unknown. Refresh the trash to check, or retry this same request. Do not restore this recording.</string>
+    <string name="record_purge_retention_hint">Trash is not cleared automatically. Restore a recording, or explicitly delete it permanently.</string>
+</resources>

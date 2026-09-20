@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_purge_remove">Definitief verwijderen</string>
+    <string name="record_purge_status">Verwijderstatus</string>
+    <string name="record_purge_confirm">Definitief verwijderen bevestigen</string>
+    <string name="record_purge_retry">Verwijderen opnieuw proberen</string>
+    <string name="record_purge_close">Sluiten</string>
+    <string name="record_purge_hint">Verwijder deze opname, media, transcriptie en samenvattingsgeschiedenis definitief. Na acceptatie is herstel onmogelijk. Geëxporteerde documenten, taken en verzonden kopieën blijven behouden.</string>
+    <string name="record_purge_acknowledge">Ik begrijp dat dit niet ongedaan kan worden gemaakt.</string>
+    <string name="record_purge_pending">Verwijderen bezig. Deze opname kan niet worden hersteld.</string>
+    <string name="record_purge_failed">Verwijderen is nog niet voltooid en wordt opnieuw geprobeerd. Herstel is niet mogelijk.</string>
+    <string name="record_purge_complete">Definitief verwijderd.</string>
+    <string name="record_purge_wait">Opruimen kan beginnen na %1$s. U kunt dit venster sluiten; het gaat op de achtergrond verder.</string>
+    <string name="record_purge_uncertain">Resultaat onbekend. Vernieuw de prullenbak of probeer hetzelfde verzoek opnieuw. Herstel deze opname niet.</string>
+    <string name="record_purge_retention_hint">De prullenbak wordt niet automatisch geleegd. Herstel een opname of kies expliciet voor definitief verwijderen.</string>
+</resources>

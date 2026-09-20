@@ -62,11 +62,12 @@ internal fun RecordTrashSheet(viewer: String, repository: MeetingRecordRepositor
     var cursors by remember(viewer) { mutableStateOf(listOf<String?>(null)) }
     var refresh by remember { mutableIntStateOf(0) }
     var selected by remember(viewer) { mutableStateOf<RecordLifecycleDto?>(null) }
+    var purging by remember(viewer) { mutableStateOf<RecordLifecycleDto?>(null) }
     val page = visibleRead(viewer, cursors.last(), refresh) { repository.trash(viewer, cursors.last()) }
     ModalBottomSheet(onDismissRequest = onClose, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.fillMaxWidth().fillMaxHeight(0.85f).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
             Text(stringResource(R.string.record_trash_title), style = MaterialTheme.typography.titleLarge)
-            Text(stringResource(R.string.record_trash_retention_hint), style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(if (page?.getOrNull()?.purgeAvailable == true) R.string.record_purge_retention_hint else R.string.record_trash_retention_hint), style = MaterialTheme.typography.bodySmall)
             when {
                 page == null -> WeMeetInlineLoading()
                 page.isFailure -> WeMeetInlineErrorState(onRetry = { selected = null; refresh++ }, message = stringResource(R.string.record_trash_unavailable))
@@ -77,7 +78,8 @@ internal fun RecordTrashSheet(viewer: String, repository: MeetingRecordRepositor
                         items(result.results, key = { it.id }) { row ->
                             Text(row.title, style = MaterialTheme.typography.titleMedium)
                             row.deletedAt?.let { Text(recordTime(it), style = MaterialTheme.typography.bodySmall) }
-                            TextButton(onClick = { selected = row }) { Text(stringResource(R.string.record_trash_restore)) }
+                            if (row.purge == null) TextButton(onClick = { selected = row }) { Text(stringResource(R.string.record_trash_restore)) }
+                            if (row.purge != null || result.purgeAvailable) TextButton(onClick = { purging = row }) { Text(stringResource(if (row.purge != null) R.string.record_purge_status else R.string.record_purge_remove)) }
                         }
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -93,5 +95,8 @@ internal fun RecordTrashSheet(viewer: String, repository: MeetingRecordRepositor
         key(viewer, item.id) {
             RecordLifecycleConfirmation(viewer, item, repository, "active", { selected = null; refresh++ }) { selected = null; cursors = listOf(null); refresh++ }
         }
+    }
+    if (page?.isSuccess == true) purging?.let { item ->
+        key(viewer, item.id) { RecordPurgeConfirmation(viewer, item, repository) { purging = null; cursors = listOf(null); refresh++ } }
     }
 }

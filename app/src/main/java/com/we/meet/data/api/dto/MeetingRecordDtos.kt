@@ -7,6 +7,7 @@ data class RecordPageDto<T>(
     @Json(name = "next_cursor") val nextCursor: String? = null,
     @Json(name = "supported_filters") val supportedFilters: List<String> = emptyList(),
     @Json(name = "trash_available") val trashAvailable: Boolean = false,
+    @Json(name = "purge_available") val purgeAvailable: Boolean = false,
 )
 
 /** Missing abilities always fail closed, including on older servers. */

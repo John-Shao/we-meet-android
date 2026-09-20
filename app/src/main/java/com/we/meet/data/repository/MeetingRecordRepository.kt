@@ -89,6 +89,25 @@ class MeetingRecordRepository(
         requireUuid(row.id)
         require(row.sourceType in listOf("upload", "audio_recording") && row.lifecycleRevision >= 0)
         row.deletedAt?.let { java.time.OffsetDateTime.parse(it) }
+        row.purge?.let { validatePurge(it, row.id, it.expectedRevision) }
+    }
+
+    suspend fun purge(viewer: String, recordId: String, revision: Int) = scoped(viewer) {
+        requireUuid(recordId); require(revision >= 0)
+        api.purge(recordId, com.we.meet.data.api.dto.RecordPurgeRequest(revision)).also { validatePurge(it, recordId, revision) }
+    }
+
+    suspend fun purgeStatus(viewer: String, recordId: String, revision: Int) = scoped(viewer) {
+        requireUuid(recordId); require(revision >= 0)
+        api.purgeStatus(recordId).also { validatePurge(it, recordId, revision) }
+    }
+
+    private fun validatePurge(value: com.we.meet.data.api.dto.RecordPurgeDto, recordId: String, revision: Int) {
+        require(value.id == recordId && value.expectedRevision == revision && revision >= 0)
+        require(value.state in listOf("pending", "failed", "complete"))
+        require(!value.canRetry || value.state == "failed")
+        java.time.OffsetDateTime.parse(value.notBefore)
+        value.completedAt?.let { java.time.OffsetDateTime.parse(it) }
     }
 
     private var recoveryContext: android.content.Context? = null

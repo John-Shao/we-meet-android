@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_purge_remove">永久删除</string>
+    <string name="record_purge_status">删除状态</string>
+    <string name="record_purge_confirm">确认永久删除</string>
+    <string name="record_purge_retry">重试删除</string>
+    <string name="record_purge_close">关闭</string>
+    <string name="record_purge_hint">将永久删除此记录的媒体、原文和纪要历史。请求一经受理就无法恢复。已导出的文档、任务及已交付的副本会保留。</string>
+    <string name="record_purge_acknowledge">我理解此操作无法撤销。</string>
+    <string name="record_purge_pending">正在永久删除，无法恢复此记录。</string>
+    <string name="record_purge_failed">删除尚未完成，系统会重试；此记录无法恢复。</string>
+    <string name="record_purge_complete">已永久删除。</string>
+    <string name="record_purge_wait">清理最早于 %1$s 开始。可以关闭窗口，后台会继续处理。</string>
+    <string name="record_purge_uncertain">结果尚未确认。可刷新回收站查看，或重试同一请求。请勿恢复此记录。</string>
+    <string name="record_purge_retention_hint">回收站不会自动清空。你可以恢复记录，或明确选择永久删除。</string>
+</resources>

@@ -23,6 +23,34 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
 class MeetingRecordRepositoryTest {
+    private fun purgeJson(state: String = "pending", revision: Int = 3, id: String = recordId) = """{"id":"$id","state":"$state","expected_revision":$revision,"not_before":"2026-09-20T00:00:00Z","completed_at":null,"can_retry":false}"""
+
+    @Test fun permanentDeletionUsesOnlyTheConfirmedRevision() = runBlocking {
+        val repo = repository("POST") { request ->
+            assertEquals("/api/v1.0/meeting-records/$recordId/purge/", request.url.encodedPath)
+            val body = okio.Buffer().also { requireNotNull(request.body).writeTo(it) }.readUtf8()
+            assertEquals("""{"expected_revision":3}""", body)
+            202 to purgeJson()
+        }
+        assertEquals("pending", repo.purge("reader", recordId, 3).getOrThrow().state)
+    }
+
+    @Test fun permanentDeletionRejectsWrongRecordRevisionAndUnknownState() = runBlocking {
+        for (body in listOf(purgeJson(id = snapshotId), purgeJson(revision = 4), purgeJson(state = "unknown"))) {
+            val repo = repository { 200 to body }
+            assertTrue(repo.purgeStatus("reader", recordId, 3).isFailure)
+        }
+    }
+
+    @Test fun permanentDeletionDiscardsResponseAfterAccountSwitch() = runBlocking {
+        val repo = repository { viewer = "other"; 200 to purgeJson() }
+        assertTrue(repo.purgeStatus("reader", recordId, 3).isFailure)
+    }
+
+    @Test fun legacyTrashPageDoesNotEnablePermanentDeletion() = runBlocking {
+        val repo = repository { 200 to """{"results":[],"next_cursor":null}""" }
+        assertFalse(repo.trash("reader").getOrThrow().purgeAvailable)
+    }
     private val recordId = "11111111-1111-4111-8111-111111111111"
     private val snapshotId = "22222222-2222-4222-8222-222222222222"
     private val sourceId = "33333333-3333-4333-8333-333333333333"

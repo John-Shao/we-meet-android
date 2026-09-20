@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_purge_remove">Supprimer définitivement</string>
+    <string name="record_purge_status">État de suppression</string>
+    <string name="record_purge_confirm">Confirmer la suppression définitive</string>
+    <string name="record_purge_retry">Réessayer la suppression</string>
+    <string name="record_purge_close">Fermer</string>
+    <string name="record_purge_hint">Supprime définitivement cet enregistrement, ses médias, sa transcription et ses résumés. Une fois acceptée, la demande ne peut pas être annulée. Les documents exportés, tâches et copies transmises sont conservés.</string>
+    <string name="record_purge_acknowledge">Je comprends que cette action est irréversible.</string>
+    <string name="record_purge_pending">Suppression en cours. Cet enregistrement ne peut pas être restauré.</string>
+    <string name="record_purge_failed">Suppression inachevée. Une nouvelle tentative est prévue ; la restauration est impossible.</string>
+    <string name="record_purge_complete">Suppression définitive terminée.</string>
+    <string name="record_purge_wait">Le nettoyage peut commencer après %1$s. Vous pouvez fermer cette fenêtre ; il continue en arrière-plan.</string>
+    <string name="record_purge_uncertain">Résultat inconnu. Actualisez la corbeille ou réessayez la même demande. Ne restaurez pas cet enregistrement.</string>
+    <string name="record_purge_retention_hint">La corbeille ne se vide pas automatiquement. Restaurez un enregistrement ou choisissez sa suppression définitive.</string>
+</resources>
