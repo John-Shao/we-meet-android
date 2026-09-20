@@ -1,0 +1,8 @@
+<resources>
+    <string name="records_created_from">Created on or after</string>
+    <string name="records_created_through">Created on or before</string>
+    <string name="records_clear_dates">Clear dates</string>
+    <string name="records_date_hint">Use YYYY-MM-DD; leave blank for no limit. Local time zone, with the end date included.</string>
+    <string name="records_date_error">Enter valid dates with the start no later than the end.</string>
+    <string name="records_date_active">Created: %1$s — %2$s</string>
+</resources>

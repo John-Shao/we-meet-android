@@ -5,6 +5,5 @@
     <string name="record_documents_hint">Your exports from this record, newest first. Use the page controls for older copies. Each document has independent access permissions.</string>
     <string name="record_documents_empty">No document exports by you yet.</string>
     <string name="record_documents_create_hint">You can create a document from a minutes version.</string>
-    <string name="record_documents_create_hint">You can create a document from a minutes version.</string>
     <string name="record_documents_source">View the source AI minutes version</string>
 </resources>

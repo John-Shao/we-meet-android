@@ -60,9 +60,11 @@ internal fun rememberTranscriptExporter(
             busy = false
             val error = written.exceptionOrNull()
             if (error is CancellationException) throw error
-            Toast.makeText(context, context.getString(
-                if (written.isFailure) R.string.records_export_failed else R.string.records_export_saved,
-            ), Toast.LENGTH_SHORT).show()
+            withContext(Dispatchers.Main.immediate) {
+                Toast.makeText(context, context.getString(
+                    if (written.isFailure) R.string.records_export_failed else R.string.records_export_saved,
+                ), Toast.LENGTH_SHORT).show()
+            }
         }
     }
     if (busy) AlertDialog(

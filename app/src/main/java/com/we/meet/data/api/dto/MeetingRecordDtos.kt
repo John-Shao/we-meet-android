@@ -5,6 +5,7 @@ import com.squareup.moshi.Json
 data class RecordPageDto<T>(
     val results: List<T>,
     @Json(name = "next_cursor") val nextCursor: String? = null,
+    @Json(name = "supported_filters") val supportedFilters: List<String> = emptyList(),
 )
 
 /** Missing abilities always fail closed, including on older servers. */

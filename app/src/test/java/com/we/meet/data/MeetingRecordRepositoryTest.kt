@@ -100,6 +100,24 @@ class MeetingRecordRepositoryTest {
         assertEquals("opaque-next", page.nextCursor)
     }
 
+    @Test fun dateQueriesKeepOtherFiltersAndRequireServerAcknowledgement() = runBlocking {
+        var supported = true
+        val repo = repository { request ->
+            assertEquals("shared", request.url.queryParameter("scope"))
+            assertEquals("upload", request.url.queryParameter("source_type"))
+            assertEquals("2026-09-19T16:00:00Z", request.url.queryParameter("created_from"))
+            assertEquals("2026-09-20T16:00:00Z", request.url.queryParameter("created_before"))
+            assertEquals("opaque-page", request.url.queryParameter("cursor"))
+            val flags = if (supported) """, "supported_filters":["created_from","created_before"]""" else ""
+            200 to """{"results":[${record()}],"next_cursor":null$flags}"""
+        }
+        suspend fun load() = repo.records("reader", RecordScope.SHARED, RecordSource.UPLOAD,
+            cursor = "opaque-page", createdFrom = "2026-09-19T16:00:00Z", createdBefore = "2026-09-20T16:00:00Z")
+        assertEquals(recordId, load().getOrThrow().results.single().id)
+        supported = false
+        assertTrue(load().isFailure)
+    }
+
     @Test fun omittedAbilitiesNeverGrantAccess() {
         val dto = moshi.adapter(RecordDto::class.java).fromJson(record("{}"))!!
         assertFalse(dto.capabilities.readSummary)

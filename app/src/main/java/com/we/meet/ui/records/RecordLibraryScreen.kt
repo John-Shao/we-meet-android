@@ -9,6 +9,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -55,23 +56,28 @@ fun RecordLibraryScreen(
     var searchVisible by remember(viewer) { mutableStateOf(false) }
     var filtersVisible by remember(initialSource) { mutableStateOf(initialSource != null) }
     var grid by remember { mutableStateOf(false) }
-    var cursors by remember(viewer, scope, source, query, summariesOnly) { mutableStateOf(listOf<String?>(null)) }
+    var dateFrom by remember(viewer) { mutableStateOf("") }
+    var dateThrough by remember(viewer) { mutableStateOf("") }
+    val dates = remember(dateFrom, dateThrough) { recordDateRange(dateFrom, dateThrough) }
+    val hasDates = dateFrom.isNotEmpty() || dateThrough.isNotEmpty()
+    var cursors by remember(viewer, scope, source, query, summariesOnly, dates) { mutableStateOf(listOf<String?>(null)) }
     var refresh by remember { mutableIntStateOf(0) }
     val cursor = cursors.last()
-    val listState = remember(viewer, scope, source, query, cursor, summariesOnly) { LazyGridState() }
+    val listState = remember(viewer, scope, source, query, cursor, summariesOnly, dates) { LazyGridState() }
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     val search = { query = input.trim(); refresh++; keyboard?.hide(); Unit }
-    val result = visibleRead(viewer, scope, source, query, cursor, summariesOnly, refresh) {
+    val result = visibleRead(viewer, scope, source, query, cursor, summariesOnly, refresh, dates) {
         // 会议实录只取已结束的:正在录的那条走下面单独一段,否则会同时出现在两处。
         // 纪要库不带这个条件(服务端本来就是 has_summary=true 的那批)。
         repository.records(viewer, scope, source, summariesOnly, query.ifBlank { null }, cursor,
-            isOngoing = if (summariesOnly) null else false)
+            isOngoing = if (summariesOnly) null else false, createdFrom = dates.first, createdBefore = dates.second)
     }
     // 「进行中」单独一段:Web 端同样是两段(进行中 / 历史记录),正在进行的那条最该排在最前。
     // 只取第一页 —— 服务端单页上限 30,同时在录的记录不该有几十条,不值得再挂一套游标。
-    val ongoing = if (summariesOnly) null else visibleRead(viewer, scope, source, query, refresh) {
-        repository.records(viewer, scope, source, summariesOnly = false, query.ifBlank { null }, cursor = null, isOngoing = true)
+    val ongoing = if (summariesOnly) null else visibleRead(viewer, scope, source, query, refresh, dates) {
+        repository.records(viewer, scope, source, summariesOnly = false, query.ifBlank { null }, cursor = null, isOngoing = true,
+            createdFrom = dates.first, createdBefore = dates.second)
     }
     val ongoingRows = ongoing?.getOrNull()?.results.orEmpty()
     LaunchedEffect(searchVisible) { if (searchVisible) focus.requestFocus() }
@@ -97,7 +103,7 @@ fun RecordLibraryScreen(
                     // 顶栏再放一个同样的图标只是重复入口。
                     if (!summariesOnly) IconButton(onClick = { filtersVisible = true }) {
                         Icon(Icons.Outlined.Tune, stringResource(R.string.records_filters),
-                            tint = if (source != null || scope == RecordScope.PARTICIPATED) MaterialTheme.colorScheme.primary else LocalContentColor.current)
+                            tint = if (source != null || scope == RecordScope.PARTICIPATED || hasDates) MaterialTheme.colorScheme.primary else LocalContentColor.current)
                     }
                 })
         },
@@ -143,11 +149,12 @@ fun RecordLibraryScreen(
                 leadingIcon = { Icon(Icons.Outlined.Search, null) }, trailingIcon = {
                     TextButton(onClick = search) { Text(stringResource(R.string.records_search_action)) }
                 }, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), keyboardActions = KeyboardActions(onSearch = { search() }))
-            if (!summariesOnly && (source != null || scope == RecordScope.PARTICIPATED)) Row(Modifier.padding(horizontal = Dimens.ScreenPadding), verticalAlignment = Alignment.CenterVertically) {
+            if ((!summariesOnly && (source != null || scope == RecordScope.PARTICIPATED)) || hasDates) Row(Modifier.padding(horizontal = Dimens.ScreenPadding), verticalAlignment = Alignment.CenterVertically) {
                 Text(listOfNotNull(source?.let { stringResource(sourceLabel(it.wire)) },
-                    if (scope == RecordScope.PARTICIPATED) stringResource(R.string.records_participated) else null).joinToString(" · "),
+                    if (scope == RecordScope.PARTICIPATED) stringResource(R.string.records_participated) else null,
+                    if (hasDates) stringResource(R.string.records_date_active, dateFrom.ifEmpty { "…" }, dateThrough.ifEmpty { "…" }) else null).joinToString(" · "),
                     modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                TextButton(onClick = { source = null; scope = RecordScope.RECENT }) { Text(stringResource(R.string.records_reset_filters)) }
+                TextButton(onClick = { source = null; scope = if (summariesOnly) RecordScope.OWNED else RecordScope.RECENT; dateFrom = ""; dateThrough = "" }) { Text(stringResource(R.string.records_reset_filters)) }
             }
             // 一级页的下一半:白色滚动区,加载态/空态/错误态也得把白底铺满。
             Box(Modifier.weight(1f).fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
@@ -198,7 +205,10 @@ fun RecordLibraryScreen(
         }
     }
     if (filtersVisible) ModalBottomSheet(onDismissRequest = { filtersVisible = false }) {
-        Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+        var fromDraft by remember { mutableStateOf(dateFrom) }
+        var throughDraft by remember { mutableStateOf(dateThrough) }
+        var invalidDates by remember { mutableStateOf(false) }
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).imePadding().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
             Text(stringResource(R.string.records_filters), style = MaterialTheme.typography.titleLarge)
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                 RecordScope.entries.filter { !summariesOnly || it != RecordScope.RECENT }.forEach { value -> FilterChip(scope == value, onClick = { scope = value }, label = { Text(stringResource(if (summariesOnly) minutesScopeLabel(value) else scopeLabel(value))) }) }
@@ -207,7 +217,18 @@ fun RecordLibraryScreen(
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                 (listOf(null) + RecordSource.entries).forEach { value -> FilterChip(source == value, onClick = { source = value }, label = { Text(stringResource(sourceLabel(value?.wire))) }) }
             }
-            Button(onClick = { filtersVisible = false }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.records_filters_done)) }
+            OutlinedTextField(fromDraft, { fromDraft = it.take(10); invalidDates = false }, singleLine = true,
+                label = { Text(stringResource(R.string.records_created_from)) }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(throughDraft, { throughDraft = it.take(10); invalidDates = false }, singleLine = true,
+                label = { Text(stringResource(R.string.records_created_through)) }, modifier = Modifier.fillMaxWidth())
+            Text(stringResource(R.string.records_date_hint), style = MaterialTheme.typography.bodySmall)
+            if (invalidDates) Text(stringResource(R.string.records_date_error), color = MaterialTheme.colorScheme.error)
+            TextButton(onClick = { fromDraft = ""; throughDraft = ""; invalidDates = false }) { Text(stringResource(R.string.records_clear_dates)) }
+            Button(onClick = {
+                if (runCatching { recordDateRange(fromDraft, throughDraft) }.isSuccess) {
+                    dateFrom = fromDraft; dateThrough = throughDraft; filtersVisible = false
+                } else invalidDates = true
+            }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.records_filters_done)) }
         }
     }
 }

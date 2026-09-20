@@ -1,0 +1,8 @@
+<resources>
+    <string name="records_created_from">创建日期从</string>
+    <string name="records_created_through">创建日期至</string>
+    <string name="records_clear_dates">清除日期</string>
+    <string name="records_date_hint">格式 YYYY-MM-DD，可留空；按本地时区筛选创建日期，包含结束日期当天。</string>
+    <string name="records_date_error">请输入有效日期，开始日期不能晚于结束日期。</string>
+    <string name="records_date_active">创建日期：%1$s — %2$s</string>
+</resources>

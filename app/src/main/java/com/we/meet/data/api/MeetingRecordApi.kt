@@ -54,6 +54,19 @@ interface MeetingRecordApi {
     ): RecordPageDto<RecordDto>
 
     @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/meeting-records/")
+    suspend fun recordsInDateRange(
+        @Query("scope") scope: String,
+        @Query("source_type") source: String?,
+        @Query("has_summary") hasSummary: Boolean?,
+        @Query("q") query: String?,
+        @Query("cursor") cursor: String?,
+        @Query("is_ongoing") isOngoing: Boolean?,
+        @Query("created_from") createdFrom: String?,
+        @Query("created_before") createdBefore: String?,
+    ): RecordPageDto<RecordDto> = error("Date filters are not implemented")
+
+    @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/{record}/")
     suspend fun record(@Path("record") recordId: String): RecordDto
 

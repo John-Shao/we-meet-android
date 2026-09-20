@@ -150,10 +150,21 @@ class MeetingRecordRepository(
         query: String? = null,
         cursor: String? = null,
         isOngoing: Boolean? = null,
+        createdFrom: String? = null,
+        createdBefore: String? = null,
     ): Result<RecordPageDto<RecordDto>> = scoped(viewer) {
         require(query == null || query.length <= 200)
         validateCursor(cursor)
-        api.records(scope.wire, source?.wire, if (summariesOnly) true else null, query, cursor, isOngoing).also { page ->
+        val dated = createdFrom != null || createdBefore != null
+        val from = createdFrom?.let(java.time.Instant::parse)
+        val before = createdBefore?.let(java.time.Instant::parse)
+        require(from == null || before == null || from < before)
+        val response = if (dated) api.recordsInDateRange(scope.wire, source?.wire, if (summariesOnly) true else null,
+            query, cursor, isOngoing, createdFrom, createdBefore)
+        else api.records(scope.wire, source?.wire, if (summariesOnly) true else null, query, cursor, isOngoing)
+        response.also { page ->
+            require(createdFrom == null || "created_from" in page.supportedFilters)
+            require(createdBefore == null || "created_before" in page.supportedFilters)
             validatePage(page)
             page.results.forEach(::validateRecord)
         }

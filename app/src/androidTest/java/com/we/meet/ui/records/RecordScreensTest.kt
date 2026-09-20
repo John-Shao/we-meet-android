@@ -113,6 +113,13 @@ class RecordScreensTest {
                 RecordCapabilitiesDto(readSummary = true, readTranscript = originals, rename = renameAllowed), isOngoing = !renameAllowed,
                 upload = if (sourceType == "upload") RecordUploadDto(canControl = uploadCanControl) else null)
         }
+        val dateQueries = java.util.concurrent.CopyOnWriteArrayList<List<String?>>()
+        var supportsDates = true
+        override suspend fun recordsInDateRange(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?, isOngoing: Boolean?, createdFrom: String?, createdBefore: String?): RecordPageDto<RecordDto> {
+            dateQueries += listOf(createdFrom, createdBefore, cursor, source)
+            return records(scope, source, hasSummary, query, cursor, isOngoing).copy(
+                supportedFilters = if (supportsDates) listOf("created_from", "created_before") else emptyList())
+        }
         override suspend fun records(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?, isOngoing: Boolean?): RecordPageDto<RecordDto> {
             checkAccess()
             // 列表页现在会并行问两次:进行中一段 + 历史一段(见 RecordLibraryScreen)。
@@ -423,6 +430,40 @@ class RecordScreensTest {
         // 这一页不再挂「录音/导入」常驻底栏:两个动作归属 AI 录音页,列表页只查只看。
         compose.onNodeWithText(label(R.string.records_start_recording)).assertDoesNotExist()
         compose.onNodeWithText(label(R.string.records_upload)).assertDoesNotExist()
+    }
+
+    @Test fun datesCombineWithSourceResetCursorAndRejectInvalidRange() {
+        val fixture = Fixture()
+        compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", false, {}, {}) } }
+        awaitText("Private planning meeting")
+        compose.onNodeWithText(label(R.string.records_next)).performScrollTo().performClick()
+        awaitText(label(R.string.records_empty))
+        compose.onNodeWithContentDescription(label(R.string.records_filters)).performClick()
+        compose.onNodeWithText(label(R.string.records_uploaded)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.records_created_from)).performScrollTo().performTextInput("2026-09-21")
+        compose.onNodeWithText(label(R.string.records_created_through)).performScrollTo().performTextInput("2026-09-20")
+        compose.onNodeWithText(label(R.string.records_filters_done)).performScrollTo().performClick()
+        awaitText(label(R.string.records_date_error))
+        assertTrue(fixture.dateQueries.isEmpty())
+        compose.onNodeWithText(label(R.string.records_created_from)).performScrollTo().performTextReplacement("2026-09-20")
+        compose.onNodeWithText(label(R.string.records_filters_done)).performScrollTo().performClick()
+        compose.waitUntil(8000) { fixture.dateQueries.size >= 2 }
+        val dates = recordDateRange("2026-09-20", "2026-09-20")
+        assertTrue(fixture.dateQueries.all { it == listOf(dates.first, dates.second, null, "upload") })
+        awaitText("Private planning meeting")
+        compose.onNodeWithText(label(R.string.records_reset_filters)).performClick()
+        compose.waitUntil(8000) { fixture.sourceFilter == null }
+    }
+
+    @Test fun oldServerDateResponseCannotDisplayUnfilteredRecords() {
+        val fixture = Fixture().apply { supportsDates = false }
+        compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", false, {}, {}) } }
+        awaitText("Private planning meeting")
+        compose.onNodeWithContentDescription(label(R.string.records_filters)).performClick()
+        compose.onNodeWithText(label(R.string.records_created_from)).performScrollTo().performTextInput("2026-09-20")
+        compose.onNodeWithText(label(R.string.records_filters_done)).performScrollTo().performClick()
+        awaitText(label(R.string.records_unavailable))
+        compose.onNodeWithText("Private planning meeting").assertDoesNotExist()
     }
 
     @Test fun minutesLibraryUsesOwnershipTabsAndOpensSummaryReader() {
