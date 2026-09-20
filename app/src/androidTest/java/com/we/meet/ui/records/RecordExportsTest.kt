@@ -137,6 +137,20 @@ class RecordExportsTest {
         assertTrue(api.creates.isEmpty()); assertTrue(api.retries.isEmpty())
         screenshot("information")
     }
+    @Test fun emptyHistoryOnlySuggestsCreationWhileExportIsAvailable() {
+        api.available = false
+        showInfo(); await(R.string.record_documents_empty)
+        compose.onNodeWithText(label(R.string.record_documents_create_hint)).assertDoesNotExist()
+        compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        api.available = true
+        compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        await(R.string.record_documents_create_hint)
+        compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        api.available = false
+        compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        compose.waitUntil(8000) { compose.onAllNodesWithText(label(R.string.record_documents_create_hint)).fetchSemanticsNodes().isEmpty() }
+        assertTrue(api.creates.isEmpty()); assertTrue(api.retries.isEmpty())
+    }
     @Test fun informationDoesNotReadExportsWithoutSummaryPermission() {
         showInfo(readSummary = false)
         compose.waitForIdle()

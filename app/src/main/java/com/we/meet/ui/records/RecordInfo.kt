@@ -64,7 +64,10 @@ internal fun RecordDocuments(viewer: String, record: RecordDto, repository: Meet
             read.isFailure -> WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.record_export_read_error))
             else -> {
                 val rows = read.getOrThrow().results
-                if (rows.isEmpty()) Text(stringResource(R.string.record_documents_empty))
+                if (rows.isEmpty()) {
+                    Text(stringResource(R.string.record_documents_empty))
+                    if (read.getOrThrow().available) Text(stringResource(R.string.record_documents_create_hint))
+                }
                 rows.forEach { row ->
                     HorizontalDivider()
                     Text(stringResource(if (row.sourceKind == "human") R.string.record_export_human else R.string.record_export_ai))
