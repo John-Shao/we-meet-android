@@ -176,6 +176,8 @@ class RecordingImportChunkedTest {
                     .fetchSemanticsNodes().isNotEmpty(),
             )
             compose.onNodeWithText(label(R.string.record_upload_submit)).assertIsEnabled()
+            compose.onNodeWithText(label(R.string.record_upload_advanced)).performScrollTo().performClick()
+            compose.onNodeWithContentDescription(label(R.string.record_upload_diarization)).performScrollTo().assertIsDisplayed()
             compose.onNodeWithText(label(R.string.record_upload_submit)).performClick()
 
             // Mid-transfer: the reader must be able to see how far it has got and
@@ -185,7 +187,7 @@ class RecordingImportChunkedTest {
                 inFlight.await(20, TimeUnit.SECONDS),
             )
             compose.waitForIdle()
-            compose.onNodeWithText(label(R.string.record_upload_cancel)).assertExists()
+            compose.onNodeWithText(label(R.string.record_upload_cancel)).assertIsDisplayed()
             // The percentage comes from a progress callback, so it needs a
             // recompose that `waitForIdle` alone does not guarantee - waiting for
             // it keeps this from depending on how loaded the device is. The exact
@@ -194,6 +196,7 @@ class RecordingImportChunkedTest {
                 compose.onAllNodesWithText("uploaded", substring = true)
                     .fetchSemanticsNodes().isNotEmpty()
             }
+            compose.onNodeWithText("uploaded", substring = true).assertIsDisplayed()
 
             compose.onNodeWithText(label(R.string.record_upload_cancel)).performClick()
             // The part in flight is watching the cancel flag, so signalling here is

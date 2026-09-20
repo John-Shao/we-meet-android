@@ -187,31 +187,35 @@ private fun RecordingImportEntry(
     if (open) AlertDialog(onDismissRequest = { if (!busy) open = false },
         title = { Text(stringResource(R.string.record_upload_title)) },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-                Text(stringResource(R.string.record_upload_hint, repository.maxBytes(config) / 1024 / 1024))
-                OutlinedButton(onClick = choose, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
-                    Text(name.ifBlank { stringResource(R.string.record_upload_choose) })
-                }
-                Text(stringResource(if (video) R.string.record_import_video else R.string.record_import_audio))
-                Text(size?.let { android.text.format.Formatter.formatFileSize(LocalContext.current, it) }
-                    ?: stringResource(R.string.record_import_size_unknown))
-                if (video) Text(stringResource(R.string.record_import_video_hint))
-                if (uri != null && !valid) Text(stringResource(R.string.record_import_invalid), color = MaterialTheme.colorScheme.error)
-                TextButton(onClick = { advanced = !advanced }) { Text(stringResource(R.string.record_upload_advanced)) }
-                if (advanced) {
-                    val speakerLabel = stringResource(R.string.record_upload_diarization)
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(speakerLabel, Modifier.weight(1f))
-                        Switch(checked = diarization, onCheckedChange = { diarization = it }, enabled = !busy && !submitted,
-                            modifier = Modifier.semantics { contentDescription = speakerLabel })
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                // Keep transfer feedback outside the settings scroll area, including
+                // when advanced settings or larger accessibility text fill the dialog.
+                Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                    Text(stringResource(R.string.record_upload_hint, repository.maxBytes(config) / 1024 / 1024))
+                    OutlinedButton(onClick = choose, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                        Text(name.ifBlank { stringResource(R.string.record_upload_choose) })
                     }
-                    Text(stringResource(R.string.record_upload_diarization_hint), style = MaterialTheme.typography.bodySmall)
-                    OutlinedTextField(context, onValueChange = { context = it.take(400) }, enabled = !busy && !submitted,
-                        label = { Text(stringResource(R.string.record_upload_context)) }, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(hotwords, onValueChange = { hotwords = it.take(4000) }, enabled = !busy && !submitted,
-                        label = { Text(stringResource(R.string.record_upload_hotwords)) }, modifier = Modifier.fillMaxWidth())
+                    Text(stringResource(if (video) R.string.record_import_video else R.string.record_import_audio))
+                    Text(size?.let { android.text.format.Formatter.formatFileSize(LocalContext.current, it) }
+                        ?: stringResource(R.string.record_import_size_unknown))
+                    if (video) Text(stringResource(R.string.record_import_video_hint))
+                    if (uri != null && !valid) Text(stringResource(R.string.record_import_invalid), color = MaterialTheme.colorScheme.error)
+                    TextButton(onClick = { advanced = !advanced }) { Text(stringResource(R.string.record_upload_advanced)) }
+                    if (advanced) {
+                        val speakerLabel = stringResource(R.string.record_upload_diarization)
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(speakerLabel, Modifier.weight(1f))
+                            Switch(checked = diarization, onCheckedChange = { diarization = it }, enabled = !busy && !submitted,
+                                modifier = Modifier.semantics { contentDescription = speakerLabel })
+                        }
+                        Text(stringResource(R.string.record_upload_diarization_hint), style = MaterialTheme.typography.bodySmall)
+                        OutlinedTextField(context, onValueChange = { context = it.take(400) }, enabled = !busy && !submitted,
+                            label = { Text(stringResource(R.string.record_upload_context)) }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(hotwords, onValueChange = { hotwords = it.take(4000) }, enabled = !busy && !submitted,
+                            label = { Text(stringResource(R.string.record_upload_hotwords)) }, modifier = Modifier.fillMaxWidth())
+                    }
+                    Text(stringResource(R.string.record_upload_consent), style = MaterialTheme.typography.bodySmall)
                 }
-                Text(stringResource(R.string.record_upload_consent), style = MaterialTheme.typography.bodySmall)
                 if (busy) {
                     if (uploadedTotal > 0) {
                         Text(
@@ -230,11 +234,6 @@ private fun RecordingImportEntry(
                     Text(stringResource(R.string.record_upload_wait))
                     if (uploadedTotal > 0 && uploadedBytes >= uploadedTotal) {
                         Text(stringResource(R.string.record_upload_confirming))
-                    }
-                }
-                if (busy) {
-                    TextButton(onClick = { cancelRequested = true; transfer?.cancel() }) {
-                        Text(stringResource(R.string.record_upload_cancel))
                     }
                 }
                 if (cancelled && !busy) {
@@ -348,7 +347,13 @@ private fun RecordingImportEntry(
                 }
             }) { Text(stringResource(R.string.record_upload_submit)) }
         }, dismissButton = {
-            TextButton(enabled = !busy, onClick = { open = false }) { Text(stringResource(R.string.records_close)) }
+            if (busy) {
+                TextButton(onClick = { cancelRequested = true; transfer?.cancel() }) {
+                    Text(stringResource(R.string.record_upload_cancel))
+                }
+            } else {
+                TextButton(onClick = { open = false }) { Text(stringResource(R.string.records_close)) }
+            }
         })
 }
 
