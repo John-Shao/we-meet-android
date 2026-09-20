@@ -123,6 +123,12 @@ internal fun CorrectableOriginalText(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+            if (!editing) {
+                Text(
+                    if (showingOriginal && originalText != null) originalText else text,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
             if (!editing && (correctable || isCorrected)) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
@@ -189,11 +195,6 @@ internal fun CorrectableOriginalText(
                         Text(stringResource(R.string.records_correction_cancel))
                     }
                 }
-            } else {
-                Text(
-                    if (showingOriginal && originalText != null) originalText else text,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
             }
 
             if (busy) WeMeetInlineLoading()

@@ -4,8 +4,11 @@ import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Arrangement
@@ -175,16 +178,29 @@ internal fun UploadMediaPlayer(
     val positionLabel = stringResource(R.string.capture_playback_position)
     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.padding(Dimens.SpaceM), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-            if (media.mediaType == "video") key(sourceId) { AndroidView(
-                modifier = Modifier.fillMaxWidth().heightIn(max = videoMaxHeight).aspectRatio(aspect),
-                factory = { viewContext -> SurfaceView(viewContext).apply {
-                    holder.addCallback(object : SurfaceHolder.Callback {
-                        override fun surfaceCreated(holder: SurfaceHolder) { surface = holder.surface; engine?.setSurface(surface) }
-                        override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) { engine?.setSurface(holder.surface) }
-                        override fun surfaceDestroyed(holder: SurfaceHolder) { engine?.setSurface(null); surface = null }
-                    })
-                } },
-            ) }
+            if (media.mediaType == "video") key(sourceId) {
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    // Size both dimensions before measuring the native SurfaceView.
+                    // A forced full width plus a height cap can make aspectRatio
+                    // overflow its measured bounds for portrait videos.
+                    val videoHeight = minOf(maxWidth / aspect, videoMaxHeight)
+                    Box(
+                        Modifier.fillMaxWidth().height(videoHeight).clipToBounds().background(MaterialTheme.colorScheme.scrim),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        AndroidView(
+                            modifier = Modifier.size(width = videoHeight * aspect, height = videoHeight),
+                            factory = { viewContext -> SurfaceView(viewContext).apply {
+                                holder.addCallback(object : SurfaceHolder.Callback {
+                                    override fun surfaceCreated(holder: SurfaceHolder) { surface = holder.surface; engine?.setSurface(surface) }
+                                    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) { engine?.setSurface(holder.surface) }
+                                    override fun surfaceDestroyed(holder: SurfaceHolder) { engine?.setSurface(null); surface = null }
+                                })
+                            } },
+                        )
+                    }
+                }
+            }
             if (state == "error") {
                 WeMeetInlineErrorState(
                     onRetry = { stop(); start(position) },

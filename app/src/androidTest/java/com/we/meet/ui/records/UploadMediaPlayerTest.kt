@@ -167,6 +167,30 @@ class UploadMediaPlayerTest {
         assertTrue(engine?.playing == true)
     }
 
+    @Test fun nativeVideoSurfaceFitsPortraitAndLandscapeWithoutDistortion() {
+        currentMedia.value = media.copy(mediaType = "video", contentType = "video/mp4")
+        show()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
+        fun findSurface(view: android.view.View): android.view.SurfaceView? =
+            if (view is android.view.SurfaceView) view else if (view is android.view.ViewGroup) {
+                (0 until view.childCount).firstNotNullOfOrNull { findSurface(view.getChildAt(it)) }
+            } else null
+        for (ratio in listOf(9f / 16f, 16f / 9f)) {
+            compose.runOnIdle { engine!!.aspect = ratio }
+            compose.waitUntil(8_000) {
+                findSurface(compose.activity.window.decorView)?.let {
+                    it.height > 0 && kotlin.math.abs(it.width.toFloat() / it.height - ratio) < 0.01f
+                } == true
+            }
+            compose.runOnIdle {
+                val surface = requireNotNull(findSurface(compose.activity.window.decorView))
+                val heightCap = context.resources.configuration.screenHeightDp * context.resources.displayMetrics.density * 0.3f
+                assertTrue("native surface must respect the height cap", surface.height <= heightCap + 1)
+            }
+            compose.onNodeWithContentDescription(label(R.string.capture_playback_pause)).assertIsDisplayed()
+        }
+    }
+
     @Test fun realEnginePreparesAsynchronouslyAndReportsItsClock() {
         show()
         val file = java.io.File.createTempFile("playback-", ".wav", context.cacheDir)
@@ -209,6 +233,8 @@ class UploadMediaPlayerTest {
         @Volatile var clock = 0L
         @Volatile var lastPlayFrom: Long? = null
         @Volatile var duration = 120_000L
+        @Volatile var aspect = 16f / 9f
+        override fun videoAspectRatio() = aspect
         override fun durationMs() = duration
         override fun isPlaying() = playing
         override fun positionMs() = clock

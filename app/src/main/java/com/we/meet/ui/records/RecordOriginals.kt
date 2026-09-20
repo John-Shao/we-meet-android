@@ -1,4 +1,4 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 
 package com.we.meet.ui.records
 
@@ -12,6 +12,7 @@ import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -177,7 +178,7 @@ internal fun RecordOriginals(
                 )
                 TextButton(onClick = search) { Text(stringResource(R.string.records_search_action)) }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                 TextButton(onClick = { searchVisible = !searchVisible; if (!searchVisible) { input = ""; query = ""; keyboard?.hide() } }) {
                     Text(stringResource(if (searchVisible) R.string.records_clear_search else R.string.records_search_originals))
                 }
@@ -192,7 +193,7 @@ internal fun RecordOriginals(
                 TextButton(onClick = { exportVisible = true }) { Text(stringResource(R.string.records_export_transcript)) }
             }
         }
-        if (positionMs != null) TextButton(onClick = {
+        if (positionMs != null && (!following || filtered)) TextButton(onClick = {
             input = ""; query = ""; speakerId = null
             anchorMs = positionMs; cursors = listOf(null); following = true
         }) { Text(stringResource(R.string.records_back_to_playback)) }
