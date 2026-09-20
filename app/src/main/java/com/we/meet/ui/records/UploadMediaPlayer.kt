@@ -3,6 +3,7 @@ package com.we.meet.ui.records
 import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import android.os.SystemClock
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -63,6 +64,7 @@ import kotlinx.coroutines.delay
 
 /** How often a playing file reports its clock. Matches the capture engine's cadence. */
 private const val POSITION_POLL_MS = 250L
+private const val PREPARATION_TIMEOUT_MS = 30_000L
 
 /**
  * Whole-file playback for an imported recording.
@@ -86,6 +88,8 @@ internal fun UploadMediaPlayer(
      */
     createEngine: ((url: String, onInterrupted: () -> Unit) -> WholeFilePlayback)? = null,
     sourceId: String = media.name,
+    /** Bounds native HTTP preparation retries; tests use a shorter real-clock deadline. */
+    preparationTimeoutMs: Long = PREPARATION_TIMEOUT_MS,
 ) {
     val context = LocalContext.current.applicationContext
     val latestPosition by rememberUpdatedState(onPosition)
@@ -97,6 +101,8 @@ internal fun UploadMediaPlayer(
     var rate by remember(sourceId) { mutableFloatStateOf(1f) }
     var ratesVisible by remember(sourceId) { mutableStateOf(false) }
     var tick by remember(sourceId) { mutableIntStateOf(0) }
+    var preparationStartedAt by remember(sourceId) { mutableLongStateOf(0) }
+    var automaticRecoveries by remember(sourceId) { mutableIntStateOf(0) }
 
     var openedUrl by remember(sourceId) { mutableStateOf<String?>(null) }
     var surface by remember(sourceId) { mutableStateOf<Surface?>(null) }
@@ -114,7 +120,8 @@ internal fun UploadMediaPlayer(
     }
 
     // Prepared lazily: opening the screen must not fetch a GB-scale file.
-    fun start(from: Long) {
+    fun start(from: Long, automatic: Boolean = false) {
+        automaticRecoveries = if (automatic) automaticRecoveries + 1 else 0
         // A refreshed lease does not interrupt an existing stream. The next
         // explicit play/seek uses the latest URL while preserving source time.
         if (engine != null && openedUrl != latestMedia.url) stop()
@@ -129,6 +136,7 @@ internal fun UploadMediaPlayer(
         runCatching { current.setSurface(surface); current.play(from, rate) }
             .onSuccess {
                 state = if (current.isPreparing()) "loading" else "playing"
+                if (state == "loading") preparationStartedAt = SystemClock.elapsedRealtime()
                 duration = current.durationMs()
             }
             .onFailure { stop(); state = "error" }
@@ -145,15 +153,28 @@ internal fun UploadMediaPlayer(
         while (state == "playing" || state == "loading") {
             val current = engine ?: break
             if (current.failure() != null) {
-                if (openedUrl != latestMedia.url) start(position)
+                if (openedUrl != latestMedia.url && automaticRecoveries < 1) start(position, automatic = true)
                 else { stop(); state = "error" }
                 break
             }
-            if (current.isPreparing()) { delay(POSITION_POLL_MS); continue }
+            if (current.isPreparing()) {
+                // Native HTTP may repeatedly retry 403 without an error callback.
+                // A healthy prepared stream remains untouched by lease refreshes.
+                if (SystemClock.elapsedRealtime() - preparationStartedAt >= preparationTimeoutMs) {
+                    if (openedUrl != latestMedia.url && automaticRecoveries < 1) start(position, automatic = true)
+                    else { stop(); state = "error" }
+                    break
+                }
+                delay(POSITION_POLL_MS)
+                continue
+            }
             report(current.positionMs())
             duration = current.durationMs()
             aspect = current.videoAspectRatio()
-            if (state == "loading") state = "playing"
+            if (state == "loading") {
+                state = "playing"
+                automaticRecoveries = 0
+            }
             if (!current.isPlaying()) {
                 state = "ready"
                 break
