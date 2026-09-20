@@ -108,6 +108,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     var tool by remember(viewer, recordId, summaryVersionId, initialReview) { mutableStateOf<String?>(if (initialReview) "manage" else null) }
     var history by remember(viewer, recordId, summaryVersionId) { mutableStateOf(false) }
     var detailTab by remember(viewer, recordId, summaryVersionId, initialSummary) { mutableStateOf(if (summaryVersionId != null || initialSummary) "summary" else "text") }
+    val exportTranscript = rememberTranscriptExporter(repository, viewer, recordId)
     val detail = visibleRead(viewer, recordId, refresh) { repository.record(viewer, recordId) }
     val record = detail?.getOrNull()
     val canPlay = app != null && record?.sourceType == "audio_recording" && record.capabilities.readTranscript && record.capabilities.playMedia
@@ -169,7 +170,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             if (app != null && record.sourceType == "audio_recording") RecordCaptureTools(
                                 viewer, record, app.captureRepository, app.captureTranscriptionRepository,
                                 { app.captureAccount }, onRefresh = { refresh++ })
-                            RecordOriginals(repository, viewer, record, onRefresh = { refresh++ }, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay || canPlayImport })
+                            RecordOriginals(repository, viewer, record, onRefresh = { refresh++ }, onExport = exportTranscript, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay || canPlayImport })
                         }
                     } else if (!record.capabilities.readSummary) {
                         WeMeetEmptyState(stringResource(R.string.records_no_summary_access))

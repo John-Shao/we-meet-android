@@ -1,6 +1,16 @@
 package com.we.meet.ui.records
 
 import android.graphics.Bitmap
+import android.app.Activity
+import android.content.ContentValues
+import android.content.Intent
+import android.provider.MediaStore
+import androidx.activity.compose.LocalActivityResultRegistryOwner
+import androidx.activity.result.ActivityResultRegistry
+import androidx.activity.result.ActivityResultRegistryOwner
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.core.app.ActivityOptionsCompat
+import okhttp3.ResponseBody.Companion.toResponseBody
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -75,7 +85,12 @@ class RecordScreensTest {
         val summaryFilters = mutableListOf<Boolean?>()
         private fun checkAccess() { check(!revoked) { "Fixture access revoked" } }
         override suspend fun media(recordId: String, download: Boolean?): RecordMediaDto = error("Media not configured")
-        override suspend fun transcriptExport(url: String) = error("Export not configured")
+        var exportReads = 0
+        override suspend fun transcriptExport(url: String): okhttp3.ResponseBody {
+            checkAccess()
+            exportReads++
+            return "Exported original text 中文".toResponseBody()
+        }
         override suspend fun correctOriginal(recordId: String, segmentId: String, body: RecordCorrectionRequest): RecordCorrectionDto {
             checkAccess()
             corrections += body
@@ -153,6 +168,46 @@ class RecordScreensTest {
         compose.waitUntil(5_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
     }
 
+    @Test fun transcriptExportSurvivesTheSystemPickerBackgroundRoundTrip() {
+        val fixture = Fixture()
+        val owner = Owner()
+        var requestCode: Int? = null
+        val registry = object : ActivityResultRegistry() {
+            override fun <I, O> onLaunch(code: Int, contract: ActivityResultContract<I, O>, input: I, options: ActivityOptionsCompat?) {
+                requestCode = code
+            }
+        }
+        val registryOwner = object : ActivityResultRegistryOwner { override val activityResultRegistry = registry }
+        val repository = MeetingRecordRepository(fixture) { "reader" }
+        val resolver = context.contentResolver
+        val uri = requireNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, "miaoji-export-lifecycle-test.txt")
+            put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+            put(MediaStore.Downloads.IS_PENDING, 1)
+        }))
+        try {
+            resolver.openOutputStream(uri)!!.use { it.write(byteArrayOf()) }
+            compose.runOnUiThread { owner.registry.currentState = Lifecycle.State.RESUMED }
+            compose.setContent {
+                CompositionLocalProvider(LocalLifecycleOwner provides owner, LocalActivityResultRegistryOwner provides registryOwner) {
+                    WeMeetTheme { RecordDetailScreen(repository, "reader", recordId, {}) }
+                }
+            }
+            awaitText("Full original text")
+            compose.onNodeWithText(label(R.string.records_export_transcript)).performClick()
+            compose.onNodeWithText("TXT").performClick()
+            compose.runOnUiThread { owner.registry.currentState = Lifecycle.State.CREATED }
+            compose.waitUntil(5_000) { compose.onAllNodesWithText("Full original text").fetchSemanticsNodes().isEmpty() }
+            compose.runOnUiThread { owner.registry.currentState = Lifecycle.State.RESUMED }
+            awaitText("Full original text")
+            compose.runOnUiThread { registry.dispatchResult(requireNotNull(requestCode), Activity.RESULT_OK, Intent().setData(uri)) }
+            compose.waitUntil(5_000) {
+                resolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } == "Exported original text 中文"
+            }
+            assertEquals(1, fixture.exportReads)
+        } finally { resolver.delete(uri, null, null) }
+    }
+
     @Test fun chapterTabOpensItsImmutableEvidence() {
         val fixture = Fixture().apply { chapters = true }
         detail(fixture)
@@ -180,7 +235,7 @@ class RecordScreensTest {
         val repository = MeetingRecordRepository(fixture) { "reader" }
         val record = mutableStateOf(RecordDto(recordId, "audio_recording", "Draft scope", "2026-09-13T00:00:00Z", 3,
             RecordCapabilitiesDto(readTranscript = true)))
-        compose.setContent { WeMeetTheme { RecordOriginals(repository, "reader", record.value, {}) } }
+        compose.setContent { WeMeetTheme { RecordOriginals(repository, "reader", record.value, {}, onExport = {}) } }
         awaitText(label(R.string.records_correction_edit))
         compose.onNodeWithText(label(R.string.records_correction_edit)).performClick()
         compose.onNodeWithText("Full original text").performTextReplacement("My unsaved draft")
@@ -198,7 +253,7 @@ class RecordScreensTest {
         val repository = MeetingRecordRepository(fixture) { "reader" }
         val record = mutableStateOf(RecordDto(recordId, "audio_recording", "Draft scope", "2026-09-13T00:00:00Z", 3,
             RecordCapabilitiesDto(readTranscript = true)))
-        compose.setContent { WeMeetTheme { RecordOriginals(repository, "reader", record.value, {}) } }
+        compose.setContent { WeMeetTheme { RecordOriginals(repository, "reader", record.value, {}, onExport = {}) } }
         awaitText(label(R.string.records_correction_edit))
         compose.onNodeWithText(label(R.string.records_correction_edit)).performClick()
         compose.onNodeWithText("Full original text").performTextReplacement("Pending draft")
