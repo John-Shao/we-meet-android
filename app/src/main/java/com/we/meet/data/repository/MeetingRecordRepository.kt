@@ -64,6 +64,33 @@ class MeetingRecordRepository(
     private val api: MeetingRecordApi,
     private val currentViewer: () -> String?,
 ) {
+    suspend fun trash(viewer: String, cursor: String? = null) = scoped(viewer) {
+        validateCursor(cursor)
+        api.trash(cursor).also { page ->
+            validatePage(page)
+            require(page.results.map { it.id }.distinct().size == page.results.size)
+            page.results.forEach { row ->
+                validateLifecycle(row)
+                requireNotNull(row.deletedAt)
+            }
+        }
+    }
+
+    suspend fun lifecycle(viewer: String, recordId: String, target: String, revision: Int) = scoped(viewer) {
+        requireUuid(recordId); require(target in listOf("active", "trashed") && revision >= 0)
+        api.lifecycle(recordId, com.we.meet.data.api.dto.RecordLifecycleRequest(target, revision)).also {
+            validateLifecycle(it)
+            require(it.id == recordId && (it.deletedAt != null) == (target == "trashed"))
+            require(it.lifecycleRevision.toLong() in revision.toLong()..revision.toLong() + 1)
+        }
+    }
+
+    private fun validateLifecycle(row: com.we.meet.data.api.dto.RecordLifecycleDto) {
+        requireUuid(row.id)
+        require(row.sourceType in listOf("upload", "audio_recording") && row.lifecycleRevision >= 0)
+        row.deletedAt?.let { java.time.OffsetDateTime.parse(it) }
+    }
+
     private var recoveryContext: android.content.Context? = null
     private val replacementLock = Mutex()
     private val replacementAdapter = com.squareup.moshi.Moshi.Builder()

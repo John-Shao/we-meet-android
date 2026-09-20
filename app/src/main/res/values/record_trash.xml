@@ -1,0 +1,15 @@
+<resources>
+    <string name="record_trash_title">Trash</string>
+    <string name="record_trash_remove">Move to trash</string>
+    <string name="record_trash_confirm_remove">Confirm move to trash</string>
+    <string name="record_trash_restore">Restore</string>
+    <string name="record_trash_confirm_restore">Restore record</string>
+    <string name="record_trash_cancel">Cancel</string>
+    <string name="record_trash_empty">No records in trash.</string>
+    <string name="record_trash_remove_hint">The record and its contents will be hidden. Sharing and automatic minutes will be turned off. Existing exported documents remain separate copies.</string>
+    <string name="record_trash_restore_hint">Restore the record and saved content. Previous sharing and automatic minutes will remain off.</string>
+    <string name="record_trash_retention_hint">Records can be restored here. Permanent deletion is not yet available. Existing audio retention rules still apply.</string>
+    <string name="record_trash_conflict">The record changed, access was lost, or processing is still active. Return, refresh and try again.</string>
+    <string name="record_trash_uncertain">The result could not be confirmed. You may retry the same action or return and refresh to check.</string>
+    <string name="record_trash_unavailable">Trash is unavailable. Refresh to check access.</string>
+</resources>

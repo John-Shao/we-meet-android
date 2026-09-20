@@ -6,6 +6,7 @@ data class RecordPageDto<T>(
     val results: List<T>,
     @Json(name = "next_cursor") val nextCursor: String? = null,
     @Json(name = "supported_filters") val supportedFilters: List<String> = emptyList(),
+    @Json(name = "trash_available") val trashAvailable: Boolean = false,
 )
 
 /** Missing abilities always fail closed, including on older servers. */
@@ -17,6 +18,7 @@ data class RecordCapabilitiesDto(
     @Json(name = "play_media") val playMedia: Boolean = false,
     @Json(name = "download_media") val downloadMedia: Boolean = false,
     @Json(name = "batch_correct") val batchCorrect: Boolean = false,
+    val trash: Boolean = false,
 )
 
 data class RecordTitleRequestDto(val title: String, @Json(name = "expected_title") val expectedTitle: String)
@@ -68,6 +70,7 @@ data class RecordDto(
     val owner: String? = null,
     @Json(name = "media_timing") val mediaTiming: RecordMediaTimingDto? = null,
     @Json(name = "created_at") val createdAt: String? = null,
+    @Json(name = "lifecycle_revision") val lifecycleRevision: Int? = null,
 )
 
 data class RecordReferenceDto(

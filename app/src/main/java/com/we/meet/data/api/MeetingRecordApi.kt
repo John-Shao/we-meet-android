@@ -27,6 +27,14 @@ import okhttp3.ResponseBody
 /** Canonical record IDs, never the latest summary of a reused room. */
 interface MeetingRecordApi {
     @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/meeting-records/trash/")
+    suspend fun trash(@Query("cursor") cursor: String?): RecordPageDto<com.we.meet.data.api.dto.RecordLifecycleDto> = error("Trash is unavailable")
+
+    @Headers("Cache-Control: no-store")
+    @PATCH("api/v1.0/meeting-records/{record}/lifecycle/")
+    suspend fun lifecycle(@Path("record") recordId: String, @Body body: com.we.meet.data.api.dto.RecordLifecycleRequest): com.we.meet.data.api.dto.RecordLifecycleDto = error("Record lifecycle is unavailable")
+
+    @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/{record}/transcript-replacements/")
     suspend fun replacements(@Path("record") recordId: String): RecordPageDto<com.we.meet.data.api.dto.ReplacementReceipt> = error("Replacement API not implemented")
 

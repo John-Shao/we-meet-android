@@ -1,0 +1,15 @@
+<resources>
+    <string name="record_trash_title">回收站</string>
+    <string name="record_trash_remove">移入回收站</string>
+    <string name="record_trash_confirm_remove">确认移入回收站</string>
+    <string name="record_trash_restore">恢复</string>
+    <string name="record_trash_confirm_restore">确认恢复</string>
+    <string name="record_trash_cancel">取消</string>
+    <string name="record_trash_empty">回收站暂无记录。</string>
+    <string name="record_trash_remove_hint">记录及其内容将隐藏，并撤销记录分享、关闭自动纪要。已导出的文档仍是独立副本。</string>
+    <string name="record_trash_restore_hint">恢复记录及保留的内容，不恢复原有分享，也不会重新开启自动纪要。</string>
+    <string name="record_trash_retention_hint">可在此恢复记录，暂不支持永久删除。音频仍遵循原有保留规则。</string>
+    <string name="record_trash_conflict">记录状态已变化、权限失效或仍在处理中，请返回刷新后再试。</string>
+    <string name="record_trash_uncertain">尚未确认操作结果。可重试同一操作，或返回刷新核对。</string>
+    <string name="record_trash_unavailable">回收站暂不可用，请刷新检查访问权限。</string>
+</resources>

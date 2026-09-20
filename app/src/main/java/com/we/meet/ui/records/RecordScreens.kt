@@ -160,6 +160,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                     }
                     if (selectedTab == "info") {
                         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                            RecordTrashControl(viewer, record, repository, onBack)
                             RecordMediaDownload(repository, viewer, record)
                             RecordInfo(record, app?.captureRepository, viewer, fullDuration = fullDuration)
                             if (app != null && onDocument != null) RecordDocuments(viewer, record, app.meetingDeliveryRepository, onDocument, onHumanSource = {

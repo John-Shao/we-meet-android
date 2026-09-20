@@ -60,6 +60,7 @@ fun RecordLibraryScreen(
     var filtersVisible by remember(initialSource) { mutableStateOf(initialSource != null) }
     var grid by remember { mutableStateOf(false) }
     var ordering by remember(viewer, summariesOnly) { mutableStateOf(RecordOrdering.NEWEST) }
+    var trashVisible by remember(viewer) { mutableStateOf(false) }
     var orderMenu by remember { mutableStateOf(false) }
     var dateFrom by remember(viewer) { mutableStateOf("") }
     var dateThrough by remember(viewer) { mutableStateOf("") }
@@ -95,6 +96,10 @@ fun RecordLibraryScreen(
                 // 固定头部用浅灰与状态栏、兄弟分区(视频会议/AI 录音)对齐。
                 containerColor = MaterialTheme.colorScheme.background,
                 actions = {
+                    if (result?.getOrNull()?.trashAvailable == true) IconButton(onClick = { trashVisible = true }) {
+                        Icon(Icons.Outlined.DeleteOutline, stringResource(R.string.record_trash_title))
+                    }
+
                     Box {
                         IconButton(onClick = { orderMenu = true }) {
                             Icon(Icons.AutoMirrored.Outlined.Sort, stringResource(R.string.records_sort))
@@ -223,6 +228,7 @@ fun RecordLibraryScreen(
             }
         }
     }
+    if (trashVisible) RecordTrashSheet(viewer, repository) { trashVisible = false; refresh++ }
     if (filtersVisible) ModalBottomSheet(
         onDismissRequest = { filtersVisible = false },
         // A validation message changes content height. Keep the form expanded

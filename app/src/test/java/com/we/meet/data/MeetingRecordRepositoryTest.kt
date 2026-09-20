@@ -363,6 +363,27 @@ class MeetingRecordRepositoryTest {
         assertTrue(repo.records("reader").isFailure)
     }
 
+    @Test fun trashUsesOpaqueCursorAndChecksOwnerBeforeAndAfterResponse() = runBlocking {
+        val body = """{"results":[{"id":"$recordId","title":"Removed","source_type":"upload","deleted_at":"2026-09-20T00:00:00Z","lifecycle_revision":3}],"next_cursor":"next"}"""
+        val repo = repository { 200 to body }
+        assertTrue(repo.trash("reader", "signed+cursor").isSuccess)
+        assertEquals("signed+cursor", requests.last().url.queryParameter("cursor"))
+        viewer = "someone-else"
+        assertTrue(repo.trash("reader").isFailure)
+        assertEquals(1, requests.size)
+    }
+
+    @Test fun lifecycleValidatesTargetRevisionAndReturnedIdentity() = runBlocking {
+        val repo = repository("PATCH") { 200 to """{"id":"$recordId","title":"Removed","source_type":"upload","deleted_at":null,"lifecycle_revision":4}""" }
+        assertTrue(repo.lifecycle("reader", recordId, "active", 3).isSuccess)
+        assertEquals("PATCH", requests.single().method)
+        assertTrue(repo.lifecycle("reader", recordId, "trashed", 3).isFailure)
+        val count = requests.size
+        assertTrue(repo.lifecycle("reader", recordId, "purge", 4).isFailure)
+        assertTrue(repo.lifecycle("reader", recordId, "active", -1).isFailure)
+        assertEquals(count, requests.size)
+    }
+
     @Test fun cancellationIsNotConvertedToFailureContent() = runBlocking {
         // The viewer getter is synchronous and is inside the cancellation-preserving boundary.
         val base = repository { 200 to record() }
