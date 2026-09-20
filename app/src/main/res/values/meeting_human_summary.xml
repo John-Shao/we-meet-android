@@ -5,6 +5,7 @@
     <string name="human_summary_read_error">Reviewed minutes are unavailable. Refresh to check access.</string>
     <string name="human_summary_edit">Edit reviewed minutes</string>
     <string name="human_summary_history">Revision history</string>
+    <string name="human_summary_history_read_only">This is a saved revision. It is read-only and does not change when the current minutes are edited.</string>
     <string name="human_summary_version">Human revision %1$d</string>
     <string name="human_summary_save">Save new revision</string>
     <string name="human_summary_save_error">Could not confirm the save. Keep your draft, check required text and the 64 KB limit, then refresh or reconcile the pending request.</string>

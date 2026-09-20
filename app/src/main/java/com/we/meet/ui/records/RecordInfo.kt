@@ -56,7 +56,7 @@ internal fun RecordInfo(record: RecordDto, captures: CaptureRepository?, viewer:
 /** Read the caller's existing receipts, without invoking export creation. */
 @Composable
 internal fun RecordDocuments(viewer: String, record: RecordDto, repository: MeetingDeliveryRepository,
-    onDocument: (String) -> Unit, onSource: (String) -> Unit) {
+    onDocument: (String) -> Unit, onHumanSource: ((String) -> Unit)? = null, onSource: (String) -> Unit) {
     if (!record.capabilities.readSummary) return
     var refresh by remember(viewer, record.id) { mutableIntStateOf(0) }
     var cursors by remember(viewer, record.id) { mutableStateOf(listOf<String?>(null)) }
@@ -81,6 +81,7 @@ internal fun RecordDocuments(viewer: String, record: RecordDto, repository: Meet
                     if (row.status == "ready" && row.canOpen && row.documentId != null) {
                         TextButton(onClick = { onDocument(row.documentId) }) { Text(stringResource(R.string.record_export_open)) }
                     }
+                    if (row.sourceKind == "human" && onHumanSource != null) TextButton(onClick = { onHumanSource(row.sourceId) }) { Text(stringResource(R.string.record_documents_source)) }
                     if (row.sourceKind == "ai") TextButton(onClick = { onSource(row.sourceId) }) { Text(stringResource(R.string.record_documents_source)) }
                 }
                 read.getOrThrow().nextCursor?.let { next ->

@@ -194,11 +194,23 @@ private fun HumanSummaryHistory(viewer: String, record: RecordDto, repository: M
                     page.getOrThrow().nextBefore?.let { next -> TextButton(onClick = { cursors = cursors + next; selected = null }) { Text(stringResource(R.string.records_next)) } }
                 }
             }
-            selected?.let { id ->
-                val detail = visibleRead(viewer, record.id, id, refresh) { repository.version(viewer, record.id, id) }
-                when { detail == null -> WeMeetInlineLoading(); detail.isFailure -> WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.human_summary_read_error))
-                    else -> HumanSummaryBody(detail.getOrThrow(), record.capabilities.readTranscript) { snapshot, reference -> onClose(); onSource(snapshot, reference) } }
-            }
+            selected?.let { id -> HumanSummaryRevision(viewer, record, repository, id) { snapshot, reference -> onClose(); onSource(snapshot, reference) } }
+
         }
     }, confirmButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.records_close)) } })
+}
+
+/** Read only the exact exported revision, with the same visibility polling as other private content. */
+@Composable
+internal fun HumanSummaryRevision(viewer: String, record: RecordDto, repository: MeetingReviewRepository, versionId: String, onSource: (String, RecordReferenceDto) -> Unit) {
+    var refresh by remember(viewer, record.id, versionId) { mutableIntStateOf(0) }
+    val detail = visibleRead(viewer, record.id, versionId, refresh) { repository.version(viewer, record.id, versionId) }
+    when {
+        detail == null -> WeMeetInlineLoading()
+        detail.isFailure -> WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.human_summary_read_error))
+        else -> {
+            Text(stringResource(R.string.human_summary_history_read_only), style = MaterialTheme.typography.bodySmall)
+            HumanSummaryBody(detail.getOrThrow(), record.capabilities.readTranscript, onSource)
+        }
+    }
 }

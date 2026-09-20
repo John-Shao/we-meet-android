@@ -141,16 +141,47 @@ class RecordHumanSummaryTest {
         compose.onNodeWithText(label(R.string.human_summary_save)).assertDoesNotExist()
         assertTrue(api.bodies.isEmpty())
     }
+    private fun exact(readTranscript: Boolean = true) {
+        val item = record.copy(capabilities = record.capabilities.copy(readTranscript = readTranscript))
+        compose.setContent { WeMeetTheme { Surface { Column(Modifier.verticalScroll(rememberScrollState())) {
+            HumanSummaryRevision(viewer, item, MeetingReviewRepository(api) { viewer }, api.current.id) { snapshot, ref -> sources += snapshot to ref }
+        } } } }
+    }
+    @Test fun exactHistoricalSourceBypassesCurrentAndHistoryAndPreservesCitations() {
+        exact()
+        await(R.string.human_summary_history_read_only)
+        compose.onNodeWithText(label(R.string.records_source) + " · " + sourceTime(ref.startMs)).performScrollTo().performClick()
+        assertEquals(listOf(snapshot to ref), sources.toList())
+        assertEquals(listOf(api.current.id), api.versionReads.toList())
+        assertEquals(0, api.currentReads); assertEquals(0, api.historyReads); assertTrue(api.bodies.isEmpty())
+        compose.onNodeWithText(label(R.string.human_summary_edit)).assertDoesNotExist()
+    }
+    @Test fun exactHistoricalBodyDisappearsAfterPermissionLoss() {
+        exact(); await(R.string.human_summary_history_read_only)
+        compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        api.failRead = true
+        compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        await(R.string.human_summary_read_error)
+        compose.onNodeWithText("Private reviewed overview").assertDoesNotExist()
+        assertEquals(0, api.currentReads); assertTrue(api.bodies.isEmpty())
+    }
+    @Test fun exactHistoricalSummaryOnlyReaderHasNoCitationAction() {
+        exact(readTranscript = false); await(R.string.human_summary_history_read_only)
+        compose.onNodeWithText(label(R.string.records_source) + " · " + sourceTime(ref.startMs)).assertDoesNotExist()
+        assertTrue(sources.isEmpty()); assertTrue(api.bodies.isEmpty())
+    }
     private inner class Fixture : MeetingReviewApi {
         var canEdit = true
         @Volatile var hasReview = true
         @Volatile var failRead = false
         @Volatile var status = 200
         @Volatile var historyReads = 0
+        @Volatile var currentReads = 0
         @Volatile var current = HumanReviewDto(UUID.randomUUID().toString(), 1, base, null, snapshot, null, "2026-09-13T00:00:00Z", content, "human", 2)
         val bodies = CopyOnWriteArrayList<String>()
         val versionReads = CopyOnWriteArrayList<String>()
         override suspend fun current(record: String): HumanReviewStateDto {
+            currentReads++
             if (failRead) throw HttpException(Response.error<Any>(403, "{}".toResponseBody()))
             return HumanReviewStateDto(if (hasReview) current else null, canEdit)
         }
@@ -165,7 +196,11 @@ class RecordHumanSummaryTest {
         override suspend fun history(record: String, before: Int?): HumanReviewHistoryDto {
             historyReads++; return HumanReviewHistoryDto(listOf(HumanReviewHistoryRowDto(current.id, current.revision, current.baseSummaryId, current.createdAt)), null)
         }
-        override suspend fun version(record: String, review: String): HumanReviewDto { versionReads += review; return current }
+        override suspend fun version(record: String, review: String): HumanReviewDto {
+            versionReads += review
+            if (failRead) throw HttpException(Response.error<Any>(404, "{}".toResponseBody()))
+            return current
+        }
         override suspend fun tasks(record: String, query: String?): SummaryTasksStateDto = error("Never creates tasks")
         override suspend fun convert(record: String, body: RequestBody): SummaryTaskAcceptedDto = error("Never creates tasks")
     }

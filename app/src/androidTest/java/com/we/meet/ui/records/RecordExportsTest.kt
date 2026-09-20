@@ -123,7 +123,7 @@ class RecordExportsTest {
             capabilities = RecordCapabilitiesDto(readSummary = readSummary), owner = "Recording owner", createdAt = "2026-09-13T00:00:00Z")
         compose.setContent { WeMeetTheme { Surface { Column(Modifier.verticalScroll(rememberScrollState())) {
             RecordInfo(item, null, viewer)
-            RecordDocuments(viewer, item, MeetingDeliveryRepository(api) { viewer }, { opened += it }, { opened += it })
+            RecordDocuments(viewer, item, MeetingDeliveryRepository(api) { viewer }, { opened += it }, onHumanSource = { opened += "human:$it" }, onSource = { opened += it })
         } } } }
     }
     @Test fun informationOpensExistingDocumentAndExactAiSourceWithoutCreating() {
@@ -136,6 +136,12 @@ class RecordExportsTest {
         assertEquals(listOf(api.document, source.id), opened.toList())
         assertTrue(api.creates.isEmpty()); assertTrue(api.retries.isEmpty())
         screenshot("information")
+    }
+    @Test fun informationOpensExactHumanSourceWithoutCreatingOrOpeningDocument() {
+        api.delivery = "ready"; api.kind = "human"; api.available = false
+        showInfo(); click(R.string.record_documents_source)
+        assertEquals(listOf("human:${source.id}"), opened.toList())
+        assertTrue(api.creates.isEmpty()); assertTrue(api.retries.isEmpty())
     }
     @Test fun emptyHistoryOnlySuggestsCreationWhileExportIsAvailable() {
         api.available = false

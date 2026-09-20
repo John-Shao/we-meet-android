@@ -5,6 +5,7 @@
     <string name="human_summary_read_error">暂时无法读取人工纪要，请刷新检查访问权限。</string>
     <string name="human_summary_edit">编辑人工纪要</string>
     <string name="human_summary_history">修订历史</string>
+    <string name="human_summary_history_read_only">这是已保存的历史版本，仅供查看，不会随当前纪要的修改而变化。</string>
     <string name="human_summary_version">人工修订 %1$d</string>
     <string name="human_summary_save">保存新修订</string>
     <string name="human_summary_save_error">未能确认保存成功。草稿已保留，请检查必填文字和 64 KB 长度限制，再刷新或核对待确认请求。</string>

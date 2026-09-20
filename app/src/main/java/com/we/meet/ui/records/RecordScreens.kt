@@ -102,6 +102,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
      */
     var playbackPositionMs by remember(viewer, recordId) { mutableStateOf<Long?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
+    var selectedHuman by remember(viewer, recordId) { mutableStateOf<String?>(null) }
     var selectedVersion by remember(viewer, recordId, summaryVersionId) { mutableStateOf(summaryVersionId) }
     var cursors by remember(viewer, recordId, selectedVersion) { mutableStateOf(listOf<String?>(null)) }
     var citation by remember(viewer, recordId, summaryVersionId) { mutableStateOf<Pair<String, RecordReferenceDto>?>(null) }
@@ -161,8 +162,10 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                             RecordMediaDownload(repository, viewer, record)
                             RecordInfo(record, app?.captureRepository, viewer, fullDuration = fullDuration)
-                            if (app != null && onDocument != null) RecordDocuments(viewer, record, app.meetingDeliveryRepository, onDocument) {
-                                selectedVersion = it; detailTab = "summary"; tool = null; history = false; citation = null
+                            if (app != null && onDocument != null) RecordDocuments(viewer, record, app.meetingDeliveryRepository, onDocument, onHumanSource = {
+                                selectedHuman = it; detailTab = "summary"; tool = null; history = false; citation = null
+                            }) {
+                                selectedHuman = null; selectedVersion = it; detailTab = "summary"; tool = null; history = false; citation = null
                             }
                         }
                     } else if (selectedTab == "speakers") {
@@ -182,6 +185,11 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         }
                     } else if (!record.capabilities.readSummary) {
                         WeMeetEmptyState(stringResource(R.string.records_no_summary_access))
+                    } else if (selectedHuman != null && !chaptersOnly && app != null) {
+                        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                            TextButton(onClick = { selectedHuman = null; selectedVersion = null; citation = null }) { Text(stringResource(R.string.records_all_versions)) }
+                            HumanSummaryRevision(viewer, record, app.meetingReviewRepository, selectedHuman!!) { snapshot, reference -> citation = snapshot to reference }
+                        }
                     } else {
                         val cursor = cursors.last()
                         val summaries = visibleRead(viewer, recordId, cursor, selectedVersion, refresh) {
