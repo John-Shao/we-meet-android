@@ -42,4 +42,7 @@
     <string name="record_upload_transcribing">正在转写，可离开此页稍后查看。</string>
     <string name="record_upload_failed">转写失败</string>
     <string name="record_upload_retry">重试转写</string>
+    <string name="records_sort">按创建时间排序</string>
+    <string name="records_newest">创建时间从新到旧</string>
+    <string name="records_oldest">创建时间从旧到新</string>
 </resources>

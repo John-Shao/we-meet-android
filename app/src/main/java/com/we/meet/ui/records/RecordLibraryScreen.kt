@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ViewList
+import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.R
 import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.repository.MeetingRecordRepository
+import com.we.meet.data.repository.RecordOrdering
 import com.we.meet.data.repository.RecordScope
 import com.we.meet.data.repository.RecordSource
 import com.we.meet.ui.components.*
@@ -57,28 +59,30 @@ fun RecordLibraryScreen(
     var searchVisible by remember(viewer) { mutableStateOf(false) }
     var filtersVisible by remember(initialSource) { mutableStateOf(initialSource != null) }
     var grid by remember { mutableStateOf(false) }
+    var ordering by remember(viewer, summariesOnly) { mutableStateOf(RecordOrdering.NEWEST) }
+    var orderMenu by remember { mutableStateOf(false) }
     var dateFrom by remember(viewer) { mutableStateOf("") }
     var dateThrough by remember(viewer) { mutableStateOf("") }
     val dates = remember(dateFrom, dateThrough) { recordDateRange(dateFrom, dateThrough) }
     val hasDates = dateFrom.isNotEmpty() || dateThrough.isNotEmpty()
-    var cursors by remember(viewer, scope, source, query, summariesOnly, dates) { mutableStateOf(listOf<String?>(null)) }
+    var cursors by remember(viewer, scope, source, query, summariesOnly, dates, ordering) { mutableStateOf(listOf<String?>(null)) }
     var refresh by remember { mutableIntStateOf(0) }
     val cursor = cursors.last()
-    val listState = remember(viewer, scope, source, query, cursor, summariesOnly, dates) { LazyGridState() }
+    val listState = remember(viewer, scope, source, query, cursor, summariesOnly, dates, ordering) { LazyGridState() }
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     val search = { query = input.trim(); refresh++; keyboard?.hide(); Unit }
-    val result = visibleRead(viewer, scope, source, query, cursor, summariesOnly, refresh, dates) {
+    val result = visibleRead(viewer, scope, source, query, cursor, summariesOnly, refresh, dates, ordering) {
         // 会议实录只取已结束的:正在录的那条走下面单独一段,否则会同时出现在两处。
         // 纪要库不带这个条件(服务端本来就是 has_summary=true 的那批)。
         repository.records(viewer, scope, source, summariesOnly, query.ifBlank { null }, cursor,
-            isOngoing = if (summariesOnly) null else false, createdFrom = dates.first, createdBefore = dates.second)
+            isOngoing = if (summariesOnly) null else false, createdFrom = dates.first, createdBefore = dates.second, ordering = ordering)
     }
     // 「进行中」单独一段:Web 端同样是两段(进行中 / 历史记录),正在进行的那条最该排在最前。
     // 只取第一页 —— 服务端单页上限 30,同时在录的记录不该有几十条,不值得再挂一套游标。
-    val ongoing = if (summariesOnly) null else visibleRead(viewer, scope, source, query, refresh, dates) {
+    val ongoing = if (summariesOnly) null else visibleRead(viewer, scope, source, query, refresh, dates, ordering) {
         repository.records(viewer, scope, source, summariesOnly = false, query.ifBlank { null }, cursor = null, isOngoing = true,
-            createdFrom = dates.first, createdBefore = dates.second)
+            createdFrom = dates.first, createdBefore = dates.second, ordering = ordering)
     }
     val ongoingRows = ongoing?.getOrNull()?.results.orEmpty()
     LaunchedEffect(searchVisible) { if (searchVisible) focus.requestFocus() }
@@ -91,6 +95,20 @@ fun RecordLibraryScreen(
                 // 固定头部用浅灰与状态栏、兄弟分区(视频会议/AI 录音)对齐。
                 containerColor = MaterialTheme.colorScheme.background,
                 actions = {
+                    Box {
+                        IconButton(onClick = { orderMenu = true }) {
+                            Icon(Icons.AutoMirrored.Outlined.Sort, stringResource(R.string.records_sort))
+                        }
+                        DropdownMenu(expanded = orderMenu, onDismissRequest = { orderMenu = false }) {
+                            RecordOrdering.entries.forEach { value ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(if (value == RecordOrdering.NEWEST) R.string.records_newest else R.string.records_oldest)) },
+                                    leadingIcon = { if (ordering == value) Icon(Icons.Outlined.Check, null) },
+                                    onClick = { ordering = value; orderMenu = false },
+                                )
+                            }
+                        }
+                    }
                     onSearchMeetingAi?.let { search ->
                         IconButton(onClick = search) {
                             Icon(Icons.Outlined.AutoAwesome, stringResource(R.string.meeting_ai_search))

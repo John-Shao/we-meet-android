@@ -115,9 +115,11 @@ class RecordScreensTest {
                 upload = if (sourceType == "upload") RecordUploadDto(canControl = uploadCanControl) else null)
         }
         val dateQueries = java.util.concurrent.CopyOnWriteArrayList<List<String?>>()
+        val orderQueries = java.util.concurrent.CopyOnWriteArrayList<List<String?>>()
         var supportsDates = true
-        override suspend fun recordsInDateRange(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?, isOngoing: Boolean?, createdFrom: String?, createdBefore: String?): RecordPageDto<RecordDto> {
-            dateQueries += listOf(createdFrom, createdBefore, cursor, source)
+        override suspend fun filteredRecords(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?, isOngoing: Boolean?, createdFrom: String?, createdBefore: String?, ordering: String?): RecordPageDto<RecordDto> {
+            if (createdFrom != null || createdBefore != null) dateQueries += listOf(createdFrom, createdBefore, cursor, source)
+            orderQueries += listOf(ordering, cursor, source, query, isOngoing?.toString(), hasSummary?.toString())
             return records(scope, source, hasSummary, query, cursor, isOngoing).copy(
                 supportedFilters = if (supportsDates) listOf("created_from", "created_before") else emptyList())
         }
@@ -464,6 +466,50 @@ class RecordScreensTest {
         awaitText("Private planning meeting")
         compose.onNodeWithText(label(R.string.records_reset_filters)).performClick()
         compose.waitUntil(8000) { fixture.sourceFilter == null }
+    }
+
+    @Test fun orderingResetsPaginationAndPreservesSourceAndDateFilters() {
+        val fixture = Fixture()
+        compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", false, {}, {}) } }
+        awaitText("Private planning meeting")
+        compose.onNodeWithContentDescription(label(R.string.records_filters)).performClick()
+        compose.onNodeWithText(label(R.string.records_uploaded)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.records_created_from)).performScrollTo().performTextInput("2026-09-20")
+        compose.onNodeWithText(label(R.string.records_filters_done)).performScrollTo().performClick()
+        awaitText("Private planning meeting")
+        compose.onNodeWithText(label(R.string.records_next)).performScrollTo().performClick()
+        awaitText(label(R.string.records_empty))
+        fixture.orderQueries.clear()
+        fixture.dateQueries.clear()
+        compose.onNodeWithContentDescription(label(R.string.records_sort)).performClick()
+        compose.onNodeWithText(label(R.string.records_oldest)).performClick()
+        awaitText("Private planning meeting")
+        compose.waitUntil(5000) { fixture.orderQueries.size >= 2 }
+        assertTrue(fixture.orderQueries.all { it[0] == "created_at" && it[1] == null && it[2] == "upload" })
+        assertEquals(setOf("true", "false"), fixture.orderQueries.map { it[4] }.toSet())
+        assertTrue(fixture.dateQueries.all { it[0] == recordDateRange("2026-09-20", "").first })
+        compose.onNodeWithText(label(R.string.records_next)).performScrollTo().performClick()
+        awaitText(label(R.string.records_empty))
+        assertTrue(fixture.orderQueries.any { it[0] == "created_at" && it[1] == "next-page" })
+        compose.onNodeWithContentDescription(label(R.string.records_sort)).performClick()
+        compose.onNodeWithText(label(R.string.records_newest)).performClick()
+        awaitText("Private planning meeting")
+        assertTrue(fixture.orderQueries.any { it[0] == "-created_at" && it[1] == null })
+    }
+
+    @Test fun minutesLibraryOrderingKeepsSummaryScope() {
+        val fixture = Fixture()
+        compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", true, {}, {}) } }
+        awaitText("Private planning meeting")
+        compose.onNodeWithText(label(R.string.records_next)).performScrollTo().performClick()
+        awaitText(label(R.string.minutes_empty))
+        fixture.orderQueries.clear()
+        compose.onNodeWithContentDescription(label(R.string.records_sort)).performClick()
+        compose.onNodeWithText(label(R.string.records_oldest)).performClick()
+        awaitText("Private planning meeting")
+        assertEquals(listOf("created_at", null, null, null, null, "true"), fixture.orderQueries.single())
+        assertEquals("owned" to null, fixture.queries.last())
+        screenshot("records-ordered-minutes")
     }
 
     @Test fun oldServerDateResponseCannotDisplayUnfilteredRecords() {

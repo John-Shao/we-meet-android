@@ -105,6 +105,9 @@ class MeetingRecordsSnapshotTest {
         private val records: List<RecordDto> = catalogue,
         private val versions: List<RecordSummaryVersionDto>? = null,
     ) : MeetingRecordApi {
+        override suspend fun filteredRecords(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?, isOngoing: Boolean?, createdFrom: String?, createdBefore: String?, ordering: String?) =
+            records(scope, source, hasSummary, query, cursor, isOngoing)
+
         override suspend fun records(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?, isOngoing: Boolean?) =
             RecordPageDto(
                 records.filter { (source == null || it.sourceType == source) && (isOngoing == null || it.isOngoing == isOngoing) },

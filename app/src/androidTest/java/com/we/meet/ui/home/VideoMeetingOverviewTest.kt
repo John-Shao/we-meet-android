@@ -51,7 +51,8 @@ class VideoMeetingOverviewTest {
     @Test fun moreInitialFilterIsUsedByTheFirstLibraryRequest() {
         val sources = mutableListOf<Any?>()
         val api = Proxy.newProxyInstance(MeetingRecordApi::class.java.classLoader, arrayOf(MeetingRecordApi::class.java)) { _, method, args ->
-            check(method.name == "records") { "Unexpected body request: ${method.name}" }
+            check(method.name == "filteredRecords") { "Unexpected body request: ${method.name}" }
+            assertEquals("-created_at", args[8])
             sources += args[1]
             RecordPageDto(listOf(record))
         } as MeetingRecordApi

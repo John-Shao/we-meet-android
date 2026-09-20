@@ -55,7 +55,7 @@ interface MeetingRecordApi {
 
     @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/")
-    suspend fun recordsInDateRange(
+    suspend fun filteredRecords(
         @Query("scope") scope: String,
         @Query("source_type") source: String?,
         @Query("has_summary") hasSummary: Boolean?,
@@ -64,7 +64,8 @@ interface MeetingRecordApi {
         @Query("is_ongoing") isOngoing: Boolean?,
         @Query("created_from") createdFrom: String?,
         @Query("created_before") createdBefore: String?,
-    ): RecordPageDto<RecordDto> = error("Date filters are not implemented")
+        @Query("ordering") ordering: String?,
+    ): RecordPageDto<RecordDto> = error("Record filters are not implemented")
 
     @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/{record}/")

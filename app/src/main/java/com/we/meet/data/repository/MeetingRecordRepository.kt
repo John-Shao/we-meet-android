@@ -31,6 +31,8 @@ private const val MAX_CORRECTION_LENGTH = 20_000
 /** The attribution picker's own cap, mirroring the server's list bound. */
 private const val MAX_CANDIDATES = 50
 
+enum class RecordOrdering(val wire: String) { NEWEST("-created_at"), OLDEST("created_at") }
+
 enum class RecordScope(val wire: String) { RECENT("recent"), OWNED("owned"), PARTICIPATED("participated"), SHARED("shared") }
 enum class RecordSource(val wire: String) { MEETING("meeting"), AUDIO("audio_recording"), UPLOAD("upload"), RECORDINGS("recordings") }
 
@@ -152,6 +154,7 @@ class MeetingRecordRepository(
         isOngoing: Boolean? = null,
         createdFrom: String? = null,
         createdBefore: String? = null,
+        ordering: RecordOrdering? = null,
     ): Result<RecordPageDto<RecordDto>> = scoped(viewer) {
         require(query == null || query.length <= 200)
         validateCursor(cursor)
@@ -159,8 +162,8 @@ class MeetingRecordRepository(
         val from = createdFrom?.let(java.time.Instant::parse)
         val before = createdBefore?.let(java.time.Instant::parse)
         require(from == null || before == null || from < before)
-        val response = if (dated) api.recordsInDateRange(scope.wire, source?.wire, if (summariesOnly) true else null,
-            query, cursor, isOngoing, createdFrom, createdBefore)
+        val response = if (dated || ordering != null) api.filteredRecords(scope.wire, source?.wire, if (summariesOnly) true else null,
+            query, cursor, isOngoing, createdFrom, createdBefore, ordering?.wire)
         else api.records(scope.wire, source?.wire, if (summariesOnly) true else null, query, cursor, isOngoing)
         response.also { page ->
             require(createdFrom == null || "created_from" in page.supportedFilters)

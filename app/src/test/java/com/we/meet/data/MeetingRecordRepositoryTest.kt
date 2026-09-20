@@ -7,6 +7,7 @@ import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.api.dto.RecordReferenceDto
 import com.we.meet.data.repository.MeetingRecordRepository
 import com.we.meet.data.repository.RecordScope
+import com.we.meet.data.repository.RecordOrdering
 import com.we.meet.data.repository.RecordSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
@@ -116,6 +117,34 @@ class MeetingRecordRepositoryTest {
         assertEquals(recordId, load().getOrThrow().results.single().id)
         supported = false
         assertTrue(load().isFailure)
+    }
+
+    @Test fun orderingUsesServerQueryWithDatesAndOpaqueCursor() = runBlocking {
+        var expectedOrder = "created_at"
+        val repo = repository { request ->
+            assertEquals(expectedOrder, request.url.queryParameter("ordering"))
+            assertEquals("shared", request.url.queryParameter("scope"))
+            assertEquals("upload", request.url.queryParameter("source_type"))
+            assertEquals("true", request.url.queryParameter("has_summary"))
+            assertEquals("budget", request.url.queryParameter("q"))
+            assertEquals("page-two", request.url.queryParameter("cursor"))
+            assertEquals("2026-09-20T00:00:00Z", request.url.queryParameter("created_from"))
+            200 to """{"results":[${record()}],"supported_filters":["created_from"]}"""
+        }
+        for (order in listOf(RecordOrdering.OLDEST, RecordOrdering.NEWEST)) {
+            expectedOrder = order.wire
+            assertTrue(repo.records("reader", RecordScope.SHARED, RecordSource.UPLOAD, true,
+                "budget", "page-two", createdFrom = "2026-09-20T00:00:00Z", ordering = order).isSuccess)
+        }
+    }
+
+    @Test fun orderingWithoutDatesDoesNotRequireDateCapabilities() = runBlocking {
+        val repo = repository { request ->
+            assertEquals("created_at", request.url.queryParameter("ordering"))
+            assertNull(request.url.queryParameter("created_from"))
+            200 to """{"results":[${record()}]}"""
+        }
+        assertTrue(repo.records("reader", ordering = RecordOrdering.OLDEST).isSuccess)
     }
 
     @Test fun omittedAbilitiesNeverGrantAccess() {
