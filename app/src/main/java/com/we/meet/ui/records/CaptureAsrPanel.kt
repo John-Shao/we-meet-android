@@ -131,7 +131,10 @@ internal fun CaptureAsrPanel(viewer: String, capture: CaptureDto, repository: Ca
                 WeMeetInlineErrorState(onRetry = { retry++; if (storageError) storageRetry++ }, message = stringResource(R.string.capture_asr_read_error))
             } else if (state != null) {
                 Text(stringResource(R.string.capture_asr_usage), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                latest?.let { Text(stringResource(asrStatus(it.status)), style = MaterialTheme.typography.labelLarge) }
+                latest?.let {
+                    Text(stringResource(captureAsrStatus(it)), style = MaterialTheme.typography.labelLarge)
+                    if (captureAsrNoSpeech(it)) Text(stringResource(R.string.capture_asr_no_speech_hint), style = MaterialTheme.typography.bodyMedium)
+                }
                 if (pending != null) Text(stringResource(R.string.capture_asr_unknown), style = MaterialTheme.typography.bodyMedium)
                 if (operationError) Text(stringResource(R.string.capture_asr_operation_error), color = MaterialTheme.colorScheme.error)
                 if (!active && pending == null && available) Row {
@@ -151,15 +154,6 @@ internal fun CaptureAsrPanel(viewer: String, capture: CaptureDto, repository: Ca
             }
         }
     }
-}
-
-private fun asrStatus(status: String) = when (status) {
-    "queued" -> R.string.capture_asr_queued
-    "running" -> R.string.capture_asr_running
-    "succeeded" -> R.string.capture_asr_succeeded
-    "incomplete" -> R.string.capture_asr_incomplete
-    "canceled" -> R.string.capture_asr_canceled
-    else -> R.string.capture_asr_read_error
 }
 
 @Composable

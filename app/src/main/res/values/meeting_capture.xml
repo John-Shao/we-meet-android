@@ -54,4 +54,6 @@
     <string name="capture_asr_previous">Previous</string>
     <string name="capture_asr_next">Next</string>
     <string name="capture_asr_latest">Follow latest</string>
+    <string name="capture_asr_no_speech">No recognizable speech found</string>
+    <string name="capture_asr_no_speech_hint">No text was generated. Check the recording, volume and microphone before deciding whether to transcribe again.</string>
 </resources>

@@ -54,4 +54,6 @@
     <string name="capture_asr_previous">上一页</string>
     <string name="capture_asr_next">下一页</string>
     <string name="capture_asr_latest">跟随最新</string>
+    <string name="capture_asr_no_speech">未识别到有效语音</string>
+    <string name="capture_asr_no_speech_hint">本次未生成文字。请检查录音内容、音量和麦克风，再决定是否重新转写。</string>
 </resources>
