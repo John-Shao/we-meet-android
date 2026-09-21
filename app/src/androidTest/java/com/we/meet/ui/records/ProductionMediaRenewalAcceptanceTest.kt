@@ -68,7 +68,7 @@ class ProductionMediaRenewalAcceptanceTest {
         }
         compose.onNodeWithText(speed(1f)).performClick()
         compose.onNodeWithText(speed(1.5f)).performClick()
-        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
         compose.waitUntil(45_000) {
             compose.onAllNodesWithText(label(R.string.capture_playback_error)).fetchSemanticsNodes().isNotEmpty()
         }
@@ -80,11 +80,11 @@ class ProductionMediaRenewalAcceptanceTest {
         compose.runOnIdle { seek.value = CaptureAudioSeek(40_000) }
         // > 40,000 proves the real decoder advanced, rather than just the seek callback.
         compose.waitUntil(30_000) { positions.any { it > 40_000 } }
-        compose.onNodeWithContentDescription(label(R.string.capture_playback_pause)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_pause)).performClick()
         val paused = positions.last()
         compose.waitForIdle()
         assertEquals(paused, positions.last())
-        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).assertIsDisplayed()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).assertIsDisplayed()
         compose.onNodeWithText(speed(1.5f)).assertIsDisplayed()
         compose.onNodeWithText(label(R.string.capture_playback_error)).assertDoesNotExist()
     }

@@ -1073,4 +1073,17 @@
     <string name="room_ai_prompt_decisions">目前达成了哪些结论？</string>
     <string name="room_ai_prompt_actions">列出待办事项和负责人</string>
     <string name="meeting_ai_search">搜索会议 AI</string>
+    <!-- 功能性图标的无障碍名（设计规范 §5.1 的 cd_ 前缀）：读屏读的是这一组，
+         与同名的可见文案分开，改一处文案不会顺手改掉读屏。 -->
+    <string name="cd_records_ai_search">搜索会议 AI</string>
+    <string name="cd_records_search">搜索标题</string>
+    <string name="cd_records_clear_search">清空搜索</string>
+    <string name="cd_records_more">更多操作</string>
+    <string name="cd_records_list_view">切换到列表视图</string>
+    <string name="cd_records_grid_view">切换到网格视图</string>
+    <string name="cd_records_skip_back">后退 15 秒</string>
+    <string name="cd_records_skip_forward">前进 15 秒</string>
+    <string name="cd_records_play">播放</string>
+    <string name="cd_records_pause">暂停</string>
+    <string name="cd_records_close">关闭</string>
 </resources>

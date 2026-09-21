@@ -210,13 +210,15 @@ internal fun RecordOriginals(
             }
         }
         val current = page?.getOrNull()
-        // 单页时这一行只剩下一个孤立的「刷新」挂在底部,不如不显示;失败/空态各自带重试。
-        if (current != null && (cursors.size > 1 || current.nextCursor != null)) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.SpaceBetween) {
-                if (cursors.size > 1) TextButton(onClick = { following = false; cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
-                current.nextCursor?.let { next -> TextButton(onClick = { following = false; cursors = cursors + next }) { Text(stringResource(R.string.records_next)) } }
-                TextButton(onClick = onRefresh) { Text(stringResource(R.string.records_refresh)) }
-            }
+        if (current != null) {
+            // 单页时这一行只会剩一个孤立的「刷新」—— 那条规则现在收在 RecordPager 里。
+            RecordPager(
+                hasPrevious = cursors.size > 1,
+                onPrevious = { following = false; cursors = cursors.dropLast(1) },
+                hasNext = current.nextCursor != null,
+                onNext = { current.nextCursor?.let { next -> following = false; cursors = cursors + next } },
+                onRefresh = onRefresh,
+            )
         }
     }
     if (selectSpeaker) {

@@ -123,7 +123,81 @@ dp：横屏 / 折叠屏的屏幕高度差异很大）。**没有**顺手去扩 `
 
 对应截图：`06.jpg` 里被高亮成浅蓝底的「中国」。
 
-## 8. 验证
+## 8. 翻页行、播放状态机、`cd_` 前缀（2026-09-19 追加，「遗留」第二批）
+
+### 8.1 翻页行收成 `RecordPager`（7 处 → 1 处）
+
+「上一页 / 下一页 / 刷新」这一行原先在七个地方各写一遍，而七处的行为都不一样：有的带
+刷新有的不带、有的在某个条件下把「下一页」藏起来、有的整行左右内边距跟同屏其它行对不齐。
+用户在**同一次会话**里翻这三种页，手感却不一致。
+
+新增 [`RecordPager.kt`](../app/src/main/java/com/we/meet/ui/records/RecordPager.kt)，规则写死在里面：
+
+- **单页时整行不出现** —— 只有「刷新」而没有上一页/下一页的那一行是挂在底部的孤立动作。
+  这条规则原先只在 `RecordOriginals` 的注释里写着，现在由组件统一保证，调用点也不必再
+  自己写 `if (cursors.size > 1 || next != null)`。
+- 「上一页」靠左、「下一页」与「刷新」靠右（`Spacer(weight)` 顶开），三个都是同级导航动作，
+  字号与点击区一致。
+- 左右内边距固定 `Dimens.ScreenPadding`。
+
+改用的七处：`RecordLibraryScreen`、`RecordOriginals`、`RecordTrash`、`RecordSharing`
+（带 `enabled = !busy` → 组件新增 `enabled` 参数）、`RecordHumanSummary`、`RecordScreens`
+（纪要历史版本）、`SpeakerTimeline`。
+
+### 8.2 两个播放器共用一个状态机（`MediaPlaybackState`）
+
+审计的 C11 指出：`CaptureAudioPlayer` 与 `UploadMediaPlayer` 各有一套**字符串**状态机，
+而**同名状态在两处含义不同** —— 前者的 `"loading"` 是「还没读到播放列表」，后者是
+「媒体还没准备完」。后果是同一条记录的两条入口行为不一致：录音播放器里**每一次拖动
+进度条**（它会进入 `"buffering"`）都会把整条控件换成一个转圈，而导入播放器只会在第一次
+准备时转一下。
+
+新增 [`MediaPlaybackState.kt`](../app/src/main/java/com/we/meet/ui/records/MediaPlaybackState.kt)：
+六档（`Loading` / `Preparing` / `Ready` / `Playing` / `Gap` / `Error`），并把两条渲染规则
+收成属性 —— `showsPause`（含 `Preparing`：准备中那一下点下去是「停下」）与 `showsSpinner`。
+两个播放器的状态赋值与判断全部换成枚举常量，**渲染条件改成读这两个属性**。
+
+用户可见的变化只有一处，但那正是缺陷本身：**录音播放器在换段 / 拖动时不再把整条控件
+换成转圈**（`Preparing` 仍是 `showsSpinner = true`，但控件保留）。
+
+**没有做整份合并**：两个播放器的控件排布本来就不同（一个有视频 Surface 与 `duration`
+可空，一个只有音频），真正的重复在中段；把它们抽成一个组件需要同时改媒体生命周期与
+签名续期那两条链，属于独立的一批（审计估 2 人日）。这一轮先把**同状态不同语义**这个
+真缺陷消掉。
+
+### 8.3 功能性图标的无障碍名加 `cd_` 前缀
+
+设计规范 §5.1 要求功能图标的 `contentDescription` 走 `strings.xml` 的 `cd_` 前缀（与可见
+文案分开，改文案不会顺手改掉读屏），而全 app 只有 5 个 `cd_` key。这一轮把**记录模块里
+图标独占、没有可见文字**的那些收进来：顶栏图标（搜索会议 AI / 搜索 / 清空 / 更多）、
+网格/列表开关、播放器的播放/暂停/前后跳 15 秒、弹层关闭 —— **11 条新 key × 2 种语言**
+（`values` + `values-zh-rCN`）。
+
+既有可见文字又兼作无障碍名的（例如「搜索标题」既是输入框占位又是图标描述）**保留原键**，
+另给图标一条 `cd_` —— 两句话本来就可能不一样长。
+
+同步改了 **35 处**仪器测试断言：以无障碍名定位图标的 `onNodeWithContentDescription(label(R.string.cd_…))`
+与玩家测试里那个「文本或描述都认」的 `await(R.string.cd_…)` 助手。它们断言的就是读屏
+读到的那句话，键跟着走才是正确的绑定。
+
+### 8.4 转写关键词芯片行：需要后端先给数据（未实现）
+
+参考稿 `06.jpg` 里逐字稿上方那排「现金 / 地主 / 老板 / 中国 / …」是**服务端抽取的关键词**，
+点一颗即按该词筛选 / 高亮。查过两边：`RecordDto`（Android）与 `MeetingRecord`（Web）都
+**没有任何关键词字段**，也没有对应接口 —— 现在只有用户自建的「个人热词」（用于 ASR 偏置）
+与在页面内做的逐字稿搜索。
+
+中文要抽词就得有分词能力（客户端没有词典，硬按字切出来的「词」不是词），所以这一条
+**不能在客户端单独做出可用版本**。需要的最小后端契约是二选一：
+
+- `RecordDto.keywords: [String]`（导入 / 转写完成时抽一次，随记录返回）；或
+- `GET /meeting-records/{id}/keywords/`（按需返回 top-N 词与出现次数）。
+
+拿到之后客户端这一半是现成的：芯片行用 `FilterChip`（与列表页的通用控件同一档），
+点一颗 → 复用 §7.2 已有的逐字稿搜索 + 命中高亮（把芯片的文本当查询词提交即可），
+不需要新的渲染逻辑。
+
+## 9. 验证
 
 ```bash
 ./gradlew checkDesignTokens :core-design:testDebugUnitTest :app:testDebugUnitTest
@@ -176,9 +250,19 @@ dp：横屏 / 折叠屏的屏幕高度差异很大）。**没有**顺手去扩 `
   `MeetingNavigationTest` 的录制页用例由「汉堡菜单」改为「返回箭头」，并断言
   `meeting_navigation` **不存在**；`originalSearchAndSpeakerSelectionUseServerFilters`
   由「点搜索按钮」改 `performImeAction()`（那颗按钮已按参考稿删掉）。
-  期间还观察到一次 `RecordSharingCopyLinkTest` 的
-  `clipboard read blocked by the harness` —— 它在**单独跑时（改前与改后各一次）都是 2/2 通过**，
-  最终整包复跑也通过，属 325 条长跑里的窗口焦点干扰，不是回归。
+- **长跑里的偶发失败：整包跑了两遍才下结论。** 第一遍除了上面那 9 条还多出 **3 条**；
+  第二遍（同一份代码、同一台 AVD、同一条命令）这 3 条**全部通过**，单独跑也通过。
+  所以稳定复现的失败集合就是那 9 条「跑错 runner」：
+
+  | 第一遍多出的用例 | 报错 | 单独跑 |
+  | --- | --- | --- |
+  | `InterpretationPanelTest.managerStartNeedsConsentAndDoesNotJoinOrRetainByDefault` | `IllegalArgumentException: performMeasureAndLayout called during measure layout` —— Compose 在测量过程中又被要求测量，与用例里 `screenshot(…, dialog = true)` 抓图那一拍的时序有关 | ✓（与下一条同跑 **14/14**） |
+  | `PersonalHotwordsTest.oversizedMergeIsRejectedWithoutTruncation` | `ComposeTimeoutException: Condition still not satisfied after 5000 ms` —— `show()` 里等热词编辑器出现的那 5 秒，负载高时不够 | ✓（同上） |
+  | `RecordSharingCopyLinkTest.clipboardCarriesTheDeepLinkShapeTheAppAccepts` | 读回的剪贴板是**上一次运行的残留文本**：Android 10+ 只允许持有焦点的应用写剪贴板，整包长跑中那一次写入被丢掉 | ✓ **2/2**（改前与改后各单独跑一次） |
+
+  三条都是「长跑 + 窗口焦点 / 负载」敏感，不是回归：它们依赖的源码本轮一行未改
+  （`InterpretationPanel.kt`、`PersonalHotwords.kt`；`CaptureWorkspaceComponents.kt`
+  只动了 `records_close` → `cd_records_close` 一个资源 id，取值逐字相同）。
 - **模拟器实机走查：做了**（用仪器测试的挂载点，绕开登录）。
   装好 `app-debug.apk` + `app-debug-androidTest.apk` 后直接跑快照类，
   再从设备上把渲染结果拉回来：
@@ -206,8 +290,12 @@ dp：横屏 / 折叠屏的屏幕高度差异很大）。**没有**顺手去扩 `
   **状态栏的实际过渡**、从二级页返回一级页时**底部模块导航栏的恢复**、**1.5× / 2.0× 字号**、
   **横屏 / 折叠屏**、**TalkBack 实际朗读顺序**。快照类只渲染页面本身，不覆盖这些系统行为；
   真机/登录后仍需人工过一遍（`page-backgrounds.md:51` 自己也这么写）。
+- **提交前在最终内容上再复跑一遍**：整包仪器测试第二遍 **325 条：316 passed / 1 skipped /
+  9 failed**（那 9 条见上，换 `IsolatedCaptureRunner` 后 **9/9 通过**），
+  `:app:assembleDebug checkDesignTokens :app:testDebugUnitTest :core-design:testDebugUnitTest`
+  **BUILD SUCCESSFUL**、设计护栏基线仍为空。
 
-## 9. 未做 / 有意留着
+## 10. 未做 / 有意留着
 
 - **列表标题的机器名**（参考稿里那条
   `share_68a41415e7dfe0a4135fe8e9334db551781397189684` 就是把这件事放大了）：根治要后端在
@@ -215,20 +303,20 @@ dp：横屏 / 折叠屏的屏幕高度差异很大）。**没有**顺手去扩 `
   Web 侧只加了悬停提示 —— **需要产品定默认名规则**，没自作主张改后端。
 - **转写关键词芯片行**（参考稿 `06.jpg` 里「现金 / 地主 / 老板 / 中国 / …」那一排）：
   点一颗就按该词筛/高亮。这需要抽词（服务端或客户端词频），是一件事而不是一处样式，
-  没在这一轮做 —— 现在能替代它的是逐字稿搜索 + 命中高亮（§7.2）。
+  没在这一轮做（拦在哪一步、需要什么后端契约，见 §8.4）—— 现在能替代它的是逐字稿
+  搜索 + 命中高亮（§7.2）。
 - **参考稿把「发言人 / 会议信息 / 会议片段」放在视频下方、把「智能纪要 / 文字记录」
   放在右栏**：那是两栏信息架构，与我们现在「一行 Tab 切内容」不同。改它等于重排
   整个工作区，收益不确定（我们的视频在窄屏下本来就要单独滚），没动。
-- **翻页行 7 处各写一遍**（`RecordLibrary` / `RecordOriginals` / `RecordTrash` /
-  `RecordSharing` / `RecordHumanSummary` / `SpeakerTimeline` / `RecordSummaryControls`）：
-  位置、间距、是否带刷新各不相同。抽 `RecordPager` 是独立的一批。
-- **`CaptureAudioPlayer` 与 `UploadMediaPlayer` 是两份几乎相同的播放器**，且两处对
-  `loading` / `buffering` 的状态语义不同（同一状态在两个入口行为不一样）。
+- **两个播放器仍未合成一个组件**：这一轮只统一了状态机（§8.2，消掉「同状态不同语义」
+  这个真缺陷）。控件排布本来就不同（一个有视频 Surface 与可空 `duration`，一个只有音频），
+  真正的合并要同时改媒体生命周期与签名续期两条链，需要另跑一轮续期回归。审计估 2 人日。
+- **`cd_` 前缀只做了 records 模块**（§8.3，11 条 key）：records 里图标独占的那些已收口，
+  其余模块（`feature-im` / contacts / tasks / docs / calendar）的功能图标还在用普通 key。
+  一次性铺开牵动 60+ 资源键，且**没有任何护栏检查这一条** —— 建议先给 `DesignLintTask`
+  加一条「功能图标必须引用 `cd_` 前缀 key」的检查，再按模块改，否则改完还会退回去。
 - **时间格式跨模块不一致**：会议模块内恒定 `yyyy/M/d HH:mm`（模块内一致，注释已声明），
   而会议首页走 `fullDateTimeLocalized()`。统一需要先定「本地化 vs 恒定格式」，属产品取舍。
-- **`cd_` 前缀**：records 模块的功能性图标 `contentDescription` 取的都是普通 key
-  （`records_search` 这类），而 §5.1 要求走 `strings.xml` 的 `cd_` 前缀。全 app 只有 5 个
-  `cd_` key，且没有任何护栏检查这一条 —— 一次性重命名会牵动 60+ 资源键，属于独立的一批。
 - **`brand.N` 数字档**：Web 侧 `panda.config` 明确用 `brand.N` 替代裸 `primary.N`，与
   Web `color-system.md` §3.1「不得引用数字档」的口径冲突。属规范层待收敛，不是 Android
   的问题。

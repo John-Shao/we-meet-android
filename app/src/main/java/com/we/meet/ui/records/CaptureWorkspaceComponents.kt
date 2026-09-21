@@ -167,7 +167,7 @@ internal fun CaptureSettingsSheet(title: String, onDismiss: () -> Unit, content:
             .padding(bottom = Dimens.SpaceXl), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                IconButton(onDismiss) { Icon(Icons.Outlined.Close, stringResource(R.string.records_close)) }
+                IconButton(onDismiss) { Icon(Icons.Outlined.Close, stringResource(R.string.cd_records_close)) }
             }
             content()
         }

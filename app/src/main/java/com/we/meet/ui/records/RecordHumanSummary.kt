@@ -190,8 +190,13 @@ private fun HumanSummaryHistory(viewer: String, record: RecordDto, repository: M
                 page.isFailure -> WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.human_summary_read_error))
                 else -> {
                     page.getOrThrow().results.forEach { row -> TextButton(onClick = { selected = row.id }) { Text(stringResource(R.string.human_summary_version, row.revision) + " · " + recordTime(row.createdAt)) } }
-                    if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1); selected = null }) { Text(stringResource(R.string.records_previous)) }
-                    page.getOrThrow().nextBefore?.let { next -> TextButton(onClick = { cursors = cursors + next; selected = null }) { Text(stringResource(R.string.records_next)) } }
+                    // 翻页时清掉当前选中的人工版本：下一页里它可能根本不存在。
+                    RecordPager(
+                        hasPrevious = cursors.size > 1,
+                        onPrevious = { cursors = cursors.dropLast(1); selected = null },
+                        hasNext = page.getOrThrow().nextBefore != null,
+                        onNext = { page.getOrThrow().nextBefore?.let { next -> cursors = cursors + next; selected = null } },
+                    )
                 }
             }
             selected?.let { id -> HumanSummaryRevision(viewer, record, repository, id) { snapshot, reference -> onClose(); onSource(snapshot, reference) } }

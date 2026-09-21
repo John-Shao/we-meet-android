@@ -196,7 +196,7 @@ class MeetingRecordsSnapshotTest {
     @Test fun recordLibrary() {
         compose.setContent { WeMeetTheme { RecordLibraryScreen(repository(), viewer, false, {}, {}, onOpenNavDrawer = {}, onSearchMeetingAi = {}) } }
         shot("20-records-list")
-        compose.onNodeWithContentDescription(label(R.string.records_grid_view)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_grid_view)).performClick()
         shot("21-records-grid")
     }
 
@@ -208,7 +208,7 @@ class MeetingRecordsSnapshotTest {
     @Test fun minutesLibrary() {
         compose.setContent { WeMeetTheme { RecordLibraryScreen(repository(), viewer, true, {}, {}, onOpenNavDrawer = {}, onSearchMeetingAi = {}) } }
         shot("30-minutes-list")
-        compose.onNodeWithContentDescription(label(R.string.records_grid_view)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_grid_view)).performClick()
         shot("31-minutes-grid")
     }
 

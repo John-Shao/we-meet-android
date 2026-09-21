@@ -102,10 +102,12 @@ internal fun RecordTrashSheet(viewer: String, repository: MeetingRecordRepositor
                             ) { Text(stringResource(if (row.purge != null) R.string.record_purge_status else R.string.record_purge_remove)) }
                         }
                     }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
-                        result.nextCursor?.let { cursor -> TextButton(onClick = { cursors = cursors + cursor }) { Text(stringResource(R.string.records_next)) } }
-                    }
+                    RecordPager(
+                        hasPrevious = cursors.size > 1,
+                        onPrevious = { cursors = cursors.dropLast(1) },
+                        hasNext = result.nextCursor != null,
+                        onNext = { result.nextCursor?.let { cursor -> cursors = cursors + cursor } },
+                    )
                 }
             }
             TextButton(onClick = onClose) { Text(stringResource(R.string.records_close)) }

@@ -179,7 +179,7 @@ class RecordScreensTest {
     }
 /** 「排序 / 筛选 / 回收站」收在顶栏的溢出菜单里(顶栏只留三格,设计规范 §3)。 */
     private fun openMore() {
-        compose.onNodeWithContentDescription(label(R.string.records_more)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_more)).performClick()
     }
 
     private fun awaitText(text: String) {
@@ -424,11 +424,11 @@ class RecordScreensTest {
         val fixture = Fixture()
         compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", false, {}, {}) } }
         awaitText("Private planning meeting")
-        compose.onNodeWithContentDescription(label(R.string.records_search)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_search)).performClick()
         compose.onNodeWithText(label(R.string.records_search)).performTextInput("Design")
         compose.onNodeWithText(label(R.string.records_search_action)).performClick()
         compose.waitUntil(5_000) { fixture.searchQuery == "Design" }
-        compose.onNodeWithContentDescription(label(R.string.records_clear_search)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_clear_search)).performClick()
         compose.waitUntil(5_000) { fixture.searchQuery == null }
         openMore()
         compose.onNodeWithText(label(R.string.records_filters)).performClick()

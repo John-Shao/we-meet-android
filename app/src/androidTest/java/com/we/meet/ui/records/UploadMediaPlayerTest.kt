@@ -77,7 +77,7 @@ class UploadMediaPlayerTest {
         show()
         // Opening must not start playback: a GB-scale import is not fetched on open.
         assertTrue(engine == null)
-        val play = compose.onNodeWithContentDescription(label(R.string.capture_playback_play))
+        val play = compose.onNodeWithContentDescription(label(R.string.cd_records_play))
         play.assertIsDisplayed()
         play.performClick()
         compose.waitForIdle()
@@ -91,7 +91,7 @@ class UploadMediaPlayerTest {
 
     @Test fun aPositionTickReachesTheTranscriptThroughTheCallback() {
         show()
-        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
         // The poller reports the engine's clock; drive it and assert the tick lands.
         compose.runOnIdle { engine?.clock = 7_000L }
         compose.waitUntil(8_000) { reported.contains(7_000L) }
@@ -101,13 +101,13 @@ class UploadMediaPlayerTest {
 
     @Test fun pausingStopsWithoutDiscardingThePosition() {
         show()
-        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
         compose.waitForIdle()
-        compose.onNodeWithContentDescription(label(R.string.capture_playback_pause)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_pause)).performClick()
         compose.waitForIdle()
         assertEquals(false, engine?.playing)
         // Resume control is offered again at the same place.
-        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).assertIsDisplayed()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).assertIsDisplayed()
     }
 
     @Test fun aFailedEngineSurfacesAnErrorInsteadOfASilentNoOp() {
@@ -123,7 +123,7 @@ class UploadMediaPlayerTest {
                 }
             }
         }
-        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
         compose.waitUntil(8_000) {
             compose.onAllNodesWithText(label(R.string.capture_playback_error)).fetchSemanticsNodes().isNotEmpty()
         }
@@ -132,7 +132,7 @@ class UploadMediaPlayerTest {
 
     @Test fun refreshedLeaseDoesNotRestartPlaybackAndNextSeekUsesLatestUrl() {
         show()
-        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
         compose.runOnIdle { engine?.clock = 42_000L }
         compose.waitUntil(8_000) { reported.contains(42_000L) }
         val originalEngine = engine
@@ -149,15 +149,15 @@ class UploadMediaPlayerTest {
 
     @Test fun refreshedLeasePreservesAPausedPosition() {
         show()
-        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
         compose.runOnIdle { engine?.clock = 42_000L }
         compose.waitUntil(8_000) { reported.contains(42_000L) }
-        compose.onNodeWithContentDescription(label(R.string.capture_playback_pause)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_pause)).performClick()
         compose.runOnIdle { currentMedia.value = media.copy(url = "https://private.example/renewed") }
         compose.waitForIdle()
         assertEquals(1, openedUrls.size)
         assertEquals(false, engine?.playing)
-        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
         compose.waitUntil(8_000) { openedUrls.size == 2 }
         assertEquals(42_000L, engine?.lastPlayFrom)
     }
@@ -165,7 +165,7 @@ class UploadMediaPlayerTest {
     @Test fun videoUsesARealSurfaceWithoutChangingThePlaybackContract() {
         currentMedia.value = media.copy(mediaType = "video", contentType = "video/mp4")
         show()
-        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
         compose.waitUntil(8_000) { engine?.outputSurface?.isValid == true }
         assertTrue(engine?.playing == true)
     }
@@ -173,7 +173,7 @@ class UploadMediaPlayerTest {
     @Test fun nativeVideoSurfaceFitsPortraitAndLandscapeWithoutDistortion() {
         currentMedia.value = media.copy(mediaType = "video", contentType = "video/mp4")
         show()
-        compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
         fun findSurface(view: android.view.View): android.view.SurfaceView? =
             if (view is android.view.SurfaceView) view else if (view is android.view.ViewGroup) {
                 (0 until view.childCount).firstNotNullOfOrNull { findSurface(view.getChildAt(it)) }
@@ -190,7 +190,7 @@ class UploadMediaPlayerTest {
                 val heightCap = context.resources.configuration.screenHeightDp * context.resources.displayMetrics.density * 0.3f
                 assertTrue("native surface must respect the height cap", surface.height <= heightCap + 1)
             }
-            compose.onNodeWithContentDescription(label(R.string.capture_playback_pause)).assertIsDisplayed()
+            compose.onNodeWithContentDescription(label(R.string.cd_records_pause)).assertIsDisplayed()
         }
     }
 

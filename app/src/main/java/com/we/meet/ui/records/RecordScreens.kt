@@ -247,10 +247,13 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                             SummaryCard(version, record.capabilities.readTranscript, chaptersOnly) { ref -> citation = version.inputSnapshotId to ref }
                                         }
                                         item {
-                                            Row(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), horizontalArrangement = Arrangement.SpaceBetween) {
-                                                if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
-                                                if (selectedVersion == null) summaries.getOrThrow().nextCursor?.let { next -> TextButton(onClick = { cursors = cursors + next }) { Text(stringResource(R.string.records_next)) } }
-                                            }
+                                            RecordPager(
+                                                hasPrevious = cursors.size > 1,
+                                                onPrevious = { cursors = cursors.dropLast(1) },
+                                                // 钉住某个历史版本时不翻页：那一屏读的是指定快照。
+                                                hasNext = selectedVersion == null && summaries.getOrThrow().nextCursor != null,
+                                                onNext = { summaries.getOrThrow().nextCursor?.let { next -> cursors = cursors + next } },
+                                            )
                                         }
                                     }
                                 }

@@ -43,7 +43,7 @@ class CaptureTranslationPanelTest {
         button(R.string.capture_translation_start).performScrollTo().performClick()
         assertEquals(listOf("start"), actions)
         compose.runOnIdle { state = state.copy(live = CaptureTranslationLiveState("ready")) }
-        compose.onNodeWithContentDescription(label(R.string.records_close)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_close)).performClick()
         assertEquals(listOf("start"), actions)
         tool(R.string.capture_tool_translate).performClick()
         assertTrue(choice.audio) // A live session cannot be reconfigured by opening another sheet.

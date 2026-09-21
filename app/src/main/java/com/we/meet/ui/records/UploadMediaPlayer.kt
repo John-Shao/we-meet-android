@@ -97,7 +97,7 @@ internal fun UploadMediaPlayer(
     val latestDuration by rememberUpdatedState(onDuration)
     val latestConsume by rememberUpdatedState(onSeekConsumed)
     var engine by remember(sourceId) { mutableStateOf<WholeFilePlayback?>(null) }
-    var state by remember(sourceId) { mutableStateOf("ready") }
+    var state by remember(sourceId) { mutableStateOf(MediaPlaybackState.Ready) }
     var position by remember(sourceId) { mutableLongStateOf(positionMs ?: 0L) }
     var duration by remember(sourceId) { mutableLongStateOf(0L) }
     var rate by remember(sourceId) { mutableFloatStateOf(1f) }
@@ -114,7 +114,7 @@ internal fun UploadMediaPlayer(
     fun stop() {
         engine?.close()
         engine = null
-        state = "ready"
+        state = MediaPlaybackState.Ready
     }
 
     DisposableEffect(sourceId) {
@@ -133,17 +133,17 @@ internal fun UploadMediaPlayer(
             createEngine?.invoke(latestMedia.url) { stop() }
                 ?: UploadMediaEngine(context, latestMedia.url) { stop() }
         }
-            .onFailure { state = "error" }
+            .onFailure { state = MediaPlaybackState.Error }
             .getOrNull() ?: return
         engine = current
         runCatching { current.setSurface(surface); current.play(from, rate) }
             .onSuccess {
-                state = if (current.isPreparing()) "loading" else "playing"
-                if (state == "loading") preparationStartedAt = SystemClock.elapsedRealtime()
+                state = if (current.isPreparing()) MediaPlaybackState.Preparing else MediaPlaybackState.Playing
+                if (state == MediaPlaybackState.Preparing) preparationStartedAt = SystemClock.elapsedRealtime()
                 duration = current.durationMs()
                 latestDuration(duration.takeIf(::validMediaDuration))
             }
-            .onFailure { stop(); state = "error" }
+            .onFailure { stop(); state = MediaPlaybackState.Error }
         tick++
     }
 
@@ -154,11 +154,11 @@ internal fun UploadMediaPlayer(
 
     // One poller for the whole playing lifetime rather than a loop per tick.
     LaunchedEffect(tick, state) {
-        while (state == "playing" || state == "loading") {
+        while (state.showsPause) {
             val current = engine ?: break
             if (current.failure() != null) {
                 if (openedUrl != latestMedia.url && automaticRecoveries < 1) start(position, automatic = true)
-                else { stop(); state = "error" }
+                else { stop(); state = MediaPlaybackState.Error }
                 break
             }
             if (current.isPreparing()) {
@@ -166,7 +166,7 @@ internal fun UploadMediaPlayer(
                 // A healthy prepared stream remains untouched by lease refreshes.
                 if (SystemClock.elapsedRealtime() - preparationStartedAt >= preparationTimeoutMs) {
                     if (openedUrl != latestMedia.url && automaticRecoveries < 1) start(position, automatic = true)
-                    else { stop(); state = "error" }
+                    else { stop(); state = MediaPlaybackState.Error }
                     break
                 }
                 delay(POSITION_POLL_MS)
@@ -176,12 +176,12 @@ internal fun UploadMediaPlayer(
             duration = current.durationMs()
             latestDuration(duration.takeIf(::validMediaDuration))
             aspect = current.videoAspectRatio()
-            if (state == "loading") {
-                state = "playing"
+            if (state == MediaPlaybackState.Preparing) {
+                state = MediaPlaybackState.Playing
                 automaticRecoveries = 0
             }
             if (!current.isPlaying()) {
-                state = "ready"
+                state = MediaPlaybackState.Ready
                 break
             }
             delay(POSITION_POLL_MS)
@@ -190,7 +190,7 @@ internal fun UploadMediaPlayer(
 
     LaunchedEffect(seek?.token) {
         val request = seek ?: return@LaunchedEffect
-        if (state == "error") {
+        if (state == MediaPlaybackState.Error) {
             latestConsume()
             return@LaunchedEffect
         }
@@ -228,13 +228,13 @@ internal fun UploadMediaPlayer(
                     }
                 }
             }
-            if (state == "error") {
+            if (state == MediaPlaybackState.Error) {
                 WeMeetInlineErrorState(
                     onRetry = { stop(); start(position) },
                     message = stringResource(R.string.capture_playback_error),
                 )
             } else {
-                if (state == "loading") WeMeetInlineLoading()
+                if (state.showsSpinner) WeMeetInlineLoading()
                 Text("${sourceTime(position)} / ${sourceTime(duration)}", style = MaterialTheme.typography.labelMedium)
                 Slider(
                     position.coerceAtMost(maxOf(1L, duration - 1)).toFloat(),
@@ -249,20 +249,20 @@ internal fun UploadMediaPlayer(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { ratesVisible = true }) { Text(stringResource(R.string.capture_playback_rate, rate)) }
                     IconButton(onClick = { start(maxOf(0L, position - 15_000)) }) {
-                        Icon(Icons.Outlined.Replay, stringResource(R.string.records_skip_back))
+                        Icon(Icons.Outlined.Replay, stringResource(R.string.cd_records_skip_back))
                     }
                     FilledTonalIconButton(
                         modifier = Modifier.size(Dimens.ButtonHeight),
-                        onClick = { if (state == "playing" || state == "loading") { engine?.pause(); state = "ready" } else start(position) },
+                        onClick = { if (state.showsPause) { engine?.pause(); state = MediaPlaybackState.Ready } else start(position) },
                     ) {
                         Icon(
-                            if (state == "playing" || state == "loading") Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
-                            stringResource(if (state == "playing" || state == "loading") R.string.capture_playback_pause else R.string.capture_playback_play),
+                            if (state.showsPause) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+                            stringResource(if (state.showsPause) R.string.cd_records_pause else R.string.cd_records_play),
                             Modifier.size(Dimens.IconXl),
                         )
                     }
                     IconButton(onClick = { start(minOf(maxOf(0L, duration - 1), position + 15_000)) }) {
-                        Icon(Icons.Outlined.FastForward, stringResource(R.string.records_skip_forward))
+                        Icon(Icons.Outlined.FastForward, stringResource(R.string.cd_records_skip_forward))
                     }
                 }
             }
@@ -275,7 +275,7 @@ internal fun UploadMediaPlayer(
             text = {
                 Column {
                     listOf(0.75f, 1f, 1.25f, 1.5f, 2f).forEach { speed ->
-                        TextButton(onClick = { rate = speed; ratesVisible = false; if (state == "playing") start(position) }) {
+                        TextButton(onClick = { rate = speed; ratesVisible = false; if (state == MediaPlaybackState.Playing) start(position) }) {
                             Text(stringResource(R.string.capture_playback_rate, speed))
                         }
                     }

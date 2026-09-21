@@ -1094,4 +1094,17 @@
     <string name="room_ai_prompt_decisions">What decisions have been made?</string>
     <string name="room_ai_prompt_actions">List action items and owners</string>
     <string name="meeting_ai_search">Search meetings with AI</string>
+    <!-- 功能性图标的无障碍名（设计规范 §5.1 的 cd_ 前缀）：读屏读的是这一组，
+         与同名的可见文案分开，改一处文案不会顺手改掉读屏。 -->
+    <string name="cd_records_ai_search">Search meetings with AI</string>
+    <string name="cd_records_search">Search titles</string>
+    <string name="cd_records_clear_search">Clear the search</string>
+    <string name="cd_records_more">More actions</string>
+    <string name="cd_records_list_view">Switch to list view</string>
+    <string name="cd_records_grid_view">Switch to grid view</string>
+    <string name="cd_records_skip_back">Back 15 seconds</string>
+    <string name="cd_records_skip_forward">Forward 15 seconds</string>
+    <string name="cd_records_play">Play</string>
+    <string name="cd_records_pause">Pause</string>
+    <string name="cd_records_close">Close</string>
 </resources>

@@ -120,10 +120,13 @@ internal fun RecordSharing(viewer: String, record: RecordDto, repository: Meetin
                             Text(stringResource(R.string.record_share_revoke))
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                        if (pages.size > 1) TextButton(onClick = { pages = pages.dropLast(1) }, enabled = !busy) { Text(stringResource(R.string.records_previous)) }
-                        state.nextCursor?.let { next -> TextButton(onClick = { pages = pages + next }, enabled = !busy) { Text(stringResource(R.string.records_next)) } }
-                    }
+                    RecordPager(
+                        hasPrevious = pages.size > 1,
+                        onPrevious = { pages = pages.dropLast(1) },
+                        hasNext = state.nextCursor != null,
+                        onNext = { state.nextCursor?.let { next -> pages = pages + next } },
+                        enabled = !busy,
+                    )
                     // 与 Web 的 summarySharing.copyLink 同一个位置(授权列表之后)与同一个链接形状:
                     // 入站深链 App 早就认了(RecordLinks.parse),缺的只是把链接发出去的入口。
                     TextButton(onClick = {

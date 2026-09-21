@@ -61,10 +61,13 @@ internal fun SpeakerTimeline(timeline: RecordSpeakerTimelineDto?, mediaDuration:
                 if (onSource == null) Text("${sourceTime(span.startMs)} – ${sourceTime(span.endMs)}")
                 else TextButton(onClick = { onSource(span.startMs) }) { Text(label) }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                if (page > 0) TextButton(onClick = { page-- }) { Text(stringResource(R.string.records_previous)) }
-                if ((page + 1) * 10 < timeline.intervals.size) TextButton(onClick = { page++ }) { Text(stringResource(R.string.records_next)) }
-            }
+            // 每页 10 段：与上面那个 intervals 切片同一个步长，两处必须一起改。
+            RecordPager(
+                hasPrevious = page > 0,
+                onPrevious = { page-- },
+                hasNext = (page + 1) * 10 < timeline.intervals.size,
+                onNext = { page++ },
+            )
         }
     }
 }

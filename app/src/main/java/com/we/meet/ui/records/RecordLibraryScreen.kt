@@ -101,16 +101,16 @@ fun RecordLibraryScreen(
                     // 现在只留三格:搜索会议 AI、搜索、更多;排序 / 筛选 / 回收站进菜单。
                     onSearchMeetingAi?.let { search ->
                         IconButton(onClick = search) {
-                            Icon(Icons.Outlined.AutoAwesome, stringResource(R.string.meeting_ai_search))
+                            Icon(Icons.Outlined.AutoAwesome, stringResource(R.string.cd_records_ai_search))
                         }
                     }
                     IconButton(onClick = { searchVisible = !searchVisible; if (!searchVisible) { input = ""; query = "" } }) {
                         Icon(if (searchVisible) Icons.Outlined.Close else Icons.Outlined.Search,
-                            stringResource(if (searchVisible) R.string.records_clear_search else R.string.records_search))
+                            stringResource(if (searchVisible) R.string.cd_records_clear_search else R.string.cd_records_search))
                     }
                     Box {
                         IconButton(onClick = { orderMenu = true }) {
-                            Icon(Icons.Outlined.MoreVert, stringResource(R.string.records_more))
+                            Icon(Icons.Outlined.MoreVert, stringResource(R.string.cd_records_more))
                         }
                         DropdownMenu(expanded = orderMenu, onDismissRequest = { orderMenu = false }) {
                             RecordOrdering.entries.forEach { value ->
@@ -154,7 +154,7 @@ fun RecordLibraryScreen(
                     }
                     IconButton(onClick = { grid = !grid }) {
                         Icon(if (grid) Icons.AutoMirrored.Outlined.ViewList else Icons.Outlined.GridView,
-                            stringResource(if (grid) R.string.records_list_view else R.string.records_grid_view))
+                            stringResource(if (grid) R.string.cd_records_list_view else R.string.cd_records_grid_view))
                     }
                 }
             } else
@@ -169,7 +169,7 @@ fun RecordLibraryScreen(
                 }
                 IconButton(onClick = { grid = !grid }) {
                     Icon(if (grid) Icons.AutoMirrored.Outlined.ViewList else Icons.Outlined.GridView,
-                        stringResource(if (grid) R.string.records_list_view else R.string.records_grid_view))
+                        stringResource(if (grid) R.string.cd_records_list_view else R.string.cd_records_grid_view))
                 }
             }
             if (searchVisible) OutlinedTextField(input, onValueChange = { input = it.take(200); if (input.isEmpty()) query = "" },
@@ -237,13 +237,16 @@ fun RecordLibraryScreen(
                             val open = { if (summariesOnly) onSummaryRecord(record.id) else onRecord(record.id) }
                             if (grid) RecordLibraryCard(record, summariesOnly, open) else RecordLibraryRow(record, summariesOnly, open)
                         }
-                        // 没有上一页/下一页时不放这一行 —— 否则只剩一个孤零零的「刷新」挂在底部。
-                        if (cursors.size > 1 || page.nextCursor != null) item(span = { GridItemSpan(maxLineSpan) }) {
-                            Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.SpaceBetween) {
-                                if (cursors.size > 1) TextButton(onClick = { cursors = cursors.dropLast(1) }) { Text(stringResource(R.string.records_previous)) }
-                                page.nextCursor?.let { next -> TextButton(onClick = { cursors = cursors + next }) { Text(stringResource(R.string.records_next)) } }
-                                TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
-                            }
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            // 「单页不放这一行」由 RecordPager 自己保证（它同时是七处
+                            // 翻页行的唯一定义）。
+                            RecordPager(
+                                hasPrevious = cursors.size > 1,
+                                onPrevious = { cursors = cursors.dropLast(1) },
+                                hasNext = page.nextCursor != null,
+                                onNext = { page.nextCursor?.let { next -> cursors = cursors + next } },
+                                onRefresh = { refresh++ },
+                            )
                         }
                     }
                 }

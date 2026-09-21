@@ -114,8 +114,8 @@ class UploadMediaRenewalTest {
         currentMedia.value = currentMedia.value.copy(url = server.url("/fresh.wav").toString())
     }
 
-    private fun play() = compose.onNodeWithContentDescription(label(R.string.capture_playback_play)).performClick()
-    private fun pause() = compose.onNodeWithContentDescription(label(R.string.capture_playback_pause)).performClick()
+    private fun play() = compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
+    private fun pause() = compose.onNodeWithContentDescription(label(R.string.cd_records_pause)).performClick()
     private fun awaitCondition(condition: () -> Boolean) {
         try { compose.waitUntil(30_000, condition) }
         catch (error: androidx.compose.ui.test.ComposeTimeoutException) {
