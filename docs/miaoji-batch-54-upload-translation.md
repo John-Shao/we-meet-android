@@ -7,3 +7,7 @@
 请求未知保留同一请求键核对；所有请求绑定当前账号/记录。无持久正文缓存，后台及权限失败清理正文。系统文件选择器返回后再取译文文件并鉴权；失败清理部分文件。
 
 验证：JVM 翻译仓库 11 项、新 Compose 仪器测试 4 项（Pixel 8 / Android 16）通过，debug 构建通过。真实生产翻译、正式 APK 分发和物理设备验收仍待后端发布后完成。供应商测试使用 fixture，不能作为翻译质量结论。
+
+## 2026-09-21 生产后续
+
+第 55 批已确认 Helm 385 / backend、frontend `a616ec42e`，Android `48af303a` debug APK 在 Pixel 8 上完成真实生成、对照/回听、三个格式保存、旧版提示和重生成；API 验证权限撤销与回收恢复。专用样本永久删除 pending，北京时间 13:21:35 后复核。完整证据与未覆盖项见 we-meet 仓库 `docs/research/miaoji-batch-55-upload-translation-acceptance.md`。上述“待发布”是本批实施时的历史状态；正式 APK 分发仍待完成。
