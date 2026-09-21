@@ -47,7 +47,7 @@ private const val MAX_CORRECTION_LENGTH = 20_000
  * 底色取 `primaryContainer` / `onPrimaryContainer` 成对 —— 与「正在播放」那一行的底色
  * 同族,两套主题都成对翻转,不会出现浅底压浅字。
  */
-private fun highlightMatches(
+internal fun highlightMatches(
     text: String,
     query: String,
     background: Color,
@@ -55,18 +55,18 @@ private fun highlightMatches(
 ): AnnotatedString {
     val needle = query.trim()
     if (needle.isEmpty()) return AnnotatedString(text)
-    val haystack = text.lowercase()
-    val lowered = needle.lowercase()
+    // Match in the original string: lowercasing can expand characters such as İ,
+    // making its offsets invalid for substring() on the original text.
     return buildAnnotatedString {
         var cursor = 0
-        var index = haystack.indexOf(lowered)
+        var index = text.indexOf(needle, ignoreCase = true)
         while (index >= 0) {
             if (index > cursor) append(text.substring(cursor, index))
             withStyle(SpanStyle(background = background, color = foreground)) {
                 append(text.substring(index, index + needle.length))
             }
             cursor = index + needle.length
-            index = haystack.indexOf(lowered, cursor)
+            index = text.indexOf(needle, startIndex = cursor, ignoreCase = true)
         }
         append(text.substring(cursor))
     }
