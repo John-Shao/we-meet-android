@@ -1,0 +1,18 @@
+<resources>
+    <string name="upload_translation_description">翻译校对后的完整原文。有全文阅读权限的人可查看译文；生成可能产生 AI 用量，失败后需手动重试。</string>
+    <string name="upload_translation_generate">翻译全文</string>
+    <string name="upload_translation_regenerate">重新翻译</string>
+    <string name="upload_translation_check">核对上次请求</string>
+    <string name="upload_translation_empty">暂无该语言的译文。</string>
+    <string name="upload_translation_stale">原文已修改。这是旧版本译文，请重新翻译后导出。</string>
+    <string name="upload_translation_uncertain">请求结果未知，请先核对上次请求，避免重复生成。</string>
+    <string name="upload_translation_conflict">原文、权限或任务状态已变化，请刷新后再试。</string>
+    <string name="upload_translation_budget">原文超过本次翻译上限，未截断或发送文本。</string>
+    <string name="upload_translation_play">回听此段</string>
+    <string name="upload_translation_queued">等待翻译</string>
+    <string name="upload_translation_running">翻译中</string>
+    <string name="upload_translation_succeeded">翻译完成</string>
+    <string name="upload_translation_failed">翻译失败，可手动重新发起。</string>
+    <string name="upload_translation_canceled">原文或权限已变化，请刷新后重新翻译。</string>
+    <string name="upload_translation_original">原文: %1$s</string>
+</resources>

@@ -62,6 +62,8 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         private set
     lateinit var translationArchiveRepository: com.we.meet.data.repository.TranslationArchiveRepository
         private set
+    lateinit var uploadTranslationRepository: com.we.meet.data.repository.UploadTranslationRepository
+        private set
     override lateinit var captureRepository: com.we.meet.data.repository.CaptureRepository
         private set
     override val captureAccount: String?
@@ -202,6 +204,7 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
             partStorage = com.we.meet.data.api.OkHttpPartStorage(),
         )
         translationArchiveRepository = com.we.meet.data.repository.TranslationArchiveRepository(apiClient.translationArchiveApi) { captureAccount }
+        uploadTranslationRepository = com.we.meet.data.repository.UploadTranslationRepository(apiClient.uploadTranslationApi) { captureAccount }
         captureRepository = com.we.meet.data.repository.CaptureRepository(apiClient.captureApi) { tokenStore.userId }
         captureTranscriptionRepository = com.we.meet.data.repository.CaptureTranscriptionRepository(apiClient.captureTranscriptionApi) { captureAccount }
         meetingSummaryRepository = com.we.meet.data.repository.MeetingSummaryRepository(apiClient.meetingSummaryApi) { captureAccount }

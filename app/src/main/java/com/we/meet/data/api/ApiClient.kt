@@ -115,6 +115,7 @@ class ApiClient(tokenStore: TokenStore) {
         .client(meetingPrivateHttp)
         .build()
     val meetingRecordApi: MeetingRecordApi = meetingPrivateRetrofit.create(MeetingRecordApi::class.java)
+    val uploadTranslationApi: UploadTranslationApi = meetingPrivateRetrofit.create(UploadTranslationApi::class.java)
     val translationArchiveApi: TranslationArchiveApi = meetingPrivateRetrofit.newBuilder()
         .client(meetingPrivateHttp.newBuilder().readTimeout(8, TimeUnit.SECONDS).callTimeout(8, TimeUnit.SECONDS).build())
         .build().create(TranslationArchiveApi::class.java)

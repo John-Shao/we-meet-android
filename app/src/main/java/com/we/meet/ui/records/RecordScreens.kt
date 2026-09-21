@@ -112,6 +112,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     var history by remember(viewer, recordId, summaryVersionId) { mutableStateOf(false) }
     var detailTab by remember(viewer, recordId, summaryVersionId, initialSummary) { mutableStateOf(if (summaryVersionId != null || initialSummary) "summary" else "text") }
     val exportTranscript = rememberTranscriptExporter(repository, viewer, recordId)
+    val exportTranslation = app?.let { rememberTranslationExporter(it.uploadTranslationRepository, viewer, recordId) }
     val detail = visibleRead(viewer, recordId, refresh) { repository.record(viewer, recordId) }
     val record = detail?.getOrNull()
     val canPlay = app != null && record?.sourceType == "audio_recording" && record.capabilities.readTranscript && record.capabilities.playMedia
@@ -150,7 +151,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                    val canReadTranslations = record.capabilities.readTranscript && app != null && (record.sourceType == "meeting" || record.sourceType == "audio_recording" && record.captureId != null)
+                    val canReadTranslations = record.capabilities.readTranscript && app != null && (record.sourceType == "meeting" || record.sourceType == "upload" || record.sourceType == "audio_recording" && record.captureId != null)
                     val tabs = buildList {
                         if (record.capabilities.readTranscript) add("text" to R.string.records_originals)
                         if (record.capabilities.readSummary) add("summary" to R.string.records_minutes)
@@ -190,7 +191,8 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             fullDuration = fullDuration, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null)
                     } else if (showTranslations) {
                         Column(Modifier.weight(1f).fillMaxWidth()) {
-                            if (record.sourceType == "audio_recording") CaptureTranslationArchives(viewer, requireNotNull(record.captureId), recordId, requireNotNull(app).captureTranslationRepository)
+                            if (record.sourceType == "upload") UploadTranslationPanel(viewer, recordId, requireNotNull(app).uploadTranslationRepository, requireNotNull(exportTranslation), onSource = if (canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null)
+                            else if (record.sourceType == "audio_recording") CaptureTranslationArchives(viewer, requireNotNull(record.captureId), recordId, requireNotNull(app).captureTranslationRepository)
                             else RecordTranslationArchives(viewer, recordId, requireNotNull(app).translationArchiveRepository)
                         }
                     } else if (showOriginals) {

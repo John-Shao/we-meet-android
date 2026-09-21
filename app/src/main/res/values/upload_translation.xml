@@ -1,0 +1,18 @@
+<resources>
+    <string name="upload_translation_description">Translate the corrected full transcript. Readers with original-text access can view translations. Generation may incur AI usage; retries are manual.</string>
+    <string name="upload_translation_generate">Translate full transcript</string>
+    <string name="upload_translation_regenerate">Translate again</string>
+    <string name="upload_translation_check">Check previous request</string>
+    <string name="upload_translation_empty">No translation in this language.</string>
+    <string name="upload_translation_stale">The original has changed. This translation uses an older version; translate again before exporting.</string>
+    <string name="upload_translation_uncertain">The result is unknown. Check the same request before starting another translation.</string>
+    <string name="upload_translation_conflict">The source, permission or task has changed. Refresh and try again.</string>
+    <string name="upload_translation_budget">This transcript exceeds the translation limit. No text was truncated or sent.</string>
+    <string name="upload_translation_play">Play this segment</string>
+    <string name="upload_translation_queued">Waiting to translate</string>
+    <string name="upload_translation_running">Translating</string>
+    <string name="upload_translation_succeeded">Translation complete</string>
+    <string name="upload_translation_failed">Translation failed. You can start a new attempt.</string>
+    <string name="upload_translation_canceled">Source or access changed. Refresh before translating again.</string>
+    <string name="upload_translation_original">Original: %1$s</string>
+</resources>
