@@ -30,7 +30,7 @@ class AuthInterceptor(
             original.newBuilder()
                 .tag(AuthSnapshot::class.java, snapshot)
                 .header("Authorization", "Bearer $token")
-                .header("Accept", "application/json")
+                .apply { if (original.header("Accept") == null) header("Accept", "application/json") }
                 .build()
         } else {
             original
