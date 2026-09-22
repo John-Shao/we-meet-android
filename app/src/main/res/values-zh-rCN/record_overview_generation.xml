@@ -1,0 +1,16 @@
+<resources>
+    <string name="record_overview_generate">生成概要</string>
+    <string name="record_overview_regenerate">重新生成概要</string>
+    <string name="record_overview_retry">重试概要生成</string>
+    <string name="record_overview_resubmit">确认上次概要请求</string>
+    <string name="record_overview_generating">正在生成概要…</string>
+    <string name="record_overview_failed">本次概要生成未完成，已有概要仍保留。请刷新后重试或重新生成。</string>
+    <string name="record_overview_accepted">概要生成请求已受理。</string>
+    <string name="record_overview_uncertain">尚未确认概要请求结果，可确认同一次请求。</string>
+    <string name="record_overview_conflict">文字记录或概要任务已变化，请刷新后再试。</string>
+    <string name="record_overview_rate_limited">概要请求过于频繁，请稍后再试。</string>
+    <string name="record_overview_wait_source">请先完成录音与文字转写；过长的原文暂不可生成概要。</string>
+    <string name="record_overview_source_changed">原文已变化，这是之前生成的概要。</string>
+    <string name="record_overview_unavailable">概要生成暂不可用。</string>
+    <string name="record_overview_storage_error">无法保存概要请求，请允许会话存储后重试。</string>
+</resources>

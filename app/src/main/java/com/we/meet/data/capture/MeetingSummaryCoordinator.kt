@@ -27,6 +27,13 @@ class MeetingSummaryCoordinator(private val viewer: String, private val store: M
             repository.request(viewer, record, it.key, requireNotNull(summaryAdapter.fromJson(it.body))).getOrThrow()
         }
     }
+    suspend fun submitOverview(record: String, request: SummaryRequestDto): SummaryAcceptedDto {
+        MeetingSummaryRepository.validate(request)
+        require(request.stage == "final")
+        return execute(record, MeetingIntentKind.OVERVIEW_REQUEST, summaryAdapter.toJson(request)) {
+            repository.requestOverview(viewer, record, it.key, requireNotNull(summaryAdapter.fromJson(it.body))).getOrThrow()
+        }
+    }
     suspend fun control(record: String, request: SummaryAutomationRequestDto): SummaryAutomationAcceptedDto {
         MeetingSummaryRepository.validate(request)
         return execute(record, MeetingIntentKind.SUMMARY_AUTOMATION, automationAdapter.toJson(request)) {
@@ -47,5 +54,5 @@ class MeetingSummaryCoordinator(private val viewer: String, private val store: M
             }
         }
     }
-    companion object { private val KINDS = setOf(MeetingIntentKind.SUMMARY_REQUEST, MeetingIntentKind.SUMMARY_AUTOMATION) }
+    companion object { private val KINDS = setOf(MeetingIntentKind.SUMMARY_REQUEST, MeetingIntentKind.SUMMARY_AUTOMATION, MeetingIntentKind.OVERVIEW_REQUEST) }
 }

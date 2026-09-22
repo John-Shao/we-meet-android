@@ -6,6 +6,14 @@ import retrofit2.http.*
 
 interface MeetingSummaryApi {
     @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/meeting-records/{record}/overview/")
+    suspend fun overview(@Path("record") record: String): RecordOverviewStateDto
+
+    @Headers("Cache-Control: no-store")
+    @POST("api/v1.0/meeting-records/{record}/overview-requests/")
+    suspend fun requestOverview(@Path("record") record: String, @Header("Idempotency-Key") key: String, @Body body: RequestBody): SummaryAcceptedDto
+
+    @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/{record}/summary-job/")
     suspend fun progress(@Path("record") record: String): SummaryProgressDto
 

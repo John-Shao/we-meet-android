@@ -15,6 +15,36 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
 class MeetingSummaryRepositoryTest {
+    @Test fun overviewUsesItsOwnReadAndRequestEndpoints() = runBlocking {
+        val repo = repo { request ->
+            if (request.method == "GET") {
+                assertEquals("/api/v1.0/meeting-records/$record/overview/", request.url.encodedPath)
+                200 to """{"revision":2,"available":true,"can_generate":true,"generation_ready":true,"job":null,"version":null}"""
+            } else {
+                assertEquals("/api/v1.0/meeting-records/$record/overview-requests/", request.url.encodedPath)
+                assertEquals(key, request.header("Idempotency-Key"))
+                202 to """{"request_id":"$key","replayed":false,"dispatch_state":"pending","job":${job("final")}}"""
+            }
+        }
+        val state = repo.overview("owner", record).getOrThrow()
+        assertNull(state.version)
+        assertTrue(state.canGenerate)
+        assertTrue(repo.requestOverview("owner", record, key, SummaryRequestDto("generate", "final", state.revision, null, null)).isSuccess)
+    }
+
+    @Test fun overviewRejectsMinutesContentAndDoesNotFallback() = runBlocking {
+        val repo = repo { 200 to """{"revision":2,"job":null,"version":{"id":"$job","created_at":"2026-09-22T00:00:00Z","input_snapshot_id":"$key","input_revision":2,"is_current":true,"asr_status":"finished","content":{"overview":"Minutes","chapters":[]}}}""" }
+        assertTrue(repo.overview("owner", record).isFailure)
+        assertEquals(1, requests.size)
+        assertTrue(requests.single().url.encodedPath.endsWith("/overview/"))
+    }
+
+    @Test fun overviewDoesNotSendMinutesStages() = runBlocking {
+        val repo = repo { error("Must not dispatch") }
+        assertTrue(repo.requestOverview("owner", record, key, SummaryRequestDto("generate", "quick", 2, null, null)).isFailure)
+        assertTrue(requests.isEmpty())
+    }
+
     private val record = "11111111-1111-4111-8111-111111111111"
     private val job = "22222222-2222-4222-8222-222222222222"
     private val key = "33333333-3333-4333-8333-333333333333"

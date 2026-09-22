@@ -1,0 +1,8 @@
+<resources>
+    <string name="record_overview_title">Overview</string>
+    <string name="record_overview_hint">A quick overview of the recording and its main points.</string>
+    <string name="record_overview_open_minutes">Open AI minutes</string>
+    <string name="record_overview_empty">No overview yet. Generate one directly from the transcript.</string>
+    <string name="record_overview_back">View recording and overview</string>
+    <string name="record_minutes_document_title">AI minutes: %1$s</string>
+</resources>

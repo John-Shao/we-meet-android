@@ -16,6 +16,32 @@ class MeetingSummaryRepository(private val api: MeetingSummaryApi, private val c
     private val summaryAdapter = moshi.adapter(SummaryRequestDto::class.java).serializeNulls()
     private val automationAdapter = moshi.adapter(SummaryAutomationRequestDto::class.java)
 
+    suspend fun overview(viewer: String, record: String): Result<RecordOverviewStateDto> = scoped(viewer, record) {
+        api.overview(record).also { state ->
+            require(state.revision > 0)
+            state.job?.let(::job)
+            state.version?.let { version ->
+                uuid(version.id); uuid(version.inputSnapshotId); OffsetDateTime.parse(version.createdAt)
+                require(version.inputRevision > 0 && version.content.synopsis.isNotBlank() && version.content.topics.size <= 40)
+                version.content.topics.forEach { topic ->
+                    require(topic.title.isNotBlank() && topic.text.isNotBlank() && topic.sourceRefs.size in 1..30)
+                    topic.sourceRefs.forEach { ref ->
+                        uuid(ref.segmentId)
+                        require(ref.segmentRevision > 0 && ref.startMs >= 0 && (ref.endMs == null || ref.endMs >= ref.startMs))
+                    }
+                }
+            }
+        }
+    }
+
+    suspend fun requestOverview(viewer: String, record: String, key: String, request: SummaryRequestDto): Result<SummaryAcceptedDto> = scoped(viewer, record) {
+        uuid(key); validate(request); require(request.stage == "final")
+        api.requestOverview(record, key, summaryAdapter.toJson(request).toRequestBody(JSON)).also {
+            uuid(it.requestId); job(it.job)
+            require(it.dispatchState in setOf("pending", "sent", "abandoned") && it.job.stage == "final")
+        }
+    }
+
     suspend fun progress(viewer: String, record: String): Result<SummaryProgressDto> = scoped(viewer, record) {
         api.progress(record).also {
             require(it.revision > 0)
