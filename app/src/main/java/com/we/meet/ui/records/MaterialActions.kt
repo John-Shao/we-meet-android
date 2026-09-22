@@ -21,6 +21,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.we.meet.BuildConfig
 import com.we.meet.R
 import com.we.meet.WeMeetApp
+import com.we.meet.core.directory.ui.MemberAvatar
 import com.we.meet.data.api.dto.*
 import com.we.meet.data.capture.MeetingIntent
 import com.we.meet.data.capture.MeetingIntentKind
@@ -173,6 +174,7 @@ private fun MaterialMembers(app: WeMeetApp, viewer: String, record: RecordDto, o
                             state.results.forEach { member ->
                                 MemberRow(
                                     name = member.name.ifBlank { member.id },
+                                    avatarUrl = member.avatarUrl,
                                     role = member.role,
                                     canManage = state.canManage && !busy && ready,
                                     onRole = { role ->
@@ -268,16 +270,19 @@ private fun MaterialMembers(app: WeMeetApp, viewer: String, record: RecordDto, o
 }
 
 /**
- * 成员名单里的一行:角色下拉 + 移除。
+ * 成员名单里的一行:头像 + 角色下拉 + 移除。
  *
  * 与任务清单的协作者行同款(角色是可逆的轻操作,直接提交;移除是危险动作,
  * 走图标 + 二次确认),不再把角色、转移、移除全塞进一个底部弹层 —— 那个弹层
- * 要求用户先猜到「点角色名」才能管理成员。
+ * 要求用户先猜到「点角色名」才能管理成员。头像与 Web / 飞书截图一致:服务端
+ * 在成员行上给 presigned URL,部门/用户组没有头像,自动回落成首字色块。
  */
 @Composable
-private fun MemberRow(name: String, role: String, canManage: Boolean, onRole: (String) -> Unit, onTransfer: (() -> Unit)?, onRemove: (() -> Unit)?) {
+private fun MemberRow(name: String, avatarUrl: String?, role: String, canManage: Boolean, onRole: (String) -> Unit, onTransfer: (() -> Unit)?, onRemove: (() -> Unit)?) {
     var menu by remember { mutableStateOf(false) }
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM), verticalAlignment = Alignment.CenterVertically) {
+        // cacheKey 只用于没有 URL 时的兜底身份;URL 换了(新 object key)Coil 会重取。
+        MemberAvatar(name = name, url = avatarUrl, cacheKey = "avatar:$name", size = Dimens.AvatarS)
         Text(name, Modifier.weight(1f))
         if (role == "owner") {
             Text(stringResource(R.string.collaboration_owner), style = MaterialTheme.typography.labelLarge)
