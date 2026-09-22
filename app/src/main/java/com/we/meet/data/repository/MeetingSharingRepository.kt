@@ -35,6 +35,29 @@ class MeetingSharingRepository(private val api: MeetingSharingApi, private val c
             require(it.appliedPreview.previewHash == request.expectedHash)
         }
     }
+    suspend fun materialAccess(viewer: String, record: String, scope: String) = scoped(viewer, record) {
+        require(scope in setOf("record", "minutes"))
+        api.materialAccess(record, scope).also {
+            require(it.recordId == record && it.scope == scope && it.revision >= 0 && it.count == it.results.size)
+            require(it.linkScope in setOf("private", "organization"))
+            require(it.results.map { member -> member.id }.distinct().size == it.results.size)
+            it.results.forEach { member -> principal(member.id); name(member.name); require(member.role in setOf("reader", "editor", "manager", "owner")) }
+        }
+    }
+    suspend fun materialCandidates(viewer: String, record: String, scope: String, query: String, offset: Int, kind: String = "users") = scoped(viewer, record) {
+        require(scope in setOf("record", "minutes") && query.length <= 80 && offset >= 0)
+        api.materialCandidates(record, scope, query, offset, kind).also { page ->
+            require(page.results.size <= 50 && (page.nextOffset == null || page.nextOffset == offset + 50))
+            page.results.forEach { principal(it.id); name(it.name) }
+        }
+    }
+    suspend fun materialChange(viewer: String, record: String, scope: String, key: String, body: MaterialChangeDto) = scoped(viewer, record) {
+        uuid(key); require(scope in setOf("record", "minutes") && body.expectedRevision >= 0)
+        require(body.operation in setOf("invite", "role", "remove", "transfer", "link"))
+        body.members?.forEach { principal(it.id); require(it.role in setOf("reader", "editor", "manager")) }
+        api.materialChange(record, scope, key, body).also { require(it.recordId == record && it.scope == scope && it.revision > body.expectedRevision) }
+    }
+    suspend fun retryMaterialNotices(viewer: String, record: String, scope: String) = scoped(viewer, record) { api.retryMaterialNotices(record, scope) }
     private suspend fun <T> scoped(viewer: String, record: String, run: suspend () -> T): Result<T> = try {
         require(viewer.isNotBlank() && currentViewer() == viewer); uuid(record)
         val result = run(); require(currentViewer() == viewer); Result.success(result)
@@ -43,6 +66,8 @@ class MeetingSharingRepository(private val api: MeetingSharingApi, private val c
     companion object {
         private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
         val requestAdapter = moshi.adapter(SummaryShareRequestDto::class.java)
+        val materialAdapter = moshi.adapter(MaterialChangeDto::class.java)
+        private fun principal(value: String) { if (value.contains(':')) require(value.matches(Regex("(dept|group):[0-9a-f]{32}"))) else uuid(value) }
         private fun uuid(value: String) { require(UUID.fromString(value).toString() == value) }
         private fun hash(value: String) { require(value.matches(Regex("[a-f0-9]{64}"))) }
         private fun name(value: String) { require(value.length <= 1000) }

@@ -147,6 +147,7 @@ fun previewText(contentType: String?, body: String?): String {
         is MessageContent.GroupCall -> stringResource(R.string.im_calllog_voice)
         is MessageContent.EventCard -> stringResource(R.string.im_preview_event)
         is MessageContent.DocCard -> stringResource(R.string.im_preview_doc)
+        is MessageContent.MeetingRecordCard -> content.title
         is MessageContent.MeetingCard -> stringResource(R.string.im_preview_meeting)
         is MessageContent.CalendarCard -> stringResource(R.string.im_preview_calendar_named, content.name)
         is MessageContent.PhoneViewed -> stringResource(R.string.im_phone_viewed_preview)

@@ -270,6 +270,7 @@ fun MessageBubble(
                 is MessageContent.EventCard -> EventCardBubble(
                     content, isOwn, onLongPress,
                 ) { onOpenEvent?.invoke(content.eventId) }
+                is MessageContent.MeetingRecordCard -> MeetingRecordCardBubble(content, onLongPress, onOpenDoc)
                 is MessageContent.DocCard -> {
                     LaunchedEffect(content.docId, isOwn) {
                         if (isOwn && content.docId.isNotBlank()) onLoadDocAccess?.invoke(content.docId)

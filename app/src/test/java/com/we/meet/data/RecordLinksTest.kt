@@ -56,4 +56,10 @@ class RecordLinksTest {
         }
         assertThrows(IllegalArgumentException::class.java) { RecordLinks.share(record, base, "bad") }
     }
+    @Test fun materialLinksKeepIndependentTargets() {
+        assertEquals(RecordLink(record, summaryView = true), RecordLinks.parse(RecordLinks.material(record, base, "minutes"), base))
+        assertEquals(RecordLink(record, summaryView = false), RecordLinks.parse(RecordLinks.material(record, base, "record"), base))
+        assertNull(RecordLinks.parse("$base$path?tab=summary&tab=overview", base))
+    }
+
 }

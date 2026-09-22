@@ -1,0 +1,9 @@
+<resources>
+    <string name="im_material_record">会议实录</string>
+    <string name="im_material_minutes">智能纪要</string>
+    <string name="im_material_reader">你可阅读</string>
+    <string name="im_material_editor">你可编辑</string>
+    <string name="im_material_manager">你可管理</string>
+    <string name="im_material_unavailable">暂无访问权限或内容不可用</string>
+    <string name="im_material_loading">加载中…</string>
+</resources>

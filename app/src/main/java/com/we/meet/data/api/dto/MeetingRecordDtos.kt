@@ -17,6 +17,7 @@ data class RecordCapabilitiesDto(
     @Json(name = "generate_summary") val generateSummary: Boolean = false,
     val rename: Boolean = false,
     @Json(name = "play_media") val playMedia: Boolean = false,
+    @Json(name = "control_capture") val controlCapture: Boolean = false,
     @Json(name = "download_media") val downloadMedia: Boolean = false,
     @Json(name = "batch_correct") val batchCorrect: Boolean = false,
     val trash: Boolean = false,

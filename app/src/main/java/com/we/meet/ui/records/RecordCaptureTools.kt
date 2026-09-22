@@ -39,7 +39,7 @@ internal fun RecordCaptureTools(
     onRefresh: () -> Unit,
 ) {
     val captureId = record.captureId ?: return
-    if (!record.capabilities.readTranscript) return
+    if (!record.capabilities.readTranscript || !record.capabilities.controlCapture) return
     var open by remember(viewer, record.id) { mutableStateOf(false) }
     var retry by remember(viewer, record.id) { mutableIntStateOf(0) }
     TextButton(onClick = { open = true }) { Text(stringResource(R.string.records_transcription_manage)) }

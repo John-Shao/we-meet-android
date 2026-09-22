@@ -4,10 +4,14 @@ import java.net.URI
 import java.net.URLDecoder
 import java.util.UUID
 
-data class RecordLink(val recordId: String, val summaryId: String? = null)
+data class RecordLink(val recordId: String, val summaryId: String? = null, val summaryView: Boolean = false)
 
 /** Links are selectors, never permission grants or API destinations. */
 object RecordLinks {
+    fun material(recordId: String, baseUrl: String, scope: String): String {
+        require(scope in setOf("record", "minutes"))
+        return share(recordId, baseUrl) + "?tab=" + if (scope == "minutes") "summary" else "overview"
+    }
     /**
      * 造一条可分享的记录链接 —— 与 [parse] 共用同一段路径口径(解析器只认
      * `{base}/meeting/records/{uuid}`,这里也只产出这一段)。Web 端「复制记录链接」
@@ -39,10 +43,10 @@ object RecordLinks {
             require(parts.size == 2)
             URLDecoder.decode(parts[0], "UTF-8") to URLDecoder.decode(parts[1], "UTF-8")
         }.orEmpty()
-        require(params.isEmpty() || (params.size == 1 && params.single().first == "summary"))
-        val summary = params.singleOrNull()?.second
+        require(params.isEmpty() || (params.size == 1 && (params.single().first == "summary" || params.single().first == "tab" && params.single().second in setOf("summary", "overview"))))
+        val summary = params.singleOrNull()?.takeIf { it.first == "summary" }?.second
         summary?.let(::requireUuid)
-        RecordLink(record.lowercase(), summary?.lowercase())
+        RecordLink(record.lowercase(), summary?.lowercase(), params.singleOrNull() == ("tab" to "summary"))
     }.getOrNull()
 
     private fun requireUuid(value: String) {

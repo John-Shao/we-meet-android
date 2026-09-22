@@ -118,6 +118,8 @@ sealed interface MessageContent {
      * `{v,doc_id,title,url,shared_by?}`。与 EventCard 不同,这是分享时刻的
      * 静态快照,不追更——没有 kind 多态。
      */
+    data class MeetingRecordCard(val recordId: String, val title: String, val scope: String = "minutes") : MessageContent
+
     data class DocCard(
         val docId: String,
         val title: String,
@@ -269,6 +271,13 @@ object MessageContentParser {
                     }
                     .orEmpty(),
             )
+        }
+        "meeting-record-card" -> parseJson(contentType, body) {
+            val id = it.getString("record_id")
+            require(java.util.UUID.fromString(id).toString() == id)
+            val scope = it.optString("scope", "minutes")
+            require(scope in setOf("record", "minutes"))
+            MessageContent.MeetingRecordCard(id, it.getString("title"), scope)
         }
         "doc-card" -> parseJson(contentType, body) {
             MessageContent.DocCard(

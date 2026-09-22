@@ -163,11 +163,16 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                    val canReadTranslations = record.capabilities.readTranscript && app != null && (record.sourceType == "meeting" || record.sourceType == "upload" || record.sourceType == "audio_recording" && record.captureId != null)
+                    if (app != null && (if (document) record.capabilities.readSummary else record.capabilities.readTranscript)) {
+                        androidx.compose.runtime.key(viewer, recordId, document) {
+                            MaterialActions(app, viewer, record, if (document) "minutes" else "record") { refresh++ }
+                        }
+                    }
+                    val canReadTranslations = record.capabilities.readTranscript && app != null && (record.sourceType == "meeting" || record.sourceType == "upload" || record.sourceType == "audio_recording" && record.captureId != null && record.capabilities.controlCapture)
                     val tabs = buildList {
                         if (record.capabilities.readTranscript) add("text" to R.string.records_originals)
-                        if (record.capabilities.readSummary) add("overview" to R.string.record_overview_title)
-                        if (record.capabilities.readSummary) add("chapters" to R.string.records_chapters)
+                        if (record.capabilities.readTranscript) add("overview" to R.string.record_overview_title)
+                        if (record.capabilities.readTranscript) add("chapters" to R.string.records_chapters)
                         if (record.capabilities.readTranscript && record.sourceType in listOf("audio_recording", "upload")) add("speakers" to R.string.records_speakers)
                         add("info" to R.string.records_info)
                         if (canReadTranslations) add("translations" to R.string.archives_title)
@@ -225,11 +230,11 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                 { app.captureAccount }, onRefresh = { refresh++ })
                             RecordOriginals(repository, viewer, record, onRefresh = { refresh++ }, onExport = exportTranscript, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay || canPlayImport })
                         }
-                    } else if (!record.capabilities.readSummary) {
+                    } else if (document && !record.capabilities.readSummary) {
                         WeMeetEmptyState(stringResource(R.string.records_no_summary_access))
-                    } else if (overviewOnly) {
+                    } else if (overviewOnly || chaptersOnly) {
                         if (app == null) WeMeetEmptyState(stringResource(R.string.records_unavailable))
-                        else RecordOverview(viewer, record, app.meetingSummaryRepository, { app.captureAccount }, Modifier.weight(1f)) { snapshot, ref -> citation = snapshot to ref }
+                        else RecordOverview(viewer, record, app.meetingSummaryRepository, { app.captureAccount }, Modifier.weight(1f), chaptersOnly = chaptersOnly) { snapshot, ref -> citation = snapshot to ref }
                     } else if (selectedHuman != null && document && app != null) {
                         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                             TextButton(onClick = { selectedHuman = null; selectedVersion = null; citation = null }) { Text(stringResource(R.string.records_all_versions)) }
@@ -306,7 +311,6 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                                     { app.captureAccount }, onTask) { snapshot, reference -> citation = snapshot to reference }
                                             }
                                             RecordNotifications(viewer, record, app.meetingDeliveryRepository, { app.captureAccount }) { selectedVersion = it; tool = null }
-                                            RecordSharing(viewer, record, app.meetingSharingRepository) { app.captureAccount }
                                             if (onDocument != null) RecordExports(viewer, record, versions, app.meetingDeliveryRepository,
                                                 app.meetingReviewRepository, { app.captureAccount }, onDocument)
                                         }

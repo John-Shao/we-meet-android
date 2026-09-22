@@ -35,7 +35,7 @@ import retrofit2.HttpException
 
 /** Own endpoint and durable intent; no minutes content or minutes generation. */
 @Composable
-internal fun RecordOverview(viewer: String, record: RecordDto, repository: MeetingSummaryRepository, currentViewer: () -> String?, modifier: Modifier = Modifier, onSource: (String, RecordReferenceDto) -> Unit) {
+internal fun RecordOverview(viewer: String, record: RecordDto, repository: MeetingSummaryRepository, currentViewer: () -> String?, modifier: Modifier = Modifier, chaptersOnly: Boolean = false, onSource: (String, RecordReferenceDto) -> Unit) {
     val context = LocalContext.current.applicationContext
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
@@ -128,7 +128,7 @@ internal fun RecordOverview(viewer: String, record: RecordDto, repository: Meeti
                     Text(stringResource(R.string.minutes_generated_at, recordTime(version.createdAt)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (!version.isCurrent) Text(stringResource(R.string.record_overview_source_changed), style = MaterialTheme.typography.bodySmall)
                     if (version.asrStatus == "incomplete") Text(stringResource(R.string.records_incomplete), style = MaterialTheme.typography.bodySmall)
-                    Text(version.content.synopsis, style = MaterialTheme.typography.bodyLarge)
+                    if (!chaptersOnly) Text(version.content.synopsis, style = MaterialTheme.typography.bodyLarge)
                     version.content.topics.forEach { topic ->
                         Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                             Text(topic.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)

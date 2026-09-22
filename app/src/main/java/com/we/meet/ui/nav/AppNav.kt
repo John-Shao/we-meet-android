@@ -462,12 +462,15 @@ fun AppNav() {
     // 云文档打开入口统一(设计文档 §4.7.2):原生开关开启且 URL 能解析出 docId
     // → 原生详情;否则走既有 WebView 查看器兜底(老版本/降级行为不变)。
     val openDocUrl: (String) -> Unit = { url ->
+        val material = com.we.meet.ui.records.RecordLinks.parse(url, com.we.meet.BuildConfig.WE_MEET_BASE_URL)
         val docId = if (com.we.meet.BuildConfig.WE_MEET_DOCS_NATIVE) {
             com.we.meet.feature.docs.util.DocLinks.docIdFromUrl(url, com.we.meet.BuildConfig.WE_MEET_DOCS_URL)
         } else {
             null
         }
-        if (docId != null) {
+        if (material != null) {
+            navController.navigate(Routes.recordDetail(material.recordId, material.summaryId, summaryView = material.summaryView))
+        } else if (docId != null) {
             navController.navigate(Routes.docsDetail(docId))
         } else {
             navController.navigate(Routes.docsViewer(url))
@@ -497,7 +500,7 @@ fun AppNav() {
         }
         if (!app.tokenStore.isLoggedIn() || currentEntry == null || currentEntry?.destination?.route == Routes.LOGIN) return@LaunchedEffect
         app.pendingRecordLink.value = null
-        navController.navigate(Routes.recordDetail(link.recordId, link.summaryId)) { launchSingleTop = true }
+        navController.navigate(Routes.recordDetail(link.recordId, link.summaryId, summaryView = link.summaryView)) { launchSingleTop = true }
     }
 
     // Set by RoomScreen when the server disconnected us because the host

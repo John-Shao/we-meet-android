@@ -1,0 +1,9 @@
+<resources>
+    <string name="im_material_record">Meeting record</string>
+    <string name="im_material_minutes">Smart minutes</string>
+    <string name="im_material_reader">You can read</string>
+    <string name="im_material_editor">You can edit</string>
+    <string name="im_material_manager">You can manage</string>
+    <string name="im_material_unavailable">No access or content unavailable</string>
+    <string name="im_material_loading">Loading…</string>
+</resources>
