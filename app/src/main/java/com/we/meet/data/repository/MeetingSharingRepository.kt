@@ -41,7 +41,7 @@ class MeetingSharingRepository(private val api: MeetingSharingApi, private val c
             require(it.recordId == record && it.scope == scope && it.revision >= 0 && it.count == it.results.size)
             require(it.linkScope in setOf("private", "organization"))
             require(it.results.map { member -> member.id }.distinct().size == it.results.size)
-            it.results.forEach { member -> principal(member.id); name(member.name); require(member.role in setOf("reader", "editor", "manager", "owner")) }
+            it.results.forEach { member -> principal(member.id); name(member.name); name(member.avatarUrl.orEmpty()); require(member.role in setOf("reader", "editor", "manager", "owner")) }
         }
     }
     /** Cursor-paged candidates restricted to whoever may be granted this object. */

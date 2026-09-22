@@ -2,7 +2,8 @@ package com.we.meet.data.api.dto
 
 import com.squareup.moshi.Json
 
-data class MaterialMemberDto(val id: String, val name: String, val role: String, val active: Boolean = true)
+data class MaterialMemberDto(val id: String, val name: String, val role: String, val active: Boolean = true,
+    @Json(name = "avatar_url") val avatarUrl: String? = null)
 data class MaterialAccessDto(val scope: String, @Json(name = "record_id") val recordId: String,
     val revision: Int, @Json(name = "can_manage") val canManage: Boolean = false,
     @Json(name = "is_owner") val isOwner: Boolean = false,
