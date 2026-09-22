@@ -8,8 +8,12 @@ import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
@@ -101,11 +105,13 @@ private fun MaterialMembers(app: WeMeetApp, viewer: String, record: RecordDto, o
     var step by remember { mutableStateOf("members") }
     var query by remember { mutableStateOf("") }
     var candidateKind by remember { mutableStateOf("users") }
+    var cursor by remember { mutableStateOf<String?>(null) }
     var notify by remember { mutableStateOf(true) }
     var note by remember { mutableStateOf("") }
-    var offset by remember { mutableIntStateOf(0) }
-    var selected by remember { mutableStateOf<Map<String, Pair<String, String>>>(emptyMap()) }
-    var rolePerson by remember { mutableStateOf<MaterialMemberDto?>(null) }
+    var selected by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var inviteRole by remember { mutableStateOf("reader") }
+    var roleMenuFor by remember { mutableStateOf<String?>(null) }
+    var inviteRoleMenu by remember { mutableStateOf(false) }
     var confirmation by remember { mutableStateOf<MaterialChangeDto?>(null) }
     var pending by remember { mutableStateOf<MeetingIntent?>(null) }
     var ready by remember { mutableStateOf(false) }
@@ -138,8 +144,9 @@ private fun MaterialMembers(app: WeMeetApp, viewer: String, record: RecordDto, o
                     withContext(Dispatchers.IO) { MeetingIntentStore.open(app, viewer) { app.captureAccount }.use { it.resolve(kind, record.id, intent) } }
                     pending = null; confirmation = null
                 }
-                if (response.isSuccess) { step = "members"; selected = emptyMap(); message = R.string.collaboration_saved }
-                else message = if (definitive) R.string.collaboration_changed else R.string.collaboration_uncertain
+                if (response.isSuccess) {
+                    step = "members"; selected = emptyMap(); note = ""; message = R.string.collaboration_saved
+                } else message = if (definitive) R.string.collaboration_changed else R.string.collaboration_uncertain
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { message = R.string.collaboration_uncertain }
             finally { busy = false; refresh++; onChanged() }
@@ -147,7 +154,7 @@ private fun MaterialMembers(app: WeMeetApp, viewer: String, record: RecordDto, o
     }
     Dialog(onDismissRequest = { if (!busy) onClose() }, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = !busy)) {
         Scaffold(topBar = { WeMeetTopBar(stringResource(if (step == "members") R.string.collaboration_manage else R.string.collaboration_invite), onBack = {
-            if (!busy) { if (step == "invite") step = "select" else if (step == "select") step = "members" else onClose() }
+            if (!busy) { if (step == "invite") { step = "members"; selected = emptyMap(); note = "" } else onClose() }
         }) }) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                 Text(stringResource(if (objectScope == "minutes") R.string.collaboration_minutes else R.string.collaboration_record), style = MaterialTheme.typography.labelLarge)
@@ -158,16 +165,30 @@ private fun MaterialMembers(app: WeMeetApp, viewer: String, record: RecordDto, o
                     state != null -> {
                         if (pending != null) {
                             Text(stringResource(R.string.collaboration_uncertain))
+                            Text(stringResource(R.string.collaboration_retryPending))
                             Button(onClick = { save() }, enabled = ready && !busy && state.canManage) { Text(stringResource(R.string.collaboration_retry)) }
                         } else if (step == "members") {
                             Text(stringResource(R.string.collaboration_count, state.count))
-                            if (state.canManage) Button(onClick = { step = "select" }, enabled = ready && !busy) { Text(stringResource(R.string.collaboration_invite)) }
+                            if (state.canManage) Button(onClick = { step = "invite"; candidateKind = "users"; cursor = null; query = "" }, enabled = ready && !busy) { Text(stringResource(R.string.collaboration_invite)) }
                             state.results.forEach { member ->
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                                    Text(member.name.ifBlank { member.id }, Modifier.weight(1f))
-                                    TextButton(onClick = { rolePerson = member }, enabled = state.canManage && member.role != "owner" && !busy && ready) { Text(stringResource(roleLabel(member.role))) }
-                                }
+                                MemberRow(
+                                    name = member.name.ifBlank { member.id },
+                                    role = member.role,
+                                    canManage = state.canManage && !busy && ready,
+                                    onRole = { role ->
+                                        // 改角色直接提交:可逆、有回执,服务端按
+                                        // expected_revision 挡住过期写入 —— 不再多问一次。
+                                        save(MaterialChangeDto("role", state.revision, listOf(MaterialRoleDto(member.id, role))))
+                                    },
+                                    onTransfer = if (state.isOwner && member.active && !member.id.contains(':')) {
+                                        { confirmation = MaterialChangeDto("transfer", state.revision, listOf(MaterialRoleDto(member.id))) }
+                                    } else null,
+                                    onRemove = if (member.role != "owner") {
+                                        { confirmation = MaterialChangeDto("remove", state.revision, listOf(MaterialRoleDto(member.id))) }
+                                    } else null,
+                                )
                             }
+                            if (!state.canManage) Text(stringResource(R.string.collaboration_viewOnly), style = MaterialTheme.typography.bodySmall)
                             if (state.pendingNotifications > 0) TextButton(onClick = { coroutine.launch { repository.retryMaterialNotices(viewer, record.id, objectScope); refresh++ } }) { Text(stringResource(R.string.collaboration_retryNotifications)) }
                             HorizontalDivider()
                             Text(stringResource(R.string.collaboration_permissions), style = MaterialTheme.typography.titleMedium)
@@ -175,33 +196,64 @@ private fun MaterialMembers(app: WeMeetApp, viewer: String, record: RecordDto, o
                             listOfNotNull("private", "organization".takeIf { state.canLinkOrganization }).forEach { option ->
                                 Row { RadioButton(selected = state.linkScope == option, enabled = state.canManage && !busy && ready, onClick = { confirmation = MaterialChangeDto("link", state.revision, linkScope = option) }); Text(stringResource(if (option == "private") R.string.collaboration_private else R.string.collaboration_organization)) }
                             }
-                        } else if (step == "select") {
-                            Row { listOfNotNull("users", "departments", "groups".takeIf { objectScope == "minutes" }).forEach { value -> FilterChip(selected = candidateKind == value, onClick = { candidateKind = value; offset = 0 }, label = { Text(stringResource(when (value) { "users" -> R.string.collaboration_users; "departments" -> R.string.collaboration_departments; else -> R.string.collaboration_groups })) }) } }
-                            OutlinedTextField(value = query, onValueChange = { query = it.take(80); offset = 0 }, label = { Text(stringResource(R.string.collaboration_search)) }, modifier = Modifier.fillMaxWidth())
+                        } else {
+                            // 邀请只有这一个视图:选人 + 本批角色 + 备注,同屏完成。
+                            // 逐人配角色要多一次「下一步」,而常用路径是一批人给同一权限。
+                            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                                listOfNotNull("users", "departments", "groups".takeIf { objectScope == "minutes" }).forEach { value ->
+                                    FilterChip(selected = candidateKind == value, onClick = { candidateKind = value; cursor = null }, label = { Text(stringResource(when (value) { "users" -> R.string.collaboration_users; "departments" -> R.string.collaboration_departments; else -> R.string.collaboration_groups })) })
+                                }
+                            }
+                            OutlinedTextField(value = query, onValueChange = { query = it.take(80); cursor = null }, label = { Text(stringResource(R.string.collaboration_search)) }, modifier = Modifier.fillMaxWidth())
                             Text(stringResource(R.string.collaboration_selected, selected.size))
-                            val candidates = visibleRead(viewer, record.id, objectScope, candidateKind, query, offset, refresh) { repository.materialCandidates(viewer, record.id, objectScope, query, offset, candidateKind) }
+                            val candidates = visibleRead(viewer, record.id, objectScope, candidateKind, query, cursor, refresh) { repository.materialCandidates(viewer, record.id, objectScope, query, cursor, candidateKind) }
                             if (candidates == null) WeMeetInlineLoading()
                             else if (candidates.isFailure) Text(stringResource(R.string.collaboration_error))
                             else candidates.getOrThrow().let { page ->
                                 page.results.forEach { person ->
                                     Row(Modifier.fillMaxWidth()) {
-                                        Checkbox(checked = selected.containsKey(person.id), enabled = state.canManage && state.results.none { it.id == person.id } && (selected.size < 50 || selected.containsKey(person.id)), onCheckedChange = { checked -> selected = if (checked) selected + (person.id to (person.name to "reader")) else selected - person.id })
+                                        Checkbox(checked = selected.containsKey(person.id), enabled = state.canManage && state.results.none { it.id == person.id } && (selected.size < 50 || selected.containsKey(person.id)), onCheckedChange = { checked -> selected = if (checked) selected + (person.id to person.name) else selected - person.id })
                                         Text(person.name.ifBlank { person.id })
                                     }
                                 }
-                                Row { if (offset > 0) TextButton(onClick = { offset = (offset - 50).coerceAtLeast(0) }) { Text(stringResource(R.string.records_previous)) }; page.nextOffset?.let { next -> TextButton(onClick = { offset = next }) { Text(stringResource(R.string.records_next)) } } }
+                                if (page.results.isEmpty()) Text(stringResource(R.string.collaboration_noCandidates))
+                                Row { if (cursor != null) TextButton(onClick = { cursor = null }) { Text(stringResource(R.string.records_previous)) }; page.nextCursor?.let { next -> TextButton(onClick = { cursor = next }) { Text(stringResource(R.string.records_next)) } } }
                             }
-                            Button(onClick = { step = "invite" }, enabled = selected.isNotEmpty() && state.canManage) { Text(stringResource(R.string.collaboration_next)) }
-                        } else {
-                            selected.forEach { (id, value) -> Row(Modifier.fillMaxWidth()) {
-                                Text(value.first, Modifier.weight(1f))
-                                TextButton(onClick = { rolePerson = MaterialMemberDto(id, value.first, value.second) }) { Text(stringResource(roleLabel(value.second))) }
-                            } }
+                            HorizontalDivider()
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text(stringResource(R.string.collaboration_role), Modifier.weight(1f))
+                                Box {
+                                    TextButton(onClick = { inviteRoleMenu = true }, enabled = !busy && ready) {
+                                        Text(stringResource(roleLabel(inviteRole)))
+                                        Icon(Icons.Outlined.ExpandMore, null)
+                                    }
+                                    DropdownMenu(expanded = inviteRoleMenu, onDismissRequest = { inviteRoleMenu = false }) {
+                                        listOf("manager", "editor", "reader").forEach { role ->
+                                            DropdownMenuItem(text = { Text(stringResource(roleLabel(role))) }, onClick = { inviteRole = role; inviteRoleMenu = false }, trailingIcon = { if (role == inviteRole) Icon(Icons.Filled.Check, null) })
+                                        }
+                                    }
+                                }
+                            }
+                            Text(stringResource(R.string.collaboration_inviteHint), style = MaterialTheme.typography.bodySmall)
                             if (state.canNotify) {
-                                OutlinedTextField(value = note, onValueChange = { note = it.take(1000) }, label = { Text(stringResource(R.string.collaboration_note)) })
+                                OutlinedTextField(value = note, onValueChange = { note = it.take(1000) }, label = { Text(stringResource(R.string.collaboration_note)) }, modifier = Modifier.fillMaxWidth())
                                 Row { Checkbox(checked = notify, onCheckedChange = { notify = it }); Text(stringResource(R.string.collaboration_notify)) }
                             }
-                            Button(onClick = { save(MaterialChangeDto("invite", state.revision, selected.map { MaterialRoleDto(it.key, it.value.second) }, notify = state.canNotify && notify, note = note)) }, enabled = selected.isNotEmpty() && !busy && ready && state.canManage) { Text(stringResource(R.string.collaboration_invite)) }
+                            Button(
+                                onClick = {
+                                    // 备注与通知只在服务端确认可通知时发:否则这两个字段
+                                    // 本身就是「不允许出现」的载荷。
+                                    save(MaterialChangeDto(
+                                        operation = "invite",
+                                        expectedRevision = state.revision,
+                                        members = selected.map { MaterialRoleDto(it.key, inviteRole) },
+                                        notify = notify.takeIf { state.canNotify },
+                                        note = note.takeIf { state.canNotify && it.isNotBlank() },
+                                    ))
+                                },
+                                enabled = selected.isNotEmpty() && !busy && ready && state.canManage,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) { Text(stringResource(R.string.collaboration_invite)) }
                         }
                     }
                 }
@@ -209,25 +261,43 @@ private fun MaterialMembers(app: WeMeetApp, viewer: String, record: RecordDto, o
                 message?.let { Text(stringResource(it)) }
             }
         }
-        rolePerson?.let { person -> ModalBottomSheet(onDismissRequest = { rolePerson = null }) {
-            Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                Text(person.name, style = MaterialTheme.typography.titleLarge)
-                listOf("manager", "editor", "reader").forEach { role -> TextButton(onClick = {
-                    if (step == "invite") selected = selected + (person.id to (person.name to role))
-                    else state?.let { confirmation = MaterialChangeDto("role", it.revision, listOf(MaterialRoleDto(person.id, role))) }
-                    rolePerson = null
-                }) { Text(stringResource(roleLabel(role))) } }
-                if (step == "members" && state?.isOwner == true && person.active && !person.id.contains(':')) TextButton(onClick = { confirmation = MaterialChangeDto("transfer", state.revision, listOf(MaterialRoleDto(person.id))); rolePerson = null }) { Text(stringResource(R.string.collaboration_transfer)) }
-                TextButton(onClick = {
-                    if (step == "invite") selected = selected - person.id
-                    else state?.let { confirmation = MaterialChangeDto("remove", it.revision, listOf(MaterialRoleDto(person.id))) }
-                    rolePerson = null
-                }) { Text(stringResource(R.string.collaboration_remove), color = MaterialTheme.colorScheme.error) }
-            }
-        } }
         confirmation?.let { request -> AlertDialog(onDismissRequest = { if (!busy) confirmation = null }, title = { Text(stringResource(R.string.collaboration_confirm)) }, text = { Text(stringResource(when (request.operation) {
-            "transfer" -> R.string.collaboration_confirm_transfer; "remove" -> R.string.collaboration_confirm_remove; "link" -> R.string.collaboration_confirm_link; else -> R.string.collaboration_confirm_role
+            "transfer" -> R.string.collaboration_confirm_transfer; "remove" -> R.string.collaboration_confirm_remove; "link" -> R.string.collaboration_confirm_link; else -> R.string.collaboration_changed
         })) }, confirmButton = { TextButton(onClick = { save(request) }, enabled = !busy && state?.canManage == true) { Text(stringResource(R.string.collaboration_confirm)) } }, dismissButton = { TextButton(onClick = { confirmation = null }, enabled = !busy) { Text(stringResource(R.string.collaboration_back)) } }) }
+    }
+}
+
+/**
+ * 成员名单里的一行:角色下拉 + 移除。
+ *
+ * 与任务清单的协作者行同款(角色是可逆的轻操作,直接提交;移除是危险动作,
+ * 走图标 + 二次确认),不再把角色、转移、移除全塞进一个底部弹层 —— 那个弹层
+ * 要求用户先猜到「点角色名」才能管理成员。
+ */
+@Composable
+private fun MemberRow(name: String, role: String, canManage: Boolean, onRole: (String) -> Unit, onTransfer: (() -> Unit)?, onRemove: (() -> Unit)?) {
+    var menu by remember { mutableStateOf(false) }
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(name, Modifier.weight(1f))
+        if (role == "owner") {
+            Text(stringResource(R.string.collaboration_owner), style = MaterialTheme.typography.labelLarge)
+        } else if (!canManage) {
+            Text(stringResource(roleLabel(role)), style = MaterialTheme.typography.labelLarge)
+        } else {
+            Box {
+                TextButton(onClick = { menu = true }) {
+                    Text(stringResource(roleLabel(role)))
+                    Icon(Icons.Outlined.ExpandMore, null)
+                }
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    listOf("manager", "editor", "reader").forEach { value ->
+                        DropdownMenuItem(text = { Text(stringResource(roleLabel(value))) }, onClick = { menu = false; onRole(value) }, trailingIcon = { if (value == role) Icon(Icons.Filled.Check, null) })
+                    }
+                    onTransfer?.let { transfer -> DropdownMenuItem(text = { Text(stringResource(R.string.collaboration_transfer)) }, onClick = { menu = false; transfer() }) }
+                    onRemove?.let { remove -> DropdownMenuItem(text = { Text(stringResource(R.string.collaboration_remove), color = MaterialTheme.colorScheme.error) }, onClick = { menu = false; remove() }) }
+                }
+            }
+        }
     }
 }
 

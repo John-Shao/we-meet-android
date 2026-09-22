@@ -10,7 +10,7 @@ interface MeetingSharingApi {
     @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/{record}/collaboration/{scope}/candidates/")
     suspend fun materialCandidates(@Path("record") record: String, @Path("scope") scope: String,
-        @Query("q") query: String, @Query("offset") offset: Int, @Query("kind") kind: String): MaterialCandidatesDto
+        @Query("q") query: String, @Query("cursor") cursor: String?, @Query("kind") kind: String): MaterialCandidatesDto
     @Headers("Cache-Control: no-store")
     @POST("api/v1.0/meeting-records/{record}/collaboration/{scope}/")
     suspend fun materialChange(@Path("record") record: String, @Path("scope") scope: String,

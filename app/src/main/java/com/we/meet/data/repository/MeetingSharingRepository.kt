@@ -44,11 +44,12 @@ class MeetingSharingRepository(private val api: MeetingSharingApi, private val c
             it.results.forEach { member -> principal(member.id); name(member.name); require(member.role in setOf("reader", "editor", "manager", "owner")) }
         }
     }
-    suspend fun materialCandidates(viewer: String, record: String, scope: String, query: String, offset: Int, kind: String = "users") = scoped(viewer, record) {
-        require(scope in setOf("record", "minutes") && query.length <= 80 && offset >= 0)
-        api.materialCandidates(record, scope, query, offset, kind).also { page ->
-            require(page.results.size <= 50 && (page.nextOffset == null || page.nextOffset == offset + 50))
-            page.results.forEach { principal(it.id); name(it.name) }
+    /** Cursor-paged candidates restricted to whoever may be granted this object. */
+    suspend fun materialCandidates(viewer: String, record: String, scope: String, query: String, pageCursor: String?, kind: String = "users") = scoped(viewer, record) {
+        require(scope in setOf("record", "minutes") && query.length <= 80 && kind in setOf("users", "departments", "groups")); cursor(pageCursor)
+        api.materialCandidates(record, scope, query, pageCursor, kind).also { page ->
+            require(page.results.size <= 50 && page.results.map { it.id }.distinct().size == page.results.size); cursor(page.nextCursor)
+            page.results.forEach { principal(it.id); name(it.name); name(it.avatarUrl.orEmpty()) }
         }
     }
     suspend fun materialChange(viewer: String, record: String, scope: String, key: String, body: MaterialChangeDto) = scoped(viewer, record) {

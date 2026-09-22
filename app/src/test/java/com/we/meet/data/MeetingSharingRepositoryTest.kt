@@ -108,6 +108,30 @@ class MeetingSharingRepositoryTest {
         }
         assertEquals(person, repo.candidates("owner", record, "participants", "A&B", cursor).getOrThrow().results.single().id)
     }
+    @Test fun materialCandidatesUseCursorPagingAndKeepTheKindTeamKeysOpaque() = runBlocking {
+        val department = "dept:" + "a".repeat(32)
+        val person = UUID.randomUUID().toString()
+        val repo = repository {
+            assertEquals("/api/v1.0/meeting-records/$record/collaboration/record/candidates/", it.url.encodedPath)
+            assertEquals("departments", it.url.queryParameter("kind")); assertEquals("产品", it.url.queryParameter("q"))
+            assertEquals("50", it.url.queryParameter("cursor"))
+            200 to """{"results":[{"id":"$department","name":"产品部","avatar_url":""},{"id":"$person","name":"Recipient","avatar_url":"https://oss/avatar"}],"next_cursor":"100"}"""
+        }
+        val page = repo.materialCandidates("owner", record, "record", "产品", "50", "departments").getOrThrow()
+        assertEquals(listOf(department, person), page.results.map { it.id })
+        assertEquals("100", page.nextCursor)
+    }
+    @Test fun materialCandidatesRejectAnUnboundedOrMalformedPage() = runBlocking {
+        val person = UUID.randomUUID().toString()
+        assertTrue(repository { 200 to """{"results":[{"id":"not-a-principal","name":"x"}]}""" }
+            .materialCandidates("owner", record, "record", "", null, "users").isFailure)
+        assertTrue(repository { 200 to """{"results":[{"id":"$person","name":"x"},{"id":"$person","name":"x"}]}""" }
+            .materialCandidates("owner", record, "record", "", null, "users").isFailure)
+        assertTrue(repository { 200 to """{"results":[],"next_cursor":"${"x".repeat(2049)}"}""" }
+            .materialCandidates("owner", record, "record", "", null, "users").isFailure)
+        assertTrue(repository { error("No dispatch") }
+            .materialCandidates("owner", record, "record", "", null, "teams").isFailure)
+    }
     @Test fun accessCollectionsAreBoundedAndNonManagersCannotReceivePrivateGrants() = runBlocking {
         assertFalse(repository { 200 to "{}" }.access("owner", record).getOrThrow().canManage)
         val row = SummaryShareAccessDto(person, "Recipient", true, true, false)
