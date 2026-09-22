@@ -9,6 +9,10 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.we.meet.BuildConfig
 import com.we.meet.R
 import com.we.meet.data.api.MeetingSharingApi
+import com.we.meet.data.api.dto.MaterialAccessDto
+import com.we.meet.data.api.dto.MaterialCandidatesDto
+import com.we.meet.data.api.dto.MaterialChangeDto
+import com.we.meet.data.api.dto.MaterialReceiptDto
 import com.we.meet.data.api.dto.RecordCapabilitiesDto
 import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.api.dto.RecordPageDto
@@ -46,6 +50,11 @@ class RecordSharingCopyLinkTest {
         // 这条用例只碰「复制链接」,授权/预览路径不经过这里。
         override suspend fun preview(record: String, body: SummaryShareSelectionDto): SummarySharePreviewDto = error("unused")
         override suspend fun apply(record: String, key: String, body: SummaryShareRequestDto): SummaryShareReceiptDto = error("unused")
+        // 同理:素材协作是另一个入口(ui/records/MaterialActions.kt),本用例不经过。
+        override suspend fun materialAccess(record: String, scope: String): MaterialAccessDto = error("unused")
+        override suspend fun materialCandidates(record: String, scope: String, query: String, cursor: String?, kind: String): MaterialCandidatesDto = error("unused")
+        override suspend fun materialChange(record: String, scope: String, key: String, body: MaterialChangeDto): MaterialReceiptDto = error("unused")
+        override suspend fun retryMaterialNotices(record: String, scope: String) = error("unused")
     }
 
     private fun show() {

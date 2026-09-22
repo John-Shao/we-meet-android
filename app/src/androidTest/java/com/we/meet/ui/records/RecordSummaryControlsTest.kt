@@ -198,6 +198,9 @@ class RecordSummaryControlsTest {
         private val commands = mutableMapOf<String, SummaryAutomationAcceptedDto>()
         override suspend fun progress(record: String): SummaryProgressDto { if (failRead) throw IOException("Synthetic denied read"); return progress }
         override suspend fun automation(record: String) = auto
+        // 概要正文由 RecordOverview 自己的用例覆盖;这里只驱动进度/自动化控件。
+        override suspend fun overview(record: String): RecordOverviewStateDto = error("Unexpected read")
+        override suspend fun requestOverview(record: String, key: String, body: RequestBody): SummaryAcceptedDto = error("Unexpected read")
         override suspend fun request(record: String, key: String, body: RequestBody): SummaryAcceptedDto {
             keys += key
             val json = Buffer().also { body.writeTo(it) }.readUtf8()
@@ -227,7 +230,7 @@ class RecordSummaryControlsTest {
         val segment = UUID.randomUUID().toString()
         var readSnapshot: String? = null
         override suspend fun rename(recordId: String, body: RecordTitleRequestDto): RecordDto = error("Rename not configured")
-    override suspend fun media(recordId: String, download: Boolean?): RecordMediaDto = error("Media not configured")
+        override suspend fun media(recordId: String, download: Boolean?): RecordMediaDto = error("Media not configured")
         override suspend fun transcriptExport(url: String) = error("Export not configured")
         override suspend fun correctOriginal(recordId: String, segmentId: String, body: com.we.meet.data.api.dto.RecordCorrectionRequest) = error("Correction not configured")
         override suspend fun revertOriginal(recordId: String, segmentId: String, expectedRevision: Int) = error("Correction not configured")

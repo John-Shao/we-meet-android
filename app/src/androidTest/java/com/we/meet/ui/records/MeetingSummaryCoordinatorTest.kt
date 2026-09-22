@@ -105,5 +105,8 @@ class MeetingSummaryCoordinatorTest {
         }
         override suspend fun progress(record: String): SummaryProgressDto = error("Unexpected read")
         override suspend fun automation(record: String): SummaryAutomationDto = error("Unexpected read")
+        // 概要页自身的读取;这条用例只驱动请求/自动化两条收据,不读它。
+        override suspend fun overview(record: String): RecordOverviewStateDto = error("Unexpected read")
+        override suspend fun requestOverview(record: String, key: String, body: RequestBody): SummaryAcceptedDto = error("Unexpected read")
     }
 }

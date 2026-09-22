@@ -178,5 +178,12 @@ class RecordSharingTest {
             if (status != 200) throw HttpException(Response.error<Any>(status, "{}".toResponseBody()))
             return receipt.copy(replayed = existing)
         }
+        // 这一族用例只覆盖 summary-sharing 的选人/预览/确认;素材协作是另一个
+        // 入口(ui/records/MaterialActions.kt),不经过这里 —— 被调到就该报错,
+        // 而不是悄悄返回一个 Fake 状态。
+        override suspend fun materialAccess(record: String, scope: String): MaterialAccessDto = error("No automatic reads")
+        override suspend fun materialCandidates(record: String, scope: String, query: String, cursor: String?, kind: String): MaterialCandidatesDto = error("No automatic reads")
+        override suspend fun materialChange(record: String, scope: String, key: String, body: MaterialChangeDto): MaterialReceiptDto = error("No automatic reads")
+        override suspend fun retryMaterialNotices(record: String, scope: String) = error("No automatic reads")
     }
 }

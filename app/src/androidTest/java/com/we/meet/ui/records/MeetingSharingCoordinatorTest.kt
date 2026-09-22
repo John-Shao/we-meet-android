@@ -76,5 +76,10 @@ class MeetingSharingCoordinatorTest {
         override suspend fun access(record: String, cursor: String?): SummaryShareAccessPageDto = error("No automatic reads")
         override suspend fun candidates(record: String, scope: String, query: String, cursor: String?): RecordPageDto<SummarySharePersonDto> = error("No automatic reads")
         override suspend fun preview(record: String, body: SummaryShareSelectionDto): SummarySharePreviewDto = error("No automatic reads")
+        // 协作收据只走 summary-sharing 的 apply;素材协作(另一接口族)不经过这里。
+        override suspend fun materialAccess(record: String, scope: String): MaterialAccessDto = error("No automatic reads")
+        override suspend fun materialCandidates(record: String, scope: String, query: String, cursor: String?, kind: String): MaterialCandidatesDto = error("No automatic reads")
+        override suspend fun materialChange(record: String, scope: String, key: String, body: MaterialChangeDto): MaterialReceiptDto = error("No automatic reads")
+        override suspend fun retryMaterialNotices(record: String, scope: String) = error("No automatic reads")
     }
 }
