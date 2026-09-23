@@ -12,6 +12,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -84,8 +85,9 @@ internal class OriginalCorrectionState(text: String, revision: Int) {
 }
 
 internal class OriginalCorrectionDrafts {
-    private val states = mutableMapOf<String, OriginalCorrectionState>()
+    private val states = mutableStateMapOf<String, OriginalCorrectionState>()
     fun get(segmentId: String, text: String, revision: Int) = states.getOrPut(segmentId) { OriginalCorrectionState(text, revision) }
+    fun isEditing() = states.values.any { it.editing.value || it.busy.value }
     fun clear() {
         states.values.forEach { it.active = false; it.draft.value = ""; it.editing.value = false }
         states.clear()

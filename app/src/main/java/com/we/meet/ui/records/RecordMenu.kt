@@ -55,7 +55,6 @@ internal fun RecordMenuContent(
     onRenamed: () -> Unit,
     onChanged: () -> Unit,
     asPlayerSheet: Boolean = false,
-    followState: TranscriptFollowState? = null,
     onSpeakers: (() -> Unit)? = null,
     onTranslations: (() -> Unit)? = null,
     onInfo: (() -> Unit)? = null,
@@ -67,7 +66,7 @@ internal fun RecordMenuContent(
     if (asPlayerSheet) {
         if (expanded) RecordPlaybackActionsSheet(
             title = record.title, owner = record.owner,
-            onClose = onDismiss, followState = followState,
+            onClose = onDismiss,
             onShare = { onDismiss(); copied = false; panel = "share" },
             onRename = if (allowRename && canRenameRecord(record)) ({ onDismiss(); renaming = true }) else null,
             onMembers = { onDismiss(); panel = "members" },

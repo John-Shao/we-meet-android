@@ -36,11 +36,10 @@ class RecordVideoControlsTest {
               CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, if (narrow) 1.3f else 1f)) {
                 var playing by remember { mutableStateOf(false) }
                 var muted by remember { mutableStateOf(false) }
-                val follow = remember { TranscriptFollowState() }
                 RecordVideoControls(Modifier.width(if (narrow) 320.dp else 360.dp).height(210.dp), playing, 27000, 47000, 1f, false,
                     onPlayPause = { playing = !playing }, onSeek = {}, onSeekFinished = {}, onRate = {},
                     onSkipBack = {}, onSkipForward = {}, muted = muted, onToggleMute = { muted = !muted },
-                    onCollapse = {}, onFullscreen = {}, followState = follow) {
+                    onCollapse = {}, onFullscreen = {}) {
                     Text("视频预览", color = OnMediaOverlay, modifier = Modifier.align(Alignment.Center))
                 }
               }
@@ -50,7 +49,7 @@ class RecordVideoControlsTest {
 
     private fun checkLayout() {
         val ids = listOf(R.string.cd_records_play, R.string.cd_records_skip_back, R.string.cd_records_skip_forward,
-            R.string.capture_playback_mute, R.string.capture_playback_speed, R.string.capture_playback_follow)
+            R.string.capture_playback_mute, R.string.capture_playback_speed)
         val bounds = ids.map { compose.onNodeWithContentDescription(context.getString(it)).assertIsDisplayed().fetchSemanticsNode().boundsInRoot }
         bounds.zipWithNext().forEach { (left, right) ->
             assertTrue("transport buttons do not overlap", left.right <= right.left + 1)
@@ -81,11 +80,7 @@ class RecordVideoControlsTest {
         val pause = compose.onNodeWithContentDescription(context.getString(R.string.cd_records_pause))
         compose.onNodeWithContentDescription(context.getString(R.string.cd_records_more)).assertDoesNotExist()
         val follow = compose.onNodeWithContentDescription(context.getString(R.string.capture_playback_follow))
-        follow.assertIsOn().performClick()
-        compose.mainClock.advanceTimeBy(100)
-        follow.assertIsOff().performClick()
-        compose.mainClock.advanceTimeBy(100)
-        follow.assertIsOn()
+        follow.assertDoesNotExist()
         play.performClick()
         compose.mainClock.advanceTimeBy(3200)
         pause.assertDoesNotExist()

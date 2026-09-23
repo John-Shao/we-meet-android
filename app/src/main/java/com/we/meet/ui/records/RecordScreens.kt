@@ -179,7 +179,6 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             objectScope = if (document) "minutes" else "record",
                             onRename = if (!document) ({ refresh++ }) else null,
                             onChanged = { refresh++ },
-                            followState = transcriptFollow.takeIf { canPlay || canPlayImport },
                             onSpeakers = if (!document && record.capabilities.readTranscript && record.sourceType in listOf("audio_recording", "upload")) ({ detailTab = "speakers" }) else null,
                             onTranslations = if (!document && record.capabilities.readTranscript && (record.sourceType in listOf("meeting", "upload") || record.sourceType == "audio_recording" && record.captureId != null && record.capabilities.controlCapture)) ({ detailTab = "translations" }) else null,
                             onInfo = if (!document) ({ detailTab = "info" }) else null,

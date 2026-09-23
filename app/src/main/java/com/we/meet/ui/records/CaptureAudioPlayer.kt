@@ -130,10 +130,14 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
             }
         }
     }
+    fun jump(milliseconds: Long) {
+        play(milliseconds)
+        followState?.resume()
+    }
     LaunchedEffect(seek?.token, playlist, state == MediaPlaybackState.Error) {
         val request = seek ?: return@LaunchedEffect
         if (state == MediaPlaybackState.Error) consumeSeek()
-        else if (playlist != null && allowed()) { play(request.milliseconds); consumeSeek() }
+        else if (playlist != null && allowed()) { jump(request.milliseconds); consumeSeek() }
     }
     val data = playlist
     RecordPlayerSurface {
@@ -152,19 +156,19 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
                         if (state.showsPause) { stop(); state = MediaPlaybackState.Ready; consumeSeek() }
                         else play(if (position >= data.endMs) 0 else position)
                     },
-                    onSkipBack = { play(maxOf(0, position - 15_000)) },
-                    onSkipForward = { play(minOf((data.endMs - 1).coerceAtLeast(0), position + 15_000)) },
+                    onSkipBack = { jump(maxOf(0, position - 15_000)) },
+                    onSkipForward = { jump(minOf((data.endMs - 1).coerceAtLeast(0), position + 15_000)) },
                     onRate = { speed ->
                         val resume = state.showsPause
                         rate = speed
                         if (resume) play(position)
                     },
-                    followState = followState,
+                    onSeekFinished = { followState?.resume() },
                 )
                 if (state == MediaPlaybackState.Gap) {
                     Text(stringResource(R.string.capture_playback_gap), style = MaterialTheme.typography.bodySmall)
                     data.chunks.firstOrNull { it.startMs >= position }?.let { next ->
-                        TextButton(onClick = { play(next.startMs) }) { Text(stringResource(R.string.capture_playback_skip)) }
+                        TextButton(onClick = { jump(next.startMs) }) { Text(stringResource(R.string.capture_playback_skip)) }
                     }
                 }
             }

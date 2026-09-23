@@ -49,6 +49,7 @@ class UploadMediaPlayerTest {
     private val durations = CopyOnWriteArrayList<Long?>()
     private val seek = mutableStateOf<CaptureAudioSeek?>(null)
     private var engine: FakeEngine? = null
+    private val follow = TranscriptFollowState()
 
     private fun label(id: Int) = context.getString(id)
     private fun label(id: Int, vararg args: Any) = context.getString(id, *args)
@@ -59,6 +60,7 @@ class UploadMediaPlayerTest {
                 Surface {
                     UploadMediaPlayer(
                         media = currentMedia.value,
+                        followState = follow,
                         positionMs = null,
                         seek = seek.value,
                         onSeekConsumed = { seek.value = null },
@@ -88,6 +90,17 @@ class UploadMediaPlayerTest {
         compose.runOnIdle { seek.value = CaptureAudioSeek(42_500) }
         compose.waitUntil(8_000) { engine?.lastPlayFrom == 42_500L }
         assertEquals(42_500L, engine?.lastPlayFrom)
+    }
+
+    @Test fun explicitSeekRestoresFollowButProtectsAnActiveEdit() {
+        show()
+        compose.runOnIdle { follow.following = false; seek.value = CaptureAudioSeek(12_000) }
+        compose.waitUntil(8_000) { engine?.lastPlayFrom == 12_000L }
+        compose.runOnIdle { assertTrue(follow.following); follow.following = false; follow.canResume = { false } }
+        compose.onNodeWithContentDescription(label(R.string.cd_records_skip_forward)).performClick()
+        compose.runOnIdle { assertEquals(false, follow.following); follow.canResume = { true } }
+        compose.onNodeWithContentDescription(label(R.string.cd_records_skip_back)).performClick()
+        compose.runOnIdle { assertTrue(follow.following) }
     }
 
     @Test fun aPositionTickReachesTheTranscriptThroughTheCallback() {

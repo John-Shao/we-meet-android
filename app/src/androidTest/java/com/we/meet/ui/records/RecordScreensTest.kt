@@ -32,6 +32,7 @@ import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -328,7 +329,7 @@ class RecordScreensTest {
         assertEquals(1, fixture.corrections.size)
     }
 
-    @Test fun playerFollowClearsSearchAndReturnsToTheCurrentTranscript() {
+    @Test fun returnToPlaybackClearsSearchEvenWhilePaused() {
         val fixture = Fixture()
         val repository = MeetingRecordRepository(fixture) { "reader" }
         val record = RecordDto(recordId, "audio_recording", "Playback", "2026-09-13T00:00:00Z", 3,
@@ -341,7 +342,7 @@ class RecordScreensTest {
                         positionMs = 1500L, followState = follow)
                 }
                 RecordPlayerSurface {
-                    RecordPlaybackControls(1500L, 25000L, false, 1f, {}, {}, {}, {}, {}, follow)
+                    RecordPlaybackControls(1500L, 25000L, false, 1f, {}, {}, {}, {}, {})
                 }
             }
         } }
@@ -351,7 +352,8 @@ class RecordScreensTest {
         compose.onNodeWithText(label(R.string.records_search_originals)).performImeAction()
         awaitText("Search matched original")
         compose.runOnIdle { assertFalse(follow.following) }
-        compose.onNodeWithContentDescription(label(R.string.capture_playback_follow)).performClick()
+        compose.mainClock.advanceTimeBy(10_000)
+        compose.onNodeWithText(label(R.string.records_back_to_playback)).assertIsDisplayed().performClick()
         awaitText("Full original text")
         compose.runOnIdle {
             assertTrue(follow.following)
@@ -361,6 +363,26 @@ class RecordScreensTest {
         File(context.getExternalFilesDir(null), "record-playback-follow.png").outputStream().use {
             compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
         }
+    }
+
+    @Test fun editingBlocksSeekDrivenFollowWithoutDiscardingTheDraft() {
+        val fixture = Fixture().apply { canCorrect = true }
+        val repository = MeetingRecordRepository(fixture) { "reader" }
+        val record = RecordDto(recordId, "audio_recording", "Playback", "2026-09-13T00:00:00Z", 3,
+            RecordCapabilitiesDto(readTranscript = true))
+        val follow = TranscriptFollowState()
+        compose.setContent { WeMeetTheme {
+            RecordOriginals(repository, "reader", record, {}, onExport = {}, positionMs = 1500L, followState = follow)
+        } }
+        awaitText(label(R.string.records_correction_edit))
+        compose.onNodeWithText(label(R.string.records_correction_edit)).performClick()
+        compose.onNodeWithText("Full original text").performTextReplacement("Keep this draft")
+        compose.runOnIdle { follow.resume(); assertFalse(follow.following) }
+        compose.onNodeWithText(label(R.string.records_back_to_playback)).assertIsNotEnabled()
+        compose.onNodeWithText("Keep this draft").assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.records_correction_cancel)).performClick()
+        compose.onNodeWithText(label(R.string.records_back_to_playback)).assertIsEnabled().performClick()
+        compose.runOnIdle { assertTrue(follow.following) }
     }
 
     @Test fun summaryOnlyChaptersDoNotReadOriginals() {

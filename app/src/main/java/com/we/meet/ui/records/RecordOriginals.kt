@@ -66,16 +66,7 @@ import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
-import kotlinx.coroutines.delay
 import retrofit2.HttpException
-
-/**
- * 判定「回放指针不再前进」的时间窗。
- *
- * 播放器每 250ms 报一次位置,所以超过这个窗口没有新位置就视为已停(播完了、暂停了
- * 或还没开始)。取 1.5s 是给弱网下的上报抖动留余量,不至于播放中途闪一下。
- */
-private const val PLAYBACK_ADVANCING_TIMEOUT_MS = 1_500L
 
 @Composable
 internal fun RecordOriginals(
@@ -114,23 +105,13 @@ internal fun RecordOriginals(
             anchorMs = positionMs ?: 0L; cursors = listOf(null)
         }
     }
-    /**
-     * 回放指针**此刻是否在走**(正在播放)。
-     *
-     * 指针每 250ms 报一次,所以「一段时间没再动」就等于「没在播」。用它来兜住
-     * 「回到播放位置」那颗按钮:之前它只看 `following`,于是拖过一次转写之后 ——
-     * 哪怕已经播到 0:25/0:25 播完了 —— 按钮也一直挂在页面上。
-     */
-    var playbackAdvancing by remember(viewer, record.id) { mutableStateOf(false) }
-    LaunchedEffect(positionMs) {
-        if (positionMs == null) return@LaunchedEffect
-        playbackAdvancing = true
-        delay(PLAYBACK_ADVANCING_TIMEOUT_MS)
-        playbackAdvancing = false
-    }
     val scope = rememberCoroutineScope()
     val correctionDrafts = remember(viewer, record.id) { OriginalCorrectionDrafts() }
-    DisposableEffect(correctionDrafts) { onDispose { correctionDrafts.clear() } }
+    val editing = correctionDrafts.isEditing()
+    DisposableEffect(correctionDrafts, followState) {
+        followState.canResume = { !correctionDrafts.isEditing() }
+        onDispose { followState.canResume = { true }; correctionDrafts.clear() }
+    }
     var exportVisible by remember(viewer, record.id) { mutableStateOf(false) }
     val keyboard = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
@@ -152,15 +133,15 @@ internal fun RecordOriginals(
     val followIndex = rows.indexOfFirst { it.id == followId }
     val dragging by listState.interactionSource.collectIsDraggedAsState()
     LaunchedEffect(dragging) { if (dragging) followState.following = false }
-    LaunchedEffect(positionMs, timelineRows, following, filtered, dragging) {
-        if (!following || filtered || dragging || positionMs == null) return@LaunchedEffect
+    LaunchedEffect(positionMs, timelineRows, following, filtered, dragging, editing) {
+        if (!following || filtered || editing || dragging || positionMs == null) return@LaunchedEffect
         transcriptWindowTarget(timelineRows, positionMs, anchorMs, page?.getOrNull()?.nextCursor != null)?.let {
             anchorMs = it
             cursors = listOf(null)
         }
     }
-    LaunchedEffect(followIndex, followId, following, filtered) {
-        if (!following || filtered || followIndex < 0 || listState.isScrollInProgress) return@LaunchedEffect
+    LaunchedEffect(followIndex, followId, following, filtered, editing) {
+        if (!following || filtered || editing || followIndex < 0 || listState.isScrollInProgress) return@LaunchedEffect
         listState.animateScrollToItem(followIndex)
     }
     val search = { query = input.trim(); cursors = listOf(null); keyboard?.hide(); Unit }
@@ -170,6 +151,7 @@ internal fun RecordOriginals(
                 OutlinedTextField(
                     value = input,
                     onValueChange = { value ->
+                        followState.following = false
                         input = value.take(200)
                         // 清空即撤销:与 Web 端逐字稿搜索同一口径(收口记录 §3.13),
                         // 也省掉一颗只为「再问一次」而存在的按钮。
@@ -188,7 +170,7 @@ internal fun RecordOriginals(
             // 工具栏恒为一行,也不再依赖「四个中文标签刚好放得下」这种巧合。
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(
-                    onClick = { searchVisible = !searchVisible; if (!searchVisible) { input = ""; query = ""; keyboard?.hide() } },
+                    onClick = { followState.following = false; searchVisible = !searchVisible; if (!searchVisible) { input = ""; query = ""; keyboard?.hide() } },
                     modifier = Modifier.heightIn(min = Dimens.MinTouchTarget),
                 ) {
                     Text(stringResource(if (searchVisible) R.string.records_clear_search else R.string.records_search_originals))
@@ -228,13 +210,12 @@ internal fun RecordOriginals(
                 }
             }
         }
-        // 只有「指针在走 + 没有跟随」才给这颗按钮:正在播放时用户滚走了才需要回到
-        // 播放位置;没在播(还没点播放、或已经播到结尾)时它就是个看不懂的残留。
-        if (positionMs != null && playbackAdvancing && !following) TextButton(
+        if (positionMs != null && !following) TextButton(
             onClick = {
                 input = ""; query = ""; speakerId = null
                 anchorMs = positionMs; cursors = listOf(null); followState.resume()
             },
+            enabled = !editing,
             modifier = Modifier.heightIn(min = Dimens.MinTouchTarget),
         ) { Text(stringResource(R.string.records_back_to_playback)) }
         Column(Modifier.weight(1f).fillMaxWidth()) {

@@ -9,8 +9,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.MyLocation
-import androidx.compose.material.icons.outlined.LocationSearching
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Replay
@@ -38,8 +36,13 @@ internal class TranscriptFollowState {
     var resumeToken by mutableIntStateOf(0)
         private set
 
-    fun resume() { following = true; resumeToken++ }
-    fun toggle() { if (following) following = false else resume() }
+    var canResume: () -> Boolean = { true }
+
+    fun resume() {
+        if (!canResume()) return
+        following = true
+        resumeToken++
+    }
 }
 
 internal fun playbackRateValue(rate: Float): String =
@@ -71,14 +74,12 @@ internal fun RecordPlaybackControls(
     onSkipBack: () -> Unit,
     onSkipForward: () -> Unit,
     onRate: (Float) -> Unit,
-    followState: TranscriptFollowState? = null,
     onSeekFinished: () -> Unit = {},
 ) {
     var ratesVisible by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
     val positionLabel = stringResource(R.string.capture_playback_position)
     val speedLabel = stringResource(R.string.capture_playback_speed)
-    val followLabel = stringResource(R.string.capture_playback_follow)
     val enabled = durationMs != null && durationMs > 0
     val end = (durationMs ?: 0L).coerceAtLeast(1L)
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
@@ -113,7 +114,7 @@ internal fun RecordPlaybackControls(
                 fontFamily = FontFamily.Monospace, color = colors.onSurfaceVariant)
         }
         Spacer(Modifier.height(Dimens.SpaceS))
-        // Equal outer slots keep the primary action centered, including when follow is hidden.
+        // Equal outer slots keep the primary action centered, with the speed selector at the leading edge.
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                 TextButton(onClick = { ratesVisible = true }, contentPadding = PaddingValues(Dimens.SpaceXs),
@@ -144,16 +145,7 @@ internal fun RecordPlaybackControls(
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                 SkipFifteenButton(true, onSkipForward, enabled)
             }
-            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                if (followState != null) IconToggleButton(
-                    checked = followState.following, onCheckedChange = { followState.toggle() },
-                    modifier = Modifier.size(Dimens.MinTouchTarget).semantics { contentDescription = followLabel },
-                    colors = IconButtonDefaults.iconToggleButtonColors(checkedContentColor = colors.primary),
-                ) {
-                    Icon(if (followState.following) Icons.Outlined.MyLocation else Icons.Outlined.LocationSearching,
-                        null, Modifier.size(Dimens.ComponentIconMedium))
-                }
-            }
+            Spacer(Modifier.weight(1f))
         }
     }
 }

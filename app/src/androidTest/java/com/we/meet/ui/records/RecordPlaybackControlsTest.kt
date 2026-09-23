@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
@@ -46,13 +45,11 @@ class RecordPlaybackControlsTest {
         compose.setContent {
             WeMeetTheme(darkTheme = dark) {
                 CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
-                    val follow = remember { TranscriptFollowState() }
                     Column(Modifier.width(320.dp)) {
-                        RecordHeaderMenu(app, "owner", record, "record", null, {}, followState = follow,
+                        RecordHeaderMenu(app, "owner", record, "record", null, {},
                             onInfo = { openedInfo = true })
                         RecordPlayerSurface {
-                            RecordPlaybackControls(6000, 25000, false, 1f, {}, {}, {}, {}, {},
-                                follow)
+                            RecordPlaybackControls(6000, 25000, false, 1f, {}, {}, {}, {}, {})
                         }
                     }
                 }
@@ -66,7 +63,7 @@ class RecordPlaybackControlsTest {
         val forward = compose.onNodeWithContentDescription(context.getString(R.string.cd_records_skip_forward))
         val follow = compose.onNodeWithContentDescription(context.getString(R.string.capture_playback_follow))
         val more = compose.onNodeWithContentDescription(context.getString(R.string.records_page_actions))
-        listOf(play, back, forward, follow, more).forEach { it.assertIsDisplayed() }
+        listOf(play, back, forward, more).forEach { it.assertIsDisplayed() }
         // The header is now the sole menu entry; its localized label can match the old player label.
         compose.onAllNodesWithContentDescription(context.getString(R.string.records_page_actions)).assertCountEquals(1)
         assertEquals(back.fetchSemanticsNode().boundsInRoot.center.x + forward.fetchSemanticsNode().boundsInRoot.center.x,
@@ -74,17 +71,17 @@ class RecordPlaybackControlsTest {
         assertTrue(play.fetchSemanticsNode().boundsInRoot.width > play.fetchSemanticsNode().boundsInRoot.height)
         assertTrue(compose.onNodeWithText("00:06").fetchSemanticsNode().boundsInRoot.top >=
             compose.onNodeWithContentDescription(context.getString(R.string.capture_playback_position)).fetchSemanticsNode().boundsInRoot.bottom)
-        follow.assertIsOn().performClick().assertIsOff()
+        follow.assertDoesNotExist()
         more.performClick()
         compose.onNode(isDialog()).assertExists()
         compose.onNodeWithText(context.getString(R.string.collaboration_share)).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.record_rename)).assertDoesNotExist()
-        compose.onNode(isToggleable() and hasAnyAncestor(isDialog())).assertIsOff().performClick().assertIsOn()
+        compose.onNode(isToggleable() and hasAnyAncestor(isDialog())).assertDoesNotExist()
         File(context.getExternalFilesDir(null), "record-player-menu-$name.png").outputStream().use {
             InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot().compress(Bitmap.CompressFormat.PNG, 100, it)
         }
         compose.onNodeWithContentDescription(context.getString(R.string.cd_records_close)).performClick()
-        follow.assertIsOn()
+        follow.assertDoesNotExist()
         File(context.getExternalFilesDir(null), "record-player-$name.png").outputStream().use {
             compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
         }

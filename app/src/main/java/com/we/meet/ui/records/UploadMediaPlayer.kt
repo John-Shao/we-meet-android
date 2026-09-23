@@ -138,6 +138,12 @@ internal fun UploadMediaPlayer(
         latestPosition(milliseconds)
     }
 
+    fun jump(milliseconds: Long) {
+        start(milliseconds)
+        report(milliseconds)
+        followState?.resume()
+    }
+
     // One poller for the whole playing lifetime rather than a loop per tick.
     LaunchedEffect(tick, state) {
         while (state.showsPause) {
@@ -181,8 +187,7 @@ internal fun UploadMediaPlayer(
             return@LaunchedEffect
         }
         // A citation seek also starts playback, matching the capture player.
-        start(request.milliseconds)
-        report(request.milliseconds)
+        jump(request.milliseconds)
         latestConsume()
     }
 
@@ -200,15 +205,14 @@ internal fun UploadMediaPlayer(
                     report(value)
                     latestConsume()
                 },
-                onSeekFinished = { engine?.seekTo(position) },
+                onSeekFinished = { engine?.seekTo(position); followState?.resume() },
                 onPlayPause = {
                     if (state.showsPause) { engine?.pause(); state = MediaPlaybackState.Ready }
                     else start(if (duration > 0 && position >= duration) 0 else position)
                 },
-                onSkipBack = { start(maxOf(0L, position - 15_000)) },
-                onSkipForward = { start(minOf(maxOf(0L, duration - 1), position + 15_000)) },
+                onSkipBack = { jump(maxOf(0L, position - 15_000)) },
+                onSkipForward = { jump(minOf(maxOf(0L, duration - 1), position + 15_000)) },
                 onRate = { speed -> rate = speed; if (state.showsPause) start(position) },
-                followState = if (fullscreen) null else followState,
             )
         }
     }
@@ -234,13 +238,12 @@ internal fun UploadMediaPlayer(
                 else start(if (duration > 0 && position >= duration) 0 else position)
             },
             onSeek = { value -> engine?.pause(); state = MediaPlaybackState.Ready; report(value); latestConsume() },
-            onSeekFinished = { engine?.seekTo(position) },
+            onSeekFinished = { engine?.seekTo(position); followState?.resume() },
             onRate = { speed -> rate = speed; if (state.showsPause) start(position) },
-            onSkipBack = { start(maxOf(0L, position - 15_000)) },
-            onSkipForward = { start(minOf(maxOf(0L, duration - 1), position + 15_000)) },
+            onSkipBack = { jump(maxOf(0L, position - 15_000)) },
+            onSkipForward = { jump(minOf(maxOf(0L, duration - 1), position + 15_000)) },
             muted = muted, onToggleMute = { muted = !muted; engine?.setMuted(muted) },
             onCollapse = { videoExpanded = false }, onFullscreen = { fullscreen = !fullscreen },
-            followState = followState,
         ) {
             BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 val videoHeight = minOf(maxWidth / aspect, maxHeight)

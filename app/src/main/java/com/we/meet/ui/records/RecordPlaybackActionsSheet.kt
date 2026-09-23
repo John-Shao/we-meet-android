@@ -13,8 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 
@@ -27,12 +25,10 @@ internal fun RecordPlaybackActionsSheet(
     onShare: () -> Unit,
     onMembers: () -> Unit,
     onRename: (() -> Unit)? = null,
-    followState: TranscriptFollowState? = null,
     onSpeakers: (() -> Unit)? = null,
     onTranslations: (() -> Unit)? = null,
     onInfo: (() -> Unit)? = null,
 ) {
-    val followLabel = stringResource(R.string.capture_playback_follow)
     ModalBottomSheet(onDismissRequest = onClose,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow) {
@@ -57,14 +53,6 @@ internal fun RecordPlaybackActionsSheet(
                     PlaybackAction(Icons.Outlined.Group, stringResource(R.string.collaboration_manage), onMembers)
                     onSpeakers?.let { PlaybackAction(Icons.Outlined.RecordVoiceOver, stringResource(R.string.records_speakers), it) }
                     onTranslations?.let { PlaybackAction(Icons.Outlined.Translate, stringResource(R.string.archives_title), it) }
-                    followState?.let {
-                        ListItem(
-                            leadingContent = { Icon(Icons.Outlined.MyLocation, null) },
-                            headlineContent = { Text(followLabel) },
-                            trailingContent = { Switch(checked = it.following, onCheckedChange = { _ -> it.toggle() },
-                                modifier = Modifier.semantics { contentDescription = followLabel }) },
-                        )
-                    }
                     onInfo?.let { PlaybackAction(Icons.Outlined.Info, stringResource(R.string.records_info), it) }
                 }
             }
