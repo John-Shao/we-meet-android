@@ -61,7 +61,8 @@ class RecordVideoControlsTest {
         val collapse = compose.onNodeWithText(context.getString(R.string.capture_playback_hide_video)).fetchSemanticsNode().boundsInRoot
         assertTrue(speed.right <= clock.left)
         assertEquals(speed.center.y, clock.center.y, 1f)
-        assertTrue(full.right <= collapse.left)
+        assertTrue(collapse.right <= full.left)
+        assertEquals(full.right, bounds.last().right, 1f)
         assertTrue(full.bottom < bounds.first().top)
         assertEquals(full.center.y, collapse.center.y, 1f)
         assertTrue(speed.top >= bounds.first().bottom)

@@ -259,12 +259,13 @@ internal fun UploadMediaPlayer(
         }
     } else if (!fullscreen) RecordPlayerSurface {
         if (hasVideo) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { fullscreen = true }) {
-                Icon(Icons.Outlined.Fullscreen, stringResource(R.string.capture_playback_fullscreen))
-            }
             TextButton(onClick = { videoExpanded = true }) {
                 Icon(Icons.Outlined.ExpandLess, null)
                 Text(stringResource(R.string.capture_playback_show_video))
+            }
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = { fullscreen = true }) {
+                Icon(Icons.Outlined.Fullscreen, stringResource(R.string.capture_playback_fullscreen))
             }
         }
         controls()
@@ -274,7 +275,7 @@ internal fun UploadMediaPlayer(
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.scrim) {
             Box(Modifier.fillMaxSize().safeDrawingPadding()) {
                 if (state == MediaPlaybackState.Error) Column {
-                    IconButton(onClick = { fullscreen = false }) {
+                    IconButton(onClick = { fullscreen = false }, modifier = Modifier.align(Alignment.End)) {
                         Icon(Icons.Outlined.FullscreenExit, stringResource(R.string.capture_playback_exit_fullscreen), tint = com.we.meet.ui.theme.OnMediaOverlay)
                     }
                     controls()
