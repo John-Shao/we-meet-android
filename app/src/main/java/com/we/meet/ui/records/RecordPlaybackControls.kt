@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -108,19 +109,27 @@ internal fun RecordPlaybackControls(
     } + Dimens.SpaceXxs * 2)
     val end = (durationMs ?: 0L).coerceAtLeast(1L)
     val timelineHeight = if (compactTopSpacing) Dimens.ControlCompact else Dimens.MinTouchTarget
-    val timelineOffset = if (compactTopSpacing) Dimens.SpaceS else Dimens.SpaceL
     CompositionLocalProvider(LocalContentColor provides contentColor) {
         Column(modifier.fillMaxWidth()) {
             Slider(value = positionMs.coerceIn(0L, end).toFloat(), valueRange = 0f..end.toFloat(), enabled = enabled,
                 onValueChange = { onInteraction(); onSeek(it.toLong()) }, onValueChangeFinished = onSeekFinished,
                 modifier = Modifier.fillMaxWidth().height(timelineHeight).semantics { contentDescription = positionLabel },
-                // Compact layout keeps the rail-to-button gap; Slider retains its minimum touch bounds.
-                thumb = { Box(Modifier.offset(y = timelineOffset).size(Dimens.RecordPlayback.ThumbSize).background(primary, CircleShape)) },
-                track = { slider -> Canvas(Modifier.offset(y = timelineOffset).fillMaxWidth().height(Dimens.RecordPlayback.TrackHeight)) {
-                    val start = if (rtl) size.width else 0f
-                    val finish = if (rtl) 0f else size.width
-                    drawLine(trackColor, Offset(start, center.y), Offset(finish, center.y), size.height, StrokeCap.Round)
-                    drawLine(primary, Offset(start, center.y), Offset(start + (finish - start) * slider.value / end, center.y), size.height, StrokeCap.Round)
+                // Keep the painted rail inside Slider's measured hit region, including over video.
+                thumb = {
+                    Box(Modifier.width(Dimens.RecordPlayback.ThumbSize).height(timelineHeight)) {
+                        Box(Modifier.align(Alignment.BottomCenter).padding(bottom = Dimens.SpaceXxs)
+                            .size(Dimens.RecordPlayback.ThumbSize).background(primary, CircleShape))
+                    }
+                },
+                track = { slider -> Box(Modifier.fillMaxWidth().height(timelineHeight)) {
+                    Canvas(Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                        .padding(bottom = Dimens.SpaceXs + Dimens.SpaceXxs)
+                        .height(Dimens.RecordPlayback.TrackHeight).testTag("record-playback-track")) {
+                        val start = if (rtl) size.width else 0f
+                        val finish = if (rtl) 0f else size.width
+                        drawLine(trackColor, Offset(start, center.y), Offset(finish, center.y), size.height, StrokeCap.Round)
+                        drawLine(primary, Offset(start, center.y), Offset(start + (finish - start) * slider.value / end, center.y), size.height, StrokeCap.Round)
+                    }
                 } })
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 // Measure with the current font scale instead of forcing every phone into two rows.
