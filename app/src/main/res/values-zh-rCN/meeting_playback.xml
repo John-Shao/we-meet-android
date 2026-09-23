@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="capture_playback_mute">静音</string>
+    <string name="capture_playback_unmute">取消静音</string>
     <string name="capture_playback_video_controls">显示播放控件</string>
     <string name="capture_playback_title">录音回放</string>
     <string name="capture_playback_position">录音播放位置</string>

@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="capture_playback_mute">Mute</string>
+    <string name="capture_playback_unmute">Unmute</string>
     <string name="capture_playback_video_controls">Show playback controls</string>
     <string name="capture_playback_title">Recording playback</string>
     <string name="capture_playback_position">Recording position</string>

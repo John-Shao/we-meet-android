@@ -269,11 +269,37 @@ class UploadMediaPlayerTest {
         }
     }
 
+    @Test fun videoMuteAndSkipControlsReachTheEngineAndSurviveSurfaceChanges() {
+        currentMedia.value = media.copy(mediaType = "video", contentType = "video/mp4")
+        show()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_mute)).performClick()
+        assertEquals(null, engine)
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
+        compose.waitUntil(8_000) { engine?.mutedOutput == true }
+        val original = engine
+        compose.runOnIdle { seek.value = CaptureAudioSeek(45_000) }
+        compose.waitUntil(8_000) { engine?.lastPlayFrom == 45_000L && reported.contains(45_000L) }
+        compose.onNodeWithContentDescription(label(R.string.cd_records_skip_back)).performClick()
+        compose.waitUntil(8_000) { engine?.lastPlayFrom == 30_000L && reported.contains(30_000L) }
+        compose.onNodeWithContentDescription(label(R.string.cd_records_skip_forward)).performClick()
+        compose.waitUntil(8_000) { engine?.lastPlayFrom == 45_000L }
+        compose.onNodeWithText(label(R.string.capture_playback_hide_video)).performClick()
+        compose.onNodeWithText(label(R.string.capture_playback_show_video)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_fullscreen)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_unmute)).performClick()
+        compose.runOnIdle {
+            assertTrue(original === engine)
+            assertEquals(false, engine?.mutedOutput)
+        }
+    }
+
     /** A whole-file engine with no stream behind it. */
     private class FakeEngine(private val onInterrupted: () -> Unit) : WholeFilePlayback {
         @Volatile var outputSurface: android.view.Surface? = null
         override fun setSurface(surface: android.view.Surface?) { outputSurface = surface }
         @Volatile var playing = false
+        @Volatile var mutedOutput = false
+        override fun setMuted(muted: Boolean) { mutedOutput = muted }
         @Volatile var clock = 0L
         @Volatile var lastPlayFrom: Long? = null
         @Volatile var duration = 120_000L

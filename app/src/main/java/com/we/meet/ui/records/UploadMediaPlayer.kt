@@ -85,6 +85,7 @@ internal fun UploadMediaPlayer(
     var position by remember(sourceId) { mutableLongStateOf(positionMs ?: 0L) }
     var duration by remember(sourceId) { mutableLongStateOf(0L) }
     var rate by remember(sourceId) { mutableFloatStateOf(1f) }
+    var muted by remember(sourceId) { mutableStateOf(false) }
     var videoExpanded by remember(sourceId) { mutableStateOf(true) }
     var fullscreen by remember(sourceId) { mutableStateOf(false) }
     var tick by remember(sourceId) { mutableIntStateOf(0) }
@@ -121,7 +122,7 @@ internal fun UploadMediaPlayer(
             .onFailure { state = MediaPlaybackState.Error }
             .getOrNull() ?: return
         engine = current
-        runCatching { current.setSurface(surface); current.play(from, rate) }
+        runCatching { current.setSurface(surface); current.setMuted(muted); current.play(from, rate) }
             .onSuccess {
                 state = if (current.isPreparing()) MediaPlaybackState.Preparing else MediaPlaybackState.Playing
                 if (state == MediaPlaybackState.Preparing) preparationStartedAt = SystemClock.elapsedRealtime()
@@ -235,6 +236,9 @@ internal fun UploadMediaPlayer(
             onSeek = { value -> engine?.pause(); state = MediaPlaybackState.Ready; report(value); latestConsume() },
             onSeekFinished = { engine?.seekTo(position) },
             onRate = { speed -> rate = speed; if (state.showsPause) start(position) },
+            onSkipBack = { start(maxOf(0L, position - 15_000)) },
+            onSkipForward = { start(minOf(maxOf(0L, duration - 1), position + 15_000)) },
+            muted = muted, onToggleMute = { muted = !muted; engine?.setMuted(muted) },
             onCollapse = { videoExpanded = false }, onFullscreen = { fullscreen = !fullscreen },
             followState = followState,
         ) {
@@ -247,8 +251,8 @@ internal fun UploadMediaPlayer(
     if (hasVideo && videoExpanded && !fullscreen && state != MediaPlaybackState.Error) {
         val heightCap = (LocalConfiguration.current.screenHeightDp * Dimens.MediaPreviewMaxHeightRatio).dp
         BoxWithConstraints(Modifier.fillMaxWidth()) {
-            // Keep the player at the existing bottom anchor and cap how much text it covers.
-            videoPanel(Modifier.fillMaxWidth().height(minOf(maxWidth / (16f / 9f), heightCap)))
+            // Bound the top preview so the transcript retains reading space below it.
+            videoPanel(Modifier.fillMaxWidth().height(minOf(maxWidth / (16f / 9f), heightCap).coerceAtLeast(Dimens.RecordPlayback.VideoMinHeight)))
         }
     } else if (!fullscreen) RecordPlayerSurface {
         if (hasVideo) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

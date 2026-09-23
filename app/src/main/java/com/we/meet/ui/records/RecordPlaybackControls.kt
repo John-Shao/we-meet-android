@@ -159,7 +159,7 @@ internal fun RecordPlaybackControls(
 }
 
 @Composable
-private fun SkipFifteenButton(forward: Boolean, onClick: () -> Unit, enabled: Boolean = true) {
+internal fun SkipFifteenButton(forward: Boolean, onClick: () -> Unit, enabled: Boolean = true) {
     // A circular arrow with an explicit interval avoids confusing skip with replay/fast-forward.
     val label = stringResource(if (forward) R.string.cd_records_skip_forward else R.string.cd_records_skip_back)
     IconButton(onClick = onClick, enabled = enabled,

@@ -26,6 +26,7 @@ interface WholeFilePlayback {
     fun failure(): Throwable? = null
     fun videoAspectRatio(): Float = 16f / 9f
     fun setSurface(surface: Surface?) {}
+    fun setMuted(muted: Boolean) {}
     fun durationMs(): Long
     fun isPlaying(): Boolean
     fun positionMs(): Long
@@ -71,6 +72,13 @@ class UploadMediaEngine(
     private var pendingRate = 1f
     private var seeking = false
     private var playWhenReady = false
+    private var muted = false
+
+    @Synchronized override fun setMuted(muted: Boolean) {
+        this.muted = muted
+        val volume = if (muted) 0f else 1f
+        if (!closed) player?.setVolume(volume, volume)
+    }
 
     @Synchronized override fun isPreparing() = preparing
     @Synchronized override fun failure() = error
@@ -202,6 +210,8 @@ class UploadMediaEngine(
         }
         val value = MediaPlayer().apply {
             setAudioAttributes(attributes)
+            val volume = if (muted) 0f else 1f
+            setVolume(volume, volume)
         }
         player = value
         value.setSurface(surface)

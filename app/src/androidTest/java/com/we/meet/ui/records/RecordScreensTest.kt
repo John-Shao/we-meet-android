@@ -26,6 +26,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
@@ -69,6 +70,7 @@ class RecordScreensTest {
         var failRename = false
         var recordTitle = "Private planning meeting"
         var sourceType = "audio_recording"
+        var importedMediaType: String? = null
         var uploadCanControl = false
         val renames = mutableListOf<RecordTitleRequestDto>()
         var revoked = false
@@ -91,7 +93,9 @@ class RecordScreensTest {
         var sourceFilter: String? = null
         val summaryFilters = mutableListOf<Boolean?>()
         private fun checkAccess() { check(!revoked) { "Fixture access revoked" } }
-        override suspend fun media(recordId: String, download: Boolean?): RecordMediaDto = error("Media not configured")
+        override suspend fun media(recordId: String, download: Boolean?): RecordMediaDto = RecordMediaDto(
+            url = "https://private.example/fixture", expiresIn = 3600,
+            mediaType = checkNotNull(importedMediaType), name = "fixture", size = 4096, contentType = "video/mp4")
         var exportReads = 0
         override suspend fun transcriptExport(url: String): okhttp3.ResponseBody {
             checkAccess()
@@ -116,7 +120,7 @@ class RecordScreensTest {
         override suspend fun record(recordId: String): RecordDto {
             checkAccess()
             return RecordDto(recordId, sourceType, recordTitle, "2026-09-13T00:00:00Z", revision,
-                RecordCapabilitiesDto(readSummary = true, readTranscript = originals, rename = renameAllowed), isOngoing = !renameAllowed,
+                RecordCapabilitiesDto(readSummary = true, readTranscript = originals, rename = renameAllowed, playMedia = importedMediaType != null), isOngoing = !renameAllowed,
                 upload = if (sourceType == "upload") RecordUploadDto(canControl = uploadCanControl) else null)
         }
         val dateQueries = java.util.concurrent.CopyOnWriteArrayList<List<String?>>()
@@ -425,6 +429,29 @@ class RecordScreensTest {
         assertEquals("Private planning meeting", fixture.recordTitle)
         assertTrue(fixture.renames.isEmpty())
     }
+    @Test fun importedVideoSitsBetweenTitleAndTabsWhileAudioStaysBelowText() {
+        val fixture = Fixture().apply { sourceType = "upload"; importedMediaType = "video" }
+        val repository = MeetingRecordRepository(fixture) { "reader" }
+        val type = mutableStateOf("video")
+        compose.setContent { androidx.compose.runtime.key(type.value) {
+            WeMeetTheme { RecordDetailScreen(repository, "reader", recordId, {}) }
+        } }
+        compose.waitUntil(8_000) { compose.onAllNodesWithContentDescription(label(R.string.capture_playback_video_preview)).fetchSemanticsNodes().isNotEmpty() }
+        val title = compose.onNodeWithText(fixture.recordTitle).fetchSemanticsNode().boundsInRoot
+        val video = compose.onNodeWithContentDescription(label(R.string.capture_playback_video_preview)).fetchSemanticsNode().boundsInRoot
+        val tab = compose.onNodeWithText(label(R.string.records_originals)).fetchSemanticsNode().boundsInRoot
+        assertTrue(title.bottom < video.top)
+        assertTrue(video.bottom <= tab.top)
+        screenshot("record-video-top-layout")
+        compose.onNodeWithText(label(R.string.records_chapters)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).assertIsDisplayed()
+        compose.runOnIdle { fixture.importedMediaType = "audio"; type.value = "audio" }
+        compose.waitUntil(8_000) { compose.onAllNodesWithContentDescription(label(R.string.cd_records_play)).fetchSemanticsNodes().isNotEmpty() }
+        val audio = compose.onNodeWithContentDescription(label(R.string.cd_records_play)).fetchSemanticsNode().boundsInRoot
+        val audioTab = compose.onNodeWithText(label(R.string.records_originals)).fetchSemanticsNode().boundsInRoot
+        assertTrue(audio.top > audioTab.bottom)
+    }
+
     private fun screenshot(name: String) {
         val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
         File(context.externalCacheDir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
