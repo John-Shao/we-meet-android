@@ -42,8 +42,9 @@ internal fun MaterialActions(app: WeMeetApp, viewer: String, record: RecordDto, 
     var panel by remember { mutableStateOf<String?>(null) }
     var copied by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-        TextButton(onClick = { copied = false; panel = "share" }) { Text(stringResource(R.string.collaboration_share)) }
-        TextButton(onClick = { panel = "members" }) { Text(stringResource(R.string.collaboration_manage)) }
+        // 两颗都是裸 TextButton:补最小触控高度(规范 §5.2 的 48dp)。
+        TextButton(onClick = { copied = false; panel = "share" }, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) { Text(stringResource(R.string.collaboration_share)) }
+        TextButton(onClick = { panel = "members" }, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) { Text(stringResource(R.string.collaboration_manage)) }
     }
     if (panel == "share") ModalBottomSheet(onDismissRequest = { panel = null }) {
         Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {

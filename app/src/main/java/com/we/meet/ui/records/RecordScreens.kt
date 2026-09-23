@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -166,14 +168,21 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                     // 两者之间没有缝,合起来就是那条白色固定头;滚动区留在它下面,铺浅灰。
                     Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
                         Column(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                            Text(if (document) stringResource(R.string.record_minutes_document_title, record.title) else record.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            // 纪要文档页的顶栏标题已经是「智能纪要」,所以这里只用记录标题 ——
+                            // 原先拼成「智能纪要：{标题}」,同一个词在一屏里出现两次,
+                            // 长标题还被挤成两行。Web 端不撞是因为它的顶栏是「返回智能纪要」。
+                            Text(record.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             Text("${recordTime(record.originAt)} · ${stringResource(recordSourceLabel(record))}",
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                     if (app != null && (if (document) record.capabilities.readSummary else record.capabilities.readTranscript)) {
-                        androidx.compose.runtime.key(viewer, recordId, document) {
-                            MaterialActions(app, viewer, record, if (document) "minutes" else "record") { refresh++ }
+                        // 分享行与正文分隔:它原先是一排没有容器感的裸按钮,夹在白色标题区和
+                        // 浅灰正文之间,三块底色说不清谁属于谁。
+                        RecordSurfaceStrip {
+                            androidx.compose.runtime.key(viewer, recordId, document) {
+                                MaterialActions(app, viewer, record, if (document) "minutes" else "record") { refresh++ }
+                            }
                         }
                     }
                     val canReadTranslations = record.capabilities.readTranscript && app != null && (record.sourceType == "meeting" || record.sourceType == "upload" || record.sourceType == "audio_recording" && record.captureId != null && record.capabilities.controlCapture)
@@ -283,7 +292,33 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                 val versions = summaries.getOrThrow().results
                                 val primary = versions.firstOrNull { it.isCurrent } ?: versions.firstOrNull()
                                 val older = versions.filter { it.id != primary?.id }
-                                LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                                // 工具行在正文之上(与 Web 的面板顶部一致):原先它排在 LazyColumn
+                                // 之后、贴着屏幕底,长纪要要滚到底才够得着「问问 AI / 管理纪要」。
+                                // 同时补白底 + 分隔线 —— 它原来没有背景,滚动内容会从它后面穿过去,
+                                // 末行看起来像被裁掉。
+                                // 只有真的会画出按钮时才铺这一条(纪要空态只留空态自带的那颗刷新),
+                                // 否则就是一截没有内容的空白。
+                                val showTools = app != null && versions.isNotEmpty() &&
+                                    (!document || record.capabilities.readTranscript)
+                                if (showTools) RecordSurfaceStrip {
+                                    Row(
+                                        Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                    ) {
+                                        if (document && record.capabilities.readTranscript) TextButton(onClick = { tool = "ask" }, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) { Text(stringResource(R.string.minutes_ask)) }
+                                        if (document) TextButton(onClick = { tool = "manage" }, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) { Text(stringResource(R.string.minutes_manage)) }
+                                        // 还没有纪要时空态自己就带一个「刷新」,工具行再放一个就是同一屏两个同名动作;
+                                        // 有内容时页面每 15 秒也会自动重读,这里只留一份手动刷新。
+                                        if (versions.isNotEmpty()) TextButton(onClick = { refresh++ }, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) { Text(stringResource(R.string.records_refresh)) }
+                                    }
+                                }
+                                LazyColumn(
+                                    Modifier.weight(1f).fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
+                                    // 末条与屏幕底之间留出呼吸位:原先最后一行的下沿正好贴着屏底,
+                                    // 加上工具行就在旁边,读起来像被裁了一半。
+                                    contentPadding = PaddingValues(bottom = Dimens.SpaceL),
+                                ) {
                                     if (primary != null) item(key = primary.id) {
                                         SummaryCard(primary, record.capabilities.readTranscript, chaptersOnly) { ref -> citation = primary.inputSnapshotId to ref }
                                     }
@@ -314,13 +349,6 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                             )
                                         }
                                     }
-                                }
-                                if (app != null) Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    if (document && record.capabilities.readTranscript) TextButton(onClick = { tool = "ask" }) { Text(stringResource(R.string.minutes_ask)) }
-                                    if (document) TextButton(onClick = { tool = "manage" }) { Text(stringResource(R.string.minutes_manage)) }
-                                    // 还没有纪要时空态自己就带一个「刷新」,底栏再放一个就是同一屏两个同名动作;
-                                    // 有内容时页面每 15 秒也会自动重读,这里只留一份手动刷新。
-                                    if (versions.isNotEmpty()) TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
                                 }
                                 if (document && app != null && tool != null) ModalBottomSheet(onDismissRequest = { tool = null }) {
                                     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
@@ -373,6 +401,21 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
 }
 
 /**
+ * 页面头部的白色动作条。
+ *
+ * 抽出来是因为「纪要文档页」与「实录页」共用同一条:标题区(白)→ 动作条(白)→ 一条
+ * 分隔线 → 浅灰正文。原先动作条是裸的,底色跟着父级走,于是同一个按钮条在实录页
+ * 看起来在灰底上、在文档页看起来又在白底下 —— 而实际两块都是 `background`。
+ */
+@Composable
+private fun RecordSurfaceStrip(content: @Composable () -> Unit) {
+    Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
+        content()
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = Dimens.DividerThin)
+    }
+}
+
+/**
  * Tab 行两端那层渐隐。
  *
  * 与 [WeMeetChipRow] 同款做法(那里注释写明动机:装不下的标签没有任何提示,
@@ -419,7 +462,11 @@ internal fun SummaryCard(version: RecordSummaryVersionDto, originals: Boolean, c
             if (points.isNotEmpty()) {
                 var expanded by remember(version.id, label) { mutableStateOf(true) }
                 Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-                    TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth()) {
+                    // 折叠标题用 TextButton 是为了整行可点,但 M3 的 TextButton 内容内边距是
+                    // 12dp,叠加外层 16dp 后标题落在 28dp、而下面的正文在 32dp —— 一屏里
+                    // 小节标题和它的内容差 4dp,看着就是「没对齐」。把横向内边距收掉,
+                    // 标题与正文回到同一条 16dp 网格线上(纵向仍保留 TextButton 的高度)。
+                    TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = Dimens.SpaceNone)) {
                         Text("${stringResource(label)} · ${points.size}", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null)
                     }
@@ -437,7 +484,9 @@ internal fun SummaryCard(version: RecordSummaryVersionDto, originals: Boolean, c
                 }
             }
         }
-        TextButton(onClick = { sourceInfo = !sourceInfo }) {
+        // 「生成信息」同样收掉 TextButton 的横向内边距 —— 理由同上,让它与版本行、
+        // 正文对齐在同一条 16dp 网格线上。
+        TextButton(onClick = { sourceInfo = !sourceInfo }, contentPadding = PaddingValues(horizontal = Dimens.SpaceNone)) {
             Text(stringResource(R.string.minutes_source_info))
             Icon(if (sourceInfo) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null)
         }
