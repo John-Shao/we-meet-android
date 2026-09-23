@@ -296,7 +296,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             val pendingReplacement = visibleRead(viewer, recordId) { repository.pendingReplacement(viewer, recordId) }
                             LaunchedEffect(pendingReplacement?.getOrNull() != null) { if (pendingReplacement?.getOrNull() != null) replacementOpen = true }
                             RecordOriginals(repository, viewer, record, followState = transcriptFollow, onRefresh = { refresh++ }, onExport = exportTranscript, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay || canPlayImport },
-                                onWordSource = if (canPlayImport) ({ audioSeek = CaptureAudioSeek(it, preservePlayback = true); transcriptFollow.resume() }) else null,
+                                onWordSource = if (canPlayImport) ({ audioSeek = CaptureAudioSeek(it, preservePlayback = true) }) else null,
                                 // 只给纯文本:菜单项整行可点,套按钮会带出主色和按钮内边距,
                                 // 与旁边几项的普通 Text 既不同色也不同缩进。
                                 transcriptionLabel = if (canManageTranscription) ({ Text(stringResource(R.string.records_transcription_manage)) }) else null,

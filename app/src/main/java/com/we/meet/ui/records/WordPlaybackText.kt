@@ -51,10 +51,11 @@ internal fun WordPlaybackText(
     val requester = remember { BringIntoViewRequester() }
     val latestSeek by rememberUpdatedState(onSeek)
     val latestBrowse by rememberUpdatedState(onBrowse)
-    LaunchedEffect(activeIndex, following, layout?.size) {
+    var touching by remember { mutableStateOf(false) }
+    LaunchedEffect(activeIndex, following, layout?.size, touching) {
         val word = words.getOrNull(activeIndex)
         val result = layout
-        if (following && word != null && result != null) requester.bringIntoView(result.getBoundingBox(word.startOffset))
+        if (following && !touching && word != null && result != null) requester.bringIntoView(result.getBoundingBox(word.startOffset))
     }
     SelectionContainer {
         Text(annotated, style = MaterialTheme.typography.bodyLarge,
@@ -62,19 +63,24 @@ internal fun WordPlaybackText(
             modifier = Modifier.bringIntoViewRequester(requester).pointerInput(text, words) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
-                    val up = waitForUpOrCancellation()
-                    if (up == null || up.uptimeMillis - down.uptimeMillis >= 450 ||
-                        (up.position - down.position).getDistance() > viewConfiguration.touchSlop) {
-                        latestBrowse()
-                    } else {
-                        val result = layout
-                        if (result != null && text.isNotEmpty()) {
-                            val offset = result.getOffsetForPosition(up.position)
-                            if (offset < text.length && result.getBoundingBox(offset).contains(up.position)) {
-                                words.firstOrNull { offset >= it.startOffset && offset < it.endOffset }?.let { latestSeek?.invoke(it.startMs) }
+                    touching = true
+                    try {
+                        val up = withTimeoutOrNull(minOf(450L, viewConfiguration.longPressTimeoutMillis)) {
+                            waitForUpOrCancellation()
+                        }
+                        if (up == null || up.uptimeMillis - down.uptimeMillis >= 450 ||
+                            (up.position - down.position).getDistance() > viewConfiguration.touchSlop) {
+                            latestBrowse()
+                        } else {
+                            val result = layout
+                            if (result != null && text.isNotEmpty()) {
+                                val offset = result.getOffsetForPosition(up.position)
+                                if (offset < text.length && result.getBoundingBox(offset).contains(up.position)) {
+                                    words.firstOrNull { offset >= it.startOffset && offset < it.endOffset }?.let { latestSeek?.invoke(it.startMs) }
+                                }
                             }
                         }
-                    }
+                    } finally { touching = false }
                 }
             })
     }

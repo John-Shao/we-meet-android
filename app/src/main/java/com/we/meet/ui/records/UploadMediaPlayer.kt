@@ -94,6 +94,7 @@ internal fun UploadMediaPlayer(
     var tick by remember(sourceId) { mutableIntStateOf(0) }
     var preparationStartedAt by remember(sourceId) { mutableLongStateOf(0) }
     var automaticRecoveries by remember(sourceId) { mutableIntStateOf(0) }
+    var awaitingSeek by remember(sourceId) { mutableStateOf(false) }
 
     var openedUrl by remember(sourceId) { mutableStateOf<String?>(null) }
     var surface by remember(sourceId) { mutableStateOf<Surface?>(null) }
@@ -101,6 +102,7 @@ internal fun UploadMediaPlayer(
     val latestMedia by rememberUpdatedState(media)
 
     fun stop() {
+        awaitingSeek = false
         engine?.close()
         engine = null
         state = MediaPlaybackState.Ready
@@ -155,8 +157,8 @@ internal fun UploadMediaPlayer(
         onDispose { lifecycle.removeObserver(observer) }
     }
     // One local sampler, suspended while this UI is in the background.
-    LaunchedEffect(tick, state, visible) {
-        while (state.showsPause && visible) {
+    LaunchedEffect(tick, state, visible, awaitingSeek) {
+        while ((state.showsPause || awaitingSeek) && visible) {
             val current = engine ?: break
             if (current.failure() != null) {
                 if (openedUrl != latestMedia.url && automaticRecoveries < 1) start(position, automatic = true)
@@ -174,7 +176,13 @@ internal fun UploadMediaPlayer(
                 delay(POSITION_POLL_MS)
                 continue
             }
-            if (!current.isSeeking()) report(current.positionMs())
+            if (!current.isSeeking()) {
+                report(current.positionMs())
+                if (awaitingSeek) {
+                    awaitingSeek = false
+                    followState?.resume()
+                }
+            }
             duration = current.durationMs()
             latestDuration(duration.takeIf(::validMediaDuration))
             aspect = current.videoAspectRatio()
@@ -184,7 +192,7 @@ internal fun UploadMediaPlayer(
             }
             if (!current.isPlaying()) {
                 state = MediaPlaybackState.Ready
-                break
+                if (!awaitingSeek) break
             }
             delay(POSITION_POLL_MS)
         }
@@ -197,12 +205,18 @@ internal fun UploadMediaPlayer(
             return@LaunchedEffect
         }
         if (request.preservePlayback) {
-            engine?.seekTo(request.milliseconds)
             position = request.milliseconds
-            val seekStarted = SystemClock.elapsedRealtime()
-            while (engine?.isSeeking() == true && SystemClock.elapsedRealtime() - seekStarted < 5000) delay(POSITION_POLL_MS)
-            if (engine?.isSeeking() != true) report(engine?.positionMs() ?: request.milliseconds)
-            followState?.resume()
+            val current = engine
+            if (current == null) {
+                report(request.milliseconds)
+                followState?.resume()
+            } else {
+                followState?.following = false
+                current.seekTo(request.milliseconds)
+                // Keep sampling a paused player until native seeking settles.
+                // Visibility and disposal control the sampler, not an arbitrary deadline.
+                awaitingSeek = true
+            }
         } else {
             // Existing citation/timestamp actions continue to start playback.
             jump(request.milliseconds)
