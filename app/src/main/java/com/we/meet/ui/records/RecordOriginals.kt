@@ -103,7 +103,10 @@ internal fun RecordOriginals(
     LaunchedEffect(followState.resumeToken) {
         if (followState.resumeToken > 0) {
             input = ""; query = ""; speakerId = null
-            anchorMs = positionMs ?: 0L; cursors = listOf(null)
+            // Resume within the current page. Re-anchoring at the playhead
+            // removes all preceding rows from the server's forward-only window.
+            // Filter changes reset cursors above; the window effect below loads
+            // another page only when the playhead actually leaves this one.
         }
     }
     val scope = rememberCoroutineScope()
@@ -141,8 +144,8 @@ internal fun RecordOriginals(
             cursors = listOf(null)
         }
     }
-    LaunchedEffect(followIndex, followId, following, filtered, editing) {
-        if (!following || filtered || editing || followIndex < 0 || listState.isScrollInProgress) return@LaunchedEffect
+    LaunchedEffect(followIndex, followId, following, filtered, editing, dragging, followState.resumeToken) {
+        if (!following || filtered || editing || dragging || followIndex < 0) return@LaunchedEffect
         listState.animateScrollToItem(followIndex)
     }
     val search = { query = input.trim(); cursors = listOf(null); keyboard?.hide(); Unit }
@@ -212,10 +215,7 @@ internal fun RecordOriginals(
             }
         }
         if (positionMs != null && !following) TextButton(
-            onClick = {
-                input = ""; query = ""; speakerId = null
-                anchorMs = positionMs; cursors = listOf(null); followState.resume()
-            },
+            onClick = { followState.resume() },
             enabled = !editing,
             modifier = Modifier.heightIn(min = Dimens.MinTouchTarget),
         ) { Text(stringResource(R.string.records_back_to_playback)) }
@@ -302,8 +302,12 @@ internal fun RecordOriginals(
         if (current != null) {
             // 单页时这一行只会剩一个孤立的「刷新」—— 那条规则现在收在 RecordPager 里。
             RecordPager(
-                hasPrevious = cursors.size > 1,
-                onPrevious = { followState.following = false; cursors = cursors.dropLast(1) },
+                hasPrevious = cursors.size > 1 || !filtered && anchorMs > 0,
+                onPrevious = {
+                    followState.following = false
+                    if (cursors.size > 1) cursors = cursors.dropLast(1)
+                    else anchorMs = 0L
+                },
                 hasNext = current.nextCursor != null,
                 onNext = { current.nextCursor?.let { next -> followState.following = false; cursors = cursors + next } },
                 onRefresh = onRefresh,

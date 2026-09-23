@@ -32,6 +32,12 @@ import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
+import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.lifecycle.Lifecycle
@@ -85,6 +91,8 @@ class RecordScreensTest {
         var correctionGate: CompletableDeferred<Unit>? = null
         val corrections = mutableListOf<RecordCorrectionRequest>()
         val originalQueries = mutableListOf<Pair<String?, String?>>()
+        var playbackRows: List<RecordOriginalSegmentDto>? = null
+        val originalAnchors = mutableListOf<Long?>()
         val summarySelectors = mutableListOf<String?>()
         var missingVersion = false
         var chapters = false
@@ -166,6 +174,15 @@ class RecordScreensTest {
         override suspend fun originals(recordId: String, revision: Int, query: String?, speakerId: String?, cursor: String?, atMs: Long?): RecordPageDto<RecordOriginalSegmentDto> {
             checkAccess()
             originalQueries += query to speakerId
+            originalAnchors += atMs
+            playbackRows?.let { all ->
+                val matching = all.filter { query == null || it.text.contains(query) }
+                val start = matching.lastOrNull { it.startMs <= (atMs ?: 0L) }?.startMs ?: 0L
+                val window = matching.filter { it.startMs >= start }
+                val offset = cursor?.toInt() ?: 0
+                val page = window.drop(offset).take(30)
+                return RecordPageDto(page, (offset + page.size).takeIf { it < window.size }?.toString())
+            }
             return RecordPageDto(listOf(RecordOriginalSegmentDto(segmentId, 1, snapshotId, versionId, "Speaker 1", 1000, 3000,
                 if (query == null) "Full original text" else "Search matched original", correctionRevision = correctionVersion, canCorrect = canCorrect)))
         }
@@ -327,6 +344,89 @@ class RecordScreensTest {
         awaitText(label(R.string.records_correction_conflict))
         compose.onNodeWithText("Pending draft").assertIsDisplayed()
         assertEquals(1, fixture.corrections.size)
+    }
+
+    private fun playbackRows(count: Int) = (0 until count).map { index ->
+        RecordOriginalSegmentDto("33333333-3333-4333-8333-${index.toString().padStart(12, '0')}",
+            1, snapshotId, versionId, "Speaker 1", index * 1000L, (index + 1) * 1000L,
+            "Original line $index")
+    }
+
+    @Test fun returnToPlaybackKeepsEarlierRowsAvailableForDragging() = checkReturnKeepsEarlierRows(15_500L)
+
+    @Test fun returnAfterPlaybackEndsKeepsEarlierRowsAvailableForDragging() = checkReturnKeepsEarlierRows(20_000L)
+
+    @Test fun returnToPlaybackInterruptsAnOngoingFlingWhilePaused() {
+        val fixture = Fixture().apply { sourceType = "upload"; playbackRows = playbackRows(20) }
+        val follow = TranscriptFollowState()
+        val repository = MeetingRecordRepository(fixture) { "reader" }
+        val record = RecordDto(recordId, "upload", "Playback", "2026-09-13T00:00:00Z", 3,
+            RecordCapabilitiesDto(readTranscript = true))
+        compose.setContent { WeMeetTheme {
+            RecordOriginals(repository, "reader", record, {}, onExport = {}, positionMs = 15_500L, followState = follow)
+        } }
+        awaitText("Original line 15")
+        compose.waitForIdle()
+        repeat(2) {
+            compose.mainClock.autoAdvance = false
+            try {
+                val list = compose.onNode(hasScrollAction())
+                list.performTouchInput { swipeDown(durationMillis = 100) }
+                compose.mainClock.advanceTimeByFrame()
+                val before = list.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
+                compose.mainClock.advanceTimeBy(32)
+                val after = list.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
+                assertNotEquals("Return must be tested while inertia is still moving the list", before, after)
+                compose.onNodeWithText(label(R.string.records_back_to_playback)).performClick()
+            } finally {
+                compose.mainClock.autoAdvance = true
+            }
+            compose.waitForIdle()
+            compose.onNodeWithText("Original line 15").assertIsDisplayed()
+            compose.runOnIdle { assertTrue(follow.following) }
+        }
+    }
+
+    private fun checkReturnKeepsEarlierRows(positionMs: Long) {
+        val fixture = Fixture().apply { sourceType = "upload"; playbackRows = playbackRows(20) }
+        val follow = TranscriptFollowState()
+        val repository = MeetingRecordRepository(fixture) { "reader" }
+        val record = RecordDto(recordId, "upload", "Playback", "2026-09-13T00:00:00Z", 3,
+            RecordCapabilitiesDto(readTranscript = true))
+        compose.setContent { WeMeetTheme {
+            RecordOriginals(repository, "reader", record, {}, onExport = {}, positionMs = positionMs, followState = follow)
+        } }
+        val target = if (positionMs == 20_000L) "Original line 19" else "Original line 15"
+        awaitText(target)
+        compose.onNodeWithText(target).assertIsDisplayed()
+        compose.onNode(hasScrollAction()).performTouchInput {
+            if (positionMs == 20_000L) swipeDown(durationMillis = 500) else swipeUp(durationMillis = 500)
+        }
+        compose.onNodeWithText(label(R.string.records_back_to_playback)).assertIsDisplayed().performClick()
+        compose.onNodeWithText(target).assertIsDisplayed()
+        compose.onNode(hasScrollAction()).performTouchInput { swipeDown(durationMillis = 500) }
+        compose.runOnIdle {
+            assertFalse(follow.following)
+            assertTrue("Returning must not truncate the current page", fixture.originalAnchors.all { it == 0L })
+        }
+        compose.onNode(hasScrollAction()).performScrollToIndex(0)
+        compose.onNodeWithText("Original line 0").assertIsDisplayed()
+    }
+
+    @Test fun playbackWindowBeyondFirstPageStillOffersEarlierText() {
+        val fixture = Fixture().apply { sourceType = "upload"; playbackRows = playbackRows(40) }
+        val follow = TranscriptFollowState()
+        val repository = MeetingRecordRepository(fixture) { "reader" }
+        val record = RecordDto(recordId, "upload", "Playback", "2026-09-13T00:00:00Z", 3,
+            RecordCapabilitiesDto(readTranscript = true))
+        compose.setContent { WeMeetTheme {
+            RecordOriginals(repository, "reader", record, {}, onExport = {}, positionMs = 35_500L, followState = follow)
+        } }
+        awaitText("Original line 35")
+        compose.onNodeWithText(label(R.string.records_previous)).assertIsDisplayed().performClick()
+        awaitText("Original line 0")
+        compose.onNodeWithText("Original line 0").assertIsDisplayed()
+        compose.runOnIdle { assertFalse(follow.following); assertEquals(0L, fixture.originalAnchors.last()) }
     }
 
     @Test fun returnToPlaybackClearsSearchEvenWhilePaused() {
