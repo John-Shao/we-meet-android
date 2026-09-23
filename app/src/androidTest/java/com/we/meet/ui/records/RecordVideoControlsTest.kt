@@ -31,9 +31,10 @@ class RecordVideoControlsTest {
         compose.setContent {
             WeMeetTheme {
                 var playing by remember { mutableStateOf(false) }
+                val follow = remember { TranscriptFollowState() }
                 RecordVideoControls(Modifier.width(360.dp).height(210.dp), playing, 27000, 47000, 1f, false,
                     onPlayPause = { playing = !playing }, onSeek = {}, onSeekFinished = {}, onRate = {},
-                    onCollapse = {}, onFullscreen = {}, onMore = {}) {
+                    onCollapse = {}, onFullscreen = {}, followState = follow) {
                     Text("视频预览", color = OnMediaOverlay, modifier = Modifier.align(Alignment.Center))
                 }
             }
@@ -41,6 +42,13 @@ class RecordVideoControlsTest {
         compose.mainClock.advanceTimeBy(100)
         val play = compose.onNodeWithContentDescription(context.getString(R.string.cd_records_play))
         val pause = compose.onNodeWithContentDescription(context.getString(R.string.cd_records_pause))
+        compose.onNodeWithContentDescription(context.getString(R.string.cd_records_more)).assertDoesNotExist()
+        val follow = compose.onNodeWithContentDescription(context.getString(R.string.capture_playback_follow))
+        follow.assertIsOn().performClick()
+        compose.mainClock.advanceTimeBy(100)
+        follow.assertIsOff().performClick()
+        compose.mainClock.advanceTimeBy(100)
+        follow.assertIsOn()
         play.performClick()
         compose.mainClock.advanceTimeBy(3200)
         pause.assertDoesNotExist()

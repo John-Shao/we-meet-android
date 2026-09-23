@@ -18,7 +18,7 @@ import androidx.compose.ui.semantics.semantics
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 
-/** Player entry point for existing record actions, with capability-gated optional rows. */
+/** Record actions opened from the page header, with capability-gated optional rows. */
 @Composable
 internal fun RecordPlaybackActionsSheet(
     title: String,

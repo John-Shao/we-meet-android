@@ -10,7 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.MyLocation
-import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material.icons.outlined.LocationSearching
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Replay
@@ -73,7 +73,6 @@ internal fun RecordPlaybackControls(
     onRate: (Float) -> Unit,
     followState: TranscriptFollowState? = null,
     onSeekFinished: () -> Unit = {},
-    onMore: (() -> Unit)? = null,
 ) {
     var ratesVisible by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
@@ -146,17 +145,13 @@ internal fun RecordPlaybackControls(
                 SkipFifteenButton(true, onSkipForward, enabled)
             }
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                if (onMore != null) IconButton(onClick = onMore, modifier = Modifier.size(Dimens.MinTouchTarget)) {
-                    Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.cd_records_more))
-                } else if (followState != null) IconToggleButton(
+                if (followState != null) IconToggleButton(
                     checked = followState.following, onCheckedChange = { followState.toggle() },
                     modifier = Modifier.size(Dimens.MinTouchTarget).semantics { contentDescription = followLabel },
                     colors = IconButtonDefaults.iconToggleButtonColors(checkedContentColor = colors.primary),
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Outlined.MyLocation, null, Modifier.size(Dimens.ComponentIconMedium))
-                        Text(followLabel, style = MaterialTheme.typography.labelSmall, maxLines = 1)
-                    }
+                    Icon(if (followState.following) Icons.Outlined.MyLocation else Icons.Outlined.LocationSearching,
+                        null, Modifier.size(Dimens.ComponentIconMedium))
                 }
             }
         }

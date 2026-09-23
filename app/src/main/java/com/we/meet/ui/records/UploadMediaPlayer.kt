@@ -75,7 +75,6 @@ internal fun UploadMediaPlayer(
     /** Bounds native HTTP preparation retries; tests use a shorter real-clock deadline. */
     preparationTimeoutMs: Long = PREPARATION_TIMEOUT_MS,
     followState: TranscriptFollowState? = null,
-    onMore: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current.applicationContext
     val latestPosition by rememberUpdatedState(onPosition)
@@ -209,7 +208,6 @@ internal fun UploadMediaPlayer(
                 onSkipForward = { start(minOf(maxOf(0L, duration - 1), position + 15_000)) },
                 onRate = { speed -> rate = speed; if (state.showsPause) start(position) },
                 followState = if (fullscreen) null else followState,
-                onMore = onMore,
             )
         }
     }
@@ -238,7 +236,7 @@ internal fun UploadMediaPlayer(
             onSeekFinished = { engine?.seekTo(position) },
             onRate = { speed -> rate = speed; if (state.showsPause) start(position) },
             onCollapse = { videoExpanded = false }, onFullscreen = { fullscreen = !fullscreen },
-            onMore = onMore?.let { action -> { fullscreen = false; action() } },
+            followState = followState,
         ) {
             BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 val videoHeight = minOf(maxWidth / aspect, maxHeight)

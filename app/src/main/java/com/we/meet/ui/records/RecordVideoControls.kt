@@ -44,7 +44,7 @@ internal fun RecordVideoControls(
     onRate: (Float) -> Unit,
     onCollapse: () -> Unit,
     onFullscreen: () -> Unit,
-    onMore: (() -> Unit)?,
+    followState: TranscriptFollowState?,
     picture: @Composable BoxScope.() -> Unit,
 ) {
     var visible by remember { mutableStateOf(true) }
@@ -92,8 +92,16 @@ internal fun RecordVideoControls(
                             }
                         }
                     }
-                    if (onMore != null) IconButton(onClick = { interaction++; onMore() }) {
-                        Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.cd_records_more))
+                    if (followState != null) IconToggleButton(
+                        checked = followState.following,
+                        onCheckedChange = { interaction++; followState.toggle() },
+                        colors = IconButtonDefaults.iconToggleButtonColors(
+                            contentColor = OnMediaOverlay,
+                            checkedContentColor = OnMediaOverlay,
+                            checkedContainerColor = scrim.copy(alpha = 0.35f)),
+                    ) {
+                        Icon(if (followState.following) Icons.Outlined.MyLocation else Icons.Outlined.LocationSearching,
+                            stringResource(R.string.capture_playback_follow))
                     }
                 }
                 IconButton(onClick = { interaction++; onPlayPause() },

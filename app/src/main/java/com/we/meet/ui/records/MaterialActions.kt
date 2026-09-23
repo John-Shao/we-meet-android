@@ -55,6 +55,10 @@ internal fun RecordHeaderMenu(
     objectScope: String,
     onRename: (() -> Unit)?,
     onChanged: () -> Unit,
+    followState: TranscriptFollowState? = null,
+    onSpeakers: (() -> Unit)? = null,
+    onTranslations: (() -> Unit)? = null,
+    onInfo: (() -> Unit)? = null,
 ) {
     var menu by remember { mutableStateOf(false) }
     Box {
@@ -72,6 +76,11 @@ internal fun RecordHeaderMenu(
             onDismiss = { menu = false },
             onRenamed = { onRename?.invoke() },
             onChanged = onChanged,
+            asPlayerSheet = true,
+            followState = followState,
+            onSpeakers = onSpeakers,
+            onTranslations = onTranslations,
+            onInfo = onInfo,
         )
     }
 }
