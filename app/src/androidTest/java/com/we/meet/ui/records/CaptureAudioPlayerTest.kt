@@ -150,9 +150,26 @@ class CaptureAudioPlayerTest {
         assertTrue(reported.last() >= 1000L)
     }
 
+    @Test fun muteWorksBeforePlaybackAndSurvivesSeeking() {
+        show()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_mute)).performClick()
+        assertTrue(downloads.isEmpty())
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
+        compose.waitUntil(8000) { sinks.isNotEmpty() && sinks.first().started }
+        assertTrue(sinks.first().mutedOutput)
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_unmute)).performClick()
+        compose.runOnIdle { assertFalse(sinks.first().mutedOutput); assertEquals(1, sinks.size) }
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_mute)).performClick()
+        compose.runOnIdle { seek.value = CaptureAudioSeek(2300) }
+        compose.waitUntil(8000) { sinks.size == 2 && sinks.last().started }
+        assertTrue(sinks.last().mutedOutput)
+    }
+
     private class Sink : CapturePlaybackOutput {
         @Volatile var closed = false
         @Volatile var started = false
+        @Volatile var mutedOutput = false
+        override fun setMuted(muted: Boolean) { mutedOutput = muted }
         var offset = 0L
         var rate = 1f
         override fun play(wave: ByteArray, offsetMs: Long, rate: Float) { check(!closed); offset = offsetMs; this.rate = rate; started = true }

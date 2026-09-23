@@ -25,10 +25,14 @@ class CapturePlaybackEngineTest {
         var position = 0L
         var onPosition: (() -> Unit)? = null
         val starts = mutableListOf<Pair<Long, Float>>()
+        var mutedOutput = false
+        val mutedAtStart = mutableListOf<Boolean>()
+        override fun setMuted(muted: Boolean) { mutedOutput = muted }
         override fun play(wave: ByteArray, offsetMs: Long, rate: Float) {
             check(!closed)
             assertTrue(wave.any { it != 0.toByte() })
             starts += offsetMs to rate
+            mutedAtStart += mutedOutput
             position = offsetMs
         }
         override fun positionMs(): Long { onPosition?.invoke(); position += step; return position }
@@ -56,6 +60,19 @@ class CapturePlaybackEngineTest {
         assertEquals(1, downloads)
         val second = CapturePlaybackEngine({ _, _ -> error("Must not download a gap") }, {}, { error("Must not open output") }, { true })
         assertEquals(CapturePlaybackEnd(1500, true), second.play(playlist(gap = true), 1500) {})
+    }
+    @Test fun muteAppliesBeforeOutputStartsAndPersistsAcrossChunks() = runBlocking {
+        val sink = Sink()
+        val engine = CapturePlaybackEngine({ _, _ -> wave.copyOf() }, {}, { sink }, { true })
+        engine.setMuted(true)
+        val end = engine.play(playlist(), 0) { position ->
+            if (position == 2000L) {
+                engine.setMuted(false)
+                assertFalse(sink.mutedOutput)
+            }
+        }
+        assertEquals(listOf(true, true), sink.mutedAtStart)
+        assertEquals(2000L, end.positionMs)
     }
     @Test fun closeDuringPlaybackStopsOutputAndCannotAutoResumeFromLatePrefetch() = runBlocking {
         val started = CompletableDeferred<Unit>()

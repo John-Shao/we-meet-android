@@ -342,7 +342,7 @@ class RecordScreensTest {
                         positionMs = 1500L, followState = follow)
                 }
                 RecordPlayerSurface {
-                    RecordPlaybackControls(1500L, 25000L, false, 1f, {}, {}, {}, {}, {})
+                    RecordPlaybackControls(1500L, 25000L, false, 1f, {}, {}, {}, {}, {}, false, {})
                 }
             }
         } }

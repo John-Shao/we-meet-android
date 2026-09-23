@@ -52,6 +52,7 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
     var state by remember(viewer, recordId) { mutableStateOf(MediaPlaybackState.Loading) }
     var position by remember(viewer, recordId) { mutableLongStateOf(0) }
     var rate by remember(viewer, recordId) { mutableFloatStateOf(1f) }
+    var muted by remember(viewer, recordId) { mutableStateOf(false) }
     var refresh by remember(viewer, recordId) { mutableIntStateOf(0) }
     var engine by remember(viewer, recordId) { mutableStateOf<CapturePlaybackEngine?>(null) }
     var work by remember(viewer, recordId) { mutableStateOf<Job?>(null) }
@@ -108,6 +109,7 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
         if (data.locate(position) == null) { state = MediaPlaybackState.Gap; return }
         state = MediaPlaybackState.Preparing
         val current = createEngine(allowed)
+        current.setMuted(muted)
         engine = current
         CapturePlaybackRegistry.activate(current)
         work = scope.launch {
@@ -151,6 +153,7 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
             else {
                 RecordPlaybackControls(
                     positionMs = position, durationMs = data.endMs, playing = state.showsPause, rate = rate,
+                    muted = muted, onToggleMute = { muted = !muted; engine?.setMuted(muted) },
                     onSeek = { stop(); setPosition(it); state = MediaPlaybackState.Ready; consumeSeek() },
                     onPlayPause = {
                         if (state.showsPause) { stop(); state = MediaPlaybackState.Ready; consumeSeek() }

@@ -45,11 +45,11 @@ class RecordPlaybackControlsTest {
         compose.setContent {
             WeMeetTheme(darkTheme = dark) {
                 CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
-                    Column(Modifier.width(320.dp)) {
+                    Column(Modifier.width(if (fontScale == 1f) 360.dp else 320.dp)) {
                         RecordHeaderMenu(app, "owner", record, "record", null, {},
                             onInfo = { openedInfo = true })
                         RecordPlayerSurface {
-                            RecordPlaybackControls(6000, 25000, false, 1f, {}, {}, {}, {}, {})
+                            RecordPlaybackControls(6000, 25000, false, 1f, {}, {}, {}, {}, {}, false, {})
                         }
                     }
                 }
@@ -66,11 +66,22 @@ class RecordPlaybackControlsTest {
         listOf(play, back, forward, more).forEach { it.assertIsDisplayed() }
         // The header is now the sole menu entry; its localized label can match the old player label.
         compose.onAllNodesWithContentDescription(context.getString(R.string.records_page_actions)).assertCountEquals(1)
-        assertEquals(back.fetchSemanticsNode().boundsInRoot.center.x + forward.fetchSemanticsNode().boundsInRoot.center.x,
-            play.fetchSemanticsNode().boundsInRoot.center.x * 2, 1f)
-        assertTrue(play.fetchSemanticsNode().boundsInRoot.width > play.fetchSemanticsNode().boundsInRoot.height)
-        assertTrue(compose.onNodeWithText("00:06").fetchSemanticsNode().boundsInRoot.top >=
-            compose.onNodeWithContentDescription(context.getString(R.string.capture_playback_position)).fetchSemanticsNode().boundsInRoot.bottom)
+        val mute = compose.onNodeWithContentDescription(context.getString(R.string.capture_playback_mute))
+        val speed = compose.onNodeWithContentDescription(context.getString(R.string.capture_playback_speed))
+        val transport = listOf(play, back, forward, mute)
+        (transport + speed).forEach { it.assertIsDisplayed().assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp) }
+        transport.zipWithNext().forEach { (left, right) ->
+            val a = left.fetchSemanticsNode().boundsInRoot
+            val b = right.fetchSemanticsNode().boundsInRoot
+            assertTrue(a.right <= b.left + 1)
+            assertEquals(a.center.y, b.center.y, 1f)
+        }
+        val clock = compose.onNodeWithText(context.getString(R.string.capture_playback_clock, "00:06", "00:25")).fetchSemanticsNode().boundsInRoot
+        val rate = speed.fetchSemanticsNode().boundsInRoot
+        assertTrue(rate.right <= clock.left)
+        assertEquals(rate.center.y, clock.center.y, 1f)
+        if (name == "light") assertEquals(play.fetchSemanticsNode().boundsInRoot.center.y, rate.center.y, 1f)
+        else assertTrue(rate.top >= play.fetchSemanticsNode().boundsInRoot.bottom)
         follow.assertDoesNotExist()
         more.performClick()
         compose.onNode(isDialog()).assertExists()
@@ -91,7 +102,7 @@ class RecordPlaybackControlsTest {
         assertTrue(openedInfo)
     }
 
-    @Test fun compactPlayerKeepsControlsCenteredAndReachable() {
+    @Test fun compactPlayerUsesVideoControlOrderAndTouchTargets() {
         show(dark = false, fontScale = 1f)
         checkAndCapture("light")
     }

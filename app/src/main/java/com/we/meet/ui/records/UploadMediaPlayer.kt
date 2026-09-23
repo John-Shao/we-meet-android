@@ -199,6 +199,7 @@ internal fun UploadMediaPlayer(
             RecordPlaybackControls(
                 positionMs = position, durationMs = duration.takeIf(::validMediaDuration),
                 playing = state.showsPause, rate = rate,
+                muted = muted, onToggleMute = { muted = !muted; engine?.setMuted(muted) },
                 onSeek = { value ->
                     engine?.pause()
                     state = MediaPlaybackState.Ready
@@ -259,9 +260,10 @@ internal fun UploadMediaPlayer(
         }
     } else if (!fullscreen) RecordPlayerSurface {
         if (hasVideo) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = { videoExpanded = true }) {
+            TextButton(onClick = { videoExpanded = true },
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) {
                 Icon(Icons.Outlined.ExpandLess, null)
-                Text(stringResource(R.string.capture_playback_show_video))
+                Text(stringResource(R.string.capture_playback_show_video), style = MaterialTheme.typography.labelSmall)
             }
             Spacer(Modifier.weight(1f))
             IconButton(onClick = { fullscreen = true }) {

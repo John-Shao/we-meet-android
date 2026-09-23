@@ -1,6 +1,11 @@
 package com.we.meet.ui.records
 
 import androidx.activity.ComponentActivity
+import android.graphics.Bitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.onRoot
+import java.io.File
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
@@ -282,6 +287,21 @@ class UploadMediaPlayerTest {
         }
     }
 
+    @Test fun importedAudioUsesTheSameMuteControlWithoutRestartingPlayback() {
+        show()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_mute)).performClick()
+        assertEquals(null, engine)
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
+        compose.waitUntil(8_000) { engine?.mutedOutput == true }
+        val original = engine
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_unmute)).performClick()
+        compose.runOnIdle {
+            assertEquals(false, engine?.mutedOutput)
+            assertTrue(original === engine)
+            assertEquals(1, openedUrls.size)
+        }
+    }
+
     @Test fun videoMuteAndSkipControlsReachTheEngineAndSurviveSurfaceChanges() {
         currentMedia.value = media.copy(mediaType = "video", contentType = "video/mp4")
         show()
@@ -297,6 +317,12 @@ class UploadMediaPlayerTest {
         compose.onNodeWithContentDescription(label(R.string.cd_records_skip_forward)).performClick()
         compose.waitUntil(8_000) { engine?.lastPlayFrom == 45_000L }
         compose.onNodeWithText(label(R.string.capture_playback_hide_video)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_unmute)).performClick()
+        compose.runOnIdle { assertEquals(false, engine?.mutedOutput); assertTrue(original === engine) }
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_mute)).performClick()
+        File(context.getExternalFilesDir(null), "record-player-collapsed-video.png").outputStream().use {
+            compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
         compose.onNodeWithText(label(R.string.capture_playback_show_video)).performClick()
         compose.onNodeWithContentDescription(label(R.string.capture_playback_fullscreen)).performClick()
         compose.onNodeWithContentDescription(label(R.string.capture_playback_unmute)).performClick()

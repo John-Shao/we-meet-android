@@ -20,6 +20,7 @@ class AndroidCapturePlaybackOutput(context: Context, private val onInterrupted: 
     private val manager = this.context.getSystemService(AudioManager::class.java)
     private val attributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()
     private var track: AudioTrack? = null
+    private var muted = false
     private var offset = 0L
     private var closed = false
     private var focused = false
@@ -35,6 +36,10 @@ class AndroidCapturePlaybackOutput(context: Context, private val onInterrupted: 
             if (closed) false else { close(); true }
         }
         if (notify) onInterrupted()
+    }
+    @Synchronized override fun setMuted(muted: Boolean) {
+        this.muted = muted
+        if (!closed) track?.setVolume(if (muted) 0f else 1f)
     }
     @Synchronized override fun play(wave: ByteArray, offsetMs: Long, rate: Float) {
         check(!closed)
@@ -61,6 +66,7 @@ class AndroidCapturePlaybackOutput(context: Context, private val onInterrupted: 
             check(value.state == AudioTrack.STATE_NO_STATIC_DATA || value.state == AudioTrack.STATE_INITIALIZED)
             check(value.write(wave, begin, count, AudioTrack.WRITE_BLOCKING) == count)
             value.playbackParams = PlaybackParams().setSpeed(rate).setPitch(1f)
+            value.setVolume(if (muted) 0f else 1f)
             offset = offsetMs
             value.play()
         } catch (error: Throwable) { close(); throw error }

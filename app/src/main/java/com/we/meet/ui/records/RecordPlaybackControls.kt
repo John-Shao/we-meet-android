@@ -7,6 +7,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.automirrored.outlined.VolumeOff
+import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.filled.Pause
@@ -17,14 +19,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.LayoutDirection
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
@@ -58,11 +62,11 @@ internal fun RecordPlayerSurface(content: @Composable ColumnScope.() -> Unit) {
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = Dimens.ElevationFlat,
     ) {
-        Column(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS), content = content)
+        Column(Modifier.padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs), content = content)
     }
 }
 
-/** The visual track is thin, while the slider and secondary controls retain 48dp targets. */
+/** One control strip for audio, collapsed video and video overlays. */
 @Composable
 internal fun RecordPlaybackControls(
     positionMs: Long,
@@ -74,78 +78,94 @@ internal fun RecordPlaybackControls(
     onSkipBack: () -> Unit,
     onSkipForward: () -> Unit,
     onRate: (Float) -> Unit,
+    muted: Boolean,
+    onToggleMute: () -> Unit,
     onSeekFinished: () -> Unit = {},
+    modifier: Modifier = Modifier,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    trackColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
+    onInteraction: () -> Unit = {},
+    onRateMenuVisibilityChange: (Boolean) -> Unit = {},
 ) {
     var ratesVisible by remember { mutableStateOf(false) }
-    val colors = MaterialTheme.colorScheme
+    val primary = MaterialTheme.colorScheme.primary
+    val enabled = durationMs != null && durationMs > 0
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val positionLabel = stringResource(R.string.capture_playback_position)
     val speedLabel = stringResource(R.string.capture_playback_speed)
-    val enabled = durationMs != null && durationMs > 0
+    val clockLabel = stringResource(R.string.capture_playback_clock, playbackTime(positionMs),
+        if (durationMs != null && durationMs > 0) playbackTime(durationMs) else "\u2014")
+    val rateLabel = stringResource(R.string.capture_playback_rate, playbackRateValue(rate))
+    val detailStyle = MaterialTheme.typography.labelMedium
+    val textMeasurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val clockWidth = with(density) {
+        textMeasurer.measure(clockLabel, detailStyle, softWrap = false, maxLines = 1).size.width.toDp()
+    }
+    val rateWidth = maxOf(Dimens.MinTouchTarget, with(density) {
+        textMeasurer.measure(rateLabel, detailStyle, softWrap = false, maxLines = 1).size.width.toDp()
+    } + Dimens.SpaceXxs * 2)
     val end = (durationMs ?: 0L).coerceAtLeast(1L)
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    Column(Modifier.fillMaxWidth()) {
-        Slider(
-            value = positionMs.coerceIn(0L, end).toFloat(),
-            onValueChange = { onSeek(it.toLong()) },
-            onValueChangeFinished = onSeekFinished,
-            enabled = enabled,
-            valueRange = 0f..end.toFloat(),
-            modifier = Modifier.fillMaxWidth().height(Dimens.MinTouchTarget).semantics { contentDescription = positionLabel },
-            thumb = {
-                Box(Modifier.size(Dimens.RecordPlayback.ThumbSize).background(if (enabled) colors.primary else colors.outline, CircleShape))
-            },
-            track = { slider ->
-                Canvas(Modifier.fillMaxWidth().height(Dimens.RecordPlayback.TrackHeight)) {
-                    val fraction = (slider.value / end.toFloat()).coerceIn(0f, 1f)
+    CompositionLocalProvider(LocalContentColor provides contentColor) {
+        Column(modifier.fillMaxWidth()) {
+            Slider(value = positionMs.coerceIn(0L, end).toFloat(), valueRange = 0f..end.toFloat(), enabled = enabled,
+                onValueChange = { onInteraction(); onSeek(it.toLong()) }, onValueChangeFinished = onSeekFinished,
+                modifier = Modifier.fillMaxWidth().height(Dimens.MinTouchTarget).semantics { contentDescription = positionLabel },
+                // Bring the timeline closer to the controls within its own 48dp touch area.
+                thumb = { Box(Modifier.offset(y = Dimens.SpaceL).size(Dimens.RecordPlayback.ThumbSize).background(primary, CircleShape)) },
+                track = { slider -> Canvas(Modifier.offset(y = Dimens.SpaceL).fillMaxWidth().height(Dimens.RecordPlayback.TrackHeight)) {
                     val start = if (rtl) size.width else 0f
                     val finish = if (rtl) 0f else size.width
-                    drawLine(colors.surfaceContainerHighest, Offset(start, center.y), Offset(finish, center.y),
-                        strokeWidth = size.height, cap = StrokeCap.Round)
-                    if (fraction > 0f) drawLine(if (enabled) colors.primary else colors.outline,
-                        Offset(start, center.y), Offset(start + (finish - start) * fraction, center.y),
-                        strokeWidth = size.height, cap = StrokeCap.Round)
-                }
-            },
-        )
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(playbackTime(positionMs), style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace,
-                color = colors.onSurfaceVariant)
-            Text(durationMs?.let(::playbackTime) ?: "—", style = MaterialTheme.typography.labelSmall,
-                fontFamily = FontFamily.Monospace, color = colors.onSurfaceVariant)
-        }
-        Spacer(Modifier.height(Dimens.SpaceS))
-        // Equal outer slots keep the primary action centered, with the speed selector at the leading edge.
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                TextButton(onClick = { ratesVisible = true }, contentPadding = PaddingValues(Dimens.SpaceXs),
-                    colors = ButtonDefaults.textButtonColors(contentColor = colors.onSurface),
-                    modifier = Modifier.heightIn(min = Dimens.MinTouchTarget).semantics { contentDescription = speedLabel }) {
-                    Text(stringResource(R.string.capture_playback_rate, playbackRateValue(rate)), maxLines = 1)
-                }
-                DropdownMenu(expanded = ratesVisible, onDismissRequest = { ratesVisible = false }) {
-                    listOf(0.75f, 1f, 1.25f, 1.5f, 2f).forEach { speed ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.capture_playback_rate, playbackRateValue(speed))) },
-                            trailingIcon = { if (speed == rate) Icon(Icons.Outlined.Check, null) },
-                            onClick = { ratesVisible = false; onRate(speed) },
-                        )
+                    drawLine(trackColor, Offset(start, center.y), Offset(finish, center.y), size.height, StrokeCap.Round)
+                    drawLine(primary, Offset(start, center.y), Offset(start + (finish - start) * slider.value / end, center.y), size.height, StrokeCap.Round)
+                } })
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                // Measure with the current font scale instead of forcing every phone into two rows.
+                val requiredWidth = Dimens.MinTouchTarget * 4 + rateWidth + clockWidth + Dimens.SpaceXs * 2
+                val compact = maxWidth < requiredWidth
+                val transport: @Composable RowScope.() -> Unit = {
+                    IconButton(onClick = { onInteraction(); onPlayPause() }, modifier = Modifier.size(Dimens.MinTouchTarget)) {
+                        Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                            stringResource(if (playing) R.string.cd_records_pause else R.string.cd_records_play), Modifier.size(Dimens.IconLarge))
+                    }
+                    SkipFifteenButton(false, { onInteraction(); onSkipBack() })
+                    SkipFifteenButton(true, { onInteraction(); onSkipForward() }, enabled = enabled)
+                    IconToggleButton(checked = muted, onCheckedChange = { onInteraction(); onToggleMute() },
+                        modifier = Modifier.size(Dimens.MinTouchTarget),
+                        colors = IconButtonDefaults.iconToggleButtonColors(contentColor = contentColor, checkedContentColor = contentColor)) {
+                        Icon(if (muted) Icons.AutoMirrored.Outlined.VolumeOff else Icons.AutoMirrored.Outlined.VolumeUp,
+                            stringResource(if (muted) R.string.capture_playback_unmute else R.string.capture_playback_mute))
                     }
                 }
+                val details: @Composable RowScope.() -> Unit = {
+                    Box {
+                        TextButton(onClick = { ratesVisible = true; onRateMenuVisibilityChange(true); onInteraction() },
+                            modifier = Modifier.width(rateWidth).height(Dimens.MinTouchTarget).semantics { contentDescription = speedLabel },
+                            contentPadding = PaddingValues(Dimens.SpaceXxs),
+                            colors = ButtonDefaults.textButtonColors(contentColor = contentColor)) {
+                            Text(rateLabel, style = detailStyle, maxLines = 1, softWrap = false)
+                        }
+                        DropdownMenu(expanded = ratesVisible, onDismissRequest = { ratesVisible = false; onRateMenuVisibilityChange(false) }) {
+                            listOf(0.75f, 1f, 1.25f, 1.5f, 2f).forEach { speed ->
+                                DropdownMenuItem(text = { Text(stringResource(R.string.capture_playback_rate, playbackRateValue(speed))) },
+                                    trailingIcon = { if (speed == rate) Icon(Icons.Outlined.Check, null) },
+                                    onClick = { ratesVisible = false; onRateMenuVisibilityChange(false); onRate(speed); onInteraction() })
+                            }
+                        }
+                    }
+                    Text(clockLabel, style = detailStyle, maxLines = 1, softWrap = false,
+                        modifier = Modifier.padding(horizontal = Dimens.SpaceXs))
+                }
+                if (compact) Column {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically, content = transport)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, content = details)
+                } else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    transport()
+                    Spacer(Modifier.weight(1f))
+                    details()
+                }
             }
-            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                SkipFifteenButton(false, onSkipBack)
-            }
-            FilledIconButton(onClick = onPlayPause,
-                modifier = Modifier.width(Dimens.RecordPlayback.PlayButtonWidth).height(Dimens.RecordPlayback.PlayButtonSize),
-                shape = CircleShape,
-                colors = IconButtonDefaults.filledIconButtonColors(containerColor = colors.primary.copy(alpha = 0.08f), contentColor = colors.primary)) {
-                Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    stringResource(if (playing) R.string.cd_records_pause else R.string.cd_records_play), Modifier.size(Dimens.RecordPlayback.PlayIconSize))
-            }
-            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                SkipFifteenButton(true, onSkipForward, enabled)
-            }
-            Spacer(Modifier.weight(1f))
         }
     }
 }

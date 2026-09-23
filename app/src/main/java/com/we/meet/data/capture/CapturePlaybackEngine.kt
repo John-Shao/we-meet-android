@@ -9,6 +9,7 @@ interface CapturePlaybackOutput : Closeable {
     /** The bytes are borrowed only during this call. Position is relative to the original chunk. */
     fun play(wave: ByteArray, offsetMs: Long, rate: Float)
     fun positionMs(): Long
+    fun setMuted(muted: Boolean) {}
 }
 data class CapturePlaybackEnd(val positionMs: Long, val gap: Boolean)
 
@@ -24,8 +25,16 @@ class CapturePlaybackEngine(
     private val stopped = AtomicBoolean(false)
     private val resources = Any()
     private var output: CapturePlaybackOutput? = null
+    private var muted = false
     private var buffered: ByteArray? = null
     @Volatile private var checkedAt = 0L
+
+    fun setMuted(value: Boolean) {
+        synchronized(resources) {
+            muted = value
+            output?.setMuted(value)
+        }
+    }
 
     override fun close() {
         stopped.set(true)
@@ -67,7 +76,10 @@ class CapturePlaybackEngine(
                     guard()
                     val sink = synchronized(resources) {
                         check(!stopped.get())
-                        (output ?: outputFactory { close() }.also { output = it }).also { it.play(bytes, offset, rate) }
+                        (output ?: outputFactory { close() }.also { output = it }).also {
+                            it.setMuted(muted)
+                            it.play(bytes, offset, rate)
+                        }
                     }
                     val chunk = playlist.chunks[index]
                     val following = playlist.chunks.getOrNull(index + 1)
