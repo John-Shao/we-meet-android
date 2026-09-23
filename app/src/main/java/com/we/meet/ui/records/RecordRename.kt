@@ -34,20 +34,39 @@ internal fun CaptureSavedRecordTitle(repository: MeetingRecordRepository, viewer
     }
 }
 
+/** 谁能重命名:后端能力 + 这两类有标题的来源 + 不在录制中。三处入口共用这一条。 */
+internal fun canRenameRecord(record: RecordDto): Boolean =
+    record.capabilities.rename && record.sourceType in listOf("audio_recording", "upload") && !record.isOngoing
+
+/**
+ * 重命名的入口按钮。真正的对话框在 [RecordRenameDialog] —— 页面头部的三点菜单
+ * 也需要同一份对话框,所以两者拆开,别让菜单项去嵌一颗按钮。
+ */
 @Composable
 internal fun RecordRenameAction(repository: MeetingRecordRepository, viewer: String, record: RecordDto, onRenamed: () -> Unit) {
-    if (!record.capabilities.rename || record.sourceType !in listOf("audio_recording", "upload") || record.isOngoing) return
+    if (!canRenameRecord(record)) return
+    var open by remember { mutableStateOf(false) }
+    TextButton(onClick = { open = true }) {
+        Text(stringResource(R.string.record_rename))
+    }
+    if (open) RecordRenameDialog(repository, viewer, record, onClose = { open = false }, onRenamed = onRenamed)
+}
+
+/**
+ * 重命名对话框本体。
+ *
+ * 调用方负责决定它何时出现([onClose] 在取消/成功后都会被调到),所以三处入口
+ * (实录页的三点菜单、录制完成页的标题行、[RecordRenameAction])都能直接用。
+ */
+@Composable
+internal fun RecordRenameDialog(repository: MeetingRecordRepository, viewer: String, record: RecordDto, onClose: () -> Unit, onRenamed: () -> Unit) {
     key(viewer, record.id) {
-        var open by remember { mutableStateOf(false) }
         var draft by remember { mutableStateOf(record.title) }
         var busy by remember { mutableStateOf(false) }
         var failed by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
-        TextButton(onClick = { draft = record.title; failed = false; open = true }) {
-            Text(stringResource(R.string.record_rename))
-        }
-        if (open) AlertDialog(
-            onDismissRequest = { if (!busy) open = false },
+        AlertDialog(
+            onDismissRequest = { if (!busy) onClose() },
             title = { Text(stringResource(R.string.record_rename)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
@@ -63,14 +82,14 @@ internal fun RecordRenameAction(repository: MeetingRecordRepository, viewer: Str
                     scope.launch {
                         try {
                             val result = repository.rename(viewer, record.id, draft, record.title)
-                            if (result.isSuccess) { open = false; onRenamed() }
+                            if (result.isSuccess) { onClose(); onRenamed() }
                             else failed = true
                         } finally { busy = false }
                     }
                 }) { Text(stringResource(if (busy) R.string.record_renaming else R.string.record_rename_save)) }
             },
             dismissButton = {
-                TextButton(enabled = !busy, onClick = { open = false }) { Text(stringResource(R.string.capture_keep_recording)) }
+                TextButton(enabled = !busy, onClick = onClose) { Text(stringResource(R.string.capture_keep_recording)) }
             },
         )
     }

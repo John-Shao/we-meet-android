@@ -156,7 +156,25 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     // 于是「白顶栏 + 白头下固定区 + 浅灰正文」三段成立 —— 此前整页 `surface`,
     // 顶栏、标题、Tab 与正文全是同一个白,浅色下看不出分界、深色下彻底糊成一片。
     Scaffold(topBar = { WeMeetTopBar(stringResource(if (document) R.string.records_minutes else R.string.records_title), onBack = navigateBack,
-        actions = { if (!document) record?.let { RecordRenameAction(repository, viewer, it) { refresh++ } } }) },
+        actions = {
+            // 顶栏三点菜单:重命名 / 分享 / 协作者管理。原先重命名单独占顶栏一颗文字按钮,
+            // 分享与协作者管理另起一条按钮条,页面头部两组平级动作 —— 现在合成一处。
+            if (record != null && app != null) {
+                val canShare = if (document) record.capabilities.readSummary else record.capabilities.readTranscript
+                if (canShare) {
+                    androidx.compose.runtime.key(viewer, recordId, document) {
+                        RecordHeaderMenu(
+                            app = app,
+                            viewer = viewer,
+                            record = record,
+                            objectScope = if (document) "minutes" else "record",
+                            onRename = if (!document) ({ refresh++ }) else null,
+                            onChanged = { refresh++ },
+                        )
+                    }
+                }
+            }
+        }) },
         containerColor = MaterialTheme.colorScheme.background) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             when {
@@ -177,13 +195,9 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         }
                     }
                     if (app != null && (if (document) record.capabilities.readSummary else record.capabilities.readTranscript)) {
-                        // 分享行与正文分隔:它原先是一排没有容器感的裸按钮,夹在白色标题区和
-                        // 浅灰正文之间,三块底色说不清谁属于谁。
-                        RecordSurfaceStrip {
-                            androidx.compose.runtime.key(viewer, recordId, document) {
-                                MaterialActions(app, viewer, record, if (document) "minutes" else "record") { refresh++ }
-                            }
-                        }
+                        // 分享/协作者管理已经收进顶栏的三点菜单(见 RecordHeaderMenu),
+                        // 这里只在需要时留一条分隔线,不再另起一条按钮条。
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = Dimens.DividerThin)
                     }
                     val canReadTranslations = record.capabilities.readTranscript && app != null && (record.sourceType == "meeting" || record.sourceType == "upload" || record.sourceType == "audio_recording" && record.captureId != null && record.capabilities.controlCapture)
                     val tabs = buildList {
@@ -401,11 +415,10 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
 }
 
 /**
- * 页面头部的白色动作条。
+ * 页面头部动作条的白底 + 分隔线。
  *
- * 抽出来是因为「纪要文档页」与「实录页」共用同一条:标题区(白)→ 动作条(白)→ 一条
- * 分隔线 → 浅灰正文。原先动作条是裸的,底色跟着父级走,于是同一个按钮条在实录页
- * 看起来在灰底上、在文档页看起来又在白底下 —— 而实际两块都是 `background`。
+ * 只给「纪要工具行」用(问问 AI / 管理纪要 / 刷新):分享与协作者管理已经收进顶栏的
+ * 三点菜单,不再需要同款外壳。
  */
 @Composable
 private fun RecordSurfaceStrip(content: @Composable () -> Unit) {

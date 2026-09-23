@@ -11,6 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,25 +38,67 @@ import kotlinx.coroutines.*
 import org.json.JSONObject
 import retrofit2.HttpException
 
+/**
+ * 页面顶部那颗三点菜单:重命名 / 分享 / 协作者管理。
+ *
+ * 为什么收进菜单:这三件事原先分在两条线上 —— 顶栏一颗「重命名」文字按钮,下面
+ * 再一条裸按钮条放「分享」「协作者管理」。一条页面头部出现两组平级动作,既占屏高
+ * 又让人分不清主次(而且那条按钮条没有容器色,夹在白标题与灰正文之间)。
+ *
+ * [onRename] 传 null 表示当前页面不提供重命名(例如智能纪要文档页);重命名自己
+ * 的可用性判断仍留在 [RecordRenameAction] 里,不在这里重复。
+ */
 @Composable
-internal fun MaterialActions(app: WeMeetApp, viewer: String, record: RecordDto, objectScope: String, onChanged: () -> Unit) {
+internal fun RecordHeaderMenu(
+    app: WeMeetApp,
+    viewer: String,
+    record: RecordDto,
+    objectScope: String,
+    onRename: (() -> Unit)?,
+    onChanged: () -> Unit,
+) {
+    val repository = app.meetingRecordRepository
+    // 后端给的重命名能力 + 本地这几条来源/状态限制;`RecordRenameDialog` 里不再重判。
+    val canRename = onRename != null && canRenameRecord(record)
     var panel by remember { mutableStateOf<String?>(null) }
+    var menu by remember { mutableStateOf(false) }
     var copied by remember { mutableStateOf(false) }
-    Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-        // 两颗都是裸 TextButton:补最小触控高度(规范 §5.2 的 48dp)。
-        TextButton(onClick = { copied = false; panel = "share" }, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) { Text(stringResource(R.string.collaboration_share)) }
-        TextButton(onClick = { panel = "members" }, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) { Text(stringResource(R.string.collaboration_manage)) }
+    var renaming by remember { mutableStateOf(false) }
+    Box {
+        // 图标按钮:热区 48dp(规范 §5.2),图标本身用 24dp 一档。
+        IconButton(onClick = { menu = true }, modifier = Modifier.size(Dimens.MinTouchTarget)) {
+            Icon(Icons.Outlined.MoreVert, stringResource(R.string.records_page_actions))
+        }
+        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+            if (canRename) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.record_rename)) },
+                    onClick = { menu = false; renaming = true },
+                )
+            }
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.collaboration_share)) },
+                onClick = { menu = false; copied = false; panel = "share" },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.collaboration_manage)) },
+                onClick = { menu = false; panel = "members" },
+            )
+        }
+    }
+    if (renaming) {
+        RecordRenameDialog(repository, viewer, record, onClose = { renaming = false }, onRenamed = { onRename?.invoke() })
     }
     if (panel == "share") ModalBottomSheet(onDismissRequest = { panel = null }) {
         Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
             Text(stringResource(R.string.collaboration_share), style = MaterialTheme.typography.titleLarge)
             Text(record.title, style = MaterialTheme.typography.titleMedium)
-            TextButton(onClick = { panel = "chat" }) { Text(stringResource(R.string.collaboration_send)) }
+            TextButton(onClick = { panel = "chat" }, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) { Text(stringResource(R.string.collaboration_send)) }
             TextButton(onClick = {
                 val url = RecordLinks.material(record.id, BuildConfig.WE_MEET_BASE_URL, objectScope)
                 (app.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText(record.title, url))
                 copied = true
-            }) { Text(stringResource(R.string.collaboration_copy)) }
+            }, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) { Text(stringResource(R.string.collaboration_copy)) }
             if (copied) Text(stringResource(R.string.collaboration_copied))
         }
     }

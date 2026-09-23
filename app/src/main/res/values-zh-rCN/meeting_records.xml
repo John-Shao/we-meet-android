@@ -45,6 +45,7 @@
     <string name="records_all_speakers">全部发言人</string>
     <string name="records_clear_filters">清除筛选</string>
     <string name="records_transcript_actions">逐字稿操作</string>
+    <string name="records_page_actions">更多操作</string>
     <string name="records_no_speakers">暂无已发布的发言人。</string>
     <string name="records_speakers_hint">仅展示转写中已有的发言人标签；未识别的声音不会自动关联到成员。</string>
     <!-- 标注说话人实际是谁。识别器的标签仍保留在下层，标注只改变读者看到的名字。 -->

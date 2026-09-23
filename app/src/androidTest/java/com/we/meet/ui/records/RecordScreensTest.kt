@@ -345,8 +345,8 @@ class RecordScreensTest {
         val fixture = Fixture().apply { renameAllowed = true }
         val repository = MeetingRecordRepository(fixture) { "owner" }
         compose.setContent { WeMeetTheme { RecordDetailScreen(repository, "owner", recordId, {}) } }
-        awaitText(label(R.string.record_rename))
-        compose.onNodeWithText(label(R.string.record_rename)).performClick()
+        awaitText(label(R.string.records_page_actions))
+        clickPageAction(R.string.record_rename)
         compose.onNodeWithText(label(R.string.record_name)).performTextReplacement("  ")
         compose.onNodeWithText(label(R.string.record_rename_save)).assertIsNotEnabled()
         compose.onNodeWithText(label(R.string.record_name)).performTextReplacement("Design review")
@@ -365,8 +365,8 @@ class RecordScreensTest {
         val fixture = Fixture().apply { renameAllowed = true; sourceType = "upload" }
         val repository = MeetingRecordRepository(fixture) { "owner" }
         compose.setContent { WeMeetTheme { RecordDetailScreen(repository, "owner", recordId, {}) } }
-        awaitText(label(R.string.record_rename))
-        compose.onNodeWithText(label(R.string.record_rename)).performClick()
+        awaitText(label(R.string.records_page_actions))
+        clickPageAction(R.string.record_rename)
         compose.onNodeWithText(label(R.string.record_name)).performTextReplacement("Uploaded interview")
         compose.onNodeWithText(label(R.string.record_rename_save)).performClick()
         awaitText("Uploaded interview")
@@ -377,8 +377,8 @@ class RecordScreensTest {
         val fixture = Fixture().apply { renameAllowed = true; failRename = true }
         val repository = MeetingRecordRepository(fixture) { "owner" }
         compose.setContent { WeMeetTheme { RecordDetailScreen(repository, "owner", recordId, {}) } }
-        awaitText(label(R.string.record_rename))
-        compose.onNodeWithText(label(R.string.record_rename)).performClick()
+        awaitText(label(R.string.records_page_actions))
+        clickPageAction(R.string.record_rename)
         compose.onNodeWithText(label(R.string.record_name)).performTextReplacement("Draft name")
         compose.onNodeWithText(label(R.string.record_rename_save)).performClick()
         awaitText(label(R.string.record_rename_error))
@@ -402,6 +402,19 @@ class RecordScreensTest {
 
     private fun clickTranscriptAction(id: Int) {
         openTranscriptActions()
+        compose.onNodeWithText(label(id)).performClick()
+    }
+
+    /**
+     * 顶栏的三点菜单:重命名 / 分享 / 协作者管理现在都收在里面。
+     * 改这些入口的用例都要先开菜单。
+     */
+    private fun openPageActions() {
+        compose.onNodeWithContentDescription(label(R.string.records_page_actions)).performClick()
+    }
+
+    private fun clickPageAction(id: Int) {
+        openPageActions()
         compose.onNodeWithText(label(id)).performClick()
     }
     private fun detail(fixture: Fixture, dark: Boolean = false): Owner {
