@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -168,6 +169,46 @@ class UploadMediaPlayerTest {
         compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
         compose.waitUntil(8_000) { engine?.outputSurface?.isValid == true }
         assertTrue(engine?.playing == true)
+    }
+
+    @Test fun pausedVideoKeepsItsSurfaceAndSeekingDoesNotReopenTheStream() {
+        currentMedia.value = media.copy(mediaType = "video", contentType = "video/mp4")
+        show()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
+        compose.waitUntil(8_000) { engine?.outputSurface?.isValid == true }
+        val originalSurface = engine!!.outputSurface
+        compose.onNodeWithContentDescription(label(R.string.cd_records_pause)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_video_preview)).assertIsDisplayed()
+        assertTrue(originalSurface === engine!!.outputSurface)
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_position)).performSemanticsAction(
+            androidx.compose.ui.semantics.SemanticsActions.SetProgress,
+        ) { it(30_000f) }
+        compose.runOnIdle {
+            assertEquals(30_000L, engine!!.clock)
+            assertEquals(false, engine!!.playing)
+            assertEquals(1, openedUrls.size)
+            assertTrue(originalSurface === engine!!.outputSurface)
+        }
+    }
+
+    @Test fun videoCollapseAndFullscreenKeepTheSamePlaybackSession() {
+        currentMedia.value = media.copy(mediaType = "video", contentType = "video/mp4")
+        show()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
+        compose.waitUntil(8_000) { engine?.outputSurface?.isValid == true }
+        compose.onNodeWithText(label(R.string.capture_playback_hide_video)).performClick()
+        compose.waitUntil(8_000) { engine?.outputSurface == null }
+        assertTrue(engine!!.playing)
+        compose.onNodeWithText(label(R.string.capture_playback_show_video)).performClick()
+        compose.waitUntil(8_000) { engine?.outputSurface?.isValid == true }
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_fullscreen)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_exit_fullscreen)).assertIsDisplayed()
+        compose.waitUntil(8_000) { engine?.outputSurface?.isValid == true }
+        compose.onNodeWithContentDescription(label(R.string.cd_records_pause)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_exit_fullscreen)).performClick()
+        compose.waitUntil(8_000) { engine?.outputSurface?.isValid == true }
+        assertEquals(false, engine!!.playing)
+        assertEquals(1, openedUrls.size)
     }
 
     @Test fun nativeVideoSurfaceFitsPortraitAndLandscapeWithoutDistortion() {

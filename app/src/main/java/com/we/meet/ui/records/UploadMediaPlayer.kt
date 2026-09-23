@@ -1,43 +1,27 @@
 package com.we.meet.ui.records
 
 import android.view.Surface
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.Fullscreen
+import androidx.compose.material.icons.outlined.FullscreenExit
+import androidx.compose.material3.*
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.os.SystemClock
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.height
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FastForward
-import androidx.compose.material.icons.outlined.Pause
-import androidx.compose.material.icons.outlined.PlayArrow
-import androidx.compose.material.icons.outlined.Replay
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -57,7 +41,6 @@ import com.we.meet.data.api.dto.RecordMediaDto
 import com.we.meet.data.capture.UploadMediaEngine
 import com.we.meet.data.capture.WholeFilePlayback
 import com.we.meet.ui.components.WeMeetInlineErrorState
-import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
 
 import kotlinx.coroutines.delay
@@ -91,6 +74,7 @@ internal fun UploadMediaPlayer(
     sourceId: String = media.name,
     /** Bounds native HTTP preparation retries; tests use a shorter real-clock deadline. */
     preparationTimeoutMs: Long = PREPARATION_TIMEOUT_MS,
+    followState: TranscriptFollowState? = null,
 ) {
     val context = LocalContext.current.applicationContext
     val latestPosition by rememberUpdatedState(onPosition)
@@ -101,7 +85,8 @@ internal fun UploadMediaPlayer(
     var position by remember(sourceId) { mutableLongStateOf(positionMs ?: 0L) }
     var duration by remember(sourceId) { mutableLongStateOf(0L) }
     var rate by remember(sourceId) { mutableFloatStateOf(1f) }
-    var ratesVisible by remember(sourceId) { mutableStateOf(false) }
+    var videoExpanded by remember(sourceId) { mutableStateOf(true) }
+    var fullscreen by remember(sourceId) { mutableStateOf(false) }
     var tick by remember(sourceId) { mutableIntStateOf(0) }
     var preparationStartedAt by remember(sourceId) { mutableLongStateOf(0) }
     var automaticRecoveries by remember(sourceId) { mutableIntStateOf(0) }
@@ -200,115 +185,107 @@ internal fun UploadMediaPlayer(
         latestConsume()
     }
 
-    val videoMaxHeight =
-        (LocalConfiguration.current.screenHeightDp * Dimens.MediaPreviewMaxHeightRatio).dp
-    val positionLabel = stringResource(R.string.capture_playback_position)
-    // 「正在播/刚开始播」才需要那块视频面。引擎在准备中就会把视频轨道的尺寸报回来,
-    // 所以按比例量出来的 Surface 从第一帧起就是对的;纯音频与未播放态不占这块高度。
-    val showVideo = media.mediaType == "video" && state.showsPause
-    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Column(Modifier.padding(Dimens.SpaceM), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-            if (showVideo) key(sourceId) {
-                BoxWithConstraints(Modifier.fillMaxWidth()) {
-                    // 按比例把画布收缩到画面本身:外层不再 fillMaxWidth,否则竖屏视频
-                    // (9:16)会在两侧各留一条与画面等高的黑边 —— 1080px 宽的屏上,
-                    // 画面只有 30% 屏高那么高,却整行铺黑,等于白白吃掉两条黑框。
-                    val videoHeight = minOf(maxWidth / aspect, videoMaxHeight)
-                    Box(
-                        Modifier.size(width = videoHeight * aspect, height = videoHeight)
-                            .clipToBounds()
-                            .background(MaterialTheme.colorScheme.scrim),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        AndroidView(
-                            modifier = Modifier.size(width = videoHeight * aspect, height = videoHeight),
-                            factory = { viewContext -> SurfaceView(viewContext).apply {
-                                holder.addCallback(object : SurfaceHolder.Callback {
-                                    override fun surfaceCreated(holder: SurfaceHolder) { surface = holder.surface; engine?.setSurface(surface) }
-                                    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) { engine?.setSurface(holder.surface) }
-                                    override fun surfaceDestroyed(holder: SurfaceHolder) { engine?.setSurface(null); surface = null }
-                                })
-                            } },
-                        )
-                    }
+    val controls: @Composable () -> Unit = {
+        if (state == MediaPlaybackState.Error) {
+            WeMeetInlineErrorState(onRetry = { stop(); start(position) },
+                message = stringResource(R.string.capture_playback_error))
+        } else {
+            RecordPlaybackControls(
+                positionMs = position, durationMs = duration.takeIf(::validMediaDuration),
+                playing = state.showsPause, rate = rate,
+                onSeek = { value ->
+                    engine?.pause()
+                    state = MediaPlaybackState.Ready
+                    report(value)
+                    latestConsume()
+                },
+                onSeekFinished = { engine?.seekTo(position) },
+                onPlayPause = {
+                    if (state.showsPause) { engine?.pause(); state = MediaPlaybackState.Ready }
+                    else start(if (duration > 0 && position >= duration) 0 else position)
+                },
+                onSkipBack = { start(maxOf(0L, position - 15_000)) },
+                onSkipForward = { start(minOf(maxOf(0L, duration - 1), position + 15_000)) },
+                onRate = { speed -> rate = speed; if (state.showsPause) start(position) },
+                followState = if (fullscreen) null else followState,
+            )
+        }
+    }
+    val hasVideo = media.mediaType == "video" && engine != null
+    val attachSurface: (Surface) -> Unit = {
+        surface = it
+        engine?.let { current ->
+            current.setSurface(it)
+            // Redraw a paused frame after expanding or leaving full screen without autoplay.
+            if (!state.showsPause && !current.isPreparing()) current.seekTo(position)
+        }
+    }
+    val detachSurface: (Surface) -> Unit = {
+        // A removed preview must not detach a newer full-screen surface.
+        if (surface === it) { engine?.setSurface(null); surface = null }
+    }
+    RecordPlayerSurface {
+        if (hasVideo) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = { videoExpanded = !videoExpanded }) {
+                    Icon(if (videoExpanded) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess, null)
+                    Text(stringResource(if (videoExpanded) R.string.capture_playback_hide_video else R.string.capture_playback_show_video))
+                }
+                Spacer(Modifier.weight(1f))
+                IconButton(onClick = { fullscreen = true }) {
+                    Icon(Icons.Outlined.Fullscreen, stringResource(R.string.capture_playback_fullscreen))
                 }
             }
-            if (state == MediaPlaybackState.Error) {
-                WeMeetInlineErrorState(
-                    onRetry = { stop(); start(position) },
-                    message = stringResource(R.string.capture_playback_error),
-                )
-            } else {
-                if (state.showsSpinner) WeMeetInlineLoading()
-                // 一条紧凑控制条:播放键 + 时间 + 进度 + 倍速/快退/快进。
-                // 时间行原先单独占一行(未播放时是「0:00 / 0:00」,看着像坏了),
-                // 改用共享的 playbackClockLabel —— 元数据没到就只显示当前位置。
-                Row(
-                    Modifier.fillMaxWidth().heightIn(min = Dimens.MinTouchTarget),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
-                ) {
-                    IconButton(onClick = { if (state.showsPause) { engine?.pause(); state = MediaPlaybackState.Ready } else start(position) }) {
-                        Icon(
-                            if (state.showsPause) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
-                            stringResource(if (state.showsPause) R.string.cd_records_pause else R.string.cd_records_play),
-                            Modifier.size(Dimens.IconMedium),
-                        )
-                    }
-                    Text(playbackClockLabel(sourceTime(position), duration.takeIf(::validMediaDuration)?.let { sourceTime(it) }), style = MaterialTheme.typography.labelSmall)
-                    // 进度条自己只有一条细轨,靠外层 48dp 的容器把热区撑到规范要求。
-                    Box(Modifier.weight(1f).heightIn(min = Dimens.MinTouchTarget), contentAlignment = Alignment.Center) {
-                        Slider(
-                            position.coerceAtMost(maxOf(1L, duration - 1)).toFloat(),
-                            onValueChange = { value ->
-                                stop()
-                                report(value.toLong())
-                            },
-                            enabled = duration > 0,
-                            valueRange = 0f..maxOf(1f, (duration - 1).toFloat()),
-                            modifier = Modifier.fillMaxWidth().semantics { contentDescription = positionLabel },
-                        )
-                    }
-                }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { ratesVisible = true }) { Text(stringResource(R.string.capture_playback_rate, rate)) }
-                    IconButton(onClick = { start(maxOf(0L, position - 15_000)) }) {
-                        Icon(Icons.Outlined.Replay, stringResource(R.string.cd_records_skip_back))
-                    }
-                    IconButton(onClick = { start(minOf(maxOf(0L, duration - 1), position + 15_000)) }) {
-                        Icon(Icons.Outlined.FastForward, stringResource(R.string.cd_records_skip_forward))
-                    }
+            if (videoExpanded && !fullscreen) {
+                val heightCap = (LocalConfiguration.current.screenHeightDp * Dimens.MediaPreviewMaxHeightRatio).dp
+                BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    val videoHeight = minOf(maxWidth / aspect, heightCap)
+                    RecordVideoSurface(Modifier.size(videoHeight * aspect, videoHeight), attachSurface, detachSurface)
                 }
             }
         }
+        if (!fullscreen) controls()
     }
-    if (ratesVisible) {
-        AlertDialog(
-            onDismissRequest = { ratesVisible = false },
-            title = { Text(stringResource(R.string.capture_playback_speed)) },
-            text = {
-                Column {
-                    listOf(0.75f, 1f, 1.25f, 1.5f, 2f).forEach { speed ->
-                        TextButton(onClick = { rate = speed; ratesVisible = false; if (state == MediaPlaybackState.Playing) start(position) }) {
-                            Text(stringResource(R.string.capture_playback_rate, speed))
-                        }
+    if (fullscreen) Dialog(onDismissRequest = { fullscreen = false },
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+            Column(Modifier.fillMaxSize().safeDrawingPadding()) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    IconButton(onClick = { fullscreen = false }) {
+                        Icon(Icons.Outlined.FullscreenExit, stringResource(R.string.capture_playback_exit_fullscreen))
                     }
                 }
-            },
-            confirmButton = { TextButton(onClick = { ratesVisible = false }) { Text(stringResource(R.string.records_close)) } },
-        )
+                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    if (hasVideo) {
+                        val videoHeight = minOf(maxWidth / aspect, maxHeight)
+                        RecordVideoSurface(Modifier.size(videoHeight * aspect, videoHeight), attachSurface, detachSurface)
+                    }
+                }
+                RecordPlayerSurface { controls() }
+            }
+        }
     }
 }
 
-/**
- * 导入媒体播放器上那行时间。
- *
- * 时长是从引擎问出来的，**准备期间它是 0** —— 之前无条件拼成 `「0:00 / 0:00」`，
- * 看着像坏了，也让未播放态平白多占一行。这里收口：还没有可信时长时只显示当前位置。
- *
- * 只给导入媒体用：录音回放的时长来自播放列表清单，读到列表那一刻它就是真的。
- */
+/** The native surface survives pause; only explicit collapse/full-screen moves it. */
 @Composable
-private fun playbackClockLabel(position: String, duration: String?): String =
-    if (duration == null) position
-    else stringResource(R.string.capture_playback_clock, position, duration)
+private fun RecordVideoSurface(
+    modifier: Modifier,
+    onAttach: (Surface) -> Unit,
+    onDetach: (Surface) -> Unit,
+) {
+    val attach by rememberUpdatedState(onAttach)
+    val detach by rememberUpdatedState(onDetach)
+    val label = stringResource(R.string.capture_playback_video_preview)
+    AndroidView(
+        modifier = modifier.clipToBounds().background(MaterialTheme.colorScheme.scrim)
+            .semantics { contentDescription = label },
+        factory = { context -> SurfaceView(context).apply {
+            holder.addCallback(object : SurfaceHolder.Callback {
+                override fun surfaceCreated(holder: SurfaceHolder) { attach(holder.surface) }
+                override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) { attach(holder.surface) }
+                override fun surfaceDestroyed(holder: SurfaceHolder) { detach(holder.surface) }
+            })
+        } },
+    )
+}

@@ -8,9 +8,15 @@
     <string name="capture_playback_gap">当前位置没有音频，请选择已保存的片段继续。</string>
     <string name="capture_playback_pause">暂停播放</string>
     <string name="capture_playback_play">播放</string>
-    <string name="capture_playback_rate">%1$.2f×</string>
+    <string name="capture_playback_rate">%1$s×</string>
     <string name="capture_playback_skip">下一段已保存音频</string>
     <string name="capture_playback_speed">播放速度</string>
     <string name="capture_playback_source">播放 %1$s 处原音</string>
     <string name="capture_playback_clock">%1$s / %2$s</string>
+    <string name="capture_playback_follow">跟随</string>
+    <string name="capture_playback_video_preview">视频预览</string>
+    <string name="capture_playback_show_video">展开视频</string>
+    <string name="capture_playback_hide_video">收起视频</string>
+    <string name="capture_playback_fullscreen">全屏</string>
+    <string name="capture_playback_exit_fullscreen">退出全屏</string>
 </resources>

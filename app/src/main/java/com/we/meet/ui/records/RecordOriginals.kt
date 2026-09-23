@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -45,6 +46,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -91,6 +97,7 @@ internal fun RecordOriginals(
     /** 「批量查找替换」的菜单项标签,同样是纯文本(理由见上)。 */
     replacementLabel: (@Composable () -> Unit)? = null,
     onManageReplacement: (() -> Unit)? = null,
+    followState: TranscriptFollowState = remember(viewer, record.id) { TranscriptFollowState() },
 ) {
     var input by remember(viewer, record.id) { mutableStateOf("") }
     var query by remember(viewer, record.id) { mutableStateOf("") }
@@ -100,7 +107,13 @@ internal fun RecordOriginals(
     var selectSpeaker by remember(viewer, record.id, record.revision) { mutableStateOf(false) }
     var cursors by remember(viewer, record.id, record.revision, query, speakerId) { mutableStateOf(listOf<String?>(null)) }
     var anchorMs by remember(viewer, record.id, record.revision) { mutableStateOf(0L) }
-    var following by remember(viewer, record.id) { mutableStateOf(true) }
+    val following = followState.following
+    LaunchedEffect(followState.resumeToken) {
+        if (followState.resumeToken > 0) {
+            input = ""; query = ""; speakerId = null
+            anchorMs = positionMs ?: 0L; cursors = listOf(null)
+        }
+    }
     /**
      * 回放指针**此刻是否在走**(正在播放)。
      *
@@ -122,6 +135,7 @@ internal fun RecordOriginals(
     val keyboard = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
     val filtered = query.isNotBlank() || speakerId != null
+    LaunchedEffect(filtered) { if (filtered) followState.following = false }
     val atMs = if (record.sourceType == "meeting") null else if (filtered) 0L else anchorMs
     val page = visibleRead(viewer, record.id, record.revision, query, speakerId, cursors.last(), atMs) {
         repository.originals(viewer, record.id, record.revision, query.ifBlank { null }, speakerId, cursors.last(), atMs)
@@ -137,7 +151,7 @@ internal fun RecordOriginals(
     val activeDescription = stringResource(R.string.records_now_playing)
     val followIndex = rows.indexOfFirst { it.id == followId }
     val dragging by listState.interactionSource.collectIsDraggedAsState()
-    LaunchedEffect(dragging) { if (dragging) following = false }
+    LaunchedEffect(dragging) { if (dragging) followState.following = false }
     LaunchedEffect(positionMs, timelineRows, following, filtered, dragging) {
         if (!following || filtered || dragging || positionMs == null) return@LaunchedEffect
         transcriptWindowTarget(timelineRows, positionMs, anchorMs, page?.getOrNull()?.nextCursor != null)?.let {
@@ -219,7 +233,7 @@ internal fun RecordOriginals(
         if (positionMs != null && playbackAdvancing && !following) TextButton(
             onClick = {
                 input = ""; query = ""; speakerId = null
-                anchorMs = positionMs; cursors = listOf(null); following = true
+                anchorMs = positionMs; cursors = listOf(null); followState.resume()
             },
             modifier = Modifier.heightIn(min = Dimens.MinTouchTarget),
         ) { Text(stringResource(R.string.records_back_to_playback)) }
@@ -235,12 +249,18 @@ internal fun RecordOriginals(
                 else -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                     items(page.getOrThrow().results, key = { it.id }) { original ->
                             val isActive = activeId != null && original.id == activeId
+                            val activeColor = MaterialTheme.colorScheme.primary
                             Column(
                                 Modifier.fillMaxWidth()
                                     .background(
-                                        if (isActive) MaterialTheme.colorScheme.primaryContainer
+                                        if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)
                                         else MaterialTheme.colorScheme.surface,
                                     )
+                                    .drawBehind {
+                                        if (isActive) drawRect(activeColor,
+                                            topLeft = Offset(0f, Dimens.ScreenPadding.toPx()),
+                                            size = Size(Dimens.RecordPlayback.ActiveIndicatorWidth.toPx(), (size.height - Dimens.ScreenPadding.toPx() * 2).coerceAtLeast(0f)))
+                                    }
                                     // The accessible signal is a state description, not just colour.
                                     .semantics {
                                         if (isActive) stateDescription = activeDescription
@@ -254,7 +274,13 @@ internal fun RecordOriginals(
                                     }
                                     Text(original.speakerLabel.ifBlank { stringResource(R.string.records_unknown_speaker) }, Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     if (onSource != null && original.startMs != null) {
-                                        TextButton(onClick = { onSource(original.startMs) }) { Text(stringResource(R.string.capture_playback_source, sourceTime(original.startMs))) }
+                                        val sourceLabel = stringResource(R.string.capture_playback_source, sourceTime(original.startMs))
+                                        TextButton(onClick = { onSource(original.startMs) },
+                                            modifier = Modifier.semantics { contentDescription = sourceLabel }) {
+                                            Icon(Icons.Outlined.PlayArrow, null, Modifier.size(Dimens.IconSmall))
+                                            Text(playbackTime(original.startMs), modifier = Modifier.clearAndSetSemantics {},
+                                                style = MaterialTheme.typography.labelMedium)
+                                        }
                                     } else Text(original.startedAt?.let(::recordTime) ?: original.startMs?.let(::sourceTime).orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 CorrectableOriginalText(
@@ -271,7 +297,7 @@ internal fun RecordOriginals(
                                     correctable = original.canCorrect && original.correctionRevision != null,
                                     correctionRevision = original.correctionRevision ?: 0,
                                     onCorrected = onRefresh,
-                                    onEditing = { following = false },
+                                    onEditing = { followState.following = false },
                                     draftState = correctionDrafts.get(original.id, original.text, original.correctionRevision ?: 0),
                                     writeScope = scope,
                                     // 命中处落在正文里(服务端只把不匹配的行过滤掉)。
@@ -287,9 +313,9 @@ internal fun RecordOriginals(
             // 单页时这一行只会剩一个孤立的「刷新」—— 那条规则现在收在 RecordPager 里。
             RecordPager(
                 hasPrevious = cursors.size > 1,
-                onPrevious = { following = false; cursors = cursors.dropLast(1) },
+                onPrevious = { followState.following = false; cursors = cursors.dropLast(1) },
                 hasNext = current.nextCursor != null,
-                onNext = { current.nextCursor?.let { next -> following = false; cursors = cursors + next } },
+                onNext = { current.nextCursor?.let { next -> followState.following = false; cursors = cursors + next } },
                 onRefresh = onRefresh,
             )
         }

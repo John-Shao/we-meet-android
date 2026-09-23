@@ -13,6 +13,10 @@ import androidx.core.app.ActivityOptionsCompat
 import okhttp3.ResponseBody.Companion.toResponseBody
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotFocused
@@ -318,6 +322,41 @@ class RecordScreensTest {
         awaitText(label(R.string.records_correction_conflict))
         compose.onNodeWithText("Pending draft").assertIsDisplayed()
         assertEquals(1, fixture.corrections.size)
+    }
+
+    @Test fun playerFollowClearsSearchAndReturnsToTheCurrentTranscript() {
+        val fixture = Fixture()
+        val repository = MeetingRecordRepository(fixture) { "reader" }
+        val record = RecordDto(recordId, "audio_recording", "Playback", "2026-09-13T00:00:00Z", 3,
+            RecordCapabilitiesDto(readTranscript = true))
+        val follow = TranscriptFollowState()
+        compose.setContent { WeMeetTheme {
+            Column(Modifier.fillMaxSize()) {
+                Box(Modifier.weight(1f)) {
+                    RecordOriginals(repository, "reader", record, {}, onExport = {}, onSource = {},
+                        positionMs = 1500L, followState = follow)
+                }
+                RecordPlayerSurface {
+                    RecordPlaybackControls(1500L, 25000L, false, 1f, {}, {}, {}, {}, {}, follow)
+                }
+            }
+        } }
+        awaitText("Full original text")
+        compose.onNodeWithText(label(R.string.records_search_originals)).performClick()
+        compose.onNodeWithText(label(R.string.records_search_originals)).performTextInput("Search")
+        compose.onNodeWithText(label(R.string.records_search_originals)).performImeAction()
+        awaitText("Search matched original")
+        compose.runOnIdle { assertFalse(follow.following) }
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_follow)).performClick()
+        awaitText("Full original text")
+        compose.runOnIdle {
+            assertTrue(follow.following)
+            assertEquals(null, fixture.originalQueries.last().first)
+        }
+        compose.onNodeWithContentDescription(context.getString(R.string.capture_playback_source, "0:01")).assertIsDisplayed()
+        File(context.getExternalFilesDir(null), "record-playback-follow.png").outputStream().use {
+            compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
     }
 
     @Test fun summaryOnlyChaptersDoNotReadOriginals() {

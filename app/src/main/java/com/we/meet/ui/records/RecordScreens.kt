@@ -113,6 +113,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
      * separate regions: the player owns the clock, the transcript owns the text,
      * and this is the one place that connects them. Null until a player reports.
      */
+    val transcriptFollow = remember(viewer, recordId) { TranscriptFollowState() }
     var playbackPositionMs by remember(viewer, recordId) { mutableStateOf<Long?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
     var selectedHuman by remember(viewer, recordId) { mutableStateOf<String?>(null) }
@@ -282,7 +283,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             var replacementOpen by remember(viewer, recordId) { mutableStateOf(false) }
                             val pendingReplacement = visibleRead(viewer, recordId) { repository.pendingReplacement(viewer, recordId) }
                             LaunchedEffect(pendingReplacement?.getOrNull() != null) { if (pendingReplacement?.getOrNull() != null) replacementOpen = true }
-                            RecordOriginals(repository, viewer, record, onRefresh = { refresh++ }, onExport = exportTranscript, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay || canPlayImport },
+                            RecordOriginals(repository, viewer, record, followState = transcriptFollow, onRefresh = { refresh++ }, onExport = exportTranscript, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay || canPlayImport },
                                 // 只给纯文本:菜单项整行可点,套按钮会带出主色和按钮内边距,
                                 // 与旁边几项的普通 Text 既不同色也不同缩进。
                                 transcriptionLabel = if (canManageTranscription) ({ Text(stringResource(R.string.records_transcription_manage)) }) else null,
@@ -408,11 +409,11 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                     }
                 }
             }
-            if (canPlay) NativeCaptureAudioPlayer(viewer, recordId, requireNotNull(app).capturePlaybackRepository, { app.captureAccount }, audioSeek, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it })
+            if (canPlay) NativeCaptureAudioPlayer(viewer, recordId, requireNotNull(app).capturePlaybackRepository, { app.captureAccount }, audioSeek, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it }, followState = transcriptFollow.takeIf { detailTab == "text" })
             // The import's signed read is fetched lazily; until it arrives there is
             // no player, and a refused read leaves the transcript readable alone.
             if (canPlayImport) media?.getOrNull()?.let { read ->
-                UploadMediaPlayer(read, playbackPositionMs, audioSeek, onDuration = { playerDuration = it }, sourceId = recordId, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it })
+                UploadMediaPlayer(read, playbackPositionMs, audioSeek, onDuration = { playerDuration = it }, sourceId = recordId, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it }, followState = transcriptFollow.takeIf { detailTab == "text" })
             }
             if (detail?.isSuccess == true && record?.capabilities?.readTranscript == true) citation?.let { (snapshot, reference) ->
                 val original = visibleRead(viewer, recordId, snapshot, reference, refresh) { repository.citation(viewer, recordId, snapshot, reference) }

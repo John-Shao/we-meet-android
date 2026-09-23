@@ -36,7 +36,7 @@ class ProductionMediaRenewalAcceptanceTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private fun label(id: Int) = context.getString(id)
-    private fun speed(value: Float) = context.getString(R.string.capture_playback_rate, value)
+    private fun speed(value: Float) = context.getString(R.string.capture_playback_rate, playbackRateValue(value))
 
     @Test fun expiredProductionLeaseRecoversWithNewLeaseAndPreservesSpeedAndSeek() {
         val endpoint = InstrumentationRegistry.getArguments().getString("mediaLeaseDescriptor")

@@ -8,9 +8,15 @@
     <string name="capture_playback_gap">No audio at this position. Choose a saved segment to continue.</string>
     <string name="capture_playback_pause">Pause playback</string>
     <string name="capture_playback_play">Play</string>
-    <string name="capture_playback_rate">%1$.2f×</string>
+    <string name="capture_playback_rate">%1$s×</string>
     <string name="capture_playback_skip">Next saved segment</string>
     <string name="capture_playback_speed">Playback speed</string>
     <string name="capture_playback_source">Listen at %1$s</string>
     <string name="capture_playback_clock">%1$s / %2$s</string>
+    <string name="capture_playback_follow">Follow</string>
+    <string name="capture_playback_video_preview">Video preview</string>
+    <string name="capture_playback_show_video">Show video</string>
+    <string name="capture_playback_hide_video">Hide video</string>
+    <string name="capture_playback_fullscreen">Full screen</string>
+    <string name="capture_playback_exit_fullscreen">Exit full screen</string>
 </resources>

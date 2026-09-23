@@ -68,19 +68,20 @@ class CaptureAudioPlayerTest {
         compose.waitForIdle()
         assertEquals(1, sinks.size)
     }
-    @Test fun exactSourceSeekAndRateSelectionRequireExplicitPlayback() {
+    @Test fun exactSourceSeekAndRateSelectionPreservePlayback() {
         show()
         compose.runOnIdle { seek.value = CaptureAudioSeek(2300) }
         compose.waitUntil(8000) { sinks.isNotEmpty() && sinks.first().started }
         assertEquals(300L, sinks.first().offset)
         assertEquals(listOf(1), downloads.toList())
-        val normal = context.getString(R.string.capture_playback_rate, 1f)
+        val normal = context.getString(R.string.capture_playback_rate, playbackRateValue(1f))
         compose.onNodeWithText(normal).performClick()
-        assertTrue(sinks.first().closed)
-        compose.onNodeWithText(context.getString(R.string.capture_playback_rate, 1.5f)).performClick()
+        assertFalse("opening the speed menu must not stop audio", sinks.first().closed)
         assertEquals(1, sinks.size)
-        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
+        compose.onNodeWithText(context.getString(R.string.capture_playback_rate, playbackRateValue(1.5f))).performClick()
         compose.waitUntil(8000) { sinks.size == 2 && sinks.last().started }
+        assertTrue(sinks.first().closed)
+        assertEquals(300L, sinks.last().offset)
         assertEquals(1.5f, sinks.last().rate)
     }
     @Test fun seekingMissingAudioDoesNotDownloadAndNextSegmentIsExplicit() {

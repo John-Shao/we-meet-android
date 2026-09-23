@@ -1,24 +1,9 @@
 package com.we.meet.ui.records
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.Alignment
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Replay
-import androidx.compose.material.icons.outlined.FastForward
-import androidx.compose.material.icons.outlined.PlayArrow
-import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
@@ -35,19 +20,18 @@ import com.we.meet.service.ConferenceForegroundService
 import com.we.meet.ui.components.WeMeetInlineEmptyState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
-import com.we.meet.ui.theme.Dimens
 import java.util.UUID
 import kotlinx.coroutines.*
 
 internal data class CaptureAudioSeek(val milliseconds: Long, val token: String = UUID.randomUUID().toString())
 
 @Composable
-internal fun NativeCaptureAudioPlayer(viewer: String, recordId: String, repository: CapturePlaybackRepository, currentViewer: () -> String?, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}, onPosition: (Long) -> Unit = {}) {
+internal fun NativeCaptureAudioPlayer(viewer: String, recordId: String, repository: CapturePlaybackRepository, currentViewer: () -> String?, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}, onPosition: (Long) -> Unit = {}, followState: TranscriptFollowState? = null) {
     val context = LocalContext.current.applicationContext
     CaptureAudioPlayer(viewer, recordId, { repository.playlist(viewer, recordId).getOrThrow() }, { allowed ->
         CapturePlaybackEngine({ playlist, index -> repository.audio(viewer, playlist, index).getOrThrow() },
             { repository.checkAccess(viewer, it).getOrThrow() }, { AndroidCapturePlaybackOutput(context, it) }, allowed)
-    }, { currentViewer() == viewer && !CaptureForegroundService.microphoneActive && !ConferenceForegroundService.isRunning }, seek, onSeekConsumed, onPosition)
+    }, { currentViewer() == viewer && !CaptureForegroundService.microphoneActive && !ConferenceForegroundService.isRunning }, seek, onSeekConsumed, onPosition, followState)
 }
 
 /**
@@ -58,7 +42,7 @@ internal fun NativeCaptureAudioPlayer(viewer: String, recordId: String, reposito
  */
 @Composable
 internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend () -> CapturePlaylist, createEngine: (allowed: () -> Boolean) -> CapturePlaybackEngine,
-    authorized: () -> Boolean, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}, onPosition: (Long) -> Unit = {}) {
+    authorized: () -> Boolean, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}, onPosition: (Long) -> Unit = {}, followState: TranscriptFollowState? = null) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
     val currentAllowed by rememberUpdatedState(authorized)
@@ -71,7 +55,6 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
     var refresh by remember(viewer, recordId) { mutableIntStateOf(0) }
     var engine by remember(viewer, recordId) { mutableStateOf<CapturePlaybackEngine?>(null) }
     var work by remember(viewer, recordId) { mutableStateOf<Job?>(null) }
-    var ratesVisible by remember(viewer, recordId) { mutableStateOf(false) }
     val allowed = { lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) && currentAllowed() }
 
     /**
@@ -111,7 +94,6 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
                 if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
                     playlist = null
                     setPosition(0)
-                    ratesVisible = false
                     consumeSeek()
                 }
             }
@@ -154,40 +136,38 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
         else if (playlist != null && allowed()) { play(request.milliseconds); consumeSeek() }
     }
     val data = playlist
-    // 播放键的「是否显示暂停」收在 MediaPlaybackState.showsPause 一处：
-    // 它在「准备中」也返回 true，两个播放器因此一致。
-    val playing = state.showsPause
-    val positionLabel = stringResource(R.string.capture_playback_position)
-    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Column(Modifier.padding(Dimens.SpaceM), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-            // 只有真的还没有来源时才让位给整块转圈；换段 / 拖动（Preparing）保留控件 ——
-            // 原先这里连 Preparing 一起挡掉，于是每次拖进度条控件都会闪一下。
-            if (state.showsSpinner) WeMeetInlineLoading()
-            if (state == MediaPlaybackState.Error) WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.capture_playback_error))
-            if (data != null) {
-                if (data.manifest.outcome == "incomplete") Text(stringResource(R.string.capture_playback_incomplete), style = MaterialTheme.typography.bodySmall)
-                if (data.chunks.isEmpty()) WeMeetInlineEmptyState(stringResource(R.string.capture_playback_empty))
-                else {
-                    Text("${sourceTime(position)} / ${sourceTime(data.endMs)}", style = MaterialTheme.typography.labelMedium)
-                    Slider(position.coerceAtMost(maxOf(1, data.endMs - 1)).toFloat(), onValueChange = { stop(); setPosition(it.toLong()); state = MediaPlaybackState.Ready; consumeSeek() },
-                        valueRange = 0f..maxOf(1, data.endMs - 1).toFloat(), modifier = Modifier.semantics { contentDescription = positionLabel })
-                    if (state == MediaPlaybackState.Gap) Text(stringResource(R.string.capture_playback_gap), style = MaterialTheme.typography.bodySmall)
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = { stop(); state = MediaPlaybackState.Ready; consumeSeek(); ratesVisible = true }) { Text(stringResource(R.string.capture_playback_rate, rate)) }
-                        IconButton(onClick = { play(maxOf(0, position - 15_000)) }) { Icon(Icons.Outlined.Replay, stringResource(R.string.cd_records_skip_back)) }
-                        FilledTonalIconButton(modifier = Modifier.size(Dimens.ButtonHeight), onClick = { if (playing) { stop(); state = MediaPlaybackState.Ready; consumeSeek() } else play(if (position >= data.endMs) 0 else position) }) {
-                            Icon(if (playing) Icons.Outlined.Pause else Icons.Outlined.PlayArrow, stringResource(if (playing) R.string.cd_records_pause else R.string.cd_records_play), Modifier.size(Dimens.IconXl))
-                        }
-                        IconButton(onClick = { play(minOf(data.endMs - 1, position + 15_000)) }) { Icon(Icons.Outlined.FastForward, stringResource(R.string.cd_records_skip_forward)) }
-                        if (state == MediaPlaybackState.Gap) data.chunks.firstOrNull { it.startMs >= position }?.let { next ->
-                            TextButton(onClick = { play(next.startMs) }) { Text(stringResource(R.string.capture_playback_skip)) }
-                        }
+    RecordPlayerSurface {
+        if (state.showsSpinner) WeMeetInlineLoading()
+        if (state == MediaPlaybackState.Error) WeMeetInlineErrorState(
+            onRetry = { refresh++ }, message = stringResource(R.string.capture_playback_error))
+        if (data != null) {
+            if (data.manifest.outcome == "incomplete") Text(
+                stringResource(R.string.capture_playback_incomplete), style = MaterialTheme.typography.bodySmall)
+            if (data.chunks.isEmpty()) WeMeetInlineEmptyState(stringResource(R.string.capture_playback_empty))
+            else {
+                RecordPlaybackControls(
+                    positionMs = position, durationMs = data.endMs, playing = state.showsPause, rate = rate,
+                    onSeek = { stop(); setPosition(it); state = MediaPlaybackState.Ready; consumeSeek() },
+                    onPlayPause = {
+                        if (state.showsPause) { stop(); state = MediaPlaybackState.Ready; consumeSeek() }
+                        else play(if (position >= data.endMs) 0 else position)
+                    },
+                    onSkipBack = { play(maxOf(0, position - 15_000)) },
+                    onSkipForward = { play(minOf((data.endMs - 1).coerceAtLeast(0), position + 15_000)) },
+                    onRate = { speed ->
+                        val resume = state.showsPause
+                        rate = speed
+                        if (resume) play(position)
+                    },
+                    followState = followState,
+                )
+                if (state == MediaPlaybackState.Gap) {
+                    Text(stringResource(R.string.capture_playback_gap), style = MaterialTheme.typography.bodySmall)
+                    data.chunks.firstOrNull { it.startMs >= position }?.let { next ->
+                        TextButton(onClick = { play(next.startMs) }) { Text(stringResource(R.string.capture_playback_skip)) }
                     }
                 }
             }
         }
     }
-    if (ratesVisible) AlertDialog(onDismissRequest = { ratesVisible = false }, title = { Text(stringResource(R.string.capture_playback_speed)) }, text = {
-        Column { listOf(0.75f, 1f, 1.25f, 1.5f, 2f).forEach { speed -> TextButton(onClick = { rate = speed; ratesVisible = false }) { Text(stringResource(R.string.capture_playback_rate, speed)) } } }
-    }, confirmButton = { TextButton(onClick = { ratesVisible = false }) { Text(stringResource(R.string.records_close)) } })
 }

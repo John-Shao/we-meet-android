@@ -49,7 +49,7 @@ class UploadMediaRenewalTest {
     @Volatile private var refusedGate: CountDownLatch? = null
 
     private fun label(id: Int) = context.getString(id)
-    private fun speed(value: Float) = context.getString(R.string.capture_playback_rate, value)
+    private fun speed(value: Float) = context.getString(R.string.capture_playback_rate, playbackRateValue(value))
 
     @Before fun serveAudio() {
         val pcmBytes = 16000 * 2 * 30

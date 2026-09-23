@@ -142,6 +142,15 @@ object Dimens {
      * (`.` 前面不是数字),所以它此前一直没被报出来。
      */
     const val MediaPreviewMaxHeightRatio = 0.3f
+    /** Shared geometry for recording playback controls and the active transcript row. */
+    object RecordPlayback {
+        val CornerRadius = 20.dp
+        val PlayButtonSize = 56.dp
+        val PlayIconSize = 30.dp
+        val TrackHeight = 4.dp
+        val ThumbSize = 12.dp
+        val ActiveIndicatorWidth = 3.dp
+    }
     /** 首页那种大号功能入口方块。 */
     val ActionTile = 72.dp
     /** Minimum readable card width in the adaptive meeting-record library grid. */
