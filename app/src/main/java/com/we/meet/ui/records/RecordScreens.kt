@@ -277,15 +277,24 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             // 把状态放在菜单项里的话,打开动作会连同它一起被销毁(踩过一次)。
                             val canManageTranscription = app != null && record.sourceType == "audio_recording" && record.capabilities.controlCapture
                             var transcriptionOpen by remember(viewer, recordId) { mutableStateOf(false) }
+                            // 批量查找替换的弹窗也由这里持有 —— 同一类问题:菜单项一点就随菜单
+                            // 从组合里移除,状态放在菜单项里会连同它一起被销毁。
+                            var replacementOpen by remember(viewer, recordId) { mutableStateOf(false) }
+                            val pendingReplacement = visibleRead(viewer, recordId) { repository.pendingReplacement(viewer, recordId) }
+                            LaunchedEffect(pendingReplacement?.getOrNull() != null) { if (pendingReplacement?.getOrNull() != null) replacementOpen = true }
                             RecordOriginals(repository, viewer, record, onRefresh = { refresh++ }, onExport = exportTranscript, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay || canPlayImport },
-                                transcriptionTrigger = if (canManageTranscription) ({
-                                    TextButton(onClick = { transcriptionOpen = true }, modifier = Modifier.fillMaxWidth()) {
-                                        Text(stringResource(R.string.records_transcription_manage))
-                                    }
-                                }) else null)
+                                // 只给纯文本:菜单项整行可点,套按钮会带出主色和按钮内边距,
+                                // 与旁边几项的普通 Text 既不同色也不同缩进。
+                                transcriptionLabel = if (canManageTranscription) ({ Text(stringResource(R.string.records_transcription_manage)) }) else null,
+                                onManageTranscription = if (canManageTranscription) ({ transcriptionOpen = true }) else null,
+                                replacementLabel = if (record.capabilities.batchCorrect) ({ Text(stringResource(R.string.batch_correction_title)) }) else null,
+                                onManageReplacement = if (record.capabilities.batchCorrect) ({ replacementOpen = true }) else null)
                             if (transcriptionOpen && canManageTranscription) RecordCaptureToolsSheet(
                                 viewer, record, requireNotNull(app).captureRepository, app.captureTranscriptionRepository,
                                 { app.captureAccount }, onClose = { transcriptionOpen = false; refresh++ })
+                            if (replacementOpen && record.capabilities.batchCorrect) TranscriptReplacementDialog(
+                                repository, viewer, recordId, open = true,
+                                onClose = { replacementOpen = false }, onChanged = { refresh++ })
                         }
                     } else if (document && !record.capabilities.readSummary) {
                         WeMeetEmptyState(stringResource(R.string.records_no_summary_access))

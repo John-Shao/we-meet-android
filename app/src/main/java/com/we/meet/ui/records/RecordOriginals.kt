@@ -81,11 +81,16 @@ internal fun RecordOriginals(
     onSource: ((Long) -> Unit)? = null,
     positionMs: Long? = null,
     /**
-     * 有「转写管理」可放时传进来(只对 AI 录音且当前用户能控制采集的记录有值):
-     * 它会被收进工具栏的溢出菜单,不再独占页面头部的一整行。参数是「真正要显示
-     * 的那颗按钮 / 菜单项」,由调用方决定外观。
+     * 「转写管理」的菜单项标签 —— 有值就说明这条记录能管转写(只对 AI 录音、且当前
+     * 用户能控制采集的记录有值)。**只传文本**,不要在这里套按钮:菜单项是「整行
+     * 可点的纯文本」,嵌一颗 TextButton 会让那一项带上主色和按钮内边距,和旁边三项
+     * 既不同色也不同缩进(踩过)。真正的开合由 [onManageTranscription] 负责。
      */
-    transcriptionTrigger: (@Composable () -> Unit)? = null,
+    transcriptionLabel: (@Composable () -> Unit)? = null,
+    onManageTranscription: (() -> Unit)? = null,
+    /** 「批量查找替换」的菜单项标签,同样是纯文本(理由见上)。 */
+    replacementLabel: (@Composable () -> Unit)? = null,
+    onManageReplacement: (() -> Unit)? = null,
 ) {
     var input by remember(viewer, record.id) { mutableStateOf("") }
     var query by remember(viewer, record.id) { mutableStateOf("") }
@@ -183,8 +188,8 @@ internal fun RecordOriginals(
                     DropdownMenu(expanded = actionsVisible, onDismissRequest = { actionsVisible = false }) {
                         // 转写管理排在最前:它是这条记录自己的转写状态(重试 / 清理),
                         // 比「按发言人筛选」这类浏览动作更该先被看到。
-                        if (transcriptionTrigger != null) {
-                            DropdownMenuItem(text = transcriptionTrigger, onClick = { actionsVisible = false })
+                        if (transcriptionLabel != null && onManageTranscription != null) {
+                            DropdownMenuItem(text = transcriptionLabel, onClick = { actionsVisible = false; onManageTranscription() })
                         }
                         if (record.sourceType in listOf("audio_recording", "upload")) {
                             DropdownMenuItem(
@@ -202,12 +207,8 @@ internal fun RecordOriginals(
                             text = { Text(stringResource(R.string.records_export_transcript)) },
                             onClick = { actionsVisible = false; exportVisible = true },
                         )
-                        if (record.capabilities.batchCorrect) {
-                            // 它自己就是一颗按钮 + 一个编辑弹窗,塞进菜单项即可。
-                            DropdownMenuItem(
-                                text = { TranscriptReplacementControl(repository, viewer, record.id, onRefresh) },
-                                onClick = { actionsVisible = false },
-                            )
+                        if (replacementLabel != null && onManageReplacement != null) {
+                            DropdownMenuItem(text = replacementLabel, onClick = { actionsVisible = false; onManageReplacement() })
                         }
                     }
                 }

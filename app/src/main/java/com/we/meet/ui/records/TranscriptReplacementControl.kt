@@ -23,15 +23,39 @@ import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.util.UUID
 
-/** Exact request survives ordinary state restoration; no transcript preview is persisted. */
+/**
+ * 批量查找替换的**独立入口按钮** —— 旧路径,行为不变(自带按钮 + 负责恢复未确认请求)。
+ * 要把它放进工具栏菜单时用 [TranscriptReplacementDialog],由调用方持有 `open`。
+ */
 @Composable
 internal fun TranscriptReplacementControl(repository: MeetingRecordRepository, viewer: String, recordId: String, onChanged: () -> Unit) {
-    key(viewer, recordId) { ReplacementEditor(repository, viewer, recordId, onChanged) }
+    // 有上次未确认的请求时自动顶开:这一步原先在对话框里做,现在 open 归调用方,
+    // 得由持有它的这一层自己判。
+    val pending = visibleRead(viewer, recordId) { repository.pendingReplacement(viewer, recordId) }
+    TranscriptReplacementEntry(repository, viewer, recordId, onChanged, autoOpen = pending?.getOrNull() != null)
 }
 
 @Composable
-private fun ReplacementEditor(repository: MeetingRecordRepository, viewer: String, recordId: String, onChanged: () -> Unit) {
-    var open by rememberSaveable { mutableStateOf(false) }
+private fun TranscriptReplacementEntry(repository: MeetingRecordRepository, viewer: String, recordId: String, onChanged: () -> Unit, autoOpen: Boolean = false) {
+    var open by rememberSaveable { mutableStateOf(autoOpen) }
+    LaunchedEffect(autoOpen) { if (autoOpen) open = true }
+    TextButton(onClick = { open = true }) { Text(stringResource(R.string.batch_correction_title)) }
+    TranscriptReplacementDialog(repository, viewer, recordId, open = open, onClose = { open = false }, onChanged = onChanged)
+}
+
+/**
+ * 批量查找替换对话框本体 —— 与入口分开,调用方自己决定何时显示它。
+ *
+ * [open] 由调用方持有:菜单项当入口时,状态必须活在菜单之外(菜单项一点就从组合里
+ * 移除,状态放在里面会一起被销毁)。
+ */
+@Composable
+internal fun TranscriptReplacementDialog(repository: MeetingRecordRepository, viewer: String, recordId: String, open: Boolean, onClose: () -> Unit, onChanged: () -> Unit) {
+    key(viewer, recordId) { ReplacementEditor(repository, viewer, recordId, open, onClose, onChanged) }
+}
+
+@Composable
+private fun ReplacementEditor(repository: MeetingRecordRepository, viewer: String, recordId: String, open: Boolean, onClose: () -> Unit, onChanged: () -> Unit) {
     var find by rememberSaveable { mutableStateOf("") }
     var replacement by rememberSaveable { mutableStateOf("") }
     var requestKey by rememberSaveable { mutableStateOf<String?>(null) }
@@ -49,12 +73,11 @@ private fun ReplacementEditor(repository: MeetingRecordRepository, viewer: Strin
         repository.pendingReplacement(viewer, recordId).onSuccess { pending ->
             if (pending != null) {
                 find = pending.find; replacement = pending.replacement
-                requestKey = pending.key; expectedHash = pending.expectedHash; open = true
+                requestKey = pending.key; expectedHash = pending.expectedHash
             }
             recovered = true
         }.onFailure { message = R.string.batch_correction_storage_error }
     }
-    TextButton(onClick = { open = true }) { Text(stringResource(R.string.batch_correction_title)) }
     if (!open) return
     val history = visibleRead(viewer, recordId, refresh) { repository.replacements(viewer, recordId) }
     LaunchedEffect(history?.isFailure) { if (history?.isFailure == true) preview = null }
@@ -89,7 +112,7 @@ private fun ReplacementEditor(repository: MeetingRecordRepository, viewer: Strin
         }
     }
     AlertDialog(
-        onDismissRequest = { if (!busy) { open = false; preview = null; undoId = null } },
+        onDismissRequest = { if (!busy) { onClose(); preview = null; undoId = null } },
         title = { Text(stringResource(R.string.batch_correction_title)) },
         text = {
             Column(Modifier.fillMaxWidth().heightIn(max = Dimens.SheetContentMaxHeight).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
@@ -153,6 +176,6 @@ private fun ReplacementEditor(repository: MeetingRecordRepository, viewer: Strin
                 }
             }
         },
-        dismissButton = { TextButton(enabled = !busy, onClick = { open = false; preview = null; undoId = null }) { Text(stringResource(R.string.batch_correction_close)) } },
+        dismissButton = { TextButton(enabled = !busy, onClick = { onClose(); preview = null; undoId = null }) { Text(stringResource(R.string.batch_correction_close)) } },
     )
 }
