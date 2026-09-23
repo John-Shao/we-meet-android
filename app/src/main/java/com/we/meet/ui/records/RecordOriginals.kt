@@ -5,17 +5,23 @@ package com.we.meet.ui.records
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.lazy.LazyColumn
@@ -69,6 +75,7 @@ internal fun RecordOriginals(
     var input by remember(viewer, record.id) { mutableStateOf("") }
     var query by remember(viewer, record.id) { mutableStateOf("") }
     var searchVisible by remember(viewer, record.id) { mutableStateOf(false) }
+    var actionsVisible by remember(viewer, record.id) { mutableStateOf(false) }
     var speakerId by remember(viewer, record.id, record.revision) { mutableStateOf<String?>(null) }
     var selectSpeaker by remember(viewer, record.id, record.revision) { mutableStateOf(false) }
     var cursors by remember(viewer, record.id, record.revision, query, speakerId) { mutableStateOf(listOf<String?>(null)) }
@@ -128,21 +135,47 @@ internal fun RecordOriginals(
                     keyboardActions = KeyboardActions(onSearch = { search() }),
                 )
             }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                TextButton(onClick = { searchVisible = !searchVisible; if (!searchVisible) { input = ""; query = ""; keyboard?.hide() } }) {
+            // 动作收进溢出菜单:原先四个文字按钮在 FlowRow 里换行,「批量查找替换」
+            // 单独掉到第二行 —— 一条只有一颗按钮的工具栏,白占 40dp 屏高。收进菜单后
+            // 工具栏恒为一行,也不再依赖「四个中文标签刚好放得下」这种巧合。
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                TextButton(
+                    onClick = { searchVisible = !searchVisible; if (!searchVisible) { input = ""; query = ""; keyboard?.hide() } },
+                    modifier = Modifier.heightIn(min = Dimens.MinTouchTarget),
+                ) {
                     Text(stringResource(if (searchVisible) R.string.records_clear_search else R.string.records_search_originals))
                 }
-                if (record.sourceType in listOf("audio_recording", "upload")) {
-                    TextButton(onClick = { selectSpeaker = true }) {
-                        Text(stringResource(if (speakerId == null) R.string.records_filter_speaker else R.string.records_speaker_filtered))
+                Spacer(Modifier.weight(1f))
+                Box {
+                    IconButton(
+                        onClick = { actionsVisible = true },
+                        modifier = Modifier.size(Dimens.MinTouchTarget),
+                    ) { Icon(Icons.Outlined.MoreVert, stringResource(R.string.records_transcript_actions)) }
+                    DropdownMenu(expanded = actionsVisible, onDismissRequest = { actionsVisible = false }) {
+                        if (record.sourceType in listOf("audio_recording", "upload")) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(if (speakerId == null) R.string.records_filter_speaker else R.string.records_speaker_filtered)) },
+                                onClick = { actionsVisible = false; selectSpeaker = true },
+                            )
+                        }
+                        if (query.isNotBlank() || speakerId != null) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.records_clear_filters)) },
+                                onClick = { actionsVisible = false; input = ""; query = ""; speakerId = null },
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.records_export_transcript)) },
+                            onClick = { actionsVisible = false; exportVisible = true },
+                        )
+                        if (record.capabilities.batchCorrect) {
+                            // 它自己就是一颗按钮 + 一个编辑弹窗,塞进菜单项即可。
+                            DropdownMenuItem(
+                                text = { TranscriptReplacementControl(repository, viewer, record.id, onRefresh) },
+                                onClick = { actionsVisible = false },
+                            )
+                        }
                     }
-                }
-                if (query.isNotBlank() || speakerId != null) {
-                    TextButton(onClick = { input = ""; query = ""; speakerId = null }) { Text(stringResource(R.string.records_clear_filters)) }
-                }
-                TextButton(onClick = { exportVisible = true }) { Text(stringResource(R.string.records_export_transcript)) }
-                if (record.capabilities.batchCorrect) {
-                    TranscriptReplacementControl(repository, viewer, record.id, onRefresh)
                 }
             }
         }

@@ -12,4 +12,5 @@
     <string name="capture_playback_skip">Next saved segment</string>
     <string name="capture_playback_speed">Playback speed</string>
     <string name="capture_playback_source">Listen at %1$s</string>
+    <string name="capture_playback_clock">%1$s / %2$s</string>
 </resources>

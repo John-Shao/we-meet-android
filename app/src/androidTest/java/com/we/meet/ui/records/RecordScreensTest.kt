@@ -246,7 +246,7 @@ class RecordScreensTest {
                 }
             }
             awaitText("Full original text")
-            compose.onNodeWithText(label(R.string.records_export_transcript)).performClick()
+            clickTranscriptAction(R.string.records_export_transcript)
             compose.onNodeWithText("TXT").performClick()
             compose.runOnUiThread { owner.registry.currentState = Lifecycle.State.CREATED }
             compose.waitUntil(5_000) { compose.onAllNodesWithText("Full original text").fetchSemanticsNodes().isEmpty() }
@@ -389,6 +389,20 @@ class RecordScreensTest {
     private fun screenshot(name: String) {
         val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
         File(context.externalCacheDir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
+    /**
+     * 逐字稿的动作(导出 / 按发言人筛选 / 批量查找替换 / 清除筛选)现在收在一个
+     * 溢出菜单里 —— 原先四个文字按钮在 FlowRow 里换行,"批量查找替换" 单独掉到
+     * 第二行,一条只有一颗按钮的工具栏白占屏高。所以点这些动作之前先开菜单。
+     */
+    private fun openTranscriptActions() {
+        compose.onNodeWithContentDescription(label(R.string.records_transcript_actions)).performClick()
+    }
+
+    private fun clickTranscriptAction(id: Int) {
+        openTranscriptActions()
+        compose.onNodeWithText(label(id)).performClick()
     }
     private fun detail(fixture: Fixture, dark: Boolean = false): Owner {
         val owner = Owner()
@@ -618,11 +632,11 @@ class RecordScreensTest {
         // 所以走 IME action，而不是点一颗已经删掉的按钮。
         compose.onNodeWithText(label(R.string.records_search_originals)).performImeAction()
         awaitText("Search matched original")
-        compose.onNodeWithText(label(R.string.records_filter_speaker)).performClick()
+        clickTranscriptAction(R.string.records_filter_speaker)
         awaitText(label(R.string.records_all_speakers))
         compose.onAllNodesWithText("Speaker 1")[1].performClick()
         compose.waitUntil(5_000) { fixture.originalQueries.lastOrNull() == ("release 中文" to versionId) }
-        compose.onNodeWithText(label(R.string.records_clear_filters)).performClick()
+        clickTranscriptAction(R.string.records_clear_filters)
         awaitText("Full original text")
         compose.onNodeWithText(label(R.string.records_clear_search)).performClick()
         screenshot("records-originals-light")

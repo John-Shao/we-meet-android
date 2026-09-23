@@ -46,6 +46,7 @@
     <string name="records_speaker_filtered">Speaker filter active</string>
     <string name="records_all_speakers">All speakers</string>
     <string name="records_clear_filters">Clear filters</string>
+    <string name="records_transcript_actions">Transcript actions</string>
     <string name="records_no_speakers">No published speakers yet.</string>
     <string name="records_speakers_hint">Only existing transcription labels are shown. Unidentified voices are not assigned to members.</string>
     <!-- Saying which real person a diarised track is. The recogniser's label

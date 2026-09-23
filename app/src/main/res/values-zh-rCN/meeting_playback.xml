@@ -12,4 +12,5 @@
     <string name="capture_playback_skip">下一段已保存音频</string>
     <string name="capture_playback_speed">播放速度</string>
     <string name="capture_playback_source">播放 %1$s 处原音</string>
+    <string name="capture_playback_clock">%1$s / %2$s</string>
 </resources>

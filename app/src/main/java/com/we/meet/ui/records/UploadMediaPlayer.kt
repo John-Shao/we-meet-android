@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -26,7 +27,6 @@ import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -203,16 +203,21 @@ internal fun UploadMediaPlayer(
     val videoMaxHeight =
         (LocalConfiguration.current.screenHeightDp * Dimens.MediaPreviewMaxHeightRatio).dp
     val positionLabel = stringResource(R.string.capture_playback_position)
+    // 「正在播/刚开始播」才需要那块视频面。引擎在准备中就会把视频轨道的尺寸报回来,
+    // 所以按比例量出来的 Surface 从第一帧起就是对的;纯音频与未播放态不占这块高度。
+    val showVideo = media.mediaType == "video" && state.showsPause
     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.padding(Dimens.SpaceM), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-            if (media.mediaType == "video") key(sourceId) {
+            if (showVideo) key(sourceId) {
                 BoxWithConstraints(Modifier.fillMaxWidth()) {
-                    // Size both dimensions before measuring the native SurfaceView.
-                    // A forced full width plus a height cap can make aspectRatio
-                    // overflow its measured bounds for portrait videos.
+                    // 按比例把画布收缩到画面本身:外层不再 fillMaxWidth,否则竖屏视频
+                    // (9:16)会在两侧各留一条与画面等高的黑边 —— 1080px 宽的屏上,
+                    // 画面只有 30% 屏高那么高,却整行铺黑,等于白白吃掉两条黑框。
                     val videoHeight = minOf(maxWidth / aspect, videoMaxHeight)
                     Box(
-                        Modifier.fillMaxWidth().height(videoHeight).clipToBounds().background(MaterialTheme.colorScheme.scrim),
+                        Modifier.size(width = videoHeight * aspect, height = videoHeight)
+                            .clipToBounds()
+                            .background(MaterialTheme.colorScheme.scrim),
                         contentAlignment = Alignment.Center,
                     ) {
                         AndroidView(
@@ -235,31 +240,40 @@ internal fun UploadMediaPlayer(
                 )
             } else {
                 if (state.showsSpinner) WeMeetInlineLoading()
-                Text("${sourceTime(position)} / ${sourceTime(duration)}", style = MaterialTheme.typography.labelMedium)
-                Slider(
-                    position.coerceAtMost(maxOf(1L, duration - 1)).toFloat(),
-                    onValueChange = { value ->
-                        stop()
-                        report(value.toLong())
-                    },
-                    enabled = duration > 0,
-                    valueRange = 0f..maxOf(1f, (duration - 1).toFloat()),
-                    modifier = Modifier.semantics { contentDescription = positionLabel },
-                )
+                // 一条紧凑控制条:播放键 + 时间 + 进度 + 倍速/快退/快进。
+                // 时间行原先单独占一行(未播放时是「0:00 / 0:00」,看着像坏了),
+                // 改用共享的 playbackClockLabel —— 元数据没到就只显示当前位置。
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = Dimens.MinTouchTarget),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
+                ) {
+                    IconButton(onClick = { if (state.showsPause) { engine?.pause(); state = MediaPlaybackState.Ready } else start(position) }) {
+                        Icon(
+                            if (state.showsPause) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+                            stringResource(if (state.showsPause) R.string.cd_records_pause else R.string.cd_records_play),
+                            Modifier.size(Dimens.IconMedium),
+                        )
+                    }
+                    Text(playbackClockLabel(sourceTime(position), duration.takeIf(::validMediaDuration)?.let { sourceTime(it) }), style = MaterialTheme.typography.labelSmall)
+                    // 进度条自己只有一条细轨,靠外层 48dp 的容器把热区撑到规范要求。
+                    Box(Modifier.weight(1f).heightIn(min = Dimens.MinTouchTarget), contentAlignment = Alignment.Center) {
+                        Slider(
+                            position.coerceAtMost(maxOf(1L, duration - 1)).toFloat(),
+                            onValueChange = { value ->
+                                stop()
+                                report(value.toLong())
+                            },
+                            enabled = duration > 0,
+                            valueRange = 0f..maxOf(1f, (duration - 1).toFloat()),
+                            modifier = Modifier.fillMaxWidth().semantics { contentDescription = positionLabel },
+                        )
+                    }
+                }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { ratesVisible = true }) { Text(stringResource(R.string.capture_playback_rate, rate)) }
                     IconButton(onClick = { start(maxOf(0L, position - 15_000)) }) {
                         Icon(Icons.Outlined.Replay, stringResource(R.string.cd_records_skip_back))
-                    }
-                    FilledTonalIconButton(
-                        modifier = Modifier.size(Dimens.ButtonHeight),
-                        onClick = { if (state.showsPause) { engine?.pause(); state = MediaPlaybackState.Ready } else start(position) },
-                    ) {
-                        Icon(
-                            if (state.showsPause) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
-                            stringResource(if (state.showsPause) R.string.cd_records_pause else R.string.cd_records_play),
-                            Modifier.size(Dimens.IconXl),
-                        )
                     }
                     IconButton(onClick = { start(minOf(maxOf(0L, duration - 1), position + 15_000)) }) {
                         Icon(Icons.Outlined.FastForward, stringResource(R.string.cd_records_skip_forward))
@@ -285,3 +299,16 @@ internal fun UploadMediaPlayer(
         )
     }
 }
+
+/**
+ * 导入媒体播放器上那行时间。
+ *
+ * 时长是从引擎问出来的，**准备期间它是 0** —— 之前无条件拼成 `「0:00 / 0:00」`，
+ * 看着像坏了，也让未播放态平白多占一行。这里收口：还没有可信时长时只显示当前位置。
+ *
+ * 只给导入媒体用：录音回放的时长来自播放列表清单，读到列表那一刻它就是真的。
+ */
+@Composable
+private fun playbackClockLabel(position: String, duration: String?): String =
+    if (duration == null) position
+    else stringResource(R.string.capture_playback_clock, position, duration)

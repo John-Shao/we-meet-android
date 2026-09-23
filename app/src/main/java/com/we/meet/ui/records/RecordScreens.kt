@@ -6,11 +6,15 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.verticalScroll
@@ -32,10 +36,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -185,8 +193,24 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                     if (!document && record.sourceType == "upload" && record.upload?.canControl == true && app != null) {
                         RecordingUploadStatus(app.recordingUploadRepository, viewer, recordId)
                     }
-                    if (!document) ScrollableTabRow(selectedTabIndex = tabs.indexOfFirst { it.first == selectedTab }, edgePadding = Dimens.SpaceS, containerColor = MaterialTheme.colorScheme.surface) {
-                        tabs.forEach { (value, label) -> Tab(selected = value == selectedTab, onClick = { detailTab = value }, text = { Text(stringResource(label)) }) }
+                    if (!document) {
+                        // 六个标签在 360dp 屏上放不下,所以还是可滚动的一版;但右缘补一层
+                        // 渐隐当「右边还有」的提示 —— 全应用只有这一处是 ScrollableTabRow,
+                        // 默认的滚动指示几乎看不见,末尾的「译文」就那样被截在边上。
+                        // 渐隐是纯装饰、不拦点击,只要标签多到可能溢出就一直留着。
+                        // (试过定宽 TabRow:六个标签等分后「Smart minutes」会被截成省略号。)
+                        Box(Modifier.fillMaxWidth()) {
+                            ScrollableTabRow(
+                                selectedTabIndex = tabs.indexOfFirst { it.first == selectedTab },
+                                edgePadding = Dimens.SpaceS,
+                                containerColor = MaterialTheme.colorScheme.surface,
+                            ) {
+                                tabs.forEach { (value, label) -> Tab(selected = value == selectedTab, onClick = { detailTab = value }, text = { Text(stringResource(label)) }) }
+                            }
+                            if (tabs.size >= 5) Box(Modifier.matchParentSize()) {
+                                EdgeFade(Alignment.CenterEnd, listOf(Color.Transparent, MaterialTheme.colorScheme.surface))
+                            }
+                        }
                     }
                     // 白色固定头与浅灰正文的分界(与「通讯录」二级名单页同款)。
                     HorizontalDivider(
@@ -346,6 +370,23 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
             }
         }
     }
+}
+
+/**
+ * Tab 行两端那层渐隐。
+ *
+ * 与 [WeMeetChipRow] 同款做法(那里注释写明动机:装不下的标签没有任何提示,
+ * 末尾那个正好卡在屏幕右缘被截断)。梯子很窄,只够柔化边界、不遮标签本身;
+ * 纯装饰 Box,不处理指针事件,底下的 Tab 该点还是点得到。
+ */
+@Composable
+private fun BoxScope.EdgeFade(alignment: Alignment, colors: List<Color>) {
+    Box(
+        Modifier.align(alignment)
+            .width(Dimens.SpaceXl)
+            .fillMaxHeight()
+            .background(Brush.horizontalGradient(colors)),
+    )
 }
 
 @Composable
