@@ -1,10 +1,14 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.foundation.ExperimentalFoundationApi::class,
+)
 
 package com.we.meet.ui.records
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
@@ -23,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
@@ -30,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.R
+import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.repository.MeetingRecordRepository
 import com.we.meet.data.repository.RecordOrdering
@@ -67,6 +73,10 @@ fun RecordLibraryScreen(
     val hasDates = dateFrom.isNotEmpty() || dateThrough.isNotEmpty()
     var cursors by remember(viewer, scope, source, query, summariesOnly, dates, ordering) { mutableStateOf(listOf<String?>(null)) }
     var refresh by remember { mutableIntStateOf(0) }
+    // 长按哪一行,菜单就锚在哪一行:只记这一条,不弹全局对话框。
+    var menuRecord by remember(viewer) { mutableStateOf<RecordDto?>(null) }
+    // 长按菜单要 app(剪贴板 / IM 会话 / 各仓库);取不到时行照常渲染,只是没有菜单。
+    val app = LocalContext.current.applicationContext as? WeMeetApp
     val cursor = cursors.last()
     val listState = remember(viewer, scope, source, query, cursor, summariesOnly, dates, ordering) { LazyGridState() }
     val focus = remember { FocusRequester() }
@@ -227,7 +237,7 @@ fun RecordLibraryScreen(
                             }
                             items(ongoingRows, key = { "ongoing-${it.id}" }) { record ->
                                 val open = { if (summariesOnly) onSummaryRecord(record.id) else onRecord(record.id) }
-                                if (grid) RecordLibraryCard(record, summariesOnly, open) else RecordLibraryRow(record, summariesOnly, open)
+                                RecordLibraryItem(app, viewer, record, summariesOnly, grid, menuRecord, { menuRecord = null }, { menuRecord = it }, { refresh++ }, open)
                             }
                         }
                         if (!summariesOnly) item(span = { GridItemSpan(maxLineSpan) }, key = "section-archive") {
@@ -235,7 +245,7 @@ fun RecordLibraryScreen(
                         }
                         items(page.results, key = { it.id }) { record ->
                             val open = { if (summariesOnly) onSummaryRecord(record.id) else onRecord(record.id) }
-                            if (grid) RecordLibraryCard(record, summariesOnly, open) else RecordLibraryRow(record, summariesOnly, open)
+                            RecordLibraryItem(app, viewer, record, summariesOnly, grid, menuRecord, { menuRecord = null }, { menuRecord = it }, { refresh++ }, open)
                         }
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             // 「单页不放这一行」由 RecordPager 自己保证（它同时是七处
@@ -294,14 +304,54 @@ fun RecordLibraryScreen(
 }
 
 /**
+ * 列表/网格里的一行(或一张卡)+ 它的长按菜单。
+ *
+ * 菜单挂在**行自己的 `Box`** 里,所以长按哪一行,菜单就贴在哪一行旁边 —— 用
+ * `DropdownMenu`(底层是 Popup,不受 `LazyVerticalGrid` 的裁剪影响)而不是对话框。
+ * 三个动作与实录详情页顶栏那颗三点按钮完全同一份([RecordMenu])。
+ *
+ * `app` 为 null(理论上只在测试宿主里)时仍然渲染行,只是没有长按菜单。
+ */
+@Composable
+private fun RecordLibraryItem(
+    app: WeMeetApp?,
+    viewer: String,
+    record: RecordDto,
+    summariesOnly: Boolean,
+    grid: Boolean,
+    menuRecord: RecordDto?,
+    onDismiss: () -> Unit,
+    onOpen: (RecordDto) -> Unit,
+    onChanged: () -> Unit,
+    onClick: () -> Unit,
+) {
+    Box {
+        val longPress = { onOpen(record) }
+        if (grid) RecordLibraryCard(record, summariesOnly, onClick, longPress)
+        else RecordLibraryRow(record, summariesOnly, onClick, longPress)
+        if (app != null) RecordMenuContent(
+            app = app,
+            viewer = viewer,
+            record = record,
+            objectScope = if (summariesOnly) "minutes" else "record",
+            expanded = menuRecord?.id == record.id,
+            allowRename = !summariesOnly,
+            onDismiss = onDismiss,
+            onRenamed = onChanged,
+            onChanged = onChanged,
+        )
+    }
+}
+
+/**
  * 列表行:与「视频会议」「AI 录音」同款骨架 —— 图标块 + 标题 + 说明,行间内缩分隔线。
  * 记录库/纪要库和它们同属会议模块的抽屉一级分区,行样式不该各说各话。
  */
 @Composable
-private fun RecordLibraryRow(record: RecordDto, summariesOnly: Boolean, onClick: () -> Unit) {
+private fun RecordLibraryRow(record: RecordDto, summariesOnly: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
     Column(Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
+            modifier = Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick)
                 .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM)
                 .heightIn(min = Dimens.MinTouchTarget),
             verticalAlignment = Alignment.CenterVertically,
@@ -326,10 +376,10 @@ private fun RecordLibraryRow(record: RecordDto, summariesOnly: Boolean, onClick:
 
 /** 网格卡片:白底上要靠描边立住形状,不能用和底色同色的实心卡。 */
 @Composable
-private fun RecordLibraryCard(record: RecordDto, summariesOnly: Boolean, onClick: () -> Unit) {
+private fun RecordLibraryCard(record: RecordDto, summariesOnly: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(Dimens.DividerThin, MaterialTheme.colorScheme.outlineVariant),
