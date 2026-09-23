@@ -71,6 +71,12 @@ internal fun RecordOriginals(
     onExport: (String) -> Unit,
     onSource: ((Long) -> Unit)? = null,
     positionMs: Long? = null,
+    /**
+     * 有「转写管理」可放时传进来(只对 AI 录音且当前用户能控制采集的记录有值):
+     * 它会被收进工具栏的溢出菜单,不再独占页面头部的一整行。参数是「真正要显示
+     * 的那颗按钮 / 菜单项」,由调用方决定外观。
+     */
+    transcriptionTrigger: (@Composable () -> Unit)? = null,
 ) {
     var input by remember(viewer, record.id) { mutableStateOf("") }
     var query by remember(viewer, record.id) { mutableStateOf("") }
@@ -81,6 +87,15 @@ internal fun RecordOriginals(
     var cursors by remember(viewer, record.id, record.revision, query, speakerId) { mutableStateOf(listOf<String?>(null)) }
     var anchorMs by remember(viewer, record.id, record.revision) { mutableStateOf(0L) }
     var following by remember(viewer, record.id) { mutableStateOf(true) }
+    /**
+     * 播放位置一变,就把「跟随播放」重新打开。
+     *
+     * 之前它只由「点回到播放位置」这一处置回 true,于是拖过一次转写、编辑过一段、
+     * 或翻过一页之后,`following`就一直挂着 —— 那颗按钮会一直留在页面上,**即使
+     * 根本没在播**(回放位置是 0:00 也照样显示)。现在只要回放指针动了(播放、
+     * 拖动进度、点「播放 X 处原音」跳转),就恢复跟随,按钮随之消失。
+     */
+    LaunchedEffect(positionMs) { if (positionMs != null && !following) following = true }
     val scope = rememberCoroutineScope()
     val correctionDrafts = remember(viewer, record.id) { OriginalCorrectionDrafts() }
     DisposableEffect(correctionDrafts) { onDispose { correctionDrafts.clear() } }
@@ -152,6 +167,11 @@ internal fun RecordOriginals(
                         modifier = Modifier.size(Dimens.MinTouchTarget),
                     ) { Icon(Icons.Outlined.MoreVert, stringResource(R.string.records_transcript_actions)) }
                     DropdownMenu(expanded = actionsVisible, onDismissRequest = { actionsVisible = false }) {
+                        // 转写管理排在最前:它是这条记录自己的转写状态(重试 / 清理),
+                        // 比「按发言人筛选」这类浏览动作更该先被看到。
+                        if (transcriptionTrigger != null) {
+                            DropdownMenuItem(text = transcriptionTrigger, onClick = { actionsVisible = false })
+                        }
                         if (record.sourceType in listOf("audio_recording", "upload")) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(if (speakerId == null) R.string.records_filter_speaker else R.string.records_speaker_filtered)) },

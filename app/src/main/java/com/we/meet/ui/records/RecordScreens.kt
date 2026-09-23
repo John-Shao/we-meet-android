@@ -272,10 +272,15 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         }
                     } else if (showOriginals) {
                         Column(Modifier.weight(1f).fillMaxWidth()) {
-                            if (app != null && record.sourceType == "audio_recording") RecordCaptureTools(
-                                viewer, record, app.captureRepository, app.captureTranscriptionRepository,
-                                { app.captureAccount }, onRefresh = { refresh++ })
-                            RecordOriginals(repository, viewer, record, onRefresh = { refresh++ }, onExport = exportTranscript, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay || canPlayImport })
+                            // 「转写管理」不再单占一行:它被收进逐字稿工具栏的溢出菜单
+                            // (见 RecordOriginals 的 transcriptionTools)。页面头部因此
+                            // 少一层,第一条转写能早上来一行。
+                            RecordOriginals(repository, viewer, record, onRefresh = { refresh++ }, onExport = exportTranscript, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay || canPlayImport },
+                                transcriptionTrigger = if (app != null && record.sourceType == "audio_recording" && record.capabilities.controlCapture) ({
+                                    RecordCaptureTools(viewer, record, requireNotNull(app).captureRepository, app.captureTranscriptionRepository,
+                                        { app.captureAccount }, onRefresh = { refresh++ },
+                                        trigger = @Composable { Text(stringResource(R.string.records_transcription_manage)) })
+                                }) else null)
                         }
                     } else if (document && !record.capabilities.readSummary) {
                         WeMeetEmptyState(stringResource(R.string.records_no_summary_access))
