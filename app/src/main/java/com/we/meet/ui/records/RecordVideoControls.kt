@@ -20,9 +20,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.rememberTextMeasurer
 import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.OnMediaOverlay
@@ -57,6 +59,18 @@ internal fun RecordVideoControls(
     val primary = MaterialTheme.colorScheme.primary
     val positionLabel = stringResource(R.string.capture_playback_position)
     val speedLabel = stringResource(R.string.capture_playback_speed)
+    val clockLabel = stringResource(R.string.capture_playback_clock, playbackTime(positionMs),
+        if (durationMs > 0) playbackTime(durationMs) else "\u2014")
+    val rateLabel = stringResource(R.string.capture_playback_rate, playbackRateValue(rate))
+    val detailStyle = MaterialTheme.typography.labelMedium
+    val textMeasurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val clockWidth = with(density) {
+        textMeasurer.measure(clockLabel, detailStyle, softWrap = false, maxLines = 1).size.width.toDp()
+    }
+    val rateWidth = maxOf(Dimens.MinTouchTarget, with(density) {
+        textMeasurer.measure(rateLabel, detailStyle, softWrap = false, maxLines = 1).size.width.toDp()
+    } + Dimens.SpaceXxs * 2)
     val end = durationMs.coerceAtLeast(1L)
     LaunchedEffect(playing, interaction, ratesVisible) {
         visible = true
@@ -98,7 +112,9 @@ internal fun RecordVideoControls(
                             drawLine(primary, Offset(0f, center.y), Offset(size.width * slider.value / end, center.y), size.height, StrokeCap.Round)
                         } })
                     BoxWithConstraints(Modifier.fillMaxWidth()) {
-                        val compact = maxWidth < Dimens.RecordPlayback.WideControlsMinWidth
+                        // Measure with the current font scale instead of forcing every phone into two rows.
+                        val requiredWidth = Dimens.MinTouchTarget * 4 + rateWidth + clockWidth + Dimens.SpaceXs * 2
+                        val compact = maxWidth < requiredWidth
                         val transport: @Composable RowScope.() -> Unit = {
                             IconButton(onClick = { interaction++; onPlayPause() }, modifier = Modifier.size(Dimens.MinTouchTarget)) {
                                 Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
@@ -116,10 +132,10 @@ internal fun RecordVideoControls(
                         val details: @Composable RowScope.() -> Unit = {
                             Box {
                                 TextButton(onClick = { ratesVisible = true },
-                                    modifier = Modifier.size(Dimens.MinTouchTarget).semantics { contentDescription = speedLabel },
+                                    modifier = Modifier.width(rateWidth).height(Dimens.MinTouchTarget).semantics { contentDescription = speedLabel },
                                     contentPadding = PaddingValues(Dimens.SpaceXxs),
                                     colors = ButtonDefaults.textButtonColors(contentColor = OnMediaOverlay)) {
-                                    Text(stringResource(R.string.capture_playback_rate, playbackRateValue(rate)), style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                                    Text(rateLabel, style = detailStyle, maxLines = 1, softWrap = false)
                                 }
                                 DropdownMenu(expanded = ratesVisible, onDismissRequest = { ratesVisible = false }) {
                                     listOf(0.75f, 1f, 1.25f, 1.5f, 2f).forEach { speed ->
@@ -129,10 +145,8 @@ internal fun RecordVideoControls(
                                     }
                                 }
                             }
-                            Text(stringResource(R.string.capture_playback_clock, playbackTime(positionMs),
-                                if (durationMs > 0) playbackTime(durationMs) else "\u2014"),
-                                style = MaterialTheme.typography.labelMedium, maxLines = 1,
-                                modifier = Modifier.padding(horizontal = Dimens.SpaceS))
+                            Text(clockLabel, style = detailStyle, maxLines = 1, softWrap = false,
+                                modifier = Modifier.padding(horizontal = Dimens.SpaceXs))
                         }
                         if (compact) Column {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
