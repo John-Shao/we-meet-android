@@ -60,7 +60,16 @@ import com.we.meet.ui.components.WeMeetErrorState
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
+import kotlinx.coroutines.delay
 import retrofit2.HttpException
+
+/**
+ * 判定「回放指针不再前进」的时间窗。
+ *
+ * 播放器每 250ms 报一次位置,所以超过这个窗口没有新位置就视为已停(播完了、暂停了
+ * 或还没开始)。取 1.5s 是给弱网下的上报抖动留余量,不至于播放中途闪一下。
+ */
+private const val PLAYBACK_ADVANCING_TIMEOUT_MS = 1_500L
 
 @Composable
 internal fun RecordOriginals(
@@ -88,14 +97,19 @@ internal fun RecordOriginals(
     var anchorMs by remember(viewer, record.id, record.revision) { mutableStateOf(0L) }
     var following by remember(viewer, record.id) { mutableStateOf(true) }
     /**
-     * 播放位置一变,就把「跟随播放」重新打开。
+     * 回放指针**此刻是否在走**(正在播放)。
      *
-     * 之前它只由「点回到播放位置」这一处置回 true,于是拖过一次转写、编辑过一段、
-     * 或翻过一页之后,`following`就一直挂着 —— 那颗按钮会一直留在页面上,**即使
-     * 根本没在播**(回放位置是 0:00 也照样显示)。现在只要回放指针动了(播放、
-     * 拖动进度、点「播放 X 处原音」跳转),就恢复跟随,按钮随之消失。
+     * 指针每 250ms 报一次,所以「一段时间没再动」就等于「没在播」。用它来兜住
+     * 「回到播放位置」那颗按钮:之前它只看 `following`,于是拖过一次转写之后 ——
+     * 哪怕已经播到 0:25/0:25 播完了 —— 按钮也一直挂在页面上。
      */
-    LaunchedEffect(positionMs) { if (positionMs != null && !following) following = true }
+    var playbackAdvancing by remember(viewer, record.id) { mutableStateOf(false) }
+    LaunchedEffect(positionMs) {
+        if (positionMs == null) return@LaunchedEffect
+        playbackAdvancing = true
+        delay(PLAYBACK_ADVANCING_TIMEOUT_MS)
+        playbackAdvancing = false
+    }
     val scope = rememberCoroutineScope()
     val correctionDrafts = remember(viewer, record.id) { OriginalCorrectionDrafts() }
     DisposableEffect(correctionDrafts) { onDispose { correctionDrafts.clear() } }
@@ -199,10 +213,15 @@ internal fun RecordOriginals(
                 }
             }
         }
-        if (positionMs != null && (!following || filtered)) TextButton(onClick = {
-            input = ""; query = ""; speakerId = null
-            anchorMs = positionMs; cursors = listOf(null); following = true
-        }) { Text(stringResource(R.string.records_back_to_playback)) }
+        // 只有「指针在走 + 没有跟随」才给这颗按钮:正在播放时用户滚走了才需要回到
+        // 播放位置;没在播(还没点播放、或已经播到结尾)时它就是个看不懂的残留。
+        if (positionMs != null && playbackAdvancing && !following) TextButton(
+            onClick = {
+                input = ""; query = ""; speakerId = null
+                anchorMs = positionMs; cursors = listOf(null); following = true
+            },
+            modifier = Modifier.heightIn(min = Dimens.MinTouchTarget),
+        ) { Text(stringResource(R.string.records_back_to_playback)) }
         Column(Modifier.weight(1f).fillMaxWidth()) {
             when {
                 page == null -> WeMeetInlineLoading()

@@ -5,6 +5,7 @@ package com.we.meet.ui.records
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -27,7 +28,6 @@ import com.we.meet.data.repository.CaptureTranscriptionRepository
 import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
-
 /** The record owns sealed-file transcription, including retries and temporary-audio cleanup. */
 @Composable
 internal fun RecordCaptureTools(
@@ -37,20 +37,36 @@ internal fun RecordCaptureTools(
     transcriptions: CaptureTranscriptionRepository,
     currentViewer: () -> String?,
     onRefresh: () -> Unit,
-    /**
-     * 入口的宿主。默认是一颗独占一行的 `TextButton`(原样保留,面板自己的用例靠它);
-     * 传了 [trigger] 就改成「调用方给行,自己管开合」—— 实录页把它放进逐字稿的溢出菜单,
-     * 免得页面头部为它多占一整行。
-     */
-    trigger: (@Composable (open: () -> Unit) -> Unit)? = null,
+) {
+    // 入口按钮自己持有开合状态;要把它放进菜单时用 [RecordCaptureToolsSheet]——
+    // 菜单项一旦被点就随菜单一起从组合里移除,**内置状态会跟着销毁**,弹层永远开不出来。
+    var open by remember(viewer, record.id) { mutableStateOf(false) }
+    TextButton(onClick = { open = true }, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) {
+        Text(stringResource(R.string.records_transcription_manage))
+    }
+    if (open) RecordCaptureToolsSheet(viewer, record, captures, transcriptions, currentViewer,
+        onClose = { open = false; onRefresh() })
+}
+
+/**
+ * 「转写管理」底部弹层本体 —— 与入口分开,调用方自己决定何时显示它。
+ *
+ * 分成两半的原因见上:需要「菜单项只负责开、面板作为兄弟节点常驻」的场景,
+ * 不能把状态放在菜单项里。
+ */
+@Composable
+internal fun RecordCaptureToolsSheet(
+    viewer: String,
+    record: RecordDto,
+    captures: CaptureRepository,
+    transcriptions: CaptureTranscriptionRepository,
+    currentViewer: () -> String?,
+    onClose: () -> Unit,
 ) {
     val captureId = record.captureId ?: return
     if (!record.capabilities.readTranscript || !record.capabilities.controlCapture) return
-    var open by remember(viewer, record.id) { mutableStateOf(false) }
     var retry by remember(viewer, record.id) { mutableIntStateOf(0) }
-    if (trigger == null) TextButton(onClick = { open = true }) { Text(stringResource(R.string.records_transcription_manage)) }
-    else trigger { open = true }
-    if (open) ModalBottomSheet(onDismissRequest = { open = false; onRefresh() }) {
+    ModalBottomSheet(onDismissRequest = onClose) {
         val result = visibleRead(viewer, record.id, captureId, retry, intervalMs = 5000) {
             captures.read(viewer, captureId).mapCatching { capture ->
                 require(capture.recordId == record.id)
@@ -69,7 +85,7 @@ internal fun RecordCaptureTools(
                     CaptureAsrPanel(viewer, capture, transcriptions, currentViewer)
                 }
             }
-            TextButton(onClick = { open = false; onRefresh() }) { Text(stringResource(R.string.records_close)) }
+            TextButton(onClick = onClose) { Text(stringResource(R.string.records_close)) }
         }
     }
 }
