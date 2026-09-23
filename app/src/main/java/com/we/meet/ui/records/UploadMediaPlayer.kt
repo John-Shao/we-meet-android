@@ -200,6 +200,7 @@ internal fun UploadMediaPlayer(
                 positionMs = position, durationMs = duration.takeIf(::validMediaDuration),
                 playing = state.showsPause, rate = rate,
                 muted = muted, onToggleMute = { muted = !muted; engine?.setMuted(muted) },
+                compactTopSpacing = media.mediaType == "video" && !videoExpanded,
                 onSeek = { value ->
                     engine?.pause()
                     state = MediaPlaybackState.Ready

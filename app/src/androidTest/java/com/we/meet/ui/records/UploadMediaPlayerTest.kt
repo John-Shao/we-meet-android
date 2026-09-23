@@ -5,6 +5,9 @@ import android.graphics.Bitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
+import androidx.compose.ui.geometry.Offset
 import java.io.File
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.mutableStateOf
@@ -320,6 +323,9 @@ class UploadMediaPlayerTest {
         compose.onNodeWithContentDescription(label(R.string.capture_playback_unmute)).performClick()
         compose.runOnIdle { assertEquals(false, engine?.mutedOutput); assertTrue(original === engine) }
         compose.onNodeWithContentDescription(label(R.string.capture_playback_mute)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.capture_playback_position))
+            .performTouchInput { swipe(Offset(width * 0.25f, height * 0.75f), Offset(width * 0.75f, height * 0.75f)) }
+        compose.runOnIdle { assertTrue(original === engine); assertTrue(engine!!.clock > 45_000L) }
         File(context.getExternalFilesDir(null), "record-player-collapsed-video.png").outputStream().use {
             compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
         }

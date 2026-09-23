@@ -82,6 +82,7 @@ internal fun RecordPlaybackControls(
     onToggleMute: () -> Unit,
     onSeekFinished: () -> Unit = {},
     modifier: Modifier = Modifier,
+    compactTopSpacing: Boolean = false,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     trackColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
     onInteraction: () -> Unit = {},
@@ -106,14 +107,16 @@ internal fun RecordPlaybackControls(
         textMeasurer.measure(rateLabel, detailStyle, softWrap = false, maxLines = 1).size.width.toDp()
     } + Dimens.SpaceXxs * 2)
     val end = (durationMs ?: 0L).coerceAtLeast(1L)
+    val timelineHeight = if (compactTopSpacing) Dimens.ControlCompact else Dimens.MinTouchTarget
+    val timelineOffset = if (compactTopSpacing) Dimens.SpaceS else Dimens.SpaceL
     CompositionLocalProvider(LocalContentColor provides contentColor) {
         Column(modifier.fillMaxWidth()) {
             Slider(value = positionMs.coerceIn(0L, end).toFloat(), valueRange = 0f..end.toFloat(), enabled = enabled,
                 onValueChange = { onInteraction(); onSeek(it.toLong()) }, onValueChangeFinished = onSeekFinished,
-                modifier = Modifier.fillMaxWidth().height(Dimens.MinTouchTarget).semantics { contentDescription = positionLabel },
-                // Bring the timeline closer to the controls within its own 48dp touch area.
-                thumb = { Box(Modifier.offset(y = Dimens.SpaceL).size(Dimens.RecordPlayback.ThumbSize).background(primary, CircleShape)) },
-                track = { slider -> Canvas(Modifier.offset(y = Dimens.SpaceL).fillMaxWidth().height(Dimens.RecordPlayback.TrackHeight)) {
+                modifier = Modifier.fillMaxWidth().height(timelineHeight).semantics { contentDescription = positionLabel },
+                // Compact layout keeps the rail-to-button gap; Slider retains its minimum touch bounds.
+                thumb = { Box(Modifier.offset(y = timelineOffset).size(Dimens.RecordPlayback.ThumbSize).background(primary, CircleShape)) },
+                track = { slider -> Canvas(Modifier.offset(y = timelineOffset).fillMaxWidth().height(Dimens.RecordPlayback.TrackHeight)) {
                     val start = if (rtl) size.width else 0f
                     val finish = if (rtl) 0f else size.width
                     drawLine(trackColor, Offset(start, center.y), Offset(finish, center.y), size.height, StrokeCap.Round)
