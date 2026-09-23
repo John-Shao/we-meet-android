@@ -76,6 +76,10 @@ internal fun RecordVideoControls(
             CompositionLocalProvider(LocalContentColor provides OnMediaOverlay) {
                 Row(Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(horizontal = Dimens.SpaceS),
                     verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { interaction++; onFullscreen() }, modifier = Modifier.size(Dimens.MinTouchTarget)) {
+                        Icon(if (fullscreen) Icons.Outlined.FullscreenExit else Icons.Outlined.Fullscreen,
+                            stringResource(if (fullscreen) R.string.capture_playback_exit_fullscreen else R.string.capture_playback_fullscreen))
+                    }
                     if (!fullscreen) TextButton(onClick = onCollapse,
                         colors = ButtonDefaults.textButtonColors(contentColor = OnMediaOverlay)) {
                         Icon(Icons.Outlined.ExpandMore, null)
@@ -128,11 +132,6 @@ internal fun RecordVideoControls(
                                 if (durationMs > 0) playbackTime(durationMs) else "\u2014"),
                                 style = MaterialTheme.typography.labelMedium, maxLines = 1,
                                 modifier = Modifier.padding(horizontal = Dimens.SpaceS))
-                            Spacer(Modifier.weight(1f))
-                            IconButton(onClick = { interaction++; onFullscreen() }, modifier = Modifier.size(Dimens.MinTouchTarget)) {
-                                Icon(if (fullscreen) Icons.Outlined.FullscreenExit else Icons.Outlined.Fullscreen,
-                                    stringResource(if (fullscreen) R.string.capture_playback_exit_fullscreen else R.string.capture_playback_fullscreen))
-                            }
                         }
                         if (compact) Column {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,

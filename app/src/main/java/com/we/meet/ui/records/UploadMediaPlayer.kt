@@ -259,13 +259,12 @@ internal fun UploadMediaPlayer(
         }
     } else if (!fullscreen) RecordPlayerSurface {
         if (hasVideo) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { fullscreen = true }) {
+                Icon(Icons.Outlined.Fullscreen, stringResource(R.string.capture_playback_fullscreen))
+            }
             TextButton(onClick = { videoExpanded = true }) {
                 Icon(Icons.Outlined.ExpandLess, null)
                 Text(stringResource(R.string.capture_playback_show_video))
-            }
-            Spacer(Modifier.weight(1f))
-            IconButton(onClick = { fullscreen = true }) {
-                Icon(Icons.Outlined.Fullscreen, stringResource(R.string.capture_playback_fullscreen))
             }
         }
         controls()
