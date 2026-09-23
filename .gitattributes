@@ -1,0 +1,29 @@
+# 行尾统一 —— 索引与工作区一律按 LF 存放/检出。
+#
+# 背景:此前本仓库没有这个文件,core.autocrlf 也没有统一设置,结果 19 个文件
+# 出现 CRLF 与 LF 混用(git ls-files --eol 显示 i/mixed),git diff 会把整个
+# 文件算成改动,review 里全是噪音。
+#
+# 约定:
+#   * 默认所有文本文件按 LF(git 检测到 NUL 字节即视为二进制,自动跳过)。
+#   * Windows 批处理必须 CRLF —— gradlew.bat 由 cmd.exe 解析。
+#   * POSIX shell 脚本必须 LF —— 否则 Git Bash / Linux 上报 bad interpreter。
+#
+# 注意:本文件对已存在的文件不会自动重写行尾,首次生效要跑一次 renormalize:
+#   git add --renormalize .
+#   git commit -m "chore: 统一行尾为 LF"
+
+# 自动识别文本文件并统一 LF;二进制不受影响。
+* text=auto eol=lf
+
+# Windows 批处理必须 CRLF。
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# POSIX shell 脚本必须 LF。
+gradlew text eol=lf
+*.sh text eol=lf
+.githooks/* text eol=lf
+
+# 明确二进制,避免将来被误判成文本后做 EOL 转换。
+*.png binary
