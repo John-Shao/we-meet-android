@@ -451,7 +451,7 @@ class RecordScreensTest {
         assertEquals("Private planning meeting", fixture.recordTitle)
         assertTrue(fixture.renames.isEmpty())
     }
-    @Test fun importedVideoSitsBetweenTitleAndTabsWhileAudioStaysBelowText() {
+    @Test fun importedAudioAndVideoStayBetweenTitleAndTabs() {
         val fixture = Fixture().apply { sourceType = "upload"; importedMediaType = "video" }
         val repository = MeetingRecordRepository(fixture) { "reader" }
         val type = mutableStateOf("video")
@@ -471,7 +471,12 @@ class RecordScreensTest {
         compose.waitUntil(8_000) { compose.onAllNodesWithContentDescription(label(R.string.cd_records_play)).fetchSemanticsNodes().isNotEmpty() }
         val audio = compose.onNodeWithContentDescription(label(R.string.cd_records_play)).fetchSemanticsNode().boundsInRoot
         val audioTab = compose.onNodeWithText(label(R.string.records_originals)).fetchSemanticsNode().boundsInRoot
-        assertTrue(audio.top > audioTab.bottom)
+        assertTrue(audio.bottom <= audioTab.top)
+        val audioTitle = compose.onNodeWithText(fixture.recordTitle).fetchSemanticsNode().boundsInRoot
+        assertTrue(audioTitle.bottom < audio.top)
+        screenshot("record-audio-top-layout")
+        compose.onNodeWithText(label(R.string.records_chapters)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).assertIsDisplayed()
     }
 
     private fun screenshot(name: String) {

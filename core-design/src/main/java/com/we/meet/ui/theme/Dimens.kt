@@ -144,8 +144,9 @@ object Dimens {
     const val MediaPreviewMaxHeightRatio = 0.3f
     /** Shared geometry for recording playback controls and the active transcript row. */
     object RecordPlayback {
-        /** Top toolbar plus timeline and transport row, each with touch-safe targets. */
-        val VideoMinHeight = 160.dp
+        /** Top toolbar, timeline and two compact control rows with touch-safe targets. */
+        val VideoMinHeight = 200.dp
+        val WideControlsMinWidth = 560.dp
         val CornerRadius = 20.dp
         val PlayButtonSize = 56.dp
         val PlayButtonWidth = 88.dp

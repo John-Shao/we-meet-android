@@ -153,7 +153,6 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
         repository.media(viewer, recordId, record.revision)
     }
     val uploadedMedia = media?.getOrNull().takeIf { canPlayImport }
-    val videoAtTop = uploadedMedia?.mediaType == "video"
     val uploadPlayer: @Composable () -> Unit = {
         uploadedMedia?.let { read ->
             UploadMediaPlayer(read, playbackPositionMs, audioSeek, onDuration = { playerDuration = it }, sourceId = recordId,
@@ -211,7 +210,8 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         // 这里只在需要时留一条分隔线,不再另起一条按钮条。
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = Dimens.DividerThin)
                     }
-                    if (videoAtTop) uploadPlayer()
+                    if (canPlay) NativeCaptureAudioPlayer(viewer, recordId, requireNotNull(app).capturePlaybackRepository, { app.captureAccount }, audioSeek, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it }, followState = transcriptFollow)
+                    uploadPlayer()
                     val canReadTranslations = record.capabilities.readTranscript && app != null && (record.sourceType == "meeting" || record.sourceType == "upload" || record.sourceType == "audio_recording" && record.captureId != null && record.capabilities.controlCapture)
                     val tabs = buildList {
                         if (record.capabilities.readTranscript) add("text" to R.string.records_originals)
@@ -421,10 +421,6 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                     }
                 }
             }
-            if (canPlay) NativeCaptureAudioPlayer(viewer, recordId, requireNotNull(app).capturePlaybackRepository, { app.captureAccount }, audioSeek, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it }, followState = transcriptFollow)
-            // The import's signed read is fetched lazily; until it arrives there is
-            // no player, and a refused read leaves the transcript readable alone.
-            if (!videoAtTop) uploadPlayer()
             if (detail?.isSuccess == true && record?.capabilities?.readTranscript == true) citation?.let { (snapshot, reference) ->
                 val original = visibleRead(viewer, recordId, snapshot, reference, refresh) { repository.citation(viewer, recordId, snapshot, reference) }
                 AlertDialog(onDismissRequest = { citation = null }, title = { Text(stringResource(R.string.records_source)) },

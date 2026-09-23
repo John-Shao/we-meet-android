@@ -49,7 +49,7 @@ class RecordVideoControlsTest {
 
     private fun checkLayout() {
         val ids = listOf(R.string.cd_records_play, R.string.cd_records_skip_back, R.string.cd_records_skip_forward,
-            R.string.capture_playback_mute, R.string.capture_playback_speed)
+            R.string.capture_playback_mute)
         val bounds = ids.map { compose.onNodeWithContentDescription(context.getString(it)).assertIsDisplayed().fetchSemanticsNode().boundsInRoot }
         bounds.zipWithNext().forEach { (left, right) ->
             assertTrue("transport buttons do not overlap", left.right <= right.left + 1)
@@ -57,10 +57,16 @@ class RecordVideoControlsTest {
         }
         val clock = compose.onNodeWithText(context.getString(R.string.capture_playback_clock, "00:27", "00:47")).fetchSemanticsNode().boundsInRoot
         val full = compose.onNodeWithContentDescription(context.getString(R.string.capture_playback_fullscreen)).fetchSemanticsNode().boundsInRoot
+        val speed = compose.onNodeWithContentDescription(context.getString(R.string.capture_playback_speed)).fetchSemanticsNode().boundsInRoot
+        val collapse = compose.onNodeWithText(context.getString(R.string.capture_playback_hide_video)).fetchSemanticsNode().boundsInRoot
+        assertTrue(speed.right <= clock.left)
         assertTrue(clock.right < full.left)
         assertEquals(clock.center.y, full.center.y, 1f)
-        assertTrue(full.bottom < bounds.first().top)
-        assertEquals(full.right, bounds.last().right, 1f)
+        assertEquals(speed.center.y, full.center.y, 1f)
+        assertTrue(speed.top >= bounds.first().bottom)
+        assertTrue(collapse.bottom < bounds.first().top)
+        assertTrue(collapse.center.x < bounds.last().left)
+
     }
 
     @Test fun narrowVideoKeepsWebControlOrderWithLargeText() {
