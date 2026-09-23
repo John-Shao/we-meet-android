@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="capture_playback_video_controls">Show playback controls</string>
     <string name="capture_playback_title">Recording playback</string>
     <string name="capture_playback_position">Recording position</string>
     <string name="capture_playback_error">Playback stopped or is unavailable. Reload to check access and try again.</string>

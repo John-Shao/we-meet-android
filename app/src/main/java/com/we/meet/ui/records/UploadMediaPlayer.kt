@@ -75,6 +75,7 @@ internal fun UploadMediaPlayer(
     /** Bounds native HTTP preparation retries; tests use a shorter real-clock deadline. */
     preparationTimeoutMs: Long = PREPARATION_TIMEOUT_MS,
     followState: TranscriptFollowState? = null,
+    onMore: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current.applicationContext
     val latestPosition by rememberUpdatedState(onPosition)
@@ -208,10 +209,11 @@ internal fun UploadMediaPlayer(
                 onSkipForward = { start(minOf(maxOf(0L, duration - 1), position + 15_000)) },
                 onRate = { speed -> rate = speed; if (state.showsPause) start(position) },
                 followState = if (fullscreen) null else followState,
+                onMore = onMore,
             )
         }
     }
-    val hasVideo = media.mediaType == "video" && engine != null
+    val hasVideo = media.mediaType == "video"
     val attachSurface: (Surface) -> Unit = {
         surface = it
         engine?.let { current ->
@@ -224,44 +226,55 @@ internal fun UploadMediaPlayer(
         // A removed preview must not detach a newer full-screen surface.
         if (surface === it) { engine?.setSurface(null); surface = null }
     }
-    RecordPlayerSurface {
-        if (hasVideo) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = { videoExpanded = !videoExpanded }) {
-                    Icon(if (videoExpanded) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess, null)
-                    Text(stringResource(if (videoExpanded) R.string.capture_playback_hide_video else R.string.capture_playback_show_video))
-                }
-                Spacer(Modifier.weight(1f))
-                IconButton(onClick = { fullscreen = true }) {
-                    Icon(Icons.Outlined.Fullscreen, stringResource(R.string.capture_playback_fullscreen))
-                }
-            }
-            if (videoExpanded && !fullscreen) {
-                val heightCap = (LocalConfiguration.current.screenHeightDp * Dimens.MediaPreviewMaxHeightRatio).dp
-                BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    val videoHeight = minOf(maxWidth / aspect, heightCap)
-                    RecordVideoSurface(Modifier.size(videoHeight * aspect, videoHeight), attachSurface, detachSurface)
-                }
+    val videoPanel: @Composable (Modifier) -> Unit = { modifier ->
+        RecordVideoControls(
+            modifier = modifier, playing = state.showsPause,
+            positionMs = position, durationMs = duration, rate = rate, fullscreen = fullscreen,
+            onPlayPause = {
+                if (state.showsPause) { engine?.pause(); state = MediaPlaybackState.Ready }
+                else start(if (duration > 0 && position >= duration) 0 else position)
+            },
+            onSeek = { value -> engine?.pause(); state = MediaPlaybackState.Ready; report(value); latestConsume() },
+            onSeekFinished = { engine?.seekTo(position) },
+            onRate = { speed -> rate = speed; if (state.showsPause) start(position) },
+            onCollapse = { videoExpanded = false }, onFullscreen = { fullscreen = !fullscreen },
+            onMore = onMore?.let { action -> { fullscreen = false; action() } },
+        ) {
+            BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                val videoHeight = minOf(maxWidth / aspect, maxHeight)
+                RecordVideoSurface(Modifier.size(videoHeight * aspect, videoHeight), attachSurface, detachSurface)
             }
         }
-        if (!fullscreen) controls()
+    }
+    if (hasVideo && videoExpanded && !fullscreen && state != MediaPlaybackState.Error) {
+        val heightCap = (LocalConfiguration.current.screenHeightDp * Dimens.MediaPreviewMaxHeightRatio).dp
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            // Keep the player at the existing bottom anchor and cap how much text it covers.
+            videoPanel(Modifier.fillMaxWidth().height(minOf(maxWidth / (16f / 9f), heightCap)))
+        }
+    } else if (!fullscreen) RecordPlayerSurface {
+        if (hasVideo) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = { videoExpanded = true }) {
+                Icon(Icons.Outlined.ExpandLess, null)
+                Text(stringResource(R.string.capture_playback_show_video))
+            }
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = { fullscreen = true }) {
+                Icon(Icons.Outlined.Fullscreen, stringResource(R.string.capture_playback_fullscreen))
+            }
+        }
+        controls()
     }
     if (fullscreen) Dialog(onDismissRequest = { fullscreen = false },
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
-            Column(Modifier.fillMaxSize().safeDrawingPadding()) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.scrim) {
+            Box(Modifier.fillMaxSize().safeDrawingPadding()) {
+                if (state == MediaPlaybackState.Error) Column {
                     IconButton(onClick = { fullscreen = false }) {
-                        Icon(Icons.Outlined.FullscreenExit, stringResource(R.string.capture_playback_exit_fullscreen))
+                        Icon(Icons.Outlined.FullscreenExit, stringResource(R.string.capture_playback_exit_fullscreen), tint = com.we.meet.ui.theme.OnMediaOverlay)
                     }
-                }
-                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    if (hasVideo) {
-                        val videoHeight = minOf(maxWidth / aspect, maxHeight)
-                        RecordVideoSurface(Modifier.size(videoHeight * aspect, videoHeight), attachSurface, detachSurface)
-                    }
-                }
-                RecordPlayerSurface { controls() }
+                    controls()
+                } else videoPanel(Modifier.fillMaxSize())
             }
         }
     }

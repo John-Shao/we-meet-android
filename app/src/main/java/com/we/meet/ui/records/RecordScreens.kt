@@ -114,6 +114,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
      * and this is the one place that connects them. Null until a player reports.
      */
     val transcriptFollow = remember(viewer, recordId) { TranscriptFollowState() }
+    var playbackMenu by remember(viewer, recordId) { mutableStateOf(false) }
     var playbackPositionMs by remember(viewer, recordId) { mutableStateOf<Long?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
     var selectedHuman by remember(viewer, recordId) { mutableStateOf<String?>(null) }
@@ -409,12 +410,20 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                     }
                 }
             }
-            if (canPlay) NativeCaptureAudioPlayer(viewer, recordId, requireNotNull(app).capturePlaybackRepository, { app.captureAccount }, audioSeek, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it }, followState = transcriptFollow.takeIf { detailTab == "text" })
+            if (canPlay) NativeCaptureAudioPlayer(viewer, recordId, requireNotNull(app).capturePlaybackRepository, { app.captureAccount }, audioSeek, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it }, followState = transcriptFollow.takeIf { detailTab == "text" }, onMore = { playbackMenu = true })
             // The import's signed read is fetched lazily; until it arrives there is
             // no player, and a refused read leaves the transcript readable alone.
             if (canPlayImport) media?.getOrNull()?.let { read ->
-                UploadMediaPlayer(read, playbackPositionMs, audioSeek, onDuration = { playerDuration = it }, sourceId = recordId, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it }, followState = transcriptFollow.takeIf { detailTab == "text" })
+                UploadMediaPlayer(read, playbackPositionMs, audioSeek, onDuration = { playerDuration = it }, sourceId = recordId, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it }, followState = transcriptFollow.takeIf { detailTab == "text" }, onMore = { playbackMenu = true })
             }
+            if (app != null && record != null && (canPlay || canPlayImport)) RecordMenuContent(
+                app, viewer, record, "record", expanded = playbackMenu, allowRename = true,
+                onDismiss = { playbackMenu = false }, onRenamed = { refresh++ }, onChanged = { refresh++ },
+                asPlayerSheet = true, followState = transcriptFollow.takeIf { detailTab == "text" },
+                onSpeakers = { detailTab = "speakers" },
+                onTranslations = if (record.sourceType == "upload" || record.captureId != null && record.capabilities.controlCapture) ({ detailTab = "translations" }) else null,
+                onInfo = { detailTab = "info" },
+            )
             if (detail?.isSuccess == true && record?.capabilities?.readTranscript == true) citation?.let { (snapshot, reference) ->
                 val original = visibleRead(viewer, recordId, snapshot, reference, refresh) { repository.citation(viewer, recordId, snapshot, reference) }
                 AlertDialog(onDismissRequest = { citation = null }, title = { Text(stringResource(R.string.records_source)) },

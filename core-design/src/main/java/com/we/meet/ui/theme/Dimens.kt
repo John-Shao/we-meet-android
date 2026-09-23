@@ -146,6 +146,7 @@ object Dimens {
     object RecordPlayback {
         val CornerRadius = 20.dp
         val PlayButtonSize = 56.dp
+        val PlayButtonWidth = 88.dp
         val PlayIconSize = 30.dp
         val TrackHeight = 4.dp
         val ThumbSize = 12.dp

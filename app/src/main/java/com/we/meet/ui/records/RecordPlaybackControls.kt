@@ -10,8 +10,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.MyLocation
-import androidx.compose.material.icons.outlined.Pause
-import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -52,7 +53,7 @@ internal fun RecordPlayerSurface(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(topStart = Dimens.RecordPlayback.CornerRadius, topEnd = Dimens.RecordPlayback.CornerRadius),
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = Dimens.ElevationRaised,
+        shadowElevation = Dimens.ElevationFlat,
     ) {
         Column(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS), content = content)
     }
@@ -72,6 +73,7 @@ internal fun RecordPlaybackControls(
     onRate: (Float) -> Unit,
     followState: TranscriptFollowState? = null,
     onSeekFinished: () -> Unit = {},
+    onMore: (() -> Unit)? = null,
 ) {
     var ratesVisible by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
@@ -82,12 +84,6 @@ internal fun RecordPlaybackControls(
     val end = (durationMs ?: 0L).coerceAtLeast(1L)
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Column(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(playbackTime(positionMs), style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace,
-                color = colors.onSurfaceVariant)
-            Text(durationMs?.let(::playbackTime) ?: "—", style = MaterialTheme.typography.labelSmall,
-                fontFamily = FontFamily.Monospace, color = colors.onSurfaceVariant)
-        }
         Slider(
             value = positionMs.coerceIn(0L, end).toFloat(),
             onValueChange = { onSeek(it.toLong()) },
@@ -111,10 +107,18 @@ internal fun RecordPlaybackControls(
                 }
             },
         )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(playbackTime(positionMs), style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace,
+                color = colors.onSurfaceVariant)
+            Text(durationMs?.let(::playbackTime) ?: "—", style = MaterialTheme.typography.labelSmall,
+                fontFamily = FontFamily.Monospace, color = colors.onSurfaceVariant)
+        }
+        Spacer(Modifier.height(Dimens.SpaceS))
         // Equal outer slots keep the primary action centered, including when follow is hidden.
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                 TextButton(onClick = { ratesVisible = true }, contentPadding = PaddingValues(Dimens.SpaceXs),
+                    colors = ButtonDefaults.textButtonColors(contentColor = colors.onSurface),
                     modifier = Modifier.heightIn(min = Dimens.MinTouchTarget).semantics { contentDescription = speedLabel }) {
                     Text(stringResource(R.string.capture_playback_rate, playbackRateValue(rate)), maxLines = 1)
                 }
@@ -131,15 +135,20 @@ internal fun RecordPlaybackControls(
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                 SkipFifteenButton(false, onSkipBack)
             }
-            FilledIconButton(onClick = onPlayPause, modifier = Modifier.size(Dimens.RecordPlayback.PlayButtonSize), shape = CircleShape) {
-                Icon(if (playing) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+            FilledIconButton(onClick = onPlayPause,
+                modifier = Modifier.width(Dimens.RecordPlayback.PlayButtonWidth).height(Dimens.RecordPlayback.PlayButtonSize),
+                shape = CircleShape,
+                colors = IconButtonDefaults.filledIconButtonColors(containerColor = colors.primary.copy(alpha = 0.08f), contentColor = colors.primary)) {
+                Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     stringResource(if (playing) R.string.cd_records_pause else R.string.cd_records_play), Modifier.size(Dimens.RecordPlayback.PlayIconSize))
             }
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                 SkipFifteenButton(true, onSkipForward, enabled)
             }
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                if (followState != null) IconToggleButton(
+                if (onMore != null) IconButton(onClick = onMore, modifier = Modifier.size(Dimens.MinTouchTarget)) {
+                    Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.cd_records_more))
+                } else if (followState != null) IconToggleButton(
                     checked = followState.following, onCheckedChange = { followState.toggle() },
                     modifier = Modifier.size(Dimens.MinTouchTarget).semantics { contentDescription = followLabel },
                     colors = IconButtonDefaults.iconToggleButtonColors(checkedContentColor = colors.primary),

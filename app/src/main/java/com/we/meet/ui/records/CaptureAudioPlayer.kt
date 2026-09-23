@@ -26,12 +26,12 @@ import kotlinx.coroutines.*
 internal data class CaptureAudioSeek(val milliseconds: Long, val token: String = UUID.randomUUID().toString())
 
 @Composable
-internal fun NativeCaptureAudioPlayer(viewer: String, recordId: String, repository: CapturePlaybackRepository, currentViewer: () -> String?, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}, onPosition: (Long) -> Unit = {}, followState: TranscriptFollowState? = null) {
+internal fun NativeCaptureAudioPlayer(viewer: String, recordId: String, repository: CapturePlaybackRepository, currentViewer: () -> String?, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}, onPosition: (Long) -> Unit = {}, followState: TranscriptFollowState? = null, onMore: (() -> Unit)? = null) {
     val context = LocalContext.current.applicationContext
     CaptureAudioPlayer(viewer, recordId, { repository.playlist(viewer, recordId).getOrThrow() }, { allowed ->
         CapturePlaybackEngine({ playlist, index -> repository.audio(viewer, playlist, index).getOrThrow() },
             { repository.checkAccess(viewer, it).getOrThrow() }, { AndroidCapturePlaybackOutput(context, it) }, allowed)
-    }, { currentViewer() == viewer && !CaptureForegroundService.microphoneActive && !ConferenceForegroundService.isRunning }, seek, onSeekConsumed, onPosition, followState)
+    }, { currentViewer() == viewer && !CaptureForegroundService.microphoneActive && !ConferenceForegroundService.isRunning }, seek, onSeekConsumed, onPosition, followState, onMore)
 }
 
 /**
@@ -42,7 +42,7 @@ internal fun NativeCaptureAudioPlayer(viewer: String, recordId: String, reposito
  */
 @Composable
 internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend () -> CapturePlaylist, createEngine: (allowed: () -> Boolean) -> CapturePlaybackEngine,
-    authorized: () -> Boolean, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}, onPosition: (Long) -> Unit = {}, followState: TranscriptFollowState? = null) {
+    authorized: () -> Boolean, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}, onPosition: (Long) -> Unit = {}, followState: TranscriptFollowState? = null, onMore: (() -> Unit)? = null) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
     val currentAllowed by rememberUpdatedState(authorized)
@@ -159,7 +159,7 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
                         rate = speed
                         if (resume) play(position)
                     },
-                    followState = followState,
+                    followState = followState, onMore = onMore,
                 )
                 if (state == MediaPlaybackState.Gap) {
                     Text(stringResource(R.string.capture_playback_gap), style = MaterialTheme.typography.bodySmall)

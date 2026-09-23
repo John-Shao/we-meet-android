@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
@@ -19,6 +22,7 @@ import com.we.meet.R
 import com.we.meet.ui.theme.WeMeetTheme
 import java.io.File
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,12 +36,17 @@ class RecordPlaybackControlsTest {
         compose.setContent {
             WeMeetTheme(darkTheme = dark) {
                 CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
+                    val follow = remember { TranscriptFollowState() }
+                    var menu by remember { mutableStateOf(false) }
                     Column(Modifier.width(320.dp)) {
                         RecordPlayerSurface {
                             RecordPlaybackControls(6000, 25000, false, 1f, {}, {}, {}, {}, {},
-                                remember { TranscriptFollowState() })
+                                follow, onMore = { menu = true })
                         }
                     }
+                    if (menu) RecordPlaybackActionsSheet("产品体验评审 · 播放器优化", "王晓",
+                        onClose = { menu = false }, onShare = { menu = false }, onMembers = { menu = false },
+                        followState = follow)
                 }
             }
         }
@@ -48,11 +57,20 @@ class RecordPlaybackControlsTest {
         val back = compose.onNodeWithContentDescription(context.getString(R.string.cd_records_skip_back))
         val forward = compose.onNodeWithContentDescription(context.getString(R.string.cd_records_skip_forward))
         val follow = compose.onNodeWithContentDescription(context.getString(R.string.capture_playback_follow))
-        listOf(play, back, forward, follow).forEach { it.assertIsDisplayed() }
+        val more = compose.onNodeWithContentDescription(context.getString(R.string.cd_records_more))
+        listOf(play, back, forward, more).forEach { it.assertIsDisplayed() }
         assertEquals(back.fetchSemanticsNode().boundsInRoot.center.x + forward.fetchSemanticsNode().boundsInRoot.center.x,
             play.fetchSemanticsNode().boundsInRoot.center.x * 2, 1f)
+        assertTrue(play.fetchSemanticsNode().boundsInRoot.width > play.fetchSemanticsNode().boundsInRoot.height)
+        assertTrue(compose.onNodeWithText("00:06").fetchSemanticsNode().boundsInRoot.top >=
+            compose.onNodeWithContentDescription(context.getString(R.string.capture_playback_position)).fetchSemanticsNode().boundsInRoot.bottom)
+        more.performClick()
         follow.assertIsOn().performClick().assertIsOff()
         follow.performClick().assertIsOn()
+        File(context.getExternalFilesDir(null), "record-player-menu-$name.png").outputStream().use {
+            InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot().compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
+        compose.onNodeWithContentDescription(context.getString(R.string.cd_records_close)).performClick()
         File(context.getExternalFilesDir(null), "record-player-$name.png").outputStream().use {
             compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
         }

@@ -54,12 +54,28 @@ internal fun RecordMenuContent(
     onDismiss: () -> Unit,
     onRenamed: () -> Unit,
     onChanged: () -> Unit,
+    asPlayerSheet: Boolean = false,
+    followState: TranscriptFollowState? = null,
+    onSpeakers: (() -> Unit)? = null,
+    onTranslations: (() -> Unit)? = null,
+    onInfo: (() -> Unit)? = null,
 ) {
     val repository = app.meetingRecordRepository
     var panel by remember { mutableStateOf<String?>(null) }
     var copied by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+    if (asPlayerSheet) {
+        if (expanded) RecordPlaybackActionsSheet(
+            title = record.title, owner = record.owner,
+            onClose = onDismiss, followState = followState,
+            onShare = { onDismiss(); copied = false; panel = "share" },
+            onRename = if (allowRename && canRenameRecord(record)) ({ onDismiss(); renaming = true }) else null,
+            onMembers = { onDismiss(); panel = "members" },
+            onSpeakers = onSpeakers?.let { action -> { onDismiss(); action() } },
+            onTranslations = onTranslations?.let { action -> { onDismiss(); action() } },
+            onInfo = onInfo?.let { action -> { onDismiss(); action() } },
+        )
+    } else DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
         if (allowRename && canRenameRecord(record)) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.record_rename)) },
