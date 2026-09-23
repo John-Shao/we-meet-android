@@ -153,6 +153,8 @@ data class RecordOriginalSegmentDto(
     val language: String = "",
     @Json(name = "correction_revision") val correctionRevision: Int? = null,
     @Json(name = "can_correct") val canCorrect: Boolean = false,
+    // An optional enhancement must not break the entire page on a malformed shape.
+    @Json(name = "playback_alignment") val playbackAlignment: Any? = null,
 )
 
 /** The result of correcting one segment, or of restoring its original text. */

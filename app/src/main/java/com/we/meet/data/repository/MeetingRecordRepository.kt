@@ -57,6 +57,7 @@ data class RecordOriginalRow(
     val isCorrected: Boolean = false,
     val correctionRevision: Int? = null,
     val canCorrect: Boolean = false,
+    val playbackAlignment: com.we.meet.data.api.dto.PlaybackAlignmentDto? = null,
 )
 
 /** No disk cache or cross-account memory; every response is checked against its reader. */
@@ -277,6 +278,7 @@ class MeetingRecordRepository(
                         isCorrected = it.isCorrected,
                         correctionRevision = it.correctionRevision,
                         canCorrect = it.canCorrect,
+                        playbackAlignment = com.we.meet.data.api.dto.decodePlaybackAlignment(it.playbackAlignment),
                     )
                 }, rows.nextCursor)
             }

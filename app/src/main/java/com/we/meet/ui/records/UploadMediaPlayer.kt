@@ -44,9 +44,12 @@ import com.we.meet.ui.components.WeMeetInlineErrorState
 import com.we.meet.ui.theme.Dimens
 
 import kotlinx.coroutines.delay
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
-/** How often a playing file reports its clock. Matches the capture engine's cadence. */
-private const val POSITION_POLL_MS = 250L
+/** Word highlighting samples the real media clock; never extrapolate through stalls. */
+private const val POSITION_POLL_MS = 50L
 private const val PREPARATION_TIMEOUT_MS = 30_000L
 
 /**
@@ -144,9 +147,16 @@ internal fun UploadMediaPlayer(
         followState?.resume()
     }
 
-    // One poller for the whole playing lifetime rather than a loop per tick.
-    LaunchedEffect(tick, state) {
-        while (state.showsPause) {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    var visible by remember(lifecycle) { mutableStateOf(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) }
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, _ -> visible = lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+    // One local sampler, suspended while this UI is in the background.
+    LaunchedEffect(tick, state, visible) {
+        while (state.showsPause && visible) {
             val current = engine ?: break
             if (current.failure() != null) {
                 if (openedUrl != latestMedia.url && automaticRecoveries < 1) start(position, automatic = true)
@@ -164,7 +174,7 @@ internal fun UploadMediaPlayer(
                 delay(POSITION_POLL_MS)
                 continue
             }
-            report(current.positionMs())
+            if (!current.isSeeking()) report(current.positionMs())
             duration = current.durationMs()
             latestDuration(duration.takeIf(::validMediaDuration))
             aspect = current.videoAspectRatio()
@@ -186,8 +196,17 @@ internal fun UploadMediaPlayer(
             latestConsume()
             return@LaunchedEffect
         }
-        // A citation seek also starts playback, matching the capture player.
-        jump(request.milliseconds)
+        if (request.preservePlayback) {
+            engine?.seekTo(request.milliseconds)
+            position = request.milliseconds
+            val seekStarted = SystemClock.elapsedRealtime()
+            while (engine?.isSeeking() == true && SystemClock.elapsedRealtime() - seekStarted < 5000) delay(POSITION_POLL_MS)
+            if (engine?.isSeeking() != true) report(engine?.positionMs() ?: request.milliseconds)
+            followState?.resume()
+        } else {
+            // Existing citation/timestamp actions continue to start playback.
+            jump(request.milliseconds)
+        }
         latestConsume()
     }
 
@@ -202,6 +221,7 @@ internal fun UploadMediaPlayer(
                 muted = muted, onToggleMute = { muted = !muted; engine?.setMuted(muted) },
                 compactTopSpacing = media.mediaType == "video" && !videoExpanded,
                 onSeek = { value ->
+                    followState?.following = false
                     engine?.pause()
                     state = MediaPlaybackState.Ready
                     report(value)
@@ -239,7 +259,7 @@ internal fun UploadMediaPlayer(
                 if (state.showsPause) { engine?.pause(); state = MediaPlaybackState.Ready }
                 else start(if (duration > 0 && position >= duration) 0 else position)
             },
-            onSeek = { value -> engine?.pause(); state = MediaPlaybackState.Ready; report(value); latestConsume() },
+            onSeek = { value -> followState?.following = false; engine?.pause(); state = MediaPlaybackState.Ready; report(value); latestConsume() },
             onSeekFinished = { engine?.seekTo(position); followState?.resume() },
             onRate = { speed -> rate = speed; if (state.showsPause) start(position) },
             onSkipBack = { jump(maxOf(0L, position - 15_000)) },

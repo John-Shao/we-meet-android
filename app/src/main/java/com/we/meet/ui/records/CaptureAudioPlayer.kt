@@ -23,7 +23,7 @@ import com.we.meet.ui.components.WeMeetInlineLoading
 import java.util.UUID
 import kotlinx.coroutines.*
 
-internal data class CaptureAudioSeek(val milliseconds: Long, val token: String = UUID.randomUUID().toString())
+internal data class CaptureAudioSeek(val milliseconds: Long, val token: String = UUID.randomUUID().toString(), val preservePlayback: Boolean = false)
 
 @Composable
 internal fun NativeCaptureAudioPlayer(viewer: String, recordId: String, repository: CapturePlaybackRepository, currentViewer: () -> String?, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}, onPosition: (Long) -> Unit = {}, followState: TranscriptFollowState? = null) {

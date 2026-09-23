@@ -121,12 +121,17 @@ internal fun CorrectableOriginalText(
     writeScope: CoroutineScope? = null,
     /** 当前搜索词:正文里命中的片段会被标出来。空串 = 不做任何标记。 */
     highlight: String = "",
+    words: List<com.we.meet.data.api.dto.PlaybackWordDto> = emptyList(),
+    activeWord: Int = -1,
+    wordFollowing: Boolean = false,
+    onWordSeek: ((Long) -> Unit)? = null,
 ) {
     key(segmentId) {
         val state = draftState ?: remember { OriginalCorrectionState(text, correctionRevision) }
         var editing by state.editing
         var draft by state.draft
         var showingOriginal by remember { mutableStateOf(false) }
+        var alignmentInvalidated by remember(text, correctionRevision) { mutableStateOf(false) }
         var busy by state.busy
         var failed by state.failed
         var conflict by state.conflict
@@ -151,6 +156,8 @@ internal fun CorrectableOriginalText(
                 if (!state.active) return@launch
                 busy = false
                 if (result.isSuccess) {
+                    // The old page can remain visible while its replacement loads.
+                    alignmentInvalidated = true
                     editing = false
                     draft = ""
                     showingOriginal = false
@@ -168,7 +175,10 @@ internal fun CorrectableOriginalText(
         Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
             if (!editing) {
                 val shown = if (showingOriginal && originalText != null) originalText else text
-                Text(
+                if (words.isNotEmpty() && !showingOriginal && !busy && !alignmentInvalidated && onWordSeek != null) WordPlaybackText(
+                    text = shown, words = words, activeIndex = activeWord, query = highlight,
+                    following = wordFollowing, onBrowse = onEditing, onSeek = onWordSeek,
+                ) else Text(
                     highlightMatches(
                         shown,
                         highlight,

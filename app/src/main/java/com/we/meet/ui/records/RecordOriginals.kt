@@ -76,6 +76,7 @@ internal fun RecordOriginals(
     onRefresh: () -> Unit,
     onExport: (String) -> Unit,
     onSource: ((Long) -> Unit)? = null,
+    onWordSource: ((Long) -> Unit)? = null,
     positionMs: Long? = null,
     /**
      * 「转写管理」的菜单项标签 —— 有值就说明这条记录能管转写(只对 AI 录音、且当前
@@ -230,11 +231,15 @@ internal fun RecordOriginals(
                 else -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                     items(page.getOrThrow().results, key = { it.id }) { original ->
                             val isActive = activeId != null && original.id == activeId
+                            val words = remember(original.text, original.playbackAlignment) {
+                                validatedWords(original.text, original.playbackAlignment)
+                            }
+                            val wordMode = words.isNotEmpty() && onWordSource != null
                             val activeColor = MaterialTheme.colorScheme.primary
                             Column(
                                 Modifier.fillMaxWidth()
                                     .background(
-                                        if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)
+                                        if (isActive && !wordMode) MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)
                                         else MaterialTheme.colorScheme.surface,
                                     )
                                     .drawBehind {
@@ -283,6 +288,10 @@ internal fun RecordOriginals(
                                     writeScope = scope,
                                     // 命中处落在正文里(服务端只把不匹配的行过滤掉)。
                                     highlight = query,
+                                    words = words,
+                                    activeWord = if (isActive) activeWordIndex(words, positionMs) else -1,
+                                    wordFollowing = following && !filtered && !editing && !dragging,
+                                    onWordSeek = onWordSource,
                                 )
                             }
                     }

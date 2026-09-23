@@ -22,6 +22,7 @@ import androidx.core.content.ContextCompat
  * without opening a real stream, exactly as the capture player does.
  */
 interface WholeFilePlayback {
+    fun isSeeking(): Boolean = false
     fun isPreparing(): Boolean = false
     fun failure(): Throwable? = null
     fun videoAspectRatio(): Float = 16f / 9f
@@ -81,6 +82,7 @@ class UploadMediaEngine(
     }
 
     @Synchronized override fun isPreparing() = preparing
+    @Synchronized override fun isSeeking() = seeking
     @Synchronized override fun failure() = error
     @Synchronized override fun videoAspectRatio(): Float =
         player?.takeIf { prepared && it.videoWidth > 0 && it.videoHeight > 0 }

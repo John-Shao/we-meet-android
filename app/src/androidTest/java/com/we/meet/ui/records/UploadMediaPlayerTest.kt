@@ -100,6 +100,22 @@ class UploadMediaPlayerTest {
         assertEquals(42_500L, engine?.lastPlayFrom)
     }
 
+    @Test fun wordSeekPreservesPausedAndPlayingStates() {
+        show()
+        compose.runOnIdle { seek.value = CaptureAudioSeek(5000, preservePlayback = true) }
+        compose.waitUntil(8000) { reported.contains(5000L) }
+        assertTrue("word seek does not lazily start a stream", engine == null)
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
+        compose.waitUntil(8000) { engine?.playing == true }
+        compose.runOnIdle { seek.value = CaptureAudioSeek(7000, preservePlayback = true) }
+        compose.waitUntil(8000) { reported.contains(7000L) }
+        assertTrue(engine?.playing == true)
+        compose.onNodeWithContentDescription(label(R.string.cd_records_pause)).performClick()
+        compose.runOnIdle { seek.value = CaptureAudioSeek(9000, preservePlayback = true) }
+        compose.waitUntil(8000) { reported.contains(9000L) }
+        assertTrue(engine?.playing == false)
+    }
+
     @Test fun explicitSeekRestoresFollowButProtectsAnActiveEdit() {
         show()
         compose.runOnIdle { follow.following = false; seek.value = CaptureAudioSeek(12_000) }
