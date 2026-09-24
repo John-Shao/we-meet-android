@@ -85,6 +85,7 @@ internal fun RecordPlaybackControls(
     modifier: Modifier = Modifier,
     compactTopSpacing: Boolean = false,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    playContentColor: Color = MaterialTheme.colorScheme.primary,
     trackColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
     onInteraction: () -> Unit = {},
     onRateMenuVisibilityChange: (Boolean) -> Unit = {},
@@ -136,7 +137,8 @@ internal fun RecordPlaybackControls(
                 val requiredWidth = Dimens.MinTouchTarget * 4 + rateWidth + clockWidth + Dimens.SpaceXs * 2
                 val compact = maxWidth < requiredWidth
                 val transport: @Composable RowScope.() -> Unit = {
-                    IconButton(onClick = { onInteraction(); onPlayPause() }, modifier = Modifier.size(Dimens.MinTouchTarget)) {
+                    IconButton(onClick = { onInteraction(); onPlayPause() }, modifier = Modifier.size(Dimens.MinTouchTarget),
+                        colors = IconButtonDefaults.iconButtonColors(contentColor = playContentColor)) {
                         Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                             stringResource(if (playing) R.string.cd_records_pause else R.string.cd_records_play), Modifier.size(Dimens.IconLarge))
                     }

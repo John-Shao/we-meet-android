@@ -87,7 +87,8 @@ internal fun RecordVideoControls(
                     muted = muted, onToggleMute = onToggleMute,
                     modifier = Modifier.align(Alignment.BottomCenter)
                         .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
-                    contentColor = OnMediaOverlay, trackColor = OnMediaOverlay.copy(alpha = 0.4f),
+                    contentColor = OnMediaOverlay, playContentColor = OnMediaOverlay,
+                    trackColor = OnMediaOverlay.copy(alpha = 0.4f),
                     onInteraction = { interaction++ }, onRateMenuVisibilityChange = { ratesVisible = it },
                 )
             }
