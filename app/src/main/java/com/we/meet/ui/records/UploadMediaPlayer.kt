@@ -149,6 +149,12 @@ internal fun UploadMediaPlayer(
         followState?.resume()
     }
 
+    fun skipForward() {
+        val target = position + 15_000
+        // Before lazy preparation there is no duration yet; keep the requested seek.
+        jump(if (validMediaDuration(duration)) minOf(duration, target) else target)
+    }
+
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var visible by remember(lifecycle) { mutableStateOf(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) }
     DisposableEffect(lifecycle) {
@@ -247,7 +253,7 @@ internal fun UploadMediaPlayer(
                     else start(if (duration > 0 && position >= duration) 0 else position)
                 },
                 onSkipBack = { jump(maxOf(0L, position - 15_000)) },
-                onSkipForward = { jump(minOf(maxOf(0L, duration - 1), position + 15_000)) },
+                onSkipForward = ::skipForward,
                 onRate = { speed -> rate = speed; if (state.showsPause) start(position) },
             )
         }
@@ -277,7 +283,7 @@ internal fun UploadMediaPlayer(
             onSeekFinished = { engine?.seekTo(position); followState?.resume() },
             onRate = { speed -> rate = speed; if (state.showsPause) start(position) },
             onSkipBack = { jump(maxOf(0L, position - 15_000)) },
-            onSkipForward = { jump(minOf(maxOf(0L, duration - 1), position + 15_000)) },
+            onSkipForward = ::skipForward,
             muted = muted, onToggleMute = { muted = !muted; engine?.setMuted(muted) },
             onCollapse = { videoExpanded = false }, onFullscreen = { fullscreen = !fullscreen },
         ) {

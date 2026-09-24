@@ -12,6 +12,8 @@ import java.io.File
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -82,6 +84,41 @@ class UploadMediaPlayerTest {
                 }
             }
         }
+    }
+
+    private fun checkFirstVideoSkip(collapsed: Boolean) {
+        currentMedia.value = media.copy(mediaType = "video", contentType = "video/mp4")
+        show()
+        if (collapsed) compose.onNodeWithText(label(R.string.capture_playback_hide_video)).performClick()
+        assertEquals(null, engine)
+        compose.onNodeWithContentDescription(label(R.string.cd_records_skip_back)).assertIsNotEnabled()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_skip_forward)).assertIsEnabled().performClick()
+        compose.waitUntil(8_000) { engine?.lastPlayFrom == 15_000L && reported.contains(15_000L) }
+        compose.onNodeWithContentDescription(label(R.string.cd_records_skip_back)).assertIsEnabled()
+    }
+
+    @Test fun firstForwardSkipPreparesVideoAtFifteenSeconds() = checkFirstVideoSkip(collapsed = false)
+
+    @Test fun firstForwardSkipPreparesCollapsedVideoAtFifteenSeconds() = checkFirstVideoSkip(collapsed = true)
+
+    @Test fun skipButtonsRespectStartAndEndBoundaries() {
+        show()
+        val back = compose.onNodeWithContentDescription(label(R.string.cd_records_skip_back))
+        val forward = compose.onNodeWithContentDescription(label(R.string.cd_records_skip_forward))
+        back.assertIsNotEnabled()
+        forward.assertIsEnabled().performClick()
+        compose.waitUntil(8_000) { engine?.lastPlayFrom == 15_000L }
+        back.assertIsEnabled().performClick()
+        compose.waitUntil(8_000) { engine?.lastPlayFrom == 0L }
+        back.assertIsNotEnabled()
+        compose.runOnIdle { seek.value = CaptureAudioSeek(115_000) }
+        compose.waitUntil(8_000) { reported.contains(115_000L) }
+        forward.assertIsEnabled().performClick()
+        compose.waitUntil(8_000) { engine?.lastPlayFrom == 120_000L }
+        forward.assertIsNotEnabled()
+        back.assertIsEnabled().performClick()
+        compose.waitUntil(8_000) { engine?.lastPlayFrom == 105_000L }
+        forward.assertIsEnabled()
     }
 
     @Test fun reportsTheSourceClockAndAcceptsAnExactSeek() {

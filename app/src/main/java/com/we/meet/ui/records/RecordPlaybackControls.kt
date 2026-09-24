@@ -142,8 +142,8 @@ internal fun RecordPlaybackControls(
                         Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                             stringResource(if (playing) R.string.cd_records_pause else R.string.cd_records_play), Modifier.size(Dimens.IconLarge))
                     }
-                    SkipFifteenButton(false, { onInteraction(); onSkipBack() })
-                    SkipFifteenButton(true, { onInteraction(); onSkipForward() }, enabled = enabled)
+                    SkipFifteenButton(false, { onInteraction(); onSkipBack() }, enabled = positionMs > 0)
+                    SkipFifteenButton(true, { onInteraction(); onSkipForward() }, enabled = !enabled || positionMs < end)
                     IconToggleButton(checked = muted, onCheckedChange = { onInteraction(); onToggleMute() },
                         modifier = Modifier.size(Dimens.MinTouchTarget),
                         colors = IconButtonDefaults.iconToggleButtonColors(contentColor = contentColor, checkedContentColor = contentColor)) {
