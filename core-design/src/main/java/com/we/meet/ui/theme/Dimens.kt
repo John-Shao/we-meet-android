@@ -146,7 +146,6 @@ object Dimens {
     object RecordPlayback {
         /** Top toolbar, timeline and two compact control rows with touch-safe targets. */
         val VideoMinHeight = 200.dp
-        val CornerRadius = 20.dp
         val PlayButtonSize = 56.dp
         val PlayButtonWidth = 88.dp
         val PlayIconSize = 30.dp
