@@ -28,6 +28,7 @@ interface WholeFilePlayback {
     fun videoAspectRatio(): Float = 16f / 9f
     fun setSurface(surface: Surface?) {}
     fun setMuted(muted: Boolean) {}
+    fun setOnCompletionListener(listener: () -> Unit) {}
     fun durationMs(): Long
     fun isPlaying(): Boolean
     fun positionMs(): Long
@@ -74,6 +75,12 @@ class UploadMediaEngine(
     private var seeking = false
     private var playWhenReady = false
     private var muted = false
+    private var completed = false
+    private var onCompletion: (() -> Unit)? = null
+
+    @Synchronized override fun setOnCompletionListener(listener: () -> Unit) {
+        onCompletion = listener
+    }
 
     @Synchronized override fun setMuted(muted: Boolean) {
         this.muted = muted
@@ -130,7 +137,10 @@ class UploadMediaEngine(
     override fun isPlaying(): Boolean = prepared && runCatching { requireNotNull(player).isPlaying }.getOrDefault(false)
 
     @Synchronized
-    override fun positionMs(): Long = runCatching { if (prepared && !seeking) requireNotNull(player).currentPosition.toLong() else pendingMs }
+    override fun positionMs(): Long = runCatching {
+        if (completed) durationMs()
+        else if (prepared && !seeking) requireNotNull(player).currentPosition.toLong() else pendingMs
+    }
         .getOrDefault(pendingMs)
         .coerceAtLeast(0L)
 
@@ -138,6 +148,7 @@ class UploadMediaEngine(
     @Synchronized
     override fun play(fromMs: Long, rate: Float) {
         check(!closed) { "player is closed" }
+        completed = false
         pendingMs = fromMs.coerceAtLeast(0L)
         pendingRate = rate
         playWhenReady = true
@@ -162,6 +173,7 @@ class UploadMediaEngine(
     @Synchronized
     override fun seekTo(milliseconds: Long) {
         if (closed) return
+        completed = false
         pendingMs = milliseconds.coerceAtLeast(0L)
         if (prepared) {
             seeking = true
@@ -176,6 +188,7 @@ class UploadMediaEngine(
         preparing = false
         prepared = false
         playWhenReady = false
+        onCompletion = null
         player?.let { value ->
             runCatching { value.reset() }
             runCatching { value.release() }
@@ -218,6 +231,14 @@ class UploadMediaEngine(
         player = value
         value.setSurface(surface)
         value.setOnSeekCompleteListener { seeking = false }
+        value.setOnCompletionListener {
+            if (!closed) {
+                completed = true
+                seeking = false
+                playWhenReady = false
+                onCompletion?.invoke()
+            }
+        }
         value.setOnErrorListener { _, what, extra ->
             error = IllegalStateException("media playback failed: $what/$extra")
             close()

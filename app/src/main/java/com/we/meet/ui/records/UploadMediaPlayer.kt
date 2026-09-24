@@ -127,6 +127,16 @@ internal fun UploadMediaPlayer(
             .onFailure { state = MediaPlaybackState.Error }
             .getOrNull() ?: return
         engine = current
+        current.setOnCompletionListener {
+            if (engine === current) {
+                duration = current.durationMs()
+                latestDuration(duration.takeIf(::validMediaDuration))
+                position = if (validMediaDuration(duration)) duration else current.positionMs()
+                latestPosition(position)
+                awaitingSeek = false
+                state = MediaPlaybackState.Ready
+            }
+        }
         runCatching { current.setSurface(surface); current.setMuted(muted); current.play(from, rate) }
             .onSuccess {
                 state = if (current.isPreparing()) MediaPlaybackState.Preparing else MediaPlaybackState.Playing

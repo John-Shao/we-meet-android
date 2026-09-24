@@ -121,6 +121,30 @@ class UploadMediaPlayerTest {
         forward.assertIsEnabled()
     }
 
+    @Test fun naturalCompletionDisablesForwardEvenWhenTheLastClockSampleIsShort() {
+        currentMedia.value = media.copy(mediaType = "video", contentType = "video/mp4")
+        show()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
+        compose.runOnIdle {
+            engine!!.clock = 119_960L
+            engine!!.playing = false
+            engine!!.onCompletion?.invoke()
+        }
+        compose.waitUntil(8_000) { reported.contains(120_000L) }
+        val forward = compose.onNodeWithContentDescription(label(R.string.cd_records_skip_forward))
+        forward.assertIsNotEnabled()
+        compose.onNodeWithText(label(R.string.capture_playback_hide_video)).performClick()
+        forward.assertIsNotEnabled()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_skip_back)).assertIsEnabled().performClick()
+        compose.waitUntil(8_000) { engine?.lastPlayFrom == 105_000L }
+        forward.assertIsEnabled()
+        compose.runOnIdle { engine!!.playing = false; engine!!.onCompletion?.invoke() }
+        compose.onNodeWithContentDescription(label(R.string.cd_records_play)).performClick()
+        compose.waitUntil(8_000) { engine?.lastPlayFrom == 0L }
+        forward.assertIsEnabled()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_skip_back)).assertIsNotEnabled()
+    }
+
     @Test fun reportsTheSourceClockAndAcceptsAnExactSeek() {
         show()
         // Opening must not start playback: a GB-scale import is not fetched on open.
@@ -337,6 +361,15 @@ class UploadMediaPlayerTest {
             compose.waitUntil(8_000) { real!!.positionMs() >= 1000 }
             compose.runOnIdle { real!!.pause() }
             assertEquals(false, real?.isPlaying())
+            var completed = false
+            compose.runOnIdle {
+                real!!.setOnCompletionListener { completed = true }
+                real!!.play(4500, 1f)
+            }
+            compose.waitUntil(8_000) { completed }
+            assertEquals(real!!.durationMs(), real!!.positionMs())
+            compose.runOnIdle { real!!.play(0, 1f) }
+            compose.waitUntil(8_000) { real!!.isPlaying() && real!!.positionMs() < real!!.durationMs() }
         } finally {
             compose.runOnIdle { real?.close() }
             file.delete()
@@ -393,6 +426,8 @@ class UploadMediaPlayerTest {
 
     /** A whole-file engine with no stream behind it. */
     private class FakeEngine(private val onInterrupted: () -> Unit) : WholeFilePlayback {
+        var onCompletion: (() -> Unit)? = null
+        override fun setOnCompletionListener(listener: () -> Unit) { onCompletion = listener }
         @Volatile var outputSurface: android.view.Surface? = null
         override fun setSurface(surface: android.view.Surface?) { outputSurface = surface }
         @Volatile var playing = false
