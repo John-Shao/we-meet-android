@@ -1,16 +1,15 @@
 <resources>
     <string name="record_overview_generate">Generate overview</string>
-    <string name="record_overview_regenerate">Regenerate overview</string>
-    <string name="record_overview_retry">Retry overview generation</string>
-    <string name="record_overview_resubmit">Check previous overview request</string>
-    <string name="record_overview_generating">Generating overview…</string>
-    <string name="record_overview_failed">Overview generation did not finish. Any previous overview is preserved. Refresh to retry or regenerate.</string>
+    <string name="record_overview_regenerate">Regenerate</string>
+    <string name="record_overview_generating">Generating…</string>
+    <string name="record_overview_failed">Overview generation failed. Please try again.</string>
     <string name="record_overview_accepted">Overview generation requested.</string>
-    <string name="record_overview_uncertain">The overview request outcome is unknown. Check the same request again.</string>
+    <string name="record_overview_uncertain">Unable to confirm the result right now. Please try again.</string>
     <string name="record_overview_conflict">The transcript or overview job changed. Refresh and try again.</string>
     <string name="record_overview_rate_limited">Too many overview requests. Try again later.</string>
     <string name="record_overview_wait_source">Finish recording and transcription first. Oversized transcripts cannot be processed yet.</string>
     <string name="record_overview_source_changed">The transcript has changed. This is the previous overview.</string>
     <string name="record_overview_unavailable">Overview generation is currently unavailable.</string>
     <string name="record_overview_storage_error">Cannot save the overview request. Allow session storage and try again.</string>
+    <string name="record_overview_failed_preserved">Generation failed. Your previous overview has been preserved. Please try again.</string>
 </resources>

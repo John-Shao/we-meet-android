@@ -105,9 +105,19 @@ internal fun RecordOverview(viewer: String, record: RecordDto, repository: Meeti
         RecordPanelToolbar(buildList {
             if (state?.canGenerate == true) {
                 val canClick = controller != null && !storageError && !busy
-                add(RecordToolAction(stringResource(if (pending) R.string.record_overview_resubmit else if (job == null) R.string.record_overview_generate else R.string.record_overview_regenerate),
-                    canClick && (pending || state.generationReady && !active)) { submit(if (job == null) "generate" else "regenerate") })
-                if (job?.retryable == true && !active && !pending) add(RecordToolAction(stringResource(R.string.record_overview_retry), canClick && state.generationReady) { submit("retry") })
+                val label = when {
+                    active || busy -> R.string.record_overview_generating
+                    state.version != null -> R.string.record_overview_regenerate
+                    else -> R.string.record_overview_generate
+                }
+                // The coordinator replays any pending request with its original key/body.
+                val operation = when {
+                    job?.retryable == true && job.status in setOf("failed", "partial") && job.inputRevision == state.revision -> "retry"
+                    job != null -> "regenerate"
+                    else -> "generate"
+                }
+                add(RecordToolAction(stringResource(label),
+                    canClick && !active && (pending || state.generationReady)) { submit(operation) })
             }
             onOpenMinutes?.let { add(RecordToolAction(stringResource(R.string.record_overview_open_minutes), onClick = it)) }
             add(RecordToolAction(stringResource(R.string.records_refresh)) { refresh++ })
@@ -121,7 +131,7 @@ internal fun RecordOverview(viewer: String, record: RecordDto, repository: Meeti
                     if (state.canGenerate && !state.generationReady) Text(stringResource(R.string.record_overview_wait_source), style = MaterialTheme.typography.bodySmall)
                     if (storageError) WeMeetInlineErrorState(onRetry = { storageRetry++ }, message = stringResource(R.string.record_overview_storage_error))
                     if (active) Text(stringResource(R.string.record_overview_generating))
-                    if (job?.status in setOf("failed", "canceled")) Text(stringResource(R.string.record_overview_failed))
+                    if (job?.status in setOf("failed", "canceled")) Text(stringResource(if (state.version != null) R.string.record_overview_failed_preserved else R.string.record_overview_failed))
                     message?.let { Text(stringResource(it)) }
                     if (!state.available) Text(stringResource(R.string.record_overview_unavailable))
                     val version = state.version
