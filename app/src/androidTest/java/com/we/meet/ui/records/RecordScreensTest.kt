@@ -406,7 +406,6 @@ class RecordScreensTest {
                 compose.mainClock.advanceTimeBy(32)
                 val after = list.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
                 assertNotEquals("Return must be tested while inertia is still moving the list", before, after)
-                compose.onNodeWithContentDescription(label(R.string.records_transcript_actions)).performClick()
                 compose.onNodeWithText(label(R.string.records_back_to_playback)).performClick()
             } finally {
                 compose.mainClock.autoAdvance = true
@@ -432,7 +431,6 @@ class RecordScreensTest {
         compose.onNode(hasScrollAction()).performTouchInput {
             if (positionMs == 20_000L) swipeDown(durationMillis = 500) else swipeUp(durationMillis = 500)
         }
-        compose.onNodeWithContentDescription(label(R.string.records_transcript_actions)).performClick()
         compose.onNodeWithText(label(R.string.records_back_to_playback)).performClick()
         compose.onNodeWithText(target).assertIsDisplayed()
         compose.onNode(hasScrollAction()).performTouchInput { swipeDown(durationMillis = 500) }
@@ -466,7 +464,7 @@ class RecordScreensTest {
         val repository = MeetingRecordRepository(fixture) { "reader" }
         compose.setContent { WeMeetTheme { RecordDetailScreen(repository, "reader", recordId, {}) } }
         awaitText("Full original text")
-        compose.onNodeWithText(label(R.string.records_search_originals)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.records_search_originals)).performClick()
         compose.onNodeWithText(label(R.string.records_search_originals)).performTextInput("Search")
         compose.onNodeWithText(label(R.string.records_search_originals)).performImeAction()
         awaitText("Search matched original")
@@ -495,13 +493,12 @@ class RecordScreensTest {
             }
         } }
         awaitText("Full original text")
-        compose.onNodeWithText(label(R.string.records_search_originals)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.records_search_originals)).performClick()
         compose.onNodeWithText(label(R.string.records_search_originals)).performTextInput("Search")
         compose.onNodeWithText(label(R.string.records_search_originals)).performImeAction()
         awaitText("Search matched original")
         compose.runOnIdle { assertFalse(follow.following) }
         compose.mainClock.advanceTimeBy(10_000)
-        compose.onNodeWithContentDescription(label(R.string.records_transcript_actions)).performClick()
         compose.onNodeWithText(label(R.string.records_back_to_playback)).performClick()
         awaitText("Full original text")
         compose.runOnIdle {
@@ -888,10 +885,14 @@ class RecordScreensTest {
 
     @Test fun originalSearchAndSpeakerSelectionUseServerFilters() {
         val fixture = Fixture()
-        detail(fixture)
-        compose.onNodeWithText(label(R.string.records_originals)).performClick()
+        val repository = MeetingRecordRepository(fixture) { "reader" }
+        val record = RecordDto(recordId, "audio_recording", "Search", "2026-09-13T00:00:00Z", 3,
+            RecordCapabilitiesDto(readTranscript = true))
+        compose.setContent { WeMeetTheme {
+            RecordOriginals(repository, "reader", record, {}, onExport = {})
+        } }
         awaitText("Full original text")
-        compose.onNodeWithText(label(R.string.records_search_originals)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.records_search_originals)).performClick()
         compose.onNodeWithText(label(R.string.records_search_originals)).performTextInput("release 中文")
         // 提交只剩键盘上的搜索键（参考稿与 Web 端都没有独立的搜索按钮），
         // 所以走 IME action，而不是点一颗已经删掉的按钮。
@@ -903,7 +904,7 @@ class RecordScreensTest {
         compose.waitUntil(5_000) { fixture.originalQueries.lastOrNull() == ("release 中文" to versionId) }
         clickTranscriptAction(R.string.records_clear_filters)
         awaitText("Full original text")
-        compose.onNodeWithText(label(R.string.records_clear_search)).performClick()
+        compose.onNodeWithContentDescription(label(R.string.records_clear_search)).performClick()
         screenshot("records-originals-light")
     }
 

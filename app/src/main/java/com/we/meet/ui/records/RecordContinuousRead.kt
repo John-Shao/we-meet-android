@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
@@ -126,6 +127,6 @@ internal fun <T, P> RecordLoadMore(state: RecordContinuousRead<T, P>, disabled: 
         state.busy -> WeMeetInlineLoading()
         state.error != null -> TextButton(onClick = state::retry, enabled = !disabled, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.records_load_retry)) }
         state.hasNext -> TextButton(onClick = state::loadMore, enabled = !disabled, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.records_load_more)) }
-        else -> Text(stringResource(R.string.records_load_end), Modifier.fillMaxWidth().padding(Dimens.SpaceM))
+        else -> Text(stringResource(R.string.records_load_end), Modifier.fillMaxWidth().padding(Dimens.SpaceM), textAlign = TextAlign.Center)
     }
 }

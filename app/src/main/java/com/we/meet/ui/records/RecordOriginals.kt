@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.MyLocation
@@ -29,6 +30,10 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -143,6 +148,7 @@ internal fun RecordOriginals(
     val activeId = positionMs?.let { activeRowId(timelineRows, it) }
     val followId = activeId ?: positionMs?.let { nearestStartedRowId(timelineRows, it) }
     val activeDescription = stringResource(R.string.records_now_playing)
+    val activePlaybackLabel = stringResource(R.string.records_back_to_playback)
     val followIndex = rows.indexOfFirst { it.id == followId }
     val dragging by listState.interactionSource.collectIsDraggedAsState()
     LaunchedEffect(dragging) { if (dragging) followState.following = false }
@@ -177,20 +183,33 @@ internal fun RecordOriginals(
                     // 提交只剩键盘上的「搜索」—— 参考稿与 Web 端都没有独立的搜索按钮。
                     keyboardActions = KeyboardActions(onSearch = { search() }),
                 )
-                IconButton(onClick = { input = ""; query = ""; searchVisible = false; keyboard?.hide() }, enabled = !editing) {
-                    Icon(Icons.Outlined.Close, stringResource(R.string.records_clear_search))
-                }
             }
-            // 动作收进溢出菜单:原先四个文字按钮在 FlowRow 里换行,「批量查找替换」
-            // 单独掉到第二行 —— 一条只有一颗按钮的工具栏,白占 40dp 屏高。收进菜单后
-            // 工具栏恒为一行,也不再依赖「四个中文标签刚好放得下」这种巧合。
+            // Keep playback navigation visible; secondary actions stay in the menu.
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(
-                    onClick = { followState.following = false; searchVisible = !searchVisible; if (!searchVisible) { input = ""; query = ""; keyboard?.hide() } },
-                    enabled = !editing,
-                    modifier = Modifier.weight(1f).heightIn(min = Dimens.MinTouchTarget),
+                if (positionMs != null) {
+                    TextButton(
+                        onClick = { keyboard?.hide(); followState.resume() },
+                        enabled = !editing && !following,
+                        modifier = Modifier.weight(1f).heightIn(min = Dimens.MinTouchTarget)
+                            .semantics { contentDescription = activePlaybackLabel },
+                    ) {
+                        Text(stringResource(R.string.records_back_to_playback), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    }
+                } else {
+                    Spacer(Modifier.weight(1f))
+                }
+                val searchLabel = stringResource(if (searchVisible) R.string.records_clear_search else R.string.records_search_originals)
+                TooltipBox(
+                    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                    tooltip = { PlainTooltip { Text(searchLabel) } },
+                    state = rememberTooltipState(),
                 ) {
-                    Text(stringResource(if (searchVisible) R.string.records_clear_search else R.string.records_search_originals), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    IconButton(
+                        onClick = { followState.following = false; searchVisible = !searchVisible; if (!searchVisible) { input = ""; query = ""; keyboard?.hide() } },
+                        enabled = !editing,
+                    ) {
+                        Icon(if (searchVisible) Icons.Outlined.Close else Icons.Outlined.Search, searchLabel)
+                    }
                 }
                 IconButton(onClick = refreshText, enabled = !editing && !continuous.busy) {
                     Icon(Icons.Outlined.Refresh, stringResource(R.string.records_refresh))
@@ -204,11 +223,6 @@ internal fun RecordOriginals(
                         if (anchorMs > 0) DropdownMenuItem(
                             text = { Text(stringResource(R.string.records_read_start)) }, enabled = !editing,
                             onClick = { actionsVisible = false; followState.following = false; anchorMs = 0L },
-                        )
-                        if (positionMs != null) DropdownMenuItem(
-                            text = { Text(stringResource(R.string.records_back_to_playback)) },
-                            enabled = !editing && !following,
-                            onClick = { actionsVisible = false; followState.resume() },
                         )
                         // 转写管理排在最前:它是这条记录自己的转写状态(重试 / 清理),
                         // 比「按发言人筛选」这类浏览动作更该先被看到。
