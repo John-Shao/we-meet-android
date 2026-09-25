@@ -32,6 +32,7 @@ import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTouchInput
@@ -352,6 +353,34 @@ class RecordScreensTest {
             "Original line $index")
     }
 
+    @Test fun originalsAutoLoadAndRefreshPreservesScrollWithoutReloadingPlayer() {
+        val fixture = Fixture().apply { sourceType = "upload"; playbackRows = playbackRows(60) }
+        val repository = MeetingRecordRepository(fixture) { "reader" }
+        val record = RecordDto(recordId, "upload", "Continuous reader", "2026-09-13T00:00:00Z", 3,
+            RecordCapabilitiesDto(readTranscript = true))
+        var parentRefreshes = 0
+        compose.setContent { WeMeetTheme {
+            RecordOriginals(repository, "reader", record, { parentRefreshes++ }, onExport = {})
+        } }
+        awaitText("Original line 0")
+        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(27)
+        compose.waitUntil(9000) { fixture.originalAnchors.size >= 2 }
+        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(45)
+        awaitText("Original line 45")
+        val before = compose.onNode(hasScrollAction()).fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
+        val requests = fixture.originalAnchors.size
+        compose.onNodeWithContentDescription(label(R.string.records_refresh)).assertIsDisplayed().performClick()
+        compose.waitUntil(9000) { fixture.originalAnchors.size >= requests + 2 }
+        val after = compose.onNode(hasScrollAction()).fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
+        assertEquals(before, after)
+        assertEquals(0, parentRefreshes)
+        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(0)
+        compose.onNodeWithText("Original line 0").assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.records_next)).assertDoesNotExist()
+        compose.onNodeWithText(label(R.string.records_previous)).assertDoesNotExist()
+        screenshot("continuous-originals")
+    }
+
     @Test fun returnToPlaybackKeepsEarlierRowsAvailableForDragging() = checkReturnKeepsEarlierRows(15_500L)
 
     @Test fun returnAfterPlaybackEndsKeepsEarlierRowsAvailableForDragging() = checkReturnKeepsEarlierRows(20_000L)
@@ -377,7 +406,8 @@ class RecordScreensTest {
                 compose.mainClock.advanceTimeBy(32)
                 val after = list.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
                 assertNotEquals("Return must be tested while inertia is still moving the list", before, after)
-                compose.onNodeWithContentDescription(label(R.string.records_back_to_playback)).performClick()
+                compose.onNodeWithContentDescription(label(R.string.records_transcript_actions)).performClick()
+                compose.onNodeWithText(label(R.string.records_back_to_playback)).performClick()
             } finally {
                 compose.mainClock.autoAdvance = true
             }
@@ -402,7 +432,8 @@ class RecordScreensTest {
         compose.onNode(hasScrollAction()).performTouchInput {
             if (positionMs == 20_000L) swipeDown(durationMillis = 500) else swipeUp(durationMillis = 500)
         }
-        compose.onNodeWithContentDescription(label(R.string.records_back_to_playback)).assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription(label(R.string.records_transcript_actions)).performClick()
+        compose.onNodeWithText(label(R.string.records_back_to_playback)).performClick()
         compose.onNodeWithText(target).assertIsDisplayed()
         compose.onNode(hasScrollAction()).performTouchInput { swipeDown(durationMillis = 500) }
         compose.runOnIdle {
@@ -423,7 +454,8 @@ class RecordScreensTest {
             RecordOriginals(repository, "reader", record, {}, onExport = {}, positionMs = 35_500L, followState = follow)
         } }
         awaitText("Original line 35")
-        compose.onNodeWithText(label(R.string.records_previous)).assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription(label(R.string.records_transcript_actions)).performClick()
+        compose.onNodeWithText(label(R.string.records_read_start)).performClick()
         awaitText("Original line 0")
         compose.onNodeWithText("Original line 0").assertIsDisplayed()
         compose.runOnIdle { assertFalse(follow.following); assertEquals(0L, fixture.originalAnchors.last()) }
@@ -469,7 +501,8 @@ class RecordScreensTest {
         awaitText("Search matched original")
         compose.runOnIdle { assertFalse(follow.following) }
         compose.mainClock.advanceTimeBy(10_000)
-        compose.onNodeWithContentDescription(label(R.string.records_back_to_playback)).assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription(label(R.string.records_transcript_actions)).performClick()
+        compose.onNodeWithText(label(R.string.records_back_to_playback)).performClick()
         awaitText("Full original text")
         compose.runOnIdle {
             assertTrue(follow.following)

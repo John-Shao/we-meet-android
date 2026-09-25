@@ -53,25 +53,23 @@ class RecordTranslationArchivesTest {
             compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
         }
     }
-    @Test fun listsSavedArchiveAndPaginatesSeparateConfirmedTranslations() {
+    @Test fun listsSavedArchiveAndAutomaticallyAppendsConfirmedTranslations() {
         show(); awaitText(label(R.string.archives_shared)); screenshot("list-light")
         open(); awaitText("First confirmed translation")
         compose.onNodeWithText(label(R.string.archives_timing)).assertExists()
-        click(R.string.records_next); awaitText("Second confirmed translation")
-        compose.onNodeWithText("First confirmed translation").assertDoesNotExist()
+        awaitText("Second confirmed translation")
+        compose.onNodeWithText("First confirmed translation").assertExists()
         assertEquals("segment-next", api.segmentCursor)
-        click(R.string.records_previous); awaitText("First confirmed translation")
         click(R.string.archives_back); awaitText(label(R.string.archives_shared))
-        click(R.string.records_next); awaitText(label(R.string.archives_empty))
+        compose.waitUntil(9000) { api.archiveCursor == "archive-next" }
         assertEquals("archive-next", api.archiveCursor)
-        click(R.string.records_previous); awaitText(label(R.string.archives_shared))
     }
     @Test fun personalIncompleteArchiveShowsScopeAndReverseTargetWithoutSourceSeek() {
         api.privateArchive = true; api.status = "incomplete"
         show(dark = true); open(); awaitText("First confirmed translation")
         compose.onNodeWithText(label(R.string.archives_private_scope)).assertExists()
         compose.onNodeWithText(label(R.string.archives_incomplete_hint)).assertExists()
-        compose.onNodeWithText("Speaker · " + label(R.string.archives_zh)).assertExists()
+        compose.onAllNodesWithText("Speaker · " + label(R.string.archives_zh)).onFirst().assertExists()
         screenshot("personal-dark")
         compose.onNodeWithText(label(R.string.records_source)).assertDoesNotExist()
     }
@@ -115,7 +113,7 @@ class RecordTranslationArchivesTest {
             assertEquals(this@RecordTranslationArchivesTest.record, record); assertEquals(archiveId, archive); segmentCursor = cursor; fail()
             val selected = row()
             val text = if (cursor == null) "First confirmed translation" else "Second confirmed translation"
-            val segment = TranslationSegmentDto(source, if (cursor == null) 1 else 2, source, "PA_speaker", "Speaker", if (privateArchive) "reverse" else "forward", if (privateArchive) "zh" else "en", text, "2026-09-13T00:00:01Z", "delivery", null)
+            val segment = TranslationSegmentDto(UUID.nameUUIDFromBytes("segment-$cursor".toByteArray()).toString(), if (cursor == null) 1 else 2, source, "PA_speaker", "Speaker", if (privateArchive) "reverse" else "forward", if (privateArchive) "zh" else "en", text, "2026-09-13T00:00:01Z", "delivery", null)
             return TranslationSegmentPageDto(listOf(segment), if (cursor == null) "segment-next" else null, archiveId, status, selected.target, selected.sourceKind, selected.mode, selected.source)
         }
     }

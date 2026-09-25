@@ -1,0 +1,6 @@
+<resources>
+    <string name="records_read_start">Read from beginning</string>
+    <string name="records_load_more">Load more</string>
+    <string name="records_load_retry">Loading failed. Tap to retry</string>
+    <string name="records_load_end">All content loaded</string>
+</resources>

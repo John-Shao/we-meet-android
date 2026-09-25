@@ -36,6 +36,8 @@ class CaptureTranslationArchivesTest {
     private fun label(id: Int) = context.getString(id)
     private fun awaitText(text: String) { compose.waitUntil(9000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() } }
     private fun click(id: Int) {
+        if (id == R.string.records_refresh && compose.onAllNodesWithText(label(id)).fetchSemanticsNodes().isEmpty())
+            compose.onNodeWithContentDescription(label(R.string.records_panel_actions)).performClick()
         awaitText(label(id))
         val node = compose.onNodeWithText(label(id))
         if (id !in setOf(R.string.archives_back, R.string.records_refresh)) node.performScrollTo()
@@ -51,25 +53,23 @@ class CaptureTranslationArchivesTest {
             compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
         }
     }
-    @Test fun listsSavedArchiveAndPaginatesSeparateConfirmedTranslations() {
+    @Test fun listsSavedArchiveAndAutomaticallyAppendsConfirmedTranslations() {
         show(); awaitText(label(R.string.capture_translation_speech)); screenshot("list-light")
         open(); awaitText("First confirmed translation")
         compose.onNodeWithText(label(R.string.archives_timing)).assertExists()
-        click(R.string.records_next); awaitText("Second confirmed translation")
-        compose.onNodeWithText("First confirmed translation").assertDoesNotExist()
+        awaitText("Second confirmed translation")
+        compose.onNodeWithText("First confirmed translation").assertExists()
         assertEquals("segment-next", api.segmentCursor)
-        click(R.string.records_previous); awaitText("First confirmed translation")
         click(R.string.archives_back); awaitText(label(R.string.capture_translation_speech))
-        click(R.string.records_next); awaitText(label(R.string.archives_empty))
+        compose.waitUntil(9000) { api.archiveCursor == "archive-next" }
         assertEquals("archive-next", api.archiveCursor)
-        click(R.string.records_previous); awaitText(label(R.string.capture_translation_speech))
     }
     @Test fun personalIncompleteArchiveShowsScopeAndReverseTargetWithoutSourceSeek() {
         api.privateArchive = true; api.status = "incomplete"
         show(dark = true); open(); awaitText("First confirmed translation")
         compose.onNodeWithText(label(R.string.archives_private_scope)).assertExists()
         compose.onNodeWithText(label(R.string.archives_incomplete_hint)).assertExists()
-        compose.onNodeWithText(label(R.string.archives_en) + " → " + label(R.string.archives_zh)).assertExists()
+        compose.onAllNodesWithText(label(R.string.archives_en) + " → " + label(R.string.archives_zh)).onFirst().assertExists()
         screenshot("personal-dark")
         compose.onNodeWithText(label(R.string.records_source)).assertDoesNotExist()
     }

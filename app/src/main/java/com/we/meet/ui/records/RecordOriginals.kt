@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Person
@@ -100,7 +102,6 @@ internal fun RecordOriginals(
     var actionsVisible by remember(viewer, record.id) { mutableStateOf(false) }
     var speakerId by rememberSaveable(viewer, record.id, record.revision) { mutableStateOf<String?>(null) }
     var selectSpeaker by remember(viewer, record.id, record.revision) { mutableStateOf(false) }
-    var cursors by rememberSaveable(viewer, record.id, record.revision, query, speakerId) { mutableStateOf(listOf<String?>(null)) }
     var anchorMs by rememberSaveable(viewer, record.id, record.revision) { mutableStateOf(0L) }
     val following = followState.following
     LaunchedEffect(followState.resumeToken) {
@@ -108,7 +109,7 @@ internal fun RecordOriginals(
             input = ""; query = ""; speakerId = null
             // Resume within the current page. Re-anchoring at the playhead
             // removes all preceding rows from the server's forward-only window.
-            // Filter changes reset cursors above; the window effect below loads
+            // Filter changes reset the read scope; the window effect below loads
             // another page only when the playhead actually leaves this one.
         }
     }
@@ -125,9 +126,14 @@ internal fun RecordOriginals(
     val filtered = query.isNotBlank() || speakerId != null
     LaunchedEffect(filtered) { if (filtered) followState.following = false }
     val atMs = if (record.sourceType == "meeting") null else if (filtered) 0L else anchorMs
-    val page = visibleRead(viewer, record.id, record.revision, query, speakerId, cursors.last(), atMs) {
-        repository.originals(viewer, record.id, record.revision, query.ifBlank { null }, speakerId, cursors.last(), atMs)
-    }
+    val continuous = rememberRecordContinuousRead(viewer, record.id, record.revision, query, speakerId, atMs,
+        initial = null as String?, next = { it.nextCursor },
+        intervalMs = if (record.isOngoing && !editing) 15_000L else null,
+        merge = { pages -> pages.last().copy(results = pages.flatMap { it.results }.distinctBy { it.id }) },
+        read = { cursor -> repository.originals(viewer, record.id, record.revision, query.ifBlank { null }, speakerId, cursor, atMs) })
+    val page = continuous.result
+    RecordAutoLoad(continuous, listState, disabled = editing)
+    val refreshText: () -> Unit = { if (page?.exceptionOrNull() is RecordSourceChangedException) onRefresh() else continuous.refresh() }
     val rows = page?.getOrNull()?.results.orEmpty()
     val readError = page?.exceptionOrNull()
     LaunchedEffect(readError) {
@@ -144,14 +150,13 @@ internal fun RecordOriginals(
         if (!following || filtered || editing || dragging || positionMs == null) return@LaunchedEffect
         transcriptWindowTarget(timelineRows, positionMs, anchorMs, page?.getOrNull()?.nextCursor != null)?.let {
             anchorMs = it
-            cursors = listOf(null)
         }
     }
     LaunchedEffect(followIndex, followId, following, filtered, editing, dragging, followState.resumeToken) {
         if (!following || filtered || editing || dragging || followIndex < 0) return@LaunchedEffect
         listState.animateScrollToItem(followIndex)
     }
-    val search = { query = input.trim(); cursors = listOf(null); keyboard?.hide(); Unit }
+    val search = { query = input.trim(); keyboard?.hide(); Unit }
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = Dimens.ScreenPadding)) {
             if (searchVisible) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
@@ -162,15 +167,19 @@ internal fun RecordOriginals(
                         input = value.take(200)
                         // 清空即撤销:与 Web 端逐字稿搜索同一口径(收口记录 §3.13),
                         // 也省掉一颗只为「再问一次」而存在的按钮。
-                        if (input.isEmpty() && query.isNotEmpty()) { query = ""; cursors = listOf(null) }
+                        if (input.isEmpty() && query.isNotEmpty()) { query = "" }
                     },
                     label = { Text(stringResource(R.string.records_search_originals)) },
                     singleLine = true,
+                    enabled = !editing,
                     modifier = Modifier.weight(1f),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     // 提交只剩键盘上的「搜索」—— 参考稿与 Web 端都没有独立的搜索按钮。
                     keyboardActions = KeyboardActions(onSearch = { search() }),
                 )
+                IconButton(onClick = { input = ""; query = ""; searchVisible = false; keyboard?.hide() }, enabled = !editing) {
+                    Icon(Icons.Outlined.Close, stringResource(R.string.records_clear_search))
+                }
             }
             // 动作收进溢出菜单:原先四个文字按钮在 FlowRow 里换行,「批量查找替换」
             // 单独掉到第二行 —— 一条只有一颗按钮的工具栏,白占 40dp 屏高。收进菜单后
@@ -178,12 +187,13 @@ internal fun RecordOriginals(
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(
                     onClick = { followState.following = false; searchVisible = !searchVisible; if (!searchVisible) { input = ""; query = ""; keyboard?.hide() } },
+                    enabled = !editing,
                     modifier = Modifier.weight(1f).heightIn(min = Dimens.MinTouchTarget),
                 ) {
                     Text(stringResource(if (searchVisible) R.string.records_clear_search else R.string.records_search_originals), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
-                if (positionMs != null) IconButton(onClick = { followState.resume() }, enabled = !editing && !following) {
-                    Icon(Icons.Outlined.MyLocation, stringResource(R.string.records_back_to_playback))
+                IconButton(onClick = refreshText, enabled = !editing && !continuous.busy) {
+                    Icon(Icons.Outlined.Refresh, stringResource(R.string.records_refresh))
                 }
                 Box {
                     IconButton(
@@ -191,6 +201,15 @@ internal fun RecordOriginals(
                         modifier = Modifier.size(Dimens.MinTouchTarget),
                     ) { Icon(Icons.Outlined.MoreVert, stringResource(R.string.records_transcript_actions)) }
                     DropdownMenu(expanded = actionsVisible, onDismissRequest = { actionsVisible = false }) {
+                        if (anchorMs > 0) DropdownMenuItem(
+                            text = { Text(stringResource(R.string.records_read_start)) }, enabled = !editing,
+                            onClick = { actionsVisible = false; followState.following = false; anchorMs = 0L },
+                        )
+                        if (positionMs != null) DropdownMenuItem(
+                            text = { Text(stringResource(R.string.records_back_to_playback)) },
+                            enabled = !editing && !following,
+                            onClick = { actionsVisible = false; followState.resume() },
+                        )
                         // 转写管理排在最前:它是这条记录自己的转写状态(重试 / 清理),
                         // 比「按发言人筛选」这类浏览动作更该先被看到。
                         if (transcriptionLabel != null && onManageTranscription != null) {
@@ -222,11 +241,11 @@ internal fun RecordOriginals(
         Column(Modifier.weight(1f).fillMaxWidth()) {
             when {
                 page == null -> WeMeetInlineLoading()
-                page.isFailure -> WeMeetErrorState(onRetry = onRefresh, message = stringResource(originalError(page.exceptionOrNull())))
+                page.isFailure -> WeMeetErrorState(onRetry = refreshText, message = stringResource(originalError(page.exceptionOrNull())))
                 page.getOrThrow().results.isEmpty() -> WeMeetEmptyState(
                     stringResource(R.string.records_no_originals),
                     description = stringResource(R.string.records_no_originals_hint),
-                    action = { TextButton(onClick = onRefresh) { Text(stringResource(R.string.records_refresh)) } },
+
                 )
                 else -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                     items(page.getOrThrow().results, key = { it.id }) { original ->
@@ -296,7 +315,7 @@ internal fun RecordOriginals(
                                     // so that source gets no edit control at all.
                                     correctable = correctable,
                                     correctionRevision = original.correctionRevision ?: 0,
-                                    onCorrected = onRefresh,
+                                    onCorrected = { continuous.refresh() },
                                     onEditing = { followState.following = false },
                                     draftState = correctionState,
                                     writeScope = scope,
@@ -309,25 +328,12 @@ internal fun RecordOriginals(
                                 )
                             }
                     }
+                    item(key = "load-more") { RecordLoadMore(continuous, disabled = editing) }
                 }
             }
         }
-        val current = page?.getOrNull()
-        if (current != null) {
-            // 单页时这一行只会剩一个孤立的「刷新」—— 那条规则现在收在 RecordPager 里。
-            RecordPager(
-                hasPrevious = cursors.size > 1 || !filtered && anchorMs > 0,
-                onPrevious = {
-                    followState.following = false
-                    if (cursors.size > 1) cursors = cursors.dropLast(1)
-                    else anchorMs = 0L
-                },
-                hasNext = current.nextCursor != null,
-                onNext = { current.nextCursor?.let { next -> followState.following = false; cursors = cursors + next } },
-                onRefresh = onRefresh,
-            )
-        }
     }
+
     if (selectSpeaker) {
         SpeakerPicker(repository, viewer, record, onRefresh, onClose = { selectSpeaker = false }) {
             speakerId = it

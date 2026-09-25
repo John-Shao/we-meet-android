@@ -83,12 +83,12 @@ import java.time.format.DateTimeFormatter
 
 /** Read only while visible. Errors and backgrounding remove the last private body. */
 @Composable
-internal fun <T> visibleRead(vararg keys: Any?, intervalMs: Long = 15_000, stopWhen: (T) -> Boolean = { false }, read: suspend () -> Result<T>): Result<T>? {
+internal fun <T> visibleRead(vararg keys: Any?, intervalMs: Long = 15_000, refreshKey: Any? = null, stopWhen: (T) -> Boolean = { false }, read: suspend () -> Result<T>): Result<T>? {
     var result by remember(*keys) { mutableStateOf<Result<T>?>(null) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val latestRead by rememberUpdatedState(read)
     val latestStopWhen by rememberUpdatedState(stopWhen)
-    LaunchedEffect(lifecycle, *keys) {
+    LaunchedEffect(lifecycle, refreshKey, *keys) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             try {
                 do {

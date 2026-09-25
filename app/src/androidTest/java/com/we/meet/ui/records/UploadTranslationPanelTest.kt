@@ -40,7 +40,7 @@ class UploadTranslationPanelTest {
             return UploadTranslationListDto(true, 1, if (complete) listOf(item) else emptyList())
         }
         override suspend fun detail(record: String, translation: String, page: Int) = item.copy(
-            results = if (longPage) (0..39).map { UploadTranslationSegmentDto(UUID.nameUUIDFromBytes("$it".toByteArray()).toString(), it * 1000L, "Speaker", "Original $it", "Translation $it") } else listOf(UploadTranslationSegmentDto(segment, 1200, "Speaker", "Original", if (page == 0) "First translation" else "Last translation")),
+            results = if (longPage) (0..39).map { UploadTranslationSegmentDto(UUID.nameUUIDFromBytes("$it".toByteArray()).toString(), it * 1000L, "Speaker", "Original $it", "Translation $it") } else listOf(UploadTranslationSegmentDto(UUID.nameUUIDFromBytes("$segment-$page".toByteArray()).toString(), 1200, "Speaker", "Original", if (page == 0) "First translation" else "Last translation")),
             nextPage = if (page == 0) 1 else null,
         )
         override suspend fun generate(record: String, body: UploadTranslationRequestDto): UploadTranslationDto {
@@ -73,9 +73,8 @@ class UploadTranslationPanelTest {
         compose.onNodeWithContentDescription(label(R.string.records_panel_actions)).performClick()
         compose.onNodeWithText(context.getString(R.string.records_export_translation, "TXT")).performClick()
         assertEquals(listOf(id to "txt"), exports)
-        compose.onNodeWithText(label(R.string.records_next)).performScrollTo().performClick()
         awaitText("Last translation")
-        compose.onNodeWithText("First translation").assertDoesNotExist()
+        compose.onNodeWithText("First translation").assertExists()
     }
     @Test fun staleTranslationExplainsWhyExportIsUnavailable() {
         stale = true; show(); awaitText("First translation")
