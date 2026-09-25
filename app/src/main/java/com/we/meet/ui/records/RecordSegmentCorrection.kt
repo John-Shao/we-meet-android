@@ -188,7 +188,7 @@ internal fun CorrectableOriginalText(
                     style = MaterialTheme.typography.bodyLarge,
                 )
             }
-            if (!editing && (correctable || isCorrected)) {
+            if (!editing && isCorrected) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
                     verticalAlignment = Alignment.CenterVertically,
@@ -208,18 +208,6 @@ internal fun CorrectableOriginalText(
                                     )
                                 )
                             }
-                        }
-                    }
-                    if (correctable) {
-                        TextButton(enabled = !busy, onClick = {
-                            draft = text
-                            editRevision = correctionRevision
-                            failed = false
-                            conflict = false
-                            onEditing()
-                            editing = true
-                        }) {
-                            Text(stringResource(R.string.records_correction_edit))
                         }
                     }
                     if (correctable && isCorrected) {

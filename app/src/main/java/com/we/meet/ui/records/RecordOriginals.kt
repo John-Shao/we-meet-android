@@ -230,6 +230,8 @@ internal fun RecordOriginals(
                 )
                 else -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                     items(page.getOrThrow().results, key = { it.id }) { original ->
+                            val correctable = original.canCorrect && original.correctionRevision != null
+                            val correctionState = correctionDrafts.get(original.id, original.text, original.correctionRevision ?: 0)
                             val isActive = activeId != null && original.id == activeId
                             val words = remember(original.text, original.playbackAlignment) {
                                 validatedWords(original.text, original.playbackAlignment)
@@ -268,6 +270,18 @@ internal fun RecordOriginals(
                                                 style = MaterialTheme.typography.labelMedium)
                                         }
                                     } else Text(original.startedAt?.let(::recordTime) ?: original.startMs?.let(::sourceTime).orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    if (correctable && !correctionState.editing.value) {
+                                        TextButton(enabled = !correctionState.busy.value, onClick = {
+                                            correctionState.draft.value = original.text
+                                            correctionState.editRevision.value = original.correctionRevision ?: 0
+                                            correctionState.failed.value = false
+                                            correctionState.conflict.value = false
+                                            followState.following = false
+                                            correctionState.editing.value = true
+                                        }) {
+                                            Text(stringResource(R.string.records_correction_edit))
+                                        }
+                                    }
                                 }
                                 CorrectableOriginalText(
                                     repository = repository,
@@ -280,11 +294,11 @@ internal fun RecordOriginals(
                                     isCorrected = original.isCorrected,
                                     // An online transcript has no revision model,
                                     // so that source gets no edit control at all.
-                                    correctable = original.canCorrect && original.correctionRevision != null,
+                                    correctable = correctable,
                                     correctionRevision = original.correctionRevision ?: 0,
                                     onCorrected = onRefresh,
                                     onEditing = { followState.following = false },
-                                    draftState = correctionDrafts.get(original.id, original.text, original.correctionRevision ?: 0),
+                                    draftState = correctionState,
                                     writeScope = scope,
                                     // 命中处落在正文里(服务端只把不匹配的行过滤掉)。
                                     highlight = query,
