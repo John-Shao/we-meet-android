@@ -10,6 +10,10 @@ interface MeetingSummaryApi {
     suspend fun overview(@Path("record") record: String): RecordOverviewStateDto
 
     @Headers("Cache-Control: no-store")
+    @PATCH("api/v1.0/meeting-records/{record}/overview/")
+    suspend fun setOverviewLanguage(@Path("record") record: String, @Body body: OverviewLanguageRequestDto): OverviewLanguageDto
+
+    @Headers("Cache-Control: no-store")
     @POST("api/v1.0/meeting-records/{record}/overview-requests/")
     suspend fun requestOverview(@Path("record") record: String, @Header("Idempotency-Key") key: String, @Body body: RequestBody): SummaryAcceptedDto
 

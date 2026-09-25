@@ -86,6 +86,7 @@ class MeetingSummaryCoordinatorTest {
         assertNull(coordinator().pending(record, MeetingIntentKind.SUMMARY_AUTOMATION))
     }
     private class Fixture : MeetingSummaryApi {
+        override suspend fun setOverviewLanguage(record: String, body: OverviewLanguageRequestDto): OverviewLanguageDto = error("Unexpected language update")
         var status = 200
         val keys = mutableListOf<String>()
         val bodies = mutableListOf<String>()

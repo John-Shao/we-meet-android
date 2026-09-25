@@ -12,4 +12,10 @@
     <string name="record_overview_unavailable">概要生成暂不可用。</string>
     <string name="record_overview_storage_error">无法保存概要请求，请允许会话存储后重试。</string>
     <string name="record_overview_failed_preserved">生成失败，已保留原概要。请再试一次。</string>
+    <string name="record_overview_language">生成语言</string>
+    <string name="record_overview_follow_source">跟随原文</string>
+    <string name="record_overview_language_hint">应用于概要和章节纪要，下次生成时生效；已有内容会保留至新结果生成成功。</string>
+    <string name="record_overview_language_save_failed">语言设置未能确认，请刷新后再试。</string>
+    <string name="record_overview_language_save">保存</string>
+    <string name="record_overview_language_cancel">取消</string>
 </resources>

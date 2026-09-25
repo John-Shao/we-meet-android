@@ -15,6 +15,21 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
 class MeetingSummaryRepositoryTest {
+    @Test fun overviewLanguageIsSavedSeparatelyFromGeneration() = runBlocking {
+        val repo = repo { request ->
+            assertEquals("PATCH", request.method)
+            assertEquals("/api/v1.0/meeting-records/$record/overview/", request.url.encodedPath)
+            val buffer = Buffer(); request.body!!.writeTo(buffer)
+            val body = buffer.readUtf8()
+            assertTrue(body.contains("\"output_language\":\"zh\""))
+            assertTrue(body.contains("\"expected_output_language\":\"auto\""))
+            200 to """{"output_language":"zh"}"""
+        }
+        assertEquals("zh", repo.setOverviewLanguage("owner", record, "zh", "auto").getOrThrow().outputLanguage)
+        assertTrue(repo.setOverviewLanguage("owner", record, "unsupported", "zh").isFailure)
+        assertEquals(1, requests.size)
+    }
+
     @Test fun overviewUsesItsOwnReadAndRequestEndpoints() = runBlocking {
         val repo = repo { request ->
             if (request.method == "GET") {

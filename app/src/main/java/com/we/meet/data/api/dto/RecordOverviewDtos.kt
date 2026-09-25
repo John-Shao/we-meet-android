@@ -20,4 +20,11 @@ data class RecordOverviewStateDto(
     @Json(name = "generation_ready") val generationReady: Boolean = false,
     val job: SummaryJobDto?,
     val version: RecordOverviewVersionDto?,
+    @Json(name = "output_language") val outputLanguage: String = "auto",
+)
+
+data class OverviewLanguageDto(@Json(name = "output_language") val outputLanguage: String)
+data class OverviewLanguageRequestDto(
+    @Json(name = "output_language") val outputLanguage: String,
+    @Json(name = "expected_output_language") val expectedOutputLanguage: String,
 )

@@ -19,6 +19,7 @@ class MeetingSummaryRepository(private val api: MeetingSummaryApi, private val c
     suspend fun overview(viewer: String, record: String): Result<RecordOverviewStateDto> = scoped(viewer, record) {
         api.overview(record).also { state ->
             require(state.revision > 0)
+            require(state.outputLanguage in OVERVIEW_LANGUAGES)
             state.job?.let(::job)
             state.version?.let { version ->
                 uuid(version.id); uuid(version.inputSnapshotId); OffsetDateTime.parse(version.createdAt)
@@ -31,6 +32,13 @@ class MeetingSummaryRepository(private val api: MeetingSummaryApi, private val c
                     }
                 }
             }
+        }
+    }
+
+    suspend fun setOverviewLanguage(viewer: String, record: String, language: String, previous: String): Result<OverviewLanguageDto> = scoped(viewer, record) {
+        require(language in OVERVIEW_LANGUAGES && previous in OVERVIEW_LANGUAGES)
+        api.setOverviewLanguage(record, OverviewLanguageRequestDto(language, previous)).also {
+            require(it.outputLanguage == language)
         }
     }
 
@@ -91,6 +99,7 @@ class MeetingSummaryRepository(private val api: MeetingSummaryApi, private val c
     catch (error: Exception) { Result.failure(error) }
 
     companion object {
+        val OVERVIEW_LANGUAGES = listOf("auto", "zh", "en", "fr", "de", "nl", "ja", "ko", "es", "it", "pt", "ru", "ar")
         val STAGES = setOf("realtime", "quick", "final")
         private val JSON = "application/json".toMediaType()
         private fun uuid(value: String) { require(UUID.fromString(value).toString() == value) }

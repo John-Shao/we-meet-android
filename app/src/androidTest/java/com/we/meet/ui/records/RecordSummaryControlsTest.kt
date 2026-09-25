@@ -186,6 +186,7 @@ class RecordSummaryControlsTest {
         compose.onNodeWithText("Quick release decision").assertDoesNotExist()
     }
     private class Fixture : MeetingSummaryApi {
+        override suspend fun setOverviewLanguage(record: String, body: OverviewLanguageRequestDto): OverviewLanguageDto = error("Unexpected language update")
         var loseSummary = false
         var loseAutomation = false
         var failRead = false

@@ -12,4 +12,16 @@
     <string name="record_overview_unavailable">Overview generation is currently unavailable.</string>
     <string name="record_overview_storage_error">Cannot save the overview request. Allow session storage and try again.</string>
     <string name="record_overview_failed_preserved">Generation failed. Your previous overview has been preserved. Please try again.</string>
+    <string name="record_overview_language">Generation language</string>
+    <string name="record_overview_follow_source">Follow transcript</string>
+    <string name="record_overview_language_hint">Applies to the overview and topics on the next generation. Existing content is kept until generation succeeds.</string>
+    <string name="record_overview_language_save_failed">Could not confirm the language setting. Refresh and try again.</string>
+    <string name="record_overview_language_save">Save</string>
+    <string name="record_overview_language_cancel">Cancel</string>
+    <string-array name="record_overview_languages">
+        <item>@string/record_overview_follow_source</item>
+        <item>中文</item><item>English</item><item>Français</item><item>Deutsch</item>
+        <item>Nederlands</item><item>日本語</item><item>한국어</item><item>Español</item>
+        <item>Italiano</item><item>Português</item><item>Русский</item><item>العربية</item>
+    </string-array>
 </resources>

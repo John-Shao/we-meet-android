@@ -2,6 +2,8 @@ package com.we.meet.ui.records
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -10,10 +12,15 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -47,6 +54,10 @@ internal fun RecordOverview(viewer: String, record: RecordDto, repository: Meeti
     var busy by remember(viewer, record.id) { mutableStateOf(false) }
     var message by remember(viewer, record.id) { mutableStateOf<Int?>(null) }
     var action by remember(viewer, record.id) { mutableStateOf<Job?>(null) }
+    var languageOpen by remember(viewer, record.id) { mutableStateOf(false) }
+    var languageDraft by remember(viewer, record.id) { mutableStateOf("auto") }
+    var languageSaving by remember(viewer, record.id) { mutableStateOf(false) }
+    var languageError by remember(viewer, record.id) { mutableStateOf(false) }
     val read = visibleRead(viewer, record.id, refresh, intervalMs = 3000) { repository.overview(viewer, record.id) }
     val state = read?.getOrNull()
     val job = state?.job
@@ -104,7 +115,7 @@ internal fun RecordOverview(viewer: String, record: RecordDto, repository: Meeti
     Column(modifier.fillMaxWidth()) {
         RecordPanelToolbar(buildList {
             if (state?.canGenerate == true) {
-                val canClick = controller != null && !storageError && !busy
+                val canClick = controller != null && !storageError && !busy && !languageSaving
                 val label = when {
                     active || busy -> R.string.record_overview_generating
                     state.version != null -> R.string.record_overview_regenerate
@@ -118,6 +129,9 @@ internal fun RecordOverview(viewer: String, record: RecordDto, repository: Meeti
                 }
                 add(RecordToolAction(stringResource(label),
                     canClick && !active && (pending || state.generationReady)) { submit(operation) })
+                add(RecordToolAction(stringResource(R.string.record_overview_language), canClick && !active && !pending) {
+                    languageDraft = state.outputLanguage; languageError = false; languageOpen = true
+                })
             }
             onOpenMinutes?.let { add(RecordToolAction(stringResource(R.string.record_overview_open_minutes), onClick = it)) }
             add(RecordToolAction(stringResource(R.string.records_refresh)) { refresh++ })
@@ -154,5 +168,36 @@ internal fun RecordOverview(viewer: String, record: RecordDto, repository: Meeti
                 }
             }
         }
+    }
+    if (languageOpen && state?.canGenerate == true) {
+        AlertDialog(
+            onDismissRequest = { if (!languageSaving) languageOpen = false },
+            title = { Text(stringResource(R.string.record_overview_language)) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    Text(stringResource(R.string.record_overview_language_hint), style = MaterialTheme.typography.bodySmall)
+                    MeetingSummaryRepository.OVERVIEW_LANGUAGES.zip(stringArrayResource(R.array.record_overview_languages).toList()).forEach { (code, label) ->
+                        Row(Modifier.fillMaxWidth().selectable(selected = languageDraft == code, enabled = !languageSaving,
+                            role = Role.RadioButton, onClick = { languageDraft = code }).padding(vertical = Dimens.SpaceS), verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = languageDraft == code, onClick = null)
+                            Text(if (code == "auto") stringResource(R.string.record_overview_follow_source) else label)
+                        }
+                    }
+                    if (languageError) Text(stringResource(R.string.record_overview_language_save_failed), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            confirmButton = {
+                TextButton(enabled = !languageSaving && !active && !pending && !busy, onClick = {
+                    languageSaving = true; languageError = false
+                    scope.launch {
+                        try {
+                            val result = repository.setOverviewLanguage(viewer, record.id, languageDraft, state.outputLanguage)
+                            if (result.isSuccess) languageOpen = false else languageError = true
+                        } finally { languageSaving = false; refresh++ }
+                    }
+                }) { Text(stringResource(R.string.record_overview_language_save)) }
+            },
+            dismissButton = { TextButton(enabled = !languageSaving, onClick = { languageOpen = false }) { Text(stringResource(R.string.record_overview_language_cancel)) } },
+        )
     }
 }
