@@ -41,6 +41,7 @@ internal fun MeetingListItem(
     timestamp: String,
     icon: ImageVector,
     onClick: () -> Unit,
+    supportingMaxLines: Int = 1,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -81,7 +82,7 @@ internal fun MeetingListItem(
                     text = timestamp,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = supportingMaxLines,
                     overflow = TextOverflow.Ellipsis,
                 )
             }

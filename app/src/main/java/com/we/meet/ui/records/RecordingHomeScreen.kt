@@ -92,12 +92,14 @@ internal fun RecordingHomeContent(
                                 stringResource(recordingSourceLabel(record)),
                                 record.upload?.let { stringResource(uploadStatusLabel(it.status)) },
                             ).joinToString(" · "),
-                            if (record.upload?.mediaType == "video") Icons.Outlined.Videocam else Icons.Outlined.Mic, { onDetail(record.id) })
+                            if (record.upload?.mediaType == "video") Icons.Outlined.Videocam else Icons.Outlined.Mic, { onDetail(record.id) }, supportingMaxLines = 3)
                     } }
                 }
                 // 列表为空时「更多」无处可去，不显示。
                 if (rows.isNotEmpty()) TextButton(onClick = onMore, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.video_more)) }
             }
+        } else {
+            Box(Modifier.weight(1f).fillMaxWidth().background(MaterialTheme.colorScheme.surface))
         }
     }
 }

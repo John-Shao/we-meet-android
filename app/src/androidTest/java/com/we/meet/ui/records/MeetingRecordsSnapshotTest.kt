@@ -1,12 +1,26 @@
 package com.we.meet.ui.records
 
 import android.graphics.Bitmap
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -55,11 +69,17 @@ import java.io.FileOutputStream
  * reviewed on a device without a live backend (`adb pull .../files/ux`).
  */
 class MeetingRecordsSnapshotTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+
+    @Composable private fun SnapshotTheme(dark: Boolean = false, largeText: Boolean = false, content: @Composable () -> Unit) {
+        CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, if (largeText) 1.5f else LocalDensity.current.fontScale)) {
+            WeMeetTheme(darkTheme = dark) { Box(Modifier.width(if (largeText) 320.dp else 390.dp)) { content() } }
+        }
+    }
 
     private val viewer = "11111111-1111-1111-1111-111111111111"
     private val session = "00000700-1111-1111-1111-111111111111"
-    private fun label(id: Int) = InstrumentationRegistry.getInstrumentation().targetContext.getString(id)
+    private fun label(id: Int) = compose.activity.getString(id)
     private fun uuid(n: Int) = "%08d-1111-1111-1111-111111111111".format(n)
 
     private fun meeting(id: String, title: String, at: String, summary: Boolean = true, ongoing: Boolean = false) =
@@ -110,7 +130,7 @@ class MeetingRecordsSnapshotTest {
 
         override suspend fun records(scope: String, source: String?, hasSummary: Boolean?, query: String?, cursor: String?, isOngoing: Boolean?) =
             RecordPageDto(
-                records.filter { (source == null || it.sourceType == source) && (isOngoing == null || it.isOngoing == isOngoing) },
+                records.filter { (source == null || it.sourceType == source) && (isOngoing == null || it.isOngoing == isOngoing) && (hasSummary != true || it.hasSummary) && (query == null || it.title.contains(query)) },
                 if (cursor == null && records.isNotEmpty()) "next-page" else null,
             )
 
@@ -169,15 +189,17 @@ class MeetingRecordsSnapshotTest {
 
     private fun uploadRepository() = RecordingUploadRepository(FakeUploadApi(), currentViewer = { viewer })
 
-    private fun shot(name: String) {
+    private fun shot(name: String, windows: Boolean = false) {
         compose.waitForIdle()
-        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+        // Dialog window transitions render on the device clock, outside Compose's test clock.
+        if (windows) android.os.SystemClock.sleep(350)
+        val bitmap = if (windows) InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot() else compose.onRoot().captureToImage().asAndroidBitmap()
         val dir = File(InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir(null), "ux").apply { mkdirs() }
         FileOutputStream(File(dir, "$name.png")).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 
     @Test fun recordingSection() {
-        compose.setContent { WeMeetTheme {
+        compose.setContent { SnapshotTheme {
             RecordingHomeContent(Result.success(catalogue), true, {}, {}, {}, {}, {},
                 importAction = { modifier -> RecordingUploadAction(uploadRepository(), viewer, {}, modifier, tile = true) })
         } }
@@ -187,69 +209,93 @@ class MeetingRecordsSnapshotTest {
 
     @Test fun recordingSectionStates() {
         var result by mutableStateOf<Result<List<RecordDto>>?>(Result.success(emptyList()))
-        compose.setContent { WeMeetTheme { RecordingHomeContent(result, true, {}, {}, {}, {}, {}) } }
+        compose.setContent { SnapshotTheme { RecordingHomeContent(result, true, {}, {}, {}, {}, {}) } }
         shot("11-recording-empty")
         compose.runOnIdle { result = Result.failure(IllegalStateException("offline")) }
         shot("12-recording-error")
     }
 
     @Test fun recordLibrary() {
-        compose.setContent { WeMeetTheme { RecordLibraryScreen(repository(), viewer, false, {}, {}, onOpenNavDrawer = {}, onSearchMeetingAi = {}) } }
+        compose.setContent { SnapshotTheme { RecordLibraryScreen(repository(), viewer, false, {}, {}, onOpenNavDrawer = {}, onSearchMeetingAi = {}) } }
         shot("20-records-list")
         compose.onNodeWithContentDescription(label(R.string.cd_records_grid_view)).performClick()
         shot("21-records-grid")
     }
 
     @Test fun recordLibraryEmpty() {
-        compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(FakeApi(emptyList()), { viewer }), viewer, false, {}, {}, onOpenNavDrawer = {}, onSearchMeetingAi = {}) } }
+        compose.setContent { SnapshotTheme { RecordLibraryScreen(MeetingRecordRepository(FakeApi(emptyList()), { viewer }), viewer, false, {}, {}, onOpenNavDrawer = {}, onSearchMeetingAi = {}) } }
         shot("22-records-empty")
     }
 
     @Test fun minutesLibrary() {
-        compose.setContent { WeMeetTheme { RecordLibraryScreen(repository(), viewer, true, {}, {}, onOpenNavDrawer = {}, onSearchMeetingAi = {}) } }
+        compose.setContent { SnapshotTheme { RecordLibraryScreen(repository(), viewer, true, {}, {}, onOpenNavDrawer = {}, onSearchMeetingAi = {}) } }
         shot("30-minutes-list")
         compose.onNodeWithContentDescription(label(R.string.cd_records_grid_view)).performClick()
         shot("31-minutes-grid")
     }
 
     @Test fun recordDetailSummary() {
-        compose.setContent { WeMeetTheme { RecordDetailScreen(repository(), viewer, uuid(1), {}) } }
-        compose.onNodeWithText(label(R.string.records_minutes)).performClick()
+        compose.setContent { SnapshotTheme { RecordDetailScreen(repository(), viewer, uuid(1), {}, initialSummary = true) } }
         shot("40-record-summary")
     }
 
     @Test fun recordDetailOriginals() {
-        compose.setContent { WeMeetTheme { RecordDetailScreen(repository(), viewer, uuid(1), {}) } }
+        compose.setContent { SnapshotTheme { RecordDetailScreen(repository(), viewer, uuid(1), {}) } }
         shot("50-record-originals")
     }
 
     /** 还没有纪要时空态自带「刷新」,底栏不该再出现一个同名动作。 */
     @Test fun recordDetailWithoutSummary() {
-        compose.setContent { WeMeetTheme { RecordDetailScreen(MeetingRecordRepository(FakeApi(catalogue, emptyList()), { viewer }), viewer, uuid(1), {}) } }
-        compose.onNodeWithText(label(R.string.records_minutes)).performClick()
+        compose.setContent { SnapshotTheme { RecordDetailScreen(MeetingRecordRepository(FakeApi(catalogue, emptyList()), { viewer }), viewer, uuid(1), {}, initialSummary = true) } }
         shot("41-record-summary-empty")
     }
 
     @Test fun recordDetailInfo() {
-        compose.setContent { WeMeetTheme { RecordDetailScreen(repository(), viewer, uuid(1), {}) } }
+        compose.setContent { SnapshotTheme { RecordDetailScreen(repository(), viewer, uuid(1), {}) } }
         compose.onNodeWithText(label(R.string.records_info)).performClick()
         shot("60-record-info")
     }
 
     /** 说话人 tab 只对本地录音/导入件出现(线上会议没有独立说话人端点)。 */
     @Test fun recordDetailSpeakers() {
-        compose.setContent { WeMeetTheme { RecordDetailScreen(repository(), viewer, uuid(2), {}) } }
+        compose.setContent { SnapshotTheme { RecordDetailScreen(repository(), viewer, uuid(2), {}) } }
         compose.onNodeWithText(label(R.string.records_speakers)).performClick()
         shot("61-record-speakers")
     }
 
     /** 「生成信息」展开后要交代覆盖范围:阶段 / 已观察到的时间点 / 送达 · 覆盖度 / 识别。 */
     @Test fun recordDetailSourceInfo() {
-        compose.setContent { WeMeetTheme { RecordDetailScreen(repository(), viewer, uuid(1), {}) } }
-        compose.onNodeWithText(label(R.string.records_minutes)).performClick()
+        compose.setContent { SnapshotTheme { RecordDetailScreen(repository(), viewer, uuid(1), {}, initialSummary = true) } }
         compose.onNodeWithText(label(R.string.minutes_source_info)).performScrollTo().performClick()
         // 展开出来的几行在折叠按钮下方,滚到它们再拍。
         compose.onNodeWithText(label(R.string.records_coverage_unverified), substring = true).performScrollTo()
         shot("42-record-source-info")
     }
+    @Test fun narrowLargeTextFiltersAndSearch() {
+        compose.setContent { SnapshotTheme(largeText = true) { RecordLibraryScreen(repository(), viewer, false, {}, {}, onOpenNavDrawer = {}) } }
+        compose.onNodeWithText(label(R.string.records_filters)).performClick()
+        compose.waitUntil(5_000) { runCatching { compose.onNodeWithText(label(R.string.records_filters_done)).assertIsDisplayed() }.isSuccess }
+        shot("23-records-filter-sheet", windows = true)
+        compose.onNodeWithText(label(R.string.records_filters_done)).assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.records_uploaded)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.records_filters_done)).performClick()
+        shot("23-records-narrow-filtered")
+        compose.onNode(hasText(label(R.string.records_reset_filters)) and hasClickAction()).performClick()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_search)).performClick()
+        compose.onNodeWithText(label(R.string.records_search)).performTextInput("no-match")
+        compose.onNodeWithText("no-match").performImeAction()
+        compose.onNodeWithText(label(R.string.records_empty)).assertIsDisplayed()
+        compose.onAllNodesWithText(label(R.string.records_reset_filters))[0].performClick()
+        shot("24-records-search-recovered")
+    }
+    @Test fun minutesNarrowDark() {
+        compose.setContent { SnapshotTheme(dark = true, largeText = true) { RecordLibraryScreen(repository(), viewer, true, {}, {}, onOpenNavDrawer = {}) } }
+        shot("32-minutes-narrow-dark")
+    }
+    @Test fun recordingNarrowLargeText() {
+        compose.setContent { SnapshotTheme(largeText = true) { RecordingHomeContent(Result.success(catalogue.filter { it.sourceType != "meeting" }), true, {}, {}, {}, {}, {},
+            importAction = { modifier -> RecordingUploadAction(uploadRepository(), viewer, {}, modifier, tile = true) }) } }
+        shot("13-recording-narrow")
+    }
+
 }

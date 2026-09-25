@@ -11,8 +11,8 @@
     <string name="records_skip_forward">Forward 15 seconds</string>
     <string name="records_filters">Filters</string>
     <string name="records_source_filter">Source</string>
-    <string name="records_filters_done">Done</string>
-    <string name="records_reset_filters">Reset</string>
+    <string name="records_filters_done">Apply filters</string>
+    <string name="records_reset_filters">Clear filters</string>
     <string name="records_clear_search">Close search</string>
     <string name="records_grid_view">Switch to grid view</string>
     <string name="records_list_view">Switch to list view</string>

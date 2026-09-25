@@ -650,9 +650,9 @@ class RecordScreensTest {
         compose.waitUntil(5_000) { fixture.searchQuery == "Design" }
         compose.onNodeWithContentDescription(label(R.string.cd_records_clear_search)).performClick()
         compose.waitUntil(5_000) { fixture.searchQuery == null }
-        openMore()
         compose.onNodeWithText(label(R.string.records_filters)).performClick()
         compose.onNodeWithText(label(R.string.records_uploaded)).performScrollTo().performClick()
+        compose.runOnIdle { assertEquals(null, fixture.sourceFilter) }
         compose.onNodeWithText(label(R.string.records_filters_done)).performClick()
         compose.waitUntil(5_000) { fixture.sourceFilter == "upload" }
         compose.onNodeWithText(label(R.string.records_reset_filters)).performClick()
@@ -662,18 +662,30 @@ class RecordScreensTest {
         compose.onNodeWithText(label(R.string.records_upload)).assertDoesNotExist()
     }
 
+    @Test fun dismissingFiltersDiscardsSourceDraft() {
+        val fixture = Fixture()
+        compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", false, {}, {}) } }
+        awaitText("Private planning meeting")
+        compose.onNodeWithText(label(R.string.records_filters)).performClick()
+        compose.onNodeWithText(label(R.string.records_uploaded)).performScrollTo().performClick()
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
+        compose.runOnIdle { assertEquals(null, fixture.sourceFilter) }
+        compose.onNodeWithText(label(R.string.records_filters)).performClick()
+        compose.onNodeWithText(label(R.string.records_filters_done)).performClick()
+        compose.runOnIdle { assertEquals(null, fixture.sourceFilter) }
+    }
+
     @Test fun datesCombineWithSourceResetCursorAndRejectInvalidRange() {
         val fixture = Fixture()
         compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", false, {}, {}) } }
         awaitText("Private planning meeting")
         compose.onNodeWithText(label(R.string.records_next)).performScrollTo().performClick()
         awaitText(label(R.string.records_empty))
-        openMore()
         compose.onNodeWithText(label(R.string.records_filters)).performClick()
         compose.onNodeWithText(label(R.string.records_uploaded)).performScrollTo().performClick()
         compose.onNodeWithText(label(R.string.records_created_from)).performScrollTo().performTextInput("2026-09-21")
         compose.onNodeWithText(label(R.string.records_created_through)).performScrollTo().performTextInput("2026-09-20")
-        compose.onNodeWithText(label(R.string.records_filters_done)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.records_filters_done)).performClick()
         awaitText(label(R.string.records_date_error))
         compose.onNodeWithText(label(R.string.records_date_error)).assertIsDisplayed()
         compose.onNodeWithText(label(R.string.records_filters_done)).assertIsDisplayed()
@@ -687,7 +699,7 @@ class RecordScreensTest {
         }
         assertTrue(fixture.dateQueries.isEmpty())
         compose.onNodeWithText(label(R.string.records_created_from)).performScrollTo().performTextReplacement("2026-09-20")
-        compose.onNodeWithText(label(R.string.records_filters_done)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.records_filters_done)).performClick()
         compose.waitUntil(8000) { fixture.dateQueries.size >= 2 }
         val dates = recordDateRange("2026-09-20", "2026-09-20")
         assertTrue(fixture.dateQueries.all { it == listOf(dates.first, dates.second, null, "upload") })
@@ -700,11 +712,10 @@ class RecordScreensTest {
         val fixture = Fixture()
         compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", false, {}, {}) } }
         awaitText("Private planning meeting")
-        openMore()
         compose.onNodeWithText(label(R.string.records_filters)).performClick()
         compose.onNodeWithText(label(R.string.records_uploaded)).performScrollTo().performClick()
         compose.onNodeWithText(label(R.string.records_created_from)).performScrollTo().performTextInput("2026-09-20")
-        compose.onNodeWithText(label(R.string.records_filters_done)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.records_filters_done)).performClick()
         awaitText("Private planning meeting")
         compose.onNodeWithText(label(R.string.records_next)).performScrollTo().performClick()
         awaitText(label(R.string.records_empty))
@@ -745,10 +756,9 @@ class RecordScreensTest {
         val fixture = Fixture().apply { supportsDates = false }
         compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", false, {}, {}) } }
         awaitText("Private planning meeting")
-        openMore()
         compose.onNodeWithText(label(R.string.records_filters)).performClick()
         compose.onNodeWithText(label(R.string.records_created_from)).performScrollTo().performTextInput("2026-09-20")
-        compose.onNodeWithText(label(R.string.records_filters_done)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.records_filters_done)).performClick()
         awaitText(label(R.string.records_unavailable))
         compose.onNodeWithText("Private planning meeting").assertDoesNotExist()
     }

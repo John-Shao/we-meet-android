@@ -1,6 +1,7 @@
 @file:OptIn(
     androidx.compose.material3.ExperimentalMaterial3Api::class,
     androidx.compose.foundation.ExperimentalFoundationApi::class,
+    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
 )
 
 package com.we.meet.ui.records
@@ -9,12 +10,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -62,7 +61,7 @@ fun RecordLibraryScreen(
     var input by remember(viewer) { mutableStateOf("") }
     var query by remember(viewer) { mutableStateOf("") }
     var searchVisible by remember(viewer) { mutableStateOf(false) }
-    var filtersVisible by remember(initialSource) { mutableStateOf(initialSource != null) }
+    var filtersVisible by remember { mutableStateOf(false) }
     var grid by remember { mutableStateOf(false) }
     var ordering by remember(viewer, summariesOnly) { mutableStateOf(RecordOrdering.NEWEST) }
     var trashVisible by remember(viewer) { mutableStateOf(false) }
@@ -81,7 +80,15 @@ fun RecordLibraryScreen(
     val listState = remember(viewer, scope, source, query, cursor, summariesOnly, dates, ordering) { LazyGridState() }
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
-    val search = { query = input.trim(); refresh++; keyboard?.hide(); Unit }
+    val focusManager = LocalFocusManager.current
+    val search = { query = input.trim(); refresh++; focusManager.clearFocus(); keyboard?.hide(); Unit }
+    val hasFilters = query.isNotBlank() || source != null || hasDates || scope != (if (summariesOnly) RecordScope.OWNED else RecordScope.RECENT)
+    val resetFilters: () -> Unit = {
+        input = ""; query = ""; source = null
+        scope = if (summariesOnly) RecordScope.OWNED else RecordScope.RECENT
+        dateFrom = ""; dateThrough = ""
+        focusManager.clearFocus(); keyboard?.hide()
+    }
     val result = visibleRead(viewer, scope, source, query, cursor, summariesOnly, refresh, dates, ordering) {
         // 会议实录只取已结束的:正在录的那条走下面单独一段,否则会同时出现在两处。
         // 纪要库不带这个条件(服务端本来就是 has_summary=true 的那批)。
@@ -114,7 +121,7 @@ fun RecordLibraryScreen(
                             Icon(Icons.Outlined.AutoAwesome, stringResource(R.string.cd_records_ai_search))
                         }
                     }
-                    IconButton(onClick = { searchVisible = !searchVisible; if (!searchVisible) { input = ""; query = "" } }) {
+                    IconButton(onClick = { searchVisible = !searchVisible; if (!searchVisible) { input = ""; query = ""; focusManager.clearFocus(); keyboard?.hide() } }) {
                         Icon(if (searchVisible) Icons.Outlined.Close else Icons.Outlined.Search,
                             stringResource(if (searchVisible) R.string.cd_records_clear_search else R.string.cd_records_search))
                     }
@@ -130,13 +137,6 @@ fun RecordLibraryScreen(
                                     onClick = { ordering = value; orderMenu = false },
                                 )
                             }
-                            // 纪要子区正文里已有带当前值的「全部智能纪要」筛选入口,
-                            // 菜单里不再重复一项。
-                            if (!summariesOnly) DropdownMenuItem(
-                                text = { Text(stringResource(R.string.records_filters)) },
-                                leadingIcon = { Icon(Icons.Outlined.Tune, null) },
-                                onClick = { orderMenu = false; filtersVisible = true },
-                            )
                             if (result?.getOrNull()?.trashAvailable == true) DropdownMenuItem(
                                 text = { Text(stringResource(R.string.record_trash_title)) },
                                 leadingIcon = { Icon(Icons.Outlined.DeleteOutline, null) },
@@ -151,31 +151,19 @@ fun RecordLibraryScreen(
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            if (summariesOnly) {
-                val scopes = listOf(RecordScope.OWNED, RecordScope.PARTICIPATED, RecordScope.SHARED)
-                TabRow(selectedTabIndex = scopes.indexOf(scope).coerceAtLeast(0), containerColor = MaterialTheme.colorScheme.background) {
-                    scopes.forEach { value -> Tab(selected = scope == value, onClick = { scope = value },
-                        text = { Text(stringResource(minutesScopeLabel(value))) }) }
-                }
-                Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { filtersVisible = true }, modifier = Modifier.weight(1f)) {
-                        Text(stringResource(source?.let { sourceLabel(it.wire) } ?: R.string.minutes_all), modifier = Modifier.weight(1f))
-                        Icon(Icons.Outlined.ExpandMore, null)
-                    }
-                    IconButton(onClick = { grid = !grid }) {
-                        Icon(if (grid) Icons.AutoMirrored.Outlined.ViewList else Icons.Outlined.GridView,
-                            stringResource(if (grid) R.string.cd_records_list_view else R.string.cd_records_grid_view))
-                    }
-                }
-            } else
+            val scopes = if (summariesOnly) listOf(RecordScope.OWNED, RecordScope.PARTICIPATED, RecordScope.SHARED)
+                else listOfNotNull(RecordScope.RECENT, RecordScope.OWNED, RecordScope.PARTICIPATED.takeIf { scope == it }, RecordScope.SHARED)
+            ScrollableTabRow(selectedTabIndex = scopes.indexOf(scope).coerceAtLeast(0), edgePadding = Dimens.ScreenPadding,
+                containerColor = MaterialTheme.colorScheme.background) {
+                scopes.forEach { value -> Tab(selected = scope == value, onClick = { scope = value },
+                    text = { Text(stringResource(if (summariesOnly) minutesScopeLabel(value) else scopeLabel(value)), maxLines = 1) }) }
+            }
             Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding), verticalAlignment = Alignment.CenterVertically) {
-                Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                    listOf(RecordScope.RECENT, RecordScope.OWNED, RecordScope.SHARED).forEach { value ->
-                        FilterChip(selected = scope == value, onClick = { scope = value }, shape = CircleShape,
-                            border = null, colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer),
-                            label = { Text(stringResource(scopeLabel(value)), fontWeight = if (scope == value) FontWeight.SemiBold else FontWeight.Normal) })
-                    }
+                TextButton(onClick = { filtersVisible = true }, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Outlined.Tune, null)
+                    Spacer(Modifier.width(Dimens.SpaceS))
+                    Text(stringResource(source?.let { sourceLabel(it.wire) } ?: R.string.records_filters), modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Icon(Icons.Outlined.ExpandMore, null)
                 }
                 IconButton(onClick = { grid = !grid }) {
                     Icon(if (grid) Icons.AutoMirrored.Outlined.ViewList else Icons.Outlined.GridView,
@@ -188,12 +176,12 @@ fun RecordLibraryScreen(
                 leadingIcon = { Icon(Icons.Outlined.Search, null) }, trailingIcon = {
                     TextButton(onClick = search) { Text(stringResource(R.string.records_search_action)) }
                 }, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), keyboardActions = KeyboardActions(onSearch = { search() }))
-            if ((!summariesOnly && (source != null || scope == RecordScope.PARTICIPATED)) || hasDates) Row(Modifier.padding(horizontal = Dimens.ScreenPadding), verticalAlignment = Alignment.CenterVertically) {
-                Text(listOfNotNull(source?.let { stringResource(sourceLabel(it.wire)) },
-                    if (scope == RecordScope.PARTICIPATED) stringResource(R.string.records_participated) else null,
+            if (hasFilters) Row(Modifier.padding(horizontal = Dimens.ScreenPadding), verticalAlignment = Alignment.CenterVertically) {
+                Text(listOfNotNull(query.takeIf { it.isNotBlank() }, source?.let { stringResource(sourceLabel(it.wire)) },
+                    if (scope != (if (summariesOnly) RecordScope.OWNED else RecordScope.RECENT)) stringResource(if (summariesOnly) minutesScopeLabel(scope) else scopeLabel(scope)) else null,
                     if (hasDates) stringResource(R.string.records_date_active, dateFrom.ifEmpty { "…" }, dateThrough.ifEmpty { "…" }) else null).joinToString(" · "),
-                    modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                TextButton(onClick = { source = null; scope = if (summariesOnly) RecordScope.OWNED else RecordScope.RECENT; dateFrom = ""; dateThrough = "" }) { Text(stringResource(R.string.records_reset_filters)) }
+                    modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                TextButton(onClick = resetFilters) { Text(stringResource(R.string.records_reset_filters)) }
             }
             // 一级页的下一半:白色滚动区,加载态/空态/错误态也得把白底铺满。
             Box(Modifier.weight(1f).fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
@@ -207,13 +195,7 @@ fun RecordLibraryScreen(
                     // 空态的 action 要「给下一步」,而不是「再问一次服务器」:
                     // 有筛选条件时给「清除筛选」(真的能改变结果),否则才退回「刷新」。
                     action = {
-                        val filtered = source != null || hasDates || (!summariesOnly && scope == RecordScope.PARTICIPATED) ||
-                            (summariesOnly && scope != RecordScope.OWNED)
-                        if (filtered) TextButton(onClick = {
-                            source = null
-                            scope = if (summariesOnly) RecordScope.OWNED else RecordScope.RECENT
-                            dateFrom = ""; dateThrough = ""
-                        }) { Text(stringResource(R.string.records_reset_filters)) }
+                        if (hasFilters) TextButton(onClick = resetFilters) { Text(stringResource(R.string.records_reset_filters)) }
                         else TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) }
                     })
                 else -> {
@@ -273,17 +255,20 @@ fun RecordLibraryScreen(
     ) {
         val filterFocus = LocalFocusManager.current
         val filterKeyboard = LocalSoftwareKeyboardController.current
+        var scopeDraft by remember { mutableStateOf(scope) }
+        var sourceDraft by remember { mutableStateOf(source) }
         var fromDraft by remember { mutableStateOf(dateFrom) }
         var throughDraft by remember { mutableStateOf(dateThrough) }
         var invalidDates by remember { mutableStateOf(false) }
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).imePadding().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+        Column(Modifier.fillMaxWidth().fillMaxHeight(0.9f).imePadding()) {
+          Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
             Text(stringResource(R.string.records_filters), style = MaterialTheme.typography.titleLarge)
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                RecordScope.entries.filter { !summariesOnly || it != RecordScope.RECENT }.forEach { value -> FilterChip(scope == value, onClick = { scope = value }, label = { Text(stringResource(if (summariesOnly) minutesScopeLabel(value) else scopeLabel(value))) }) }
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                RecordScope.entries.filter { !summariesOnly || it != RecordScope.RECENT }.forEach { value -> FilterChip(scopeDraft == value, onClick = { scopeDraft = value }, label = { Text(stringResource(if (summariesOnly) minutesScopeLabel(value) else scopeLabel(value))) }) }
             }
             Text(stringResource(R.string.records_source_filter), style = MaterialTheme.typography.titleSmall)
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                (listOf(null) + RecordSource.entries).forEach { value -> FilterChip(source == value, onClick = { source = value }, label = { Text(stringResource(sourceLabel(value?.wire))) }) }
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                (listOf(null) + RecordSource.entries).forEach { value -> FilterChip(sourceDraft == value, onClick = { sourceDraft = value }, label = { Text(stringResource(sourceLabel(value?.wire))) }) }
             }
             OutlinedTextField(fromDraft, { fromDraft = it.take(10); invalidDates = false }, singleLine = true,
                 label = { Text(stringResource(R.string.records_created_from)) }, modifier = Modifier.fillMaxWidth())
@@ -292,13 +277,18 @@ fun RecordLibraryScreen(
             Text(stringResource(R.string.records_date_hint), style = MaterialTheme.typography.bodySmall)
             if (invalidDates) Text(stringResource(R.string.records_date_error), color = MaterialTheme.colorScheme.error)
             TextButton(onClick = { fromDraft = ""; throughDraft = ""; invalidDates = false }) { Text(stringResource(R.string.records_clear_dates)) }
+          }
+          HorizontalDivider()
+          Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+            TextButton(onClick = { scopeDraft = if (summariesOnly) RecordScope.OWNED else RecordScope.RECENT; sourceDraft = null; fromDraft = ""; throughDraft = ""; invalidDates = false }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.records_reset_filters)) }
             Button(onClick = {
                 filterFocus.clearFocus()
                 filterKeyboard?.hide()
                 if (runCatching { recordDateRange(fromDraft, throughDraft) }.isSuccess) {
-                    dateFrom = fromDraft; dateThrough = throughDraft; filtersVisible = false
+                    scope = scopeDraft; source = sourceDraft; dateFrom = fromDraft; dateThrough = throughDraft; filtersVisible = false
                 } else invalidDates = true
-            }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.records_filters_done)) }
+            }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.records_filters_done)) }
+          }
         }
     }
 }
