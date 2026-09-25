@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="records_filter_speaker">Filter by speaker</string>
-    <string name="records_info">Recording info</string>
+    <string name="records_info">Record info</string>
     <string name="records_start_time">Started</string>
     <string name="records_retention">Storage</string>
     <string name="records_retention_media">Audio or video retained</string>

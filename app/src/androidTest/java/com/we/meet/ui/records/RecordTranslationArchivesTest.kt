@@ -35,6 +35,9 @@ class RecordTranslationArchivesTest {
     private fun label(id: Int) = context.getString(id)
     private fun awaitText(text: String) { compose.waitUntil(9000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() } }
     private fun click(id: Int) {
+        if (id == R.string.records_refresh && compose.onAllNodesWithText(label(id)).fetchSemanticsNodes().isEmpty())
+            compose.onNodeWithContentDescription(label(R.string.records_panel_actions)).performClick()
+
         awaitText(label(id))
         val node = compose.onNodeWithText(label(id))
         if (id !in setOf(R.string.archives_back, R.string.records_refresh)) node.performScrollTo()

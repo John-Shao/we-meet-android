@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -60,6 +61,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.we.meet.R
 import com.we.meet.WeMeetApp
+import com.we.meet.data.api.dto.RecordLifecycleDto
 import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.api.dto.RecordReferenceDto
 import com.we.meet.data.api.dto.RecordSummaryVersionDto
@@ -106,6 +108,7 @@ internal fun <T> visibleRead(vararg keys: Any?, intervalMs: Long = 15_000, stopW
 
 @Composable
 fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String, onBack: () -> Unit, summaryVersionId: String? = null, onTask: ((String) -> Unit)? = null, onDocument: ((String) -> Unit)? = null, initialSummary: Boolean = false, initialReview: Boolean = false, onRemoved: () -> Unit = onBack) {
+    val viewStates = androidx.compose.runtime.key(viewer, recordId) { rememberSaveableStateHolder() }
     val app = LocalContext.current.applicationContext as? WeMeetApp
     var audioSeek by remember(viewer, recordId) { mutableStateOf<CaptureAudioSeek?>(null) }
     /**
@@ -115,6 +118,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
      */
     val transcriptFollow = remember(viewer, recordId) { TranscriptFollowState() }
     var playbackPositionMs by remember(viewer, recordId) { mutableStateOf<Long?>(null) }
+    var trashSelection by remember(viewer, recordId) { mutableStateOf<RecordLifecycleDto?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
     var selectedHuman by remember(viewer, recordId) { mutableStateOf<String?>(null) }
     var selectedVersion by remember(viewer, recordId, summaryVersionId) { mutableStateOf(summaryVersionId) }
@@ -181,9 +185,13 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             onSpeakers = if (!document && record.capabilities.readTranscript && record.sourceType in listOf("audio_recording", "upload")) ({ detailTab = "speakers" }) else null,
                             onTranslations = if (!document && record.capabilities.readTranscript && (record.sourceType in listOf("meeting", "upload") || record.sourceType == "audio_recording" && record.captureId != null && record.capabilities.controlCapture)) ({ detailTab = "translations" }) else null,
                             onInfo = if (!document) ({ detailTab = "info" }) else null,
+                            onTrash = if (!document && record.capabilities.trash && record.lifecycleRevision != null) ({ trashSelection = RecordLifecycleDto(record.id, record.title, record.sourceType, null, record.lifecycleRevision) }) else null,
                         )
                     }
                 }
+            }
+            if (record != null && !document && record.capabilities.trash && record.lifecycleRevision != null && (app == null || !record.capabilities.readTranscript)) {
+                RecordTrashControl(viewer, record, repository, menu = true, onRemoved = onRemoved)
             }
         }) },
         containerColor = MaterialTheme.colorScheme.background) { padding ->
@@ -241,7 +249,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                 edgePadding = Dimens.SpaceS,
                                 containerColor = MaterialTheme.colorScheme.surface,
                             ) {
-                                tabs.forEach { (value, label) -> Tab(selected = value == selectedTab, onClick = { detailTab = value }, text = { Text(stringResource(label)) }) }
+                                tabs.forEach { (value, label) -> Tab(selectedContentColor = MaterialTheme.colorScheme.primary, unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant, selected = value == selectedTab, onClick = { detailTab = value }, text = { Text(stringResource(label)) }) }
                             }
                             if (tabs.size >= 5) Box(Modifier.matchParentSize()) {
                                 EdgeFade(Alignment.CenterEnd, listOf(Color.Transparent, MaterialTheme.colorScheme.surface))
@@ -257,170 +265,166 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         document = false; detailTab = "overview"; selectedVersion = null; selectedHuman = null
                         cursors = listOf(null); tool = null; history = false; citation = null
                     }) { Text(stringResource(R.string.record_overview_back)) }
-                    if (overviewOnly && record.capabilities.readSummary) Column(Modifier.padding(horizontal = Dimens.ScreenPadding)) {
-                        Text(stringResource(R.string.record_overview_hint), style = MaterialTheme.typography.bodySmall)
-                        TextButton(onClick = { document = true; selectedVersion = null; selectedHuman = null; cursors = listOf(null); tool = null; citation = null; history = false }) {
-                            Text(stringResource(R.string.record_overview_open_minutes))
-                        }
-                    }
-                    if (selectedTab == "info") {
-                        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-                            RecordTrashControl(viewer, record, repository, onRemoved)
-                            RecordMediaDownload(repository, viewer, record)
-                            RecordInfo(record, app?.captureRepository, viewer, fullDuration = fullDuration)
-                            if (app != null && onDocument != null) RecordDocuments(viewer, record, app.meetingDeliveryRepository, onDocument, onHumanSource = {
-                                document = true; selectedHuman = it; detailTab = "summary"; tool = null; history = false; citation = null
-                            }) {
-                                document = true; selectedHuman = null; selectedVersion = it; detailTab = "summary"; tool = null; history = false; citation = null
+                    viewStates.SaveableStateProvider(selectedTab) {
+                        if (selectedTab == "info") {
+                            if (record.sourceType == "upload" && record.capabilities.downloadMedia) RecordSurfaceStrip {
+                                RecordMediaDownload(repository, viewer, record)
                             }
-                        }
-                    } else if (selectedTab == "speakers") {
-                        RecordSpeakers(repository, viewer, record, Modifier.weight(1f),
-                            fullDuration = fullDuration, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null)
-                    } else if (showTranslations) {
-                        Column(Modifier.weight(1f).fillMaxWidth()) {
-                            if (record.sourceType == "upload") UploadTranslationPanel(viewer, recordId, requireNotNull(app).uploadTranslationRepository, requireNotNull(exportTranslation), onSource = if (canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null)
-                            else if (record.sourceType == "audio_recording") CaptureTranslationArchives(viewer, requireNotNull(record.captureId), recordId, requireNotNull(app).captureTranslationRepository)
-                            else RecordTranslationArchives(viewer, recordId, requireNotNull(app).translationArchiveRepository)
-                        }
-                    } else if (showOriginals) {
-                        Column(Modifier.weight(1f).fillMaxWidth()) {
-                            // 「转写管理」不再单占一行:它被收进逐字稿工具栏的溢出菜单。
-                            // 弹层由这里作为**兄弟节点**常驻 —— 菜单项一点就随菜单从组合里移除,
-                            // 把状态放在菜单项里的话,打开动作会连同它一起被销毁(踩过一次)。
-                            val canManageTranscription = app != null && record.sourceType == "audio_recording" && record.capabilities.controlCapture
-                            var transcriptionOpen by remember(viewer, recordId) { mutableStateOf(false) }
-                            // 批量查找替换的弹窗也由这里持有 —— 同一类问题:菜单项一点就随菜单
-                            // 从组合里移除,状态放在菜单项里会连同它一起被销毁。
-                            var replacementOpen by remember(viewer, recordId) { mutableStateOf(false) }
-                            val pendingReplacement = visibleRead(viewer, recordId) { repository.pendingReplacement(viewer, recordId) }
-                            LaunchedEffect(pendingReplacement?.getOrNull() != null) { if (pendingReplacement?.getOrNull() != null) replacementOpen = true }
-                            RecordOriginals(repository, viewer, record, followState = transcriptFollow, onRefresh = { refresh++ }, onExport = exportTranscript, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay || canPlayImport },
-                                onWordSource = if (canPlayImport) ({ audioSeek = CaptureAudioSeek(it, preservePlayback = true) }) else null,
-                                // 只给纯文本:菜单项整行可点,套按钮会带出主色和按钮内边距,
-                                // 与旁边几项的普通 Text 既不同色也不同缩进。
-                                transcriptionLabel = if (canManageTranscription) ({ Text(stringResource(R.string.records_transcription_manage)) }) else null,
-                                onManageTranscription = if (canManageTranscription) ({ transcriptionOpen = true }) else null,
-                                replacementLabel = if (record.capabilities.batchCorrect) ({ Text(stringResource(R.string.batch_correction_title)) }) else null,
-                                onManageReplacement = if (record.capabilities.batchCorrect) ({ replacementOpen = true }) else null)
-                            if (transcriptionOpen && canManageTranscription) RecordCaptureToolsSheet(
-                                viewer, record, requireNotNull(app).captureRepository, app.captureTranscriptionRepository,
-                                { app.captureAccount }, onClose = { transcriptionOpen = false; refresh++ })
-                            if (replacementOpen && record.capabilities.batchCorrect) TranscriptReplacementDialog(
-                                repository, viewer, recordId, open = true,
-                                onClose = { replacementOpen = false }, onChanged = { refresh++ })
-                        }
-                    } else if (document && !record.capabilities.readSummary) {
-                        WeMeetEmptyState(stringResource(R.string.records_no_summary_access))
-                    } else if (overviewOnly || chaptersOnly) {
-                        if (app == null) WeMeetEmptyState(stringResource(R.string.records_unavailable))
-                        else RecordOverview(viewer, record, app.meetingSummaryRepository, { app.captureAccount }, Modifier.weight(1f), chaptersOnly = chaptersOnly) { snapshot, ref -> citation = snapshot to ref }
-                    } else if (selectedHuman != null && document && app != null) {
-                        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-                            TextButton(onClick = { selectedHuman = null; selectedVersion = null; citation = null }) { Text(stringResource(R.string.records_all_versions)) }
-                            HumanSummaryRevision(viewer, record, app.meetingReviewRepository, selectedHuman!!) { snapshot, reference -> citation = snapshot to reference }
-                        }
-                    } else {
-                        val cursor = if (overviewOnly) null else cursors.last()
-                        val versionId = if (overviewOnly) null else selectedVersion
-                        val summaries = visibleRead(viewer, recordId, cursor, versionId, refresh) {
-                            repository.summaries(viewer, recordId, if (versionId == null) cursor else null, versionId)
-                        }
-                        if (!overviewOnly && selectedVersion != null) {
-                            Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = Dimens.ScreenPadding)) {
-                                Text(stringResource(R.string.records_linked_version), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                                TextButton(onClick = { selectedVersion = null }) { Text(stringResource(R.string.records_all_versions)) }
-                            }
-                        }
-                        when {
-                            summaries == null -> WeMeetInlineLoading()
-                            summaries.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
-                            else -> {
-                                val versions = summaries.getOrThrow().results
-                                val primary = versions.firstOrNull { it.isCurrent } ?: versions.firstOrNull()
-                                val older = versions.filter { it.id != primary?.id }
-                                // 工具行在正文之上(与 Web 的面板顶部一致):原先它排在 LazyColumn
-                                // 之后、贴着屏幕底,长纪要要滚到底才够得着「问问 AI / 管理纪要」。
-                                // 同时补白底 + 分隔线 —— 它原来没有背景,滚动内容会从它后面穿过去,
-                                // 末行看起来像被裁掉。
-                                // 只有真的会画出按钮时才铺这一条(纪要空态只留空态自带的那颗刷新),
-                                // 否则就是一截没有内容的空白。
-                                val showTools = app != null && versions.isNotEmpty() &&
-                                    (!document || record.capabilities.readTranscript)
-                                if (showTools) RecordSurfaceStrip {
-                                    Row(
-                                        Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                    ) {
-                                        if (document && record.capabilities.readTranscript) TextButton(onClick = { tool = "ask" }, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) { Text(stringResource(R.string.minutes_ask)) }
-                                        if (document) TextButton(onClick = { tool = "manage" }, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) { Text(stringResource(R.string.minutes_manage)) }
-                                        // 还没有纪要时空态自己就带一个「刷新」,工具行再放一个就是同一屏两个同名动作;
-                                        // 有内容时页面每 15 秒也会自动重读,这里只留一份手动刷新。
-                                        if (versions.isNotEmpty()) TextButton(onClick = { refresh++ }, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) { Text(stringResource(R.string.records_refresh)) }
-                                    }
+                            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                                RecordInfo(record, app?.captureRepository, viewer, fullDuration = fullDuration)
+                                if (app != null && onDocument != null) RecordDocuments(viewer, record, app.meetingDeliveryRepository, onDocument, onHumanSource = {
+                                    document = true; selectedHuman = it; detailTab = "summary"; tool = null; history = false; citation = null
+                                }) {
+                                    document = true; selectedHuman = null; selectedVersion = it; detailTab = "summary"; tool = null; history = false; citation = null
                                 }
-                                LazyColumn(
-                                    Modifier.weight(1f).fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
-                                    // 末条与屏幕底之间留出呼吸位:原先最后一行的下沿正好贴着屏底,
-                                    // 加上工具行就在旁边,读起来像被裁了一半。
-                                    contentPadding = PaddingValues(bottom = Dimens.SpaceL),
-                                ) {
-                                    if (primary != null) item(key = primary.id) {
-                                        SummaryCard(primary, record.capabilities.readTranscript, chaptersOnly) { ref -> citation = primary.inputSnapshotId to ref }
-                                    }
-                                    if (versions.isEmpty()) item {
-                                        WeMeetEmptyState(
-                                            stringResource(if (overviewOnly) R.string.record_overview_empty else if (selectedVersion == null) R.string.records_no_versions else R.string.records_linked_version_unavailable),
-                                            description = if (overviewOnly) null else if (selectedVersion == null) stringResource(if (chaptersOnly) R.string.records_chapters_no_version else R.string.records_no_versions_hint) else null,
-                                            action = { TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) } },
-                                        )
-                                    }
-                                    if (!overviewOnly && (older.isNotEmpty() || summaries.getOrThrow().nextCursor != null || cursors.size > 1)) item {
-                                        TextButton(onClick = { history = !history }, modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding)) {
-                                            Text(stringResource(R.string.minutes_history), Modifier.weight(1f))
-                                            Icon(if (history) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null)
+                            }
+                        } else if (selectedTab == "speakers") {
+                            RecordSpeakers(repository, viewer, record, Modifier.weight(1f),
+                                fullDuration = fullDuration, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null)
+                        } else if (showTranslations) {
+                            Column(Modifier.weight(1f).fillMaxWidth()) {
+                                if (record.sourceType == "upload") UploadTranslationPanel(viewer, recordId, requireNotNull(app).uploadTranslationRepository, requireNotNull(exportTranslation), onSource = if (canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null)
+                                else if (record.sourceType == "audio_recording") CaptureTranslationArchives(viewer, requireNotNull(record.captureId), recordId, requireNotNull(app).captureTranslationRepository)
+                                else RecordTranslationArchives(viewer, recordId, requireNotNull(app).translationArchiveRepository)
+                            }
+                        } else if (showOriginals) {
+                            Column(Modifier.weight(1f).fillMaxWidth()) {
+                                // 「转写管理」不再单占一行:它被收进逐字稿工具栏的溢出菜单。
+                                // 弹层由这里作为**兄弟节点**常驻 —— 菜单项一点就随菜单从组合里移除,
+                                // 把状态放在菜单项里的话,打开动作会连同它一起被销毁(踩过一次)。
+                                val canManageTranscription = app != null && record.sourceType == "audio_recording" && record.capabilities.controlCapture
+                                var transcriptionOpen by remember(viewer, recordId) { mutableStateOf(false) }
+                                // 批量查找替换的弹窗也由这里持有 —— 同一类问题:菜单项一点就随菜单
+                                // 从组合里移除,状态放在菜单项里会连同它一起被销毁。
+                                var replacementOpen by remember(viewer, recordId) { mutableStateOf(false) }
+                                val pendingReplacement = visibleRead(viewer, recordId) { repository.pendingReplacement(viewer, recordId) }
+                                LaunchedEffect(pendingReplacement?.getOrNull() != null) { if (pendingReplacement?.getOrNull() != null) replacementOpen = true }
+                                RecordOriginals(repository, viewer, record, followState = transcriptFollow, onRefresh = { refresh++ }, onExport = exportTranscript, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay || canPlayImport },
+                                    onWordSource = if (canPlayImport) ({ audioSeek = CaptureAudioSeek(it, preservePlayback = true) }) else null,
+                                    // 只给纯文本:菜单项整行可点,套按钮会带出主色和按钮内边距,
+                                    // 与旁边几项的普通 Text 既不同色也不同缩进。
+                                    transcriptionLabel = if (canManageTranscription) ({ Text(stringResource(R.string.records_transcription_manage)) }) else null,
+                                    onManageTranscription = if (canManageTranscription) ({ transcriptionOpen = true }) else null,
+                                    replacementLabel = if (record.capabilities.batchCorrect) ({ Text(stringResource(R.string.batch_correction_title)) }) else null,
+                                    onManageReplacement = if (record.capabilities.batchCorrect) ({ replacementOpen = true }) else null)
+                                if (transcriptionOpen && canManageTranscription) RecordCaptureToolsSheet(
+                                    viewer, record, requireNotNull(app).captureRepository, app.captureTranscriptionRepository,
+                                    { app.captureAccount }, onClose = { transcriptionOpen = false; refresh++ })
+                                if (replacementOpen && record.capabilities.batchCorrect) TranscriptReplacementDialog(
+                                    repository, viewer, recordId, open = true,
+                                    onClose = { replacementOpen = false }, onChanged = { refresh++ })
+                            }
+                        } else if (document && !record.capabilities.readSummary) {
+                            WeMeetEmptyState(stringResource(R.string.records_no_summary_access))
+                        } else if (overviewOnly || chaptersOnly) {
+                            if (app == null) WeMeetEmptyState(stringResource(R.string.records_unavailable))
+                            else RecordOverview(viewer, record, app.meetingSummaryRepository, { app.captureAccount }, Modifier.weight(1f), chaptersOnly = chaptersOnly,
+                                onOpenMinutes = if (record.capabilities.readSummary) ({ document = true; selectedVersion = null; selectedHuman = null; cursors = listOf(null); tool = null; citation = null; history = false }) else null,
+                            ) { snapshot, ref -> citation = snapshot to ref }
+                        } else if (selectedHuman != null && document && app != null) {
+                            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                                TextButton(onClick = { selectedHuman = null; selectedVersion = null; citation = null }) { Text(stringResource(R.string.records_all_versions)) }
+                                HumanSummaryRevision(viewer, record, app.meetingReviewRepository, selectedHuman!!) { snapshot, reference -> citation = snapshot to reference }
+                            }
+                        } else {
+                            val cursor = if (overviewOnly) null else cursors.last()
+                            val versionId = if (overviewOnly) null else selectedVersion
+                            val summaries = visibleRead(viewer, recordId, cursor, versionId, refresh) {
+                                repository.summaries(viewer, recordId, if (versionId == null) cursor else null, versionId)
+                            }
+                            if (!overviewOnly && selectedVersion != null) {
+                                Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = Dimens.ScreenPadding)) {
+                                    Text(stringResource(R.string.records_linked_version), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                                    TextButton(onClick = { selectedVersion = null }) { Text(stringResource(R.string.records_all_versions)) }
+                                }
+                            }
+                            when {
+                                summaries == null -> WeMeetInlineLoading()
+                                summaries.isFailure -> WeMeetErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
+                                else -> {
+                                    val versions = summaries.getOrThrow().results
+                                    val primary = versions.firstOrNull { it.isCurrent } ?: versions.firstOrNull()
+                                    val older = versions.filter { it.id != primary?.id }
+                                    // 工具行在正文之上(与 Web 的面板顶部一致):原先它排在 LazyColumn
+                                    // 之后、贴着屏幕底,长纪要要滚到底才够得着「问问 AI / 管理纪要」。
+                                    // 同时补白底 + 分隔线 —— 它原来没有背景,滚动内容会从它后面穿过去,
+                                    // 末行看起来像被裁掉。
+                                    // 只有真的会画出按钮时才铺这一条(纪要空态只留空态自带的那颗刷新),
+                                    // 否则就是一截没有内容的空白。
+                                    val showTools = app != null && versions.isNotEmpty() &&
+                                        (!document || record.capabilities.readTranscript)
+                                    if (showTools) RecordPanelToolbar(buildList {
+                                        if (document && record.capabilities.readTranscript) add(RecordToolAction(stringResource(R.string.minutes_ask)) { tool = "ask" })
+                                        if (document) add(RecordToolAction(stringResource(R.string.minutes_manage)) { tool = "manage" })
+                                        if (versions.isNotEmpty()) add(RecordToolAction(stringResource(R.string.records_refresh)) { refresh++ })
+                                    })
+                                    LazyColumn(
+                                        Modifier.weight(1f).fillMaxWidth(),
+                                        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
+                                        // 末条与屏幕底之间留出呼吸位:原先最后一行的下沿正好贴着屏底,
+                                        // 加上工具行就在旁边,读起来像被裁了一半。
+                                        contentPadding = PaddingValues(bottom = Dimens.SpaceL),
+                                    ) {
+                                        if (primary != null) item(key = primary.id) {
+                                            SummaryCard(primary, record.capabilities.readTranscript, chaptersOnly) { ref -> citation = primary.inputSnapshotId to ref }
                                         }
-                                    }
-                                    if (history && !overviewOnly) {
-                                        items(older, key = { it.id }) { version ->
-                                            SummaryCard(version, record.capabilities.readTranscript, chaptersOnly) { ref -> citation = version.inputSnapshotId to ref }
-                                        }
-                                        item {
-                                            RecordPager(
-                                                hasPrevious = cursors.size > 1,
-                                                onPrevious = { cursors = cursors.dropLast(1) },
-                                                // 钉住某个历史版本时不翻页：那一屏读的是指定快照。
-                                                hasNext = selectedVersion == null && summaries.getOrThrow().nextCursor != null,
-                                                onNext = { summaries.getOrThrow().nextCursor?.let { next -> cursors = cursors + next } },
+                                        if (versions.isEmpty()) item {
+                                            WeMeetEmptyState(
+                                                stringResource(if (overviewOnly) R.string.record_overview_empty else if (selectedVersion == null) R.string.records_no_versions else R.string.records_linked_version_unavailable),
+                                                description = if (overviewOnly) null else if (selectedVersion == null) stringResource(if (chaptersOnly) R.string.records_chapters_no_version else R.string.records_no_versions_hint) else null,
+                                                action = { TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) } },
                                             )
                                         }
-                                    }
-                                }
-                                if (document && app != null && tool != null) ModalBottomSheet(onDismissRequest = { tool = null }) {
-                                    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-                                        Text(stringResource(if (tool == "ask") R.string.minutes_ask else R.string.minutes_manage), style = MaterialTheme.typography.titleLarge)
-                                        if (tool == "ask" && record.capabilities.readTranscript) {
-                                            RecordQuestions(viewer, record, versions, app.meetingQuestionRepository,
-                                                { app.captureAccount }) { snapshot, reference -> citation = snapshot to reference }
-                                        } else {
-                                            if (selectedVersion == null) {
-                                                RecordSummaryControls(viewer, record, app.meetingSummaryRepository) { app.captureAccount }
-                                                RecordHumanSummary(viewer, record, primary, app.meetingReviewRepository,
-                                                    { app.captureAccount }, onTask) { snapshot, reference -> citation = snapshot to reference }
+                                        if (!overviewOnly && (older.isNotEmpty() || summaries.getOrThrow().nextCursor != null || cursors.size > 1)) item {
+                                            TextButton(onClick = { history = !history }, modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding)) {
+                                                Text(stringResource(R.string.minutes_history), Modifier.weight(1f))
+                                                Icon(if (history) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null)
                                             }
-                                            RecordNotifications(viewer, record, app.meetingDeliveryRepository, { app.captureAccount }) { selectedVersion = it; tool = null }
-                                            if (onDocument != null) RecordExports(viewer, record, versions, app.meetingDeliveryRepository,
-                                                app.meetingReviewRepository, { app.captureAccount }, onDocument)
                                         }
-                                        TextButton(onClick = { tool = null }) { Text(stringResource(R.string.minutes_close_tools)) }
+                                        if (history && !overviewOnly) {
+                                            items(older, key = { it.id }) { version ->
+                                                SummaryCard(version, record.capabilities.readTranscript, chaptersOnly) { ref -> citation = version.inputSnapshotId to ref }
+                                            }
+                                            item {
+                                                RecordPager(
+                                                    hasPrevious = cursors.size > 1,
+                                                    onPrevious = { cursors = cursors.dropLast(1) },
+                                                    // 钉住某个历史版本时不翻页：那一屏读的是指定快照。
+                                                    hasNext = selectedVersion == null && summaries.getOrThrow().nextCursor != null,
+                                                    onNext = { summaries.getOrThrow().nextCursor?.let { next -> cursors = cursors + next } },
+                                                )
+                                            }
+                                        }
+                                    }
+                                    if (document && app != null && tool != null) ModalBottomSheet(onDismissRequest = { tool = null }) {
+                                        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                                            Text(stringResource(if (tool == "ask") R.string.minutes_ask else R.string.minutes_manage), style = MaterialTheme.typography.titleLarge)
+                                            if (tool == "ask" && record.capabilities.readTranscript) {
+                                                RecordQuestions(viewer, record, versions, app.meetingQuestionRepository,
+                                                    { app.captureAccount }) { snapshot, reference -> citation = snapshot to reference }
+                                            } else {
+                                                if (selectedVersion == null) {
+                                                    RecordSummaryControls(viewer, record, app.meetingSummaryRepository) { app.captureAccount }
+                                                    RecordHumanSummary(viewer, record, primary, app.meetingReviewRepository,
+                                                        { app.captureAccount }, onTask) { snapshot, reference -> citation = snapshot to reference }
+                                                }
+                                                RecordNotifications(viewer, record, app.meetingDeliveryRepository, { app.captureAccount }) { selectedVersion = it; tool = null }
+                                                if (onDocument != null) RecordExports(viewer, record, versions, app.meetingDeliveryRepository,
+                                                    app.meetingReviewRepository, { app.captureAccount }, onDocument)
+                                            }
+                                            TextButton(onClick = { tool = null }) { Text(stringResource(R.string.minutes_close_tools)) }
+                                        }
                                     }
                                 }
                             }
+                            if (app == null || summaries?.isSuccess != true) TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
                         }
-                        if (app == null || summaries?.isSuccess != true) TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
                     }
                 }
+            }
+            if (record != null && !document && record.capabilities.trash) trashSelection?.let { selected ->
+                RecordLifecycleConfirmation(viewer, selected, repository, "trashed",
+                    { trashSelection = null }) { trashSelection = null; onRemoved() }
             }
             if (detail?.isSuccess == true && record?.capabilities?.readTranscript == true) citation?.let { (snapshot, reference) ->
                 val original = visibleRead(viewer, recordId, snapshot, reference, refresh) { repository.citation(viewer, recordId, snapshot, reference) }
@@ -441,12 +445,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     }
 }
 
-/**
- * 页面头部动作条的白底 + 分隔线。
- *
- * 只给「纪要工具行」用(问问 AI / 管理纪要 / 刷新):分享与协作者管理已经收进顶栏的
- * 三点菜单,不再需要同款外壳。
- */
+/** Surface and divider for the fixed record-information download action. */
 @Composable
 private fun RecordSurfaceStrip(content: @Composable () -> Unit) {
     Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {

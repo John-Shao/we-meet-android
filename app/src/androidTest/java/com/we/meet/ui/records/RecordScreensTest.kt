@@ -377,7 +377,7 @@ class RecordScreensTest {
                 compose.mainClock.advanceTimeBy(32)
                 val after = list.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
                 assertNotEquals("Return must be tested while inertia is still moving the list", before, after)
-                compose.onNodeWithText(label(R.string.records_back_to_playback)).performClick()
+                compose.onNodeWithContentDescription(label(R.string.records_back_to_playback)).performClick()
             } finally {
                 compose.mainClock.autoAdvance = true
             }
@@ -402,7 +402,7 @@ class RecordScreensTest {
         compose.onNode(hasScrollAction()).performTouchInput {
             if (positionMs == 20_000L) swipeDown(durationMillis = 500) else swipeUp(durationMillis = 500)
         }
-        compose.onNodeWithText(label(R.string.records_back_to_playback)).assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription(label(R.string.records_back_to_playback)).assertIsDisplayed().performClick()
         compose.onNodeWithText(target).assertIsDisplayed()
         compose.onNode(hasScrollAction()).performTouchInput { swipeDown(durationMillis = 500) }
         compose.runOnIdle {
@@ -429,6 +429,22 @@ class RecordScreensTest {
         compose.runOnIdle { assertFalse(follow.following); assertEquals(0L, fixture.originalAnchors.last()) }
     }
 
+    @Test fun switchingDetailTabsRetainsTranscriptSearch() {
+        val fixture = Fixture()
+        val repository = MeetingRecordRepository(fixture) { "reader" }
+        compose.setContent { WeMeetTheme { RecordDetailScreen(repository, "reader", recordId, {}) } }
+        awaitText("Full original text")
+        compose.onNodeWithText(label(R.string.records_search_originals)).performClick()
+        compose.onNodeWithText(label(R.string.records_search_originals)).performTextInput("Search")
+        compose.onNodeWithText(label(R.string.records_search_originals)).performImeAction()
+        awaitText("Search matched original")
+        compose.onNodeWithText(label(R.string.records_info)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.records_originals)).performScrollTo().performClick()
+        awaitText("Search matched original")
+        compose.onNodeWithText("Search").assertIsDisplayed()
+        compose.runOnIdle { assertEquals("Search", fixture.originalQueries.last().first) }
+    }
+
     @Test fun returnToPlaybackClearsSearchEvenWhilePaused() {
         val fixture = Fixture()
         val repository = MeetingRecordRepository(fixture) { "reader" }
@@ -453,7 +469,7 @@ class RecordScreensTest {
         awaitText("Search matched original")
         compose.runOnIdle { assertFalse(follow.following) }
         compose.mainClock.advanceTimeBy(10_000)
-        compose.onNodeWithText(label(R.string.records_back_to_playback)).assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription(label(R.string.records_back_to_playback)).assertIsDisplayed().performClick()
         awaitText("Full original text")
         compose.runOnIdle {
             assertTrue(follow.following)
@@ -478,10 +494,10 @@ class RecordScreensTest {
         compose.onNodeWithText(label(R.string.records_correction_edit)).performClick()
         compose.onNodeWithText("Full original text").performTextReplacement("Keep this draft")
         compose.runOnIdle { follow.resume(); assertFalse(follow.following) }
-        compose.onNodeWithText(label(R.string.records_back_to_playback)).assertIsNotEnabled()
+        compose.onNodeWithContentDescription(label(R.string.records_back_to_playback)).assertIsNotEnabled()
         compose.onNodeWithText("Keep this draft").assertIsDisplayed()
         compose.onNodeWithText(label(R.string.records_correction_cancel)).performClick()
-        compose.onNodeWithText(label(R.string.records_back_to_playback)).assertIsEnabled().performClick()
+        compose.onNodeWithContentDescription(label(R.string.records_back_to_playback)).assertIsEnabled().performClick()
         compose.runOnIdle { assertTrue(follow.following) }
     }
 

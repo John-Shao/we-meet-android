@@ -1,0 +1,5 @@
+<resources>
+    <string name="records_panel_actions">更多面板操作</string>
+    <string name="records_translation_language">翻译语言</string>
+    <string name="records_export_translation">导出译文（%1$s）</string>
+</resources>

@@ -28,6 +28,7 @@ internal fun RecordPlaybackActionsSheet(
     onSpeakers: (() -> Unit)? = null,
     onTranslations: (() -> Unit)? = null,
     onInfo: (() -> Unit)? = null,
+    onTrash: (() -> Unit)? = null,
 ) {
     ModalBottomSheet(onDismissRequest = onClose,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -54,6 +55,15 @@ internal fun RecordPlaybackActionsSheet(
                     onSpeakers?.let { PlaybackAction(Icons.Outlined.RecordVoiceOver, stringResource(R.string.records_speakers), it) }
                     onTranslations?.let { PlaybackAction(Icons.Outlined.Translate, stringResource(R.string.archives_title), it) }
                     onInfo?.let { PlaybackAction(Icons.Outlined.Info, stringResource(R.string.records_info), it) }
+                    onTrash?.let { action ->
+                        HorizontalDivider()
+                        TextButton(onClick = action, modifier = Modifier.fillMaxWidth().heightIn(min = Dimens.MinTouchTarget),
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
+                            Icon(Icons.Outlined.DeleteOutline, null)
+                            Spacer(Modifier.width(Dimens.SpaceS))
+                            Text(stringResource(R.string.record_trash_remove))
+                        }
+                    }
                 }
             }
         }

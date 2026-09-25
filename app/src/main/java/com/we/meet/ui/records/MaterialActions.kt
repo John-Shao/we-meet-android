@@ -58,6 +58,7 @@ internal fun RecordHeaderMenu(
     onSpeakers: (() -> Unit)? = null,
     onTranslations: (() -> Unit)? = null,
     onInfo: (() -> Unit)? = null,
+    onTrash: (() -> Unit)? = null,
 ) {
     var menu by remember { mutableStateOf(false) }
     Box {
@@ -79,6 +80,7 @@ internal fun RecordHeaderMenu(
             onSpeakers = onSpeakers,
             onTranslations = onTranslations,
             onInfo = onInfo,
+            onTrash = onTrash,
         )
     }
 }

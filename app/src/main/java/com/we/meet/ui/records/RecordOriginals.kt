@@ -2,6 +2,8 @@
 
 package com.we.meet.ui.records
 
+import androidx.compose.runtime.saveable.rememberSaveable
+
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.DropdownMenu
@@ -91,14 +94,14 @@ internal fun RecordOriginals(
     onManageReplacement: (() -> Unit)? = null,
     followState: TranscriptFollowState = remember(viewer, record.id) { TranscriptFollowState() },
 ) {
-    var input by remember(viewer, record.id) { mutableStateOf("") }
-    var query by remember(viewer, record.id) { mutableStateOf("") }
-    var searchVisible by remember(viewer, record.id) { mutableStateOf(false) }
+    var input by rememberSaveable(viewer, record.id) { mutableStateOf("") }
+    var query by rememberSaveable(viewer, record.id) { mutableStateOf("") }
+    var searchVisible by rememberSaveable(viewer, record.id) { mutableStateOf(false) }
     var actionsVisible by remember(viewer, record.id) { mutableStateOf(false) }
-    var speakerId by remember(viewer, record.id, record.revision) { mutableStateOf<String?>(null) }
+    var speakerId by rememberSaveable(viewer, record.id, record.revision) { mutableStateOf<String?>(null) }
     var selectSpeaker by remember(viewer, record.id, record.revision) { mutableStateOf(false) }
-    var cursors by remember(viewer, record.id, record.revision, query, speakerId) { mutableStateOf(listOf<String?>(null)) }
-    var anchorMs by remember(viewer, record.id, record.revision) { mutableStateOf(0L) }
+    var cursors by rememberSaveable(viewer, record.id, record.revision, query, speakerId) { mutableStateOf(listOf<String?>(null)) }
+    var anchorMs by rememberSaveable(viewer, record.id, record.revision) { mutableStateOf(0L) }
     val following = followState.following
     LaunchedEffect(followState.resumeToken) {
         if (followState.resumeToken > 0) {
@@ -175,11 +178,13 @@ internal fun RecordOriginals(
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(
                     onClick = { followState.following = false; searchVisible = !searchVisible; if (!searchVisible) { input = ""; query = ""; keyboard?.hide() } },
-                    modifier = Modifier.heightIn(min = Dimens.MinTouchTarget),
+                    modifier = Modifier.weight(1f).heightIn(min = Dimens.MinTouchTarget),
                 ) {
-                    Text(stringResource(if (searchVisible) R.string.records_clear_search else R.string.records_search_originals))
+                    Text(stringResource(if (searchVisible) R.string.records_clear_search else R.string.records_search_originals), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
-                Spacer(Modifier.weight(1f))
+                if (positionMs != null) IconButton(onClick = { followState.resume() }, enabled = !editing && !following) {
+                    Icon(Icons.Outlined.MyLocation, stringResource(R.string.records_back_to_playback))
+                }
                 Box {
                     IconButton(
                         onClick = { actionsVisible = true },
@@ -214,11 +219,6 @@ internal fun RecordOriginals(
                 }
             }
         }
-        if (positionMs != null && !following) TextButton(
-            onClick = { followState.resume() },
-            enabled = !editing,
-            modifier = Modifier.heightIn(min = Dimens.MinTouchTarget),
-        ) { Text(stringResource(R.string.records_back_to_playback)) }
         Column(Modifier.weight(1f).fillMaxWidth()) {
             when {
                 page == null -> WeMeetInlineLoading()

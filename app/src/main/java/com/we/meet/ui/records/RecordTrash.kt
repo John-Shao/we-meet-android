@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -23,17 +24,23 @@ import kotlinx.coroutines.launch
 import retrofit2.HttpException
 
 @Composable
-internal fun RecordTrashControl(viewer: String, record: RecordDto, repository: MeetingRecordRepository, onRemoved: () -> Unit) {
+internal fun RecordTrashControl(viewer: String, record: RecordDto, repository: MeetingRecordRepository, menu: Boolean = false, onRemoved: () -> Unit) {
     if (!record.capabilities.trash || record.lifecycleRevision == null) return
     key(viewer, record.id) {
         var selected by remember { mutableStateOf<RecordLifecycleDto?>(null) }
-        // 破坏性动作走共享的 `DangerButton`(设计规范 §7「破坏性操作用 DangerButton
-        // 且有二次确认」)。此前是一颗中性色 `TextButton`,和相邻的「上一页」长得
-        // 一模一样 —— 误点的代价是记录被移出正常库。
-        DangerButton(
-            text = stringResource(R.string.record_trash_remove),
-            onClick = { selected = RecordLifecycleDto(record.id, record.title, record.sourceType, null, record.lifecycleRevision) },
-        )
+        val choose = { selected = RecordLifecycleDto(record.id, record.title, record.sourceType, null, record.lifecycleRevision) }
+        if (menu) {
+            var expanded by remember { mutableStateOf(false) }
+            Box {
+                IconButton(onClick = { expanded = true }) {
+                    Icon(androidx.compose.material.icons.Icons.Outlined.MoreVert, stringResource(R.string.records_page_actions))
+                }
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.record_trash_remove), color = MaterialTheme.colorScheme.error) },
+                        onClick = { expanded = false; choose() })
+                }
+            }
+        } else DangerButton(text = stringResource(R.string.record_trash_remove), onClick = choose)
         selected?.let { item -> RecordLifecycleConfirmation(viewer, item, repository, "trashed", { selected = null }) { selected = null; onRemoved() } }
     }
 }

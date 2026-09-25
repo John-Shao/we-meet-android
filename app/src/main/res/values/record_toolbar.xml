@@ -1,0 +1,5 @@
+<resources>
+    <string name="records_panel_actions">More panel actions</string>
+    <string name="records_translation_language">Translation language</string>
+    <string name="records_export_translation">Export translation (%1$s)</string>
+</resources>

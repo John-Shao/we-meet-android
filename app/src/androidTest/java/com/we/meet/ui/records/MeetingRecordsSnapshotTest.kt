@@ -252,11 +252,22 @@ class MeetingRecordsSnapshotTest {
 
     @Test fun recordDetailInfo() {
         compose.setContent { SnapshotTheme { RecordDetailScreen(repository(), viewer, uuid(1), {}) } }
-        compose.onNodeWithText(label(R.string.records_info)).performClick()
+        compose.onNodeWithText(label(R.string.records_info)).performScrollTo().performClick()
         shot("60-record-info")
     }
 
     /** 说话人 tab 只对本地录音/导入件出现(线上会议没有独立说话人端点)。 */
+    @Test fun recordToolsNarrowLargeText() {
+        val item = catalogue[2].copy(capabilities = RecordCapabilitiesDto(readTranscript = true, readSummary = true, downloadMedia = true, trash = true), lifecycleRevision = 2)
+        compose.setContent { SnapshotTheme(largeText = true) { RecordDetailScreen(MeetingRecordRepository(FakeApi(listOf(item)), { viewer }), viewer, item.id, {}) } }
+        compose.onNodeWithText(label(R.string.records_info)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.record_media_download)).assertIsDisplayed()
+        shot("62-record-tools-narrow")
+        compose.onNodeWithContentDescription(label(R.string.records_page_actions)).performClick()
+        compose.onNodeWithText(label(R.string.record_trash_remove)).assertIsDisplayed()
+        shot("63-record-page-menu", windows = true)
+    }
+
     @Test fun recordDetailSpeakers() {
         compose.setContent { SnapshotTheme { RecordDetailScreen(repository(), viewer, uuid(2), {}) } }
         compose.onNodeWithText(label(R.string.records_speakers)).performClick()

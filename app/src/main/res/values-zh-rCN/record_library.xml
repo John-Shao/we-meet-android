@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="records_filter_speaker">按发言人筛选</string>
-    <string name="records_info">录音信息</string>
+    <string name="records_info">记录信息</string>
     <string name="records_start_time">开始时间</string>
     <string name="records_retention">留存方式</string>
     <string name="records_retention_media">保留音频或视频</string>

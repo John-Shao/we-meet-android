@@ -1,9 +1,14 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.we.meet.ui.records
+
+import androidx.compose.runtime.saveable.rememberSaveable
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -19,8 +24,8 @@ import retrofit2.HttpException
 @Composable
 internal fun UploadTranslationPanel(viewer: String, record: String, repository: UploadTranslationRepository,
     onExport: (String, String) -> Unit, onSource: ((Long) -> Unit)? = null) {
-    var target by remember(viewer, record) { mutableStateOf("en") }
-    var page by remember(viewer, record, target) { mutableIntStateOf(0) }
+    var target by rememberSaveable(viewer, record) { mutableStateOf("en") }
+    var page by rememberSaveable(viewer, record, target) { mutableIntStateOf(0) }
     var refresh by remember(viewer, record) { mutableIntStateOf(0) }
     var intent by remember(viewer, record) { mutableStateOf<UploadTranslationRequestDto?>(null) }
     var saving by remember { mutableStateOf(false) }
@@ -32,65 +37,84 @@ internal fun UploadTranslationPanel(viewer: String, record: String, repository: 
     val data = listing.getOrThrow()
     val selected = data.results.firstOrNull { it.target == target }
     val active = data.results.any { it.status in setOf("queued", "running") }
-    Column(Modifier.fillMaxSize().padding(horizontal = Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-        Text(stringResource(R.string.upload_translation_description), style = MaterialTheme.typography.bodySmall)
-        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-            listOf("en", "zh").forEach { language ->
-                FilterChip(selected = target == language, enabled = !saving && intent == null, onClick = { target = language; message = null }, label = { Text(archiveLanguage(language)) })
+    val detail = visibleRead(viewer, record, selected?.id, page, refresh, selected?.status) {
+        if (selected?.status == "succeeded") repository.detail(viewer, record, selected.id, page)
+        else Result.failure(IllegalStateException("no translation"))
+    }
+    val translated = detail?.getOrNull().takeIf { selected?.status == "succeeded" }
+    val stale = selected?.stale == true || translated?.stale == true
+    var languagesOpen by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize()) {
+        RecordPanelToolbar(buildList {
+            if (data.canGenerate && (intent != null || selected == null || selected.status != "succeeded" || stale)) {
+                add(RecordToolAction(stringResource(if (intent != null) R.string.upload_translation_check else if (selected != null) R.string.upload_translation_regenerate else R.string.upload_translation_generate), !saving && (!active || intent != null)) {
+                    if (!saving) {
+                        val request = intent ?: UploadTranslationRequestDto(UUID.randomUUID().toString(), target, data.revision)
+                        intent = request; saving = true; message = null
+                        scope.launch {
+                            try {
+                                val result = repository.generate(viewer, record, request)
+                                val error = result.exceptionOrNull()
+                                if (result.isSuccess) { intent = null; page = 0 }
+                                else if (error is HttpException && error.code() in setOf(400, 403, 404, 409, 429)) {
+                                    intent = null; message = if (error.code() == 400) R.string.upload_translation_budget else R.string.upload_translation_conflict
+                                } else message = R.string.upload_translation_uncertain
+                                refresh++
+                            } finally { saving = false }
+                        }
+                    }
+                })
             }
-        }
-        if (data.canGenerate && (intent != null || selected == null || selected.status != "succeeded" || selected.stale)) {
-            Button(enabled = !saving && (!active || intent != null), onClick = {
-                if (!saving) {
-                    val request = intent ?: UploadTranslationRequestDto(UUID.randomUUID().toString(), target, data.revision)
-                    intent = request; saving = true; message = null
-                    scope.launch {
-                        try {
-                            val result = repository.generate(viewer, record, request)
-                            val error = result.exceptionOrNull()
-                            if (result.isSuccess) { intent = null; page = 0 }
-                            else if (error is HttpException && error.code() in setOf(400, 403, 404, 409, 429)) {
-                                intent = null; message = if (error.code() == 400) R.string.upload_translation_budget else R.string.upload_translation_conflict
-                            } else message = R.string.upload_translation_uncertain
-                            refresh++
-                        } finally { saving = false }
+            if (selected != null && translated != null && !stale) listOf("txt", "srt", "vtt").forEach { format ->
+                add(RecordToolAction(stringResource(R.string.records_export_translation, format.uppercase())) { onExport(selected.id, format) })
+            }
+            add(RecordToolAction(stringResource(R.string.records_refresh), !saving) { refresh++ })
+        }, showPrimaryWithLeading = data.canGenerate && (intent != null || selected == null || selected.status != "succeeded" || stale), leading = {
+            TextButton(onClick = { languagesOpen = true }, enabled = !saving && intent == null, modifier = Modifier.weight(1f)) {
+                Text(archiveLanguage(target), maxLines = 1)
+                Icon(androidx.compose.material.icons.Icons.Outlined.ExpandMore, stringResource(R.string.records_translation_language))
+            }
+        })
+        if (languagesOpen) ModalBottomSheet(onDismissRequest = { languagesOpen = false }) {
+            Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding)) {
+                Text(stringResource(R.string.records_translation_language), style = MaterialTheme.typography.titleMedium)
+                listOf("en", "zh").forEach { language ->
+                    TextButton(onClick = { target = language; message = null; languagesOpen = false }, modifier = Modifier.fillMaxWidth()) {
+                        Text(archiveLanguage(language))
                     }
                 }
-            }) { Text(stringResource(if (intent != null) R.string.upload_translation_check else if (selected != null) R.string.upload_translation_regenerate else R.string.upload_translation_generate)) }
+            }
         }
-        message?.let { Text(stringResource(it)) }
-        if (selected == null) { WeMeetEmptyState(stringResource(R.string.upload_translation_empty)); return@Column }
-        Text(stringResource(uploadTranslationStatus(selected.status)))
-        if (active) LinearProgressIndicator(progress = { selected.completedChunks.toFloat() / selected.totalChunks }, modifier = Modifier.fillMaxWidth())
-        if (selected.stale) Text(stringResource(R.string.upload_translation_stale))
-        if (selected.status == "succeeded") {
-            val detail = visibleRead(viewer, record, selected.id, page, refresh) { repository.detail(viewer, record, selected.id, page) }
-            when {
-                detail == null -> WeMeetInlineLoading()
-                detail.isFailure -> WeMeetInlineErrorState({ refresh++ })
-                else -> {
-                    val translated = detail.getOrThrow()
-                    val stale = selected.stale || translated.stale
-                    if (translated.stale && !selected.stale) Text(stringResource(R.string.upload_translation_stale))
-                    if (!stale) Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                        listOf("txt", "srt", "vtt").forEach { format ->
-                            TextButton(onClick = { onExport(selected.id, format) }) { Text(format.uppercase()) }
-                        }
-                    }
-                    LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-                        items(translated.results, key = { it.segmentId }) { row ->
-                            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
-                                Text("${row.speakerName} · ${sourceTime(row.startMs)}", style = MaterialTheme.typography.labelMedium)
-                                if (onSource != null && !stale) TextButton(onClick = { onSource(row.startMs) }) { Text(stringResource(R.string.upload_translation_play)) }
-                                Text(stringResource(R.string.upload_translation_original, row.text), style = MaterialTheme.typography.bodySmall)
-                                Text(row.translatedText)
-                                HorizontalDivider()
+        Column(Modifier.weight(1f).padding(horizontal = Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+            Text(stringResource(R.string.upload_translation_description), style = MaterialTheme.typography.bodySmall)
+            message?.let { Text(stringResource(it)) }
+            if (selected == null) { WeMeetEmptyState(stringResource(R.string.upload_translation_empty)); return@Column }
+            Text(stringResource(uploadTranslationStatus(selected.status)))
+            if (active) LinearProgressIndicator(progress = { selected.completedChunks.toFloat() / selected.totalChunks }, modifier = Modifier.fillMaxWidth())
+            if (selected.stale) Text(stringResource(R.string.upload_translation_stale))
+            if (selected.status == "succeeded") {
+                when {
+                    detail == null -> WeMeetInlineLoading()
+                    detail.isFailure -> WeMeetInlineErrorState({ refresh++ })
+                    else -> {
+                        val translated = requireNotNull(translated)
+                        val stale = selected.stale || translated.stale
+                        if (translated.stale && !selected.stale) Text(stringResource(R.string.upload_translation_stale))
+                        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                            items(translated.results, key = { it.segmentId }) { row ->
+                                Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+                                    Text("${row.speakerName} · ${sourceTime(row.startMs)}", style = MaterialTheme.typography.labelMedium)
+                                    if (onSource != null && !stale) TextButton(onClick = { onSource(row.startMs) }) { Text(stringResource(R.string.upload_translation_play)) }
+                                    Text(stringResource(R.string.upload_translation_original, row.text), style = MaterialTheme.typography.bodySmall)
+                                    Text(row.translatedText)
+                                    HorizontalDivider()
+                                }
                             }
-                        }
-                        item {
-                            Row {
-                                if (page > 0) TextButton(onClick = { page-- }) { Text(stringResource(R.string.records_previous)) }
-                                translated.nextPage?.let { next -> TextButton(onClick = { page = next }) { Text(stringResource(R.string.records_next)) } }
+                            item {
+                                Row {
+                                    if (page > 0) TextButton(onClick = { page-- }) { Text(stringResource(R.string.records_previous)) }
+                                    translated.nextPage?.let { next -> TextButton(onClick = { page = next }) { Text(stringResource(R.string.records_next)) } }
+                                }
                             }
                         }
                     }

@@ -58,6 +58,7 @@ internal fun RecordMenuContent(
     onSpeakers: (() -> Unit)? = null,
     onTranslations: (() -> Unit)? = null,
     onInfo: (() -> Unit)? = null,
+    onTrash: (() -> Unit)? = null,
 ) {
     val repository = app.meetingRecordRepository
     var panel by remember { mutableStateOf<String?>(null) }
@@ -73,6 +74,7 @@ internal fun RecordMenuContent(
             onSpeakers = onSpeakers?.let { action -> { onDismiss(); action() } },
             onTranslations = onTranslations?.let { action -> { onDismiss(); action() } },
             onInfo = onInfo?.let { action -> { onDismiss(); action() } },
+            onTrash = onTrash?.let { action -> { onDismiss(); action() } },
         )
     } else DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
         if (allowRename && canRenameRecord(record)) {

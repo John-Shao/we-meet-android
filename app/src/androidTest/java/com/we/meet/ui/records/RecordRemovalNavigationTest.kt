@@ -72,9 +72,12 @@ class RecordRemovalNavigationTest {
         } }
         compose.runOnIdle { nav.navigate(parent); nav.navigate("detail") }
         click(R.string.records_info)
+        compose.onNodeWithText(context.getString(R.string.record_trash_remove)).assertDoesNotExist()
+        compose.onNodeWithContentDescription(context.getString(R.string.records_page_actions)).performClick()
         click(R.string.record_trash_remove)
         click(R.string.record_trash_cancel)
         compose.runOnIdle { assertEquals(0, writes); assertEquals("detail", nav.currentDestination?.route) }
+        compose.onNodeWithContentDescription(context.getString(R.string.records_page_actions)).performClick()
         click(R.string.record_trash_remove)
         click(R.string.record_trash_confirm_remove)
         compose.waitUntil(8000) { compose.onAllNodesWithText("Library fixture").fetchSemanticsNodes().isNotEmpty() }

@@ -35,7 +35,7 @@ import retrofit2.HttpException
 
 /** Own endpoint and durable intent; no minutes content or minutes generation. */
 @Composable
-internal fun RecordOverview(viewer: String, record: RecordDto, repository: MeetingSummaryRepository, currentViewer: () -> String?, modifier: Modifier = Modifier, chaptersOnly: Boolean = false, onSource: (String, RecordReferenceDto) -> Unit) {
+internal fun RecordOverview(viewer: String, record: RecordDto, repository: MeetingSummaryRepository, currentViewer: () -> String?, modifier: Modifier = Modifier, chaptersOnly: Boolean = false, onOpenMinutes: (() -> Unit)? = null, onSource: (String, RecordReferenceDto) -> Unit) {
     val context = LocalContext.current.applicationContext
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
@@ -101,45 +101,47 @@ internal fun RecordOverview(viewer: String, record: RecordDto, repository: Meeti
             }
         }
     }
-    Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-        when {
-            read == null -> WeMeetInlineLoading()
-            state == null -> WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
-            else -> {
-                if (state.canGenerate) {
-                    val canClick = controller != null && !storageError && !busy
-                    if (pending) Button(onClick = { submit("generate") }, enabled = canClick) { Text(stringResource(R.string.record_overview_resubmit)) }
-                    else {
-                        Button(onClick = { submit(if (job == null) "generate" else "regenerate") }, enabled = canClick && state.generationReady && !active) {
-                            Text(stringResource(if (job == null) R.string.record_overview_generate else R.string.record_overview_regenerate))
-                        }
-                        if (job?.retryable == true && !active) TextButton(onClick = { submit("retry") }, enabled = canClick && state.generationReady) { Text(stringResource(R.string.record_overview_retry)) }
-                    }
-                    if (!state.generationReady) Text(stringResource(R.string.record_overview_wait_source), style = MaterialTheme.typography.bodySmall)
+    Column(modifier.fillMaxWidth()) {
+        RecordPanelToolbar(buildList {
+            if (state?.canGenerate == true) {
+                val canClick = controller != null && !storageError && !busy
+                add(RecordToolAction(stringResource(if (pending) R.string.record_overview_resubmit else if (job == null) R.string.record_overview_generate else R.string.record_overview_regenerate),
+                    canClick && (pending || state.generationReady && !active)) { submit(if (job == null) "generate" else "regenerate") })
+                if (job?.retryable == true && !active && !pending) add(RecordToolAction(stringResource(R.string.record_overview_retry), canClick && state.generationReady) { submit("retry") })
+            }
+            onOpenMinutes?.let { add(RecordToolAction(stringResource(R.string.record_overview_open_minutes), onClick = it)) }
+            add(RecordToolAction(stringResource(R.string.records_refresh)) { refresh++ })
+        })
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+            Text(stringResource(R.string.record_overview_hint), style = MaterialTheme.typography.bodySmall)
+            when {
+                read == null -> WeMeetInlineLoading()
+                state == null -> WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
+                else -> {
+                    if (state.canGenerate && !state.generationReady) Text(stringResource(R.string.record_overview_wait_source), style = MaterialTheme.typography.bodySmall)
                     if (storageError) WeMeetInlineErrorState(onRetry = { storageRetry++ }, message = stringResource(R.string.record_overview_storage_error))
-                }
-                if (active) Text(stringResource(R.string.record_overview_generating))
-                if (job?.status in setOf("failed", "canceled")) Text(stringResource(R.string.record_overview_failed))
-                message?.let { Text(stringResource(it)) }
-                if (!state.available) Text(stringResource(R.string.record_overview_unavailable))
-                val version = state.version
-                if (version == null) WeMeetInlineEmptyState(stringResource(R.string.record_overview_empty))
-                else {
-                    Text(stringResource(R.string.minutes_generated_at, recordTime(version.createdAt)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (!version.isCurrent) Text(stringResource(R.string.record_overview_source_changed), style = MaterialTheme.typography.bodySmall)
-                    if (version.asrStatus == "incomplete") Text(stringResource(R.string.records_incomplete), style = MaterialTheme.typography.bodySmall)
-                    if (!chaptersOnly) Text(version.content.synopsis, style = MaterialTheme.typography.bodyLarge)
-                    version.content.topics.forEach { topic ->
-                        Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                            Text(topic.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                            Text(topic.text, style = MaterialTheme.typography.bodyLarge)
-                            if (record.capabilities.readTranscript) topic.sourceRefs.forEach { ref ->
-                                TextButton(onClick = { onSource(version.inputSnapshotId, ref) }) { Text(stringResource(R.string.records_source_at, sourceTime(ref.startMs))) }
+                    if (active) Text(stringResource(R.string.record_overview_generating))
+                    if (job?.status in setOf("failed", "canceled")) Text(stringResource(R.string.record_overview_failed))
+                    message?.let { Text(stringResource(it)) }
+                    if (!state.available) Text(stringResource(R.string.record_overview_unavailable))
+                    val version = state.version
+                    if (version == null) WeMeetInlineEmptyState(stringResource(R.string.record_overview_empty))
+                    else {
+                        Text(stringResource(R.string.minutes_generated_at, recordTime(version.createdAt)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (!version.isCurrent) Text(stringResource(R.string.record_overview_source_changed), style = MaterialTheme.typography.bodySmall)
+                        if (version.asrStatus == "incomplete") Text(stringResource(R.string.records_incomplete), style = MaterialTheme.typography.bodySmall)
+                        if (!chaptersOnly) Text(version.content.synopsis, style = MaterialTheme.typography.bodyLarge)
+                        version.content.topics.forEach { topic ->
+                            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                                Text(topic.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                                Text(topic.text, style = MaterialTheme.typography.bodyLarge)
+                                if (record.capabilities.readTranscript) topic.sourceRefs.forEach { ref ->
+                                    TextButton(onClick = { onSource(version.inputSnapshotId, ref) }) { Text(stringResource(R.string.records_source_at, sourceTime(ref.startMs))) }
+                                }
                             }
                         }
                     }
                 }
-                TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
             }
         }
     }
