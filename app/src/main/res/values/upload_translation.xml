@@ -15,4 +15,9 @@
     <string name="upload_translation_failed">Translation failed. You can start a new attempt.</string>
     <string name="upload_translation_canceled">Source or access changed. Refresh before translating again.</string>
     <string name="upload_translation_original">Original: %1$s</string>
+    <string name="upload_translation_show_original">Show original</string>
+    <string name="upload_translation_info">About translation</string>
+    <string name="upload_translation_generation_hint">Generating translations may incur AI usage. Failed tasks can be retried manually.</string>
+    <string name="upload_translation_current_segment">Current segment</string>
+    <string name="upload_translation_unknown_speaker">Unknown speaker</string>
 </resources>

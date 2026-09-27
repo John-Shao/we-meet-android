@@ -283,7 +283,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                 fullDuration = fullDuration, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null)
                         } else if (showTranslations) {
                             Column(Modifier.weight(1f).fillMaxWidth()) {
-                                if (record.sourceType == "upload") UploadTranslationPanel(viewer, recordId, requireNotNull(app).uploadTranslationRepository, requireNotNull(exportTranslation), onSource = if (canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null)
+                                if (record.sourceType == "upload") UploadTranslationPanel(viewer, recordId, requireNotNull(app).uploadTranslationRepository, requireNotNull(exportTranslation), onSource = if (canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlayImport })
                                 else if (record.sourceType == "audio_recording") CaptureTranslationArchives(viewer, requireNotNull(record.captureId), recordId, requireNotNull(app).captureTranslationRepository)
                                 else RecordTranslationArchives(viewer, recordId, requireNotNull(app).translationArchiveRepository)
                             }

@@ -5,14 +5,28 @@ package com.we.meet.ui.records
 import androidx.compose.runtime.saveable.rememberSaveable
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.R
 import com.we.meet.data.api.dto.UploadTranslationRequestDto
 import com.we.meet.data.repository.UploadTranslationRepository
@@ -24,7 +38,12 @@ import retrofit2.HttpException
 
 @Composable
 internal fun UploadTranslationPanel(viewer: String, record: String, repository: UploadTranslationRepository,
-    onExport: (String, String) -> Unit, onSource: ((Long) -> Unit)? = null) {
+    onExport: (String, String) -> Unit, onSource: ((Long) -> Unit)? = null, positionMs: Long? = null) {
+    val context = LocalContext.current
+    val preferences = remember(context) { context.getSharedPreferences("translation_view", android.content.Context.MODE_PRIVATE) }
+    val preferenceKey = "$viewer:show_original"
+    var showOriginal by remember(viewer) { mutableStateOf(preferences.getBoolean(preferenceKey, true)) }
+    var infoOpen by remember { mutableStateOf(false) }
     var target by rememberSaveable(viewer, record) { mutableStateOf("en") }
     var refresh by remember(viewer, record) { mutableIntStateOf(0) }
     var intent by remember(viewer, record) { mutableStateOf<UploadTranslationRequestDto?>(null) }
@@ -47,6 +66,13 @@ internal fun UploadTranslationPanel(viewer: String, record: String, repository: 
     RecordAutoLoad(continuous, listState, disabled = saving)
     val translated = detail?.getOrNull().takeIf { selected?.status == "succeeded" }
     val stale = selected?.stale == true || translated?.stale == true
+    val timeline = remember(translated?.results) {
+        translated?.results.orEmpty().mapIndexed { index, row ->
+            TimedRow(row.segmentId, row.startMs, row.endMs ?: translated?.results?.getOrNull(index + 1)?.startMs ?: row.startMs)
+        }
+    }
+    val currentId = positionMs?.takeIf { !stale && onSource != null }?.let { activeRowId(timeline, it) }
+    val canGenerate = data.canGenerate && (intent != null || selected == null || selected.status != "succeeded" || stale)
     var languagesOpen by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
         RecordPanelToolbar(buildList {
@@ -73,12 +99,27 @@ internal fun UploadTranslationPanel(viewer: String, record: String, repository: 
                 add(RecordToolAction(stringResource(R.string.records_export_translation, format.uppercase())) { onExport(selected.id, format) })
             }
             add(RecordToolAction(stringResource(R.string.records_refresh), !saving && !continuous.busy) { refresh++; continuous.refresh() })
+            add(RecordToolAction(stringResource(R.string.upload_translation_info)) { infoOpen = true })
         }, showPrimaryWithLeading = data.canGenerate && (intent != null || selected == null || selected.status != "succeeded" || stale), leading = {
             TextButton(onClick = { languagesOpen = true }, enabled = !saving && intent == null, modifier = Modifier.weight(1f)) {
-                Text(archiveLanguage(target), maxLines = 1)
-                Icon(androidx.compose.material.icons.Icons.Outlined.ExpandMore, stringResource(R.string.records_translation_language))
+                if (selected?.status == "succeeded") Icon(Icons.Outlined.CheckCircle, stringResource(R.string.upload_translation_succeeded), Modifier.size(Dimens.IconTiny), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(archiveLanguage(target), modifier = Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Icon(Icons.Outlined.ExpandMore, stringResource(R.string.records_translation_language), Modifier.size(Dimens.IconTiny))
+            }
+            TextButton(onClick = {
+                showOriginal = !showOriginal
+                preferences.edit().putBoolean(preferenceKey, showOriginal).apply()
+            }, modifier = Modifier.weight(1f).semantics { this.selected = showOriginal }) {
+                if (showOriginal) Icon(Icons.Outlined.Check, null, modifier = Modifier.size(Dimens.IconTiny))
+                Text(stringResource(R.string.upload_translation_show_original), maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         })
+        if (infoOpen) ModalBottomSheet(onDismissRequest = { infoOpen = false }) {
+            Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                Text(stringResource(R.string.upload_translation_info), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.upload_translation_description), style = MaterialTheme.typography.bodyMedium)
+            }
+        }
         if (languagesOpen) ModalBottomSheet(onDismissRequest = { languagesOpen = false }) {
             Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding)) {
                 Text(stringResource(R.string.records_translation_language), style = MaterialTheme.typography.titleMedium)
@@ -90,11 +131,11 @@ internal fun UploadTranslationPanel(viewer: String, record: String, repository: 
             }
         }
         Column(Modifier.weight(1f).padding(horizontal = Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-            Text(stringResource(R.string.upload_translation_description), style = MaterialTheme.typography.bodySmall)
+            if (canGenerate) Text(stringResource(R.string.upload_translation_generation_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             message?.let { Text(stringResource(it)) }
             if (selected == null) { WeMeetEmptyState(stringResource(R.string.upload_translation_empty)); return@Column }
-            Text(stringResource(uploadTranslationStatus(selected.status)))
-            if (active) LinearProgressIndicator(progress = { selected.completedChunks.toFloat() / selected.totalChunks }, modifier = Modifier.fillMaxWidth())
+            if (selected.status != "succeeded") Text(stringResource(uploadTranslationStatus(selected.status)))
+            if (selected.status in setOf("queued", "running")) LinearProgressIndicator(progress = { selected.completedChunks.toFloat() / selected.totalChunks.coerceAtLeast(1) }, modifier = Modifier.fillMaxWidth())
             if (selected.stale) Text(stringResource(R.string.upload_translation_stale))
             if (selected.status == "succeeded") {
                 when {
@@ -104,15 +145,34 @@ internal fun UploadTranslationPanel(viewer: String, record: String, repository: 
                         val translated = requireNotNull(translated)
                         val stale = selected.stale || translated.stale
                         if (translated.stale && !selected.stale) Text(stringResource(R.string.upload_translation_stale))
-                        LazyColumn(Modifier.weight(1f), state = listState, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
+                        LazyColumn(Modifier.weight(1f), state = listState) {
                             items(translated.results, key = { it.segmentId }) { row ->
-                                Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
-                                    Text("${row.speakerName} · ${sourceTime(row.startMs)}", style = MaterialTheme.typography.labelMedium)
-                                    if (onSource != null && !stale) TextButton(onClick = { onSource(row.startMs) }) { Text(stringResource(R.string.upload_translation_play)) }
-                                    Text(stringResource(R.string.upload_translation_original, row.text), style = MaterialTheme.typography.bodySmall)
-                                    Text(row.translatedText)
-                                    HorizontalDivider()
+                                val isCurrent = row.segmentId == currentId
+                                val accent = MaterialTheme.colorScheme.primary
+                                val currentLabel = stringResource(R.string.upload_translation_current_segment)
+                                Column(Modifier.fillMaxWidth()
+                                    .background(if (isCurrent) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface)
+                                    .drawBehind { if (isCurrent) drawLine(accent, Offset(0f, 0f), Offset(0f, size.height), Dimens.SpaceXs.toPx()) }
+                                    .semantics { this.selected = isCurrent; if (isCurrent) stateDescription = currentLabel }
+                                    .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceS),
+                                    verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+                                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                        Text(row.speakerName.takeUnless { it.isBlank() || it.trim().equals("unknown", ignoreCase = true) }
+                                            ?: stringResource(R.string.upload_translation_unknown_speaker),
+                                            modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        if (onSource != null && !stale) {
+                                            val playLabel = "${stringResource(R.string.upload_translation_play)} ${sourceTime(row.startMs)}"
+                                            TextButton(onClick = { onSource(row.startMs) }, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget).semantics { contentDescription = playLabel }) {
+                                                Icon(Icons.Outlined.PlayArrow, null, Modifier.size(Dimens.IconTiny))
+                                                Spacer(Modifier.width(Dimens.SpaceXs))
+                                                Text(sourceTime(row.startMs))
+                                            }
+                                        } else Text(sourceTime(row.startMs), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    Text(row.translatedText, style = MaterialTheme.typography.bodyLarge)
+                                    if (showOriginal) Text(row.text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                             }
                             item { RecordLoadMore(continuous, disabled = saving) }
                         }

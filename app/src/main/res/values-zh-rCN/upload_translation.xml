@@ -15,4 +15,9 @@
     <string name="upload_translation_failed">翻译失败，可手动重新发起。</string>
     <string name="upload_translation_canceled">原文或权限已变化，请刷新后重新翻译。</string>
     <string name="upload_translation_original">原文: %1$s</string>
+    <string name="upload_translation_show_original">显示原文</string>
+    <string name="upload_translation_info">翻译说明</string>
+    <string name="upload_translation_generation_hint">生成译文可能产生 AI 用量，失败后可手动重试。</string>
+    <string name="upload_translation_current_segment">当前片段</string>
+    <string name="upload_translation_unknown_speaker">未知发言人</string>
 </resources>

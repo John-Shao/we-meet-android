@@ -17,6 +17,7 @@ data class UploadTranslationSegmentDto(
     @Json(name = "segment_id") val segmentId: String, @Json(name = "start_ms") val startMs: Long,
     @Json(name = "speaker_name") val speakerName: String, val text: String,
     @Json(name = "translated_text") val translatedText: String,
+    @Json(name = "end_ms") val endMs: Long? = null,
 ) {
     override fun toString() = "UploadTranslationSegmentDto(id=$segmentId)"
 }
