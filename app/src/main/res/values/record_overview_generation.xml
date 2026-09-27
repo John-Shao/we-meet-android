@@ -1,4 +1,8 @@
 <resources>
+    <string name="record_overview_chapters_hint">Review the recording by chapter and jump to the source.</string>
+    <string name="record_overview_chapters_empty">No chapter notes available.</string>
+    <string name="record_overview_more_sources">Other source references (%1$d)</string>
+    <string name="record_overview_hide_sources">Collapse references</string>
     <string name="record_overview_generate">Generate overview</string>
     <string name="record_overview_regenerate">Regenerate</string>
     <string name="record_overview_generating">Generating…</string>

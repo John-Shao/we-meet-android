@@ -1,6 +1,7 @@
 package com.we.meet.ui.records
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.*
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -20,6 +21,41 @@ class RecordOverviewLanguageTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private fun label(id: Int) = context.getString(id)
+
+    @Test fun overviewAndChaptersAreSeparateAndReferencesExpand() {
+        val viewer = "overview-display-${UUID.randomUUID()}"
+        val record = RecordDto(UUID.randomUUID().toString(), "upload", "Fixture", "2026-09-13T00:00:00Z", 1, RecordCapabilitiesDto(readTranscript = true))
+        val fixture = Fixture()
+        val refs = listOf(5000L, 1000L, 3000L).map { RecordReferenceDto(UUID.randomUUID().toString(), 1, it) }
+        fixture.state = fixture.state.copy(version = fixture.state.version!!.copy(content =
+            RecordOverviewContentDto("Existing overview", listOf(RecordOverviewTopicDto("Chapter title", "Chapter details", refs)))))
+        val chapters = mutableStateOf(false)
+        val selected = mutableListOf<Pair<String, RecordReferenceDto>>()
+        val repository = MeetingSummaryRepository(fixture) { viewer }
+        compose.setContent { WeMeetTheme {
+            RecordOverview(viewer, record, repository, { viewer }, chaptersOnly = chapters.value, onSource = { snapshot, ref -> selected.add(snapshot to ref) })
+        } }
+        compose.waitUntil(8000) { compose.onAllNodesWithText("Existing overview").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Chapter title").assertDoesNotExist()
+        compose.onNodeWithText(label(R.string.record_overview_hint)).assertIsDisplayed()
+        compose.runOnIdle { chapters.value = true }
+        compose.onNodeWithText("Existing overview").assertDoesNotExist()
+        compose.onNodeWithText("Chapter details").assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.record_overview_chapters_hint)).assertIsDisplayed()
+        fun source(ms: Long) = context.getString(R.string.records_source_at, sourceTime(ms))
+        compose.onNodeWithText(source(1000)).performClick()
+        compose.onNodeWithText(source(3000)).assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.record_overview_more_sources, 2)).performClick()
+        compose.onNodeWithText(source(3000)).performScrollTo().performClick()
+        compose.onNodeWithText(source(5000)).assertExists()
+        compose.onNodeWithText(label(R.string.record_overview_hide_sources)).performScrollTo().performClick()
+        compose.onNodeWithText(source(3000)).assertDoesNotExist()
+        compose.runOnIdle {
+            assertEquals(listOf(1000L, 3000L), selected.map { it.second.startMs })
+            assertEquals(listOf(fixture.state.version!!.inputSnapshotId), selected.map { it.first }.distinct())
+            assertEquals(0, fixture.generations)
+        }
+    }
 
     @Test fun changingLanguagePreservesContentAndDoesNotGenerate() {
         val viewer = "overview-language-${UUID.randomUUID()}"

@@ -1,4 +1,8 @@
 <resources>
+    <string name="record_overview_chapters_hint">按章节回顾详细内容，定位对应原文。</string>
+    <string name="record_overview_chapters_empty">暂无章节纪要。</string>
+    <string name="record_overview_more_sources">其他原文引用（%1$d）</string>
+    <string name="record_overview_hide_sources">收起引用</string>
     <string name="record_overview_generate">生成概要</string>
     <string name="record_overview_regenerate">重新生成</string>
     <string name="record_overview_generating">生成中…</string>
