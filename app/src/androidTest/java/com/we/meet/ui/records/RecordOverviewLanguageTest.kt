@@ -32,14 +32,19 @@ class RecordOverviewLanguageTest {
         fixture.state = fixture.state.copy(version = fixture.state.version!!.copy(content =
             RecordOverviewContentDto("Existing overview", listOf(RecordOverviewTopicDto("Chapter title", "Chapter details", refs)))))
         val selected = mutableListOf<Pair<String, RecordReferenceDto>>()
+        var openedMinutes = false
         val repository = MeetingSummaryRepository(fixture) { viewer }
         compose.setContent { WeMeetTheme {
-            RecordOverview(viewer, record, repository, { viewer }, onSource = { snapshot, ref -> selected.add(snapshot to ref) })
+            RecordOverview(viewer, record, repository, { viewer }, onOpenMinutes = { openedMinutes = true }, onSource = { snapshot, ref -> selected.add(snapshot to ref) })
         } }
         compose.waitUntil(8000) { compose.onAllNodesWithText("Existing overview").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Chapter title").assertIsDisplayed()
         compose.onNodeWithText("Existing overview").assertIsDisplayed()
         compose.onNodeWithText("Chapter details").assertIsDisplayed()
+        compose.onNodeWithContentDescription(label(R.string.records_panel_actions)).assertDoesNotExist()
+        compose.onNodeWithText(label(R.string.record_overview_language)).assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.record_overview_open_minutes)).performClick()
+        compose.runOnIdle { assertEquals(true, openedMinutes) }
         compose.onAllNodesWithText(label(R.string.record_overview_regenerate)).assertCountEquals(1)
         compose.onNodeWithText(label(R.string.record_overview_synopsis_title)).assertIsDisplayed()
         compose.onNodeWithText(label(R.string.records_chapters)).assertIsDisplayed()
@@ -70,7 +75,6 @@ class RecordOverviewLanguageTest {
             RecordOverview(viewer, record, repository, { viewer }, onSource = { _, _ -> })
         } }
         compose.waitUntil(8000) { compose.onAllNodesWithText("Existing overview").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithContentDescription(label(R.string.records_panel_actions)).performClick()
         compose.waitUntil(8000) { !compose.onNodeWithText(label(R.string.record_overview_language)).fetchSemanticsNode().config.contains(SemanticsProperties.Disabled) }
         compose.onNodeWithText(label(R.string.record_overview_language)).performClick()
         compose.onNodeWithText(label(R.string.record_overview_follow_source)).assertIsSelected()
@@ -78,7 +82,6 @@ class RecordOverviewLanguageTest {
         compose.onNodeWithText(label(R.string.record_overview_language_save)).performClick()
         compose.waitUntil(8000) { fixture.state.outputLanguage == "en" && compose.onAllNodesWithText(label(R.string.record_overview_language_save)).fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithText("Existing overview").assertIsDisplayed()
-        compose.onNodeWithContentDescription(label(R.string.records_panel_actions)).performClick()
         compose.onNodeWithText(label(R.string.record_overview_language)).performClick()
         compose.onNodeWithText("English").assertIsSelected()
         assertEquals(1, fixture.languageWrites)

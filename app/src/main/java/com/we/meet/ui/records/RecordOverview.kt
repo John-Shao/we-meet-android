@@ -1,5 +1,14 @@
 package com.we.meet.ui.records
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -113,29 +122,50 @@ internal fun RecordOverview(viewer: String, record: RecordDto, repository: Meeti
         }
     }
     Column(modifier.fillMaxWidth()) {
-        RecordPanelToolbar(buildList {
-            if (state?.canGenerate == true) {
-                val canClick = controller != null && !storageError && !busy && !languageSaving
-                val label = when {
-                    active || busy -> R.string.record_overview_generating
-                    state.version != null -> R.string.record_overview_regenerate
-                    else -> R.string.record_overview_generate
+        Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceS), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                    if (state?.canGenerate == true) {
+                        val label = when {
+                            active || busy -> R.string.record_overview_generating
+                            state.version != null -> R.string.record_overview_regenerate
+                            else -> R.string.record_overview_generate
+                        }
+                        // Replay pending requests with their original key and body.
+                        val operation = when {
+                            job?.retryable == true && job.status in setOf("failed", "partial") && job.inputRevision == state.revision -> "retry"
+                            job != null -> "regenerate"
+                            else -> "generate"
+                        }
+                        TextButton(onClick = { submit(operation) },
+                            enabled = controller != null && !storageError && !busy && !languageSaving && !active && (pending || state.generationReady),
+                            modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) {
+                            Text(stringResource(label))
+                        }
+                    }
                 }
-                // The coordinator replays any pending request with its original key/body.
-                val operation = when {
-                    job?.retryable == true && job.status in setOf("failed", "partial") && job.inputRevision == state.revision -> "retry"
-                    job != null -> "regenerate"
-                    else -> "generate"
+                onOpenMinutes?.let { open ->
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+                        TextButton(onClick = open, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) {
+                            Text(stringResource(R.string.record_overview_open_minutes))
+                        }
+                    }
                 }
-                add(RecordToolAction(stringResource(label),
-                    canClick && !active && (pending || state.generationReady)) { submit(operation) })
-                add(RecordToolAction(stringResource(R.string.record_overview_language), canClick && !active && !pending) {
-                    languageDraft = state.outputLanguage; languageError = false; languageOpen = true
-                })
             }
-            onOpenMinutes?.let { add(RecordToolAction(stringResource(R.string.record_overview_open_minutes), onClick = it)) }
-            add(RecordToolAction(stringResource(R.string.records_refresh)) { refresh++ })
-        })
+            Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceS), verticalAlignment = Alignment.CenterVertically) {
+                if (state?.canGenerate == true) {
+                    TextButton(onClick = { languageDraft = state.outputLanguage; languageError = false; languageOpen = true },
+                        enabled = controller != null && !storageError && !busy && !languageSaving && !active && !pending,
+                        modifier = Modifier.weight(1f).heightIn(min = Dimens.MinTouchTarget)) {
+                        Text(stringResource(R.string.record_overview_language), modifier = Modifier.fillMaxWidth())
+                    }
+                } else Spacer(Modifier.weight(1f))
+                IconButton(onClick = { refresh++ }) {
+                    Icon(Icons.Outlined.Refresh, contentDescription = stringResource(R.string.records_refresh))
+                }
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = Dimens.DividerThin)
+        }
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
             when {
                 read == null -> WeMeetInlineLoading()
