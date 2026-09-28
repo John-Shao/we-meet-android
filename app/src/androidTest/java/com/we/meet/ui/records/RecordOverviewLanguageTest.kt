@@ -1,8 +1,10 @@
 package com.we.meet.ui.records
 
 import androidx.activity.ComponentActivity
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.*
+import androidx.compose.ui.graphics.asAndroidBitmap
+import android.graphics.Bitmap
+import java.io.File
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
@@ -22,26 +24,29 @@ class RecordOverviewLanguageTest {
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private fun label(id: Int) = context.getString(id)
 
-    @Test fun overviewAndChaptersAreSeparateAndReferencesExpand() {
+    @Test fun overviewAndChaptersShareOnePageAndReferencesExpand() {
         val viewer = "overview-display-${UUID.randomUUID()}"
         val record = RecordDto(UUID.randomUUID().toString(), "upload", "Fixture", "2026-09-13T00:00:00Z", 1, RecordCapabilitiesDto(readTranscript = true))
         val fixture = Fixture()
         val refs = listOf(5000L, 1000L, 3000L).map { RecordReferenceDto(UUID.randomUUID().toString(), 1, it) }
         fixture.state = fixture.state.copy(version = fixture.state.version!!.copy(content =
             RecordOverviewContentDto("Existing overview", listOf(RecordOverviewTopicDto("Chapter title", "Chapter details", refs)))))
-        val chapters = mutableStateOf(false)
         val selected = mutableListOf<Pair<String, RecordReferenceDto>>()
         val repository = MeetingSummaryRepository(fixture) { viewer }
         compose.setContent { WeMeetTheme {
-            RecordOverview(viewer, record, repository, { viewer }, chaptersOnly = chapters.value, onSource = { snapshot, ref -> selected.add(snapshot to ref) })
+            RecordOverview(viewer, record, repository, { viewer }, onSource = { snapshot, ref -> selected.add(snapshot to ref) })
         } }
         compose.waitUntil(8000) { compose.onAllNodesWithText("Existing overview").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("Chapter title").assertDoesNotExist()
+        compose.onNodeWithText("Chapter title").assertIsDisplayed()
         compose.onNodeWithText(label(R.string.record_overview_hint)).assertIsDisplayed()
-        compose.runOnIdle { chapters.value = true }
-        compose.onNodeWithText("Existing overview").assertDoesNotExist()
+        compose.onNodeWithText("Existing overview").assertIsDisplayed()
         compose.onNodeWithText("Chapter details").assertIsDisplayed()
-        compose.onNodeWithText(label(R.string.record_overview_chapters_hint)).assertIsDisplayed()
+        compose.onAllNodesWithText(label(R.string.record_overview_regenerate)).assertCountEquals(1)
+        compose.onNodeWithText(label(R.string.record_overview_synopsis_title)).assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.records_chapters)).assertIsDisplayed()
+        File(context.getExternalFilesDir(null), "combined-overview.png").outputStream().use {
+            compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
         fun source(ms: Long) = context.getString(R.string.records_source_at, sourceTime(ms))
         compose.onNodeWithText(source(1000)).performClick()
         compose.onNodeWithText(source(3000)).assertDoesNotExist()

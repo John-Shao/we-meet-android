@@ -42,7 +42,7 @@ import retrofit2.HttpException
 
 /** Own endpoint and durable intent; no minutes content or minutes generation. */
 @Composable
-internal fun RecordOverview(viewer: String, record: RecordDto, repository: MeetingSummaryRepository, currentViewer: () -> String?, modifier: Modifier = Modifier, chaptersOnly: Boolean = false, onOpenMinutes: (() -> Unit)? = null, onSource: (String, RecordReferenceDto) -> Unit) {
+internal fun RecordOverview(viewer: String, record: RecordDto, repository: MeetingSummaryRepository, currentViewer: () -> String?, modifier: Modifier = Modifier, onOpenMinutes: (() -> Unit)? = null, onSource: (String, RecordReferenceDto) -> Unit) {
     val context = LocalContext.current.applicationContext
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
@@ -137,7 +137,7 @@ internal fun RecordOverview(viewer: String, record: RecordDto, repository: Meeti
             add(RecordToolAction(stringResource(R.string.records_refresh)) { refresh++ })
         })
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-            Text(stringResource(if (chaptersOnly) R.string.record_overview_chapters_hint else R.string.record_overview_hint), style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.record_overview_hint), style = MaterialTheme.typography.bodySmall)
             when {
                 read == null -> WeMeetInlineLoading()
                 state == null -> WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
@@ -154,15 +154,17 @@ internal fun RecordOverview(viewer: String, record: RecordDto, repository: Meeti
                         Text(stringResource(R.string.minutes_generated_at, recordTime(version.createdAt)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         if (!version.isCurrent) Text(stringResource(R.string.record_overview_source_changed), style = MaterialTheme.typography.bodySmall)
                         if (version.asrStatus == "incomplete") Text(stringResource(R.string.records_incomplete), style = MaterialTheme.typography.bodySmall)
-                        if (!chaptersOnly) Text(version.content.synopsis, style = MaterialTheme.typography.bodyLarge)
-                        if (chaptersOnly && version.content.topics.isEmpty()) WeMeetInlineEmptyState(stringResource(R.string.record_overview_chapters_empty))
-                        if (chaptersOnly) version.content.topics.forEach { topic ->
+                        Text(stringResource(R.string.record_overview_synopsis_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(version.content.synopsis, style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(R.string.records_chapters), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        if (version.content.topics.isEmpty()) WeMeetInlineEmptyState(stringResource(R.string.record_overview_chapters_empty))
+                        version.content.topics.forEach { topic ->
                             Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                                 Text(topic.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                                 Text(topic.text, style = MaterialTheme.typography.bodyLarge)
                                 if (record.capabilities.readTranscript) {
                                     val references = topic.sourceRefs.sortedBy { it.startMs }
-                                    var expanded by remember(viewer, record.id, version.id, topic, chaptersOnly) { mutableStateOf(false) }
+                                    var expanded by remember(viewer, record.id, version.id, topic) { mutableStateOf(false) }
                                     references.take(if (expanded) references.size else 1).forEach { ref ->
                                         TextButton(onClick = { onSource(version.inputSnapshotId, ref) }) { Text(stringResource(R.string.records_source_at, sourceTime(ref.startMs))) }
                                     }

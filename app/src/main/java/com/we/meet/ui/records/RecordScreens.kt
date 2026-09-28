@@ -224,25 +224,24 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                     val tabs = buildList {
                         if (record.capabilities.readTranscript) add("text" to R.string.records_originals)
                         if (record.capabilities.readTranscript) add("overview" to R.string.record_overview_title)
-                        if (record.capabilities.readTranscript) add("chapters" to R.string.records_chapters)
                         if (record.capabilities.readTranscript && record.sourceType in listOf("audio_recording", "upload")) add("speakers" to R.string.records_speakers)
                         add("info" to R.string.records_info)
                         if (canReadTranslations) add("translations" to R.string.archives_title)
                     }
-                    val selectedTab = if (document) "summary" else detailTab.takeIf { tab -> tabs.any { it.first == tab } } ?: tabs.first().first
+                    val requestedTab = if (detailTab == "chapters") "overview" else detailTab
+                    val selectedTab = if (document) "summary" else requestedTab.takeIf { tab -> tabs.any { it.first == tab } } ?: tabs.first().first
                     val showTranslations = selectedTab == "translations"
                     val showOriginals = selectedTab == "text"
-                    val chaptersOnly = selectedTab == "chapters"
                     val overviewOnly = selectedTab == "overview"
                     if (!document && record.sourceType == "upload" && record.upload?.canControl == true && app != null) {
                         RecordingUploadStatus(app.recordingUploadRepository, viewer, recordId)
                     }
                     if (!document) {
-                        // 六个标签在 360dp 屏上放不下,所以还是可滚动的一版;但右缘补一层
+                        // 多个标签在 360dp 屏上可能放不下,保留可滚动的一版;右缘补一层
                         // 渐隐当「右边还有」的提示 —— 全应用只有这一处是 ScrollableTabRow,
                         // 默认的滚动指示几乎看不见,末尾的「译文」就那样被截在边上。
                         // 渐隐是纯装饰、不拦点击,只要标签多到可能溢出就一直留着。
-                        // (试过定宽 TabRow:六个标签等分后「Smart minutes」会被截成省略号。)
+                        // 避免定宽等分后长标签被截成省略号。
                         Box(Modifier.fillMaxWidth()) {
                             ScrollableTabRow(
                                 selectedTabIndex = tabs.indexOfFirst { it.first == selectedTab },
@@ -316,9 +315,9 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             }
                         } else if (document && !record.capabilities.readSummary) {
                             WeMeetEmptyState(stringResource(R.string.records_no_summary_access))
-                        } else if (overviewOnly || chaptersOnly) {
+                        } else if (overviewOnly) {
                             if (app == null) WeMeetEmptyState(stringResource(R.string.records_unavailable))
-                            else RecordOverview(viewer, record, app.meetingSummaryRepository, { app.captureAccount }, Modifier.weight(1f), chaptersOnly = chaptersOnly,
+                            else RecordOverview(viewer, record, app.meetingSummaryRepository, { app.captureAccount }, Modifier.weight(1f),
                                 onOpenMinutes = if (record.capabilities.readSummary) ({ document = true; selectedVersion = null; selectedHuman = null; cursors = listOf(null); tool = null; citation = null; history = false }) else null,
                             ) { snapshot, ref -> citation = snapshot to ref }
                         } else if (selectedHuman != null && document && app != null) {
@@ -366,12 +365,12 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                         contentPadding = PaddingValues(bottom = Dimens.SpaceL),
                                     ) {
                                         if (primary != null) item(key = primary.id) {
-                                            SummaryCard(primary, record.capabilities.readTranscript, chaptersOnly) { ref -> citation = primary.inputSnapshotId to ref }
+                                            SummaryCard(primary, record.capabilities.readTranscript) { ref -> citation = primary.inputSnapshotId to ref }
                                         }
                                         if (versions.isEmpty()) item {
                                             WeMeetEmptyState(
                                                 stringResource(if (overviewOnly) R.string.record_overview_empty else if (selectedVersion == null) R.string.records_no_versions else R.string.records_linked_version_unavailable),
-                                                description = if (overviewOnly) null else if (selectedVersion == null) stringResource(if (chaptersOnly) R.string.records_chapters_no_version else R.string.records_no_versions_hint) else null,
+                                                description = if (overviewOnly) null else if (selectedVersion == null) stringResource(R.string.records_no_versions_hint) else null,
                                                 action = { TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) } },
                                             )
                                         }
@@ -383,7 +382,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                         }
                                         if (history && !overviewOnly) {
                                             items(older, key = { it.id }) { version ->
-                                                SummaryCard(version, record.capabilities.readTranscript, chaptersOnly) { ref -> citation = version.inputSnapshotId to ref }
+                                                SummaryCard(version, record.capabilities.readTranscript) { ref -> citation = version.inputSnapshotId to ref }
                                             }
                                             item {
                                                 RecordPager(
