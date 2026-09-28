@@ -40,6 +40,7 @@ class UploadTranslationPanelTest {
     @Volatile private var denied = false
     private var longPage = false
     private var singlePage = false
+    private var emptyPage = false
     private var speaker = "Speaker"
     private val position = mutableStateOf<Long?>(null)
     private val requests = mutableListOf<UploadTranslationRequestDto>()
@@ -51,7 +52,7 @@ class UploadTranslationPanelTest {
             return UploadTranslationListDto(true, 1, if (complete) listOf(item) else emptyList())
         }
         override suspend fun detail(record: String, translation: String, page: Int) = item.copy(
-            results = if (longPage) (0..39).map { UploadTranslationSegmentDto(UUID.nameUUIDFromBytes("$it".toByteArray()).toString(), it * 1000L, "Speaker", "Original $it", "Translation $it") } else listOf(UploadTranslationSegmentDto(UUID.nameUUIDFromBytes("$segment-$page".toByteArray()).toString(), 1200, speaker, "Original", if (page == 0) "First translation" else "Last translation", endMs = 3200)),
+            results = if (emptyPage) emptyList() else if (longPage) (0..39).map { UploadTranslationSegmentDto(UUID.nameUUIDFromBytes("$it".toByteArray()).toString(), it * 1000L, "Speaker", "Original $it", "Translation $it") } else listOf(UploadTranslationSegmentDto(UUID.nameUUIDFromBytes("$segment-$page".toByteArray()).toString(), 1200, speaker, "Original", if (page == 0) "First translation" else "Last translation", endMs = 3200)),
             nextPage = if (page == 0 && !singlePage) 1 else null,
         )
         override suspend fun generate(record: String, body: UploadTranslationRequestDto): UploadTranslationDto {
@@ -116,6 +117,40 @@ class UploadTranslationPanelTest {
         compose.onNodeWithText(context.getString(R.string.records_export_translation, "TXT")).assertIsDisplayed()
     }
 
+    @Test fun emptyLanguageHidesOriginalControlWithoutResettingPreference() {
+        singlePage = true
+        show()
+        awaitText("First translation")
+        for (visible in listOf(false, true)) {
+            compose.onNodeWithText(label(R.string.upload_translation_show_original)).performClick()
+            compose.onNodeWithContentDescription(label(R.string.records_translation_language)).performClick()
+            compose.onNodeWithText(label(R.string.archives_zh)).performClick()
+            awaitText(label(R.string.upload_translation_empty))
+            compose.onNodeWithText(label(R.string.upload_translation_show_original)).assertDoesNotExist()
+            assertEquals(visible, context.getSharedPreferences("translation_view", android.content.Context.MODE_PRIVATE).getBoolean("owner:show_original", true))
+            compose.onNodeWithContentDescription(label(R.string.records_translation_language)).performClick()
+            compose.onNodeWithText(label(R.string.archives_en)).performClick()
+            awaitText("First translation")
+            if (visible) {
+                compose.onNodeWithText(label(R.string.upload_translation_show_original)).assertIsSelected()
+                compose.onNodeWithText("Original").assertIsDisplayed()
+            } else {
+                compose.onNodeWithText(label(R.string.upload_translation_show_original)).assertIsNotSelected()
+                compose.onNodeWithText("Original").assertDoesNotExist()
+            }
+        }
+        assertTrue(requests.isEmpty())
+    }
+
+    @Test fun emptyTranslationRowsHideOriginalControl() {
+        emptyPage = true; singlePage = true
+        show()
+        awaitText(label(R.string.archives_en))
+        compose.onNodeWithContentDescription(label(R.string.records_panel_actions)).performClick()
+        awaitText(context.getString(R.string.records_export_translation, "TXT"))
+        compose.onNodeWithText(label(R.string.upload_translation_show_original)).assertDoesNotExist()
+    }
+
     @Test fun alignedTranslationPagesAndExportIdentity() {
         show(); awaitText("First translation")
         compose.onNodeWithText(label(R.string.upload_translation_original).replace("%1\$s", "Original"))
@@ -130,9 +165,11 @@ class UploadTranslationPanelTest {
         compose.onNodeWithText(label(R.string.upload_translation_stale)).assertExists()
         compose.onNodeWithText("TXT").assertDoesNotExist()
         compose.onNodeWithText(label(R.string.upload_translation_regenerate)).assertExists()
+        compose.onNodeWithText(label(R.string.upload_translation_show_original)).assertIsDisplayed()
     }
     @Test fun responseLossReusesTheSameIntent() {
         complete = false; show(); awaitText(label(R.string.upload_translation_generate))
+        compose.onNodeWithText(label(R.string.upload_translation_show_original)).assertDoesNotExist()
         compose.onNodeWithText(label(R.string.upload_translation_generate)).performClick()
         awaitText(label(R.string.upload_translation_uncertain))
         compose.onNodeWithText(label(R.string.upload_translation_check)).performClick()

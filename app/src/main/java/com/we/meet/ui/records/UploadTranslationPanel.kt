@@ -106,7 +106,7 @@ internal fun UploadTranslationPanel(viewer: String, record: String, repository: 
                 Text(archiveLanguage(target), modifier = Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Icon(Icons.Outlined.ExpandMore, stringResource(R.string.records_translation_language), Modifier.size(Dimens.IconTiny))
             }
-            TextButton(onClick = {
+            if (!translated?.results.isNullOrEmpty()) TextButton(onClick = {
                 showOriginal = !showOriginal
                 preferences.edit().putBoolean(preferenceKey, showOriginal).apply()
             }, modifier = Modifier.weight(1f).semantics { this.selected = showOriginal }) {
