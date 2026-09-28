@@ -1,6 +1,5 @@
 <resources>
     <string name="record_overview_title">Meeting minutes</string>
-    <string name="record_overview_hint">The overview and chapters are generated together. Regenerating updates both sections.</string>
     <string name="record_overview_open_minutes">Open AI minutes</string>
     <string name="record_overview_empty">No meeting minutes yet. Generate them from the transcript.</string>
     <string name="record_overview_back">View recording and overview</string>

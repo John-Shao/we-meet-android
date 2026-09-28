@@ -38,7 +38,6 @@ class RecordOverviewLanguageTest {
         } }
         compose.waitUntil(8000) { compose.onAllNodesWithText("Existing overview").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Chapter title").assertIsDisplayed()
-        compose.onNodeWithText(label(R.string.record_overview_hint)).assertIsDisplayed()
         compose.onNodeWithText("Existing overview").assertIsDisplayed()
         compose.onNodeWithText("Chapter details").assertIsDisplayed()
         compose.onAllNodesWithText(label(R.string.record_overview_regenerate)).assertCountEquals(1)

@@ -137,7 +137,6 @@ internal fun RecordOverview(viewer: String, record: RecordDto, repository: Meeti
             add(RecordToolAction(stringResource(R.string.records_refresh)) { refresh++ })
         })
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-            Text(stringResource(R.string.record_overview_hint), style = MaterialTheme.typography.bodySmall)
             when {
                 read == null -> WeMeetInlineLoading()
                 state == null -> WeMeetInlineErrorState(onRetry = { refresh++ }, message = stringResource(R.string.records_unavailable))
@@ -154,9 +153,9 @@ internal fun RecordOverview(viewer: String, record: RecordDto, repository: Meeti
                         Text(stringResource(R.string.minutes_generated_at, recordTime(version.createdAt)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         if (!version.isCurrent) Text(stringResource(R.string.record_overview_source_changed), style = MaterialTheme.typography.bodySmall)
                         if (version.asrStatus == "incomplete") Text(stringResource(R.string.records_incomplete), style = MaterialTheme.typography.bodySmall)
-                        Text(stringResource(R.string.record_overview_synopsis_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.record_overview_synopsis_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                         Text(version.content.synopsis, style = MaterialTheme.typography.bodyLarge)
-                        Text(stringResource(R.string.records_chapters), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.records_chapters), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                         if (version.content.topics.isEmpty()) WeMeetInlineEmptyState(stringResource(R.string.record_overview_chapters_empty))
                         version.content.topics.forEach { topic ->
                             Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
