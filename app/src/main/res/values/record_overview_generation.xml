@@ -2,8 +2,8 @@
     <string name="record_overview_chapters_empty">No chapter notes available.</string>
     <string name="record_overview_more_sources">Other source references (%1$d)</string>
     <string name="record_overview_hide_sources">Collapse references</string>
-    <string name="record_overview_generate">Generate overview &amp; chapters</string>
-    <string name="record_overview_regenerate">Regenerate overview &amp; chapters</string>
+    <string name="record_overview_generate">Generate meeting minutes</string>
+    <string name="record_overview_regenerate">Regenerate meeting minutes</string>
     <string name="record_overview_generating">Generating…</string>
     <string name="record_overview_failed">Overview generation failed. Please try again.</string>
     <string name="record_overview_accepted">Overview generation requested.</string>
