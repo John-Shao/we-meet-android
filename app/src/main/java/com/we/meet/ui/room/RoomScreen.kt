@@ -875,7 +875,7 @@ private fun RoomContent(
     var showMore by remember { mutableStateOf(false) }
     val roomSdkState by room::state.flow.collectAsStateWithLifecycle()
     val roomSid by room::sid.flow.collectAsStateWithLifecycle()
-    val localSid by room.localParticipant::sid.flow.collectAsStateWithLifecycle()
+    val localSid = rememberParticipantSid(room.localParticipant)
     val onlineSid = roomSid?.sid?.takeIf { BuildConfig.WE_MEET_ONLINE_AI_NATIVE && roomSdkState == io.livekit.android.room.Room.State.CONNECTED }
     var showOnlineCapture by remember(onlineSid) { mutableStateOf(false) }
     val cloudSid = roomSid?.sid?.takeIf { BuildConfig.WE_MEET_CLOUD_RECORDING_NATIVE && roomSdkState == io.livekit.android.room.Room.State.CONNECTED }
