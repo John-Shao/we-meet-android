@@ -2,6 +2,7 @@ package com.we.meet.feature.assistant.aicall.rtc
 
 import android.content.Context
 import android.media.AudioManager
+import android.os.SystemClock
 import android.util.Log
 import com.twilio.audioswitch.AudioDevice
 import com.twilio.audioswitch.AudioSwitch
@@ -33,6 +34,8 @@ class OmniWebRtcClient(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val handshake = OmniHandshake()
+    private val recovery = OmniConnectionRecovery(scope, ::fail)
+    private val cancellation = OmniCancellation(SystemClock::elapsedRealtime)
     private val iceComplete = CompletableDeferred<Unit>()
     private val ready = CompletableDeferred<Unit>()
     private val channels = mutableSetOf<DataChannel>()
@@ -135,13 +138,17 @@ class OmniWebRtcClient(
         override fun onConnectionChange(state: PeerConnection.PeerConnectionState) = dispatch {
             when (state) {
                 PeerConnection.PeerConnectionState.CONNECTED -> {
+                    recovery.connected()
                     handshake.connected = true
                     configureIfReady()
                 }
+                PeerConnection.PeerConnectionState.DISCONNECTED -> {
+                    handshake.connected = false
+                    recovery.disconnected()
+                }
                 PeerConnection.PeerConnectionState.FAILED,
-                PeerConnection.PeerConnectionState.CLOSED,
-                PeerConnection.PeerConnectionState.DISCONNECTED -> fail()
-                else -> Unit
+                PeerConnection.PeerConnectionState.CLOSED -> fail()
+                else -> handshake.connected = false
             }
         }
         override fun onIceGatheringChange(state: PeerConnection.IceGatheringState) {
@@ -198,7 +205,13 @@ class OmniWebRtcClient(
             }
             "response.done" -> responding = false
             "input_audio_buffer.speech_started" -> remoteAudio?.setEnabled(false)
-            "error" -> fail()
+            "error" -> {
+                val error = event.optJSONObject("error")
+                if (error == null || !handshake.ready || !cancellation.recoverable(
+                        error.optString("type"), error.optString("code"),
+                        error.optString("message"), error.optString("event_id"), error.optString("param"),
+                    )) fail()
+            }
         }
     }
 
@@ -223,7 +236,9 @@ class OmniWebRtcClient(
         check(!closed && handshake.ready)
         remoteAudio?.setEnabled(false)
         if (responding) {
-            send(JSONObject().put("type", "response.cancel"))
+            val eventId = UUID.randomUUID().toString()
+            send(JSONObject().put("type", "response.cancel").put("event_id", eventId))
+            cancellation.sent(eventId)
             responding = false
         }
         onAudioLevel(0f)
@@ -298,7 +313,7 @@ class OmniWebRtcClient(
     }
 
     private fun send(event: JSONObject) {
-        event.put("event_id", UUID.randomUUID().toString())
+        if (!event.has("event_id")) event.put("event_id", UUID.randomUUID().toString())
         val channel = checkNotNull(eventChannel)
         check(channel.state() == DataChannel.State.OPEN)
         check(channel.send(DataChannel.Buffer(ByteBuffer.wrap(event.toString().toByteArray(Charsets.UTF_8)), false)))
@@ -326,6 +341,7 @@ class OmniWebRtcClient(
 
     private fun fail() {
         if (closed) return
+        recovery.close()
         ready.completeExceptionally(IllegalStateException("AI connection failed"))
         iceComplete.completeExceptionally(IllegalStateException("AI connection failed"))
         onFailure()
@@ -335,6 +351,7 @@ class OmniWebRtcClient(
     fun close() {
         if (closed) return
         closed = true
+        recovery.close()
         handshake.close()
         ready.cancel()
         iceComplete.cancel()

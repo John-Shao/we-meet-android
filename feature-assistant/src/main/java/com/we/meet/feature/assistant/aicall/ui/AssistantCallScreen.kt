@@ -203,7 +203,7 @@ fun AssistantCallScreen(
 
     // Consume Ended → collapse to Idle once the UI has rendered Ended for a beat.
     LaunchedEffect(state.status) {
-        if (state.status is AiCallStatus.Ended || state.status is AiCallStatus.Failed) {
+        if (state.status is AiCallStatus.Ended) {
             kotlinx.coroutines.delay(400)
             vm.consumeEnded()
         }

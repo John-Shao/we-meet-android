@@ -159,7 +159,7 @@ class AiCallViewModel(
     }
     fun dismissError() { _state.update { it.copy(errorToastRes = null) } }
     fun consumeEnded() {
-        if (_state.value.status is AiCallStatus.Ended || _state.value.status is AiCallStatus.Failed) {
+        if (_state.value.status is AiCallStatus.Ended) {
             _state.update { it.copy(status = AiCallStatus.Idle) }
         }
     }
