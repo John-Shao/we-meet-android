@@ -51,6 +51,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.WeMeetApp
 import com.we.meet.R
 import com.we.meet.ui.components.WeMeetTopBar
+import com.we.meet.ui.components.WeMeetInlineEmptyState
 import com.we.meet.design.R as DesignR
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -185,8 +186,10 @@ fun HomeScreen(
                 },
             )
             if (scheduledMeetings.isEmpty()) {
-                Text(stringResource(R.string.home_no_upcoming), Modifier.padding(Dimens.ScreenPadding),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                WeMeetInlineEmptyState(
+                    title = stringResource(R.string.home_no_upcoming),
+                    modifier = Modifier.padding(horizontal = Dimens.ScreenPadding),
+                )
             }
             VideoHistoryList(recentMeetings, { room -> onHistoryClick(room.id, room.meeting_session_id) }, onOpenRecords)
 
