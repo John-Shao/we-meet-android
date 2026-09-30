@@ -2,6 +2,7 @@ package com.we.meet.feature.assistant.aicall.rtc
 
 import android.content.Context
 import android.media.AudioManager
+import android.util.Log
 import com.twilio.audioswitch.AudioDevice
 import com.twilio.audioswitch.AudioSwitch
 import com.we.meet.feature.assistant.aicall.model.AiCallAnswer
@@ -84,12 +85,24 @@ class OmniWebRtcClient(
             PeerConnectionFactory.InitializationOptions.builder(context).createInitializationOptions(),
         )
         egl = EglBase.create()
-        audioSwitch = AudioSwitch(context, audioFocusChangeListener = { focus ->
-            if (focus == AudioManager.AUDIOFOCUS_LOSS) dispatch { fail() }
-        }).also { route ->
-            route.start { _, _ -> }
-            route.availableAudioDevices.filterIsInstance<AudioDevice.Speakerphone>()
-                .firstOrNull()?.let(route::selectDevice)
+        audioSwitch = AudioSwitch(
+            context,
+            audioFocusChangeListener = { focus ->
+                if (focus == AudioManager.AUDIOFOCUS_LOSS) dispatch { fail() }
+            },
+            // Discovery is asynchronous: selecting from availableAudioDevices
+            // immediately after start() sees an empty list. Keep speaker ahead
+            // of earpiece for initial discovery and after a headset disconnects.
+            preferredDeviceList = listOf(
+                AudioDevice.BluetoothHeadset::class.java,
+                AudioDevice.WiredHeadset::class.java,
+                AudioDevice.Speakerphone::class.java,
+                AudioDevice.Earpiece::class.java,
+            ),
+        ).also { route ->
+            route.start { _, selected ->
+                Log.i("OmniAudio", "Selected output: ${selected?.javaClass?.simpleName}")
+            }
             route.activate()
         }
         audioModule = JavaAudioDeviceModule.builder(context)

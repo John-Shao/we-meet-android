@@ -6,7 +6,11 @@ import com.we.meet.ui.theme.WeMeetTheme
 import com.we.meet.feature.assistant.R
 import androidx.compose.ui.res.stringResource
 import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.pm.PackageManager
+import android.media.AudioManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -65,6 +69,12 @@ import kotlinx.coroutines.launch
 
 private enum class PendingPermAction { Start, ToggleVideo }
 
+private tailrec fun Context.callActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.callActivity()
+    else -> null
+}
+
 /**
  * Public entry for the realtime AI call, hosted as a full-screen secondary
  * route under the host's AI tab. [onBack] returns to the AI hub; leaving the
@@ -86,6 +96,20 @@ fun AssistantCallScreen(
     val state by vm.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    // WebRTC plays on the call stream. Keep hardware volume keys on that
+    // stream even while the AI is silent, then restore the host's setting.
+    val activity = remember(context) { context.callActivity() }
+    val callInProgress = state.status is AiCallStatus.Connecting || state.status is AiCallStatus.Active
+    DisposableEffect(activity, callInProgress) {
+        val previousStream = activity?.volumeControlStream
+        if (callInProgress) activity?.volumeControlStream = AudioManager.STREAM_VOICE_CALL
+        onDispose {
+            if (callInProgress && previousStream != null) {
+                activity?.volumeControlStream = previousStream
+            }
+        }
+    }
 
     // Leaving the call screen ends the call (covers back arrow + system back).
     // Tied to explicit navigation rather than composable disposal so a config
