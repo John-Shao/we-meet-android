@@ -143,6 +143,7 @@ object Routes {
     const val JOIN_PREVIEW = "join_preview?slug={slug}"
     const val QR_SCAN = "qr_scan"
     const val ASSISTANT_CALL = "assistant_call"
+    const val BILINGUAL_TRANSLATION = "bilingual_translation"
     const val AI_HUB = "ai_hub"
     const val APPROVAL = "approval"
     const val APPROVAL_SUBMIT = "approval_submit?templateId={templateId}"
@@ -746,9 +747,14 @@ fun AppNav() {
         }
 
         composable(Routes.AI_HUB) {
-            AiHubRoute(onBack = rememberOnceOnly(safePop)) {
-                navController.navigate(Routes.ASSISTANT_CALL)
-            }
+            AiHubRoute(
+                onBack = rememberOnceOnly(safePop),
+                onOpenAssistantCall = { navController.navigate(Routes.ASSISTANT_CALL) },
+                onOpenBilingualTranslation = { navController.navigate(Routes.BILINGUAL_TRANSLATION) },
+            )
+        }
+        composable(Routes.BILINGUAL_TRANSLATION) {
+            com.we.meet.ui.ai.BilingualTranslationScreen(app, rememberOnceOnly(safePop))
         }
 
         composable(Routes.APPROVAL) {
@@ -1899,7 +1905,7 @@ fun AppNav() {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AiHubRoute(onBack: () -> Unit, onOpenAssistantCall: () -> Unit) {
+private fun AiHubRoute(onBack: () -> Unit, onOpenAssistantCall: () -> Unit, onOpenBilingualTranslation: () -> Unit) {
     androidx.compose.material3.Scaffold(
         topBar = {
             WeMeetTopBar(
@@ -1909,7 +1915,7 @@ private fun AiHubRoute(onBack: () -> Unit, onOpenAssistantCall: () -> Unit) {
         },
     ) { padding ->
         androidx.compose.foundation.layout.Box(modifier = Modifier.padding(padding)) {
-            com.we.meet.ui.ai.AiHubScreen(onOpenAssistantCall = onOpenAssistantCall)
+            com.we.meet.ui.ai.AiHubScreen(onOpenAssistantCall = onOpenAssistantCall, onOpenBilingualTranslation = onOpenBilingualTranslation)
         }
     }
 }

@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -36,6 +37,7 @@ import com.we.meet.ui.theme.Dimens
 @Composable
 fun AiHubScreen(
     onOpenAssistantCall: () -> Unit,
+    onOpenBilingualTranslation: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -55,6 +57,13 @@ fun AiHubScreen(
             title = stringResource(R.string.ai_hub_call_title),
             subtitle = stringResource(R.string.ai_hub_call_subtitle),
             onClick = onOpenAssistantCall,
+        )
+        Spacer(Modifier.size(Dimens.SpaceL))
+        FeatureCard(
+            icon = Icons.Filled.Translate,
+            title = stringResource(R.string.bilingual_title),
+            subtitle = stringResource(R.string.bilingual_subtitle),
+            onClick = onOpenBilingualTranslation,
         )
     }
 }

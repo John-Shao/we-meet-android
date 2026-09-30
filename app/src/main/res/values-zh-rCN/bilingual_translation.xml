@@ -1,0 +1,22 @@
+<resources>
+    <string name="bilingual_audio_omitted">该段译音缓冲已达上限，仅显示译文，对话可继续。</string>
+    <string name="bilingual_title">双语互译</string>
+    <string name="bilingual_subtitle">自动识别中英文，实时翻译对话</string>
+    <string name="bilingual_pair">中文 ⇄ 英文</string>
+    <string name="bilingual_hint">点击开始后，双方轮流说话，自动识别翻译方向。播报时暂停语音输入；关闭播报可持续收音。</string>
+    <string name="bilingual_sound">语音播报</string>
+    <string name="bilingual_permission">请允许使用麦克风；若未弹出授权提示，请在系统设置中开启权限。</string>
+    <string name="bilingual_unknown">暂未识别出语种，请使用中文或英文说话。</string>
+    <string name="bilingual_idle">准备好后，点击开始</string>
+    <string name="bilingual_connecting">正在连接…</string>
+    <string name="bilingual_listening">正在聆听 · 自动识别语种</string>
+    <string name="bilingual_speaking">正在播报译文 · 请稍后说话</string>
+    <string name="bilingual_finishing">正在完成最后一句翻译…</string>
+    <string name="bilingual_error">翻译已中断，请点击开始重新连接。</string>
+    <string name="bilingual_expired">本次 15 分钟翻译已结束，可点击开始继续。</string>
+    <string name="bilingual_empty">原文和译文将显示在这里</string>
+    <string name="bilingual_zh_en">中文 → 英文</string>
+    <string name="bilingual_en_zh">英文 → 中文</string>
+    <string name="bilingual_start">开始翻译</string>
+    <string name="bilingual_stop">停止翻译</string>
+</resources>

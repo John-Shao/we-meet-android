@@ -32,6 +32,8 @@ class AndroidTranslationOutput(context: Context, private val interrupted: () -> 
     private var muted = false
     private var registered = false
     private var focused = false
+    @get:Synchronized
+    val pendingSamples: Long get() = (written - ((track?.playbackHeadPosition?.toLong() ?: 0L) and 0xffffffffL)).coerceAtLeast(0)
     private val focus = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT).setAudioAttributes(attributes)
         .setWillPauseWhenDucked(true).setAcceptsDelayedFocusGain(false)
         .setOnAudioFocusChangeListener({ if (it != AudioManager.AUDIOFOCUS_GAIN) interrupt() }, Handler(Looper.getMainLooper())).build()

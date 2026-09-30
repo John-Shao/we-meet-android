@@ -1,0 +1,22 @@
+<resources>
+    <string name="bilingual_audio_omitted">Audio for this segment exceeded the buffer limit. Its translation is shown; the conversation can continue.</string>
+    <string name="bilingual_title">Bilingual translation</string>
+    <string name="bilingual_subtitle">Automatically translate spoken Chinese and English</string>
+    <string name="bilingual_pair">Chinese ⇄ English</string>
+    <string name="bilingual_hint">Start once, then take turns speaking. The language is detected automatically. Speech input pauses during playback; turn voice off for continuous listening.</string>
+    <string name="bilingual_sound">Read translations aloud</string>
+    <string name="bilingual_permission">Microphone permission is required. Allow it in system settings if prompted no longer.</string>
+    <string name="bilingual_unknown">Language unclear. Please speak Chinese or English.</string>
+    <string name="bilingual_idle">Ready when you are</string>
+    <string name="bilingual_connecting">Connecting…</string>
+    <string name="bilingual_listening">Listening · Language detected automatically</string>
+    <string name="bilingual_speaking">Playing translation · Please wait before speaking</string>
+    <string name="bilingual_finishing">Finishing the last translation…</string>
+    <string name="bilingual_error">Translation interrupted. Tap Start to reconnect.</string>
+    <string name="bilingual_expired">15-minute session ended. Tap Start to continue.</string>
+    <string name="bilingual_empty">Original speech and translations appear here</string>
+    <string name="bilingual_zh_en">Chinese → English</string>
+    <string name="bilingual_en_zh">English → Chinese</string>
+    <string name="bilingual_start">Start translation</string>
+    <string name="bilingual_stop">Stop translation</string>
+</resources>
