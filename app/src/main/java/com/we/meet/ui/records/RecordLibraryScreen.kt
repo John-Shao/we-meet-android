@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.data.api.dto.RecordDto
+import com.we.meet.data.api.dto.RecordPageDto
 import com.we.meet.data.repository.MeetingRecordRepository
 import com.we.meet.data.repository.RecordOrdering
 import com.we.meet.data.repository.RecordScope
@@ -70,14 +71,12 @@ fun RecordLibraryScreen(
     var dateThrough by remember(viewer) { mutableStateOf("") }
     val dates = remember(dateFrom, dateThrough) { recordDateRange(dateFrom, dateThrough) }
     val hasDates = dateFrom.isNotEmpty() || dateThrough.isNotEmpty()
-    var cursors by remember(viewer, scope, source, query, summariesOnly, dates, ordering) { mutableStateOf(listOf<String?>(null)) }
     var refresh by remember { mutableIntStateOf(0) }
     // 长按哪一行,菜单就锚在哪一行:只记这一条,不弹全局对话框。
     var menuRecord by remember(viewer) { mutableStateOf<RecordDto?>(null) }
     // 长按菜单要 app(剪贴板 / IM 会话 / 各仓库);取不到时行照常渲染,只是没有菜单。
     val app = LocalContext.current.applicationContext as? WeMeetApp
-    val cursor = cursors.last()
-    val listState = remember(viewer, scope, source, query, cursor, summariesOnly, dates, ordering) { LazyGridState() }
+    val listState = remember(viewer, scope, source, query, summariesOnly, dates, ordering) { LazyGridState() }
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -89,19 +88,31 @@ fun RecordLibraryScreen(
         dateFrom = ""; dateThrough = ""
         focusManager.clearFocus(); keyboard?.hide()
     }
-    val result = visibleRead(viewer, scope, source, query, cursor, summariesOnly, refresh, dates, ordering) {
+    val archive = rememberRecordContinuousRead(
+        viewer, scope, source, query, summariesOnly, dates, ordering,
+        initial = null as String?, next = { page: RecordPageDto<RecordDto> -> page.nextCursor },
+        merge = ::mergeLibraryPages,
+    ) { cursor ->
         // 会议实录只取已结束的:正在录的那条走下面单独一段,否则会同时出现在两处。
         // 纪要库不带这个条件(服务端本来就是 has_summary=true 的那批)。
         repository.records(viewer, scope, source, summariesOnly, query.ifBlank { null }, cursor,
             isOngoing = if (summariesOnly) null else false, createdFrom = dates.first, createdBefore = dates.second, ordering = ordering)
     }
+    val result = archive.result
     // 「进行中」单独一段:Web 端同样是两段(进行中 / 历史记录),正在进行的那条最该排在最前。
-    // 只取第一页 —— 服务端单页上限 30,同时在录的记录不该有几十条,不值得再挂一套游标。
-    val ongoing = if (summariesOnly) null else visibleRead(viewer, scope, source, query, refresh, dates, ordering) {
-        repository.records(viewer, scope, source, summariesOnly = false, query.ifBlank { null }, cursor = null, isOngoing = true,
+    val ongoingReader = if (summariesOnly) null else rememberRecordContinuousRead(
+        viewer, scope, source, query, dates, ordering,
+        initial = null as String?, next = { page: RecordPageDto<RecordDto> -> page.nextCursor },
+        merge = ::mergeLibraryPages,
+    ) { cursor ->
+        repository.records(viewer, scope, source, summariesOnly = false, query.ifBlank { null }, cursor = cursor, isOngoing = true,
             createdFrom = dates.first, createdBefore = dates.second, ordering = ordering)
     }
+    val ongoing = ongoingReader?.result
     val ongoingRows = ongoing?.getOrNull()?.results.orEmpty()
+    LaunchedEffect(refresh) {
+        if (refresh > 0) { archive.refresh(); ongoingReader?.refresh() }
+    }
     LaunchedEffect(searchVisible) { if (searchVisible) focus.requestFocus() }
     Scaffold(
         topBar = {
@@ -196,10 +207,14 @@ fun RecordLibraryScreen(
                     // 有筛选条件时给「清除筛选」(真的能改变结果),否则才退回「刷新」。
                     action = {
                         if (hasFilters) TextButton(onClick = resetFilters) { Text(stringResource(R.string.records_reset_filters)) }
-                        else TextButton(onClick = { cursors = listOf(null); refresh++ }) { Text(stringResource(R.string.records_refresh)) }
+                        else TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
                     })
                 else -> {
                     val page = result.getOrThrow()
+                    RecordAutoLoad(archive, listState)
+                    if (ongoingReader != null && ongoingRows.isNotEmpty()) {
+                        RecordAutoLoad(ongoingReader, listState, endIndex = ongoingRows.size + 1)
+                    }
                     LazyVerticalGrid(columns = if (grid) GridCells.Adaptive(Dimens.RecordGridMinWidth) else GridCells.Fixed(1), state = listState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = if (grid) PaddingValues(Dimens.ScreenPadding) else PaddingValues(),
@@ -221,6 +236,9 @@ fun RecordLibraryScreen(
                                 val open = { if (summariesOnly) onSummaryRecord(record.id) else onRecord(record.id) }
                                 RecordLibraryItem(app, viewer, record, summariesOnly, grid, menuRecord, { menuRecord = null }, { menuRecord = it }, { refresh++ }, open)
                             }
+                            item(span = { GridItemSpan(maxLineSpan) }, key = "ongoing-load-more") {
+                                ongoingReader?.let { RecordLoadMore(it) }
+                            }
                         }
                         if (!summariesOnly) item(span = { GridItemSpan(maxLineSpan) }, key = "section-archive") {
                             MeetingListSectionTitle(stringResource(R.string.records_archive))
@@ -229,16 +247,8 @@ fun RecordLibraryScreen(
                             val open = { if (summariesOnly) onSummaryRecord(record.id) else onRecord(record.id) }
                             RecordLibraryItem(app, viewer, record, summariesOnly, grid, menuRecord, { menuRecord = null }, { menuRecord = it }, { refresh++ }, open)
                         }
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            // 「单页不放这一行」由 RecordPager 自己保证（它同时是七处
-                            // 翻页行的唯一定义）。
-                            RecordPager(
-                                hasPrevious = cursors.size > 1,
-                                onPrevious = { cursors = cursors.dropLast(1) },
-                                hasNext = page.nextCursor != null,
-                                onNext = { page.nextCursor?.let { next -> cursors = cursors + next } },
-                                onRefresh = { refresh++ },
-                            )
+                        item(span = { GridItemSpan(maxLineSpan) }, key = "archive-load-more") {
+                            RecordLoadMore(archive)
                         }
                     }
                 }
@@ -292,6 +302,12 @@ fun RecordLibraryScreen(
         }
     }
 }
+
+private fun mergeLibraryPages(pages: List<RecordPageDto<RecordDto>>): RecordPageDto<RecordDto> =
+    pages.first().copy(
+        results = pages.flatMap { it.results }.distinctBy { it.id },
+        nextCursor = pages.last().nextCursor,
+    )
 
 /**
  * 列表/网格里的一行(或一张卡)+ 它的长按菜单。

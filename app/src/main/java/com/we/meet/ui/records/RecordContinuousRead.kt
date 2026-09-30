@@ -3,6 +3,7 @@ package com.we.meet.ui.records
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
@@ -118,6 +119,23 @@ internal fun <T, P> RecordAutoLoad(state: RecordContinuousRead<T, P>, list: Lazy
     } }
     LaunchedEffect(nearEnd, state.pageCount, state.busy, state.error, disabled) {
         if (nearEnd && !disabled && !state.busy && state.error == null) state.loadMore()
+    }
+}
+
+/** Library sections share a grid; each prefetches near its own footer. */
+@Composable
+internal fun <T, P> RecordAutoLoad(
+    state: RecordContinuousRead<T, P>, list: LazyGridState, endIndex: Int? = null,
+) {
+    val nearEnd by remember(list, endIndex) { derivedStateOf {
+        val layout = list.layoutInfo
+        val end = endIndex ?: (layout.totalItemsCount - 1)
+        layout.totalItemsCount > 0 &&
+            (layout.visibleItemsInfo.firstOrNull()?.index ?: Int.MAX_VALUE) <= end &&
+            (layout.visibleItemsInfo.lastOrNull()?.index ?: -1) >= end - 3
+    } }
+    LaunchedEffect(state, nearEnd, state.pageCount, state.busy, state.error) {
+        if (nearEnd && !state.busy && state.error == null) state.loadMore()
     }
 }
 

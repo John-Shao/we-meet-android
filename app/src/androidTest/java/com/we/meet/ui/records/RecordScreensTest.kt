@@ -102,6 +102,9 @@ class RecordScreensTest {
         var searchQuery: String? = null
         var sourceFilter: String? = null
         val summaryFilters = mutableListOf<Boolean?>()
+        var libraryPages = false
+        var libraryPageSize = 1
+        var failLibraryAppend = false
         private fun checkAccess() { check(!revoked) { "Fixture access revoked" } }
         override suspend fun media(recordId: String, download: Boolean?): RecordMediaDto = RecordMediaDto(
             url = "https://private.example/fixture", expiresIn = 3600,
@@ -152,7 +155,16 @@ class RecordScreensTest {
             searchQuery = query
             sourceFilter = source
             summaryFilters += hasSummary
-            return if (cursor == null) RecordPageDto(listOf(record(recordId)), "next-page") else RecordPageDto(emptyList())
+            if (cursor != null && failLibraryAppend) throw java.io.IOException("offline")
+            if (libraryPageSize > 1) {
+                val rows = (1..libraryPageSize).map { index ->
+                    record(java.util.UUID.nameUUIDFromBytes("library-$index".toByteArray()).toString())
+                        .copy(title = "Library row $index")
+                }
+                return if (cursor == null) RecordPageDto(rows, "next-page")
+                else RecordPageDto(listOf(rows.first(), record(recordId).copy(title = "Last library row")))
+            }
+            return if (cursor == null) RecordPageDto(listOf(record(recordId)), if (libraryPages) "next-page" else null) else RecordPageDto(emptyList())
         }
         override suspend fun summaries(recordId: String, cursor: String?, versionId: String?): RecordPageDto<RecordSummaryVersionDto> {
             checkAccess()
@@ -671,19 +683,61 @@ class RecordScreensTest {
         return owner
     }
 
-    @Test fun paginationEmptyStateCanReturnAndFiltersResetCursor() {
-        val fixture = Fixture()
+    @Test fun emptyNextPageKeepsLoadedRowsAndFiltersResetCursor() {
+        val fixture = Fixture().apply { libraryPages = true }
         val repo = MeetingRecordRepository(fixture) { "reader" }
         compose.setContent { WeMeetTheme(darkTheme = false) { RecordLibraryScreen(repo, "reader", false, {}, {}) } }
         awaitText("Private planning meeting")
         screenshot("records-library-light")
-        compose.onNodeWithText(label(R.string.records_next)).performScrollTo().performClick()
-        awaitText(label(R.string.records_empty))
-        compose.onNodeWithText(label(R.string.records_refresh)).performClick()
+        awaitText(label(R.string.records_load_end))
+        compose.onNodeWithText(label(R.string.records_empty)).assertDoesNotExist()
+        compose.onNodeWithText(label(R.string.records_next)).assertDoesNotExist()
         awaitText("Private planning meeting")
         compose.onNodeWithText(label(R.string.records_shared)).performScrollTo().performClick()
-        compose.waitUntil(5_000) { fixture.queries.lastOrNull() == ("shared" to null) }
+        compose.waitUntil(5_000) { fixture.queries.contains("shared" to null) }
         assertTrue(fixture.queries.contains("recent" to "next-page"))
+    }
+
+    @Test fun recordsScrollAppendsAndPreservesRowsAcrossViews() = checkLibraryAutoLoad(false, false)
+
+    @Test fun minutesScrollAppendsAndPreservesRowsAcrossViews() = checkLibraryAutoLoad(true, false)
+
+    @Test fun recordsScrollFailureRetriesWithoutDroppingRows() = checkLibraryAutoLoad(false, true)
+
+    @Test fun minutesScrollFailureRetriesWithoutDroppingRows() = checkLibraryAutoLoad(true, true)
+
+    private fun checkLibraryAutoLoad(minutes: Boolean, failAppend: Boolean) {
+        val fixture = Fixture().apply { libraryPageSize = 20; failLibraryAppend = failAppend }
+        compose.setContent { WeMeetTheme {
+            RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", minutes, {}, {})
+        } }
+        awaitText("Library row 1")
+        compose.runOnIdle { assertEquals(1, fixture.queries.size) }
+        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(19)
+        if (failAppend) {
+            awaitText(label(R.string.records_load_retry))
+            compose.runOnIdle { fixture.failLibraryAppend = false }
+            compose.onNodeWithText(label(R.string.records_load_retry)).performClick()
+        }
+        awaitText("Last library row")
+        compose.runOnIdle {
+            assertEquals(if (failAppend) 3 else 2, fixture.queries.size)
+            assertTrue(fixture.queries.drop(1).all { it.second == "next-page" })
+            assertTrue(fixture.summaryFilters.all { it == if (minutes) true else null })
+        }
+        compose.onNodeWithText(label(R.string.records_next)).assertDoesNotExist()
+        compose.onNodeWithText(label(R.string.records_previous)).assertDoesNotExist()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_grid_view)).performClick()
+        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(0)
+        compose.onNodeWithText("Library row 1").assertIsDisplayed()
+        compose.onNodeWithContentDescription(label(R.string.cd_records_list_view)).performClick()
+        compose.onNodeWithText("Library row 1").assertIsDisplayed()
+        // A scope change discards both loaded pages and starts at a fresh cursor.
+        compose.runOnIdle { fixture.libraryPageSize = 1; fixture.queries.clear() }
+        compose.onNodeWithText(label(if (minutes) R.string.minutes_shared else R.string.records_shared)).performClick()
+        awaitText("Private planning meeting")
+        compose.runOnIdle { assertEquals(listOf("shared" to null), fixture.queries) }
+        compose.onNodeWithText("Last library row").assertDoesNotExist()
     }
 
     @Test fun librarySearchAndFiltersDriveTheQuery() {
@@ -722,11 +776,10 @@ class RecordScreensTest {
     }
 
     @Test fun datesCombineWithSourceResetCursorAndRejectInvalidRange() {
-        val fixture = Fixture()
+        val fixture = Fixture().apply { libraryPages = true }
         compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", false, {}, {}) } }
         awaitText("Private planning meeting")
-        compose.onNodeWithText(label(R.string.records_next)).performScrollTo().performClick()
-        awaitText(label(R.string.records_empty))
+        awaitText(label(R.string.records_load_end))
         compose.onNodeWithText(label(R.string.records_filters)).performClick()
         compose.onNodeWithText(label(R.string.records_uploaded)).performScrollTo().performClick()
         compose.onNodeWithText(label(R.string.records_created_from)).performScrollTo().performTextInput("2026-09-21")
@@ -748,14 +801,15 @@ class RecordScreensTest {
         compose.onNodeWithText(label(R.string.records_filters_done)).performClick()
         compose.waitUntil(8000) { fixture.dateQueries.size >= 2 }
         val dates = recordDateRange("2026-09-20", "2026-09-20")
-        assertTrue(fixture.dateQueries.all { it == listOf(dates.first, dates.second, null, "upload") })
+        assertTrue(fixture.dateQueries.all { it[0] == dates.first && it[1] == dates.second && it[3] == "upload" })
+        assertNull(fixture.dateQueries.first()[2])
         awaitText("Private planning meeting")
         compose.onNodeWithText(label(R.string.records_reset_filters)).performClick()
         compose.waitUntil(8000) { fixture.sourceFilter == null }
     }
 
     @Test fun orderingResetsPaginationAndPreservesSourceAndDateFilters() {
-        val fixture = Fixture()
+        val fixture = Fixture().apply { libraryPages = true }
         compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", false, {}, {}) } }
         awaitText("Private planning meeting")
         compose.onNodeWithText(label(R.string.records_filters)).performClick()
@@ -763,19 +817,18 @@ class RecordScreensTest {
         compose.onNodeWithText(label(R.string.records_created_from)).performScrollTo().performTextInput("2026-09-20")
         compose.onNodeWithText(label(R.string.records_filters_done)).performClick()
         awaitText("Private planning meeting")
-        compose.onNodeWithText(label(R.string.records_next)).performScrollTo().performClick()
-        awaitText(label(R.string.records_empty))
+        awaitText(label(R.string.records_load_end))
         fixture.orderQueries.clear()
         fixture.dateQueries.clear()
         openMore()
         compose.onNodeWithText(label(R.string.records_oldest)).performClick()
         awaitText("Private planning meeting")
         compose.waitUntil(5000) { fixture.orderQueries.size >= 2 }
-        assertTrue(fixture.orderQueries.all { it[0] == "created_at" && it[1] == null && it[2] == "upload" })
+        assertTrue(fixture.orderQueries.all { it[0] == "created_at" && it[2] == "upload" })
+        assertNull(fixture.orderQueries.first()[1])
         assertEquals(setOf("true", "false"), fixture.orderQueries.map { it[4] }.toSet())
         assertTrue(fixture.dateQueries.all { it[0] == recordDateRange("2026-09-20", "").first })
-        compose.onNodeWithText(label(R.string.records_next)).performScrollTo().performClick()
-        awaitText(label(R.string.records_empty))
+        awaitText(label(R.string.records_load_end))
         assertTrue(fixture.orderQueries.any { it[0] == "created_at" && it[1] == "next-page" })
         openMore()
         compose.onNodeWithText(label(R.string.records_newest)).performClick()
@@ -784,17 +837,16 @@ class RecordScreensTest {
     }
 
     @Test fun minutesLibraryOrderingKeepsSummaryScope() {
-        val fixture = Fixture()
+        val fixture = Fixture().apply { libraryPages = true }
         compose.setContent { WeMeetTheme { RecordLibraryScreen(MeetingRecordRepository(fixture) { "reader" }, "reader", true, {}, {}) } }
         awaitText("Private planning meeting")
-        compose.onNodeWithText(label(R.string.records_next)).performScrollTo().performClick()
-        awaitText(label(R.string.minutes_empty))
+        awaitText(label(R.string.records_load_end))
         fixture.orderQueries.clear()
         openMore()
         compose.onNodeWithText(label(R.string.records_oldest)).performClick()
         awaitText("Private planning meeting")
-        assertEquals(listOf("created_at", null, null, null, null, "true"), fixture.orderQueries.single())
-        assertEquals("owned" to null, fixture.queries.last())
+        assertEquals(listOf("created_at", null, null, null, null, "true"), fixture.orderQueries.first())
+        assertTrue(fixture.queries.contains("owned" to null))
         screenshot("records-ordered-minutes")
     }
 
