@@ -1,54 +1,45 @@
 package com.we.meet.feature.assistant.aicall.data
 
 import android.content.Context
-import com.we.meet.feature.assistant.aicall.model.AiCallMode
-import com.we.meet.feature.assistant.aicall.model.AiModeSelection
+import com.we.meet.feature.assistant.aicall.model.AiCallSelection
 
-/**
- * Persists the user's per-mode AI agent configuration: which (profile,
- * voice, prompt) triple they picked for voice calls vs video calls.
- *
- * Legacy keys ``voice_index`` / ``prompt_label`` (one-dimensional pre-tab
- * UI) are silently ignored when loading and not written back — they decay
- * out on first save.
- */
+/** One set of preferences shared by microphone-only and camera-enabled calls. */
 class AiCallPreferences(context: Context) {
-
     private val prefs = context.applicationContext
-        .getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)
+        .getSharedPreferences("we_meet_ai_call_prefs", Context.MODE_PRIVATE)
 
-    fun load(mode: AiCallMode): AiModeSelection {
-        val (k1, k2, k3) = keys(mode)
-        return AiModeSelection(
-            profileCode = prefs.getString(k1, null),
-            voiceId = prefs.getString(k2, null),
-            promptId = prefs.getString(k3, null),
+    fun load(): AiCallSelection {
+        if (!prefs.getBoolean("unified_selection", false)) {
+            // Prefer the previous Qwen/video settings. Catalog validation drops
+            // incompatible voice IDs left by an older provider or model.
+            val selection = AiCallSelection(
+                voiceId = prefs.getString("video_voice_id", null)
+                    ?: prefs.getString("voice_voice_id", null),
+                promptId = if (prefs.contains("video_profile_code") || prefs.contains("video_voice_id")) {
+                    prefs.getString("video_prompt_id", null)
+                } else {
+                    prefs.getString("video_prompt_id", null) ?: prefs.getString("voice_prompt_id", null)
+                },
+            )
+            save(selection)
+            return selection
+        }
+        return AiCallSelection(
+            voiceId = prefs.getString("call_voice_id", null),
+            promptId = prefs.getString("call_prompt_id", null),
         )
     }
 
-    fun save(mode: AiCallMode, selection: AiModeSelection) {
-        val (k1, k2, k3) = keys(mode)
+    fun save(selection: AiCallSelection) {
         prefs.edit().apply {
-            putOrRemove(k1, selection.profileCode)
-            putOrRemove(k2, selection.voiceId)
-            putOrRemove(k3, selection.promptId)
+            putBoolean("unified_selection", true)
+            putString("call_voice_id", selection.voiceId)
+            putString("call_prompt_id", selection.promptId)
+            for (prefix in listOf("voice", "video")) {
+                for (suffix in listOf("profile_code", "voice_id", "prompt_id")) {
+                    remove("${prefix}_${suffix}")
+                }
+            }
         }.apply()
-    }
-
-    private fun keys(mode: AiCallMode): Triple<String, String, String> {
-        val prefix = if (mode == AiCallMode.Voice) "voice" else "video"
-        return Triple("${prefix}_profile_code", "${prefix}_voice_id", "${prefix}_prompt_id")
-    }
-
-    private fun android.content.SharedPreferences.Editor.putOrRemove(
-        key: String,
-        value: String?,
-    ) {
-        if (value.isNullOrBlank()) remove(key) else putString(key, value)
-    }
-
-    companion object {
-        // Prefixed to avoid colliding with any host SharedPreferences file.
-        private const val FILE_NAME = "we_meet_ai_call_prefs"
     }
 }

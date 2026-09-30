@@ -2,28 +2,6 @@ package com.we.meet.feature.assistant.aicall.model
 
 import com.squareup.moshi.JsonClass
 
-// ---- Room creation (POST /api/v1.0/rooms/) ----
-
-@JsonClass(generateAdapter = true)
-data class CreateRoomRequest(
-    val name: String,
-    val access_level: String = "public",
-)
-
-@JsonClass(generateAdapter = true)
-data class LiveKitInfoDto(
-    val url: String,
-    val room: String?,
-    val token: String,
-)
-
-@JsonClass(generateAdapter = true)
-data class CreateRoomResponse(
-    val id: String,
-    val slug: String? = null,
-    val livekit: LiveKitInfoDto? = null,
-)
-
 // ---- AI agent catalog (GET /api/v1.0/rooms/ai-agent-config/) ----
 // we-meet's profile-based contract: each profile carries its own voice list
 // (voices have a UUID `id`), and prompts are addressed by UUID `id`.
@@ -39,24 +17,14 @@ data class AiVoiceDto(
 data class AiProfileDto(
     val code: String,
     val display_name: String? = null,
-    /** Backend-declared usage: "audio" for voice-only profiles, "video"
-     *  for vision-capable profiles. Picked by the App to route 「打电话」
-     *  to the right profile. May be null if talking to a pre-0036
-     *  backend — callers fall back to the `mentions()` heuristic below. */
     val agent_type: String? = null,
+    val model_code: String? = null,
     val voices: List<AiVoiceDto> = emptyList(),
     val default_voice_id: String? = null,
     // No profile-level default prompt: model and prompt are decoupled
     // server-side. Prompt resolution falls back to user preference, then
     // to none.
-) {
-    val isVideo: Boolean get() = agent_type.equals("video", ignoreCase = true)
-    val isAudio: Boolean get() = agent_type.equals("audio", ignoreCase = true)
-
-    fun mentions(needle: String): Boolean =
-        code.contains(needle, ignoreCase = true) ||
-            (display_name?.contains(needle, ignoreCase = true) == true)
-}
+)
 
 @JsonClass(generateAdapter = true)
 data class AiPromptDto(
@@ -70,34 +38,35 @@ data class AiAgentConfigResponse(
     val profiles: List<AiProfileDto> = emptyList(),
     val prompts: List<AiPromptDto> = emptyList(),
 ) {
-    fun profile(code: String): AiProfileDto? = profiles.firstOrNull { it.code == code }
+    /** The same Qwen 3.8 profile handles microphone and camera input. */
+    fun callProfile(): AiProfileDto? = profiles.firstOrNull {
+        it.model_code == "aliyun/qwen3.8-omni-flash-realtime"
+    }
 
-    /** Backend is the source of truth for profile codes — pick by feature
-     *  rather than a hardcoded code so the client tolerates code drift
-     *  (e.g. ``qwen`` vs ``qwen-omni-realtime``). */
-
-    /** Video-capable realtime profile. Picks the backend-declared
-     *  ``agent_type == "video"`` profile; falls back to a ``code``
-     *  heuristic for pre-0036 backends that don't yet expose
-     *  ``agent_type``. */
-    fun videoProfile(): AiProfileDto? =
-        profiles.firstOrNull { it.isVideo }
-            ?: profiles.firstOrNull { it.mentions("qwen") }
-
-    /** Audio realtime profile. Same precedence: ``agent_type == "audio"``
-     *  first, legacy heuristic second. */
-    fun voiceProfile(): AiProfileDto? =
-        profiles.firstOrNull { it.isAudio }
-            ?: profiles.firstOrNull { it.mentions("doubao") && it.mentions("s2s") }
+    fun resolveSelection(selection: AiCallSelection): AiCallSelection {
+        val profile = callProfile()
+        val voices = profile?.voices.orEmpty()
+        return AiCallSelection(
+            voiceId = selection.voiceId?.takeIf { id -> voices.any { it.id == id } }
+                ?: profile?.default_voice_id?.takeIf { id -> voices.any { it.id == id } }
+                ?: voices.firstOrNull()?.id,
+            promptId = selection.promptId?.takeIf { id -> prompts.any { it.id == id } },
+        )
+    }
 }
 
-// ---- Start agent (POST /api/v1.0/rooms/{id}/start-ai-agent/) ----
-// Body is profile-based; request is authenticated by the room's LiveKit
-// token in the Authorization header (see AiAgentApi).
-
+// SDP exchange is authenticated with the user's normal application session.
 @JsonClass(generateAdapter = true)
-data class StartAgentRequest(
+data class AiCallOffer(
+    val sdp: String,
     val profile_code: String,
     val voice_id: String? = null,
     val prompt_id: String? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class AiCallAnswer(
+    val sdp: String,
+    val voice: String,
+    val instructions: String,
 )

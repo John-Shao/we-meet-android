@@ -40,6 +40,7 @@ android {
 }
 
 dependencies {
+    testImplementation(libs.junit)
     implementation(project(":core-design"))
 
     // Kotlin

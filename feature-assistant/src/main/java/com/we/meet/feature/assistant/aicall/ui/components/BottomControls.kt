@@ -49,6 +49,7 @@ fun BottomControls(
      * 与顶栏 / 状态提示条的 `onDark` 同一套判断。
      */
     onDark: Boolean = false,
+    cameraPending: Boolean = false,
 ) {
     val isActive = status is AiCallStatus.Active
     val isConnecting = status is AiCallStatus.Connecting
@@ -84,7 +85,7 @@ fun BottomControls(
         VideoToggleButton(
             controls = controls,
             selected = videoSelected,
-            enabled = !isConnecting,
+            enabled = !isConnecting && !cameraPending,
             onClick = onToggleVideoMode,
         )
     }

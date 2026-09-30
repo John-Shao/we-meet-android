@@ -17,8 +17,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -30,162 +28,68 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.we.meet.feature.assistant.aicall.model.AiAgentConfigResponse
-import com.we.meet.feature.assistant.aicall.model.AiCallMode
-import com.we.meet.feature.assistant.aicall.model.AiModeSelection
-import com.we.meet.feature.assistant.aicall.model.AiProfileDto
+import com.we.meet.feature.assistant.aicall.model.AiCallSelection
 
-/** Sentinel label shown in the prompt dropdown when nothing is selected. */
-
-
-/**
- * AI agent configuration sheet — entered from 「AI → 打电话 → 设置」.
- *
- * Two tabs (语音通话 / 视频通话). Each tab independently picks model →
- * voice → prompt. The voice list depends on the picked model, the prompt
- * list is shared across both tabs (and across users).
- *
- * The active tab is bound to the current call mode ([currentMode]) — when
- * the user switches tabs, [onModeChange] also updates the mode so the
- * "what I'm configuring" matches "what the next call will run as". This
- * prevents the trap where users picked a voice on one tab but the call
- * picked the other tab's selection because the main-screen toggle had
- * moved state.mode out of sync.
- */
+/** Shared call settings; camera state only controls the published media. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AiSettingsSheet(
     config: AiAgentConfigResponse?,
-    currentMode: AiCallMode,
-    voiceSelection: AiModeSelection,
-    videoSelection: AiModeSelection,
-    onModeChange: (AiCallMode) -> Unit,
-    onSelectProfile: (AiCallMode, profileCode: String?) -> Unit,
-    onSelectVoice: (AiCallMode, voiceId: String?) -> Unit,
-    onSelectPrompt: (AiCallMode, promptId: String?) -> Unit,
+    selection: AiCallSelection,
+    onSelectVoice: (String?) -> Unit,
+    onSelectPrompt: (String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val cfg = config
-    val audioProfiles = cfg?.profiles.orEmpty().filter { it.isAudio }
-    val videoProfiles = cfg?.profiles.orEmpty().filter { it.isVideo }
-    val prompts = cfg?.prompts.orEmpty()
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        // Use Material3's theme-aware sheet container; hardcoded white
-        // looked broken in dark mode (TabRow drew dark, sheet drew white).
     ) {
         Column(modifier = Modifier.padding(bottom = Dimens.SpaceXl)) {
-            TabRow(selectedTabIndex = if (currentMode == AiCallMode.Voice) 0 else 1) {
-                Tab(
-                    selected = currentMode == AiCallMode.Voice,
-                    onClick = { onModeChange(AiCallMode.Voice) },
-                    text = { Text(stringResource(R.string.assistant_voice_call)) },
-                )
-                Tab(
-                    selected = currentMode == AiCallMode.Video,
-                    onClick = { onModeChange(AiCallMode.Video) },
-                    text = { Text(stringResource(R.string.assistant_video_call)) },
-                )
-            }
-
             Spacer(modifier = Modifier.height(Dimens.SpaceM))
-
-            val selection = if (currentMode == AiCallMode.Voice) voiceSelection else videoSelection
-            val profiles = if (currentMode == AiCallMode.Voice) audioProfiles else videoProfiles
-            ModeConfigSection(
-                profiles = profiles,
-                prompts = prompts,
-                selection = selection,
-                onSelectProfile = { code -> onSelectProfile(currentMode, code) },
-                onSelectVoice = { id -> onSelectVoice(currentMode, id) },
-                onSelectPrompt = { id -> onSelectPrompt(currentMode, id) },
-            )
-
+            CallConfigSection(config, selection, onSelectVoice, onSelectPrompt)
             Spacer(modifier = Modifier.height(Dimens.SpaceM))
         }
     }
 }
 
 @Composable
-private fun ModeConfigSection(
-    profiles: List<AiProfileDto>,
-    prompts: List<com.we.meet.feature.assistant.aicall.model.AiPromptDto>,
-    selection: AiModeSelection,
-    onSelectProfile: (String?) -> Unit,
+private fun CallConfigSection(
+    config: AiAgentConfigResponse?,
+    selection: AiCallSelection,
     onSelectVoice: (String?) -> Unit,
     onSelectPrompt: (String?) -> Unit,
 ) {
-    // Resolved profile: explicit user pick (validated against the list)
-    // → first profile in this tab. The dropdown always reflects whatever
-    // would actually be used at call start, not a stale stored code.
-    val resolvedProfile = remember(profiles, selection.profileCode) {
-        selection.profileCode?.let { code -> profiles.firstOrNull { it.code == code } }
-            ?: profiles.firstOrNull()
-    }
-    val resolvedVoiceId = remember(resolvedProfile, selection.voiceId) {
-        val voices = resolvedProfile?.voices.orEmpty()
-        when {
-            selection.voiceId != null && voices.any { it.id == selection.voiceId } -> selection.voiceId
-            else -> resolvedProfile?.default_voice_id ?: voices.firstOrNull()?.id
-        }
-    }
+    val profile = config?.callProfile()
+    val resolved = config?.resolveSelection(selection)
+    val voices = profile?.voices.orEmpty()
+    val prompts = config?.prompts.orEmpty()
 
-    // 模型
     SectionLabel(stringResource(R.string.assistant_section_model))
-    Dropdown(
-        value = resolvedProfile?.display_name?.takeIf { it.isNotBlank() }
-            ?: resolvedProfile?.code
-            ?: stringResource(R.string.assistant_no_model),
-        options = profiles.map { it.display_name?.takeIf { n -> n.isNotBlank() } ?: it.code },
-        onSelect = { idx -> onSelectProfile(profiles[idx].code) },
-        // Stay visually 'enabled' even when there's a single option, so the
-        // value text renders at full contrast. Disabling only when the list
-        // is empty preserves the empty-state hint look.
-        enabled = profiles.isNotEmpty(),
+    OutlinedTextField(
+        value = "qwen3.8-omni-flash-realtime",
+        onValueChange = {},
+        readOnly = true,
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl),
     )
-
     Spacer(modifier = Modifier.height(Dimens.SpaceS))
-
-    // 音色
-    val voices = resolvedProfile?.voices.orEmpty()
-    val voiceLabels = voices.map { it.label ?: it.value }
-    val voiceIndex = voices.indexOfFirst { it.id == resolvedVoiceId }.takeIf { it >= 0 } ?: 0
     SectionLabel(stringResource(R.string.assistant_section_voice))
     Dropdown(
-        value = voiceLabels.getOrNull(voiceIndex) ?: "",
-        options = voiceLabels,
-        onSelect = { idx -> onSelectVoice(voices.getOrNull(idx)?.id) },
+        value = voices.firstOrNull { it.id == resolved?.voiceId }
+            ?.let { it.label ?: it.value } ?: "",
+        options = voices.map { it.label ?: it.value },
+        onSelect = { onSelectVoice(voices[it].id) },
         enabled = voices.isNotEmpty(),
     )
-
     Spacer(modifier = Modifier.height(Dimens.SpaceS))
-
-    // 提示词 — 第一项是「默认」（null），后续为后端目录中的 prompt
-    val noPromptLabel = stringResource(R.string.assistant_prompt_default)
-    val promptOptions = buildList {
-        add(noPromptLabel)
-        addAll(prompts.map { it.label })
-    }
-    val currentPromptLabel = selection.promptId
-        ?.let { id -> prompts.firstOrNull { it.id == id }?.label }
-        ?: noPromptLabel
     SectionLabel(stringResource(R.string.assistant_section_prompt))
+    val defaultLabel = stringResource(R.string.assistant_prompt_default)
     Dropdown(
-        value = currentPromptLabel,
-        options = promptOptions,
-        onSelect = { idx ->
-            if (idx == 0) {
-                onSelectPrompt(null)
-            } else {
-                onSelectPrompt(prompts[idx - 1].id)
-            }
-        },
-        // The "默认" sentinel is always present, so promptOptions is never
-        // empty — keep the dropdown fully readable regardless of how many
-        // prompts the catalog ships with.
+        value = prompts.firstOrNull { it.id == resolved?.promptId }?.label ?: defaultLabel,
+        options = listOf(defaultLabel) + prompts.map { it.label },
+        onSelect = { onSelectPrompt(if (it == 0) null else prompts[it - 1].id) },
         enabled = true,
     )
 }

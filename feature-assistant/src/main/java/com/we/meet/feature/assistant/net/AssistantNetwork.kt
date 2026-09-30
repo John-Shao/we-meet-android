@@ -19,7 +19,9 @@ internal object AssistantNetwork {
         val base = if (deps.baseUrl.endsWith("/")) deps.baseUrl else deps.baseUrl + "/"
         return Retrofit.Builder()
             .baseUrl(base)
-            .client(deps.authedOkHttp)
+            .client(deps.authedOkHttp.newBuilder()
+                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .build())
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
     }

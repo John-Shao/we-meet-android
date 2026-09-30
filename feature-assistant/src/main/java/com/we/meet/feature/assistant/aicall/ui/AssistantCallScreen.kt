@@ -198,8 +198,7 @@ fun AssistantCallScreen(
             // Background — video fill in video-active mode, otherwise white.
             if (isVideoActive) {
                 VideoPreview(
-                    room = vm.liveKitRoom,
-                    track = vm.localVideoTrack,
+                    client = vm.rtcClient,
                     mirror = state.cameraFront,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -243,6 +242,7 @@ fun AssistantCallScreen(
                     mode = state.mode,
                     isMicMuted = state.isMicMuted,
                     micPending = state.micPending,
+                    cameraPending = state.cameraPending,
                     onToggleMic = vm::toggleMic,
                     onPrimaryAction = {
                         when (state.status) {
@@ -272,11 +272,7 @@ fun AssistantCallScreen(
             if (state.showPicker) {
                 AiSettingsSheet(
                     config = state.agentConfig,
-                    currentMode = state.mode,
-                    voiceSelection = state.voiceSelection,
-                    videoSelection = state.videoSelection,
-                    onModeChange = vm::setMode,
-                    onSelectProfile = vm::selectProfile,
+                    selection = state.selection,
                     onSelectVoice = vm::selectVoice,
                     onSelectPrompt = vm::selectPrompt,
                     onDismiss = { vm.showPicker(false) },
@@ -396,10 +392,6 @@ private fun StatusHint(
 /** 只做「步骤 → 文案资源」的映射,解析交给调用方 —— 保持它是个纯函数。 */
 @StringRes
 private fun connectingLabelRes(step: ConnectingStep): Int = when (step) {
-    ConnectingStep.CreatingRoom -> R.string.assistant_step_creating_room
-    ConnectingStep.JoiningLiveKit -> R.string.assistant_step_joining
-    ConnectingStep.PublishingTracks -> R.string.assistant_step_publishing
-    ConnectingStep.StartingAgent -> R.string.assistant_step_starting_agent
-    ConnectingStep.WaitingAgent -> R.string.assistant_step_waiting_agent
-    ConnectingStep.SwitchingMode -> R.string.assistant_step_switching_mode
+    ConnectingStep.Connecting -> R.string.assistant_step_connecting
+    ConnectingStep.Configuring -> R.string.assistant_step_configuring
 }

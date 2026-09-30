@@ -6,6 +6,8 @@
   下也只显示中文。本次一并归位,与 app / core-directory 的做法对齐。
 -->
 <resources>
+    <string name="assistant_step_connecting">Connecting</string>
+    <string name="assistant_step_configuring">Preparing AI conversation</string>
     <string name="assistant_error_network">Network error. Check your connection and try again.</string>
     <string name="assistant_error_unknown">Something went wrong. Please try again.</string>
     <string name="assistant_error_auth_expired">Your session has expired. Please sign in again.</string>
