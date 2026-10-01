@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -60,8 +61,7 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
     }
     Scaffold(topBar = { WeMeetTopBar(title = stringResource(R.string.bilingual_title), onBack = back) }) { insets ->
         Column(Modifier.fillMaxSize().padding(insets).padding(horizontal = Dimens.ScreenPadding)) {
-            Text(stringResource(R.string.bilingual_pair), style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = Dimens.SpaceL))
+            BilingualLanguageSelectors(state, controller::selectLanguage)
             Text(stringResource(R.string.bilingual_hint), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS), verticalAlignment = Alignment.CenterVertically) {
@@ -83,7 +83,9 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                     BilingualPhase.EXPIRED -> R.string.bilingual_expired
                 }
             }
-            Text(stringResource(status), style = MaterialTheme.typography.bodyMedium,
+            Text(if (state.unknownLanguage && !permissionDenied) stringResource(status,
+                stringResource(BilingualLanguages.label(state.pair.source)), stringResource(BilingualLanguages.label(state.pair.target)))
+                else stringResource(status), style = MaterialTheme.typography.bodyMedium,
                 color = if (state.phase == BilingualPhase.ERROR || permissionDenied) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
             if (state.audioOmitted) Text(stringResource(R.string.bilingual_audio_omitted),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -97,7 +99,8 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                     items(state.rows, key = { it.id }) { row ->
                         Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                                Text(stringResource(if (row.sourceLanguage == "zh") R.string.bilingual_zh_en else R.string.bilingual_en_zh),
+                                Text(stringResource(R.string.bilingual_direction,
+                                    stringResource(BilingualLanguages.label(row.sourceLanguage)), stringResource(BilingualLanguages.label(row.targetLanguage))),
                                     style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                                 Text(row.source, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(row.text, style = MaterialTheme.typography.bodyLarge)
@@ -117,5 +120,41 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                 modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceL).height(Dimens.ButtonHeight),
             ) { Text(stringResource(if (state.active) R.string.bilingual_stop else R.string.bilingual_start)) }
         }
+    }
+}
+
+@Composable
+internal fun BilingualLanguageSelectors(state: BilingualState, select: (Boolean, String) -> Unit) {
+    var choosingFirst by remember { mutableStateOf<Boolean?>(null) }
+    Row(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceM), verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+        OutlinedButton(onClick = { choosingFirst = true }, enabled = !state.active,
+            modifier = Modifier.weight(1f).testTag("bilingual-first-language")) {
+            Text(stringResource(BilingualLanguages.label(state.pair.source)), fontWeight = FontWeight.Bold)
+        }
+        Text("⇄", style = MaterialTheme.typography.titleLarge)
+        OutlinedButton(onClick = { choosingFirst = false }, enabled = !state.active,
+            modifier = Modifier.weight(1f).testTag("bilingual-second-language")) {
+            Text(stringResource(BilingualLanguages.label(state.pair.target)), fontWeight = FontWeight.Bold)
+        }
+    }
+    val first = choosingFirst
+    if (first != null && !state.active) {
+        val current = if (first) state.pair.source else state.pair.target
+        AlertDialog(onDismissRequest = { choosingFirst = null },
+            title = { Text(stringResource(R.string.bilingual_choose_language)) },
+            text = {
+                LazyColumn(Modifier.testTag("bilingual-language-list")) {
+                    items(BilingualLanguages.labels.keys.toList(), key = { it }) { code ->
+                        TextButton(onClick = { select(first, code); choosingFirst = null }, modifier = Modifier.fillMaxWidth()) {
+                            Text(stringResource(BilingualLanguages.label(code)), modifier = Modifier.weight(1f),
+                                fontWeight = if (code == current) FontWeight.Bold else FontWeight.Normal)
+                            if (code == current) Text("✓")
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { choosingFirst = null }) { Text(stringResource(android.R.string.cancel)) } },
+        )
     }
 }

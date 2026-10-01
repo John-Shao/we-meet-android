@@ -58,15 +58,40 @@ class BilingualTranslationTest {
         fun ready() { listener.opened(); listener.message("{\"type\":\"ready\"}") }
     }
     private class Api : AssistantTranslationApi {
+        var selected: AssistantTranslationPair? = null
         var wait: CompletableDeferred<Unit>? = null
         var timeout = false
         val entered = CompletableDeferred<Unit>()
         override suspend fun ticket(pair: AssistantTranslationPair): AssistantTranslationTicket {
+            selected = pair
             entered.complete(Unit)
             if (timeout) withTimeout(1) { awaitCancellation() }
             wait?.await()
             return AssistantTranslationTicket("wss://test/capture-translation", "opaque")
         }
+    }
+
+    @Test fun selectedLanguagesReachTicketAndBothDirectionsKeepTheirLabels() {
+        val f = Fixture()
+        try {
+            main {
+                f.controller.selectLanguage(true, "ja")
+                f.controller.selectLanguage(false, "fr")
+                f.controller.start()
+                f.controller.selectLanguage(false, "de")
+            }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            assertEquals(AssistantTranslationPair("ja", "fr"), f.api.selected)
+            for ((source, target) in listOf("ja" to "fr", "fr" to "ja")) {
+                f.wire!!.listener.message(JSONObject().put("type", "translation").put("id", source)
+                    .put("source_language", source).put("target_language", target)
+                    .put("source", "original").put("text", "translated").toString())
+            }
+            waitFor { f.controller.state.value.rows.size == 2 }
+            assertEquals(listOf("fr", "ja"), f.controller.state.value.rows.map { it.targetLanguage })
+            main { f.controller.stop(); f.controller.selectLanguage(false, "de") }
+            assertEquals(listOf("fr", "ja"), f.controller.state.value.rows.map { it.targetLanguage })
+        } finally { main { f.controller.close() } }
     }
     private class Fixture(val api: Api = Api()) {
         val microphone = Microphone()

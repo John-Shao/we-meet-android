@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Semaphore
 import org.json.JSONObject
 
-internal data class BilingualRow(val id: String, val source: String, val text: String, val sourceLanguage: String) {
+internal data class BilingualRow(val id: String, val source: String, val text: String, val sourceLanguage: String, val targetLanguage: String) {
     override fun toString() = "BilingualRow(<private>)"
 }
 
@@ -33,6 +33,7 @@ internal data class BilingualState(
     val unknownLanguage: Boolean = false,
     val sound: Boolean = true,
     val audioOmitted: Boolean = false,
+    val pair: AssistantTranslationPair = AssistantTranslationPair(),
 ) {
     val active get() = phase in setOf(BilingualPhase.CONNECTING, BilingualPhase.LISTENING, BilingualPhase.SPEAKING, BilingualPhase.FINISHING)
     override fun toString() = "BilingualState(<private>)"
@@ -70,7 +71,7 @@ internal class BilingualTranslationController(
 
     fun start() {
         if (active != null || !authorized()) return
-        val session = Session()
+        val session = Session(mutable.value.pair)
         active = session
         mutable.update { it.copy(phase = BilingualPhase.CONNECTING, unknownLanguage = false, audioOmitted = false) }
         session.job = scope.launch(start = CoroutineStart.LAZY) {
@@ -96,13 +97,20 @@ internal class BilingualTranslationController(
     }
 
     fun sound(enabled: Boolean) { mutable.update { it.copy(sound = enabled) } }
+    fun selectLanguage(first: Boolean, language: String) {
+        if (active != null || language !in BilingualLanguages.labels) return
+        mutable.update { it.copy(
+            pair = BilingualLanguages.select(it.pair, first, language),
+            unknownLanguage = false,
+        ) }
+    }
     fun finish() {
         if (mutable.value.phase == BilingualPhase.CONNECTING) stop()
         else active?.finish()
     }
     override fun close() { stop(); scope.cancel(); mutable.value = BilingualState() }
 
-    private inner class Session {
+    private inner class Session(private val pair: AssistantTranslationPair) {
         var job: Job? = null
         private val closed = AtomicBoolean()
         private val speaking = AtomicBoolean()
@@ -121,7 +129,8 @@ internal class BilingualTranslationController(
         private fun failure() { scope.launch { if (active === this@Session) stop(BilingualPhase.ERROR) } }
 
         suspend fun run(): Unit = coroutineScope {
-            val ticket = api.ticket(AssistantTranslationPair())
+            check(BilingualLanguages.valid(pair))
+            val ticket = api.ticket(pair)
             check(!closed.get() && authorized() && ticket.url.startsWith("wss://"))
             // Resource installation occurs on Main, serialized with stop/disposal.
             output = openOutput(::failure)
@@ -155,8 +164,11 @@ internal class BilingualTranslationController(
                         }
                         "language_unknown" -> mutable.update { it.copy(unknownLanguage = true) }
                         "translation" -> {
-                            val row = BilingualRow(event.getString("id"), event.getString("source"), event.getString("text"), event.getString("source_language"))
-                            check(row.source.length <= 20000 && row.text.length <= 20000 && row.sourceLanguage in setOf("zh", "en"))
+                            val sourceLanguage = event.getString("source_language")
+                            val targetLanguage = BilingualLanguages.opposite(pair, sourceLanguage)
+                            check(event.optString("target_language", targetLanguage) == targetLanguage)
+                            val row = BilingualRow(event.getString("id"), event.getString("source"), event.getString("text"), sourceLanguage, targetLanguage)
+                            check(row.source.length <= 20000 && row.text.length <= 20000)
                             mutable.update { value -> value.copy(rows = (value.rows.filterNot { it.id == row.id } + row).takeLast(100), unknownLanguage = false, audioOmitted = event.optBoolean("audio_omitted")) }
                         }
                         "audio" -> {

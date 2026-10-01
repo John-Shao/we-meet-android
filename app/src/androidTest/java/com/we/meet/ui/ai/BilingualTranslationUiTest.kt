@@ -1,9 +1,14 @@
 package com.we.meet.ui.ai
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.hasText
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -37,10 +42,30 @@ class BilingualTranslationUiTest {
                 BilingualTranslationScreen(context.applicationContext as WeMeetApp) {}
             }
         }
-        compose.onNodeWithText(context.getString(R.string.bilingual_pair)).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.bilingual_language_zh)).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.bilingual_language_en)).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.bilingual_start)).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.bilingual_idle)).assertIsDisplayed()
         screenshot("bilingual-screen.png")
+    }
+
+    @Test fun languageSelectionIncludesLastLanguageAndIsLockedDuringSession() {
+        val state = mutableStateOf(BilingualState())
+        compose.setContent { WeMeetTheme(darkTheme = false) {
+            BilingualLanguageSelectors(state.value) { first, language ->
+                state.value = state.value.copy(pair = BilingualLanguages.select(state.value.pair, first, language))
+            }
+        } }
+        compose.onNodeWithTag("bilingual-second-language").performClick()
+        val persian = context.getString(R.string.bilingual_language_fa)
+        compose.onNodeWithTag("bilingual-language-list").performScrollToNode(hasText(persian))
+        compose.onNodeWithText(persian).performClick()
+        compose.runOnIdle {
+            assertEquals("fa", state.value.pair.target)
+            state.value = state.value.copy(phase = BilingualPhase.LISTENING)
+        }
+        compose.onNodeWithTag("bilingual-first-language").assertIsNotEnabled()
+        compose.onNodeWithTag("bilingual-second-language").assertIsNotEnabled()
     }
 
     private fun screenshot(name: String) {
